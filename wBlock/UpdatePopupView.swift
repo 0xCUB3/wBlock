@@ -13,43 +13,72 @@ struct UpdatePopupView: View {
     @Binding var isPresented: Bool
 
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
             Text("Available Updates")
-                .font(.title)
-                .padding()
+                .font(.largeTitle)
+                .fontWeight(.bold)
 
-            List(filterListManager.availableUpdates, id: \.id) { filter in
-                HStack {
-                    Text(filter.name)
-                    Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { selectedFilters.contains(filter.id) },
-                        set: { newValue in
-                            if newValue {
-                                selectedFilters.insert(filter.id)
-                            } else {
-                                selectedFilters.remove(filter.id)
-                            }
+            Text("Select the filters you want to update:")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            List {
+                ForEach(filterListManager.availableUpdates, id: \.id) { filter in
+                    HStack {
+                        Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(selectedFilters.contains(filter.id) ? .blue : .gray)
+                        Text(filter.name)
+                            .font(.body)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if selectedFilters.contains(filter.id) {
+                            selectedFilters.remove(filter.id)
+                        } else {
+                            selectedFilters.insert(filter.id)
                         }
-                    ))
+                    }
                 }
             }
+            .listStyle(PlainListStyle())
+            .background(Color(NSColor.textBackgroundColor))
+            .cornerRadius(10)
 
-            HStack {
-                Button("Cancel") {
+            HStack(spacing: 20) {
+                Button(action: {
                     isPresented = false
+                }) {
+                    Text("Cancel")
+                        .fontWeight(.semibold)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(10)
                 }
-                Button("Update Selected") {
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: {
                     Task {
                         let filtersToUpdate = filterListManager.availableUpdates.filter { selectedFilters.contains($0.id) }
                         await filterListManager.updateSelectedFilters(filtersToUpdate)
                         isPresented = false
                     }
+                }) {
+                    Text("Update Selected")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.blue)
+                        .cornerRadius(10)
                 }
+                .buttonStyle(PlainButtonStyle())
                 .disabled(selectedFilters.isEmpty)
             }
-            .padding()
         }
-        .frame(width: 300, height: 400)
+        .padding()
+        .frame(width: 400, height: 500)
+        .background(Color(.windowBackgroundColor))
     }
 }

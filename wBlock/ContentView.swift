@@ -10,81 +10,40 @@ import SwiftData
 
 struct ContentView: View {
     @ObservedObject var filterListManager: FilterListManager
+    @StateObject private var windowDelegate = WindowDelegate()
     @State private var selectedCategory: FilterListCategory = .all
-    @State private var selectedFilterList: FilterList?
-    @State private var showingMissingFiltersAlert = false
     @State private var showingLogs = false
-    
-    init(filterListManager: FilterListManager) {
-        self._filterListManager = ObservedObject(wrappedValue: filterListManager)
-    }
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selectedCategory) {
-                ForEach(FilterListCategory.allCases) { category in
-                    NavigationLink(value: category) {
-                        Text(category.rawValue)
-                    }
-                }
+            List(FilterListCategory.allCases, selection: $selectedCategory) { category in
+                Text(category.rawValue)
             }
             .navigationTitle("Categories")
         } detail: {
             VStack {
                 List {
-                    ForEach(filterListManager.filterLists(for: selectedCategory)) { filterList in
+                    ForEach(filterListManager.filterLists(for: selectedCategory)) { filter in
                         HStack {
-                            Text(filterList.name)
+                            Text(filter.name)
                             Spacer()
                             Toggle("", isOn: Binding(
-                                get: { filterList.isSelected },
-                                set: { _ in filterListManager.toggleFilterListSelection(id: filterList.id) }
+                                get: { filter.isSelected },
+                                set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
                             ))
-                            .toggleStyle(SwitchToggleStyle(tint: .blue))
-                        }
-                        .padding(.vertical, 8) // Makes the row thicker
-                        .popover(isPresented: Binding(
-                            get: { selectedFilterList?.id == filterList.id },
-                            set: { _ in selectedFilterList = nil }
-                        )) {
-                            FilterListDetailView(filterList: filterList)
-                        }
-                        .onTapGesture {
-                            selectedFilterList = filterList
                         }
                     }
-                }
-                .navigationTitle(selectedCategory.rawValue)
-                
-                if filterListManager.isUpdating {
-                    VStack {
-                        ProgressView("Updating filters...", value: filterListManager.progress, total: 1.0)
-                            .progressViewStyle(LinearProgressViewStyle())
-                            .padding()
-                        
-                        ScrollView {
-                            Text(filterListManager.logs)
-                                .font(.system(.body, design: .monospaced))
-                                .padding()
-                        }
-                        .frame(height: 100)
-                        .background(Color(NSColor.textBackgroundColor))
-                        .cornerRadius(8)
-                        .padding()
-                    }
-                    .background(Color(NSColor.windowBackgroundColor))
-                    .cornerRadius(10)
-                    .shadow(radius: 10)
                 }
             }
+            .navigationTitle(selectedCategory.rawValue)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Apply Changes") {
                         Task {
-                            await applyChanges()
+                            await filterListManager.checkAndEnableFilters()
                         }
                     }
-                    .disabled(filterListManager.isUpdating)
+                    .disabled(!filterListManager.hasUnappliedChanges)
                 }
                 ToolbarItem(placement: .automatic) {
                     Button("Check for Updates") {
@@ -94,43 +53,44 @@ struct ContentView: View {
                     }
                 }
                 ToolbarItem(placement: .automatic) {
-                    Button("View Logs") {
+                    Button("Show Logs") {
                         showingLogs = true
                     }
                 }
             }
-            
         }
         .navigationSplitViewStyle(.balanced)
-        .frame(width: 600, height: 500)
-        .alert("Missing Filters", isPresented: $showingMissingFiltersAlert) {
-            Button("Update") {
-                Task {
-                    await filterListManager.updateMissingFilters()
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("The following filters are missing: \(missingFiltersNames). Would you like to update them?")
+        .frame(width: 700, height: 500)
+        .sheet(isPresented: $filterListManager.showingUpdatePopup) {
+            UpdatePopupView(filterListManager: filterListManager, isPresented: $filterListManager.showingUpdatePopup)
         }
         .sheet(isPresented: $showingLogs) {
             LogsView(logs: filterListManager.logs)
         }
-        .sheet(isPresented: $filterListManager.showingUpdatePopup) {
-            UpdatePopupView(filterListManager: filterListManager, isPresented: $filterListManager.showingUpdatePopup)
+        .sheet(isPresented: $filterListManager.showMissingFiltersSheet) {
+            MissingFiltersView(filterListManager: filterListManager)
         }
-    }
-    
-    var missingFiltersNames: String {
-        filterListManager.missingFilters.map { $0.name }.joined(separator: ", ")
-    }
-    
-    func applyChanges() async {
-        filterListManager.checkAndEnableFilters()
-        if !filterListManager.missingFilters.isEmpty {
-            showingMissingFiltersAlert = true
-        } else {
-            await filterListManager.applyChanges()
+        .alert("Unapplied Changes", isPresented: $windowDelegate.shouldShowExitAlert) {
+            Button("Apply Changes") {
+                Task {
+                    await filterListManager.applyChanges()
+                    NSApplication.shared.terminate(nil)
+                }
+            }
+            Button("Exit Without Applying") {
+                NSApplication.shared.terminate(nil)
+            }
+            Button("Cancel", role: .cancel) {
+                // Do nothing, just dismiss the alert
+            }
+        } message: {
+            Text("You have unapplied changes. Do you want to apply them before exiting?")
+        }
+        .onAppear {
+            windowDelegate.hasUnappliedChanges = { filterListManager.hasUnappliedChanges }
+            DispatchQueue.main.async {
+                NSApplication.shared.windows.first?.delegate = windowDelegate
+            }
         }
     }
 }
@@ -155,20 +115,82 @@ struct FilterListDetailView: View {
     }
 }
 
+class WindowDelegate: NSObject, NSWindowDelegate, ObservableObject {
+    @Published var shouldShowExitAlert = false
+    var hasUnappliedChanges: () -> Bool = { false }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if hasUnappliedChanges() {
+            shouldShowExitAlert = true
+            return false
+        }
+        return true
+    }
+}
+
+struct MissingFiltersView: View {
+    @ObservedObject var filterListManager: FilterListManager
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Missing Filters")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            Text("The following filters need to be downloaded:")
+                .font(.headline)
+            
+            List(filterListManager.missingFilters, id: \.id) { filter in
+                Text(filter.name)
+                    .padding(.vertical, 4)
+            }
+            .frame(height: 200)
+            .background(Color(.windowBackgroundColor))
+            .cornerRadius(8)
+            
+            Button(action: {
+                Task {
+                    await filterListManager.updateMissingFilters()
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }) {
+                Text("Update Missing Filters")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+        .frame(width: 400, height: 400)
+        .background(Color(.windowBackgroundColor))
+    }
+}
+
 struct LogsView: View {
     let logs: String
     
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
             Text("Logs")
-                .font(.title)
-                .padding()
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
             ScrollView {
-                Text(logs)
+                TextEditor(text: .constant(logs))
                     .font(.system(.body, design: .monospaced))
-                    .padding()
+                    .background(Color(.textBackgroundColor))
+                    .cornerRadius(8)
             }
+            .background(Color(.textBackgroundColor))
+            .cornerRadius(8)
         }
-        .frame(width: 400, height: 350)
+        .padding()
+        .frame(width: 600, height: 400)
+        .background(Color(.windowBackgroundColor))
     }
 }

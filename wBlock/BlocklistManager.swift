@@ -33,6 +33,8 @@ class FilterListManager: ObservableObject {
     @Published var showProgressView = false
     @Published var availableUpdates: [FilterList] = []
     @Published var showingUpdatePopup = false
+    @Published var hasUnappliedChanges = false
+    @Published var showMissingFiltersSheet = false
     
     private let contentBlockerIdentifier = "app.netlify.0xcube.wBlock.wBlock-Filters"
     private let sharedContainerIdentifier = "group.app.netlify.0xcube.wBlock"
@@ -50,7 +52,7 @@ class FilterListManager: ObservableObject {
             FilterList(name: "AdGuard Base filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: .ads, isSelected: true),
             FilterList(name: "AdGuard Tracking Protection filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")!, category: .privacy, isSelected: true),
             FilterList(name: "AdGuard Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/14_optimized.txt")!, category: .annoyances),
-            FilterList(name: "AdGuard Social Media filter", url: URL(string: "https://github.com/AdguardTeam/FiltersRegistry/blob/master/platforms/extension/safari/filters/3_optimized.txt")!, category: .annoyances),
+            FilterList(name: "AdGuard Social Media filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: .annoyances),
             FilterList(name: "Fanboy's Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: .annoyances),
             FilterList(name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: .privacy, isSelected: true),
             FilterList(name: "Online Malicious URL Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: .security, isSelected: true),
@@ -81,16 +83,19 @@ class FilterListManager: ObservableObject {
         for filter in filterLists where filter.isSelected {
             if !filterFileExists(filter) {
                 missingFilters.append(filter)
-            } else {
-                enableFilter(filter)
             }
         }
-        if missingFilters.isEmpty {
+        if !missingFilters.isEmpty {
+            DispatchQueue.main.async {
+                self.showMissingFiltersSheet = true
+            }
+        } else {
             Task {
                 await applyChanges()
             }
         }
     }
+
     
     private func filterFileExists(_ filter: FilterList) -> Bool {
         guard let containerURL = getSharedContainerURL() else { return false }
@@ -99,22 +104,46 @@ class FilterListManager: ObservableObject {
     }
     
     func applyChanges() async {
+        showProgressView = true
+        isUpdating = true
+        progress = 0
+
         let selectedFilters = filterLists.filter { $0.isSelected }
+        let totalSteps = Float(selectedFilters.count)
+        var completedSteps: Float = 0
+
         var allRules: [[String: Any]] = []
         var advancedRules: [[String: Any]] = []
 
         for filter in selectedFilters {
+            if !filterFileExists(filter) {
+                let success = await fetchAndProcessFilter(filter)
+                if !success {
+                    appendLog("Failed to fetch and process filter: \(filter.name)")
+                    continue
+                }
+            }
+
             if let (rules, advanced) = loadFilterRules(for: filter) {
                 allRules.append(contentsOf: rules)
                 if let advanced = advanced {
                     advancedRules.append(contentsOf: advanced)
                 }
             }
+
+            completedSteps += 1
+            progress = completedSteps / totalSteps
         }
 
         saveBlockerList(allRules)
         saveAdvancedBlockerList(advancedRules)
         await reloadContentBlocker()
+
+        DispatchQueue.main.async {
+            self.hasUnappliedChanges = false
+            self.isUpdating = false
+            self.showProgressView = false
+        }
     }
     
     private func loadFilterRules(for filter: FilterList) -> ([[String: Any]], [[String: Any]]?)? {
@@ -315,6 +344,7 @@ class FilterListManager: ObservableObject {
         if let index = filterLists.firstIndex(where: { $0.id == id }) {
             filterLists[index].isSelected.toggle()
             saveSelectedState()
+            hasUnappliedChanges = true
         }
     }
     
@@ -365,6 +395,8 @@ class FilterListManager: ObservableObject {
             DispatchQueue.main.async {
                 self.showingUpdatePopup = true
             }
+        } else {
+            appendLog("No updates available.")
         }
     }
 
@@ -402,6 +434,9 @@ class FilterListManager: ObservableObject {
                 if let index = availableUpdates.firstIndex(where: { $0.id == filter.id }) {
                     availableUpdates.remove(at: index)
                 }
+                appendLog("Successfully updated \(filter.name)")
+            } else {
+                appendLog("Failed to update \(filter.name)")
             }
             completedSteps += 1
             progress = completedSteps / totalSteps

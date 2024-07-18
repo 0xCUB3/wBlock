@@ -29,7 +29,7 @@ struct wBlockApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(filterListManager: filterListManager)
-                .frame(width: 600, height: 500)
+                .frame(width: 700, height: 500)
                 .fixedSize()
         }
         .windowResizability(.contentSize)
