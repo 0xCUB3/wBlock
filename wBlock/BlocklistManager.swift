@@ -31,12 +31,15 @@ class FilterListManager: ObservableObject {
     @Published var missingFilters: [FilterList] = []
     @Published var logs: String = ""
     @Published var showProgressView = false
+    @Published var availableUpdates: [FilterList] = []
+    @Published var showingUpdatePopup = false
     
     private let contentBlockerIdentifier = "app.netlify.0xcube.wBlock.wBlock-Filters"
     private let sharedContainerIdentifier = "group.app.netlify.0xcube.wBlock"
     
     init() {
         loadFilterLists()
+        loadSelectedState()
         checkAndCreateBlockerList()
         checkAndEnableFilters()
         clearLogs()
@@ -59,6 +62,20 @@ class FilterListManager: ObservableObject {
         ]
     }
     
+    private func loadSelectedState() {
+        let defaults = UserDefaults.standard
+        for (index, filter) in filterLists.enumerated() {
+            filterLists[index].isSelected = defaults.bool(forKey: "filter_\(filter.name)")
+        }
+    }
+    
+    private func saveSelectedState() {
+        let defaults = UserDefaults.standard
+        for filter in filterLists {
+            defaults.set(filter.isSelected, forKey: "filter_\(filter.name)")
+        }
+    }
+    
     func checkAndEnableFilters() {
         missingFilters.removeAll()
         for filter in filterLists where filter.isSelected {
@@ -70,7 +87,7 @@ class FilterListManager: ObservableObject {
         }
         if missingFilters.isEmpty {
             Task {
-                await reloadContentBlocker()
+                await applyChanges()
             }
         }
     }
@@ -167,7 +184,6 @@ class FilterListManager: ObservableObject {
         
         await applyChanges()
         isUpdating = false
-        // Note: We're not setting showProgressView to false here, as it will be dismissed by the user
     }
     
     private func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
@@ -177,6 +193,13 @@ class FilterListManager: ObservableObject {
                 appendLog("Unable to parse content from \(filter.url)")
                 return false
             }
+            
+            // Save raw content
+            if let containerURL = getSharedContainerURL() {
+                let rawFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                try content.write(to: rawFileURL, atomically: true, encoding: .utf8)
+            }
+            
             let rules = content.components(separatedBy: .newlines)
             let filteredRules = rules.filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }
             
@@ -291,6 +314,7 @@ class FilterListManager: ObservableObject {
     func toggleFilterListSelection(id: UUID) {
         if let index = filterLists.firstIndex(where: { $0.id == id }) {
             filterLists[index].isSelected.toggle()
+            saveSelectedState()
         }
     }
     
@@ -328,5 +352,63 @@ class FilterListManager: ObservableObject {
     func clearLogs() {
         logs = ""
         saveLogsToFile()
+    }
+    
+    func checkForUpdates() async {
+        availableUpdates.removeAll()
+        for filter in filterLists {
+            if await hasUpdate(for: filter) {
+                availableUpdates.append(filter)
+            }
+        }
+        if !availableUpdates.isEmpty {
+            DispatchQueue.main.async {
+                self.showingUpdatePopup = true
+            }
+        }
+    }
+
+    private func hasUpdate(for filter: FilterList) async -> Bool {
+        guard let containerURL = getSharedContainerURL() else { return false }
+        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: filter.url)
+            let onlineContent = String(data: data, encoding: .utf8) ?? ""
+            
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                let localContent = try String(contentsOf: fileURL, encoding: .utf8)
+                return onlineContent != localContent
+            } else {
+                return true // If local file doesn't exist, consider it as needing an update
+            }
+        } catch {
+            appendLog("Error checking update for \(filter.name): \(error)")
+            return false
+        }
+    }
+
+    func updateSelectedFilters(_ selectedFilters: [FilterList]) async {
+        showProgressView = true
+        isUpdating = true
+        progress = 0
+        
+        let totalSteps = Float(selectedFilters.count)
+        var completedSteps: Float = 0
+        
+        for filter in selectedFilters {
+            let success = await fetchAndProcessFilter(filter)
+            if success {
+                if let index = availableUpdates.firstIndex(where: { $0.id == filter.id }) {
+                    availableUpdates.remove(at: index)
+                }
+            }
+            completedSteps += 1
+            progress = completedSteps / totalSteps
+        }
+        
+        await applyChanges()
+        isUpdating = false
+        showProgressView = false
     }
 }

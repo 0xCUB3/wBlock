@@ -11,6 +11,8 @@ import SwiftData
 
 @main
 struct wBlockApp: App {
+    @StateObject private var filterListManager = FilterListManager()
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -26,7 +28,7 @@ struct wBlockApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(filterListManager: filterListManager)
                 .frame(width: 600, height: 500)
                 .fixedSize()
         }

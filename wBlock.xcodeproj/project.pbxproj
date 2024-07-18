@@ -249,7 +249,7 @@
 			packageReferences = (
 				C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */,
 			);
-			preferredProjectObjectVersion = 60;
+			preferredProjectObjectVersion = 56;
 			productRefGroup = C19158D92C49440500319B63 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";

@@ -9,11 +9,15 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @StateObject private var filterListManager = FilterListManager()
+    @ObservedObject var filterListManager: FilterListManager
     @State private var selectedCategory: FilterListCategory = .all
     @State private var selectedFilterList: FilterList?
     @State private var showingMissingFiltersAlert = false
     @State private var showingLogs = false
+    
+    init(filterListManager: FilterListManager) {
+        self._filterListManager = ObservedObject(wrappedValue: filterListManager)
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -83,11 +87,19 @@ struct ContentView: View {
                     .disabled(filterListManager.isUpdating)
                 }
                 ToolbarItem(placement: .automatic) {
+                    Button("Check for Updates") {
+                        Task {
+                            await filterListManager.checkForUpdates()
+                        }
+                    }
+                }
+                ToolbarItem(placement: .automatic) {
                     Button("View Logs") {
                         showingLogs = true
                     }
                 }
             }
+            
         }
         .navigationSplitViewStyle(.balanced)
         .frame(width: 600, height: 500)
@@ -103,6 +115,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingLogs) {
             LogsView(logs: filterListManager.logs)
+        }
+        .sheet(isPresented: $filterListManager.showingUpdatePopup) {
+            UpdatePopupView(filterListManager: filterListManager, isPresented: $filterListManager.showingUpdatePopup)
         }
     }
     
@@ -128,7 +143,11 @@ struct FilterListDetailView: View {
             Text(filterList.name)
                 .font(.title)
             Text("Category: \(filterList.category.rawValue)")
-            Link("URL: \(filterList.url.absoluteString)", destination: filterList.url)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("URL:")
+                Link(filterList.url.absoluteString, destination: filterList.url)
+                    .foregroundColor(.blue)
+            }
             Text("Status: \(filterList.isSelected ? "Enabled" : "Disabled")")
         }
         .padding()
