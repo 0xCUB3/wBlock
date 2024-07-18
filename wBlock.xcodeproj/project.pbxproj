@@ -3,15 +3,87 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 74;
 	objects = {
+
+/* Begin PBXBuildFile section */
+		C19158F52C49444C00319B63 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C19158F42C49444C00319B63 /* Cocoa.framework */; };
+		C19158FF2C49444C00319B63 /* wBlock Filters.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C19158F22C49444C00319B63 /* wBlock Filters.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C19159072C49446400319B63 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C19159062C49446400319B63 /* ContentBlockerConverter */; };
+		C191591E2C49448C00319B63 /* wBlock Scripts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C191590C2C49448C00319B63 /* wBlock Scripts.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1A35C992C49453E009C8E50 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A35C982C49453E009C8E50 /* ContentBlockerConverter */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C19158FD2C49444C00319B63 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C19158D02C49440500319B63 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C19158F12C49444C00319B63;
+			remoteInfo = "wBlock Filters";
+		};
+		C191591C2C49448C00319B63 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C19158D02C49440500319B63 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C191590B2C49448C00319B63;
+			remoteInfo = "wBlock Scripts";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C19159042C49444C00319B63 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C191591E2C49448C00319B63 /* wBlock Scripts.appex in Embed Foundation Extensions */,
+				C19158FF2C49444C00319B63 /* wBlock Filters.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		C19158D82C49440500319B63 /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C19158F22C49444C00319B63 /* wBlock Filters.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Filters.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C19158F42C49444C00319B63 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		C191590C2C49448C00319B63 /* wBlock Scripts.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Scripts.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C19159002C49444C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C19158F12C49444C00319B63 /* wBlock Filters */;
+		};
+		C191591F2C49448C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				/Localized/SafariExtensionViewController.xib,
+			);
+			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		C19159232C49448C00319B63 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = C191590A2C49448C00319B63 /* Resources */;
+			membershipExceptions = (
+				Base.lproj/SafariExtensionViewController.xib,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C19158DA2C49440500319B63 /* wBlock */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = wBlock; sourceTree = "<group>"; };
+		C19158F62C49444C00319B63 /* wBlock Filters */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C19159002C49444C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "wBlock Filters"; sourceTree = "<group>"; };
+		C191590D2C49448C00319B63 /* wBlock Scripts */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C191591F2C49448C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, C19159232C49448C00319B63 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "wBlock Scripts"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -19,6 +91,23 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C19159072C49446400319B63 /* ContentBlockerConverter in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C19158EF2C49444C00319B63 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C19158F52C49444C00319B63 /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C19159092C49448C00319B63 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1A35C992C49453E009C8E50 /* ContentBlockerConverter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -29,6 +118,9 @@
 			isa = PBXGroup;
 			children = (
 				C19158DA2C49440500319B63 /* wBlock */,
+				C19158F62C49444C00319B63 /* wBlock Filters */,
+				C191590D2C49448C00319B63 /* wBlock Scripts */,
+				C19158F32C49444C00319B63 /* Frameworks */,
 				C19158D92C49440500319B63 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -37,8 +129,18 @@
 			isa = PBXGroup;
 			children = (
 				C19158D82C49440500319B63 /* wBlock.app */,
+				C19158F22C49444C00319B63 /* wBlock Filters.appex */,
+				C191590C2C49448C00319B63 /* wBlock Scripts.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C19158F32C49444C00319B63 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C19158F42C49444C00319B63 /* Cocoa.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -51,20 +153,69 @@
 				C19158D42C49440500319B63 /* Sources */,
 				C19158D52C49440500319B63 /* Frameworks */,
 				C19158D62C49440500319B63 /* Resources */,
+				C19159042C49444C00319B63 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C19158FE2C49444C00319B63 /* PBXTargetDependency */,
+				C191591D2C49448C00319B63 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C19158DA2C49440500319B63 /* wBlock */,
 			);
 			name = wBlock;
 			packageProductDependencies = (
+				C19159062C49446400319B63 /* ContentBlockerConverter */,
 			);
 			productName = wBlock;
 			productReference = C19158D82C49440500319B63 /* wBlock.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C19158F12C49444C00319B63 /* wBlock Filters */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C19159012C49444C00319B63 /* Build configuration list for PBXNativeTarget "wBlock Filters" */;
+			buildPhases = (
+				C19158EE2C49444C00319B63 /* Sources */,
+				C19158EF2C49444C00319B63 /* Frameworks */,
+				C19158F02C49444C00319B63 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C19158F62C49444C00319B63 /* wBlock Filters */,
+			);
+			name = "wBlock Filters";
+			packageProductDependencies = (
+			);
+			productName = "wBlock Filters";
+			productReference = C19158F22C49444C00319B63 /* wBlock Filters.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		C191590B2C49448C00319B63 /* wBlock Scripts */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C19159202C49448C00319B63 /* Build configuration list for PBXNativeTarget "wBlock Scripts" */;
+			buildPhases = (
+				C19159082C49448C00319B63 /* Sources */,
+				C19159092C49448C00319B63 /* Frameworks */,
+				C191590A2C49448C00319B63 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C191590D2C49448C00319B63 /* wBlock Scripts */,
+			);
+			name = "wBlock Scripts";
+			packageProductDependencies = (
+				C1A35C982C49453E009C8E50 /* ContentBlockerConverter */,
+			);
+			productName = "wBlock Scripts";
+			productReference = C191590C2C49448C00319B63 /* wBlock Scripts.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -79,10 +230,15 @@
 					C19158D72C49440500319B63 = {
 						CreatedOnToolsVersion = 16.0;
 					};
+					C19158F12C49444C00319B63 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					C191590B2C49448C00319B63 = {
+						CreatedOnToolsVersion = 16.0;
+					};
 				};
 			};
 			buildConfigurationList = C19158D32C49440500319B63 /* Build configuration list for PBXProject "wBlock" */;
-			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -90,17 +246,37 @@
 				Base,
 			);
 			mainGroup = C19158CF2C49440500319B63;
+			packageReferences = (
+				C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */,
+			);
+			preferredProjectObjectVersion = 60;
 			productRefGroup = C19158D92C49440500319B63 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				C19158D72C49440500319B63 /* wBlock */,
+				C19158F12C49444C00319B63 /* wBlock Filters */,
+				C191590B2C49448C00319B63 /* wBlock Scripts */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C19158D62C49440500319B63 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C19158F02C49444C00319B63 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C191590A2C49448C00319B63 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -117,7 +293,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C19158EE2C49444C00319B63 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C19159082C49448C00319B63 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C19158FE2C49444C00319B63 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C19158F12C49444C00319B63 /* wBlock Filters */;
+			targetProxy = C19158FD2C49444C00319B63 /* PBXContainerItemProxy */;
+		};
+		C191591D2C49448C00319B63 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
+			targetProxy = C191591C2C49448C00319B63 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		C19158E72C49440600319B63 /* Debug */ = {
@@ -247,7 +450,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"wBlock/Preview Content\"";
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -275,7 +477,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"wBlock/Preview Content\"";
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -289,6 +490,122 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.netlify.0xcube.wBlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C19159022C49444C00319B63 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Filters/wBlock_Filters.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wBlock Filters/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Filters";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.netlify.0xcube.wBlock.wBlock-Filters";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C19159032C49444C00319B63 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Filters/wBlock_Filters.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wBlock Filters/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Filters";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.netlify.0xcube.wBlock.wBlock-Filters";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C19159212C49448C00319B63 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock_Scripts.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wBlock Scripts/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "app.netlify.0xcube.wBlock.wBlock-Scripts";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C19159222C49448C00319B63 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock_Scripts.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wBlock Scripts/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "app.netlify.0xcube.wBlock.wBlock-Scripts";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -315,7 +632,49 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C19159012C49444C00319B63 /* Build configuration list for PBXNativeTarget "wBlock Filters" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C19159022C49444C00319B63 /* Debug */,
+				C19159032C49444C00319B63 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C19159202C49448C00319B63 /* Build configuration list for PBXNativeTarget "wBlock Scripts" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C19159212C49448C00319B63 /* Debug */,
+				C19159222C49448C00319B63 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AdguardTeam/SafariConverterLib";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C19159062C49446400319B63 /* ContentBlockerConverter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
+			productName = ContentBlockerConverter;
+		};
+		C1A35C982C49453E009C8E50 /* ContentBlockerConverter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
+			productName = ContentBlockerConverter;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C19158D02C49440500319B63 /* Project object */;
 }

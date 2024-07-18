@@ -1,4 +1,5 @@
 //
+//
 //  wBlockApp.swift
 //  wBlock
 //
@@ -26,7 +27,9 @@ struct wBlockApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .frame(width: 600, height: 500)
+                .fixedSize()
         }
-        .modelContainer(sharedModelContainer)
+        .windowResizability(.contentSize)
     }
 }
