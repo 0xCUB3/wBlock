@@ -10,6 +10,8 @@ import SwiftData
 
 struct ContentView: View {
     @ObservedObject var filterListManager: FilterListManager
+    @EnvironmentObject var updateController: UpdateController
+    
     @StateObject private var windowDelegate = WindowDelegate()
     @State private var selectedCategory: FilterListCategory = .all
     @State private var showingLogs = false
@@ -51,7 +53,7 @@ struct ContentView: View {
                     .disabled(!filterListManager.hasUnappliedChanges)
                 }
                 ToolbarItem(placement: .automatic) {
-                    Button("Check for Updates") {
+                    Button("Update Filters") {
                         Task {
                             await filterListManager.checkForUpdates()
                         }

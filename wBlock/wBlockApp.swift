@@ -12,6 +12,7 @@ import SwiftData
 @main
 struct wBlockApp: App {
     @StateObject private var filterListManager = FilterListManager()
+    @StateObject private var updateController = UpdateController.shared
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -31,6 +32,20 @@ struct wBlockApp: App {
             ContentView(filterListManager: filterListManager)
                 .frame(width: 700, height: 500)
                 .fixedSize()
+                .environmentObject(updateController)
+                .task {
+                    await updateController.checkForUpdates()
+                }
+                .alert(isPresented: $updateController.updateAvailable) {
+                    Alert(
+                        title: Text("Update Available"),
+                        message: Text("A new version (\(updateController.latestVersion ?? "")) of wBlock is available. Would you like to update?"),
+                        primaryButton: .default(Text("Update")) {
+                            updateController.openReleasesPage()
+                        },
+                        secondaryButton: .cancel(Text("Later"))
+                    )
+                }
         }
         .windowResizability(.contentSize)
     }
