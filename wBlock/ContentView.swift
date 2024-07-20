@@ -16,24 +16,29 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(FilterListCategory.allCases, selection: $selectedCategory) { category in
+            List(FilterListCategory.allCases, id: \.self, selection: $selectedCategory) { category in
                 Text(category.rawValue)
+                    .tag(category)
             }
             .navigationTitle("Categories")
+            .listStyle(SidebarListStyle())
         } detail: {
             VStack {
                 List {
                     ForEach(filterListManager.filterLists(for: selectedCategory)) { filter in
                         HStack {
                             Text(filter.name)
+                                .padding(.vertical, 8)
                             Spacer()
                             Toggle("", isOn: Binding(
                                 get: { filter.isSelected },
                                 set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
                             ))
+                            .toggleStyle(SwitchToggleStyle(tint: .blue))
                         }
                     }
                 }
+                .listStyle(PlainListStyle())
             }
             .navigationTitle(selectedCategory.rawValue)
             .toolbar {
@@ -70,6 +75,14 @@ struct ContentView: View {
         .sheet(isPresented: $filterListManager.showMissingFiltersSheet) {
             MissingFiltersView(filterListManager: filterListManager)
         }
+        .alert("Enable Recommended Filters?", isPresented: $filterListManager.showRecommendedFiltersAlert) {
+            Button("Enable") {
+                filterListManager.enableRecommendedFilters()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("No filters are currently enabled. Would you like to enable the recommended filters?")
+        }
         .alert("Unapplied Changes", isPresented: $windowDelegate.shouldShowExitAlert) {
             Button("Apply Changes") {
                 Task {
@@ -91,6 +104,7 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 NSApplication.shared.windows.first?.delegate = windowDelegate
             }
+            filterListManager.checkForEnabledFilters()
         }
     }
 }

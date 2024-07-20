@@ -14,7 +14,7 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()
-        shared.preferredContentSize = NSSize(width: 320, height: 240)
+        shared.preferredContentSize = NSSize(width: 240, height: 150)
         return shared
     }()
 
@@ -27,10 +27,13 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
 struct ContentView: View {
     var body: some View {
         VStack {
-            Text("Hello World")
+            Text("Script injection is working!")
                 .font(.largeTitle)
                 .padding()
+            Text("Script injection is for blocking extra pesky ads, particularly on YouTube.")
+                .font(.footnote)
+                .padding()
         }
-        .frame(width: 320, height: 240)
+        .frame(width: 240, height: 150)
     }
 }

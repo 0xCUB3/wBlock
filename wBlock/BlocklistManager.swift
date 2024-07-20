@@ -35,6 +35,7 @@ class FilterListManager: ObservableObject {
     @Published var showingUpdatePopup = false
     @Published var hasUnappliedChanges = false
     @Published var showMissingFiltersSheet = false
+    @Published var showRecommendedFiltersAlert = false
     
     private let contentBlockerIdentifier = "app.netlify.0xcube.wBlock.wBlock-Filters"
     private let sharedContainerIdentifier = "group.app.netlify.0xcube.wBlock"
@@ -445,5 +446,38 @@ class FilterListManager: ObservableObject {
         await applyChanges()
         isUpdating = false
         showProgressView = false
+    }
+    
+    // Make sure you're not running the app without filters on!
+    func checkForEnabledFilters() {
+        let enabledFilters = filterLists.filter { $0.isSelected }
+        if enabledFilters.isEmpty {
+            showRecommendedFiltersAlert = true
+        }
+    }
+
+    func enableRecommendedFilters() {
+        let recommendedFilters = [
+            "AdGuard Base filter",
+            "AdGuard Tracking Protection filter",
+            "AdGuard Annoyances filter",
+            "EasyPrivacy",
+            "Online Malicious URL Blocklist",
+            "d3Host List by d3ward",
+            "Anti-Adblock List"
+        ]
+
+        for index in filterLists.indices {
+            if recommendedFilters.contains(filterLists[index].name) {
+                filterLists[index].isSelected = true
+                appendLog("Enabled recommended filter: \(filterLists[index].name)")
+            }
+        }
+        saveSelectedState()
+        hasUnappliedChanges = true
+        appendLog("Recommended filters have been enabled")
+        
+        // After enabling recommended filters, check for missing filters
+        checkAndEnableFilters()
     }
 }
