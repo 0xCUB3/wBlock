@@ -1,6 +1,10 @@
 # wBlock: It's time to end the Safari ad-blocking B.S.
 
+<p align="center">
+   
 ![wBlock Logo](https://github.com/user-attachments/assets/5e21de60-7a47-48da-90d0-e0891176db34)
+
+</p>
 
 wBlock is a powerful content blocker for macOS that cuts through the noise, delivering a clean and private browsing experience without the hassle. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance and maximum blocking. 
 
