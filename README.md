@@ -28,8 +28,10 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 
 <details>
 <summary>Benchmark Results</summary>
+   
 ![AdBlock-Tester](https://github.com/user-attachments/assets/5d8d7764-d6db-4c17-b581-1269bcba2d38)
 ![d3ward](https://github.com/user-attachments/assets/d68d1481-f627-474c-8a1b-cfa6fe6dafa6)
+
 </details>
 
 
