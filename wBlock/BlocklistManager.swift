@@ -41,6 +41,7 @@ class FilterListManager: ObservableObject {
     private let sharedContainerIdentifier = "group.app.netlify.0xcube.wBlock"
     
     init() {
+        checkAndCreateGroupFolder()
         loadFilterLists()
         loadSelectedState()
         checkAndCreateBlockerList()
@@ -479,5 +480,23 @@ class FilterListManager: ObservableObject {
         
         // After enabling recommended filters, check for missing filters
         checkAndEnableFilters()
+    }
+    
+    private func checkAndCreateGroupFolder() {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier) else {
+            appendLog("Error: Unable to access shared container")
+            return
+        }
+        
+        if !FileManager.default.fileExists(atPath: containerURL.path) {
+            do {
+                try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true, attributes: nil)
+                appendLog("Created group folder: \(containerURL.path)")
+            } catch {
+                appendLog("Error creating group folder: \(error.localizedDescription)")
+            }
+        } else {
+            appendLog("Group folder already exists: \(containerURL.path)")
+        }
     }
 }
