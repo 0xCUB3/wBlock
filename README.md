@@ -65,4 +65,8 @@ Found a bug or have a feature request? [Open an issue](https://github.com/0xCUB3
 
 ---
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=0xCUB3/wBlock&type=Date)](https://star-history.com/#0xCUB3/wBlock&Date)
+
 Made with ❤️ by [0xCUB3](https://github.com/0xCUB3)
