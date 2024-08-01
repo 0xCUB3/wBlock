@@ -56,9 +56,15 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 
 - macOS 14 (Sonoma) or later - earlier OS support coming soon
 
-## Support & Contribution
+## Support wBlock's Development
 
-Found a bug or have a feature request? [Open an issue](https://github.com/0xCUB3/wBlock/issues).
+wBlock is a free, open-source project dedicated to improving your browsing experience. If you find it valuable, consider supporting its ongoing development:
+
+<p align="center">
+  <a href="https://opencollective.com/about-this-hack" target="_blank">
+    <img src="https://opencollective.com/about-this-hack/donate/button@2x.png?color=blue" width=300 />
+  </a>
+</p>
 
 ## Credits
 [@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. 
