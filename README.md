@@ -58,7 +58,7 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 
 ## Support wBlock's Development
 
-wBlock is a free, open-source project dedicated to improving your browsing experience. If you find it valuable, consider supporting its ongoing development:
+wBlock is a free, open-source project dedicated to improving your browsing experience. If you find it valuable, consider supporting its developer and ongoing development (funded through the "About This Hack" page):
 
 <p align="center">
   <a href="https://opencollective.com/about-this-hack" target="_blank">
