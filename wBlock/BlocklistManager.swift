@@ -37,7 +37,7 @@ class FilterListManager: ObservableObject {
     @Published var showMissingFiltersSheet = false
     @Published var showRecommendedFiltersAlert = false
     
-    private let contentBlockerIdentifier = "app.netlify.0xcube.wBlock.wBlock-Filters"
+    private let contentBlockerIdentifier = "app.netlify.0xcube.wBlock.wBlockFilters"
     private let sharedContainerIdentifier = "group.app.netlify.0xcube.wBlock"
     
     init() {
