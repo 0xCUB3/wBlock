@@ -189,13 +189,25 @@ struct MissingFiltersView: View {
 
 struct LogsView: View {
     let logs: String
-    
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         VStack(spacing: 20) {
-            Text("Logs")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
+            HStack {
+                Text("Logs")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Spacer()
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal)
+
             ScrollView {
                 TextEditor(text: .constant(logs))
                     .font(.system(.body, design: .monospaced))
