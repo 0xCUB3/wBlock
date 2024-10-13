@@ -10,7 +10,7 @@ import os.log
 
 class SafariExtensionViewController: SFSafariExtensionViewController {
     
-    private let logger = Logger(subsystem: "app.netlify.0xcube.wBlock.wBlockScripts", category: "ScriptInjection")
+    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ScriptInjection")
     
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()

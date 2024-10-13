@@ -12,7 +12,7 @@ class ContentBlockerEngineWrapper {
     private var contentBlockerEngine: ContentBlockerEngine
     nonisolated(unsafe) static let shared = ContentBlockerEngineWrapper()
     init() {
-        let requiredPart: String = "group.app.netlify.0xcube.wBlock"
+        let requiredPart: String = "group.app.0xcube.wBlock"
         let advancedBlockingURL: URL? = FileManager.default
             .containerURL(
                 forSecurityApplicationGroupIdentifier: requiredPart)?.appending(

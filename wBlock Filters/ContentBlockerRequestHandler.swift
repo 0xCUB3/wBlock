@@ -9,7 +9,7 @@ import Foundation
 
 class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
     func beginRequest(with context: NSExtensionContext) {
-        let sharedContainerIdentifier = "group.app.netlify.0xcube.wBlock"
+        let sharedContainerIdentifier = "group.app.0xcube.wBlock"
         
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier) else {
             print("Failed to get shared container URL")
