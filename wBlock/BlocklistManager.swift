@@ -11,7 +11,7 @@ import SafariServices
 import ContentBlockerConverter
 
 enum FilterListCategory: String, CaseIterable, Identifiable {
-    case all = "All", ads = "Ads", privacy = "Privacy", security = "Security", multipurpose = "Multipurpose", annoyances = "Annoyances", experimental = "Experimental"
+    case all = "All", ads = "Ads", privacy = "Privacy", security = "Security", multipurpose = "Multipurpose", annoyances = "Annoyances", experimental = "Experimental", foreign = "Foreign"
     var id: String { self.rawValue }
 }
 
@@ -63,6 +63,40 @@ class FilterListManager: ObservableObject {
             FilterList(name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: .multipurpose, isSelected: true),
             FilterList(name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: .multipurpose, isSelected: true),
             FilterList(name: "AdGuard Experimental filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: .experimental),
+            
+            // --- Foreign Filter Lists ---
+            // Spanish
+            FilterList(name: "Lista de bloqueo de dominios españoles", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
+
+            // French
+            FilterList(name: "Liste française de blocage des publicités", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!, category: .foreign),
+
+            // German
+            FilterList(name: "Deutsche Werbeblocker-Liste", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/119_optimized.txt")!, category: .foreign),
+
+            // Russian
+            FilterList(name: "Русский фильтр AdGuard", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt")!, category: .foreign),
+
+            // Dutch
+            FilterList(name: "Nederlandse advertentieblokkeringlijst", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/124_optimized.txt")!, category: .foreign),
+
+            // Japanese
+            FilterList(name: "日本語の広告ブロックリスト", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!, category: .foreign),
+
+            // Portuguese (Brazil)
+            FilterList(name: "Lista brasileira de bloqueio de anúncios", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/127_optimized.txt")!, category: .foreign),
+
+            // Korean
+            FilterList(name: "한국어 광고 차단 목록", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/125_optimized.txt")!, category: .foreign),
+
+            // Turkish
+            FilterList(name: "Türkçe reklam engelleme listesi", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/128_optimized.txt")!, category: .foreign),
+            
+            // Chinese Simplified
+            FilterList(name: "中文简体广告过滤列表", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/129_optimized.txt")!, category: .foreign),
+            
+            // Chinese Traditional
+            FilterList(name: "中文繁體廣告過濾清單", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/130_optimized.txt")!, category: .foreign)
         ]
     }
     
@@ -498,5 +532,17 @@ class FilterListManager: ObservableObject {
         } else {
             appendLog("Group folder already exists: \(containerURL.path)")
         }
+    }
+}
+
+extension FilterListManager {
+    /// Returns all filters except those in the 'Foreign' category
+    func allNonForeignFilters() -> [FilterList] {
+        return filterLists.filter { $0.category != .foreign }
+    }
+       
+    /// Returns all filters in the 'Foreign' category
+    func foreignFilters() -> [FilterList] {
+        return filterLists.filter { $0.category == .foreign }
     }
 }

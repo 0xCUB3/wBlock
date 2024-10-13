@@ -26,21 +26,26 @@ struct ContentView: View {
             .listStyle(SidebarListStyle())
         } detail: {
             VStack {
-                List {
-                    ForEach(filterListManager.filterLists(for: selectedCategory)) { filter in
-                        HStack {
-                            Text(filter.name)
-                                .padding(.vertical, 8)
-                            Spacer()
-                            Toggle("", isOn: Binding(
-                                get: { filter.isSelected },
-                                set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
-                            ))
-                            .toggleStyle(SwitchToggleStyle(tint: .blue))
+                if selectedCategory == .all {
+                    List {
+                        ForEach(filterListManager.allNonForeignFilters()) { filter in
+                            FilterRowView(filter: filter, filterListManager: filterListManager)
+                        }
+                        
+                        DisclosureGroup("Foreign Filters") {
+                            ForEach(filterListManager.foreignFilters()) { filter in
+                                FilterRowView(filter: filter, filterListManager: filterListManager)
+                                    .padding(.leading, 20)
+                            }
                         }
                     }
+                    .listStyle(PlainListStyle())
+                } else {
+                    List(filterListManager.filterLists(for: selectedCategory)) { filter in
+                        FilterRowView(filter: filter, filterListManager: filterListManager)
+                    }
+                    .listStyle(PlainListStyle())
                 }
-                .listStyle(PlainListStyle())
             }
             .navigationTitle(selectedCategory.rawValue)
             .toolbar {
@@ -108,6 +113,28 @@ struct ContentView: View {
             }
             filterListManager.checkForEnabledFilters()
         }
+    }
+}
+
+struct FilterRowView: View {
+    let filter: FilterList
+    @ObservedObject var filterListManager: FilterListManager
+   
+    var body: some View {
+        HStack {
+            Text(filter.name)
+                .font(.body)
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { filter.isSelected },
+                set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
+            ))
+            .toggleStyle(SwitchToggleStyle(tint: .blue))
+            .labelsHidden()
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(filter.name), \(filter.isSelected ? "Enabled" : "Disabled")")
     }
 }
 
