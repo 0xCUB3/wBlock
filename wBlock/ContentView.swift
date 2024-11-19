@@ -58,6 +58,13 @@ struct ContentView: View {
                     .disabled(!filterListManager.hasUnappliedChanges)
                 }
                 ToolbarItem(placement: .automatic) {
+                    Button(action: {
+                        filterListManager.showResetToDefaultAlert = true
+                    }) {
+                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                    }
+                }
+                ToolbarItem(placement: .automatic) {
                     Button("Update Filters") {
                         Task {
                             await filterListManager.checkForUpdates()
@@ -105,6 +112,14 @@ struct ContentView: View {
             }
         } message: {
             Text("You have unapplied changes. Do you want to apply them before exiting?")
+        }
+        .alert("Reset to Default Lists?", isPresented: $filterListManager.showResetToDefaultAlert) {
+            Button("Reset", role: .destructive) {
+                filterListManager.resetToDefaultLists()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will reset all filter selections to the recommended defaults. Are you sure?")
         }
         .onAppear {
             windowDelegate.hasUnappliedChanges = { filterListManager.hasUnappliedChanges }

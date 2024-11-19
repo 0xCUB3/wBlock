@@ -9,8 +9,16 @@ import SwiftUI
 
 struct UpdatePopupView: View {
     @ObservedObject var filterListManager: FilterListManager
-    @State private var selectedFilters: Set<UUID> = []
+    @State private var selectedFilters: Set<UUID>
     @Binding var isPresented: Bool
+    
+    // Initialize with all filters selected
+    init(filterListManager: FilterListManager, isPresented: Binding<Bool>) {
+        self.filterListManager = filterListManager
+        self._isPresented = isPresented
+        // Initialize selectedFilters with all available update IDs
+        self._selectedFilters = State(initialValue: Set(filterListManager.availableUpdates.map { $0.id }))
+    }
 
     var body: some View {
         VStack(spacing: 20) {

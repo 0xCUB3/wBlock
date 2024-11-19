@@ -36,6 +36,7 @@ class FilterListManager: ObservableObject {
     @Published var hasUnappliedChanges = false
     @Published var showMissingFiltersSheet = false
     @Published var showRecommendedFiltersAlert = false
+    @Published var showResetToDefaultAlert = false
     
     private let contentBlockerIdentifier = "app.0xcube.wBlock.wBlockFilters"
     private let sharedContainerIdentifier = "group.app.0xcube.wBlock"
@@ -421,12 +422,18 @@ class FilterListManager: ObservableObject {
     }
     
     func checkForUpdates() async {
+        // Clear the list first
         availableUpdates.removeAll()
-        for filter in filterLists {
+        
+        // Only check enabled filters
+        let enabledFilters = filterLists.filter { $0.isSelected }
+        
+        for filter in enabledFilters {
             if await hasUpdate(for: filter) {
                 availableUpdates.append(filter)
             }
         }
+        
         if !availableUpdates.isEmpty {
             DispatchQueue.main.async {
                 self.showingUpdatePopup = true
@@ -481,6 +488,37 @@ class FilterListManager: ObservableObject {
         await applyChanges()
         isUpdating = false
         showProgressView = false
+    }
+    
+    func resetToDefaultLists() {
+        // Reset all filters to unselected first
+        for index in filterLists.indices {
+            filterLists[index].isSelected = false
+        }
+        
+        // Enable only the recommended filters
+        let recommendedFilters = [
+            "AdGuard Base filter",
+            "AdGuard Tracking Protection filter",
+            "AdGuard Annoyances filter",
+            "EasyPrivacy",
+            "Online Malicious URL Blocklist",
+            "d3Host List byd3ward",
+            "Anti-Adblock List"
+        ]
+        
+        for index in filterLists.indices {
+            if recommendedFilters.contains(filterLists[index].name) {
+                filterLists[index].isSelected = true
+            }
+        }
+        
+        saveSelectedState()
+        hasUnappliedChanges = true
+        appendLog("Reset to default recommended filters")
+        
+        // Check for missing filters
+        checkAndEnableFilters()
     }
     
     // Make sure you're not running the app without filters on!
