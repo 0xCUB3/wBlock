@@ -176,12 +176,13 @@ struct FilterListDetailView: View {
 class WindowDelegate: NSObject, NSWindowDelegate, ObservableObject {
     @Published var shouldShowExitAlert = false
     var hasUnappliedChanges: () -> Bool = { false }
-
+    
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if hasUnappliedChanges() {
             shouldShowExitAlert = true
             return false
         }
+        NSApplication.shared.terminate(nil)
         return true
     }
 }

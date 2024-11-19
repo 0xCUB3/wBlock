@@ -19,14 +19,14 @@ struct wBlockApp: App {
             Item.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+        
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView(filterListManager: filterListManager)
@@ -35,8 +35,7 @@ struct wBlockApp: App {
                 .environmentObject(updateController)
                 .task {
                     await updateController.checkForUpdates()
-                }
-                .alert(isPresented: $updateController.updateAvailable) {
+                }.alert(isPresented: $updateController.updateAvailable) {
                     Alert(
                         title: Text("Update Available"),
                         message: Text("A new version (\(updateController.latestVersion ?? "")) of wBlock is available. Would you like to update?"),
@@ -48,5 +47,8 @@ struct wBlockApp: App {
                 }
         }
         .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(replacing: .newItem) { }  // Disable New Window command
+        }
     }
 }
