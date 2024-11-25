@@ -11,19 +11,18 @@ import Foundation
 class ContentBlockerEngineWrapper {
     private var contentBlockerEngine: ContentBlockerEngine
     nonisolated(unsafe) static let shared = ContentBlockerEngineWrapper()
+
     init() {
-        let requiredPart: String = "group.app.0xcube.wBlock"
-        let advancedBlockingURL: URL? = FileManager.default
-            .containerURL(
-                forSecurityApplicationGroupIdentifier: requiredPart)?.appending(
-                path: "advancedBlocking.json",
-                directoryHint: URL.DirectoryHint.notDirectory
-            )
-        let json: String = try! String(
-            contentsOf: advancedBlockingURL!,
-            encoding: .utf8
-        )
-        self.contentBlockerEngine = try! ContentBlockerEngine(json)
+        // Initialize with empty rules first
+        self.contentBlockerEngine = try! ContentBlockerEngine("[]")
+
+        do {
+            let json = try FileStorage.shared.loadJSON(filename: "advancedBlocking.json")
+            self.contentBlockerEngine = try ContentBlockerEngine(json)
+        } catch {
+            print("Error loading advanced blocking rules: \(error)")
+            // Keep the empty rules if loading fails
+        }
     }
 
     public func getData(url: URL) -> String {

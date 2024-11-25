@@ -54,6 +54,20 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C11F287A2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FileStorage.swift,
+			);
+			target = C19158F12C49444C00319B63 /* wBlock Filters */;
+		};
+		C11F287B2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FileStorage.swift,
+			);
+			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
+		};
 		C19159002C49444C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -81,7 +95,7 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C19158DA2C49440500319B63 /* wBlock */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = wBlock; sourceTree = "<group>"; };
+		C19158DA2C49440500319B63 /* wBlock */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C11F287A2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, C11F287B2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = wBlock; sourceTree = "<group>"; };
 		C19158F62C49444C00319B63 /* wBlock Filters */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C19159002C49444C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "wBlock Filters"; sourceTree = "<group>"; };
 		C191590D2C49448C00319B63 /* wBlock Scripts */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C191591F2C49448C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, C19159232C49448C00319B63 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "wBlock Scripts"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */

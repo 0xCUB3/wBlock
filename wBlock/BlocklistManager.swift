@@ -205,33 +205,48 @@ class FilterListManager: ObservableObject {
         }
     }
 
-    // Save Blocklist to UserDefaults
     private func saveBlockerList(_ rules: [[String: Any]]) {
-        if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []) {
-            if let containerDefaults = UserDefaults(suiteName: sharedContainerIdentifier) {
-                containerDefaults.set(jsonData, forKey: "blockerList")
-                appendLog("Successfully saved blockerList to UserDefaults")
+        do {
+            if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                try FileStorage.shared.saveJSON(jsonString, filename: "blockerList.json")
+
+                // Only store the state in UserDefaults
+                if let containerDefaults = UserDefaults(suiteName: sharedContainerIdentifier) {
+                    containerDefaults.set(true, forKey: "blockerList")
+                    containerDefaults.synchronize()
+                }
+
+                appendLog("Successfully saved blockerList to file storage")
             } else {
-                appendLog("Error: Unable to access UserDefaults with shared container identifier")
+                appendLog("Error: Unable to serialize blockerList JSON data")
             }
-        } else {
-            appendLog("Error: Unable to serialize blockerList JSON data")
+        } catch {
+            appendLog("Error saving blockerList: \(error)")
         }
     }
-    
-    // Save Advanced Blocking Data to UserDefaults
+
     private func saveAdvancedBlockerList(_ rules: [[String: Any]]) {
-        if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []) {
-            if let containerDefaults = UserDefaults(suiteName: sharedContainerIdentifier) {
-                containerDefaults.set(jsonData, forKey: "advancedBlocking")
-                appendLog("Successfully saved advancedBlocking to UserDefaults")
+        do {
+            if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                try FileStorage.shared.saveJSON(jsonString, filename: "advancedBlocking.json")
+
+                // Only store the state in UserDefaults
+                if let containerDefaults = UserDefaults(suiteName: sharedContainerIdentifier) {
+                    containerDefaults.set(true, forKey: "advancedBlocking")
+                    containerDefaults.synchronize()
+                }
+
+                appendLog("Successfully saved advancedBlocking to file storage")
             } else {
-                appendLog("Error: Unable to access UserDefaults with shared container identifier")
+                appendLog("Error: Unable to serialize advancedBlocking JSON data")
             }
-        } else {
-            appendLog("Error: Unable to serialize advancedBlocking JSON data")
+        } catch {
+            appendLog("Error saving advancedBlocking: \(error)")
         }
     }
+
     
     func updateMissingFilters() async {
         showProgressView = true
@@ -325,19 +340,13 @@ class FilterListManager: ObservableObject {
     }
     
     func reloadContentBlocker() async {
-        guard let containerURL = getSharedContainerURL() else {
-            appendLog("Error: Unable to access shared container")
-            return
-        }
-        
-        let fileURL = containerURL.appendingPathComponent("blockerList.json")
-        
         do {
-            let data = try Data(contentsOf: fileURL)
-            if let jsonArray = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+            let jsonString = try FileStorage.shared.loadJSON(filename: "blockerList.json")
+            if let data = jsonString.data(using: .utf8),
+               let jsonArray = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
                 let ruleCount = jsonArray.count
                 appendLog("Attempting to reload content blocker with \(ruleCount) rules")
-                
+
                 try await SFContentBlockerManager.reloadContentBlocker(withIdentifier: contentBlockerIdentifier)
                 appendLog("Content blocker reloaded successfully with \(ruleCount) rules")
             } else {
@@ -347,6 +356,7 @@ class FilterListManager: ObservableObject {
             appendLog("Error reloading content blocker: \(error)")
         }
     }
+
     
     func checkAndCreateBlockerList() {
         guard let containerURL = getSharedContainerURL() else {
