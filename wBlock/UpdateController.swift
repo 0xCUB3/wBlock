@@ -16,8 +16,8 @@ class UpdateController: ObservableObject {
        
     private let versionURL = "https://raw.githubusercontent.com/0xCUB3/Website/main/content/wBlock.txt"
     private let releasesURL = "https://github.com/0xCUB3/wBlock/releases"
-    private let logger = Logger(subsystem: "app.0xcube.wBlock", category: "UpdateController")
-       
+    private let logger = Logger(subsystem: AppConstants.LoggerSubsystem.mainApp, category: "UpdateController")
+    
     @Published var isCheckingForUpdates = false
     @Published var updateAvailable = false
     @Published var latestVersion: String?

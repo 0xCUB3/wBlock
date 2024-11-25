@@ -52,11 +52,11 @@ class FilterListManager: ObservableObject {
     @Published var showResetToDefaultAlert = false
     @Published var showingNoUpdatesAlert = false
 
-    private let contentBlockerIdentifier = "app.0xcube.wBlock.wBlockFilters"
-    private let sharedContainerIdentifier = "group.app.0xcube.wBlock"
+    private let contentBlockerIdentifier = AppConstants.BundleIdentifier.filtersExtension
+    private let sharedContainerIdentifier = AppConstants.appGroupIdentifier
     private let customFilterListsKey = "customFilterLists"
-    private let logger = Logger(subsystem: "app.0xcube.wBlock", category: "FilterListManager")
-
+    private let logger = Logger(subsystem: AppConstants.LoggerSubsystem.mainApp, category: "FilterListManager")
+    
     var customFilterLists: [FilterList] = []
 
     init() {

@@ -9,8 +9,9 @@ import Foundation
 
 class FileStorage {
     static let shared = FileStorage()
-    private let groupIdentifier = "group.app.0xcube.wBlock"
-
+    
+    private let groupIdentifier = AppConstants.appGroupIdentifier
+    
     private init() {}
 
     func getContainerURL() -> URL? {
