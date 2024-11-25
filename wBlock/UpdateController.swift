@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import UserNotifications
+import os.log
 
 @MainActor
 class UpdateController: ObservableObject {
@@ -15,12 +16,13 @@ class UpdateController: ObservableObject {
        
     private let versionURL = "https://raw.githubusercontent.com/0xCUB3/Website/main/content/wBlock.txt"
     private let releasesURL = "https://github.com/0xCUB3/wBlock/releases"
+    private let logger = Logger(subsystem: "app.0xcube.wBlock", category: "UpdateController")
        
     @Published var isCheckingForUpdates = false
     @Published var updateAvailable = false
     @Published var latestVersion: String?
        
-    private var updateTimer: Timer?
+    private var updateTimer: DispatchSourceTimer?
        
     private init() {}
        
@@ -35,20 +37,25 @@ class UpdateController: ObservableObject {
                
             let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
                
-            print("Current version: \(currentVersion)")
-            print("Latest version: \(versionString)")
+            logger.debug("Current version: \(currentVersion)")
+            logger.debug("Latest version: \(versionString)")
                
             updateAvailable = versionString.compare(currentVersion, options: .numeric) == .orderedDescending
-            print(updateAvailable ? "Update available" : "No update available")
+            if updateAvailable {
+                logger.debug("Update available")
+            } else {
+                logger.debug("No update available")
+            }
         } catch {
-            print("Error checking for updates: \(error.localizedDescription)")
+            logger.error("Error checking for updates: \(error.localizedDescription)")
         }
     }
        
     /// Schedules background updates for filter lists
     func scheduleBackgroundUpdates(filterListManager: FilterListManager) async {
-        // Invalidate existing timer if any
-        updateTimer?.invalidate()
+        // Cancel existing timer if any
+        updateTimer?.cancel()
+        updateTimer = nil
 
         // Get the selected update interval
         let interval = UserDefaults.standard.double(forKey: "updateInterval")
@@ -57,8 +64,9 @@ class UpdateController: ObservableObject {
         // Log that we're scheduling background updates
         filterListManager.appendLog("Scheduling background updates with interval: \(updateInterval) seconds")
 
-        // Schedule a timer to trigger updates periodically
-        updateTimer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { [weak self] _ in
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global())
+        timer.schedule(deadline: .now() + updateInterval, repeating: updateInterval)
+        timer.setEventHandler { [weak self] in
             Task {
                 await filterListManager.appendLog("Automatic update check started.")
                 let updatedFilters = await filterListManager.autoUpdateFilters()
@@ -69,6 +77,8 @@ class UpdateController: ObservableObject {
                 }
             }
         }
+        timer.resume()
+        updateTimer = timer
     }
        
     /// Sends a user notification listing the updated filters
@@ -85,9 +95,9 @@ class UpdateController: ObservableObject {
         // Schedule the notification
         do {
             try await UNUserNotificationCenter.current().add(request)
-            print("Notification scheduled successfully.")
+            logger.debug("Notification scheduled successfully.")
         } catch {
-            print("Failed to schedule notification: \(error.localizedDescription)")
+            logger.error("Failed to schedule notification: \(error.localizedDescription)")
         }
     }
        
@@ -110,7 +120,7 @@ class UpdateController: ObservableObject {
         let (data, response) = try await URLSession.shared.data(for: request)
            
         if let httpResponse = response as? HTTPURLResponse {
-            print("HTTP Status Code: \(httpResponse.statusCode)")
+            logger.debug("HTTP Status Code: \(httpResponse.statusCode)")
         }
            
         guard let versionString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) else {
@@ -123,7 +133,7 @@ class UpdateController: ObservableObject {
     /// Opens the releases page in the default browser
     func openReleasesPage() {
         guard let url = URL(string: releasesURL) else {
-            print("Invalid releases URL")
+            logger.error("Invalid releases URL")
             return
         }
            
