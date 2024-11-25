@@ -38,6 +38,7 @@ class FilterListManager: ObservableObject {
     @Published var showMissingFiltersSheet = false
     @Published var showRecommendedFiltersAlert = false
     @Published var showResetToDefaultAlert = false
+    @Published var showingNoUpdatesAlert = false
     
     private let contentBlockerIdentifier = "app.0xcube.wBlock.wBlockFilters"
     private let sharedContainerIdentifier = "group.app.0xcube.wBlock"
@@ -460,6 +461,10 @@ class FilterListManager: ObservableObject {
                 self.showingUpdatePopup = true
             }
         } else {
+            // Show an alert that no updates were found
+            DispatchQueue.main.async {
+                self.showingNoUpdatesAlert = true
+            }
             appendLog("No updates available.")
         }
     }

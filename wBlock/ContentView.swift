@@ -15,6 +15,7 @@ struct ContentView: View {
     @StateObject private var windowDelegate = WindowDelegate()
     @State private var selectedCategory: FilterListCategory = .all
     @State private var showingLogs = false
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationSplitView {
@@ -76,6 +77,13 @@ struct ContentView: View {
                         showingLogs = true
                     }
                 }
+                ToolbarItem(placement: .automatic) {
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                }
             }
         }
         .navigationSplitViewStyle(.balanced)
@@ -88,6 +96,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $filterListManager.showMissingFiltersSheet) {
             MissingFiltersView(filterListManager: filterListManager)
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
         }
         .alert("Enable Recommended Filters?", isPresented: $filterListManager.showRecommendedFiltersAlert) {
             Button("Enable") {
@@ -120,6 +131,9 @@ struct ContentView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will reset all filter selections to the recommended defaults. Are you sure?")
+        }
+        .alert("No Updates Found", isPresented: $filterListManager.showingNoUpdatesAlert) {
+            Button("OK", role: .cancel) {}
         }
         .onAppear {
             windowDelegate.hasUnappliedChanges = { filterListManager.hasUnappliedChanges }

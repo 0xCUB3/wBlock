@@ -21,7 +21,6 @@ class UpdateController: ObservableObject {
     @Published var latestVersion: String?
     
     private var updateTimer: Timer?
-    private let updateInterval: TimeInterval = 86400 // 1 day in seconds
     
     private init() {}
     
@@ -50,7 +49,11 @@ class UpdateController: ObservableObject {
     func scheduleBackgroundUpdates(filterListManager: FilterListManager) async {
         // Invalidate existing timer if any
         updateTimer?.invalidate()
-        
+
+        // Get the selected update interval
+        let interval = UserDefaults.standard.double(forKey: "updateInterval")
+        let updateInterval = interval > 0 ? interval : 86400 // Default to 1 day if not set
+
         // Schedule a timer to trigger updates periodically
         updateTimer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { [weak self] _ in
             Task {
@@ -59,12 +62,6 @@ class UpdateController: ObservableObject {
                     await self?.sendUpdateNotification(updatedFilters: updatedFilters)
                 }
             }
-        }
-        
-        // Optionally, trigger an immediate background check on scheduling
-        let initialUpdatedFilters = await filterListManager.autoUpdateFilters()
-        if !initialUpdatedFilters.isEmpty {
-            await sendUpdateNotification(updatedFilters: initialUpdatedFilters)
         }
     }
     
