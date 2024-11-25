@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import UserNotifications
 
 @MainActor
 class UpdateController: ObservableObject {
@@ -19,8 +20,12 @@ class UpdateController: ObservableObject {
     @Published var updateAvailable = false
     @Published var latestVersion: String?
     
+    private var updateTimer: Timer?
+    private let updateInterval: TimeInterval = 86400 // 1 day in seconds
+    
     private init() {}
     
+    /// Checks for app updates
     func checkForUpdates() async {
         isCheckingForUpdates = true
         defer { isCheckingForUpdates = false }
@@ -41,11 +46,55 @@ class UpdateController: ObservableObject {
         }
     }
     
+    /// Schedules background updates for filter lists
+    func scheduleBackgroundUpdates(filterListManager: FilterListManager) async {
+        // Invalidate existing timer if any
+        updateTimer?.invalidate()
+        
+        // Schedule a timer to trigger updates periodically
+        updateTimer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { [weak self] _ in
+            Task {
+                let updatedFilters = await filterListManager.autoUpdateFilters()
+                if !updatedFilters.isEmpty {
+                    await self?.sendUpdateNotification(updatedFilters: updatedFilters)
+                }
+            }
+        }
+        
+        // Optionally, trigger an immediate background check on scheduling
+        let initialUpdatedFilters = await filterListManager.autoUpdateFilters()
+        if !initialUpdatedFilters.isEmpty {
+            await sendUpdateNotification(updatedFilters: initialUpdatedFilters)
+        }
+    }
+    
+    /// Sends a user notification listing the updated filters
+    private func sendUpdateNotification(updatedFilters: [FilterList]) async {
+        let filterNames = updatedFilters.map { $0.name }.joined(separator: ", ")
+        let content = UNMutableNotificationContent()
+        content.title = "wBlock Filters Updated"
+        content.body = "The following filters have been updated: \(filterNames)"
+        content.sound = .default
+        
+        // Create the notification request
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        
+        // Schedule the notification
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            print("Notification scheduled successfully.")
+        } catch {
+            print("Failed to schedule notification: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Fetches the latest version string from the server
     private func fetchLatestVersion() async throws -> String {
         guard var urlComponents = URLComponents(string: versionURL) else {
             throw URLError(.badURL)
         }
         
+        // Add a timestamp to prevent caching
         urlComponents.queryItems = [URLQueryItem(name: "t", value: "\(Date().timeIntervalSince1970)")]
         
         guard let url = urlComponents.url else {
@@ -68,6 +117,7 @@ class UpdateController: ObservableObject {
         return versionString
     }
     
+    /// Opens the releases page in the default browser
     func openReleasesPage() {
         guard let url = URL(string: releasesURL) else {
             print("Invalid releases URL")

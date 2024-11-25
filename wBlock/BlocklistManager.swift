@@ -9,6 +9,7 @@ import Foundation
 import Combine
 import SafariServices
 import ContentBlockerConverter
+import UserNotifications
 
 enum FilterListCategory: String, CaseIterable, Identifiable {
     case all = "All", ads = "Ads", privacy = "Privacy", security = "Security", multipurpose = "Multipurpose", annoyances = "Annoyances", experimental = "Experimental", foreign = "Foreign"
@@ -115,6 +116,7 @@ class FilterListManager: ObservableObject {
         }
     }
     
+    /// Checks if selected filters exist, downloads if missing
     func checkAndEnableFilters() {
         missingFilters.removeAll()
         for filter in filterLists where filter.isSelected {
@@ -132,8 +134,8 @@ class FilterListManager: ObservableObject {
             }
         }
     }
-
-    
+        
+    /// Checks if a filter file exists locally
     private func filterFileExists(_ filter: FilterList) -> Bool {
         guard let containerURL = getSharedContainerURL() else { return false }
         let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
@@ -269,6 +271,7 @@ class FilterListManager: ObservableObject {
         isUpdating = false
     }
     
+    /// Fetches, processes, and saves a filter list
     private func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
             let (data, _) = try await URLSession.shared.data(from: filter.url)
@@ -294,6 +297,7 @@ class FilterListManager: ObservableObject {
         }
     }
     
+    /// Converts Adblock rules to Safari-compatible JSON and saves them
     private func convertAndSaveRules(_ rules: [String], for filter: FilterList) async {
         do {
             let converter = ContentBlockerConverter()
@@ -335,6 +339,7 @@ class FilterListManager: ObservableObject {
         appendLog("Enabling filter: \(filter.name)")
     }
     
+    /// Retrieves the shared container URL
     private func getSharedContainerURL() -> URL? {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
     }
@@ -401,11 +406,13 @@ class FilterListManager: ObservableObject {
         category == .all ? filterLists : filterLists.filter { $0.category == category }
     }
     
+    /// Appends a message to the logs
     func appendLog(_ message: String) {
         logs += message + "\n"
         saveLogsToFile()
     }
     
+    /// Saves logs to a file in the shared container
     private func saveLogsToFile() {
         guard let containerURL = getSharedContainerURL() else { return }
         let fileURL = containerURL.appendingPathComponent("logs.txt")
@@ -417,6 +424,7 @@ class FilterListManager: ObservableObject {
         }
     }
     
+    /// Loads logs from the shared container
     func loadLogsFromFile() {
         guard let containerURL = getSharedContainerURL() else { return }
         let fileURL = containerURL.appendingPathComponent("logs.txt")
@@ -428,6 +436,7 @@ class FilterListManager: ObservableObject {
         }
     }
     
+    /// Clears the current logs
     func clearLogs() {
         logs = ""
         saveLogsToFile()
@@ -454,7 +463,44 @@ class FilterListManager: ObservableObject {
             appendLog("No updates available.")
         }
     }
+    
+    /// Automatically updates filters and returns the list of updated filters
+    func autoUpdateFilters() async -> [FilterList] {
+        var updatedFilters: [FilterList] = []
+        
+        isUpdating = true
+        showProgressView = true
+        progress = 0
+        
+        let enabledFilters = filterLists.filter { $0.isSelected }
+        let totalSteps = Float(enabledFilters.count)
+        var completedSteps: Float = 0
+        
+        for filter in enabledFilters {
+            if await hasUpdate(for: filter) {
+                let success = await fetchAndProcessFilter(filter)
+                if success {
+                    updatedFilters.append(filter)
+                }
+            }
+            completedSteps += 1
+            progress = completedSteps / totalSteps
+        }
+        
+        if !updatedFilters.isEmpty {
+            await applyChanges()
+            appendLog("Applied updates to filters: \(updatedFilters.map { $0.name }.joined(separator: ", "))")
+        } else {
+            appendLog("No updates found for current filters.")
+        }
+        
+        isUpdating = false
+        showProgressView = false
+        
+        return updatedFilters
+    }
 
+    /// Checks if a filter has an update by comparing online content with local content
     private func hasUpdate(for filter: FilterList) async -> Bool {
         guard let containerURL = getSharedContainerURL() else { return false }
         let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
@@ -470,7 +516,7 @@ class FilterListManager: ObservableObject {
                 return true // If local file doesn't exist, consider it as needing an update
             }
         } catch {
-            appendLog("Error checking update for \(filter.name): \(error)")
+            appendLog("Error checking update for \(filter.name): \(error.localizedDescription)")
             return false
         }
     }
@@ -583,7 +629,29 @@ class FilterListManager: ObservableObject {
             appendLog("Group folder already exists: \(containerURL.path)")
         }
     }
+    
+    /// Sends a notification with the latest logs
+    func sendLogsAsNotification() async {
+        let latestLogs = logs
+        let content = UNMutableNotificationContent()
+        content.title = "wBlock Logs Updated"
+        content.body = "View the latest logs for troubleshooting."
+        content.sound = .default
+        
+        // Add an attachment or additional info if needed
+        
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            print("Log notification scheduled successfully.")
+        } catch {
+            print("Failed to schedule log notification: \(error.localizedDescription)")
+        }
+    }
 }
+
+// MARK: - Extensions
 
 extension FilterListManager {
     /// Returns all filters except those in the 'Foreign' category

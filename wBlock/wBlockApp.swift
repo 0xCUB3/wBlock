@@ -8,25 +8,26 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct wBlockApp: App {
     @StateObject private var filterListManager = FilterListManager()
     @StateObject private var updateController = UpdateController.shared
-    
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        
+
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView(filterListManager: filterListManager)
@@ -34,8 +35,13 @@ struct wBlockApp: App {
                 .fixedSize()
                 .environmentObject(updateController)
                 .task {
+                    // Request notification permissions
+                    try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+
                     await updateController.checkForUpdates()
-                }.alert(isPresented: $updateController.updateAvailable) {
+                    await updateController.scheduleBackgroundUpdates(filterListManager: filterListManager)
+                }
+                .alert(isPresented: $updateController.updateAvailable) {
                     Alert(
                         title: Text("Update Available"),
                         message: Text("A new version (\(updateController.latestVersion ?? "")) of wBlock is available. Would you like to update?"),
