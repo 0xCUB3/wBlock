@@ -11,17 +11,28 @@ import SafariServices
 import ContentBlockerConverter
 import UserNotifications
 
-enum FilterListCategory: String, CaseIterable, Identifiable {
-    case all = "All", ads = "Ads", privacy = "Privacy", security = "Security", multipurpose = "Multipurpose", annoyances = "Annoyances", experimental = "Experimental", foreign = "Foreign"
+enum FilterListCategory: String, CaseIterable, Identifiable, Codable {
+    case all = "All"
+    case ads = "Ads"
+    case privacy = "Privacy"
+    case security = "Security"
+    case multipurpose = "Multipurpose"
+    case annoyances = "Annoyances"
+    case experimental = "Experimental"
+    case foreign = "Foreign"
+    case custom = "Custom"
     var id: String { self.rawValue }
 }
 
-struct FilterList: Identifiable, Hashable {
-    let id = UUID()
+struct FilterList: Identifiable, Hashable, Codable {
+    let id: UUID
     let name: String
     let url: URL
     let category: FilterListCategory
     var isSelected: Bool = false
+    var description: String = ""
+    var isAdGuardAnnoyancesList: Bool = false
+
 }
 
 enum LogLevel: String {
@@ -50,6 +61,9 @@ class FilterListManager: ObservableObject {
     private let contentBlockerIdentifier = "app.0xcube.wBlock.wBlockFilters"
     private let sharedContainerIdentifier = "group.app.0xcube.wBlock"
     
+    private let customFilterListsKey = "customFilterLists"
+    var customFilterLists: [FilterList] = []
+    
     init() {
         checkAndCreateGroupFolder()
         loadFilterLists()
@@ -61,53 +75,55 @@ class FilterListManager: ObservableObject {
     
     func loadFilterLists() {
         filterLists = [
-            FilterList(name: "AdGuard Base filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: .ads, isSelected: true),
-            FilterList(name: "AdGuard Tracking Protection filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")!, category: .privacy, isSelected: true),
-            FilterList(name: "AdGuard Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/14_optimized.txt")!, category: .annoyances),
-            FilterList(name: "AdGuard Social Media filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: .annoyances),
-            FilterList(name: "Fanboy's Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: .annoyances),
-            FilterList(name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: .privacy, isSelected: true),
-            FilterList(name: "Online Malicious URL Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: .security, isSelected: true),
-            FilterList(name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: .multipurpose, isSelected: true),
-            FilterList(name: "Hagezi Pro mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: .multipurpose, isSelected: true),
-            FilterList(name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: .multipurpose, isSelected: true),
-            FilterList(name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: .multipurpose, isSelected: true),
-            FilterList(name: "AdGuard Experimental filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: .experimental),
+            FilterList(id: UUID(), name: "AdGuard Base filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: .ads, isSelected: true),
+            FilterList(id: UUID(), name: "AdGuard Tracking Protection filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")!, category: .privacy, isSelected: true),
+            FilterList(id: UUID(), name: "AdGuard Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/14_optimized.txt")!, category: .annoyances),
+            FilterList(id: UUID(), name: "AdGuard Social Media filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: .annoyances),
+            FilterList(id: UUID(), name: "Fanboy's Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: .annoyances),
+            FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: .privacy, isSelected: true),
+            FilterList(id: UUID(), name: "Online Malicious URL Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: .security, isSelected: true),
+            FilterList(id: UUID(), name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: .multipurpose, isSelected: true),
+            FilterList(id: UUID(), name: "Hagezi Pro mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: .multipurpose, isSelected: true),
+            FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: .multipurpose, isSelected: true),
+            FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: .multipurpose, isSelected: true),
+            FilterList(id: UUID(), name: "AdGuard Experimental filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: .experimental),
             
             // --- Foreign Filter Lists ---
             // Spanish
-            FilterList(name: "Lista de bloqueo de dominios españoles", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Lista de bloqueo de dominios españoles", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
 
             // French
-            FilterList(name: "Liste française de blocage des publicités", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Liste française de blocage des publicités", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!, category: .foreign),
 
             // German
-            FilterList(name: "Deutsche Werbeblocker-Liste", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/119_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Deutsche Werbeblocker-Liste", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/119_optimized.txt")!, category: .foreign),
 
             // Russian
-            FilterList(name: "Русский фильтр AdGuard", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Русский фильтр AdGuard", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt")!, category: .foreign),
 
             // Dutch
-            FilterList(name: "Nederlandse advertentieblokkeringlijst", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/124_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Nederlandse advertentieblokkeringlijst", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/124_optimized.txt")!, category: .foreign),
 
             // Japanese
-            FilterList(name: "日本語の広告ブロックリスト", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "日本語の広告ブロックリスト", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!, category: .foreign),
 
             // Portuguese (Brazil)
-            FilterList(name: "Lista brasileira de bloqueio de anúncios", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/127_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Lista brasileira de bloqueio de anúncios", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/127_optimized.txt")!, category: .foreign),
 
             // Korean
-            FilterList(name: "한국어 광고 차단 목록", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/125_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "한국어 광고 차단 목록", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/125_optimized.txt")!, category: .foreign),
 
             // Turkish
-            FilterList(name: "Türkçe reklam engelleme listesi", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/128_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "Türkçe reklam engelleme listesi", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/128_optimized.txt")!, category: .foreign),
             
             // Chinese Simplified
-            FilterList(name: "中文简体广告过滤列表", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/129_optimized.txt")!, category: .foreign),
+            FilterList(id: UUID(), name: "中文简体广告过滤列表", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/129_optimized.txt")!, category: .foreign),
             
             // Chinese Traditional
-            FilterList(name: "中文繁體廣告過濾清單", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/130_optimized.txt")!, category: .foreign)
+            FilterList(id: UUID(), name: "中文繁體廣告過濾清單", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/130_optimized.txt")!, category: .foreign)
         ]
+        
+        loadCustomFilterLists()
     }
     
     private func loadSelectedState() {
@@ -660,6 +676,49 @@ class FilterListManager: ObservableObject {
         } catch {
             print("Failed to schedule log notification: \(error.localizedDescription)")
         }
+    }
+    
+    private func loadCustomFilterLists() {
+        guard let data = UserDefaults.standard.data(forKey: customFilterListsKey),
+              let decoded = try? JSONDecoder().decode([FilterList].self, from: data)
+        else {
+            return
+        }
+        customFilterLists = decoded
+        filterLists.append(contentsOf: customFilterLists)
+    }
+    
+    private func saveCustomFilterLists() {
+        if let encoded = try? JSONEncoder().encode(customFilterLists) {
+            UserDefaults.standard.set(encoded, forKey: customFilterListsKey)
+        }
+    }
+    
+    func addCustomFilterList(name: String, url: URL, description: String = "") {
+        let newFilterList = FilterList(
+            id: UUID(),
+            name: name,
+            url: url,
+            category: .custom,
+            isSelected: false,
+            description: description
+        )
+        customFilterLists.append(newFilterList)
+        filterLists.append(newFilterList)
+        saveCustomFilterLists()
+        saveSelectedState()
+    }
+    
+    func removeCustomFilterList(_ filterList: FilterList) {
+        guard filterList.category == .custom else { return }
+        if let index = filterLists.firstIndex(of: filterList) {
+            filterLists.remove(at: index)
+        }
+        if let customIndex = customFilterLists.firstIndex(of: filterList) {
+            customFilterLists.remove(at: customIndex)
+        }
+        saveCustomFilterLists()
+        saveSelectedState()
     }
 }
 

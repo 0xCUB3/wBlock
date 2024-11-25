@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var selectedCategory: FilterListCategory = .all
     @State private var showingLogs = false
     @State private var showingSettings = false
+    @State private var showingAddFilterSheet = false
 
     var body: some View {
         NavigationSplitView {
@@ -39,6 +40,21 @@ struct ContentView: View {
                                     .padding(.leading, 20)
                             }
                         }
+                        
+                        // Display custom filters
+                        if !filterListManager.customFilterLists.isEmpty {
+                            DisclosureGroup("Custom Filters") {
+                                ForEach(filterListManager.customFilterLists) { filter in
+                                    FilterRowView(filter: filter, filterListManager: filterListManager)
+                                        .padding(.leading, 20)
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(PlainListStyle())
+                } else if selectedCategory == .custom {
+                    List(filterListManager.customFilterLists) { filter in
+                        FilterRowView(filter: filter, filterListManager: filterListManager)
                     }
                     .listStyle(PlainListStyle())
                 } else {
@@ -59,13 +75,6 @@ struct ContentView: View {
                     .disabled(!filterListManager.hasUnappliedChanges)
                 }
                 ToolbarItem(placement: .automatic) {
-                    Button(action: {
-                        filterListManager.showResetToDefaultAlert = true
-                    }) {
-                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
-                    }
-                }
-                ToolbarItem(placement: .automatic) {
                     Button("Update Filters") {
                         Task {
                             await filterListManager.checkForUpdates()
@@ -75,6 +84,20 @@ struct ContentView: View {
                 ToolbarItem(placement: .automatic) {
                     Button("Show Logs") {
                         showingLogs = true
+                    }
+                }
+                ToolbarItem(placement: .automatic) {
+                    Button(action: {
+                        showingAddFilterSheet = true
+                    }) {
+                        Label("Add Filter", systemImage: "plus")
+                    }
+                }
+                ToolbarItem(placement: .automatic) {
+                    Button(action: {
+                        filterListManager.showResetToDefaultAlert = true
+                    }) {
+                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
                     }
                 }
                 ToolbarItem(placement: .automatic) {
@@ -93,6 +116,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingLogs) {
             LogsView(logs: filterListManager.logs)
+        }
+        .sheet(isPresented: $showingAddFilterSheet) {
+            AddCustomFilterView(filterListManager: filterListManager)
         }
         .sheet(isPresented: $filterListManager.showMissingFiltersSheet) {
             MissingFiltersView(filterListManager: filterListManager)
@@ -148,7 +174,7 @@ struct ContentView: View {
 struct FilterRowView: View {
     let filter: FilterList
     @ObservedObject var filterListManager: FilterListManager
-   
+
     var body: some View {
         HStack {
             Text(filter.name)
@@ -162,8 +188,13 @@ struct FilterRowView: View {
             .labelsHidden()
         }
         .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(filter.name), \(filter.isSelected ? "Enabled" : "Disabled")")
+        .contextMenu {
+            if filter.category == .custom {
+                Button("Remove Filter") {
+                    filterListManager.removeCustomFilterList(filter)
+                }
+            }
+        }
     }
 }
 
@@ -276,6 +307,78 @@ struct LogsView: View {
         }
         .padding()
         .frame(width: 600, height: 400)
+        .background(Color(.windowBackgroundColor))
+    }
+}
+
+struct AddCustomFilterView: View {
+    @ObservedObject var filterListManager: FilterListManager
+    @Environment(\.presentationMode) var presentationMode
+
+    @State private var filterName: String = ""
+    @State private var filterURLString: String = ""
+    @State private var filterDescription: String = "" // Optional description
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Add Custom Filter")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+
+            TextField("Filter Name", text: $filterName)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+
+            TextField("Filter URL", text: $filterURLString)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+
+            TextField("Description (Optional)", text: $filterDescription)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+
+            Spacer()
+
+            HStack(spacing: 20) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Text("Cancel")
+                        .fontWeight(.semibold)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: {
+                    if let url = URL(string: filterURLString.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                        filterListManager.addCustomFilterList(
+                            name: filterName.trimmingCharacters(in: .whitespacesAndNewlines),
+                            url: url,
+                            description: filterDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                        )
+                        presentationMode.wrappedValue.dismiss()
+                    } else {
+                        // Optionally, present an alert for invalid URL
+                    }
+                }) {
+                    Text("Add")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(filterName.isEmpty || filterURLString.isEmpty)
+            }
+            .padding(.horizontal)
+        }
+        .padding()
+        .frame(width: 450, height: 350)
         .background(Color(.windowBackgroundColor))
     }
 }
