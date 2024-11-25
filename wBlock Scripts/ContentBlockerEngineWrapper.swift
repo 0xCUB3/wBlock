@@ -11,7 +11,7 @@ import os.log
 
 actor ContentBlockerEngineWrapper {
     static let shared = ContentBlockerEngineWrapper()
-    private let logger = Logger(subsystem: AppConstants.LoggerSubsystem.scriptsExtension, category: "ContentBlocker")
+    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ContentBlocker")
     private var contentBlockerEngine: ContentBlockerEngine
 
     private init() {
