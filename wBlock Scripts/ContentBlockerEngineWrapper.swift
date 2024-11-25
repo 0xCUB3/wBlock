@@ -15,20 +15,25 @@ actor ContentBlockerEngineWrapper {
     private var contentBlockerEngine: ContentBlockerEngine
 
     private init() {
+        let json: String
+        if let loadedJson = try? FileStorage.shared.loadJSON(filename: "advancedBlocking.json") {
+            json = loadedJson
+            logger.debug("Successfully loaded advanced blocking rules")
+        } else {
+            json = "[]"
+            logger.warning("Using empty rules - failed to load advanced blocking rules")
+        }
+
         do {
-            let json: String
-            if let loadedJson = try? FileStorage.shared.loadJSON(filename: "advancedBlocking.json") {
-                json = loadedJson
-                logger.debug("Successfully loaded advanced blocking rules")
-            } else {
-                json = "[]"
-                logger.warning("Using empty rules - failed to load advanced blocking rules")
-            }
             self.contentBlockerEngine = try ContentBlockerEngine(json)
         } catch {
             logger.error("Failed to initialize content blocker: \(error.localizedDescription)")
             // Fallback to empty rules
-            self.contentBlockerEngine = try! ContentBlockerEngine("[]")
+            do {
+                self.contentBlockerEngine = try ContentBlockerEngine("[]")
+            } catch {
+                fatalError("Failed to initialize content blocker with empty rules: \(error.localizedDescription)")
+            }
         }
     }
 

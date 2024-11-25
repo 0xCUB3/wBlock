@@ -161,14 +161,13 @@ struct FilterListContentView: View {
     // Define separate computed properties for each condition
     var allFiltersView: some View {
         List {
-            ForEach(filterListManager.allNonForeignFilters()) { filter in
-                FilterRowView(filter: filter, filterListManager: filterListManager)
-            }
-            
-            DisclosureGroup("Foreign Filters") {
-                ForEach(filterListManager.foreignFilters()) { filter in
-                    FilterRowView(filter: filter, filterListManager: filterListManager)
-                        .padding(.leading, 20)
+            ForEach(FilterListCategory.allCases.filter { $0 != .all }, id: \.self) { category in
+                if !filterListManager.filterLists(for: category).isEmpty {
+                    Section(header: Text(category.rawValue)) {
+                        ForEach(filterListManager.filterLists(for: category)) { filter in
+                            FilterRowView(filter: filter, filterListManager: filterListManager)
+                        }
+                    }
                 }
             }
         }
@@ -195,9 +194,20 @@ struct FilterRowView: View {
     @ObservedObject var filterListManager: FilterListManager
 
     var body: some View {
-        HStack {
-            Text(filter.name)
-                .font(.body)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(filter.name)
+                if !filter.version.isEmpty {
+                    Text("Version: \(filter.version)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                if !filter.description.isEmpty {
+                    Text(filter.description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
             Spacer()
             Toggle("", isOn: Binding(
                 get: { filter.isSelected },
@@ -206,7 +216,11 @@ struct FilterRowView: View {
             .toggleStyle(SwitchToggleStyle(tint: .blue))
             .labelsHidden()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            filterListManager.toggleFilterListSelection(id: filter.id)
+        }
         .contextMenu {
             if filter.category == .custom {
                 Button("Remove Filter") {

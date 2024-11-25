@@ -23,8 +23,7 @@ class SafariExtensionHandler: SFSafariExtensionHandler {
             return
         }
 
-        page.getPropertiesWithCompletionHandler { [weak self] properties in
-            guard let self = self else { return }
+        page.getPropertiesWithCompletionHandler { properties in
             if let pageUrlString = properties?.url?.absoluteString {
                 self.logger.debug("Received message \(messageName) from page: \(pageUrlString)")
             }

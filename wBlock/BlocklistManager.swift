@@ -20,8 +20,8 @@ enum FilterListCategory: String, CaseIterable, Identifiable, Codable {
     case multipurpose = "Multipurpose"
     case annoyances = "Annoyances"
     case experimental = "Experimental"
-    case foreign = "Foreign"
     case custom = "Custom"
+    case foreign = "Foreign"
     var id: String { self.rawValue }
 }
 
@@ -32,8 +32,7 @@ struct FilterList: Identifiable, Hashable, Codable {
     let category: FilterListCategory
     var isSelected: Bool = false
     var description: String = ""
-    var isAdGuardAnnoyancesList: Bool = false
-
+    var version: String = ""
 }
 
 @MainActor
@@ -66,57 +65,69 @@ class FilterListManager: ObservableObject {
         checkAndCreateBlockerList()
         checkAndEnableFilters()
         clearLogs()
+        
+        Task {
+            await updateMissingVersions()
+        }
     }
     
     func loadFilterLists() {
-        filterLists = [
-            FilterList(id: UUID(), name: "AdGuard Base filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: .ads, isSelected: true),
-            FilterList(id: UUID(), name: "AdGuard Tracking Protection filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")!, category: .privacy, isSelected: true),
-            FilterList(id: UUID(), name: "AdGuard Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/14_optimized.txt")!, category: .annoyances),
-            FilterList(id: UUID(), name: "AdGuard Social Media filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: .annoyances),
-            FilterList(id: UUID(), name: "Fanboy's Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: .annoyances),
-            FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: .privacy, isSelected: true),
-            FilterList(id: UUID(), name: "Online Malicious URL Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: .security, isSelected: true),
-            FilterList(id: UUID(), name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: .multipurpose, isSelected: true),
-            FilterList(id: UUID(), name: "Hagezi Pro mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: .multipurpose, isSelected: true),
-            FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: .multipurpose, isSelected: true),
-            FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: .multipurpose, isSelected: true),
-            FilterList(id: UUID(), name: "AdGuard Experimental filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: .experimental),
-            
-            // --- Foreign Filter Lists ---
-            // Spanish
-            FilterList(id: UUID(), name: "Lista de bloqueo de dominios españoles", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
-
-            // French
-            FilterList(id: UUID(), name: "Liste française de blocage des publicités", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!, category: .foreign),
-
-            // German
-            FilterList(id: UUID(), name: "Deutsche Werbeblocker-Liste", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/119_optimized.txt")!, category: .foreign),
-
-            // Russian
-            FilterList(id: UUID(), name: "Русский фильтр AdGuard", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt")!, category: .foreign),
-
-            // Dutch
-            FilterList(id: UUID(), name: "Nederlandse advertentieblokkeringlijst", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/124_optimized.txt")!, category: .foreign),
-
-            // Japanese
-            FilterList(id: UUID(), name: "日本語の広告ブロックリスト", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!, category: .foreign),
-
-            // Portuguese (Brazil)
-            FilterList(id: UUID(), name: "Lista brasileira de bloqueio de anúncios", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/127_optimized.txt")!, category: .foreign),
-
-            // Korean
-            FilterList(id: UUID(), name: "한국어 광고 차단 목록", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/125_optimized.txt")!, category: .foreign),
-
-            // Turkish
-            FilterList(id: UUID(), name: "Türkçe reklam engelleme listesi", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/128_optimized.txt")!, category: .foreign),
-            
-            // Chinese Simplified
-            FilterList(id: UUID(), name: "中文简体广告过滤列表", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/129_optimized.txt")!, category: .foreign),
-            
-            // Chinese Traditional
-            FilterList(id: UUID(), name: "中文繁體廣告過濾清單", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/130_optimized.txt")!, category: .foreign)
-        ]
+        if let data = UserDefaults.standard.data(forKey: "filterLists"),
+               let savedFilterLists = try? JSONDecoder().decode([FilterList].self, from: data) {
+                filterLists = savedFilterLists
+        } else {
+            filterLists = [
+                FilterList(id: UUID(), name: "AdGuard Base filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: .ads, isSelected: true,
+                           description: "Comprehensive ad-blocking rules by AdGuard."),
+                FilterList(id: UUID(), name: "AdGuard Tracking Protection filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")!, category: .privacy, isSelected: true, description: "Blocks online tracking and web analytics systems."),
+                FilterList(id: UUID(), name: "AdGuard Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/14_optimized.txt")!, category: .annoyances, description: "Removes cookie notices, in-page pop-ups, and other annoyances."),
+                FilterList(id: UUID(), name: "AdGuard Social Media filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: .annoyances, description: "Blocks social media widgets and buttons."),
+                FilterList(id: UUID(), name: "Fanboy's Annoyances filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: .annoyances, description: "Hides in-page pop-ups, banners, and other unwanted page elements."),
+                FilterList(id: UUID(), name: "Fanboy's Social Blocking List", url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!, category: .annoyances, description: "Blocks social media content on webpages."),
+                FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: .privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."),
+                FilterList(id: UUID(), name: "Online Malicious URL Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: .security, isSelected: true, description: "Protects against malicious URLs, phishing sites, and malware."),
+                FilterList(id: UUID(), name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: .multipurpose, isSelected: true, description: "Blocks ads and tracking servers to enhance privacy."),
+                FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: .multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content."),
+                FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: .multipurpose, isSelected: true,
+                           description: "Comprehensive block list for ads and trackers."),
+                FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: .multipurpose, isSelected: true, description: "Bypasses Anti-Adblock scripts used on some websites."),
+                FilterList(id: UUID(), name: "AdGuard Experimental filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: .experimental, description: "Contains new rules and fixes not yet included in other filters."),
+                
+                // --- Foreign Filter Lists ---
+                // Spanish
+                FilterList(id: UUID(), name: "Lista de bloqueo de dominios españoles", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
+                
+                // French
+                FilterList(id: UUID(), name: "Liste française de blocage des publicités", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!, category: .foreign),
+                
+                // German
+                FilterList(id: UUID(), name: "Deutsche Werbeblocker-Liste", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/119_optimized.txt")!, category: .foreign),
+                
+                // Russian
+                FilterList(id: UUID(), name: "Русский фильтр AdGuard", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt")!, category: .foreign),
+                
+                // Dutch
+                FilterList(id: UUID(), name: "Nederlandse advertentieblokkeringlijst", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/124_optimized.txt")!, category: .foreign),
+                
+                // Japanese
+                FilterList(id: UUID(), name: "日本語の広告ブロックリスト", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!, category: .foreign),
+                
+                // Portuguese (Brazil)
+                FilterList(id: UUID(), name: "Lista brasileira de bloqueio de anúncios", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/127_optimized.txt")!, category: .foreign),
+                
+                // Korean
+                FilterList(id: UUID(), name: "한국어 광고 차단 목록", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/125_optimized.txt")!, category: .foreign),
+                
+                // Turkish
+                FilterList(id: UUID(), name: "Türkçe reklam engelleme listesi", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/128_optimized.txt")!, category: .foreign),
+                
+                // Chinese Simplified
+                FilterList(id: UUID(), name: "中文简体广告过滤列表", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/129_optimized.txt")!, category: .foreign),
+                
+                // Chinese Traditional
+                FilterList(id: UUID(), name: "中文繁體廣告過濾清單", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/130_optimized.txt")!, category: .foreign)
+            ]
+        }
         
         loadCustomFilterLists()
     }
@@ -135,6 +146,14 @@ class FilterListManager: ObservableObject {
         }
     }
     
+    private func saveFilterLists() {
+        if let data = try? JSONEncoder().encode(filterLists) {
+            UserDefaults.standard.set(data, forKey: "filterLists")
+        } else {
+            appendLog("Failed to encode filterLists for saving.")
+        }
+    }
+    
     /// Checks if selected filters exist, downloads if missing
     func checkAndEnableFilters() {
         missingFilters.removeAll()
@@ -144,9 +163,7 @@ class FilterListManager: ObservableObject {
             }
         }
         if !missingFilters.isEmpty {
-            DispatchQueue.main.async {
-                self.showMissingFiltersSheet = true
-            }
+            showMissingFiltersSheet = true
         } else {
             Task {
                 await applyChanges()
@@ -173,7 +190,6 @@ class FilterListManager: ObservableObject {
         var allRules: [[String: Any]] = []
         var advancedRules: [[String: Any]] = []
 
-        // Fetch and process filters concurrently
         await withTaskGroup(of: (FilterList, [[String: Any]], [[String: Any]]?).self) { group in
             for filter in selectedFilters {
                 group.addTask {
@@ -189,7 +205,7 @@ class FilterListManager: ObservableObject {
                 }
             }
 
-            for await (filter, rules, advanced) in group {
+            for await (_, rules, advanced) in group {
                 allRules.append(contentsOf: rules)
                 if let advanced = advanced {
                     advancedRules.append(contentsOf: advanced)
@@ -203,11 +219,9 @@ class FilterListManager: ObservableObject {
         saveAdvancedBlockerList(advancedRules)
         await reloadContentBlocker()
 
-        DispatchQueue.main.async {
-            self.hasUnappliedChanges = false
-            self.isUpdating = false
-            self.showProgressView = false
-        }
+        self.hasUnappliedChanges = false
+        self.isUpdating = false
+        self.showProgressView = false
     }
     
     private func loadFilterRules(for filter: FilterList) -> ([[String: Any]], [[String: Any]]?)? {
@@ -309,6 +323,24 @@ class FilterListManager: ObservableObject {
                 return false
             }
 
+            // Parse metadata
+            let metadata = parseMetadata(from: content)
+            
+            // Update the filter's version and description
+            if let index = self.filterLists.firstIndex(where: { $0.id == filter.id }) {
+                self.filterLists[index].version = metadata.version ?? "Unknown"
+                self.filterLists[index].description = metadata.description ?? ""
+            }
+
+            // Save the updated filterLists array
+            saveFilterLists()
+
+            // Log the parsed metadata
+            appendLog("Parsed metadata for \(filter.name):")
+            appendLog("Title: \(metadata.title ?? "N/A")")
+            appendLog("Description: \(metadata.description ?? "N/A")")
+            appendLog("Version: \(metadata.version ?? "N/A")")
+
             // Save raw content
             if let containerURL = getSharedContainerURL() {
                 let rawFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
@@ -324,6 +356,85 @@ class FilterListManager: ObservableObject {
             appendLog("Error fetching filter from \(filter.url): \(error.localizedDescription)")
             return false
         }
+    }
+    
+    func updateMissingVersions() async {
+        for index in filterLists.indices {
+            let filter = filterLists[index]
+            if filter.version.isEmpty && filterFileExists(filter) {
+                if let newVersion = await fetchVersionFromURL(for: filter) {
+                    filterLists[index].version = newVersion
+                    appendLog("Fetched version for \(filter.name): \(newVersion)")
+                } else {
+                    appendLog("Failed to fetch version for \(filter.name)")
+                }
+            }
+        }
+        saveFilterLists()
+    }
+    
+    private func fetchVersionFromURL(for filter: FilterList) async -> String? {
+        do {
+            let (data, response) = try await URLSession.shared.data(from: filter.url)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                appendLog("Failed to fetch version from URL for \(filter.name): Invalid response")
+                return nil
+            }
+            guard let content = String(data: data, encoding: .utf8) else {
+                appendLog("Unable to parse content from \(filter.url)")
+                return nil
+            }
+            
+            // Parse metadata for version
+            let metadata = parseMetadata(from: content)
+            return metadata.version ?? "Unknown"
+        } catch {
+            appendLog("Error fetching version from URL for \(filter.name): \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
+        var title: String?
+        var description: String?
+        var version: String?
+
+        let regexPatterns = [
+            "Title": "^!\\s*Title\\s*:?\\s*(.*)$",
+            "Description": "^!\\s*Description\\s*:?\\s*(.*)$",
+            "Version": "^!\\s*(?:version|last modified|updated)\\s*:?\\s*(.*)$"
+        ]
+
+        let lines = content.components(separatedBy: .newlines)
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            
+            for (key, pattern) in regexPatterns {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+                   let match = regex.firstMatch(in: trimmedLine, options: [], range: NSRange(location: 0, length: trimmedLine.utf16.count)),
+                   match.numberOfRanges > 1,
+                   let range = Range(match.range(at: 1), in: trimmedLine) {
+                    let value = String(trimmedLine[range]).trimmingCharacters(in: .whitespaces)
+                    switch key {
+                    case "Title":
+                        title = value
+                    case "Description":
+                        description = value
+                    case "Version":
+                        version = value
+                    default:
+                        break
+                    }
+                }
+            }
+
+            // Break early if all metadata are found
+            if title != nil && description != nil && version != nil {
+                break
+            }
+        }
+
+        return (title, description, version)
     }
     
     /// Converts Adblock rules to Safari-compatible JSON and saves them
@@ -437,11 +548,9 @@ class FilterListManager: ObservableObject {
     
     /// Appends a message to the logs
     func appendLog(_ message: String) {
-        DispatchQueue.main.async {
-            self.logs += message + "\n"
-            self.saveLogsToFile()
-            self.logger.info("\(message, privacy: .public)")
-        }
+        self.logs += message + "\n"
+        self.saveLogsToFile()
+        self.logger.info("\(message, privacy: .public)")
     }
     
     /// Saves logs to a file in the shared container
@@ -475,27 +584,32 @@ class FilterListManager: ObservableObject {
     }
     
     func checkForUpdates() async {
-        // Clear the list first
         availableUpdates.removeAll()
-        
-        // Only check enabled filters
+
         let enabledFilters = filterLists.filter { $0.isSelected }
-        
-        for filter in enabledFilters {
-            if await hasUpdate(for: filter) {
-                availableUpdates.append(filter)
+
+        await withTaskGroup(of: FilterList?.self) { group in
+            for filter in enabledFilters {
+                group.addTask {
+                    if await self.hasUpdate(for: filter) {
+                        return filter
+                    } else {
+                        return nil
+                    }
+                }
+            }
+
+            for await filter in group {
+                if let filter = filter {
+                    availableUpdates.append(filter)
+                }
             }
         }
-        
+
         if !availableUpdates.isEmpty {
-            DispatchQueue.main.async {
-                self.showingUpdatePopup = true
-            }
+            showingUpdatePopup = true
         } else {
-            // Show an alert that no updates were found
-            DispatchQueue.main.async {
-                self.showingNoUpdatesAlert = true
-            }
+            showingNoUpdatesAlert = true
             appendLog("No updates available.")
         }
     }
@@ -503,36 +617,46 @@ class FilterListManager: ObservableObject {
     /// Automatically updates filters and returns the list of updated filters
     func autoUpdateFilters() async -> [FilterList] {
         var updatedFilters: [FilterList] = []
-           
+
         isUpdating = true
         showProgressView = true
         progress = 0
-           
+
         let enabledFilters = filterLists.filter { $0.isSelected }
         let totalSteps = Float(enabledFilters.count)
         var completedSteps: Float = 0
-           
-        for filter in enabledFilters {
-            if await hasUpdate(for: filter) {
-                let success = await fetchAndProcessFilter(filter)
+
+        await withTaskGroup(of: (FilterList, Bool).self) { group in
+            for filter in enabledFilters {
+                group.addTask {
+                    if await self.hasUpdate(for: filter) {
+                        let success = await self.fetchAndProcessFilter(filter)
+                        return (filter, success)
+                    } else {
+                        return (filter, false)
+                    }
+                }
+            }
+
+            for await (filter, success) in group {
                 if success {
                     updatedFilters.append(filter)
                 }
+                completedSteps += 1
+                progress = completedSteps / totalSteps
             }
-            completedSteps += 1
-            progress = completedSteps / totalSteps
         }
-           
+
         if !updatedFilters.isEmpty {
             await applyChanges()
             appendLog("Applied updates to filters: \(updatedFilters.map { $0.name }.joined(separator: ", "))")
         } else {
             appendLog("No updates found for current filters.")
         }
-           
+
         isUpdating = false
         showProgressView = false
-           
+
         return updatedFilters
     }
 
