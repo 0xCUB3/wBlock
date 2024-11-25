@@ -125,6 +125,14 @@ struct ContentView: View {
             }
             .help("Update Filters")
         }
+        ToolbarItem(placement: .automatic) {
+            Button(action: {
+                showingSettings = true
+            }) {
+                Image(systemName: "gearshape")
+            }
+            .help("Settings")
+        }
 
         ToolbarItem(placement: .automatic) {
             Menu {
