@@ -11,7 +11,7 @@ import SwiftData
 struct ContentView: View {
     @ObservedObject var filterListManager: FilterListManager
     @EnvironmentObject var updateController: UpdateController
-
+    
     @StateObject private var windowDelegate = WindowDelegate()
     @State private var selectedCategory: FilterListCategory = .all
     @State private var showingLogs = false
@@ -93,13 +93,13 @@ struct ContentView: View {
             filterListManager.checkForEnabledFilters()
         }
     }
-
+    
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button(action: {
                 Task {
-                    await filterListManager.checkAndEnableFilters()
+                    filterListManager.checkAndEnableFilters()
                 }
             }) {
                 Image(systemName: "tray.and.arrow.down.fill")
@@ -125,7 +125,7 @@ struct ContentView: View {
             }
             .help("Update Filters")
         }
-
+        
         ToolbarItem(placement: .automatic) {
             Menu {
                 Button("Show Logs") {

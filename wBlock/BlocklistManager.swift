@@ -10,7 +10,6 @@ import Combine
 import SafariServices
 import ContentBlockerConverter
 import UserNotifications
-import os.log
 
 enum FilterListCategory: String, CaseIterable, Identifiable, Codable {
     case all = "All"
@@ -36,6 +35,13 @@ struct FilterList: Identifiable, Hashable, Codable {
 
 }
 
+enum LogLevel: String {
+    case info = "INFO"
+    case debug = "DEBUG"
+    case warning = "WARNING"
+    case error = "ERROR"
+}
+
 @MainActor
 class FilterListManager: ObservableObject {
     @Published var filterLists: [FilterList] = []
@@ -51,14 +57,22 @@ class FilterListManager: ObservableObject {
     @Published var showRecommendedFiltersAlert = false
     @Published var showResetToDefaultAlert = false
     @Published var showingNoUpdatesAlert = false
+<<<<<<< HEAD
 
+    private let contentBlockerIdentifier = AppConstants.BundleIdentifier.filtersExtension
+    private let sharedContainerIdentifier = AppConstants.appGroupIdentifier
+    private let customFilterListsKey = "customFilterLists"
+    private let logger = Logger(subsystem: AppConstants.LoggerSubsystem.mainApp, category: "FilterListManager")
+    
+=======
+    
     private let contentBlockerIdentifier = "app.0xcube.wBlock.wBlockFilters"
     private let sharedContainerIdentifier = "group.app.0xcube.wBlock"
+    
     private let customFilterListsKey = "customFilterLists"
-    private let logger = Logger(subsystem: "app.0xcube.wBlock", category: "FilterListManager")
-
+>>>>>>> parent of 83fcb9a (Add native logging + other enhancements)
     var customFilterLists: [FilterList] = []
-
+    
     init() {
         checkAndCreateGroupFolder()
         loadFilterLists()
@@ -173,30 +187,24 @@ class FilterListManager: ObservableObject {
         var allRules: [[String: Any]] = []
         var advancedRules: [[String: Any]] = []
 
-        // Fetch and process filters concurrently
-        await withTaskGroup(of: (FilterList, [[String: Any]], [[String: Any]]?).self) { group in
-            for filter in selectedFilters {
-                group.addTask {
-                    if await !self.filterFileExists(filter) {
-                        let success = await self.fetchAndProcessFilter(filter)
-                        if !success {
-                            await self.appendLog("Failed to fetch and process filter: \(filter.name)")
-                            return (filter, [], nil)
-                        }
-                    }
-                    let result = await self.loadFilterRules(for: filter) ?? ([], nil)
-                    return (filter, result.0, result.1)
+        for filter in selectedFilters {
+            if !filterFileExists(filter) {
+                let success = await fetchAndProcessFilter(filter)
+                if !success {
+                    appendLog("Failed to fetch and process filter: \(filter.name)")
+                    continue
                 }
             }
 
-            for await (filter, rules, advanced) in group {
+            if let (rules, advanced) = loadFilterRules(for: filter) {
                 allRules.append(contentsOf: rules)
                 if let advanced = advanced {
                     advancedRules.append(contentsOf: advanced)
                 }
-                completedSteps += 1
-                progress = completedSteps / totalSteps
             }
+
+            completedSteps += 1
+            progress = completedSteps / totalSteps
         }
 
         saveBlockerList(allRules)
@@ -299,25 +307,21 @@ class FilterListManager: ObservableObject {
     /// Fetches, processes, and saves a filter list
     private func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
-            let (data, response) = try await URLSession.shared.data(from: filter.url)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                appendLog("Failed to fetch filter \(filter.name): Invalid response")
-                return false
-            }
+            let (data, _) = try await URLSession.shared.data(from: filter.url)
             guard let content = String(data: data, encoding: .utf8) else {
                 appendLog("Unable to parse content from \(filter.url)")
                 return false
             }
-
+            
             // Save raw content
             if let containerURL = getSharedContainerURL() {
                 let rawFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
                 try content.write(to: rawFileURL, atomically: true, encoding: .utf8)
             }
-
+            
             let rules = content.components(separatedBy: .newlines)
             let filteredRules = rules.filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }
-
+            
             await convertAndSaveRules(filteredRules, for: filter)
             return true
         } catch {
@@ -336,20 +340,20 @@ class FilterListManager: ObservableObject {
                 optimize: true,
                 advancedBlocking: true
             )
-
+            
             if let containerURL = getSharedContainerURL() {
                 let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
                 let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
-
+                
                 if let jsonData = result.converted.data(using: .utf8),
                    var jsonArray = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]] {
-
+                    
                     jsonArray = Array(jsonArray.prefix(result.convertedCount))
                     let limitedJsonData = try JSONSerialization.data(withJSONObject: jsonArray, options: .prettyPrinted)
-
+                    
                     try limitedJsonData.write(to: fileURL)
                     appendLog("Successfully wrote \(filter.name).json to: \(fileURL.path)")
-
+                    
                     if let advancedData = result.advancedBlocking?.data(using: .utf8),
                        let advancedArray = try JSONSerialization.jsonObject(with: advancedData, options: []) as? [[String: Any]] {
                         let advancedJsonData = try JSONSerialization.data(withJSONObject: advancedArray, options: .prettyPrinted)
@@ -437,11 +441,8 @@ class FilterListManager: ObservableObject {
     
     /// Appends a message to the logs
     func appendLog(_ message: String) {
-        DispatchQueue.main.async {
-            self.logs += message + "\n"
-            self.saveLogsToFile()
-            self.logger.info("\(message, privacy: .public)")
-        }
+        logs += message + "\n"
+        saveLogsToFile()
     }
     
     /// Saves logs to a file in the shared container
