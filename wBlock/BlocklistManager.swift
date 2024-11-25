@@ -205,29 +205,31 @@ class FilterListManager: ObservableObject {
         }
     }
 
+    // Save Blocklist to UserDefaults
     private func saveBlockerList(_ rules: [[String: Any]]) {
-        guard let containerURL = getSharedContainerURL() else { return }
-        let fileURL = containerURL.appendingPathComponent("blockerList.json")
-        
-        do {
-            let data = try JSONSerialization.data(withJSONObject: rules, options: .prettyPrinted)
-            try data.write(to: fileURL)
-            appendLog("Successfully wrote blockerList.json")
-        } catch {
-            appendLog("Error saving blockerList.json: \(error)")
+        if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []) {
+            if let containerDefaults = UserDefaults(suiteName: sharedContainerIdentifier) {
+                containerDefaults.set(jsonData, forKey: "blockerList")
+                appendLog("Successfully saved blockerList to UserDefaults")
+            } else {
+                appendLog("Error: Unable to access UserDefaults with shared container identifier")
+            }
+        } else {
+            appendLog("Error: Unable to serialize blockerList JSON data")
         }
     }
     
+    // Save Advanced Blocking Data to UserDefaults
     private func saveAdvancedBlockerList(_ rules: [[String: Any]]) {
-        guard let containerURL = getSharedContainerURL() else { return }
-        let fileURL = containerURL.appendingPathComponent("advancedBlocking.json")
-        
-        do {
-            let data = try JSONSerialization.data(withJSONObject: rules, options: .prettyPrinted)
-            try data.write(to: fileURL)
-            appendLog("Successfully wrote advancedBlocking.json")
-        } catch {
-            appendLog("Error saving advancedBlocking.json: \(error)")
+        if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []) {
+            if let containerDefaults = UserDefaults(suiteName: sharedContainerIdentifier) {
+                containerDefaults.set(jsonData, forKey: "advancedBlocking")
+                appendLog("Successfully saved advancedBlocking to UserDefaults")
+            } else {
+                appendLog("Error: Unable to access UserDefaults with shared container identifier")
+            }
+        } else {
+            appendLog("Error: Unable to serialize advancedBlocking JSON data")
         }
     }
     
