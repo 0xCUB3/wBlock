@@ -27,87 +27,11 @@ struct ContentView: View {
             .navigationTitle("Categories")
             .listStyle(SidebarListStyle())
         } detail: {
-            VStack {
-                if selectedCategory == .all {
-                    List {
-                        ForEach(filterListManager.allNonForeignFilters()) { filter in
-                            FilterRowView(filter: filter, filterListManager: filterListManager)
-                        }
-                        
-                        DisclosureGroup("Foreign Filters") {
-                            ForEach(filterListManager.foreignFilters()) { filter in
-                                FilterRowView(filter: filter, filterListManager: filterListManager)
-                                    .padding(.leading, 20)
-                            }
-                        }
-                        
-                        // Display custom filters
-                        if !filterListManager.customFilterLists.isEmpty {
-                            DisclosureGroup("Custom Filters") {
-                                ForEach(filterListManager.customFilterLists) { filter in
-                                    FilterRowView(filter: filter, filterListManager: filterListManager)
-                                        .padding(.leading, 20)
-                                }
-                            }
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                } else if selectedCategory == .custom {
-                    List(filterListManager.customFilterLists) { filter in
-                        FilterRowView(filter: filter, filterListManager: filterListManager)
-                    }
-                    .listStyle(PlainListStyle())
-                } else {
-                    List(filterListManager.filterLists(for: selectedCategory)) { filter in
-                        FilterRowView(filter: filter, filterListManager: filterListManager)
-                    }
-                    .listStyle(PlainListStyle())
+            FilterListContentView(selectedCategory: selectedCategory, filterListManager: filterListManager)
+                .navigationTitle(selectedCategory.rawValue)
+                .toolbar {
+                    toolbarContent
                 }
-            }
-            .navigationTitle(selectedCategory.rawValue)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Apply Changes") {
-                        Task {
-                            filterListManager.checkAndEnableFilters()
-                        }
-                    }
-                    .disabled(!filterListManager.hasUnappliedChanges)
-                }
-                ToolbarItem(placement: .automatic) {
-                    Button("Update Filters") {
-                        Task {
-                            await filterListManager.checkForUpdates()
-                        }
-                    }
-                }
-                ToolbarItem(placement: .automatic) {
-                    Button("Show Logs") {
-                        showingLogs = true
-                    }
-                }
-                ToolbarItem(placement: .automatic) {
-                    Button(action: {
-                        showingAddFilterSheet = true
-                    }) {
-                        Label("Add Filter", systemImage: "plus")
-                    }
-                }
-                ToolbarItem(placement: .automatic) {
-                    Button(action: {
-                        filterListManager.showResetToDefaultAlert = true
-                    }) {
-                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
-                    }
-                }
-                ToolbarItem(placement: .automatic) {
-                    Button(action: {
-                        showingSettings = true
-                    }) {
-                        Label("Settings", systemImage: "gearshape")
-                    }
-                }
-            }
         }
         .navigationSplitViewStyle(.balanced)
         .frame(width: 700, height: 500)
@@ -168,6 +92,110 @@ struct ContentView: View {
             }
             filterListManager.checkForEnabledFilters()
         }
+    }
+    
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button(action: {
+                Task {
+                    filterListManager.checkAndEnableFilters()
+                }
+            }) {
+                Image(systemName: "tray.and.arrow.down.fill")
+            }
+            .help("Apply Changes")
+            .disabled(!filterListManager.hasUnappliedChanges)
+        }
+        ToolbarItem(placement: .automatic) {
+            Button(action: {
+                showingAddFilterSheet = true
+            }) {
+                Label("Add Filter", systemImage: "plus")
+            }
+            .help("Add Custom Filter")
+        }
+        ToolbarItem(placement: .automatic) {
+            Button(action: {
+                Task {
+                    await filterListManager.checkForUpdates()
+                }
+            }) {
+                Image(systemName: "arrow.clockwise")
+            }
+            .help("Update Filters")
+        }
+        
+        ToolbarItem(placement: .automatic) {
+            Menu {
+                Button("Show Logs") {
+                    showingLogs = true
+                }
+                Button("Reset to Default") {
+                    filterListManager.showResetToDefaultAlert = true
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .help("More Options")
+        }
+    }
+}
+
+struct FilterListContentView: View {
+    let selectedCategory: FilterListCategory
+    @ObservedObject var filterListManager: FilterListManager
+
+    var body: some View {
+        VStack {
+            if selectedCategory == .all {
+                allFiltersView
+            } else if selectedCategory == .custom {
+                customFiltersView
+            } else {
+                categoryFiltersView
+            }
+        }
+    }
+
+    // Define separate computed properties for each condition
+    var allFiltersView: some View {
+        List {
+            ForEach(filterListManager.allNonForeignFilters()) { filter in
+                FilterRowView(filter: filter, filterListManager: filterListManager)
+            }
+            
+            DisclosureGroup("Foreign Filters") {
+                ForEach(filterListManager.foreignFilters()) { filter in
+                    FilterRowView(filter: filter, filterListManager: filterListManager)
+                        .padding(.leading, 20)
+                }
+            }
+            
+            if !filterListManager.customFilterLists.isEmpty {
+                DisclosureGroup("Custom Filters") {
+                    ForEach(filterListManager.customFilterLists) { filter in
+                        FilterRowView(filter: filter, filterListManager: filterListManager)
+                            .padding(.leading, 20)
+                    }
+                }
+            }
+        }
+        .listStyle(PlainListStyle())
+    }
+
+    var customFiltersView: some View {
+        List(filterListManager.customFilterLists) { filter in
+            FilterRowView(filter: filter, filterListManager: filterListManager)
+        }
+        .listStyle(PlainListStyle())
+    }
+
+    var categoryFiltersView: some View {
+        List(filterListManager.filterLists(for: selectedCategory)) { filter in
+            FilterRowView(filter: filter, filterListManager: filterListManager)
+        }
+        .listStyle(PlainListStyle())
     }
 }
 
