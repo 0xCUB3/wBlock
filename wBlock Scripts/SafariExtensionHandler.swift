@@ -6,40 +6,48 @@
 
 import ContentBlockerEngine
 import SafariServices
+import os.log
 
 class SafariExtensionHandler: SFSafariExtensionHandler {
+    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ExtensionHandler")
 
     override func messageReceived(
-        withName messageName: String, from page: SFSafariPage,
+        withName messageName: String,
+        from page: SFSafariPage,
         userInfo: [String: Any]?
     ) {
-        page.getPropertiesWithCompletionHandler { properties in
-            if let url = properties?.url?.absoluteString {
-                print("Received message \(messageName) from page: \(url)")
+        guard messageName == "getAdvancedBlockingData",
+              let url = userInfo?["url"] as? String,
+              let pageUrl = URL(string: url) else {
+            logger.error("Invalid message or URL received")
+            return
+        }
+
+        page.getPropertiesWithCompletionHandler { [weak self] properties in
+            guard let self = self else { return }
+            if let pageUrlString = properties?.url?.absoluteString {
+                self.logger.debug("Received message \(messageName) from page: \(pageUrlString)")
             }
         }
 
-        // Content script requests scripts and css for current page
-        if messageName == "getAdvancedBlockingData" {
-            if let url = userInfo?["url"] as? String {
-                let pageUrl = URL(string: url)!
-                Task {
-                    let data: [String: Any]? = [
-                        "url": url,
-                        "data": await ContentBlockerEngineWrapper.shared.getData(url: pageUrl),
-                        "verbose": true,
-                    ]
-                    page.dispatchMessageToScript(withName: "advancedBlockingData", userInfo: data)
-                    print("Attempted to inject script into: \(url)")
-                }
-            } else {
-                print("Empty url passed with the message")
+        Task {
+            do {
+                let blockingData = try await ContentBlockerEngineWrapper.shared.getData(url: pageUrl)
+                let responseData: [String: Any] = [
+                    "url": url,
+                    "data": blockingData,
+                    "verbose": true
+                ]
+                page.dispatchMessageToScript(withName: "advancedBlockingData", userInfo: responseData)
+                logger.debug("Successfully injected script into: \(url)")
+            } catch {
+                logger.error("Failed to inject script: \(error.localizedDescription)")
             }
         }
     }
 
     override func toolbarItemClicked(in window: SFSafariWindow) {
-        print("The extension's toolbar item was clicked")
+        logger.debug("Toolbar item clicked")
     }
 
     override func validateToolbarItem(
@@ -50,6 +58,6 @@ class SafariExtensionHandler: SFSafariExtensionHandler {
     }
 
     override func popoverViewController() -> SFSafariExtensionViewController {
-        return SafariExtensionViewController.shared
+        SafariExtensionViewController.shared
     }
 }

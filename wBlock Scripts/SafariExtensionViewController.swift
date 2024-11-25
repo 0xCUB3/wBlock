@@ -8,10 +8,9 @@ import SafariServices
 import SwiftUI
 import os.log
 
-class SafariExtensionViewController: SFSafariExtensionViewController {
-    
-    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ScriptInjection")
-    
+final class SafariExtensionViewController: SFSafariExtensionViewController {
+    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ViewController")
+
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()
         shared.preferredContentSize = NSSize(width: 240, height: 150)
@@ -19,20 +18,22 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     }()
 
     override func loadView() {
-        view = NSHostingView(rootView: ContentView())
-        logger.log("SafariExtensionViewController loadView called")
+        view = NSHostingView(rootView: ExtensionContentView())
+        logger.debug("View loaded successfully")
     }
 }
 
-struct ContentView: View {
+struct ExtensionContentView: View {
     var body: some View {
-        VStack {
+        VStack(spacing: 12) {
             Text("Script injection is working!")
-                .font(.largeTitle)
-                .padding()
-            Text("Script injection is for blocking extra pesky ads, particularly on YouTube.")
-                .font(.footnote)
-                .padding()
+                .font(.headline)
+
+            Text("Blocking extra ads on YouTube and other sites")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
         }
         .frame(width: 240, height: 150)
     }

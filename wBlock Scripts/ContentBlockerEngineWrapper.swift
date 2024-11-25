@@ -7,25 +7,37 @@
 
 import ContentBlockerEngine
 import Foundation
+import os.log
 
-class ContentBlockerEngineWrapper {
+actor ContentBlockerEngineWrapper {
+    static let shared = ContentBlockerEngineWrapper()
+    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ContentBlocker")
     private var contentBlockerEngine: ContentBlockerEngine
-    nonisolated(unsafe) static let shared = ContentBlockerEngineWrapper()
 
-    init() {
-        // Initialize with empty rules first
-        self.contentBlockerEngine = try! ContentBlockerEngine("[]")
-
+    private init() {
         do {
-            let json = try FileStorage.shared.loadJSON(filename: "advancedBlocking.json")
-            self.contentBlockerEngine = try ContentBlockerEngine(json)
+            let emptyRules = "[]"
+            self.contentBlockerEngine = try ContentBlockerEngine(emptyRules)
+
+            if let json = try? FileStorage.shared.loadJSON(filename: "advancedBlocking.json") {
+                self.contentBlockerEngine = try ContentBlockerEngine(json)
+                logger.debug("Successfully loaded advanced blocking rules")
+            } else {
+                logger.warning("Using empty rules - failed to load advanced blocking rules")
+            }
         } catch {
-            print("Error loading advanced blocking rules: \(error)")
-            // Keep the empty rules if loading fails
+            logger.error("Failed to initialize content blocker: \(error.localizedDescription)")
+            // Fallback to empty rules
+            self.contentBlockerEngine = try! ContentBlockerEngine("[]")
         }
     }
 
-    public func getData(url: URL) -> String {
-        return try! self.contentBlockerEngine.getData(url: url)
+    func getData(url: URL) throws -> String {
+        do {
+            return try self.contentBlockerEngine.getData(url: url)
+        } catch {
+            logger.error("Failed to get data for URL \(url): \(error.localizedDescription)")
+            throw error
+        }
     }
 }
