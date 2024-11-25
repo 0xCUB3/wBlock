@@ -9,8 +9,8 @@ import SwiftUI
 import os.log
 
 final class SafariExtensionViewController: SFSafariExtensionViewController {
-    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ViewController")
-
+    private let logger = Logger(subsystem: AppConstants.LoggerSubsystem.scriptsExtension, category: "ViewController")
+    
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()
         shared.preferredContentSize = NSSize(width: 240, height: 150)

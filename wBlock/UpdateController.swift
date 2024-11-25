@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 import UserNotifications
-import os.log
 
 @MainActor
 class UpdateController: ObservableObject {
@@ -16,13 +15,17 @@ class UpdateController: ObservableObject {
        
     private let versionURL = "https://raw.githubusercontent.com/0xCUB3/Website/main/content/wBlock.txt"
     private let releasesURL = "https://github.com/0xCUB3/wBlock/releases"
-    private let logger = Logger(subsystem: "app.0xcube.wBlock", category: "UpdateController")
+<<<<<<< HEAD
+    private let logger = Logger(subsystem: AppConstants.LoggerSubsystem.mainApp, category: "UpdateController")
+    
+=======
        
+>>>>>>> parent of 83fcb9a (Add native logging + other enhancements)
     @Published var isCheckingForUpdates = false
     @Published var updateAvailable = false
     @Published var latestVersion: String?
        
-    private var updateTimer: DispatchSourceTimer?
+    private var updateTimer: Timer?
        
     private init() {}
        
@@ -37,25 +40,20 @@ class UpdateController: ObservableObject {
                
             let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
                
-            logger.debug("Current version: \(currentVersion)")
-            logger.debug("Latest version: \(versionString)")
+            print("Current version: \(currentVersion)")
+            print("Latest version: \(versionString)")
                
             updateAvailable = versionString.compare(currentVersion, options: .numeric) == .orderedDescending
-            if updateAvailable {
-                logger.debug("Update available")
-            } else {
-                logger.debug("No update available")
-            }
+            print(updateAvailable ? "Update available" : "No update available")
         } catch {
-            logger.error("Error checking for updates: \(error.localizedDescription)")
+            print("Error checking for updates: \(error.localizedDescription)")
         }
     }
        
     /// Schedules background updates for filter lists
     func scheduleBackgroundUpdates(filterListManager: FilterListManager) async {
-        // Cancel existing timer if any
-        updateTimer?.cancel()
-        updateTimer = nil
+        // Invalidate existing timer if any
+        updateTimer?.invalidate()
 
         // Get the selected update interval
         let interval = UserDefaults.standard.double(forKey: "updateInterval")
@@ -64,9 +62,8 @@ class UpdateController: ObservableObject {
         // Log that we're scheduling background updates
         filterListManager.appendLog("Scheduling background updates with interval: \(updateInterval) seconds")
 
-        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global())
-        timer.schedule(deadline: .now() + updateInterval, repeating: updateInterval)
-        timer.setEventHandler { [weak self] in
+        // Schedule a timer to trigger updates periodically
+        updateTimer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { [weak self] _ in
             Task {
                 await filterListManager.appendLog("Automatic update check started.")
                 let updatedFilters = await filterListManager.autoUpdateFilters()
@@ -77,8 +74,6 @@ class UpdateController: ObservableObject {
                 }
             }
         }
-        timer.resume()
-        updateTimer = timer
     }
        
     /// Sends a user notification listing the updated filters
@@ -95,9 +90,9 @@ class UpdateController: ObservableObject {
         // Schedule the notification
         do {
             try await UNUserNotificationCenter.current().add(request)
-            logger.debug("Notification scheduled successfully.")
+            print("Notification scheduled successfully.")
         } catch {
-            logger.error("Failed to schedule notification: \(error.localizedDescription)")
+            print("Failed to schedule notification: \(error.localizedDescription)")
         }
     }
        
@@ -120,7 +115,7 @@ class UpdateController: ObservableObject {
         let (data, response) = try await URLSession.shared.data(for: request)
            
         if let httpResponse = response as? HTTPURLResponse {
-            logger.debug("HTTP Status Code: \(httpResponse.statusCode)")
+            print("HTTP Status Code: \(httpResponse.statusCode)")
         }
            
         guard let versionString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) else {
@@ -133,7 +128,7 @@ class UpdateController: ObservableObject {
     /// Opens the releases page in the default browser
     func openReleasesPage() {
         guard let url = URL(string: releasesURL) else {
-            logger.error("Invalid releases URL")
+            print("Invalid releases URL")
             return
         }
            
