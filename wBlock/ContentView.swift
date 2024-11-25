@@ -53,7 +53,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Apply Changes") {
                         Task {
-                            await filterListManager.checkAndEnableFilters()
+                            filterListManager.checkAndEnableFilters()
                         }
                     }
                     .disabled(!filterListManager.hasUnappliedChanges)

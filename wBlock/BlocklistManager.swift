@@ -24,6 +24,13 @@ struct FilterList: Identifiable, Hashable {
     var isSelected: Bool = false
 }
 
+enum LogLevel: String {
+    case info = "INFO"
+    case debug = "DEBUG"
+    case warning = "WARNING"
+    case error = "ERROR"
+}
+
 @MainActor
 class FilterListManager: ObservableObject {
     @Published var filterLists: [FilterList] = []
@@ -472,15 +479,15 @@ class FilterListManager: ObservableObject {
     /// Automatically updates filters and returns the list of updated filters
     func autoUpdateFilters() async -> [FilterList] {
         var updatedFilters: [FilterList] = []
-        
+           
         isUpdating = true
         showProgressView = true
         progress = 0
-        
+           
         let enabledFilters = filterLists.filter { $0.isSelected }
         let totalSteps = Float(enabledFilters.count)
         var completedSteps: Float = 0
-        
+           
         for filter in enabledFilters {
             if await hasUpdate(for: filter) {
                 let success = await fetchAndProcessFilter(filter)
@@ -491,17 +498,17 @@ class FilterListManager: ObservableObject {
             completedSteps += 1
             progress = completedSteps / totalSteps
         }
-        
+           
         if !updatedFilters.isEmpty {
             await applyChanges()
             appendLog("Applied updates to filters: \(updatedFilters.map { $0.name }.joined(separator: ", "))")
         } else {
             appendLog("No updates found for current filters.")
         }
-        
+           
         isUpdating = false
         showProgressView = false
-        
+           
         return updatedFilters
     }
 

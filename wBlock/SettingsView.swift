@@ -11,6 +11,9 @@ struct SettingsView: View {
     @AppStorage("updateInterval") private var updateInterval: TimeInterval = 86400 // Default to 24 hours
     @Environment(\.presentationMode) var presentationMode
 
+    @EnvironmentObject var updateController: UpdateController
+    @EnvironmentObject var filterListManager: FilterListManager
+
     let intervalOptions: [(name: String, value: TimeInterval)] = [
         ("1 Hour", 3600),
         ("24 Hours", 86400),
@@ -62,5 +65,11 @@ struct SettingsView: View {
         }
         .frame(width: 400, height: 250)
         .padding()
+        .onChange(of: updateInterval) { newValue in
+            Task {
+                await updateController.scheduleBackgroundUpdates(filterListManager: filterListManager)
+                filterListManager.appendLog("Update interval changed to \(newValue) seconds")
+            }
+        }
     }
 }

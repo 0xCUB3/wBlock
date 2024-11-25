@@ -34,6 +34,7 @@ struct wBlockApp: App {
                 .frame(width: 700, height: 500)
                 .fixedSize()
                 .environmentObject(updateController)
+                .environmentObject(filterListManager)
                 .task {
                     // Request notification permissions
                     try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
