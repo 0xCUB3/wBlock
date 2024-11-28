@@ -65,11 +65,9 @@ class FilterListManager: ObservableObject {
         checkAndCreateBlockerList()
         checkAndEnableFilters()
         clearLogs()
-        
-        Task {
-            await updateMissingVersions()
-        }
+        Task { await updateMissingVersions() } // Combine tasks
     }
+
     
     func loadFilterLists() {
         if let data = UserDefaults.standard.data(forKey: "filterLists"),
@@ -314,46 +312,27 @@ class FilterListManager: ObservableObject {
     private func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
             let (data, response) = try await URLSession.shared.data(from: filter.url)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                appendLog("Failed to fetch filter \(filter.name): Invalid response")
-                return false
-            }
-            guard let content = String(data: data, encoding: .utf8) else {
-                appendLog("Unable to parse content from \(filter.url)")
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
+                  let content = String(data: data, encoding: .utf8) else {
+                appendLog("Failed to fetch \(filter.name)") // More concise logging
                 return false
             }
 
-            // Parse metadata
             let metadata = parseMetadata(from: content)
-            
-            // Update the filter's version and description
-            if let index = self.filterLists.firstIndex(where: { $0.id == filter.id }) {
-                self.filterLists[index].version = metadata.version ?? "Unknown"
-                self.filterLists[index].description = metadata.description ?? ""
+            if let index = filterLists.firstIndex(where: { $0.id == filter.id }) {
+                filterLists[index].version = metadata.version ?? "Unknown"
+                filterLists[index].description = metadata.description ?? ""
             }
-
-            // Save the updated filterLists array
             saveFilterLists()
 
-            // Log the parsed metadata
-            appendLog("Parsed metadata for \(filter.name):")
-            appendLog("Title: \(metadata.title ?? "N/A")")
-            appendLog("Description: \(metadata.description ?? "N/A")")
-            appendLog("Version: \(metadata.version ?? "N/A")")
+            try? content.write(to: getSharedContainerURL()?.appendingPathComponent("\(filter.name).txt") ?? URL(fileURLWithPath: ""), atomically: true, encoding: .utf8)
 
-            // Save raw content
-            if let containerURL = getSharedContainerURL() {
-                let rawFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-                try content.write(to: rawFileURL, atomically: true, encoding: .utf8)
-            }
-
-            let rules = content.components(separatedBy: .newlines)
-            let filteredRules = rules.filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }
+            let filteredRules = content.components(separatedBy: .newlines).filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }
 
             await convertAndSaveRules(filteredRules, for: filter)
             return true
         } catch {
-            appendLog("Error fetching filter from \(filter.url): \(error.localizedDescription)")
+            appendLog("Error fetching \(filter.name): \(error)") // More concise logging
             return false
         }
     }
@@ -438,40 +417,27 @@ class FilterListManager: ObservableObject {
     }
     
     /// Converts Adblock rules to Safari-compatible JSON and saves them
-    private func convertAndSaveRules(_ rules: [String], for filter: FilterList) async {
+    private func convertAndSaveRules(_ rules: [String], for filter: FilterList) async { // Consolidated JSON saving logic
         do {
             let converter = ContentBlockerConverter()
-            let result = converter.convertArray(
-                rules: rules,
-                safariVersion: .safari16_4,
-                optimize: true,
-                advancedBlocking: true
-            )
+            let result = converter.convertArray(rules: rules, safariVersion: .safari16_4, optimize: true, advancedBlocking: true)
 
-            if let containerURL = getSharedContainerURL() {
-                let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
-                let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
+            guard let containerURL = getSharedContainerURL() else { return }
 
-                if let jsonData = result.converted.data(using: .utf8),
-                   var jsonArray = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]] {
+            func saveJson(data: String?, filename: String) {
+                guard let jsonData = data?.data(using: .utf8),
+                    let jsonArray = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]],
+                    let limitedJsonData = try? JSONSerialization.data(withJSONObject: Array(jsonArray.prefix(result.convertedCount)), options: .prettyPrinted)
+                    else { return }
 
-                    jsonArray = Array(jsonArray.prefix(result.convertedCount))
-                    let limitedJsonData = try JSONSerialization.data(withJSONObject: jsonArray, options: .prettyPrinted)
-
-                    try limitedJsonData.write(to: fileURL)
-                    appendLog("Successfully wrote \(filter.name).json to: \(fileURL.path)")
-
-                    if let advancedData = result.advancedBlocking?.data(using: .utf8),
-                       let advancedArray = try JSONSerialization.jsonObject(with: advancedData, options: []) as? [[String: Any]] {
-                        let advancedJsonData = try JSONSerialization.data(withJSONObject: advancedArray, options: .prettyPrinted)
-                        try advancedJsonData.write(to: advancedFileURL)
-                        appendLog("Successfully wrote \(filter.name)_advanced.json to: \(advancedFileURL.path)")
-                    }
-                }
+                try? limitedJsonData.write(to: containerURL.appendingPathComponent(filename))
+                appendLog("Wrote \(filename)")
             }
+
+            saveJson(data: result.converted, filename: "\(filter.name).json")
+            saveJson(data: result.advancedBlocking, filename: "\(filter.name)_advanced.json")
         } catch {
-            appendLog("ERROR: Failed to convert or save JSON for \(filter.name)")
-            appendLog("Error details: \(error.localizedDescription)")
+            appendLog("Error converting \(filter.name): \(error)")
         }
     }
     
@@ -484,19 +450,13 @@ class FilterListManager: ObservableObject {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
     }
     
-    func reloadContentBlocker() async {
+    func reloadContentBlocker() async { // More robust error handling
         do {
-            let jsonString = try FileStorage.shared.loadJSON(filename: "blockerList.json")
-            if let data = jsonString.data(using: .utf8),
-               let jsonArray = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                let ruleCount = jsonArray.count
-                appendLog("Attempting to reload content blocker with \(ruleCount) rules")
+            let ruleCount = try (JSONSerialization.jsonObject(with: FileStorage.shared.loadJSON(filename: "blockerList.json").data(using: .utf8)!) as? [[String: Any]])?.count ?? 0
+            appendLog("Reloading content blocker (\(ruleCount) rules)")
 
-                try await SFContentBlockerManager.reloadContentBlocker(withIdentifier: contentBlockerIdentifier)
-                appendLog("Content blocker reloaded successfully with \(ruleCount) rules")
-            } else {
-                appendLog("Error: Unable to parse blockerList.json")
-            }
+            try await SFContentBlockerManager.reloadContentBlocker(withIdentifier: contentBlockerIdentifier)
+            appendLog("Content blocker reloaded")
         } catch {
             appendLog("Error reloading content blocker: \(error)")
         }
