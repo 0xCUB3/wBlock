@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/5e21de60-7a47-48da-90d0-e0891176db34" alt="wBlock Logo" width="128"/>
+  <img src="https://github.com/user-attachments/assets/cf640d7c-7713-450c-9463-ac75ed4a9c36" alt="wBlock Logo" width="128"/>
 </p>
 
 # wBlock: The end of Safari ad-blocking B.S.
