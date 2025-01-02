@@ -9,7 +9,7 @@ import SwiftUI
 import os.log
 
 final class SafariExtensionViewController: SFSafariExtensionViewController {
-    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ViewController")
+    private let logger = Logger(subsystem: "com.0xcube.wBlock.wBlockScripts", category: "ViewController")
 
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()

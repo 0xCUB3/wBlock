@@ -9,7 +9,7 @@ import SafariServices
 import os.log
 
 class SafariExtensionHandler: SFSafariExtensionHandler {
-    private let logger = Logger(subsystem: "app.0xcube.wBlock.wBlockScripts", category: "ExtensionHandler")
+    private let logger = Logger(subsystem: "com.0xcube.wBlock.wBlockScripts", category: "ExtensionHandler")
 
     override func messageReceived(
         withName messageName: String,

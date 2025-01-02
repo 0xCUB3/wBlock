@@ -9,7 +9,7 @@ import Foundation
 
 class FileStorage {
     static let shared = FileStorage()
-    private let groupIdentifier = "group.app.0xcube.wBlock"
+    private let groupIdentifier = "group.com.0xcube.wBlock"
 
     private init() {}
 

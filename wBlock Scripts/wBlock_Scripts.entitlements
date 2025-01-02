@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.app.0xcube.wBlock</string>
+		<string>group.com.0xcube.wBlock</string>
 	</array>
 	<key>com.apple.security.network.client</key>
 	<true/>
