@@ -153,54 +153,149 @@ struct ContentView: View {
 struct FilterListContentView: View {
     let selectedCategory: FilterListCategory
     @ObservedObject var filterListManager: FilterListManager
-
+    
+    private let cachedCategories = FilterListCategory.allCases.filter { $0 != .all }
+    
     var body: some View {
-        VStack {
-            if selectedCategory == .all {
-                allFiltersView
-            } else if selectedCategory == .custom {
-                customFiltersView
-            } else {
-                categoryFiltersView
+        ScrollView {
+            VStack(spacing: 0) {
+                FilterStatsBanner(filterListManager: filterListManager)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                
+                categoryContent
             }
         }
+        .background(Color(.textBackgroundColor))
     }
-
-    // Define separate computed properties for each condition
-    var allFiltersView: some View {
-        List {
-            ForEach(FilterListCategory.allCases.filter { $0 != .all }, id: \.self) { category in
+    
+    @ViewBuilder
+    private var categoryContent: some View {
+        switch selectedCategory {
+        case .all:
+            ForEach(cachedCategories, id: \.self) { category in
                 if !filterListManager.filterLists(for: category).isEmpty {
-                    Section(header: Text(category.rawValue)) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(category.rawValue)
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                        
                         ForEach(filterListManager.filterLists(for: category)) { filter in
                             FilterRowView(filter: filter, filterListManager: filterListManager)
+                                .padding(.horizontal)
+                            if filter.id != filterListManager.filterLists(for: category).last?.id {
+                                Divider()
+                                    .padding(.leading)
+                            }
                         }
+                    }
+                    if category != cachedCategories.last {
+                        Divider()
+                            .padding(.vertical, 8)
                     }
                 }
             }
+            
+        case .custom:
+            ForEach(filterListManager.customFilterLists) { filter in
+                FilterRowView(filter: filter, filterListManager: filterListManager)
+                    .padding(.horizontal)
+                
+                if filter.id != filterListManager.customFilterLists.last?.id {
+                    Divider()
+                        .padding(.leading)
+                }
+            }
+            
+        default:
+            ForEach(filterListManager.filterLists(for: selectedCategory)) { filter in
+                FilterRowView(filter: filter, filterListManager: filterListManager)
+                    .padding(.horizontal)
+                
+                if filter.id != filterListManager.filterLists(for: selectedCategory).last?.id {
+                    Divider()
+                        .padding(.leading)
+                }
+            }
         }
-        .listStyle(PlainListStyle())
     }
+}
 
-    var customFiltersView: some View {
-        List(filterListManager.customFilterLists) { filter in
-            FilterRowView(filter: filter, filterListManager: filterListManager)
-        }
-        .listStyle(PlainListStyle())
+struct FilterStatsBanner: View {
+    @ObservedObject var filterListManager: FilterListManager
+    
+    private var enabledFiltersCount: Int {
+        filterListManager.filterLists.filter { $0.isSelected }.count
     }
-
-    var categoryFiltersView: some View {
-        List(filterListManager.filterLists(for: selectedCategory)) { filter in
-            FilterRowView(filter: filter, filterListManager: filterListManager)
+    
+    private var totalRulesCount: Int {
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.0xcube.wBlock"),
+           let data = try? Data(contentsOf: containerURL.appendingPathComponent("blockerList.json")),
+           let rules = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            return rules.count
         }
-        .listStyle(PlainListStyle())
+        return 0
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 48) {
+                StatCard(
+                    title: "Enabled Lists",
+                    value: "\(enabledFiltersCount)",
+                    icon: "list.bullet.rectangle"
+                )
+                
+                StatCard(
+                    title: "Active Rules",
+                    value: "\(totalRulesCount)",
+                    icon: "shield.lefthalf.filled"
+                )
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
+    }
+}
+
+struct StatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(.blue)
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                Text(value)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+            }
+        }
     }
 }
 
 struct FilterRowView: View {
     let filter: FilterList
     @ObservedObject var filterListManager: FilterListManager
-
+    
+    private var toggleBinding: Binding<Bool> {
+        Binding(
+            get: { filter.isSelected },
+            set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
+        )
+    }
+    
     var body: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
@@ -217,12 +312,9 @@ struct FilterRowView: View {
                 }
             }
             Spacer()
-            Toggle("", isOn: Binding(
-                get: { filter.isSelected },
-                set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
-            ))
-            .toggleStyle(SwitchToggleStyle(tint: .blue))
-            .labelsHidden()
+            Toggle("", isOn: toggleBinding)
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                .labelsHidden()
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())

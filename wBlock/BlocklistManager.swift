@@ -93,37 +93,28 @@ class FilterListManager: ObservableObject {
                 
                 // --- Foreign Filter Lists ---
                 // Spanish
-                FilterList(id: UUID(), name: "Lista de bloqueo de dominios españoles", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "AdGuard Spanish/Portuguese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
                 
                 // French
-                FilterList(id: UUID(), name: "Liste française de blocage des publicités", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "Liste FR + AdGuard French Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/16_optimized.txt")!, category: .foreign),
                 
                 // German
-                FilterList(id: UUID(), name: "Deutsche Werbeblocker-Liste", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/119_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "EasyList Germany + AdGuard German Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/6_optimized.txt")!, category: .foreign),
                 
                 // Russian
-                FilterList(id: UUID(), name: "Русский фильтр AdGuard", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "AdGuard Russian Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/1_optimized.txt")!, category: .foreign),
                 
                 // Dutch
-                FilterList(id: UUID(), name: "Nederlandse advertentieblokkeringlijst", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/124_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "AdGuard Dutch Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/8_optimized.txt")!, category: .foreign),
                 
                 // Japanese
-                FilterList(id: UUID(), name: "日本語の広告ブロックリスト", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!, category: .foreign),
-                
-                // Portuguese (Brazil)
-                FilterList(id: UUID(), name: "Lista brasileira de bloqueio de anúncios", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/127_optimized.txt")!, category: .foreign),
-                
-                // Korean
-                FilterList(id: UUID(), name: "한국어 광고 차단 목록", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/125_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "AdGuard Japanese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/7_optimized.txt")!, category: .foreign),
                 
                 // Turkish
-                FilterList(id: UUID(), name: "Türkçe reklam engelleme listesi", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/128_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "AdGuard Turkish Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/13_optimized.txt")!, category: .foreign),
                 
-                // Chinese Simplified
-                FilterList(id: UUID(), name: "中文简体广告过滤列表", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/129_optimized.txt")!, category: .foreign),
-                
-                // Chinese Traditional
-                FilterList(id: UUID(), name: "中文繁體廣告過濾清單", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/130_optimized.txt")!, category: .foreign)
+                // Chinese
+                FilterList(id: UUID(), name: "AdGuard Chinese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/224_optimized.txt")!, category: .foreign)
             ]
         }
         
@@ -188,6 +179,7 @@ class FilterListManager: ObservableObject {
         var allRules: [[String: Any]] = []
         var advancedRules: [[String: Any]] = []
 
+        // Collect all rules first
         await withTaskGroup(of: (FilterList, [[String: Any]], [[String: Any]]?).self) { group in
             for filter in selectedFilters {
                 group.addTask {
@@ -211,6 +203,24 @@ class FilterListManager: ObservableObject {
                 completedSteps += 1
                 progress = completedSteps / totalSteps
             }
+        }
+
+        // Check rule count
+        let totalRuleCount = allRules.count + advancedRules.count
+        if totalRuleCount > 150000 {
+            // Show alert and abort
+            await MainActor.run {
+                let alert = NSAlert()
+                alert.messageText = "Too Many Rules"
+                alert.informativeText = "The selected filters would create \(totalRuleCount) rules, which exceeds the maximum limit of 150,000. Please disable some filters and try again."
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+                
+                self.isUpdating = false
+                self.showProgressView = false
+            }
+            return
         }
 
         saveBlockerList(allRules)
@@ -676,12 +686,12 @@ class FilterListManager: ObservableObject {
         
         // Enable only the recommended filters
         let recommendedFilters = [
-            "AdGuard Base filter",
-            "AdGuard Tracking Protection filter",
-            "AdGuard Annoyances filter",
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
+            "AdGuard Annoyances Filter",
             "EasyPrivacy",
             "Online Malicious URL Blocklist",
-            "d3Host List byd3ward",
+            "d3Host List by d3ward",
             "Anti-Adblock List"
         ]
         
