@@ -34,7 +34,6 @@ struct SettingsView: View {
 
             // Update Interval Dropdown
             VStack(alignment: .leading, spacing: 8) {
-
                 Picker("Check for updates every:", selection: $updateInterval) {
                     ForEach(intervalOptions, id: \.value) { option in
                         Text(option.name).tag(option.value)
@@ -42,6 +41,12 @@ struct SettingsView: View {
                 }
                 .pickerStyle(MenuPickerStyle())
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Note: Automatic updates currently only work while the app is running. It is recommended to update filter lists manually when needed rather than keeping the app running constantly.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
             }
             .padding(.horizontal, 20)
 
@@ -55,13 +60,13 @@ struct SettingsView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .padding()
-                    .frame(maxWidth: 200) // Set a suitable max width
+                    .frame(maxWidth: 200)
                     .background(Color.blue)
                     .cornerRadius(10)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.bottom, 15)
-            .frame(maxWidth: .infinity) // Center the button horizontally
+            .frame(maxWidth: .infinity)
         }
         .frame(width: 400, height: 250)
         .padding()
