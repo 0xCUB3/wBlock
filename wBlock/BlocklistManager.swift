@@ -93,7 +93,7 @@ class FilterListManager: ObservableObject {
                 
                 // --- Foreign Filter Lists ---
                 // Spanish
-                FilterList(id: UUID(), name: "AdGuard Spanish/Portuguese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/126_optimized.txt")!, category: .foreign),
+                FilterList(id: UUID(), name: "AdGuard Spanish/Portuguese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/9_optimized.txt")!, category: .foreign),
                 
                 // French
                 FilterList(id: UUID(), name: "Liste FR + AdGuard French Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/16_optimized.txt")!, category: .foreign),
@@ -116,6 +116,9 @@ class FilterListManager: ObservableObject {
                 // Chinese
                 FilterList(id: UUID(), name: "AdGuard Chinese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/224_optimized.txt")!, category: .foreign)
             ]
+            
+            // Use resetToDefaultLists to set the correct default selections
+            resetToDefaultLists()
         }
         
         loadCustomFilterLists()
