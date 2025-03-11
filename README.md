@@ -67,7 +67,7 @@ wBlock is a free, open-source project dedicated to improving your browsing exper
 </p>
 
 ## Credits
-[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. 
+[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. The current implementation of wBlock Scripts relies heavily on the hard work Arjun put into his version in [WebShield]((https://github.com/arjpar/WebShield). 
 
 ---
 
