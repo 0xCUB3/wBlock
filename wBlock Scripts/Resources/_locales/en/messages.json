@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "wBlock Scripts",
+    "description": "The display name for the extension."
+  },
+  "extension_description": {
+    "message": "Script-based content blocking for wBlock. Efficiently blocks YouTube ads and more.",
+    "description": "Description of what the extension does."
+  }
+}

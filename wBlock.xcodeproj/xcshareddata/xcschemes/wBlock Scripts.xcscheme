@@ -16,7 +16,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C191590B2C49448C00319B63"
+               BlueprintIdentifier = "C1A990C72D80B14400D38291"
                BuildableName = "wBlock Scripts.appex"
                BlueprintName = "wBlock Scripts"
                ReferencedContainer = "container:wBlock.xcodeproj">

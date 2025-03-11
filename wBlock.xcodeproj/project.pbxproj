@@ -3,15 +3,16 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 74;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		C19158F52C49444C00319B63 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C19158F42C49444C00319B63 /* Cocoa.framework */; };
 		C19158FF2C49444C00319B63 /* wBlock Filters.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C19158F22C49444C00319B63 /* wBlock Filters.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C19159072C49446400319B63 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C19159062C49446400319B63 /* ContentBlockerConverter */; };
-		C191591E2C49448C00319B63 /* wBlock Scripts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C191590C2C49448C00319B63 /* wBlock Scripts.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1A35C992C49453E009C8E50 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A35C982C49453E009C8E50 /* ContentBlockerConverter */; };
+		C1A990E12D80B14400D38291 /* wBlock Scripts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A990C82D80B14400D38291 /* wBlock Scripts.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1A990E72D80B17B00D38291 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A990E62D80B17B00D38291 /* ContentBlockerConverter */; };
+		C1A990E92D80B17B00D38291 /* ConverterTool in Frameworks */ = {isa = PBXBuildFile; productRef = C1A990E82D80B17B00D38291 /* ConverterTool */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -22,11 +23,11 @@
 			remoteGlobalIDString = C19158F12C49444C00319B63;
 			remoteInfo = "wBlock Filters";
 		};
-		C191591C2C49448C00319B63 /* PBXContainerItemProxy */ = {
+		C1A990DF2D80B14400D38291 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C19158D02C49440500319B63 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = C191590B2C49448C00319B63;
+			remoteGlobalIDString = C1A990C72D80B14400D38291;
 			remoteInfo = "wBlock Scripts";
 		};
 /* End PBXContainerItemProxy section */
@@ -38,7 +39,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C191591E2C49448C00319B63 /* wBlock Scripts.appex in Embed Foundation Extensions */,
+				C1A990E12D80B14400D38291 /* wBlock Scripts.appex in Embed Foundation Extensions */,
 				C19158FF2C49444C00319B63 /* wBlock Filters.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -50,7 +51,7 @@
 		C19158D82C49440500319B63 /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C19158F22C49444C00319B63 /* wBlock Filters.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Filters.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C19158F42C49444C00319B63 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
-		C191590C2C49448C00319B63 /* wBlock Scripts.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Scripts.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1A990C82D80B14400D38291 /* wBlock Scripts.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Scripts.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -61,13 +62,6 @@
 			);
 			target = C19158F12C49444C00319B63 /* wBlock Filters */;
 		};
-		C11F287B2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Utilities/FileStorage.swift,
-			);
-			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
-		};
 		C19159002C49444C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -75,30 +69,19 @@
 			);
 			target = C19158F12C49444C00319B63 /* wBlock Filters */;
 		};
-		C191591F2C49448C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		C1A990E22D80B14400D38291 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				/Localized/SafariExtensionViewController.xib,
 				Info.plist,
 			);
-			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
+			target = C1A990C72D80B14400D38291 /* wBlock Scripts */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		C19159232C49448C00319B63 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = C191590A2C49448C00319B63 /* Resources */;
-			membershipExceptions = (
-				Base.lproj/SafariExtensionViewController.xib,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C19158DA2C49440500319B63 /* wBlock */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C11F287A2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, C11F287B2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = wBlock; sourceTree = "<group>"; };
+		C19158DA2C49440500319B63 /* wBlock */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C11F287A2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = wBlock; sourceTree = "<group>"; };
 		C19158F62C49444C00319B63 /* wBlock Filters */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C19159002C49444C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "wBlock Filters"; sourceTree = "<group>"; };
-		C191590D2C49448C00319B63 /* wBlock Scripts */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C191591F2C49448C00319B63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, C19159232C49448C00319B63 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "wBlock Scripts"; sourceTree = "<group>"; };
+		C1A990C92D80B14400D38291 /* wBlock Scripts */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C1A990E22D80B14400D38291 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (Resources/_locales, Resources/images, Resources/popup, Resources/src, Resources/web_accessible_resources, ); path = "wBlock Scripts"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,11 +101,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C19159092C49448C00319B63 /* Frameworks */ = {
+		C1A990C52D80B14400D38291 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A35C992C49453E009C8E50 /* ContentBlockerConverter in Frameworks */,
+				C1A990E72D80B17B00D38291 /* ContentBlockerConverter in Frameworks */,
+				C1A990E92D80B17B00D38291 /* ConverterTool in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,7 +118,7 @@
 			children = (
 				C19158DA2C49440500319B63 /* wBlock */,
 				C19158F62C49444C00319B63 /* wBlock Filters */,
-				C191590D2C49448C00319B63 /* wBlock Scripts */,
+				C1A990C92D80B14400D38291 /* wBlock Scripts */,
 				C19158F32C49444C00319B63 /* Frameworks */,
 				C19158D92C49440500319B63 /* Products */,
 			);
@@ -145,7 +129,7 @@
 			children = (
 				C19158D82C49440500319B63 /* wBlock.app */,
 				C19158F22C49444C00319B63 /* wBlock Filters.appex */,
-				C191590C2C49448C00319B63 /* wBlock Scripts.appex */,
+				C1A990C82D80B14400D38291 /* wBlock Scripts.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -174,7 +158,7 @@
 			);
 			dependencies = (
 				C19158FE2C49444C00319B63 /* PBXTargetDependency */,
-				C191591D2C49448C00319B63 /* PBXTargetDependency */,
+				C1A990E02D80B14400D38291 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C19158DA2C49440500319B63 /* wBlock */,
@@ -209,27 +193,28 @@
 			productReference = C19158F22C49444C00319B63 /* wBlock Filters.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		C191590B2C49448C00319B63 /* wBlock Scripts */ = {
+		C1A990C72D80B14400D38291 /* wBlock Scripts */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C19159202C49448C00319B63 /* Build configuration list for PBXNativeTarget "wBlock Scripts" */;
+			buildConfigurationList = C1A990E32D80B14400D38291 /* Build configuration list for PBXNativeTarget "wBlock Scripts" */;
 			buildPhases = (
-				C19159082C49448C00319B63 /* Sources */,
-				C19159092C49448C00319B63 /* Frameworks */,
-				C191590A2C49448C00319B63 /* Resources */,
+				C1A990C42D80B14400D38291 /* Sources */,
+				C1A990C52D80B14400D38291 /* Frameworks */,
+				C1A990C62D80B14400D38291 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C191590D2C49448C00319B63 /* wBlock Scripts */,
+				C1A990C92D80B14400D38291 /* wBlock Scripts */,
 			);
 			name = "wBlock Scripts";
 			packageProductDependencies = (
-				C1A35C982C49453E009C8E50 /* ContentBlockerConverter */,
+				C1A990E62D80B17B00D38291 /* ContentBlockerConverter */,
+				C1A990E82D80B17B00D38291 /* ConverterTool */,
 			);
 			productName = "wBlock Scripts";
-			productReference = C191590C2C49448C00319B63 /* wBlock Scripts.appex */;
+			productReference = C1A990C82D80B14400D38291 /* wBlock Scripts.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -239,7 +224,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
+				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					C19158D72C49440500319B63 = {
@@ -248,12 +233,13 @@
 					C19158F12C49444C00319B63 = {
 						CreatedOnToolsVersion = 16.0;
 					};
-					C191590B2C49448C00319B63 = {
-						CreatedOnToolsVersion = 16.0;
+					C1A990C72D80B14400D38291 = {
+						CreatedOnToolsVersion = 16.2;
 					};
 				};
 			};
 			buildConfigurationList = C19158D32C49440500319B63 /* Build configuration list for PBXProject "wBlock" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -264,14 +250,13 @@
 			packageReferences = (
 				C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */,
 			);
-			preferredProjectObjectVersion = 56;
 			productRefGroup = C19158D92C49440500319B63 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				C19158D72C49440500319B63 /* wBlock */,
 				C19158F12C49444C00319B63 /* wBlock Filters */,
-				C191590B2C49448C00319B63 /* wBlock Scripts */,
+				C1A990C72D80B14400D38291 /* wBlock Scripts */,
 			);
 		};
 /* End PBXProject section */
@@ -291,7 +276,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C191590A2C49448C00319B63 /* Resources */ = {
+		C1A990C62D80B14400D38291 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -315,7 +300,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C19159082C49448C00319B63 /* Sources */ = {
+		C1A990C42D80B14400D38291 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -330,10 +315,10 @@
 			target = C19158F12C49444C00319B63 /* wBlock Filters */;
 			targetProxy = C19158FD2C49444C00319B63 /* PBXContainerItemProxy */;
 		};
-		C191591D2C49448C00319B63 /* PBXTargetDependency */ = {
+		C1A990E02D80B14400D38291 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
-			targetProxy = C191591C2C49448C00319B63 /* PBXContainerItemProxy */;
+			target = C1A990C72D80B14400D38291 /* wBlock Scripts */;
+			targetProxy = C1A990DF2D80B14400D38291 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -578,14 +563,13 @@
 			};
 			name = Release;
 		};
-		C19159212C49448C00319B63 /* Debug */ = {
+		C1A990E42D80B14400D38291 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock_Scripts.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 124;
-				DEAD_CODE_STRIPPING = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -598,28 +582,26 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.0xcube.wBlock.wBlockScripts;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.0xcube.wBlock.wBlock-Scripts";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		C19159222C49448C00319B63 /* Release */ = {
+		C1A990E52D80B14400D38291 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock_Scripts.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 124;
-				DEAD_CODE_STRIPPING = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -632,14 +614,13 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.0xcube.wBlock.wBlockScripts;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.0xcube.wBlock.wBlock-Scripts";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -676,11 +657,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C19159202C49448C00319B63 /* Build configuration list for PBXNativeTarget "wBlock Scripts" */ = {
+		C1A990E32D80B14400D38291 /* Build configuration list for PBXNativeTarget "wBlock Scripts" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C19159212C49448C00319B63 /* Debug */,
-				C19159222C49448C00319B63 /* Release */,
+				C1A990E42D80B14400D38291 /* Debug */,
+				C1A990E52D80B14400D38291 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -704,10 +685,15 @@
 			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
 			productName = ContentBlockerConverter;
 		};
-		C1A35C982C49453E009C8E50 /* ContentBlockerConverter */ = {
+		C1A990E62D80B17B00D38291 /* ContentBlockerConverter */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
 			productName = ContentBlockerConverter;
+		};
+		C1A990E82D80B17B00D38291 /* ConverterTool */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
+			productName = ConverterTool;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
