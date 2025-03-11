@@ -3,6 +3,13 @@
   --link-color: #007aff;
   --hover-background: rgba(0, 0, 0, 0.05);
   --active-background: rgba(0, 0, 0, 0.1);
+  --background-light: #ffffff;
+  --background-dark: #1c1c1e;
+  --border-color: rgba(0, 0, 0, 0.15);
+  --text-color: #333333;
+  --description-color: #666666;
+  --alert-background: rgba(255, 213, 0, 0.15); /* subtle yellow tint */
+  --alert-text-color: #8a6d03;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -10,15 +17,71 @@
     --link-color: #0a84ff;
     --hover-background: rgba(255, 255, 255, 0.05);
     --active-background: rgba(255, 255, 255, 0.1);
+    --background-dark: #2c2c2e;
+    --text-color: #dddddd;
+    --description-color: #bbbbbb;
+    --alert-background: rgba(255, 213, 0, 0.15);
+    --alert-text-color: #b59c00;
   }
 }
 
 body {
-  width: 200px;
-  padding: 8px 0;
   margin: 0;
   font-family: -apple-system, system-ui, sans-serif;
   background: transparent;
+}
+
+.popup-container {
+  min-width: 220px;
+  background-color: var(--background-light);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .popup-container {
+    background-color: var(--background-dark);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.popup-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: inherit;
+  text-align: left;
+}
+
+.popup-title {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--link-color);
+}
+
+.popup-description {
+  font-size: 0.75rem;
+  margin: 4px 0 0;
+  color: var(--description-color);
+}
+
+/* Alert styling */
+.popup-alert {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: var(--alert-background);
+}
+
+.alert-icon {
+  margin-right: 8px;
+  flex-shrink: 0;
+  color: var(--alert-text-color);
+}
+
+.alert-text {
+  font-size: 0.75rem;
+  color: var(--alert-text-color);
 }
 
 .menu-list {
@@ -32,9 +95,8 @@ body {
 }
 
 .menu-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
+  display: block;
+  padding: 10px 16px;
   text-decoration: none;
   color: var(--link-color);
   transition: background-color 0.2s ease;
@@ -54,13 +116,4 @@ body {
   line-height: 1.25;
   letter-spacing: -0.005rem;
   font-weight: 500;
-  text-align: left;
-  flex: 1;
-}
-
-/* Platform adjustments */
-@supports (-webkit-touch-highlight: none) {
-  .menu-item {
-    padding: 10px 16px;
-  }
 }
