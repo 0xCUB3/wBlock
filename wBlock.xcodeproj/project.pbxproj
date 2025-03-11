@@ -57,14 +57,14 @@
 		C11F287A2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				FileStorage.swift,
+				Utilities/FileStorage.swift,
 			);
 			target = C19158F12C49444C00319B63 /* wBlock Filters */;
 		};
 		C11F287B2CF4A27C006DFC8B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				FileStorage.swift,
+				Utilities/FileStorage.swift,
 			);
 			target = C191590B2C49448C00319B63 /* wBlock Scripts */;
 		};
