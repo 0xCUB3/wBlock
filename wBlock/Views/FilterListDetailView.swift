@@ -10,34 +10,24 @@ import SwiftData
 
 struct FilterListDetailView: View {
     let filterList: FilterList
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text(filterList.name)
-                .font(.title)
-            Text("Category: \(filterList.category.rawValue)")
-            VStack(alignment: .leading, spacing: 5) {
-                Text("URL:")
-                Link(filterList.url.absoluteString, destination: filterList.url)
-                    .foregroundColor(.blue)
-            }
-            Text("Status: \(filterList.isSelected ? "Enabled" : "Disabled")")
-        }
-        .padding()
-        .frame(width: 300, height: 200)
-    }
-}
 
-class WindowDelegate: NSObject, NSWindowDelegate, ObservableObject {
-    @Published var shouldShowExitAlert = false
-    var hasUnappliedChanges: () -> Bool = { false }
-    
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
-        if hasUnappliedChanges() {
-            shouldShowExitAlert = true
-            return false
+    var body: some View {
+        List { // Use List for a standard iOS layout
+            Section(header: Text("Name").textCase(.none)) {
+                Text(filterList.name)
+            }
+            Section(header: Text("Category").textCase(.none)) {
+                Text(filterList.category.rawValue)
+            }
+            Section(header: Text("URL").textCase(.none)) {
+                Link(filterList.url.absoluteString, destination: filterList.url)
+            }
+            Section(header: Text("Status").textCase(.none)) {
+                Text(filterList.isSelected ? "Enabled" : "Disabled")
+            }
         }
-        NSApplication.shared.terminate(nil)
-        return true
+        .listStyle(.insetGrouped) // Use insetGrouped for iOS style
+        .navigationTitle(filterList.name) // Set navigation title
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

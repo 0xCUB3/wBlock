@@ -24,7 +24,7 @@ struct FilterListContentView: View {
                 categoryContent
             }
         }
-        .background(Color(.textBackgroundColor))
+        .background(Color(uiColor: .secondarySystemBackground)) // Use UIColor
     }
     
     @ViewBuilder
@@ -33,25 +33,12 @@ struct FilterListContentView: View {
         case .all:
             ForEach(cachedCategories, id: \.self) { category in
                 if !filterListManager.filterLists(for: category).isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(category.rawValue)
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                        
+                    Section(header: Text(category.rawValue).textCase(.none)) { // Use Section header
                         ForEach(filterListManager.filterLists(for: category)) { filter in
                             FilterRowView(filter: filter, filterListManager: filterListManager)
-                                .padding(.horizontal)
-                            if filter.id != filterListManager.filterLists(for: category).last?.id {
-                                Divider()
-                                    .padding(.leading)
-                            }
+//                                .padding(.horizontal) // Not needed within List
+                            // No Divider needed in List
                         }
-                    }
-                    if category != cachedCategories.last {
-                        Divider()
-                            .padding(.vertical, 8)
                     }
                 }
             }
@@ -59,23 +46,13 @@ struct FilterListContentView: View {
         case .custom:
             ForEach(filterListManager.customFilterLists) { filter in
                 FilterRowView(filter: filter, filterListManager: filterListManager)
-                    .padding(.horizontal)
-                
-                if filter.id != filterListManager.customFilterLists.last?.id {
-                    Divider()
-                        .padding(.leading)
-                }
+                // Divider not needed, List provides separators
             }
             
         default:
             ForEach(filterListManager.filterLists(for: selectedCategory)) { filter in
                 FilterRowView(filter: filter, filterListManager: filterListManager)
-                    .padding(.horizontal)
-                
-                if filter.id != filterListManager.filterLists(for: selectedCategory).last?.id {
-                    Divider()
-                        .padding(.leading)
-                }
+                // Divider not needed
             }
         }
     }

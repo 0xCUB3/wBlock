@@ -19,8 +19,7 @@ class FilterListUpdater {
         self.applier = applier
         self.logManager = logManager
     }
-
-    /// Updates missing versions for filter lists and returns a dictionary of indices and versions
+    
     func updateMissingVersions(filterLists: [FilterList]) async -> [(Int, String)] {
         var updatedVersions: [(Int, String)] = []
 
@@ -38,7 +37,6 @@ class FilterListUpdater {
         return updatedVersions
     }
 
-    /// Fetches version information from a filter list URL
     func fetchVersionFromURL(for filter: FilterList) async -> String? {
         do {
             let (data, response) = try await URLSession.shared.data(from: filter.url)
@@ -59,8 +57,7 @@ class FilterListUpdater {
             return nil
         }
     }
-
-    /// Parses metadata from filter list content
+    
     func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
         var title: String?
         var description: String?
@@ -104,7 +101,6 @@ class FilterListUpdater {
         return (title, description, version)
     }
 
-    /// Checks for updates and returns a list of filters that have updates
     func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
         var filtersWithUpdates: [FilterList] = []
 
@@ -126,7 +122,6 @@ class FilterListUpdater {
         return filtersWithUpdates
     }
 
-    /// Checks if a filter has an update by comparing online content with local content
     func hasUpdate(for filter: FilterList) async -> Bool {
         guard let containerURL = loader.getSharedContainerURL() else { return false }
         let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
@@ -147,7 +142,6 @@ class FilterListUpdater {
         }
     }
 
-    /// Fetches, processes, and saves a filter list
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
             let (data, response) = try await URLSession.shared.data(from: filter.url)
@@ -163,16 +157,16 @@ class FilterListUpdater {
             if let description = metadata.description, !description.isEmpty {
                 updatedFilter.description = description
             }
-
+            
             guard let containerURL = loader.getSharedContainerURL() else {
                 logManager.appendLog("Error: Unable to access shared container")
                 return false
             }
-
+            
             try? content.write(to: containerURL.appendingPathComponent("\(filter.name).txt"), atomically: true, encoding: .utf8)
 
             let filteredRules = content.components(separatedBy: .newlines).filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }
-
+            
             await converter.convertAndSaveRules(filteredRules, for: filter)
             return true
         } catch {
@@ -180,8 +174,7 @@ class FilterListUpdater {
             return false
         }
     }
-
-    /// Automatically updates filters and returns the list of updated filters
+    
     func autoUpdateFilters(filterLists: [FilterList], progressCallback: @escaping (Float) -> Void) async -> [FilterList] {
         var updatedFilters: [FilterList] = []
 
@@ -219,8 +212,7 @@ class FilterListUpdater {
         return updatedFilters
     }
 
-    /// Updates selected filters and returns the list of successfully updated filters
-    func updateSelectedFilters(_ selectedFilters: [FilterList], progressCallback: @escaping (Float) -> Void) async -> [FilterList] {
+     func updateSelectedFilters(_ selectedFilters: [FilterList], progressCallback: @escaping (Float) -> Void) async -> [FilterList] {
         let totalSteps = Float(selectedFilters.count)
         var completedSteps: Float = 0
         var updatedFilters: [FilterList] = []

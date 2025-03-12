@@ -39,17 +39,13 @@ struct FilterRowView: View {
                 .toggleStyle(SwitchToggleStyle(tint: .blue))
                 .labelsHidden()
         }
-        .padding(.vertical, 8)
         .contentShape(Rectangle())
-        .onTapGesture {
-            filterListManager.toggleFilterListSelection(id: filter.id)
-        }
-        .contextMenu {
-            if filter.category == .custom {
-                Button("Remove Filter") {
-                    filterListManager.removeCustomFilterList(filter)
-                }
-            }
-        }
+          .contextMenu {
+              if filter.category == .custom {
+                  Button("Remove Filter", role: .destructive) { // Use destructive role
+                      filterListManager.removeCustomFilterList(filter)
+                  }
+              }
+          }
     }
 }

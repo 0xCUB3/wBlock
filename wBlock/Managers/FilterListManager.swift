@@ -9,7 +9,7 @@ import Foundation
 import Combine
 import SafariServices
 import ContentBlockerConverter
-import UserNotifications
+//import UserNotifications
 import os.log
 
 @MainActor
@@ -28,12 +28,13 @@ class FilterListManager: ObservableObject {
     @Published var showResetToDefaultAlert = false
     @Published var showingNoUpdatesAlert = false
 
-    // Dependencies
     private let loader: FilterListLoader
     private let updater: FilterListUpdater
     private let converter: FilterListConverter
     private let applier: FilterListApplier
     private let logManager: LogManager
+    private let sharedContainerIdentifier = "group.com.0xcube.wBlock" // Moved for reuse
+
 
     var customFilterLists: [FilterList] = []
 
@@ -55,17 +56,39 @@ class FilterListManager: ObservableObject {
     private func setup() {
         loader.checkAndCreateGroupFolder()
         filterLists = loader.loadFilterLists()
-        customFilterLists = loader.loadCustomFilterLists() // Add this line
-        loader.loadSelectedState(for: &filterLists)
+        customFilterLists = loader.loadCustomFilterLists()
+        loadSelectedState(for: &filterLists) // Use a dedicated method
         applier.checkAndCreateBlockerList(filterLists: filterLists)
         checkAndEnableFilters()
         clearLogs()
         Task { await updateMissingVersions() }
     }
+    
+    //MARK: - Loading of Selection
+    private func loadSelectedState(for filterLists: inout [FilterList]) {
+          guard let defaults = UserDefaults(suiteName: sharedContainerIdentifier) else {
+              logManager.appendLog("Error: Unable to access shared UserDefaults")
+              return
+          }
+          for (index, filter) in filterLists.enumerated() {
+              filterLists[index].isSelected = defaults.bool(forKey: "filter_\(filter.name)")
+          }
+      }
+
+      /// Saves selected state for filter lists to shared UserDefaults
+      private func saveSelectedState(for filterLists: [FilterList]) {
+          guard let defaults = UserDefaults(suiteName: sharedContainerIdentifier) else {
+              logManager.appendLog("Error: Unable to access shared UserDefaults")
+              return
+          }
+          for filter in filterLists {
+              defaults.set(filter.isSelected, forKey: "filter_\(filter.name)")
+          }
+          defaults.synchronize() // Ensure immediate save
+      }
 
     // MARK: - Core functionality
 
-    /// Checks if selected filters exist, downloads if missing
     func checkAndEnableFilters() {
         missingFilters.removeAll()
         for filter in filterLists where filter.isSelected {
@@ -85,7 +108,7 @@ class FilterListManager: ObservableObject {
     func toggleFilterListSelection(id: UUID) {
         if let index = filterLists.firstIndex(where: { $0.id == id }) {
             filterLists[index].isSelected.toggle()
-            loader.saveSelectedState(for: filterLists)
+            saveSelectedState(for: filterLists) // Use dedicated method and ensure saving
             hasUnappliedChanges = true
         }
     }
@@ -93,7 +116,7 @@ class FilterListManager: ObservableObject {
     func filterLists(for category: FilterListCategory) -> [FilterList] {
         category == .all ? filterLists : filterLists.filter { $0.category == category }
     }
-
+    
     func resetToDefaultLists() {
         // Reset all filters to unselected first
         for index in filterLists.indices {
@@ -117,30 +140,30 @@ class FilterListManager: ObservableObject {
             }
         }
 
-        loader.saveSelectedState(for: filterLists)
+        saveSelectedState(for: filterLists) // <- Save selection
         hasUnappliedChanges = true
     }
 
     // MARK: - Delegated methods
 
     func applyChanges() async {
-        showProgressView = true
-        isUpdating = true
-        progress = 0
+          showProgressView = true
+          isUpdating = true
+          progress = 0
 
-        await applier.applyChanges(
-            filterLists: filterLists,
-            progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
-                }
-            }
-        )
+          await applier.applyChanges(
+              filterLists: filterLists,
+              progressCallback: { newProgress in
+                  Task { @MainActor in  // Explicitly back to the main actor
+                      self.progress = newProgress
+                  }
+              }
+          )
 
-        self.hasUnappliedChanges = false
-        self.isUpdating = false
-        self.showProgressView = false
-    }
+          self.hasUnappliedChanges = false
+          self.isUpdating = false
+          self.showProgressView = false
+      }
 
     func updateMissingFilters() async {
         showProgressView = true
@@ -170,6 +193,7 @@ class FilterListManager: ObservableObject {
     func updateMissingVersions() async {
         let updatedVersions = await updater.updateMissingVersions(filterLists: filterLists)
 
+        // Update on the main actor, as this modifies @Published properties
         await MainActor.run {
             for (index, version) in updatedVersions {
                 if index < filterLists.count {
@@ -197,63 +221,63 @@ class FilterListManager: ObservableObject {
     }
 
     func autoUpdateFilters() async -> [FilterList] {
-        await MainActor.run {
-            isUpdating = true
-            showProgressView = true
-            progress = 0
-        }
+         await MainActor.run { // Ensure UI updates are on the main thread.
+             isUpdating = true
+             showProgressView = true
+             progress = 0
+         }
 
-        let updatedFilters = await updater.autoUpdateFilters(
-            filterLists: filterLists.filter { $0.isSelected },
-            progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
-                }
-            }
-        )
+         let updatedFilters = await updater.autoUpdateFilters(
+             filterLists: filterLists.filter { $0.isSelected },
+             progressCallback: { newProgress in
+                 Task { @MainActor in // Explicitly back to main thread
+                     self.progress = newProgress
+                 }
+             }
+         )
 
-        if !updatedFilters.isEmpty {
-            await applyChanges()
-        }
+         if !updatedFilters.isEmpty {
+             await applyChanges()
+         }
 
-        await MainActor.run {
-            isUpdating = false
-            showProgressView = false
-        }
+         await MainActor.run {
+             isUpdating = false
+             showProgressView = false
+         }
 
-        return updatedFilters
-    }
+         return updatedFilters
+     }
 
     func updateSelectedFilters(_ selectedFilters: [FilterList]) async {
-        await MainActor.run {
-            showProgressView = true
-            isUpdating = true
-            progress = 0
-        }
+           await MainActor.run {
+               showProgressView = true
+               isUpdating = true
+               progress = 0
+           }
 
-        let updatedFilters = await updater.updateSelectedFilters(
-            selectedFilters,
-            progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
-                }
-            }
-        )
+           let updatedFilters = await updater.updateSelectedFilters(
+               selectedFilters,
+               progressCallback: { newProgress in
+                   Task { @MainActor in
+                       self.progress = newProgress
+                   }
+               }
+           )
 
-        await MainActor.run {
-            // Remove updated filters from availableUpdates
-            for filter in updatedFilters {
-                availableUpdates.removeAll { $0.id == filter.id }
-            }
-        }
+           await MainActor.run {
+               // Remove updated filters from availableUpdates
+               for filter in updatedFilters {
+                   availableUpdates.removeAll { $0.id == filter.id }
+               }
+           }
 
-        await applyChanges()
+           await applyChanges()
 
-        await MainActor.run {
-            isUpdating = false
-            showProgressView = false
-        }
-    }
+           await MainActor.run {
+               isUpdating = false
+               showProgressView = false
+           }
+       }
 
     // MARK: - Logging
 
@@ -269,22 +293,21 @@ class FilterListManager: ObservableObject {
         logs = logManager.loadLogsFromFile()
     }
     
-    /// Adds a custom filter list
     func addCustomFilterList(_ filter: FilterList) {
         // Check if a filter with the same URL already exists
         if !customFilterLists.contains(where: { $0.url == filter.url }) {
             var newFilter = filter
-
+            
             // Add to custom filter lists
             customFilterLists.append(newFilter)
-            loader.saveCustomFilterLists(customFilterLists)
-
+            saveCustomFilterLists(customFilterLists) // <- use the save method
+            
             // Also add to main filter lists
             filterLists.append(newFilter)
             loader.saveFilterLists(filterLists)
-
+            
             logManager.appendLog("Added custom filter: \(newFilter.name)")
-
+            
             // Download the filter
             Task {
                 let success = await updater.fetchAndProcessFilter(newFilter)
@@ -293,7 +316,7 @@ class FilterListManager: ObservableObject {
                     hasUnappliedChanges = true
                 } else {
                     logManager.appendLog("Failed to download custom filter: \(newFilter.name)")
-
+                    
                     // If download fails, remove the filter
                     await MainActor.run {
                         removeCustomFilterList(newFilter)
@@ -304,37 +327,41 @@ class FilterListManager: ObservableObject {
             logManager.appendLog("Custom filter with URL \(filter.url) already exists")
         }
     }
-
     
     /// Removes a custom filter list
-    func removeCustomFilterList(_ filter: FilterList) {
-        customFilterLists.removeAll { $0.id == filter.id }
-        loader.saveCustomFilterLists(customFilterLists)
+      func removeCustomFilterList(_ filter: FilterList) {
+          customFilterLists.removeAll { $0.id == filter.id }
+          saveCustomFilterLists(customFilterLists) // <- use the save method
 
-        // Also remove from main filter lists if present
-        filterLists.removeAll { $0.id == filter.id }
-        loader.saveFilterLists(filterLists)
+          // Also remove from main filter lists if present
+          filterLists.removeAll { $0.id == filter.id }
+          loader.saveFilterLists(filterLists)
 
-        // Remove any files associated with this filter
-        if let containerURL = loader.getSharedContainerURL() {
-            let fileURLs = [
-                containerURL.appendingPathComponent("\(filter.name).json"),
-                containerURL.appendingPathComponent("\(filter.name)_advanced.json"),
-                containerURL.appendingPathComponent("\(filter.name).txt")
-            ]
+          // Remove any files associated with this filter
+          if let containerURL = loader.getSharedContainerURL() {
+              let fileURLs = [
+                  containerURL.appendingPathComponent("\(filter.name).json"),
+                  containerURL.appendingPathComponent("\(filter.name)_advanced.json"),
+                  containerURL.appendingPathComponent("\(filter.name).txt")
+              ]
 
-            for url in fileURLs {
-                try? FileManager.default.removeItem(at: url)
-            }
+              for url in fileURLs {
+                  try? FileManager.default.removeItem(at: url)
+              }
+          }
+
+          logManager.appendLog("Removed custom filter: \(filter.name)")
+          hasUnappliedChanges = true
+      }
+
+    /// Loads custom filter lists from shared UserDefaults
+    func loadCustomFilterLists() -> [FilterList] {
+        guard let defaults = UserDefaults(suiteName: sharedContainerIdentifier) else {
+            logManager.appendLog("Error: Unable to access shared UserDefaults")
+            return []
         }
 
-        logManager.appendLog("Removed custom filter: \(filter.name)")
-        hasUnappliedChanges = true
-    }
-    
-    /// Loads custom filter lists from UserDefaults
-    func loadCustomFilterLists() -> [FilterList] {
-        if let data = UserDefaults.standard.data(forKey: "customFilterLists") {
+        if let data = defaults.data(forKey: "customFilterLists") {
             do {
                 let decoder = JSONDecoder()
                 let customLists = try decoder.decode([FilterList].self, from: data)
@@ -346,12 +373,17 @@ class FilterListManager: ObservableObject {
         return []
     }
 
-    /// Saves custom filter lists to UserDefaults
-    func saveCustomFilterLists(_ customFilterLists: [FilterList]) {
+    /// Saves custom filter lists to shared UserDefaults
+      func saveCustomFilterLists(_ customFilterLists: [FilterList]) {
+          guard let defaults = UserDefaults(suiteName: sharedContainerIdentifier) else {
+              logManager.appendLog("Error: Unable to access shared UserDefaults")
+              return
+          }
         do {
             let encoder = JSONEncoder()
             let data = try encoder.encode(customFilterLists)
-            UserDefaults.standard.set(data, forKey: "customFilterLists")
+            defaults.set(data, forKey: "customFilterLists")
+            defaults.synchronize()
         } catch {
             logManager.appendLog("Error saving custom filter lists: \(error)")
         }

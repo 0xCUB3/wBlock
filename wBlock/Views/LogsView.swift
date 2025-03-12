@@ -10,7 +10,7 @@ import SwiftData
 
 struct LogsView: View {
     let logs: String
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss // Works on both
 
     var body: some View {
         VStack(spacing: 20) {
@@ -25,21 +25,24 @@ struct LogsView: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.gray)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plain) // .plain works on both
             }
             .padding(.horizontal)
 
             ScrollView {
                 TextEditor(text: .constant(logs))
                     .font(.system(.body, design: .monospaced))
-                    .background(Color(.textBackgroundColor))
+                    .background(Color(uiColor: .secondarySystemBackground)) // Use UIColor
                     .cornerRadius(8)
+                    .disabled(true) // Make TextEditor read-only
             }
-            .background(Color(.textBackgroundColor))
+            .background(Color(uiColor: .secondarySystemBackground))
             .cornerRadius(8)
         }
         .padding()
+        #if os(macOS)
         .frame(width: 600, height: 400)
-        .background(Color(.windowBackgroundColor))
+        #endif
+        .background(Color(uiColor: .systemBackground))
     }
 }

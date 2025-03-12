@@ -11,7 +11,7 @@ struct UpdatePopupView: View {
     @ObservedObject var filterListManager: FilterListManager
     @State private var selectedFilters: Set<UUID>
     @Binding var isPresented: Bool
-    
+
     // Initialize with all filters selected
     init(filterListManager: FilterListManager, isPresented: Binding<Bool>) {
         self.filterListManager = filterListManager
@@ -32,25 +32,26 @@ struct UpdatePopupView: View {
 
             List {
                 ForEach(filterListManager.availableUpdates, id: \.id) { filter in
-                    HStack {
-                        Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(selectedFilters.contains(filter.id) ? .blue : .gray)
-                        Text(filter.name)
-                            .font(.body)
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
+                    Button(action: { // Use Button for list row selection
                         if selectedFilters.contains(filter.id) {
                             selectedFilters.remove(filter.id)
                         } else {
                             selectedFilters.insert(filter.id)
                         }
+                    }) {
+                        HStack {
+                            Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(selectedFilters.contains(filter.id) ? .blue : .gray)
+                            Text(filter.name)
+                                .font(.body)
+                            Spacer()
+                        }
                     }
+                    .foregroundColor(.primary) // Ensure text color is correct
                 }
             }
-            .listStyle(PlainListStyle())
-            .background(Color(NSColor.textBackgroundColor))
+            .listStyle(.plain) // Use .plain for iOS-style list
+            .background(Color(uiColor: .secondarySystemBackground)) // Use UIColor
             .cornerRadius(10)
 
             HStack(spacing: 20) {
@@ -64,7 +65,7 @@ struct UpdatePopupView: View {
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(10)
                 }
-                .buttonStyle(PlainButtonStyle())
+                //.buttonStyle(PlainButtonStyle()) // Not needed
 
                 Button(action: {
                     Task {
@@ -81,12 +82,14 @@ struct UpdatePopupView: View {
                         .background(Color.blue)
                         .cornerRadius(10)
                 }
-                .buttonStyle(PlainButtonStyle())
+                //.buttonStyle(PlainButtonStyle()) // Not needed
                 .disabled(selectedFilters.isEmpty)
             }
         }
         .padding()
+        #if os(macOS)
         .frame(width: 400, height: 500)
-        .background(Color(.windowBackgroundColor))
+        #endif
+        .background(Color(uiColor: .systemBackground))
     }
 }

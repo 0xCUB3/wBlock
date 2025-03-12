@@ -1,3 +1,5 @@
+// only need for macOS since ios can't do in-place updates
+#if os(macOS)
 //
 //  UpdateController.swift
 //  wBlock
@@ -140,3 +142,4 @@ class UpdateController: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 }
+#endif

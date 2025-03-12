@@ -19,95 +19,105 @@ class FilterListApplier {
         self.converter = converter
     }
 
-    /// Checks if the blocker list exists and creates it if needed
     func checkAndCreateBlockerList(filterLists: [FilterList]) {
-        guard let containerURL = getSharedContainerURL() else {
-            logManager.appendLog("Error: Unable to access shared container")
-            return
-        }
-
-        let blockerListURL = containerURL.appendingPathComponent("blockerList.json")
-        let advancedBlockingURL = containerURL.appendingPathComponent("advancedBlocking.json")
-
-        if !FileManager.default.fileExists(atPath: blockerListURL.path) {
-            logManager.appendLog("blockerList.json not found. Creating it...")
-            let selectedFilters = filterLists.filter { $0.isSelected }
-            var allRules: [[String: Any]] = []
-            var advancedRules: [[String: Any]] = []
-
-            for filter in selectedFilters {
-                if let (rules, advanced) = loadFilterRules(for: filter) {
-                    allRules.append(contentsOf: rules)
-                    if let advanced = advanced {
-                        advancedRules.append(contentsOf: advanced)
-                    }
-                }
+            guard let containerURL = getSharedContainerURL() else {
+                logManager.appendLog("Error: Unable to access shared container")
+                return
             }
 
-            saveBlockerList(allRules)
-            saveAdvancedBlockerList(advancedRules)
-        } else {
-            logManager.appendLog("blockerList.json found.")
-        }
-    }
+            let blockerListURL = containerURL.appendingPathComponent("blockerList.json")
+            let advancedBlockingURL = containerURL.appendingPathComponent("advancedBlocking.json")
 
-    /// Applies changes to the content blocker
+            if !FileManager.default.fileExists(atPath: blockerListURL.path) {
+                logManager.appendLog("blockerList.json not found. Creating it...")
+                let selectedFilters = filterLists.filter { $0.isSelected }
+                var allRules: [[String: Any]] = []
+                var advancedRules: [[String: Any]] = []
+
+                for filter in selectedFilters {
+                    if let (rules, advanced) = loadFilterRules(for: filter) {
+                        allRules.append(contentsOf: rules)
+                        if let advanced = advanced {
+                            advancedRules.append(contentsOf: advanced)
+                        }
+                    }
+                }
+
+                saveBlockerList(allRules)
+                saveAdvancedBlockerList(advancedRules)
+            } else {
+                logManager.appendLog("blockerList.json found.")
+            }
+        }
+
     func applyChanges(filterLists: [FilterList], progressCallback: @escaping (Float) -> Void) async {
-        let selectedFilters = filterLists.filter { $0.isSelected }
-        let totalSteps = Float(selectedFilters.count)
-        var completedSteps: Float = 0
+           let selectedFilters = filterLists.filter { $0.isSelected }
+           let totalSteps = Float(selectedFilters.count)
+           var completedSteps: Float = 0
 
-        var allRules: [[String: Any]] = []
-        var advancedRules: [[String: Any]] = []
+           var allRules: [[String: Any]] = []
+           var advancedRules: [[String: Any]] = []
 
-        // Collect all rules first
-        await withTaskGroup(of: (FilterList, [[String: Any]], [[String: Any]]?).self) { group in
-            for filter in selectedFilters {
-                group.addTask {
-                    if let (rules, advanced) = self.loadFilterRules(for: filter) {
-                        return (filter, rules, advanced)
-                    }
-                    return (filter, [], nil)
-                }
-            }
+           // Collect all rules first
+           await withTaskGroup(of: (FilterList, [[String: Any]], [[String: Any]]?).self) { group in
+               for filter in selectedFilters {
+                   group.addTask {
+                       if let (rules, advanced) = self.loadFilterRules(for: filter) {
+                           return (filter, rules, advanced)
+                       }
+                       return (filter, [], nil)
+                   }
+               }
 
-            for await (_, rules, advanced) in group {
-                allRules.append(contentsOf: rules)
-                if let advanced = advanced {
-                    advancedRules.append(contentsOf: advanced)
-                }
-                completedSteps += 1
-                progressCallback(completedSteps / totalSteps)
-            }
-        }
-
+               for await (_, rules, advanced) in group {
+                   allRules.append(contentsOf: rules)
+                   if let advanced = advanced {
+                       advancedRules.append(contentsOf: advanced)
+                   }
+                   completedSteps += 1
+                   progressCallback(completedSteps / totalSteps)
+               }
+           }
+        
         // Check rule count
         let totalRuleCount = allRules.count + advancedRules.count
         if totalRuleCount > 150000 {
-            // Show alert and abort
-            await MainActor.run {
-                let alert = NSAlert()
-                alert.messageText = "Too Many Rules"
-                alert.informativeText = "The selected filters would create \(totalRuleCount) rules, which exceeds the maximum limit of 150,000. Please disable some filters and try again."
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "OK")
-                alert.runModal()
+            await showRuleLimitAlert(ruleCount: totalRuleCount)
+            return  // Exit early if the rule limit is exceeded
+        }
+
+           // Optimize rules if converter is available
+           if let converter = converter {
+               allRules = converter.optimizeRules(allRules)
+               advancedRules = converter.optimizeRules(advancedRules)
+           }
+
+           saveBlockerList(allRules)
+           saveAdvancedBlockerList(advancedRules)
+           await reloadContentBlocker()
+       }
+
+    // Helper to show the alert
+    @MainActor // Run on main actor
+    private func showRuleLimitAlert(ruleCount: Int) {
+        // Show alert, can only show if app is not in background
+        let alert = UIAlertController(title: "Too Many Rules",
+                                      message: "The selected filters would create \(ruleCount) rules, which exceeds the maximum limit of 150,000. Please disable some filters and try again.",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+
+        // Find the current top view controller to present
+        if var topController = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first?.windows.first?.rootViewController {
+            while let presentedViewController = topController.presentedViewController {
+                topController = presentedViewController
             }
-            return
-        }
 
-        // Optimize rules if converter is available
-        if let converter = converter {
-            allRules = converter.optimizeRules(allRules)
-            advancedRules = converter.optimizeRules(advancedRules)
+            topController.present(alert, animated: true, completion: nil)
         }
-
-        saveBlockerList(allRules)
-        saveAdvancedBlockerList(advancedRules)
-        await reloadContentBlocker()
     }
 
-    /// Saves the blocker list to file storage
     func saveBlockerList(_ rules: [[String: Any]]) {
         do {
             if let jsonData = try? JSONSerialization.data(withJSONObject: rules, options: []),
@@ -151,20 +161,20 @@ class FilterListApplier {
         }
     }
 
-    /// Reloads the content blocker in Safari
     func reloadContentBlocker() async {
         do {
+            // Load rule count (for logging purposes)
             let ruleCount = try (JSONSerialization.jsonObject(with: FileStorage.shared.loadJSON(filename: "blockerList.json").data(using: .utf8)!) as? [[String: Any]])?.count ?? 0
-            logManager.appendLog("Reloading content blocker (\(ruleCount) rules)")
 
+            logManager.appendLog("Reloading content blocker (\(ruleCount) rules)")
             try await SFContentBlockerManager.reloadContentBlocker(withIdentifier: contentBlockerIdentifier)
             logManager.appendLog("Content blocker reloaded successfully")
+
         } catch {
             logManager.appendLog("Error reloading content blocker: \(error)")
         }
     }
 
-    /// Loads filter rules from a JSON file
     private func loadFilterRules(for filter: FilterList) -> ([[String: Any]], [[String: Any]]?)? {
         guard let containerURL = getSharedContainerURL() else { return nil }
         let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
@@ -186,8 +196,7 @@ class FilterListApplier {
             return nil
         }
     }
-
-    /// Retrieves the shared container URL
+    
     private func getSharedContainerURL() -> URL? {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
     }

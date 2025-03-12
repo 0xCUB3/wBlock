@@ -7,12 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C19158F52C49444C00319B63 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C19158F42C49444C00319B63 /* Cocoa.framework */; };
+		C18F66E12D821C5300D0E9FC /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C18F66E02D821C5300D0E9FC /* ContentBlockerConverter */; };
+		C18F67E22D821FB800D0E9FC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C19158F42C49444C00319B63 /* Cocoa.framework */; platformFilters = (macos, ); };
+		C18F67E42D821FBE00D0E9FC /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C18F67E32D821FBE00D0E9FC /* UIKit.framework */; platformFilter = ios; };
+		C18F67E52D821FCF00D0E9FC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C19158F42C49444C00319B63 /* Cocoa.framework */; platformFilters = (macos, ); };
+		C18F67E62D821FD400D0E9FC /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C18F67E32D821FBE00D0E9FC /* UIKit.framework */; platformFilter = ios; };
+		C18F67E72D821FEF00D0E9FC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C19158F42C49444C00319B63 /* Cocoa.framework */; platformFilters = (macos, ); };
+		C18F67E82D821FF500D0E9FC /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C18F67E32D821FBE00D0E9FC /* UIKit.framework */; platformFilter = ios; };
 		C19158FF2C49444C00319B63 /* wBlock Filters.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C19158F22C49444C00319B63 /* wBlock Filters.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C19159072C49446400319B63 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C19159062C49446400319B63 /* ContentBlockerConverter */; };
 		C1A990E12D80B14400D38291 /* wBlock Scripts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A990C82D80B14400D38291 /* wBlock Scripts.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A990E72D80B17B00D38291 /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A990E62D80B17B00D38291 /* ContentBlockerConverter */; };
-		C1A990E92D80B17B00D38291 /* ConverterTool in Frameworks */ = {isa = PBXBuildFile; productRef = C1A990E82D80B17B00D38291 /* ConverterTool */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +53,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C18F67E32D821FBE00D0E9FC /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.2.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 		C19158D82C49440500319B63 /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C19158F22C49444C00319B63 /* wBlock Filters.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Filters.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C19158F42C49444C00319B63 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -89,6 +95,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C18F67E42D821FBE00D0E9FC /* UIKit.framework in Frameworks */,
+				C18F67E22D821FB800D0E9FC /* Cocoa.framework in Frameworks */,
 				C19159072C49446400319B63 /* ContentBlockerConverter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -97,7 +105,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C19158F52C49444C00319B63 /* Cocoa.framework in Frameworks */,
+				C18F67E62D821FD400D0E9FC /* UIKit.framework in Frameworks */,
+				C18F67E52D821FCF00D0E9FC /* Cocoa.framework in Frameworks */,
+				C18F66E12D821C5300D0E9FC /* ContentBlockerConverter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,8 +115,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C18F67E82D821FF500D0E9FC /* UIKit.framework in Frameworks */,
+				C18F67E72D821FEF00D0E9FC /* Cocoa.framework in Frameworks */,
 				C1A990E72D80B17B00D38291 /* ContentBlockerConverter in Frameworks */,
-				C1A990E92D80B17B00D38291 /* ConverterTool in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +148,7 @@
 		C19158F32C49444C00319B63 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C18F67E32D821FBE00D0E9FC /* UIKit.framework */,
 				C19158F42C49444C00319B63 /* Cocoa.framework */,
 			);
 			name = Frameworks;
@@ -188,6 +200,7 @@
 			);
 			name = "wBlock Filters";
 			packageProductDependencies = (
+				C18F66E02D821C5300D0E9FC /* ContentBlockerConverter */,
 			);
 			productName = "wBlock Filters";
 			productReference = C19158F22C49444C00319B63 /* wBlock Filters.appex */;
@@ -211,7 +224,6 @@
 			name = "wBlock Scripts";
 			packageProductDependencies = (
 				C1A990E62D80B17B00D38291 /* ContentBlockerConverter */,
-				C1A990E82D80B17B00D38291 /* ConverterTool */,
 			);
 			productName = "wBlock Scripts";
 			productReference = C1A990C82D80B14400D38291 /* wBlock Scripts.appex */;
@@ -461,6 +473,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Origin";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -470,8 +483,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.0xcube.wBlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -493,6 +509,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Origin";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -502,8 +519,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.0xcube.wBlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -520,6 +540,7 @@
 				INFOPLIST_FILE = "wBlock Filters/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Filters";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -530,8 +551,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.0xcube.wBlock.wBlockFilters;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -548,6 +572,7 @@
 				INFOPLIST_FILE = "wBlock Filters/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Filters";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -558,8 +583,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.0xcube.wBlock.wBlockFilters;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -576,6 +604,7 @@
 				INFOPLIST_FILE = "wBlock Scripts/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -590,8 +619,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.0xcube.wBlock.wBlock-Scripts";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -608,6 +640,7 @@
 				INFOPLIST_FILE = "wBlock Scripts/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -622,8 +655,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.0xcube.wBlock.wBlock-Scripts";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -680,6 +716,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C18F66E02D821C5300D0E9FC /* ContentBlockerConverter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
+			productName = ContentBlockerConverter;
+		};
 		C19159062C49446400319B63 /* ContentBlockerConverter */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
@@ -689,11 +730,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
 			productName = ContentBlockerConverter;
-		};
-		C1A990E82D80B17B00D38291 /* ConverterTool */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C19159052C49446400319B63 /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
-			productName = ConverterTool;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -14,74 +14,56 @@ struct AddCustomFilterView: View {
 
     @State private var filterName: String = ""
     @State private var filterURLString: String = ""
-    @State private var filterDescription: String = "" // Optional description
+    @State private var filterDescription: String = ""
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Add Custom Filter")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-
-            TextField("Filter Name", text: $filterName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-
-            TextField("Filter URL", text: $filterURLString)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-
-            TextField("Description (Optional)", text: $filterDescription)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-
-            Spacer()
-
-            HStack(spacing: 20) {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("Cancel")
-                        .fontWeight(.semibold)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(10)
+        NavigationView {
+            Form {
+                Section {
+                    TextField("Filter Name", text: $filterName)
+                    TextField("Filter URL", text: $filterURLString)
+                        .keyboardType(.URL) // Set keyboard type
+                        .textContentType(.URL) // Set text content type
+                        .autocapitalization(.none) // Disable autocapitalization
+                        .disableAutocorrection(true) // Disable autocorrection
+                    TextField("Description (Optional)", text: $filterDescription)
                 }
-                .buttonStyle(PlainButtonStyle())
 
-                Button(action: {
-                    if let url = URL(string: filterURLString.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                        // Create a new FilterList object
-                        let newFilter = FilterList(
-                            id: UUID(),
-                            name: filterName.trimmingCharacters(in: .whitespacesAndNewlines),
-                            url: url,
-                            category: .custom, isSelected: true, description: filterDescription.trimmingCharacters(in: .whitespacesAndNewlines),
-                            version: ""
-                        )
+                Section {
+                    Button(action: {
+                        if let url = URL(string: filterURLString.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                            // Create a new FilterList object
+                            let newFilter = FilterList(
+                                id: UUID(),
+                                name: filterName.trimmingCharacters(in: .whitespacesAndNewlines),
+                                url: url,
+                                category: .custom, isSelected: true,
+                                description: filterDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+                                version: ""
+                            )
 
-                        // Add it using our new method
-                        filterListManager.addCustomFilterList(newFilter)
-                        presentationMode.wrappedValue.dismiss()
-                    } else {
-                        // Optionally, present an alert for invalid URL
+                            // Add it using our new method
+                            filterListManager.addCustomFilterList(newFilter)
+                            presentationMode.wrappedValue.dismiss()
+                        } else {
+                            // Optionally, present an alert for invalid URL
+                            // This is a good place for an iOS-specific alert
+                        }
+                    }) {
+                        Text("Add")
+                            .frame(maxWidth: .infinity)
                     }
-                }) {
-                    Text("Add")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(10)
+                    .disabled(filterName.isEmpty || filterURLString.isEmpty)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(filterName.isEmpty || filterURLString.isEmpty)
             }
-            .padding(.horizontal)
+            .navigationTitle("Add Custom Filter")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
         }
-        .padding()
-        .frame(width: 450, height: 350)
-        .background(Color(.windowBackgroundColor))
     }
 }
