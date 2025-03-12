@@ -33,6 +33,8 @@
 			<key>Level</key>
 			<string>All</string>
 		</dict>
+		<key>NSExtensionWebsiteAccessPolicyKey</key>
+    		<string>SFSafariWebsiteAccessPolicyNoAccess</string>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.Safari.web-extension</string>
 		<key>NSExtensionPrincipalClass</key>
