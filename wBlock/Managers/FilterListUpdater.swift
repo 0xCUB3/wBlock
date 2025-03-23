@@ -81,14 +81,19 @@ class FilterListUpdater {
                    let match = regex.firstMatch(in: trimmedLine, options: [], range: NSRange(location: 0, length: trimmedLine.utf16.count)),
                    match.numberOfRanges > 1,
                    let range = Range(match.range(at: 1), in: trimmedLine) {
+                    // Raw metadata capture
                     let value = String(trimmedLine[range]).trimmingCharacters(in: .whitespaces)
+                    
+                    // Clean up forward slashes
+                    let cleanValue = value.replacingOccurrences(of: "/", with: " & ")
+                    
                     switch key {
                     case "Title":
-                        title = value
+                        title = cleanValue
                     case "Description":
-                        description = value
+                        description = cleanValue
                     case "Version":
-                        version = value
+                        version = cleanValue
                     default:
                         break
                     }
@@ -96,7 +101,7 @@ class FilterListUpdater {
             }
 
             // Break early if all metadata are found
-            if title != nil && description != nil && version != nil {
+            if title != nil, description != nil, version != nil {
                 break
             }
         }
