@@ -67,8 +67,6 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "AdGuard Experimental Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: .experimental, description: "Contains new rules and fixes not yet included in other filters."),
 
             // --- Foreign Filter Lists ---
-            // Spanish
-            FilterList(id: UUID(), name: "AdGuard Spanish/Portuguese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/9_optimized.txt")!, category: .foreign),
 
             // French
             FilterList(id: UUID(), name: "Liste FR + AdGuard French Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/16_optimized.txt")!, category: .foreign),
