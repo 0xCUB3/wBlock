@@ -22,19 +22,33 @@ struct FilterRowView: View {
     var body: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(filter.name)
-                if !filter.version.isEmpty {
-                    Text("Version: \(filter.version)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                HStack {
+                    Text(filter.name)
+                    
+                    if filter.category != .custom {
+                        Link(destination: filter.url) {
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.gray)
+                        }
+                        .help("View Source")
+                    }
                 }
+                
                 if !filter.description.isEmpty {
                     Text(filter.description)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
+                
+                if !filter.version.isEmpty {
+                    Text("Version: \(filter.version)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
+            
             Spacer()
+
             Toggle("", isOn: toggleBinding)
                 .toggleStyle(SwitchToggleStyle(tint: .blue))
                 .labelsHidden()

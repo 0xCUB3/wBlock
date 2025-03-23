@@ -12,6 +12,8 @@ class FilterListUpdater {
     private let converter: FilterListConverter
     private let applier: FilterListApplier
     private let logManager: LogManager
+    
+    weak var filterListManager: FilterListManager? // Add a weak reference
 
     init(loader: FilterListLoader, converter: FilterListConverter, applier: FilterListApplier, logManager: LogManager) {
         self.loader = loader
@@ -29,6 +31,14 @@ class FilterListUpdater {
                 if let newVersion = await fetchVersionFromURL(for: filter) {
                     updatedVersions.append((index, newVersion))
                     logManager.appendLog("Fetched version for \(filter.name): \(newVersion)")
+
+                    // Update the filter and notify changes:
+                    await MainActor.run {
+                        var updatedFilter = filterLists[index]
+                        updatedFilter.version = newVersion
+                        self.filterListManager?.filterLists[index] = updatedFilter // Directly update
+                        self.filterListManager?.objectWillChange.send() //Crucial
+                    }
                 } else {
                     logManager.appendLog("Failed to fetch version for \(filter.name)")
                 }
@@ -167,6 +177,13 @@ class FilterListUpdater {
             updatedFilter.version = metadata.version ?? "Unknown"
             if let description = metadata.description, !description.isEmpty {
                 updatedFilter.description = description
+            }
+
+            await MainActor.run {
+                if let index = filterListManager?.filterLists.firstIndex(where: {$0.id == updatedFilter.id}) {
+                    filterListManager?.filterLists[index] = updatedFilter
+                    filterListManager?.objectWillChange.send() // Notify
+                }
             }
 
             guard let containerURL = loader.getSharedContainerURL() else {

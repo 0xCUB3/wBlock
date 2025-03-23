@@ -48,6 +48,7 @@ class FilterListManager: ObservableObject {
             applier: applier,
             logManager: logManager
         )
+        updater.filterListManager = self // Provide the reference
 
         setup()
     }
@@ -173,7 +174,9 @@ class FilterListManager: ObservableObject {
         await MainActor.run {
             for (index, version) in updatedVersions {
                 if index < filterLists.count {
-                    filterLists[index].version = version
+                    var updatedFilter = filterLists[index]
+                    updatedFilter.version = version
+                    filterLists[index] = updatedFilter
                 }
             }
             loader.saveFilterLists(filterLists)

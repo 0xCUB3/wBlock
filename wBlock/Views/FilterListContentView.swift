@@ -43,6 +43,7 @@ struct FilterListContentView: View {
                         ForEach(filterListManager.filterLists(for: category)) { filter in
                             FilterRowView(filter: filter, filterListManager: filterListManager)
                                 .padding(.horizontal)
+                                //.id(filter.id.uuidString + filter.version + filter.description) // Optional: Force refresh
                             if filter.id != filterListManager.filterLists(for: category).last?.id {
                                 Divider()
                                     .padding(.leading)
