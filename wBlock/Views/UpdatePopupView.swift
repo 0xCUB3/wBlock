@@ -12,11 +12,9 @@ struct UpdatePopupView: View {
     @State private var selectedFilters: Set<UUID>
     @Binding var isPresented: Bool
     
-    // Initialize with all filters selected
     init(filterListManager: FilterListManager, isPresented: Binding<Bool>) {
         self.filterListManager = filterListManager
         self._isPresented = isPresented
-        // Initialize selectedFilters with all available update IDs
         self._selectedFilters = State(initialValue: Set(filterListManager.availableUpdates.map { $0.id }))
     }
 
@@ -30,28 +28,41 @@ struct UpdatePopupView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            List {
-                ForEach(filterListManager.availableUpdates, id: \.id) { filter in
-                    HStack {
-                        Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(selectedFilters.contains(filter.id) ? .blue : .gray)
-                        Text(filter.name)
-                            .font(.body)
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if selectedFilters.contains(filter.id) {
-                            selectedFilters.remove(filter.id)
-                        } else {
-                            selectedFilters.insert(filter.id)
-                        }
+            List(filterListManager.availableUpdates, id: \.id) { filter in
+                HStack {
+                    Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(selectedFilters.contains(filter.id) ? .blue : .gray)
+                    Text(filter.name)
+                        .font(.body)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if selectedFilters.contains(filter.id) {
+                        selectedFilters.remove(filter.id)
+                    } else {
+                        selectedFilters.insert(filter.id)
                     }
                 }
             }
             .listStyle(PlainListStyle())
             .background(Color(NSColor.textBackgroundColor))
             .cornerRadius(10)
+            .frame(height: filterListManager.isUpdating ? 225 : 300)
+
+            // Show the progress bar below the list while updating
+            if filterListManager.isUpdating {
+                VStack(spacing: 8) {
+                    ProgressView(value: filterListManager.progress, total: 1.0) {
+                        Text("Updating selected filters…")
+                    }
+                    .padding(.horizontal)
+                    
+                    Text("\(Int(filterListManager.progress * 100))% complete")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
 
             HStack(spacing: 20) {
                 Button(action: {
@@ -82,7 +93,8 @@ struct UpdatePopupView: View {
                         .cornerRadius(10)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .disabled(selectedFilters.isEmpty)
+                // Disable while updating or if none are selected
+                .disabled(filterListManager.isUpdating || selectedFilters.isEmpty)
             }
         }
         .padding()
