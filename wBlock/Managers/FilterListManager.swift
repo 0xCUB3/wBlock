@@ -33,12 +33,12 @@ class FilterListManager: ObservableObject {
     private let updater: FilterListUpdater
     private let converter: FilterListConverter
     private let applier: FilterListApplier
-    private let logManager: LogManager
+    private let logManager: ConcurrentLogManager
 
     var customFilterLists: [FilterList] = []
 
     init() {
-        self.logManager = LogManager()
+        self.logManager = ConcurrentLogManager()
         self.loader = FilterListLoader(logManager: logManager)
         self.converter = FilterListConverter(logManager: logManager)
         self.applier = FilterListApplier(logManager: logManager)
@@ -48,7 +48,6 @@ class FilterListManager: ObservableObject {
             applier: applier,
             logManager: logManager
         )
-        updater.filterListManager = self // Provide the reference
 
         setup()
     }
@@ -58,7 +57,9 @@ class FilterListManager: ObservableObject {
         filterLists = loader.loadFilterLists()
         customFilterLists = loader.loadCustomFilterLists() // Add this line
         loader.loadSelectedState(for: &filterLists)
-        applier.checkAndCreateBlockerList(filterLists: filterLists)
+        Task {
+            await applier.checkAndCreateBlockerList(filterLists: filterLists)
+        }
         checkAndEnableFilters()
         clearLogs()
         Task { await updateMissingVersions() }
@@ -174,9 +175,7 @@ class FilterListManager: ObservableObject {
         await MainActor.run {
             for (index, version) in updatedVersions {
                 if index < filterLists.count {
-                    var updatedFilter = filterLists[index]
-                    updatedFilter.version = version
-                    filterLists[index] = updatedFilter
+                    filterLists[index].version = version
                 }
             }
             loader.saveFilterLists(filterLists)
@@ -261,15 +260,21 @@ class FilterListManager: ObservableObject {
     // MARK: - Logging
 
     func appendLog(_ message: String) {
-        logs = logManager.appendLog(message)
+        Task {
+            await ConcurrentLogManager.shared.log(message)
+            logs = await ConcurrentLogManager.shared.getAllLogs()
+        }
     }
 
     func clearLogs() {
-        logs = logManager.clearLogs()
+        Task {
+            await ConcurrentLogManager.shared.clearLogs()
+            logs = await ConcurrentLogManager.shared.getAllLogs() // Should now be empty
+        }
     }
 
-    func loadLogsFromFile() {
-        logs = logManager.loadLogsFromFile()
+    func loadLogsFromFile() async {
+        logs = await ConcurrentLogManager.shared.getAllLogs()
     }
     
     /// Adds a custom filter list
@@ -286,16 +291,18 @@ class FilterListManager: ObservableObject {
             filterLists.append(newFilter)
             loader.saveFilterLists(filterLists)
 
-            logManager.appendLog("Added custom filter: \(newFilter.name)")
+            Task {
+                await ConcurrentLogManager.shared.log("Added custom filter: \(newFilter.name)")
+            }
 
             // Download the filter
             Task {
                 let success = await updater.fetchAndProcessFilter(newFilter)
                 if success {
-                    logManager.appendLog("Successfully downloaded custom filter: \(newFilter.name)")
+                    await ConcurrentLogManager.shared.log("Successfully downloaded custom filter: \(newFilter.name)")
                     hasUnappliedChanges = true
                 } else {
-                    logManager.appendLog("Failed to download custom filter: \(newFilter.name)")
+                    await ConcurrentLogManager.shared.log("Failed to download custom filter: \(newFilter.name)")
 
                     // If download fails, remove the filter
                     await MainActor.run {
@@ -304,7 +311,9 @@ class FilterListManager: ObservableObject {
                 }
             }
         } else {
-            logManager.appendLog("Custom filter with URL \(filter.url) already exists")
+            Task {
+                await ConcurrentLogManager.shared.log("Custom filter with URL \(filter.url) already exists")
+            }
         }
     }
 
@@ -330,8 +339,9 @@ class FilterListManager: ObservableObject {
                 try? FileManager.default.removeItem(at: url)
             }
         }
-
-        logManager.appendLog("Removed custom filter: \(filter.name)")
+        Task {
+            await ConcurrentLogManager.shared.log("Removed custom filter: \(filter.name)")
+        }
         hasUnappliedChanges = true
     }
     
@@ -343,7 +353,9 @@ class FilterListManager: ObservableObject {
                 let customLists = try decoder.decode([FilterList].self, from: data)
                 return customLists
             } catch {
-                logManager.appendLog("Error loading custom filter lists: \(error)")
+                Task {
+                    await ConcurrentLogManager.shared.log("Error loading custom filter lists: \(error)")
+                }
             }
         }
         return []
@@ -356,7 +368,9 @@ class FilterListManager: ObservableObject {
             let data = try encoder.encode(customFilterLists)
             UserDefaults.standard.set(data, forKey: "customFilterLists")
         } catch {
-            logManager.appendLog("Error saving custom filter lists: \(error)")
+            Task {
+                await ConcurrentLogManager.shared.log("Error saving custom filter lists: \(error)")
+            }
         }
     }
 

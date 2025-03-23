@@ -9,9 +9,9 @@ import Foundation
 import ContentBlockerConverter
 
 class FilterListConverter {
-    private let logManager: LogManager
+    private let logManager: ConcurrentLogManager
 
-    init(logManager: LogManager) {
+    init(logManager: ConcurrentLogManager) {
         self.logManager = logManager
     }
 
@@ -22,7 +22,7 @@ class FilterListConverter {
             let result = converter.convertArray(rules: rules, safariVersion: .safari16_4, optimize: true, advancedBlocking: true)
 
             guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.0xcube.wBlock") else {
-                logManager.appendLog("Error: Unable to access shared container")
+                await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
                 return
             }
 
@@ -31,15 +31,21 @@ class FilterListConverter {
                     let jsonArray = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]],
                     let limitedJsonData = try? JSONSerialization.data(withJSONObject: Array(jsonArray.prefix(result.convertedCount)), options: .prettyPrinted)
                     else {
-                        logManager.appendLog("Error: Failed to process JSON data for \(filename)")
-                        return
+                        Task {
+                            await ConcurrentLogManager.shared.log("Error: Failed to process JSON data for \(filename)")
+                        }
+                    return
                     }
 
                 do {
                     try limitedJsonData.write(to: containerURL.appendingPathComponent(filename))
-                    logManager.appendLog("Wrote \(filename)")
+                    Task {
+                        await ConcurrentLogManager.shared.log("Wrote \(filename)")
+                    }
                 } catch {
-                    logManager.appendLog("Error writing \(filename): \(error.localizedDescription)")
+                    Task {
+                        await ConcurrentLogManager.shared.log("Error writing \(filename): \(error.localizedDescription)")
+                    }
                 }
             }
 
@@ -56,10 +62,10 @@ class FilterListConverter {
                 advancedRulesCount = advancedArray.count
             }
 
-            logManager.appendLog("Converted \(filter.name): \(standardRulesCount) standard rules, \(advancedRulesCount) advanced rules")
+            await ConcurrentLogManager.shared.log("Converted \(filter.name): \(standardRulesCount) standard rules, \(advancedRulesCount) advanced rules")
 
         } catch {
-            logManager.appendLog("Error converting \(filter.name): \(error)")
+            await ConcurrentLogManager.shared.log("Error converting \(filter.name): \(error)")
         }
     }
 
@@ -88,7 +94,7 @@ class FilterListConverter {
                         }
                     }
                 } catch {
-                    logManager.appendLog("Error loading rules for \(filter.name): \(error)")
+                    await ConcurrentLogManager.shared.log("Error loading rules for \(filter.name): \(error)")
                 }
             }
         }

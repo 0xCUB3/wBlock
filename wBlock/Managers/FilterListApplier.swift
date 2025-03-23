@@ -11,18 +11,18 @@ import SafariServices
 class FilterListApplier {
     private let contentBlockerIdentifier = "com.0xcube.wBlock.wBlockFilters"
     private let sharedContainerIdentifier = "group.com.0xcube.wBlock"
-    private let logManager: LogManager
+    private let logManager: ConcurrentLogManager
     private let converter: FilterListConverter?
 
-    init(logManager: LogManager, converter: FilterListConverter? = nil) {
+    init(logManager: ConcurrentLogManager, converter: FilterListConverter? = nil) {
         self.logManager = logManager
         self.converter = converter
     }
 
     /// Checks if the blocker list exists and creates it if needed
-    func checkAndCreateBlockerList(filterLists: [FilterList]) {
+    func checkAndCreateBlockerList(filterLists: [FilterList]) async {
         guard let containerURL = getSharedContainerURL() else {
-            logManager.appendLog("Error: Unable to access shared container")
+            await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
             return
         }
 
@@ -30,13 +30,13 @@ class FilterListApplier {
         let advancedBlockingURL = containerURL.appendingPathComponent("advancedBlocking.json")
 
         if !FileManager.default.fileExists(atPath: blockerListURL.path) {
-            logManager.appendLog("blockerList.json not found. Creating it...")
+            await ConcurrentLogManager.shared.log("blockerList.json not found. Creating it...")
             let selectedFilters = filterLists.filter { $0.isSelected }
             var allRules: [[String: Any]] = []
             var advancedRules: [[String: Any]] = []
 
             for filter in selectedFilters {
-                if let (rules, advanced) = loadFilterRules(for: filter) {
+                if let (rules, advanced) = await loadFilterRules(for: filter) {
                     allRules.append(contentsOf: rules)
                     if let advanced = advanced {
                         advancedRules.append(contentsOf: advanced)
@@ -47,7 +47,7 @@ class FilterListApplier {
             saveBlockerList(allRules)
             saveAdvancedBlockerList(advancedRules)
         } else {
-            logManager.appendLog("blockerList.json found.")
+            await ConcurrentLogManager.shared.log("blockerList.json found.")
         }
     }
 
@@ -64,7 +64,7 @@ class FilterListApplier {
         await withTaskGroup(of: (FilterList, [[String: Any]], [[String: Any]]?).self) { group in
             for filter in selectedFilters {
                 group.addTask {
-                    if let (rules, advanced) = self.loadFilterRules(for: filter) {
+                    if let (rules, advanced) = await self.loadFilterRules(for: filter) {
                         return (filter, rules, advanced)
                     }
                     return (filter, [], nil)
@@ -119,13 +119,18 @@ class FilterListApplier {
                     containerDefaults.set(true, forKey: "blockerList")
                     containerDefaults.synchronize()
                 }
-
-                logManager.appendLog("Successfully saved blockerList to file storage (\(rules.count) rules)")
+                Task {
+                    await ConcurrentLogManager.shared.log("Successfully saved blockerList to file storage (\(rules.count) rules)")
+                }
             } else {
-                logManager.appendLog("Error: Unable to serialize blockerList JSON data")
+                Task {
+                    await ConcurrentLogManager.shared.log("Error: Unable to serialize blockerList JSON data")
+                }
             }
         } catch {
-            logManager.appendLog("Error saving blockerList: \(error)")
+            Task {
+                await ConcurrentLogManager.shared.log("Error saving blockerList: \(error)")
+            }
         }
     }
 
@@ -141,13 +146,18 @@ class FilterListApplier {
                     containerDefaults.set(true, forKey: "advancedBlocking")
                     containerDefaults.synchronize()
                 }
-
-                logManager.appendLog("Successfully saved advancedBlocking to file storage (\(rules.count) rules)")
+                Task {
+                    await ConcurrentLogManager.shared.log("Successfully saved advancedBlocking to file storage (\(rules.count) rules)")
+                }
             } else {
-                logManager.appendLog("Error: Unable to serialize advancedBlocking JSON data")
+                Task {
+                    await ConcurrentLogManager.shared.log("Error: Unable to serialize advancedBlocking JSON data")
+                }
             }
         } catch {
-            logManager.appendLog("Error saving advancedBlocking: \(error)")
+            Task {
+                await ConcurrentLogManager.shared.log("Error saving advancedBlocking: \(error)")
+            }
         }
     }
 
@@ -155,17 +165,17 @@ class FilterListApplier {
     func reloadContentBlocker() async {
         do {
             let ruleCount = try (JSONSerialization.jsonObject(with: FileStorage.shared.loadJSON(filename: "blockerList.json").data(using: .utf8)!) as? [[String: Any]])?.count ?? 0
-            logManager.appendLog("Reloading content blocker (\(ruleCount) rules)")
+            await ConcurrentLogManager.shared.log("Reloading content blocker (\(ruleCount) rules)")
 
             try await SFContentBlockerManager.reloadContentBlocker(withIdentifier: contentBlockerIdentifier)
-            logManager.appendLog("Content blocker reloaded successfully")
+            await ConcurrentLogManager.shared.log("Content blocker reloaded successfully")
         } catch {
-            logManager.appendLog("Error reloading content blocker: \(error)")
+            await ConcurrentLogManager.shared.log("Error reloading content blocker: \(error)")
         }
     }
 
     /// Loads filter rules from a JSON file
-    private func loadFilterRules(for filter: FilterList) -> ([[String: Any]], [[String: Any]]?)? {
+    private func loadFilterRules(for filter: FilterList) async -> ([[String: Any]], [[String: Any]]?)? {
         guard let containerURL = getSharedContainerURL() else { return nil }
         let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
         let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
@@ -182,7 +192,7 @@ class FilterListApplier {
 
             return (rules ?? [], advancedRules)
         } catch {
-            logManager.appendLog("Error loading rules for \(filter.name): \(error)")
+            await ConcurrentLogManager.shared.log("Error loading rules for \(filter.name): \(error)")
             return nil
         }
     }

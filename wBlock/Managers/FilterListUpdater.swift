@@ -11,11 +11,11 @@ class FilterListUpdater {
     private let loader: FilterListLoader
     private let converter: FilterListConverter
     private let applier: FilterListApplier
-    private let logManager: LogManager
+    private let logManager: ConcurrentLogManager
     
     weak var filterListManager: FilterListManager? // Add a weak reference
 
-    init(loader: FilterListLoader, converter: FilterListConverter, applier: FilterListApplier, logManager: LogManager) {
+    init(loader: FilterListLoader, converter: FilterListConverter, applier: FilterListApplier, logManager: ConcurrentLogManager) {
         self.loader = loader
         self.converter = converter
         self.applier = applier
@@ -30,7 +30,7 @@ class FilterListUpdater {
             if filter.version.isEmpty && loader.filterFileExists(filter) {
                 if let newVersion = await fetchVersionFromURL(for: filter) {
                     updatedVersions.append((index, newVersion))
-                    logManager.appendLog("Fetched version for \(filter.name): \(newVersion)")
+                    await ConcurrentLogManager.shared.log("Fetched version for \(filter.name): \(newVersion)")
 
                     // Update the filter and notify changes:
                     await MainActor.run {
@@ -40,7 +40,7 @@ class FilterListUpdater {
                         self.filterListManager?.objectWillChange.send() //Crucial
                     }
                 } else {
-                    logManager.appendLog("Failed to fetch version for \(filter.name)")
+                    await ConcurrentLogManager.shared.log("Failed to fetch version for \(filter.name)")
                 }
             }
         }
@@ -53,11 +53,11 @@ class FilterListUpdater {
         do {
             let (data, response) = try await URLSession.shared.data(from: filter.url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                logManager.appendLog("Failed to fetch version from URL for \(filter.name): Invalid response")
+                await ConcurrentLogManager.shared.log("Failed to fetch version from URL for \(filter.name): Invalid response")
                 return nil
             }
             guard let content = String(data: data, encoding: .utf8) else {
-                logManager.appendLog("Unable to parse content from \(filter.url)")
+                await ConcurrentLogManager.shared.log("Unable to parse content from \(filter.url)")
                 return nil
             }
 
@@ -65,7 +65,7 @@ class FilterListUpdater {
             let metadata = parseMetadata(from: content)
             return metadata.version ?? "Unknown"
         } catch {
-            logManager.appendLog("Error fetching version from URL for \(filter.name): \(error.localizedDescription)")
+            await ConcurrentLogManager.shared.log("Error fetching version from URL for \(filter.name): \(error.localizedDescription)")
             return nil
         }
     }
@@ -157,7 +157,7 @@ class FilterListUpdater {
                 return true // If local file doesn't exist, consider it as needing an update
             }
         } catch {
-            logManager.appendLog("Error checking update for \(filter.name): \(error.localizedDescription)")
+            await ConcurrentLogManager.shared.log("Error checking update for \(filter.name): \(error.localizedDescription)")
             return false
         }
     }
@@ -168,7 +168,7 @@ class FilterListUpdater {
             let (data, response) = try await URLSession.shared.data(from: filter.url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
                   let content = String(data: data, encoding: .utf8) else {
-                logManager.appendLog("Failed to fetch \(filter.name)") // More concise logging
+                await ConcurrentLogManager.shared.log("Failed to fetch \(filter.name)") // More concise logging
                 return false
             }
 
@@ -187,7 +187,7 @@ class FilterListUpdater {
             }
 
             guard let containerURL = loader.getSharedContainerURL() else {
-                logManager.appendLog("Error: Unable to access shared container")
+                await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
                 return false
             }
 
@@ -198,7 +198,7 @@ class FilterListUpdater {
             await converter.convertAndSaveRules(filteredRules, for: filter)
             return true
         } catch {
-            logManager.appendLog("Error fetching \(filter.name): \(error)") // More concise logging
+            await ConcurrentLogManager.shared.log("Error fetching \(filter.name): \(error)") // More concise logging
             return false
         }
     }
@@ -233,9 +233,9 @@ class FilterListUpdater {
         }
 
         if !updatedFilters.isEmpty {
-            logManager.appendLog("Found updates for filters: \(updatedFilters.map { $0.name }.joined(separator: ", "))")
+            await ConcurrentLogManager.shared.log("Found updates for filters: \(updatedFilters.map { $0.name }.joined(separator: ", "))")
         } else {
-            logManager.appendLog("No updates found for current filters.")
+            await ConcurrentLogManager.shared.log("No updates found for current filters.")
         }
 
         return updatedFilters
@@ -251,9 +251,9 @@ class FilterListUpdater {
             let success = await fetchAndProcessFilter(filter)
             if success {
                 updatedFilters.append(filter)
-                logManager.appendLog("Successfully updated \(filter.name)")
+                await ConcurrentLogManager.shared.log("Successfully updated \(filter.name)")
             } else {
-                logManager.appendLog("Failed to update \(filter.name)")
+                await ConcurrentLogManager.shared.log("Failed to update \(filter.name)")
             }
             completedSteps += 1
             progressCallback(completedSteps / totalSteps)

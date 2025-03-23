@@ -8,27 +8,33 @@
 import Foundation
 
 class FilterListLoader {
-    private let logManager: LogManager
+    private let logManager: ConcurrentLogManager
     private let customFilterListsKey = "customFilterLists"
     private let sharedContainerIdentifier = "group.com.0xcube.wBlock"
 
-    init(logManager: LogManager) {
+    init(logManager: ConcurrentLogManager) {
         self.logManager = logManager
     }
 
     /// Checks and creates the group folder if it doesn't exist
     func checkAndCreateGroupFolder() {
         guard let containerURL = getSharedContainerURL() else {
-            logManager.appendLog("Error: Unable to access shared container")
+            Task {
+                await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
+            }
             return
         }
 
         if !FileManager.default.fileExists(atPath: containerURL.path) {
             do {
                 try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true, attributes: nil)
-                logManager.appendLog("Created shared container directory")
+                Task {
+                    await ConcurrentLogManager.shared.log("Created shared container directory")
+                }
             } catch {
-                logManager.appendLog("Error creating shared container directory: \(error)")
+                Task {
+                    await ConcurrentLogManager.shared.log("Error creating shared container directory: \(error)")
+                }
             }
         }
     }
@@ -116,7 +122,9 @@ class FilterListLoader {
         if let data = try? JSONEncoder().encode(filterLists) {
             UserDefaults.standard.set(data, forKey: "filterLists")
         } else {
-            logManager.appendLog("Failed to encode filterLists for saving.")
+            Task {
+                await ConcurrentLogManager.shared.log("Failed to encode filterLists for saving.")
+            }
         }
     }
 
@@ -177,7 +185,9 @@ class FilterListLoader {
 
             return (rules ?? [], advancedRules)
         } catch {
-            logManager.appendLog("Error loading rules for \(filter.name): \(error)")
+            Task {
+                await ConcurrentLogManager.shared.log("Error loading rules for \(filter.name): \(error)")
+            }
             return nil
         }
     }

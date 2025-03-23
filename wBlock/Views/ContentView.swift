@@ -29,7 +29,7 @@ struct ContentView: View {
         } detail: {
             FilterListContentView(selectedCategory: selectedCategory, filterListManager: filterListManager)
                 .navigationTitle(selectedCategory.rawValue)
-                .toolbar { // Changed: Use .toolbar { ... }
+                .toolbar {
                     toolbarContent
                 }
         }
@@ -39,7 +39,7 @@ struct ContentView: View {
             UpdatePopupView(filterListManager: filterListManager, isPresented: $filterListManager.showingUpdatePopup)
         }
         .sheet(isPresented: $showingLogs) {
-            LogsView(logs: filterListManager.logs)
+            LogsView()
         }
         .sheet(isPresented: $showingAddFilterSheet) {
             AddCustomFilterView(filterListManager: filterListManager)
