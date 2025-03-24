@@ -10,7 +10,7 @@ import SafariServices
 
 class FilterListApplier {
     private let contentBlockerIdentifier = "com.0xcube.wBlock.wBlockFilters"
-    private let sharedContainerIdentifier = "group.com.0xcube.wBlock"
+    private let sharedContainerIdentifier = "DNP7DGUB7B.wBlock"
     private let logManager: ConcurrentLogManager
     private let converter: FilterListConverter?
 

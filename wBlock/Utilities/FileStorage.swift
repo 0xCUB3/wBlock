@@ -9,7 +9,7 @@ import Foundation
 
 class FileStorage {
     static let shared = FileStorage()
-    private let groupIdentifier = "group.com.0xcube.wBlock"
+    private let groupIdentifier = "DNP7DGUB7B.wBlock"
     
     private lazy var cachedContainerURL: URL? = {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)

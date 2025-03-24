@@ -21,7 +21,7 @@ class FilterListConverter {
             let converter = ContentBlockerConverter()
             let result = converter.convertArray(rules: rules, safariVersion: .safari16_4, optimize: true, advancedBlocking: true)
 
-            guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.0xcube.wBlock") else {
+            guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") else {
                 await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
                 return
             }
@@ -75,7 +75,7 @@ class FilterListConverter {
         var advancedRules: [[String: Any]] = []
 
         for filter in filterLists {
-            if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.0xcube.wBlock") {
+            if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") {
                 let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
                 let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
 

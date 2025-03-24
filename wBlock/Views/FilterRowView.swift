@@ -21,7 +21,7 @@ struct FilterRowView: View {
     
     private var ruleCount: Int {
         guard filter.isSelected else { return 0 } // Only calculate if selected
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.0xcube.wBlock") else { return 0 }
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") else { return 0 }
         
         // Consider both standard and advanced rules
         let standardFileURL = containerURL.appendingPathComponent("\(filter.name).json")

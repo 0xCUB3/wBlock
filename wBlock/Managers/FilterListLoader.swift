@@ -10,7 +10,7 @@ import Foundation
 class FilterListLoader {
     private let logManager: ConcurrentLogManager
     private let customFilterListsKey = "customFilterLists"
-    private let sharedContainerIdentifier = "group.com.0xcube.wBlock"
+    private let sharedContainerIdentifier = "DNP7DGUB7B.wBlock"
 
     init(logManager: ConcurrentLogManager) {
         self.logManager = logManager

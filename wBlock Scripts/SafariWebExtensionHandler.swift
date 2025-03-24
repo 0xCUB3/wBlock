@@ -10,7 +10,7 @@ import SafariServices
 
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     static let logger = Logger(subsystem: "com.0xcube.wBlock.wBlockScripts", category: "SafariWebExtensionHandler")
-    let engine = try? ContentBlockerEngineWrapper(appGroupID: "group.com.0xcube.wBlock")
+    let engine = try? ContentBlockerEngineWrapper(appGroupID: "DNP7DGUB7B.wBlock")
 
     //    func beginRequest(with context: NSExtensionContext) {
     //        guard let item = context.inputItems.first as? NSExtensionItem,

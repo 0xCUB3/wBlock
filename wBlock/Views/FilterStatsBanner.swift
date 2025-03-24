@@ -16,7 +16,7 @@ struct FilterStatsBanner: View {
     }
     
     private var totalRulesCount: Int {
-        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.0xcube.wBlock"),
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock"),
            let data = try? Data(contentsOf: containerURL.appendingPathComponent("blockerList.json")),
            let rules = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
             return rules.count
