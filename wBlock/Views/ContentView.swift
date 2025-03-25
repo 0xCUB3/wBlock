@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var showingLogs = false
     @State private var showingSettings = false
     @State private var showingAddFilterSheet = false
+    @State private var showOnlyEnabledFilters = false
 
     var body: some View {
         NavigationSplitView {
@@ -27,7 +28,7 @@ struct ContentView: View {
             .navigationTitle("Categories")
             .listStyle(SidebarListStyle())
         } detail: {
-            FilterListContentView(selectedCategory: selectedCategory, filterListManager: filterListManager)
+            FilterListContentView(selectedCategory: selectedCategory, filterListManager: filterListManager, showOnlyEnabledFilters: $showOnlyEnabledFilters) // Pass the binding
                 .navigationTitle(selectedCategory.rawValue)
                 .toolbar {
                     toolbarContent
@@ -133,6 +134,15 @@ struct ContentView: View {
                 Image(systemName: "gearshape")
             }
             .help("Settings")
+        }
+        
+        ToolbarItem(placement: .automatic) {
+            Button(action: {
+                showOnlyEnabledFilters.toggle()
+            }) {
+                Image(systemName: showOnlyEnabledFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+            }
+            .help(showOnlyEnabledFilters ? "Show All Filters" : "Show Only Enabled Filters")
         }
 
         ToolbarItem(placement: .automatic) {

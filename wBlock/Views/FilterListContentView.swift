@@ -11,6 +11,7 @@ import SwiftData
 struct FilterListContentView: View {
     let selectedCategory: FilterListCategory
     @ObservedObject var filterListManager: FilterListManager
+    @Binding var showOnlyEnabledFilters: Bool // Add the binding
     
     private let cachedCategories = FilterListCategory.allCases.filter { $0 != .all }
     
@@ -29,55 +30,68 @@ struct FilterListContentView: View {
     
     @ViewBuilder
     private var categoryContent: some View {
-        switch selectedCategory {
+        switch (selectedCategory) {
         case .all:
             ForEach(cachedCategories, id: \.self) { category in
-                if !filterListManager.filterLists(for: category).isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(category.rawValue)
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                        
-                        ForEach(filterListManager.filterLists(for: category)) { filter in
-                            FilterRowView(filter: filter, filterListManager: filterListManager)
-                                .padding(.horizontal)
-                                //.id(filter.id.uuidString + filter.version + filter.description) // Optional: Force refresh
-                            if filter.id != filterListManager.filterLists(for: category).last?.id {
-                                Divider()
-                                    .padding(.leading)
-                            }
-                        }
-                    }
-                    if category != cachedCategories.last {
-                        Divider()
-                            .padding(.vertical, 8)
-                    }
+                let filteredLists = showOnlyEnabledFilters
+                ? filterListManager.filterLists(for: category).filter { $0.isSelected }
+                : filterListManager.filterLists(for: category)
+                
+                if !filteredLists.isEmpty {
+                    categorySection(for: category, filters: filteredLists)
                 }
             }
-            
         case .custom:
-            ForEach(filterListManager.customFilterLists) { filter in
-                FilterRowView(filter: filter, filterListManager: filterListManager)
-                    .padding(.horizontal)
-                
-                if filter.id != filterListManager.customFilterLists.last?.id {
-                    Divider()
-                        .padding(.leading)
-                }
-            }
+            let filteredCustomLists = showOnlyEnabledFilters
+            ? filterListManager.customFilterLists.filter { $0.isSelected }
+            : filterListManager.customFilterLists;
             
-        default:
-            ForEach(filterListManager.filterLists(for: selectedCategory)) { filter in
+            ForEach(filteredCustomLists) { filter in
                 FilterRowView(filter: filter, filterListManager: filterListManager)
                     .padding(.horizontal)
-                
-                if filter.id != filterListManager.filterLists(for: selectedCategory).last?.id {
+                if filter.id != filteredCustomLists.last?.id {
                     Divider()
                         .padding(.leading)
                 }
             }
+        default:
+            let filteredLists = showOnlyEnabledFilters
+            ? filterListManager.filterLists(for: selectedCategory).filter { $0.isSelected }
+            : filterListManager.filterLists(for: selectedCategory)
+            ForEach(filteredLists) { filter in
+                
+                FilterRowView(filter: filter, filterListManager: filterListManager)
+                    .padding(.horizontal)
+                
+                if filter.id != filteredLists.last?.id {
+                    Divider()
+                        .padding(.leading)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func categorySection(for category: FilterListCategory, filters: [FilterList]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(category.rawValue)
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+            
+            ForEach(filters) { filter in
+                FilterRowView(filter: filter, filterListManager: filterListManager)
+                    .padding(.horizontal)
+                if filter.id != filters.last?.id {
+                    Divider()
+                        .padding(.leading)
+                }
+            }
+        }
+        if category != cachedCategories.last {
+            Divider()
+                .padding(.vertical, 8)
         }
     }
 }
