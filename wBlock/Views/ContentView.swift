@@ -13,28 +13,19 @@ struct ContentView: View {
     @EnvironmentObject var updateController: UpdateController
 
     @StateObject private var windowDelegate = WindowDelegate()
-    @State private var selectedCategory: FilterListCategory = .all
     @State private var showingLogs = false
     @State private var showingSettings = false
     @State private var showingAddFilterSheet = false
     @State private var showOnlyEnabledFilters = false
 
     var body: some View {
-        NavigationSplitView {
-            List(FilterListCategory.allCases, id: \.self, selection: $selectedCategory) { category in
-                Text(category.rawValue)
-                    .tag(category)
-            }
-            .navigationTitle("Categories")
-            .listStyle(SidebarListStyle())
-        } detail: {
-            FilterListContentView(selectedCategory: selectedCategory, filterListManager: filterListManager, showOnlyEnabledFilters: $showOnlyEnabledFilters) // Pass the binding
-                .navigationTitle(selectedCategory.rawValue)
+        VStack {
+            FilterListContentView(selectedCategory: .all, filterListManager: filterListManager, showOnlyEnabledFilters: $showOnlyEnabledFilters)
+                .navigationTitle("wBlock")
                 .toolbar {
                     toolbarContent
                 }
         }
-        .navigationSplitViewStyle(.balanced)
         .frame(width: 700, height: 500)
         .sheet(isPresented: $filterListManager.showingUpdatePopup) {
             UpdatePopupView(filterListManager: filterListManager, isPresented: $filterListManager.showingUpdatePopup)
@@ -138,7 +129,7 @@ struct ContentView: View {
         
         ToolbarItem(placement: .automatic) {
             Button(action: {
-                showOnlyEnabledFilters.toggle()
+                showOnlyEnabledFilters.toggle() // Toggle the state
             }) {
                 Image(systemName: showOnlyEnabledFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
             }
