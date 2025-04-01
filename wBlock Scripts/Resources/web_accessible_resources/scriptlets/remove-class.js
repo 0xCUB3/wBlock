@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/remove-class.js
+  // Scriptlets/src/scriptlets/remove-class.js
   var remove_class_exports = {};
   __export(remove_class_exports, {
     removeClass: () => removeClass,
     removeClassNames: () => removeClassNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/throttle.ts
+  // Scriptlets/src/helpers/throttle.ts
   var throttle = (cb, delay) => {
     let wait = false;
     let savedArgs;
@@ -95,7 +95,7 @@ var main = (() => {
     return wrapper;
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var observeDOMChanges = (callback, observeAttrs = false, attrsToObserve = []) => {
     const THROTTLE_DELAY_MS = 20;
     const observer = new MutationObserver(throttle(callbackWrapper, THROTTLE_DELAY_MS));
@@ -126,7 +126,7 @@ var main = (() => {
     connect();
   };
 
-  // src/helpers/parse-flags.ts
+  // Scriptlets/src/helpers/parse-flags.ts
   var parseFlags = (flags) => {
     const FLAGS_DIVIDER = " ";
     const ASAP_FLAG = "asap";
@@ -144,7 +144,7 @@ var main = (() => {
     };
   };
 
-  // src/scriptlets/remove-class.js
+  // Scriptlets/src/scriptlets/remove-class.js
   function removeClass(source, classNames, selector, applying = "asap stay") {
     if (!classNames) {
       return;

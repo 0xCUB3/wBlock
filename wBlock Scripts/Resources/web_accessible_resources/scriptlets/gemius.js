@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/gemius.ts
+  // Scriptlets/src/scriptlets/gemius.ts
   var gemius_exports = {};
   __export(gemius_exports, {
     Gemius: () => Gemius,
     GemiusNames: () => GemiusNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,11 +56,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/gemius.js
+  // Scriptlets/src/redirects/gemius.js
   function Gemius(source) {
     const GemiusPlayer = function() {
     };

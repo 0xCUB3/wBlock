@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/metrika-yandex-watch.ts
+  // Scriptlets/src/scriptlets/metrika-yandex-watch.ts
   var metrika_yandex_watch_exports = {};
   __export(metrika_yandex_watch_exports, {
     metrikaYandexWatch: () => metrikaYandexWatch,
     metrikaYandexWatchNames: () => metrikaYandexWatchNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,12 +56,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopArray = () => [];
 
-  // src/redirects/metrika-yandex-watch.js
+  // Scriptlets/src/redirects/metrika-yandex-watch.js
   function metrikaYandexWatch(source) {
     const cbName = "yandex_metrika_callbacks";
     const asyncCallbackFromOptions = (options = {}) => {

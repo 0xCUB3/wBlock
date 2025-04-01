@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-replace-outbound-text.ts
+  // Scriptlets/src/scriptlets/trusted-replace-outbound-text.ts
   var trusted_replace_outbound_text_exports = {};
   __export(trusted_replace_outbound_text_exports, {
     trustedReplaceOutboundText: () => trustedReplaceOutboundText,
     trustedReplaceOutboundTextNames: () => trustedReplaceOutboundTextNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,12 +73,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -115,7 +115,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/script-source-utils.ts
+  // Scriptlets/src/helpers/script-source-utils.ts
   var shouldAbortInlineOrInjectedScript = (stackMatch, stackTrace) => {
     const INLINE_SCRIPT_STRING = "inlineScript";
     const INJECTED_SCRIPT_STRING = "injectedScript";
@@ -171,7 +171,7 @@ var main = (() => {
     return false;
   };
 
-  // src/helpers/get-wildcard-property-in-chain.ts
+  // Scriptlets/src/helpers/get-wildcard-property-in-chain.ts
   function isKeyInObject(baseObj, path, valueToCheck) {
     const parts = path.split(".");
     const check = (targetObject, pathSegments) => {
@@ -275,7 +275,7 @@ var main = (() => {
     return output;
   }
 
-  // src/helpers/regexp-utils.ts
+  // Scriptlets/src/helpers/regexp-utils.ts
   var getNativeRegexpTest = () => {
     const descriptor = Object.getOwnPropertyDescriptor(RegExp.prototype, "test");
     const nativeRegexTest = descriptor?.value;
@@ -323,7 +323,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/match-stack.ts
+  // Scriptlets/src/helpers/match-stack.ts
   var matchStackTrace = (stackMatch, stackTrace) => {
     if (!stackMatch || stackMatch === "") {
       return true;
@@ -343,7 +343,7 @@ var main = (() => {
     return getNativeRegexpTest().call(stackRegexp, refinedStackTrace);
   };
 
-  // src/helpers/get-property-in-chain.ts
+  // Scriptlets/src/helpers/get-property-in-chain.ts
   function getPropertyInChain(base, chain) {
     const pos = chain.indexOf(".");
     if (pos === -1) {
@@ -368,7 +368,7 @@ var main = (() => {
     return { base, prop, chain };
   }
 
-  // src/scriptlets/trusted-replace-outbound-text.ts
+  // Scriptlets/src/scriptlets/trusted-replace-outbound-text.ts
   function trustedReplaceOutboundText(source, methodPath, textToReplace = "", replacement = "", decodeMethod = "", stack = "", logContent = "") {
     if (!methodPath) {
       return;

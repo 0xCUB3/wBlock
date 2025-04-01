@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/googletagservices-gpt.ts
+  // Scriptlets/src/scriptlets/googletagservices-gpt.ts
   var googletagservices_gpt_exports = {};
   __export(googletagservices_gpt_exports, {
     GoogleTagServicesGpt: () => GoogleTagServicesGpt,
     GoogleTagServicesGptNames: () => GoogleTagServicesGptNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopNull = () => null;
@@ -67,7 +67,7 @@ var main = (() => {
   var noopStr = () => "";
   var noopArray = () => [];
 
-  // src/redirects/googletagservices-gpt.js
+  // Scriptlets/src/redirects/googletagservices-gpt.js
   function GoogleTagServicesGpt(source) {
     const slots = /* @__PURE__ */ new Map();
     const slotsById = /* @__PURE__ */ new Map();

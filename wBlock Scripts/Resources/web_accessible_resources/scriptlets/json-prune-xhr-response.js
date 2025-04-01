@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/json-prune-xhr-response.ts
+  // Scriptlets/src/scriptlets/json-prune-xhr-response.ts
   var json_prune_xhr_response_exports = {};
   __export(json_prune_xhr_response_exports, {
     jsonPruneXhrResponse: () => jsonPruneXhrResponse,
     jsonPruneXhrResponseNames: () => jsonPruneXhrResponseNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,12 +73,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -148,7 +148,7 @@ var main = (() => {
     }).join(" ");
   }
 
-  // src/helpers/script-source-utils.ts
+  // Scriptlets/src/helpers/script-source-utils.ts
   var shouldAbortInlineOrInjectedScript = (stackMatch, stackTrace) => {
     const INLINE_SCRIPT_STRING = "inlineScript";
     const INJECTED_SCRIPT_STRING = "injectedScript";
@@ -204,7 +204,7 @@ var main = (() => {
     return false;
   };
 
-  // src/helpers/get-wildcard-property-in-chain.ts
+  // Scriptlets/src/helpers/get-wildcard-property-in-chain.ts
   function isKeyInObject(baseObj, path, valueToCheck) {
     const parts = path.split(".");
     const check = (targetObject, pathSegments) => {
@@ -308,7 +308,7 @@ var main = (() => {
     return output;
   }
 
-  // src/helpers/regexp-utils.ts
+  // Scriptlets/src/helpers/regexp-utils.ts
   var getNativeRegexpTest = () => {
     const descriptor = Object.getOwnPropertyDescriptor(RegExp.prototype, "test");
     const nativeRegexTest = descriptor?.value;
@@ -356,7 +356,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/match-stack.ts
+  // Scriptlets/src/helpers/match-stack.ts
   var matchStackTrace = (stackMatch, stackTrace) => {
     if (!stackMatch || stackMatch === "") {
       return true;
@@ -376,7 +376,7 @@ var main = (() => {
     return getNativeRegexpTest().call(stackRegexp, refinedStackTrace);
   };
 
-  // src/helpers/prune-utils.ts
+  // Scriptlets/src/helpers/prune-utils.ts
   function isPruningNeeded(source, root, prunePaths, requiredPaths, stack, nativeObjects) {
     if (!root) {
       return false;
@@ -461,18 +461,22 @@ ${new Error().stack}`,
         const ownerObjArr = getWildcardPropertyInChain(root, pathToCheck, true, [], valueToCheck);
         for (let i = ownerObjArr.length - 1; i >= 0; i -= 1) {
           const ownerObj = ownerObjArr[i];
-          if (ownerObj !== void 0 && ownerObj.base) {
-            if (Array.isArray(ownerObj.base)) {
-              try {
-                const index = Number(ownerObj.prop);
-                ownerObj.base.splice(index, 1);
-              } catch (error) {
-                console.error("Error while deleting array element", error);
-              }
-            } else {
-              delete ownerObj.base[ownerObj.prop];
+          if (ownerObj === void 0 || !ownerObj.base) {
+            continue;
+          }
+          hit(source);
+          if (!Array.isArray(ownerObj.base)) {
+            delete ownerObj.base[ownerObj.prop];
+            continue;
+          }
+          try {
+            const index = Number(ownerObj.prop);
+            if (Number.isNaN(index)) {
+              continue;
             }
-            hit(source);
+            ownerObj.base.splice(index, 1);
+          } catch (error) {
+            console.error("Error while deleting array element", error);
           }
         }
       });
@@ -510,7 +514,7 @@ ${new Error().stack}`,
     return [];
   };
 
-  // src/helpers/request-utils.ts
+  // Scriptlets/src/helpers/request-utils.ts
   var getRequestProps = () => {
     return [
       "url",
@@ -569,7 +573,7 @@ ${new Error().stack}`,
     return matchData;
   };
 
-  // src/helpers/match-request-props.ts
+  // Scriptlets/src/helpers/match-request-props.ts
   var matchRequestProps = (source, propsToMatch, requestData) => {
     if (propsToMatch === "" || propsToMatch === "*") {
       return true;
@@ -591,7 +595,7 @@ ${new Error().stack}`,
     return isMatched;
   };
 
-  // src/scriptlets/json-prune-xhr-response.ts
+  // Scriptlets/src/scriptlets/json-prune-xhr-response.ts
   function jsonPruneXhrResponse(source, propsToRemove, obligatoryProps, propsToMatch = "", stack = "") {
     if (typeof Proxy === "undefined") {
       return;

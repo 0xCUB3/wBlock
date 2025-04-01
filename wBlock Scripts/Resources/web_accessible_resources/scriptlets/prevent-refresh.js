@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-refresh.js
+  // Scriptlets/src/scriptlets/prevent-refresh.js
   var prevent_refresh_exports = {};
   __export(prevent_refresh_exports, {
     preventRefresh: () => preventRefresh,
     preventRefreshNames: () => preventRefreshNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
@@ -36,7 +36,7 @@ var main = (() => {
     return validDelay;
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -53,7 +53,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -84,7 +84,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/prevent-refresh.js
+  // Scriptlets/src/scriptlets/prevent-refresh.js
   function preventRefresh(source, delaySec) {
     const getMetaElements = () => {
       let metaNodes = [];

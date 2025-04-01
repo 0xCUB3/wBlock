@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/hide-in-shadow-dom.js
+  // Scriptlets/src/scriptlets/hide-in-shadow-dom.js
   var hide_in_shadow_dom_exports = {};
   __export(hide_in_shadow_dom_exports, {
     hideInShadowDom: () => hideInShadowDom,
     hideInShadowDomNames: () => hideInShadowDomNames
   });
 
-  // src/helpers/array-utils.ts
+  // Scriptlets/src/helpers/array-utils.ts
   var flatten = (input) => {
     const stack = [];
     input.forEach((el) => stack.push(el));
@@ -41,7 +41,7 @@ var main = (() => {
     return res.reverse();
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -72,7 +72,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/open-shadow-dom-utils.ts
+  // Scriptlets/src/helpers/open-shadow-dom-utils.ts
   var findHostElements = (rootElement) => {
     const hosts = [];
     if (rootElement) {
@@ -100,7 +100,7 @@ var main = (() => {
     return { targets, innerHosts };
   };
 
-  // src/helpers/throttle.ts
+  // Scriptlets/src/helpers/throttle.ts
   var throttle = (cb, delay) => {
     let wait = false;
     let savedArgs;
@@ -122,7 +122,7 @@ var main = (() => {
     return wrapper;
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var observeDOMChanges = (callback, observeAttrs = false, attrsToObserve = []) => {
     const THROTTLE_DELAY_MS = 20;
     const observer = new MutationObserver(throttle(callbackWrapper, THROTTLE_DELAY_MS));
@@ -153,7 +153,7 @@ var main = (() => {
     connect();
   };
 
-  // src/scriptlets/hide-in-shadow-dom.js
+  // Scriptlets/src/scriptlets/hide-in-shadow-dom.js
   function hideInShadowDom(source, selector, baseSelector) {
     if (!Element.prototype.attachShadow) {
       return;

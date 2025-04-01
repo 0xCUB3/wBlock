@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/log-eval.js
+  // Scriptlets/src/scriptlets/log-eval.js
   var log_eval_exports = {};
   __export(log_eval_exports, {
     logEval: () => logEval,
     logEvalNames: () => logEvalNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/log-eval.js
+  // Scriptlets/src/scriptlets/log-eval.js
   function logEval(source) {
     const nativeEval = window.eval;
     function evalWrapper(str) {

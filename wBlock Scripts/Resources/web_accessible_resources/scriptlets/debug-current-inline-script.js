@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/debug-current-inline-script.js
+  // Scriptlets/src/scriptlets/debug-current-inline-script.js
   var debug_current_inline_script_exports = {};
   __export(debug_current_inline_script_exports, {
     debugCurrentInlineScript: () => debugCurrentInlineScript,
     debugCurrentInlineScriptNames: () => debugCurrentInlineScriptNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
@@ -86,7 +86,7 @@ var main = (() => {
     return true;
   }
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -123,12 +123,12 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/random-id.ts
+  // Scriptlets/src/helpers/random-id.ts
   function randomId() {
     return Math.random().toString(36).slice(2, 9);
   }
 
-  // src/helpers/create-on-error-handler.ts
+  // Scriptlets/src/helpers/create-on-error-handler.ts
   function createOnErrorHandler(rid) {
     const nativeOnError = window.onerror;
     return function onError(error, ...args) {
@@ -142,7 +142,7 @@ var main = (() => {
     };
   }
 
-  // src/helpers/get-property-in-chain.ts
+  // Scriptlets/src/helpers/get-property-in-chain.ts
   function getPropertyInChain(base, chain) {
     const pos = chain.indexOf(".");
     if (pos === -1) {
@@ -167,7 +167,7 @@ var main = (() => {
     return { base, prop, chain };
   }
 
-  // src/scriptlets/debug-current-inline-script.js
+  // Scriptlets/src/scriptlets/debug-current-inline-script.js
   function debugCurrentInlineScript(source, property, search) {
     const searchRegexp = toRegExp(search);
     const rid = randomId();

@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-xhr.js
+  // Scriptlets/src/scriptlets/prevent-xhr.js
   var prevent_xhr_exports = {};
   __export(prevent_xhr_exports, {
     preventXHR: () => preventXHR,
     preventXHRNames: () => preventXHRNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
@@ -45,7 +45,7 @@ var main = (() => {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -62,7 +62,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -93,12 +93,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -206,7 +206,7 @@ var main = (() => {
     return customResponse;
   }
 
-  // src/helpers/request-utils.ts
+  // Scriptlets/src/helpers/request-utils.ts
   var getRequestProps = () => {
     return [
       "url",
@@ -265,7 +265,7 @@ var main = (() => {
     return matchData;
   };
 
-  // src/helpers/match-request-props.ts
+  // Scriptlets/src/helpers/match-request-props.ts
   var matchRequestProps = (source, propsToMatch, requestData) => {
     if (propsToMatch === "" || propsToMatch === "*") {
       return true;
@@ -287,7 +287,7 @@ var main = (() => {
     return isMatched;
   };
 
-  // src/scriptlets/prevent-xhr.js
+  // Scriptlets/src/scriptlets/prevent-xhr.js
   function preventXHR(source, propsToMatch, customResponseText) {
     if (typeof Proxy === "undefined") {
       return;

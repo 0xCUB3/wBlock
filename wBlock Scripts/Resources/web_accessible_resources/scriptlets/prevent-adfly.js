@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-adfly.js
+  // Scriptlets/src/scriptlets/prevent-adfly.js
   var prevent_adfly_exports = {};
   __export(prevent_adfly_exports, {
     preventAdfly: () => preventAdfly,
     preventAdflyNames: () => preventAdflyNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   function setPropertyAccess(object, property, descriptor) {
     const currentDescriptor = Object.getOwnPropertyDescriptor(object, property);
     if (currentDescriptor && !currentDescriptor.configurable) {
@@ -83,7 +83,7 @@ var main = (() => {
     return true;
   }
 
-  // src/scriptlets/prevent-adfly.js
+  // Scriptlets/src/scriptlets/prevent-adfly.js
   function preventAdfly(source) {
     const isDigit = (data) => /^\d$/.test(data);
     const handler = function(encodedURL) {

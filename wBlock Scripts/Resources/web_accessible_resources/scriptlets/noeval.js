@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/noeval.js
+  // Scriptlets/src/scriptlets/noeval.js
   var noeval_exports = {};
   __export(noeval_exports, {
     noeval: () => noeval,
     noevalNames: () => noevalNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/noeval.js
+  // Scriptlets/src/scriptlets/noeval.js
   function noeval(source) {
     window.eval = function evalWrapper(s) {
       hit(source);

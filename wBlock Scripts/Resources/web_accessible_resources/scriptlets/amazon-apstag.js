@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/amazon-apstag.ts
+  // Scriptlets/src/scriptlets/amazon-apstag.ts
   var amazon_apstag_exports = {};
   __export(amazon_apstag_exports, {
     AmazonApstag: () => AmazonApstag,
     AmazonApstagNames: () => AmazonApstagNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,11 +56,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/amazon-apstag.js
+  // Scriptlets/src/redirects/amazon-apstag.js
   function AmazonApstag(source) {
     const apstagWrapper = {
       fetchBids(a, b) {

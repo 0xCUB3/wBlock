@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/close-window.js
+  // Scriptlets/src/scriptlets/close-window.js
   var close_window_exports = {};
   __export(close_window_exports, {
     forceWindowClose: () => forceWindowClose,
     forceWindowCloseNames: () => forceWindowCloseNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -110,7 +110,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/scriptlets/close-window.js
+  // Scriptlets/src/scriptlets/close-window.js
   function forceWindowClose(source, path = "") {
     if (typeof window.close !== "function") {
       const message = "window.close() is not a function so 'close-window' scriptlet is unavailable";

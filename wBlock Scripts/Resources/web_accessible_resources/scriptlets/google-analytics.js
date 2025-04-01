@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/google-analytics.ts
+  // Scriptlets/src/scriptlets/google-analytics.ts
   var google_analytics_exports = {};
   __export(google_analytics_exports, {
     GoogleAnalytics: () => GoogleAnalytics,
     GoogleAnalyticsNames: () => GoogleAnalyticsNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,13 +56,13 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopNull = () => null;
   var noopArray = () => [];
 
-  // src/redirects/google-analytics.js
+  // Scriptlets/src/redirects/google-analytics.js
   function GoogleAnalytics(source) {
     const Tracker = function() {
     };

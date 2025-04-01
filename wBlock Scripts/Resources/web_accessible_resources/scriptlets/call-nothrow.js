@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/call-nothrow.js
+  // Scriptlets/src/scriptlets/call-nothrow.js
   var call_nothrow_exports = {};
   __export(call_nothrow_exports, {
     callNoThrow: () => callNoThrow,
     callNoThrowNames: () => callNoThrowNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,12 +73,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/get-property-in-chain.ts
+  // Scriptlets/src/helpers/get-property-in-chain.ts
   function getPropertyInChain(base, chain) {
     const pos = chain.indexOf(".");
     if (pos === -1) {
@@ -103,7 +103,7 @@ var main = (() => {
     return { base, prop, chain };
   }
 
-  // src/scriptlets/call-nothrow.js
+  // Scriptlets/src/scriptlets/call-nothrow.js
   function callNoThrow(source, functionName) {
     if (!functionName) {
       return;

@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/googlesyndication-adsbygoogle.ts
+  // Scriptlets/src/scriptlets/googlesyndication-adsbygoogle.ts
   var googlesyndication_adsbygoogle_exports = {};
   __export(googlesyndication_adsbygoogle_exports, {
     GoogleSyndicationAdsByGoogle: () => GoogleSyndicationAdsByGoogle,
     GoogleSyndicationAdsByGoogleNames: () => GoogleSyndicationAdsByGoogleNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/redirects/googlesyndication-adsbygoogle.js
+  // Scriptlets/src/redirects/googlesyndication-adsbygoogle.js
   function GoogleSyndicationAdsByGoogle(source) {
     window.adsbygoogle = {
       // https://github.com/AdguardTeam/Scriptlets/issues/113

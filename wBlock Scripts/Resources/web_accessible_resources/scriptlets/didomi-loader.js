@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/didomi-loader.ts
+  // Scriptlets/src/scriptlets/didomi-loader.ts
   var didomi_loader_exports = {};
   __export(didomi_loader_exports, {
     DidomiLoader: () => DidomiLoader,
     DidomiLoaderNames: () => DidomiLoaderNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,14 +56,14 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var trueFunc = () => true;
   var falseFunc = () => false;
   var noopArray = () => [];
 
-  // src/redirects/didomi-loader.js
+  // Scriptlets/src/redirects/didomi-loader.js
   function DidomiLoader(source) {
     function UserConsentStatusForVendorSubscribe() {
     }

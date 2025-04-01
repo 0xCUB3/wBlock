@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/no-topics.js
+  // Scriptlets/src/scriptlets/no-topics.js
   var no_topics_exports = {};
   __export(no_topics_exports, {
     noTopics: () => noTopics,
     noTopicsNames: () => noTopicsNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopPromiseResolve = (responseBody = "{}", responseUrl = "", responseType = "basic") => {
     if (typeof Response === "undefined") {
       return;
@@ -83,7 +83,7 @@ var main = (() => {
     return Promise.resolve(response);
   };
 
-  // src/scriptlets/no-topics.js
+  // Scriptlets/src/scriptlets/no-topics.js
   function noTopics(source) {
     const TOPICS_PROPERTY_NAME = "browsingTopics";
     if (Document instanceof Object === false) {

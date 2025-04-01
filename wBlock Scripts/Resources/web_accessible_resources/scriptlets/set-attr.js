@@ -18,20 +18,20 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/set-attr.js
+  // Scriptlets/src/scriptlets/set-attr.js
   var set_attr_exports = {};
   __export(set_attr_exports, {
     setAttr: () => setAttr,
     setAttrNames: () => setAttrNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -48,7 +48,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -79,7 +79,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/attribute-utils.ts
+  // Scriptlets/src/helpers/attribute-utils.ts
   var defaultAttributeSetter = (elem, attribute, value) => elem.setAttribute(attribute, value);
   var setAttributeBySelector = (source, selector, attribute, value, attributeSetter = defaultAttributeSetter) => {
     let elements;
@@ -100,12 +100,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   function objectToString(obj) {
     if (!obj || typeof obj !== "object") {
       return String(obj);
@@ -139,7 +139,7 @@ var main = (() => {
     return output;
   };
 
-  // src/helpers/throttle.ts
+  // Scriptlets/src/helpers/throttle.ts
   var throttle = (cb, delay) => {
     let wait = false;
     let savedArgs;
@@ -161,7 +161,7 @@ var main = (() => {
     return wrapper;
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var observeDOMChanges = (callback, observeAttrs = false, attrsToObserve = []) => {
     const THROTTLE_DELAY_MS = 20;
     const observer = new MutationObserver(throttle(callbackWrapper, THROTTLE_DELAY_MS));
@@ -192,7 +192,7 @@ var main = (() => {
     connect();
   };
 
-  // src/scriptlets/set-attr.js
+  // Scriptlets/src/scriptlets/set-attr.js
   function setAttr(source, selector, attr, value = "") {
     if (!selector || !attr) {
       return;

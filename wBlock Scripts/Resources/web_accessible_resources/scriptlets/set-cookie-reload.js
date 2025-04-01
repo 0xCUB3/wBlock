@@ -18,20 +18,20 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/set-cookie-reload.js
+  // Scriptlets/src/scriptlets/set-cookie-reload.js
   var set_cookie_reload_exports = {};
   __export(set_cookie_reload_exports, {
     setCookieReload: () => setCookieReload,
     setCookieReloadNames: () => setCookieReloadNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -48,7 +48,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -79,7 +79,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/cookie-utils.ts
+  // Scriptlets/src/helpers/cookie-utils.ts
   var isValidCookiePath = (rawPath) => rawPath === "/" || rawPath === "none";
   var getCookiePath = (rawPath) => {
     if (rawPath === "/") {
@@ -185,7 +185,7 @@ var main = (() => {
     });
   };
 
-  // src/scriptlets/set-cookie-reload.js
+  // Scriptlets/src/scriptlets/set-cookie-reload.js
   function setCookieReload(source, name, value, path = "/", domain = "") {
     if (isCookieSetWithValue(document.cookie, name, value)) {
       return;

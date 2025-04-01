@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/evaldata-prune.js
+  // Scriptlets/src/scriptlets/evaldata-prune.js
   var evaldata_prune_exports = {};
   __export(evaldata_prune_exports, {
     evalDataPrune: () => evalDataPrune,
     evalDataPruneNames: () => evalDataPruneNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -110,7 +110,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/script-source-utils.ts
+  // Scriptlets/src/helpers/script-source-utils.ts
   var shouldAbortInlineOrInjectedScript = (stackMatch, stackTrace) => {
     const INLINE_SCRIPT_STRING = "inlineScript";
     const INJECTED_SCRIPT_STRING = "injectedScript";
@@ -166,7 +166,7 @@ var main = (() => {
     return false;
   };
 
-  // src/helpers/get-wildcard-property-in-chain.ts
+  // Scriptlets/src/helpers/get-wildcard-property-in-chain.ts
   function isKeyInObject(baseObj, path, valueToCheck) {
     const parts = path.split(".");
     const check = (targetObject, pathSegments) => {
@@ -270,7 +270,7 @@ var main = (() => {
     return output;
   }
 
-  // src/helpers/regexp-utils.ts
+  // Scriptlets/src/helpers/regexp-utils.ts
   var getNativeRegexpTest = () => {
     const descriptor = Object.getOwnPropertyDescriptor(RegExp.prototype, "test");
     const nativeRegexTest = descriptor?.value;
@@ -318,7 +318,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/match-stack.ts
+  // Scriptlets/src/helpers/match-stack.ts
   var matchStackTrace = (stackMatch, stackTrace) => {
     if (!stackMatch || stackMatch === "") {
       return true;
@@ -338,7 +338,7 @@ var main = (() => {
     return getNativeRegexpTest().call(stackRegexp, refinedStackTrace);
   };
 
-  // src/helpers/prune-utils.ts
+  // Scriptlets/src/helpers/prune-utils.ts
   function isPruningNeeded(source, root, prunePaths, requiredPaths, stack, nativeObjects) {
     if (!root) {
       return false;
@@ -423,18 +423,22 @@ ${new Error().stack}`,
         const ownerObjArr = getWildcardPropertyInChain(root, pathToCheck, true, [], valueToCheck);
         for (let i = ownerObjArr.length - 1; i >= 0; i -= 1) {
           const ownerObj = ownerObjArr[i];
-          if (ownerObj !== void 0 && ownerObj.base) {
-            if (Array.isArray(ownerObj.base)) {
-              try {
-                const index = Number(ownerObj.prop);
-                ownerObj.base.splice(index, 1);
-              } catch (error) {
-                console.error("Error while deleting array element", error);
-              }
-            } else {
-              delete ownerObj.base[ownerObj.prop];
+          if (ownerObj === void 0 || !ownerObj.base) {
+            continue;
+          }
+          hit(source);
+          if (!Array.isArray(ownerObj.base)) {
+            delete ownerObj.base[ownerObj.prop];
+            continue;
+          }
+          try {
+            const index = Number(ownerObj.prop);
+            if (Number.isNaN(index)) {
+              continue;
             }
-            hit(source);
+            ownerObj.base.splice(index, 1);
+          } catch (error) {
+            console.error("Error while deleting array element", error);
           }
         }
       });
@@ -472,7 +476,7 @@ ${new Error().stack}`,
     return [];
   };
 
-  // src/scriptlets/evaldata-prune.js
+  // Scriptlets/src/scriptlets/evaldata-prune.js
   function evalDataPrune(source, propsToRemove, requiredInitialProps, stack) {
     const prunePaths = getPrunePath(propsToRemove);
     const requiredPaths = getPrunePath(requiredInitialProps);

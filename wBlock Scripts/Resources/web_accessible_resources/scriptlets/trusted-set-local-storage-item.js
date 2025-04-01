@@ -18,20 +18,20 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-set-local-storage-item.js
+  // Scriptlets/src/scriptlets/trusted-set-local-storage-item.js
   var trusted_set_local_storage_item_exports = {};
   __export(trusted_set_local_storage_item_exports, {
     trustedSetLocalStorageItem: () => trustedSetLocalStorageItem,
     trustedSetLocalStorageItemNames: () => trustedSetLocalStorageItemNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -48,7 +48,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -79,7 +79,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/storage-utils.ts
+  // Scriptlets/src/helpers/storage-utils.ts
   var setStorageItem = (source, storage, key, value) => {
     try {
       storage.setItem(key, value);
@@ -89,7 +89,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/parse-keyword-value.ts
+  // Scriptlets/src/helpers/parse-keyword-value.ts
   var parseKeywordValue = (rawValue) => {
     const NOW_VALUE_KEYWORD = "$now$";
     const CURRENT_DATE_KEYWORD = "$currentDate$";
@@ -105,7 +105,7 @@ var main = (() => {
     return parsedValue;
   };
 
-  // src/scriptlets/trusted-set-local-storage-item.js
+  // Scriptlets/src/scriptlets/trusted-set-local-storage-item.js
   function trustedSetLocalStorageItem(source, key, value) {
     if (typeof key === "undefined") {
       logMessage(source, "Item key should be specified");

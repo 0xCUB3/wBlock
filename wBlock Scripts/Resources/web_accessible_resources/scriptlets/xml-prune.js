@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/xml-prune.js
+  // Scriptlets/src/scriptlets/xml-prune.js
   var xml_prune_exports = {};
   __export(xml_prune_exports, {
     xmlPrune: () => xmlPrune,
     xmlPruneNames: () => xmlPruneNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,12 +73,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -148,7 +148,7 @@ var main = (() => {
     }).join(" ");
   }
 
-  // src/helpers/request-utils.ts
+  // Scriptlets/src/helpers/request-utils.ts
   var getRequestProps = () => {
     return [
       "url",
@@ -207,7 +207,7 @@ var main = (() => {
     return matchData;
   };
 
-  // src/helpers/match-request-props.ts
+  // Scriptlets/src/helpers/match-request-props.ts
   var matchRequestProps = (source, propsToMatch, requestData) => {
     if (propsToMatch === "" || propsToMatch === "*") {
       return true;
@@ -229,7 +229,7 @@ var main = (() => {
     return isMatched;
   };
 
-  // src/scriptlets/xml-prune.js
+  // Scriptlets/src/scriptlets/xml-prune.js
   function xmlPrune(source, propsToRemove, optionalProp = "", urlToMatch = "", verbose = false) {
     if (typeof Reflect === "undefined" || typeof fetch === "undefined" || typeof Proxy === "undefined" || typeof Response === "undefined") {
       return;

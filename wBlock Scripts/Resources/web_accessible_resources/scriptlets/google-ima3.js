@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/google-ima3.ts
+  // Scriptlets/src/scriptlets/google-ima3.ts
   var google_ima3_exports = {};
   __export(google_ima3_exports, {
     GoogleIma3: () => GoogleIma3,
     GoogleIma3Names: () => GoogleIma3Names
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,11 +73,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/google-ima3.js
+  // Scriptlets/src/redirects/google-ima3.js
   function GoogleIma3(source) {
     const VERSION = "3.453.0";
     const ima = {};

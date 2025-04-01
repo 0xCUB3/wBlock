@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/fingerprintjs3.ts
+  // Scriptlets/src/scriptlets/fingerprintjs3.ts
   var fingerprintjs3_exports = {};
   __export(fingerprintjs3_exports, {
     Fingerprintjs3: () => Fingerprintjs3,
     Fingerprintjs3Names: () => Fingerprintjs3Names
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,10 +56,10 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopStr = () => "";
 
-  // src/redirects/fingerprintjs3.js
+  // Scriptlets/src/redirects/fingerprintjs3.js
   function Fingerprintjs3(source) {
     const visitorId = (() => {
       let id = "";

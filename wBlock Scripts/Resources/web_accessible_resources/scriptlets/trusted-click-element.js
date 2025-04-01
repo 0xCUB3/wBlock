@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-click-element.ts
+  // Scriptlets/src/scriptlets/trusted-click-element.ts
   var trusted_click_element_exports = {};
   __export(trusted_click_element_exports, {
     trustedClickElement: () => trustedClickElement,
     trustedClickElementNames: () => trustedClickElementNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/cookie-utils.ts
+  // Scriptlets/src/helpers/cookie-utils.ts
   var parseCookieString = (cookieString) => {
     const COOKIE_DELIMITER = "=";
     const COOKIE_PAIRS_DELIMITER = ";";
@@ -94,7 +94,7 @@ var main = (() => {
     return cookieData;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -138,7 +138,7 @@ var main = (() => {
     return { isInvertedMatch, matchRegexp, matchValue };
   };
 
-  // src/helpers/open-shadow-dom-utils.ts
+  // Scriptlets/src/helpers/open-shadow-dom-utils.ts
   function doesElementContainText(element, matchRegexp) {
     const { textContent } = element;
     if (!textContent) {
@@ -173,7 +173,7 @@ var main = (() => {
     return queryShadowSelector(shadowRootSelector, elem.shadowRoot, textContent);
   }
 
-  // src/helpers/throttle.ts
+  // Scriptlets/src/helpers/throttle.ts
   var throttle = (cb, delay) => {
     let wait = false;
     let savedArgs;
@@ -195,7 +195,7 @@ var main = (() => {
     return wrapper;
   };
 
-  // src/scriptlets/trusted-click-element.ts
+  // Scriptlets/src/scriptlets/trusted-click-element.ts
   function trustedClickElement(source, selectors, extraMatch = "", delay = NaN, reload = "") {
     if (!selectors) {
       return;

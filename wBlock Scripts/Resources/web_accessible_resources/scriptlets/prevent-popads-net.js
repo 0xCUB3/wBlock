@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-popads-net.js
+  // Scriptlets/src/scriptlets/prevent-popads-net.js
   var prevent_popads_net_exports = {};
   __export(prevent_popads_net_exports, {
     preventPopadsNet: () => preventPopadsNet,
     preventPopadsNetNames: () => preventPopadsNetNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,12 +56,12 @@ var main = (() => {
     }
   };
 
-  // src/helpers/random-id.ts
+  // Scriptlets/src/helpers/random-id.ts
   function randomId() {
     return Math.random().toString(36).slice(2, 9);
   }
 
-  // src/helpers/create-on-error-handler.ts
+  // Scriptlets/src/helpers/create-on-error-handler.ts
   function createOnErrorHandler(rid) {
     const nativeOnError = window.onerror;
     return function onError(error, ...args) {
@@ -75,7 +75,7 @@ var main = (() => {
     };
   }
 
-  // src/scriptlets/prevent-popads-net.js
+  // Scriptlets/src/scriptlets/prevent-popads-net.js
   function preventPopadsNet(source) {
     const rid = randomId();
     const throwError = () => {

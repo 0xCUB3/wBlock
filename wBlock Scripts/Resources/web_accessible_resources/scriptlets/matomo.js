@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/matomo.ts
+  // Scriptlets/src/scriptlets/matomo.ts
   var matomo_exports = {};
   __export(matomo_exports, {
     Matomo: () => Matomo,
     MatomoNames: () => MatomoNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,11 +56,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/matomo.js
+  // Scriptlets/src/redirects/matomo.js
   function Matomo(source) {
     const Tracker = function() {
     };

@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/spoof-css.js
+  // Scriptlets/src/scriptlets/spoof-css.js
   var spoof_css_exports = {};
   __export(spoof_css_exports, {
     spoofCSS: () => spoofCSS,
     spoofCSSNames: () => spoofCSSNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/spoof-css.js
+  // Scriptlets/src/scriptlets/spoof-css.js
   function spoofCSS(source, selectors, cssPropertyName, cssPropertyValue) {
     if (!selectors) {
       return;

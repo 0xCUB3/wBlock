@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/debug-on-property-write.js
+  // Scriptlets/src/scriptlets/debug-on-property-write.js
   var debug_on_property_write_exports = {};
   __export(debug_on_property_write_exports, {
     debugOnPropertyWrite: () => debugOnPropertyWrite,
     debugOnPropertyWriteNames: () => debugOnPropertyWriteNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
@@ -69,12 +69,12 @@ var main = (() => {
     return true;
   }
 
-  // src/helpers/random-id.ts
+  // Scriptlets/src/helpers/random-id.ts
   function randomId() {
     return Math.random().toString(36).slice(2, 9);
   }
 
-  // src/helpers/create-on-error-handler.ts
+  // Scriptlets/src/helpers/create-on-error-handler.ts
   function createOnErrorHandler(rid) {
     const nativeOnError = window.onerror;
     return function onError(error, ...args) {
@@ -88,7 +88,7 @@ var main = (() => {
     };
   }
 
-  // src/helpers/get-property-in-chain.ts
+  // Scriptlets/src/helpers/get-property-in-chain.ts
   function getPropertyInChain(base, chain) {
     const pos = chain.indexOf(".");
     if (pos === -1) {
@@ -113,7 +113,7 @@ var main = (() => {
     return { base, prop, chain };
   }
 
-  // src/scriptlets/debug-on-property-write.js
+  // Scriptlets/src/scriptlets/debug-on-property-write.js
   function debugOnPropertyWrite(source, property) {
     if (!property) {
       return;

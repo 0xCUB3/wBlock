@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/pardot-1.0.ts
+  // Scriptlets/src/scriptlets/pardot-1.0.ts
   var pardot_1_0_exports = {};
   __export(pardot_1_0_exports, {
     Pardot: () => Pardot,
     PardotNames: () => PardotNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,13 +56,13 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopNull = () => null;
   var noopStr = () => "";
 
-  // src/redirects/pardot-1.0.js
+  // Scriptlets/src/redirects/pardot-1.0.js
   function Pardot(source) {
     window.piVersion = "1.0.2";
     window.piScriptNum = 0;

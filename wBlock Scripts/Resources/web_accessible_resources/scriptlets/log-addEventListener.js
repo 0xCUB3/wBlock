@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/log-addEventListener.js
+  // Scriptlets/src/scriptlets/log-addEventListener.js
   var log_addEventListener_exports = {};
   __export(log_addEventListener_exports, {
     logAddEventListener: () => logAddEventListener,
     logAddEventListenerNames: () => logAddEventListenerNames
   });
 
-  // src/helpers/add-event-listener-utils.ts
+  // Scriptlets/src/helpers/add-event-listener-utils.ts
   var validateType = (type) => {
     return typeof type !== "undefined";
   };
@@ -36,7 +36,7 @@ var main = (() => {
     return typeof listener === "function" ? listener.toString() : listener.handleEvent.toString();
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -53,7 +53,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -84,12 +84,27 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/attribute-utils.ts
+  var getElementAttributesWithValues = (element) => {
+    if (!element || !(element instanceof Element) || !element.attributes || !element.nodeName) {
+      return "";
+    }
+    const attributes = element.attributes;
+    const nodeName = element.nodeName.toLowerCase();
+    let result = nodeName;
+    for (let i = 0; i < attributes.length; i += 1) {
+      const attr = attributes[i];
+      result += `[${attr.name}="${attr.value}"]`;
+    }
+    return result;
+  };
+
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   function objectToString(obj) {
     if (!obj || typeof obj !== "object") {
       return String(obj);
@@ -123,13 +138,35 @@ var main = (() => {
     return output;
   };
 
-  // src/scriptlets/log-addEventListener.js
+  // Scriptlets/src/scriptlets/log-addEventListener.js
   function logAddEventListener(source) {
     const nativeAddEventListener = window.EventTarget.prototype.addEventListener;
     function addEventListenerWrapper(type, listener, ...args) {
       if (validateType(type) && validateListener(listener)) {
-        const message = `addEventListener("${type}", ${listenerToString(listener)})`;
-        logMessage(source, message, true);
+        let targetElement;
+        let targetElementInfo;
+        const listenerInfo = listenerToString(listener);
+        if (this) {
+          if (this instanceof Window) {
+            targetElementInfo = "window";
+          } else if (this instanceof Document) {
+            targetElementInfo = "document";
+          } else if (this instanceof Element) {
+            targetElement = this;
+            targetElementInfo = getElementAttributesWithValues(this);
+          }
+        }
+        if (targetElementInfo) {
+          const message = `addEventListener("${type}", ${listenerInfo})
+Element: ${targetElementInfo}`;
+          logMessage(source, message, true);
+          if (targetElement) {
+            console.log("log-addEventListener Element:", targetElement);
+          }
+        } else {
+          const message = `addEventListener("${type}", ${listenerInfo})`;
+          logMessage(source, message, true);
+        }
         hit(source);
       } else {
         const message = `Invalid event type or listener passed to addEventListener:
@@ -172,7 +209,8 @@ var main = (() => {
     convertTypeToString,
     logMessage,
     objectToString,
-    isEmptyObject
+    isEmptyObject,
+    getElementAttributesWithValues
   ];
   return __toCommonJS(log_addEventListener_exports);
 })();

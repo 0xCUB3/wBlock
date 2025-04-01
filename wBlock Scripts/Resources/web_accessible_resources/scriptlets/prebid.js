@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prebid.ts
+  // Scriptlets/src/scriptlets/prebid.ts
   var prebid_exports = {};
   __export(prebid_exports, {
     Prebid: () => Prebid,
     PrebidNames: () => PrebidNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,13 +56,13 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopStr = () => "";
   var noopArray = () => [];
 
-  // src/redirects/prebid.js
+  // Scriptlets/src/redirects/prebid.js
   function Prebid(source) {
     const pushFunction = function(arg) {
       if (typeof arg === "function") {

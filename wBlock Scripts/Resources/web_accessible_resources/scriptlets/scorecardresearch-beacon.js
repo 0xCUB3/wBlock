@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/scorecardresearch-beacon.ts
+  // Scriptlets/src/scriptlets/scorecardresearch-beacon.ts
   var scorecardresearch_beacon_exports = {};
   __export(scorecardresearch_beacon_exports, {
     ScoreCardResearchBeacon: () => ScoreCardResearchBeacon,
     ScoreCardResearchBeaconNames: () => ScoreCardResearchBeaconNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/redirects/scorecardresearch-beacon.js
+  // Scriptlets/src/redirects/scorecardresearch-beacon.js
   function ScoreCardResearchBeacon(source) {
     window.COMSCORE = {
       purge() {

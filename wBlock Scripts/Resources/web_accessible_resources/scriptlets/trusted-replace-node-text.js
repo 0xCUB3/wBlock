@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-replace-node-text.js
+  // Scriptlets/src/scriptlets/trusted-replace-node-text.js
   var trusted_replace_node_text_exports = {};
   __export(trusted_replace_node_text_exports, {
     trustedReplaceNodeText: () => trustedReplaceNodeText,
     trustedReplaceNodeTextNames: () => trustedReplaceNodeTextNames
   });
 
-  // src/helpers/array-utils.ts
+  // Scriptlets/src/helpers/array-utils.ts
   var nodeListToArray = (nodeList) => {
     const nodes = [];
     for (let i = 0; i < nodeList.length; i += 1) {
@@ -34,7 +34,7 @@ var main = (() => {
     return nodes;
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -51,7 +51,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -82,7 +82,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -119,7 +119,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var getAddedNodes = (mutations) => {
     const nodes = [];
     for (let i = 0; i < mutations.length; i += 1) {
@@ -142,7 +142,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/node-text-utils.ts
+  // Scriptlets/src/helpers/node-text-utils.ts
   var handleExistingNodes = (selector, handler, parentSelector) => {
     const processNodes = (parent) => {
       if (selector === "#text") {
@@ -205,7 +205,7 @@ var main = (() => {
     };
   };
 
-  // src/scriptlets/trusted-replace-node-text.js
+  // Scriptlets/src/scriptlets/trusted-replace-node-text.js
   function trustedReplaceNodeText(source, nodeName, textMatch, pattern, replacement, ...extraArgs) {
     const {
       selector,

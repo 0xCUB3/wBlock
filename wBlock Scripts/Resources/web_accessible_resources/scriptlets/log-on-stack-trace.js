@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/log-on-stack-trace.js
+  // Scriptlets/src/scriptlets/log-on-stack-trace.js
   var log_on_stack_trace_exports = {};
   __export(log_on_stack_trace_exports, {
     logOnStackTrace: () => logOnStackTrace,
     logOnStackTraceNames: () => logOnStackTraceNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
@@ -86,7 +86,7 @@ var main = (() => {
     return true;
   }
 
-  // src/helpers/regexp-utils.ts
+  // Scriptlets/src/helpers/regexp-utils.ts
   var backupRegExpValues = () => {
     try {
       const arrayOfRegexpValues = [];
@@ -126,7 +126,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/get-property-in-chain.ts
+  // Scriptlets/src/helpers/get-property-in-chain.ts
   function getPropertyInChain(base, chain) {
     const pos = chain.indexOf(".");
     if (pos === -1) {
@@ -151,7 +151,7 @@ var main = (() => {
     return { base, prop, chain };
   }
 
-  // src/scriptlets/log-on-stack-trace.js
+  // Scriptlets/src/scriptlets/log-on-stack-trace.js
   function logOnStackTrace(source, property) {
     if (!property) {
       return;

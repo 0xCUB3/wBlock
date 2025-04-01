@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/no-protected-audience.ts
+  // Scriptlets/src/scriptlets/no-protected-audience.ts
   var no_protected_audience_exports = {};
   __export(no_protected_audience_exports, {
     noProtectedAudience: () => noProtectedAudience,
     noProtectedAudienceNames: () => noProtectedAudienceNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,14 +56,14 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopStr = () => "";
   var noopResolveVoid = () => Promise.resolve(void 0);
   var noopResolveNull = () => Promise.resolve(null);
 
-  // src/scriptlets/no-protected-audience.ts
+  // Scriptlets/src/scriptlets/no-protected-audience.ts
   function noProtectedAudience(source) {
     if (Document instanceof Object === false) {
       return;

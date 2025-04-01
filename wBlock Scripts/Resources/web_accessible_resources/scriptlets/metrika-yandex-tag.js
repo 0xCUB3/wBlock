@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/metrika-yandex-tag.ts
+  // Scriptlets/src/scriptlets/metrika-yandex-tag.ts
   var metrika_yandex_tag_exports = {};
   __export(metrika_yandex_tag_exports, {
     metrikaYandexTag: () => metrikaYandexTag,
     metrikaYandexTagNames: () => metrikaYandexTagNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,11 +56,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/metrika-yandex-tag.js
+  // Scriptlets/src/redirects/metrika-yandex-tag.js
   function metrikaYandexTag(source) {
     const asyncCallbackFromOptions = (id, param, options = {}) => {
       let { callback } = options;

@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/naver-wcslog.ts
+  // Scriptlets/src/scriptlets/naver-wcslog.ts
   var naver_wcslog_exports = {};
   __export(naver_wcslog_exports, {
     NaverWcslog: () => NaverWcslog,
     NaverWcslogNames: () => NaverWcslogNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,11 +56,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/naver-wcslog.js
+  // Scriptlets/src/redirects/naver-wcslog.js
   function NaverWcslog(source) {
     window.wcs_add = {};
     window.wcs_do = noopFunc;

@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/adjust-setInterval.js
+  // Scriptlets/src/scriptlets/adjust-setInterval.js
   var adjust_setInterval_exports = {};
   __export(adjust_setInterval_exports, {
     adjustSetInterval: () => adjustSetInterval,
     adjustSetIntervalNames: () => adjustSetIntervalNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
@@ -35,7 +35,7 @@ var main = (() => {
     return native(num);
   };
 
-  // src/helpers/adjust-set-utils.ts
+  // Scriptlets/src/helpers/adjust-set-utils.ts
   var shouldMatchAnyDelay = (delay) => delay === "*";
   var getMatchDelay = (delay) => {
     const DEFAULT_DELAY = 1e3;
@@ -61,7 +61,7 @@ var main = (() => {
     return boostMultiplier;
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -78,7 +78,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -109,7 +109,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -146,12 +146,12 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/prevent-utils.ts
+  // Scriptlets/src/helpers/prevent-utils.ts
   var isValidCallback = (callback) => {
     return callback instanceof Function || typeof callback === "string";
   };
 
-  // src/scriptlets/adjust-setInterval.js
+  // Scriptlets/src/scriptlets/adjust-setInterval.js
   function adjustSetInterval(source, matchCallback, matchDelay, boost) {
     const nativeSetInterval = window.setInterval;
     const matchRegexp = toRegExp(matchCallback);

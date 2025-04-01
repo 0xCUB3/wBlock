@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-eval-if.js
+  // Scriptlets/src/scriptlets/prevent-eval-if.js
   var prevent_eval_if_exports = {};
   __export(prevent_eval_if_exports, {
     preventEvalIf: () => preventEvalIf,
     preventEvalIfNames: () => preventEvalIfNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -93,7 +93,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/scriptlets/prevent-eval-if.js
+  // Scriptlets/src/scriptlets/prevent-eval-if.js
   function preventEvalIf(source, search) {
     const searchRegexp = toRegExp(search);
     const nativeEval = window.eval;

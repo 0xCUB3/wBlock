@@ -18,7 +18,7 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/log.js
+  // Scriptlets/src/scriptlets/log.js
   var log_exports = {};
   __export(log_exports, {
     log: () => log,

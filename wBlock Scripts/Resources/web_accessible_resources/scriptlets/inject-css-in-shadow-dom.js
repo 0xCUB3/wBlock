@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/inject-css-in-shadow-dom.js
+  // Scriptlets/src/scriptlets/inject-css-in-shadow-dom.js
   var inject_css_in_shadow_dom_exports = {};
   __export(inject_css_in_shadow_dom_exports, {
     injectCssInShadowDom: () => injectCssInShadowDom,
     injectCssInShadowDomNames: () => injectCssInShadowDomNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/shadow-dom-utils.ts
+  // Scriptlets/src/helpers/shadow-dom-utils.ts
   var hijackAttachShadow = (context, hostSelector, callback) => {
     const handlerWrapper = (target, thisArg, args) => {
       const shadowRoot = Reflect.apply(target, thisArg, args);
@@ -91,7 +91,7 @@ var main = (() => {
     );
   };
 
-  // src/scriptlets/inject-css-in-shadow-dom.js
+  // Scriptlets/src/scriptlets/inject-css-in-shadow-dom.js
   function injectCssInShadowDom(source, cssRule, hostSelector = "") {
     if (!Element.prototype.attachShadow || typeof Proxy === "undefined" || typeof Reflect === "undefined") {
       return;

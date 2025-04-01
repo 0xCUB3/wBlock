@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-element-src-loading.js
+  // Scriptlets/src/scriptlets/prevent-element-src-loading.js
   var prevent_element_src_loading_exports = {};
   __export(prevent_element_src_loading_exports, {
     preventElementSrcLoading: () => preventElementSrcLoading,
     preventElementSrcLoadingNames: () => preventElementSrcLoadingNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,11 +56,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var safeGetDescriptor = (obj, prop) => {
     const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
     if (descriptor && descriptor.configurable) {
@@ -69,7 +69,7 @@ var main = (() => {
     return null;
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -106,7 +106,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/scriptlets/prevent-element-src-loading.js
+  // Scriptlets/src/scriptlets/prevent-element-src-loading.js
   function preventElementSrcLoading(source, tagName, match) {
     if (typeof Proxy === "undefined" || typeof Reflect === "undefined") {
       return;

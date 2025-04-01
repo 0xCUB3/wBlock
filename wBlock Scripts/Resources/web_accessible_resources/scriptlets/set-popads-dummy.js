@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/set-popads-dummy.js
+  // Scriptlets/src/scriptlets/set-popads-dummy.js
   var set_popads_dummy_exports = {};
   __export(set_popads_dummy_exports, {
     setPopadsDummy: () => setPopadsDummy,
     setPopadsDummyNames: () => setPopadsDummyNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/set-popads-dummy.js
+  // Scriptlets/src/scriptlets/set-popads-dummy.js
   function setPopadsDummy(source) {
     delete window.PopAds;
     delete window.popns;

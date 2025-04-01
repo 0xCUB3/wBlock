@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/dir-string.js
+  // Scriptlets/src/scriptlets/dir-string.js
   var dir_string_exports = {};
   __export(dir_string_exports, {
     dirString: () => dirString,
     dirStringNames: () => dirStringNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/dir-string.js
+  // Scriptlets/src/scriptlets/dir-string.js
   function dirString(source, times) {
     const { dir } = console;
     times = parseInt(times, 10);

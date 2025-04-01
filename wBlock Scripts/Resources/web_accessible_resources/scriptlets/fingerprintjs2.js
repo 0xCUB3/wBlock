@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/fingerprintjs2.ts
+  // Scriptlets/src/scriptlets/fingerprintjs2.ts
   var fingerprintjs2_exports = {};
   __export(fingerprintjs2_exports, {
     Fingerprintjs2: () => Fingerprintjs2,
     Fingerprintjs2Names: () => Fingerprintjs2Names
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/redirects/fingerprintjs2.js
+  // Scriptlets/src/redirects/fingerprintjs2.js
   function Fingerprintjs2(source) {
     let browserId = "";
     for (let i = 0; i < 8; i += 1) {

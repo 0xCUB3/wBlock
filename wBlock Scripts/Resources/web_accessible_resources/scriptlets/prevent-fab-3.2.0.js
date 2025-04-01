@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-fab-3.2.0.js
+  // Scriptlets/src/scriptlets/prevent-fab-3.2.0.js
   var prevent_fab_3_2_0_exports = {};
   __export(prevent_fab_3_2_0_exports, {
     preventFab: () => preventFab,
     preventFabNames: () => preventFabNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,14 +56,14 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   function noopThis() {
     return this;
   }
 
-  // src/scriptlets/prevent-fab-3.2.0.js
+  // Scriptlets/src/scriptlets/prevent-fab-3.2.0.js
   function preventFab(source) {
     hit(source);
     const Fab = function() {

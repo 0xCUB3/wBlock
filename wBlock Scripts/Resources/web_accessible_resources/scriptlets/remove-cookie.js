@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/remove-cookie.js
+  // Scriptlets/src/scriptlets/remove-cookie.js
   var remove_cookie_exports = {};
   __export(remove_cookie_exports, {
     removeCookie: () => removeCookie,
     removeCookieNames: () => removeCookieNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -93,7 +93,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/scriptlets/remove-cookie.js
+  // Scriptlets/src/scriptlets/remove-cookie.js
   function removeCookie(source, match) {
     const matchRegexp = toRegExp(match);
     const removeCookieFromHost = (cookieName, hostName) => {

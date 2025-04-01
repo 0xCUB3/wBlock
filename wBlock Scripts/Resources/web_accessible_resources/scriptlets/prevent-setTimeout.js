@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-setTimeout.js
+  // Scriptlets/src/scriptlets/prevent-setTimeout.js
   var prevent_setTimeout_exports = {};
   __export(prevent_setTimeout_exports, {
     preventSetTimeout: () => preventSetTimeout,
     preventSetTimeoutNames: () => preventSetTimeoutNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
@@ -35,7 +35,7 @@ var main = (() => {
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -52,7 +52,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -83,11 +83,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -172,7 +172,7 @@ var main = (() => {
     return { isInvertedDelayMatch, delayMatch };
   };
 
-  // src/helpers/prevent-utils.ts
+  // Scriptlets/src/helpers/prevent-utils.ts
   var isValidCallback = (callback) => {
     return callback instanceof Function || typeof callback === "string";
   };
@@ -207,7 +207,7 @@ var main = (() => {
     return shouldPrevent;
   };
 
-  // src/scriptlets/prevent-setTimeout.js
+  // Scriptlets/src/scriptlets/prevent-setTimeout.js
   function preventSetTimeout(source, matchCallback, matchDelay) {
     const shouldLog = typeof matchCallback === "undefined" && typeof matchDelay === "undefined";
     const handlerWrapper = (target, thisArg, args) => {

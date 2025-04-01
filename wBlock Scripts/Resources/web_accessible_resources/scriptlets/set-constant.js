@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/set-constant.js
+  // Scriptlets/src/scriptlets/set-constant.js
   var set_constant_exports = {};
   __export(set_constant_exports, {
     setConstant: () => setConstant,
     setConstantNames: () => setConstantNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
@@ -36,7 +36,7 @@ var main = (() => {
     return validDelay;
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -53,7 +53,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -84,7 +84,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopCallbackFunc = () => noopFunc;
@@ -122,7 +122,7 @@ var main = (() => {
     return Promise.resolve(response);
   };
 
-  // src/helpers/object-utils.ts
+  // Scriptlets/src/helpers/object-utils.ts
   var isEmptyObject = (obj) => {
     return Object.keys(obj).length === 0 && !obj.prototype;
   };
@@ -135,7 +135,7 @@ var main = (() => {
     return true;
   }
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -172,7 +172,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/script-source-utils.ts
+  // Scriptlets/src/helpers/script-source-utils.ts
   var shouldAbortInlineOrInjectedScript = (stackMatch, stackTrace) => {
     const INLINE_SCRIPT_STRING = "inlineScript";
     const INJECTED_SCRIPT_STRING = "injectedScript";
@@ -228,7 +228,7 @@ var main = (() => {
     return false;
   };
 
-  // src/helpers/regexp-utils.ts
+  // Scriptlets/src/helpers/regexp-utils.ts
   var getNativeRegexpTest = () => {
     const descriptor = Object.getOwnPropertyDescriptor(RegExp.prototype, "test");
     const nativeRegexTest = descriptor?.value;
@@ -276,7 +276,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/match-stack.ts
+  // Scriptlets/src/helpers/match-stack.ts
   var matchStackTrace = (stackMatch, stackTrace) => {
     if (!stackMatch || stackMatch === "") {
       return true;
@@ -296,7 +296,7 @@ var main = (() => {
     return getNativeRegexpTest().call(stackRegexp, refinedStackTrace);
   };
 
-  // src/helpers/get-property-in-chain.ts
+  // Scriptlets/src/helpers/get-property-in-chain.ts
   function getPropertyInChain(base, chain) {
     const pos = chain.indexOf(".");
     if (pos === -1) {
@@ -321,7 +321,7 @@ var main = (() => {
     return { base, prop, chain };
   }
 
-  // src/scriptlets/set-constant.js
+  // Scriptlets/src/scriptlets/set-constant.js
   function setConstant(source, property, value, stack = "", valueWrapper = "", setProxyTrap = false) {
     const uboAliases = [
       "set-constant.js",

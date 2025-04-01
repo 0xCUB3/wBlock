@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/google-analytics-ga.ts
+  // Scriptlets/src/scriptlets/google-analytics-ga.ts
   var google_analytics_ga_exports = {};
   __export(google_analytics_ga_exports, {
     GoogleAnalyticsGa: () => GoogleAnalyticsGa,
     GoogleAnalyticsGaNames: () => GoogleAnalyticsGaNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,11 +73,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/redirects/google-analytics-ga.js
+  // Scriptlets/src/redirects/google-analytics-ga.js
   function GoogleAnalyticsGa(source) {
     function Gaq() {
     }

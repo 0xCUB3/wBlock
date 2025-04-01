@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/remove-node-text.js
+  // Scriptlets/src/scriptlets/remove-node-text.js
   var remove_node_text_exports = {};
   __export(remove_node_text_exports, {
     removeNodeText: () => removeNodeText,
     removeNodeTextNames: () => removeNodeTextNames
   });
 
-  // src/helpers/array-utils.ts
+  // Scriptlets/src/helpers/array-utils.ts
   var nodeListToArray = (nodeList) => {
     const nodes = [];
     for (let i = 0; i < nodeList.length; i += 1) {
@@ -34,7 +34,7 @@ var main = (() => {
     return nodes;
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -65,7 +65,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -102,7 +102,7 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var getAddedNodes = (mutations) => {
     const nodes = [];
     for (let i = 0; i < mutations.length; i += 1) {
@@ -125,7 +125,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/node-text-utils.ts
+  // Scriptlets/src/helpers/node-text-utils.ts
   var handleExistingNodes = (selector, handler, parentSelector) => {
     const processNodes = (parent) => {
       if (selector === "#text") {
@@ -188,7 +188,7 @@ var main = (() => {
     };
   };
 
-  // src/scriptlets/remove-node-text.js
+  // Scriptlets/src/scriptlets/remove-node-text.js
   function removeNodeText(source, nodeName, textMatch, parentSelector) {
     const {
       selector,

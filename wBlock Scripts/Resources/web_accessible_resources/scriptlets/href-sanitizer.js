@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/href-sanitizer.ts
+  // Scriptlets/src/scriptlets/href-sanitizer.ts
   var href_sanitizer_exports = {};
   __export(href_sanitizer_exports, {
     hrefSanitizer: () => hrefSanitizer,
     hrefSanitizerNames: () => hrefSanitizerNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/throttle.ts
+  // Scriptlets/src/helpers/throttle.ts
   var throttle = (cb, delay) => {
     let wait = false;
     let savedArgs;
@@ -95,7 +95,7 @@ var main = (() => {
     return wrapper;
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var observeDOMChanges = (callback, observeAttrs = false, attrsToObserve = []) => {
     const THROTTLE_DELAY_MS = 20;
     const observer = new MutationObserver(throttle(callbackWrapper, THROTTLE_DELAY_MS));
@@ -126,7 +126,7 @@ var main = (() => {
     connect();
   };
 
-  // src/scriptlets/href-sanitizer.ts
+  // Scriptlets/src/scriptlets/href-sanitizer.ts
   function hrefSanitizer(source, selector, attribute = "text", transform = "") {
     if (!selector) {
       logMessage(source, "Selector is required.");

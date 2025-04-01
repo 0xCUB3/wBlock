@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-canvas.ts
+  // Scriptlets/src/scriptlets/prevent-canvas.ts
   var prevent_canvas_exports = {};
   __export(prevent_canvas_exports, {
     preventCanvas: () => preventCanvas,
     preventCanvasNames: () => preventCanvasNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,7 +73,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -141,7 +141,7 @@ var main = (() => {
     return { isInvertedMatch, matchRegexp, matchValue };
   };
 
-  // src/scriptlets/prevent-canvas.ts
+  // Scriptlets/src/scriptlets/prevent-canvas.ts
   function preventCanvas(source, contextType) {
     const handlerWrapper = (target, thisArg, argumentsList) => {
       const type = argumentsList[0];

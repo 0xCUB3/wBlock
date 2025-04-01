@@ -18,20 +18,20 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-window-open.js
+  // Scriptlets/src/scriptlets/prevent-window-open.js
   var prevent_window_open_exports = {};
   __export(prevent_window_open_exports, {
     preventWindowOpen: () => preventWindowOpen,
     preventWindowOpenNames: () => preventWindowOpenNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -48,7 +48,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -79,13 +79,13 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
   var noopNull = () => null;
   var trueFunc = () => true;
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -167,7 +167,7 @@ var main = (() => {
     return { isInvertedMatch, matchRegexp, matchValue };
   };
 
-  // src/helpers/prevent-window-open-utils.ts
+  // Scriptlets/src/helpers/prevent-window-open-utils.ts
   var handleOldReplacement = (replacement) => {
     let result;
     if (!replacement) {
@@ -233,7 +233,7 @@ var main = (() => {
     return preventGetter;
   };
 
-  // src/scriptlets/prevent-window-open.js
+  // Scriptlets/src/scriptlets/prevent-window-open.js
   function preventWindowOpen(source, match = "*", delay, replacement) {
     const nativeOpen = window.open;
     const isNewSyntax = match !== "0" && match !== "1";

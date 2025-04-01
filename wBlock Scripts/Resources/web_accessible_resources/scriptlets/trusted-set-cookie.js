@@ -18,20 +18,20 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-set-cookie.js
+  // Scriptlets/src/scriptlets/trusted-set-cookie.js
   var trusted_set_cookie_exports = {};
   __export(trusted_set_cookie_exports, {
     trustedSetCookie: () => trustedSetCookie,
     trustedSetCookieNames: () => trustedSetCookieNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -48,7 +48,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -79,7 +79,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/cookie-utils.ts
+  // Scriptlets/src/helpers/cookie-utils.ts
   var isValidCookiePath = (rawPath) => rawPath === "/" || rawPath === "none";
   var getCookiePath = (rawPath) => {
     if (rawPath === "/") {
@@ -148,7 +148,7 @@ var main = (() => {
     return parsedSec * MS_IN_SEC;
   };
 
-  // src/helpers/parse-keyword-value.ts
+  // Scriptlets/src/helpers/parse-keyword-value.ts
   var parseKeywordValue = (rawValue) => {
     const NOW_VALUE_KEYWORD = "$now$";
     const CURRENT_DATE_KEYWORD = "$currentDate$";
@@ -164,7 +164,7 @@ var main = (() => {
     return parsedValue;
   };
 
-  // src/scriptlets/trusted-set-cookie.js
+  // Scriptlets/src/scriptlets/trusted-set-cookie.js
   function trustedSetCookie(source, name, value, offsetExpiresSec = "", path = "/", domain = "") {
     if (typeof name === "undefined") {
       logMessage(source, "Cookie name should be specified");

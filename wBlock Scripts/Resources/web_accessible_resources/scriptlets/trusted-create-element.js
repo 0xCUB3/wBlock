@@ -18,20 +18,20 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-create-element.ts
+  // Scriptlets/src/scriptlets/trusted-create-element.ts
   var trusted_create_element_exports = {};
   __export(trusted_create_element_exports, {
     trustedCreateElement: () => trustedCreateElement,
     trustedCreateElementNames: () => trustedCreateElementNames
   });
 
-  // src/helpers/number-utils.ts
+  // Scriptlets/src/helpers/number-utils.ts
   var nativeIsNaN = (num) => {
     const native = Number.isNaN || window.isNaN;
     return native(num);
   };
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -48,7 +48,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -79,7 +79,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/attribute-utils.ts
+  // Scriptlets/src/helpers/attribute-utils.ts
   var parseAttributePairs = (input) => {
     if (!input) {
       return [];
@@ -142,7 +142,7 @@ var main = (() => {
     return pairs;
   };
 
-  // src/helpers/get-error-message.ts
+  // Scriptlets/src/helpers/get-error-message.ts
   var getErrorMessage = (error) => {
     const isErrorWithMessage = (e) => typeof e === "object" && e !== null && "message" in e && typeof e.message === "string";
     if (isErrorWithMessage(error)) {
@@ -155,7 +155,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/observer.ts
+  // Scriptlets/src/helpers/observer.ts
   var observeDocumentWithTimeout = (callback, options = { subtree: true, childList: true }, timeout = 1e4) => {
     const documentObserver = new MutationObserver((mutations, observer) => {
       observer.disconnect();
@@ -168,7 +168,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/trusted-create-element.ts
+  // Scriptlets/src/scriptlets/trusted-create-element.ts
   function trustedCreateElement(source, parentSelector, tagName, attributePairs = "", textContent = "", cleanupDelayMs = NaN) {
     if (!parentSelector || !tagName) {
       return;

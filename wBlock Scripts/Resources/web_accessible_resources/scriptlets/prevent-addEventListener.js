@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-addEventListener.js
+  // Scriptlets/src/scriptlets/prevent-addEventListener.js
   var prevent_addEventListener_exports = {};
   __export(prevent_addEventListener_exports, {
     preventAddEventListener: () => preventAddEventListener,
     preventAddEventListenerNames: () => preventAddEventListenerNames
   });
 
-  // src/helpers/add-event-listener-utils.ts
+  // Scriptlets/src/helpers/add-event-listener-utils.ts
   var validateType = (type) => {
     return typeof type !== "undefined";
   };
@@ -36,7 +36,24 @@ var main = (() => {
     return typeof listener === "function" ? listener.toString() : listener.handleEvent.toString();
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/log-message.ts
+  var logMessage = (source, message, forced = false, convertMessageToString = true) => {
+    const {
+      name,
+      verbose
+    } = source;
+    if (!forced && !verbose) {
+      return;
+    }
+    const nativeConsole = console.log;
+    if (!convertMessageToString) {
+      nativeConsole(`${name}:`, message);
+      return;
+    }
+    nativeConsole(`${name}: ${message}`);
+  };
+
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -67,7 +84,7 @@ var main = (() => {
     }
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
     const DEFAULT_VALUE = ".?";
@@ -104,15 +121,43 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
-  // src/scriptlets/prevent-addEventListener.js
-  function preventAddEventListener(source, typeSearch, listenerSearch) {
+  // Scriptlets/src/scriptlets/prevent-addEventListener.js
+  function preventAddEventListener(source, typeSearch, listenerSearch, additionalArgName, additionalArgValue) {
     const typeSearchRegexp = toRegExp(typeSearch);
     const listenerSearchRegexp = toRegExp(listenerSearch);
+    let elementToMatch;
+    if (additionalArgName) {
+      if (additionalArgName !== "elements") {
+        logMessage(source, `Invalid "additionalArgName": ${additionalArgName}
+Only "elements" is supported.`);
+        return;
+      }
+      if (!additionalArgValue) {
+        logMessage(source, '"additionalArgValue" is required.');
+        return;
+      }
+      elementToMatch = additionalArgValue;
+    }
+    const elementMatches = (element) => {
+      if (elementToMatch === void 0) {
+        return true;
+      }
+      if (elementToMatch === "window") {
+        return element === window;
+      }
+      if (elementToMatch === "document") {
+        return element === document;
+      }
+      if (element && element.matches && element.matches(elementToMatch)) {
+        return true;
+      }
+      return false;
+    };
     const nativeAddEventListener = window.EventTarget.prototype.addEventListener;
     function addEventListenerWrapper(type, listener, ...args) {
       let shouldPrevent = false;
       if (validateType(type) && validateListener(listener)) {
-        shouldPrevent = typeSearchRegexp.test(type.toString()) && listenerSearchRegexp.test(listenerToString(listener));
+        shouldPrevent = typeSearchRegexp.test(type.toString()) && listenerSearchRegexp.test(listenerToString(listener)) && elementMatches(this);
       }
       if (shouldPrevent) {
         hit(source);
@@ -151,7 +196,8 @@ var main = (() => {
     toRegExp,
     validateType,
     validateListener,
-    listenerToString
+    listenerToString,
+    logMessage
   ];
   return __toCommonJS(prevent_addEventListener_exports);
 })();

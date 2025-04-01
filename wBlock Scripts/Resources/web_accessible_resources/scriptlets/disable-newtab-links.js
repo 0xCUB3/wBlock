@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/disable-newtab-links.js
+  // Scriptlets/src/scriptlets/disable-newtab-links.js
   var disable_newtab_links_exports = {};
   __export(disable_newtab_links_exports, {
     disableNewtabLinks: () => disableNewtabLinks,
     disableNewtabLinksNames: () => disableNewtabLinksNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/disable-newtab-links.js
+  // Scriptlets/src/scriptlets/disable-newtab-links.js
   function disableNewtabLinks(source) {
     document.addEventListener("click", (ev) => {
       let { target } = ev;

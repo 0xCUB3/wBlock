@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-bab.js
+  // Scriptlets/src/scriptlets/prevent-bab.js
   var prevent_bab_exports = {};
   __export(prevent_bab_exports, {
     preventBab: () => preventBab,
     preventBabNames: () => preventBabNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/prevent-bab.js
+  // Scriptlets/src/scriptlets/prevent-bab.js
   function preventBab(source) {
     const nativeSetTimeout = window.setTimeout;
     const babRegex = /\.bab_elementid.$/;

@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/prevent-requestAnimationFrame.js
+  // Scriptlets/src/scriptlets/prevent-requestAnimationFrame.js
   var prevent_requestAnimationFrame_exports = {};
   __export(prevent_requestAnimationFrame_exports, {
     preventRequestAnimationFrame: () => preventRequestAnimationFrame,
     preventRequestAnimationFrameNames: () => preventRequestAnimationFrameNames
   });
 
-  // src/helpers/log-message.ts
+  // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
       name,
@@ -42,7 +42,7 @@ var main = (() => {
     nativeConsole(`${name}: ${message}`);
   };
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -73,11 +73,11 @@ var main = (() => {
     }
   };
 
-  // src/helpers/noop-utils.ts
+  // Scriptlets/src/helpers/noop-utils.ts
   var noopFunc = () => {
   };
 
-  // src/helpers/string-utils.ts
+  // Scriptlets/src/helpers/string-utils.ts
   var escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var toRegExp = (rawInput) => {
     const input = rawInput || "";
@@ -137,12 +137,12 @@ var main = (() => {
     return { isInvertedMatch, matchRegexp, matchValue };
   };
 
-  // src/helpers/prevent-utils.ts
+  // Scriptlets/src/helpers/prevent-utils.ts
   var isValidCallback = (callback) => {
     return callback instanceof Function || typeof callback === "string";
   };
 
-  // src/scriptlets/prevent-requestAnimationFrame.js
+  // Scriptlets/src/scriptlets/prevent-requestAnimationFrame.js
   function preventRequestAnimationFrame(source, match) {
     const nativeRequestAnimationFrame = window.requestAnimationFrame;
     const shouldLog = typeof match === "undefined";

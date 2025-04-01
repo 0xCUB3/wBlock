@@ -18,14 +18,14 @@ var main = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/scriptlets/trusted-dispatch-event.ts
+  // Scriptlets/src/scriptlets/trusted-dispatch-event.ts
   var trusted_dispatch_event_exports = {};
   __export(trusted_dispatch_event_exports, {
     trustedDispatchEvent: () => trustedDispatchEvent,
     trustedDispatchEventNames: () => trustedDispatchEventNames
   });
 
-  // src/helpers/hit.ts
+  // Scriptlets/src/helpers/hit.ts
   var hit = (source) => {
     const ADGUARD_PREFIX = "[AdGuard]";
     if (!source.verbose) {
@@ -56,7 +56,7 @@ var main = (() => {
     }
   };
 
-  // src/scriptlets/trusted-dispatch-event.ts
+  // Scriptlets/src/scriptlets/trusted-dispatch-event.ts
   function trustedDispatchEvent(source, event, target) {
     if (!event) {
       return;
