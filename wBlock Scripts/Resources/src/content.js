@@ -143,23 +143,27 @@
     log.info(`(applyCss) Added css to css registry`);
   };
 
-  const onLoad = (waitForStylesheets) => {
-    return new Promise((resolve) => {
-      const resolveAndCleanup = () => {
-        resolve();
-        window.removeEventListener("load", resolveAndCleanup);
-        document.removeEventListener("DOMContentLoaded", resolveAndCleanup);
-      };
-
-      if (waitForStylesheets) {
-        if (document.readyState === "complete") resolve();
-        else window.addEventListener("load", resolveAndCleanup);
-      } else {
-        if (document.readyState !== "loading") resolve();
-        else document.addEventListener("DOMContentLoaded", resolveAndCleanup);
-      }
-    });
-  };
+    // Conditional Wait
+    const onLoad = (waitForStylesheets) => {
+        return new Promise((resolve) => {
+            if (!waitForStylesheets) {
+                // For scripts/scriptlets, resolve immediately if DOM is already interactive/complete,
+                // or wait only until DOMContentLoaded otherwise.
+                if (document.readyState !== 'loading') {
+                    resolve();
+                } else {
+                    document.addEventListener('DOMContentLoaded', resolve, { once: true });
+                }
+            } else {
+                // For CSS, wait for the 'load' event as before.
+                if (document.readyState === 'complete') {
+                    resolve();
+                } else {
+                    window.addEventListener('load', resolve, { once: true });
+                }
+            }
+        });
+    };
 
   const injectedExtendedCssRegistry = new Map();
 
@@ -287,22 +291,24 @@
     log.info(`(applyScriptlets) Added Scriptlets to scriptlet registry`);
   };
 
-  const applyAdvancedBlockingData = async (data) => {
-    log.info(
-      `(applyAdvancedBlockingData) Applying scriptlets, scripts, css, ExtendedCss...`,
-    );
-    log.info(`(applyAdvancedBlockingData) Frame url: ${window.location.href}`);
-    log.info(`(applyAdvancedBlockingData) Data: `, data);
 
-    await applyScriptlets(data?.scriptlets);
-    await applyScripts(data?.scripts);
-    await applyCss(data?.cssInject);
-    await applyExtendedCss(data?.cssExtended);
+    // applyAdvancedBlockingData would then use await onLoad(true) for CSS
+    // and await onLoad(false) for scripts/scriptlets.
+    const applyAdvancedBlockingData = async (data) => {
+        log.info(`(applyAdvancedBlockingData) Applying data for: ${window.location.href}`);
 
-    log.info(
-      `(applyAdvancedBlockingData) Applied scriptlets, scripts, css, ExtendedCss`,
-    );
-  };
+        // Await DOMContentLoaded (or immediate if past) for JS
+        await onLoad(false);
+        await applyScriptlets(data?.scriptlets);
+        await applyScripts(data?.scripts);
+
+        // Await full load for CSS (potentially)
+        await onLoad(true);
+        await applyCss(data?.cssInject);
+        await applyExtendedCss(data?.cssExtended); // ExtendedCss might also need full load
+
+        log.info(`(applyAdvancedBlockingData) Finished applying data`);
+    };
 
   // Simplified request handler
   const requestBlockingData = async (url) => {
