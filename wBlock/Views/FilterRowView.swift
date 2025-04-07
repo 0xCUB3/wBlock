@@ -11,45 +11,53 @@ import SwiftData
 struct FilterRowView: View {
     let filter: FilterList
     @ObservedObject var filterListManager: FilterListManager
-    
+    @State private var ruleCount: Int = 0 // Use @State
+
     private var toggleBinding: Binding<Bool> {
         Binding(
             get: { filter.isSelected },
             set: { _ in filterListManager.toggleFilterListSelection(id: filter.id) }
         )
     }
-    
-    private var ruleCount: Int {
-        guard filter.isSelected else { return 0 } // Only calculate if selected
+
+    // Async function to load rule count
+    private func loadRuleCount() async -> Int {
+        // No need to calculate if not selected
+        guard filter.isSelected else { return 0 }
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") else { return 0 }
-        
-        // Consider both standard and advanced rules
+
         let standardFileURL = containerURL.appendingPathComponent("\(filter.name).json")
         let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
-        
-        var totalCount = 0
-        
-        // Function to count rules in a given file
-        func countRules(at url: URL) -> Int {
-            if let data = try? Data(contentsOf: url),
-               let rules = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                return rules.count
-            }
-            return 0
-        }
-        
-        totalCount += countRules(at: standardFileURL)
-        totalCount += countRules(at: advancedFileURL)
-        
-        return totalCount
+
+        // Perform file reading and counting in detached tasks to avoid blocking
+        let standardCount = await Task.detached { await countRules(at: standardFileURL) }.value
+        let advancedCount = await Task.detached { await countRules(at: advancedFileURL) }.value
+
+        return standardCount + advancedCount
     }
-    
+
+    // Helper function for counting (remains synchronous but called from detached task)
+    private func countRules(at url: URL) -> Int {
+         guard FileManager.default.fileExists(atPath: url.path) else { return 0 }
+         do {
+             let data = try Data(contentsOf: url)
+             if let rules = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                 return rules.count
+             }
+         } catch {
+             // Log appropriately
+             print("Error counting rules for \(url.lastPathComponent): \(error)")
+         }
+         return 0
+     }
+
+
     var body: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(filter.name)
-                    
+
                     if filter.category != .custom {
                         Link(destination: filter.url) {
                             Image(systemName: "arrow.up.right.square")
@@ -57,28 +65,28 @@ struct FilterRowView: View {
                         }
                         .help("View Source")
                     }
-                    
-                    // Show rule count *only* if the filter is enabled
-                    if filter.isSelected {
-                        Text("(\(ruleCount) rules)") // Added "rules" label
-                            .font(.caption2) // Even smaller font
-                            .foregroundColor(.gray) // Use gray color directly
+
+                    // Show rule count *only* if the filter is enabled and count > 0
+                    if filter.isSelected && ruleCount > 0 {
+                        Text("(\(ruleCount) rules)")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
                     }
                 }
-                
+
                 if !filter.description.isEmpty {
                     Text(filter.description)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
-                
+
                 if !filter.version.isEmpty {
                     Text("Version: \(filter.version)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
             }
-            
+
             Spacer()
 
             Toggle("", isOn: toggleBinding)
@@ -95,6 +103,18 @@ struct FilterRowView: View {
                 Button("Remove Filter") {
                     filterListManager.removeCustomFilterList(filter)
                 }
+            }
+        }
+        // Load the count when the view appears or when the filter selection state changes
+        .task(id: filter.isSelected) {
+             self.ruleCount = await loadRuleCount()
+        }
+        // Also reload count if the underlying filter files might have changed (e.g., after an update)
+        .onChange(of: filterListManager.isUpdating) { isUpdating in
+            if !isUpdating { // When an update finishes
+                 Task {
+                     self.ruleCount = await loadRuleCount()
+                 }
             }
         }
     }

@@ -12,11 +12,13 @@ class FilterListLoader {
     private let customFilterListsKey = "customFilterLists"
     private let sharedContainerIdentifier = "DNP7DGUB7B.wBlock"
 
+    // Cache the defaults instance
+    private let defaults = UserDefaults.standard
+
     init(logManager: ConcurrentLogManager) {
         self.logManager = logManager
     }
 
-    /// Checks and creates the group folder if it doesn't exist
     func checkAndCreateGroupFolder() {
         guard let containerURL = getSharedContainerURL() else {
             Task {
@@ -43,18 +45,26 @@ class FilterListLoader {
     func loadFilterLists() -> [FilterList] {
         var filterLists: [FilterList] = []
 
-        if let data = UserDefaults.standard.data(forKey: "filterLists"),
+        if let data = defaults.data(forKey: "filterLists"), // Use cached defaults
            let savedFilterLists = try? JSONDecoder().decode([FilterList].self, from: data) {
             filterLists = savedFilterLists
         } else {
             filterLists = createDefaultFilterLists()
         }
 
+        // Merge with custom lists if they exist
+        let customLists = loadCustomFilterLists()
+        let customListURLs = Set(customLists.map { $0.url })
+        filterLists.removeAll { $0.category == .custom && !customListURLs.contains($0.url) } // Clean up old custom defaults if needed
+        filterLists.append(contentsOf: customLists.filter { existingFilter in !filterLists.contains(where: { $0.url == existingFilter.url }) })
+
+
         return filterLists
     }
 
     /// Creates the default set of filter lists
     private func createDefaultFilterLists() -> [FilterList] {
+       // --- Keep the existing default lists ---
         var filterLists = [
             FilterList(id: UUID(), name: "AdGuard Base Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: .ads, isSelected: true,
                        description: "Comprehensive ad-blocking rules by AdGuard."),
@@ -76,7 +86,7 @@ class FilterListLoader {
 
             // Spanish & Portuguese
             FilterList(id: UUID(), name: "AdGuard Spanish & Portuguese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/9_optimized.txt")!, category: .foreign),
-            
+
             // French
             FilterList(id: UUID(), name: "Liste FR + AdGuard French Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/16_optimized.txt")!, category: .foreign),
 
@@ -117,36 +127,58 @@ class FilterListLoader {
         return filterLists
     }
 
+
     /// Saves filter lists to UserDefaults
     func saveFilterLists(_ filterLists: [FilterList]) {
-        if let data = try? JSONEncoder().encode(filterLists) {
-            UserDefaults.standard.set(data, forKey: "filterLists")
-        } else {
-            Task {
-                await ConcurrentLogManager.shared.log("Failed to encode filterLists for saving.")
-            }
-        }
+         // Separate default and custom lists before saving
+         let defaultLists = filterLists.filter { $0.category != .custom }
+         let customLists = filterLists.filter { $0.category == .custom }
+
+         // Save default lists definition (might be redundant if only selection changes)
+         // Consider if you *really* need to save the whole default list definition everytime.
+         // Maybe only save if the list structure itself changes (new defaults added/removed).
+         if let data = try? JSONEncoder().encode(defaultLists) {
+             defaults.set(data, forKey: "filterLists")
+         } else {
+             Task {
+                 await ConcurrentLogManager.shared.log("Failed to encode default filterLists for saving.")
+             }
+         }
+
+         // Save custom lists separately
+         saveCustomFilterLists(customLists)
+
+         // Save the selected state (most important part to save frequently)
+         saveSelectedState(for: filterLists) // Ensure selection state covers all lists
     }
 
     /// Loads selected state for filter lists from UserDefaults
     func loadSelectedState(for filterLists: inout [FilterList]) {
-        let defaults = UserDefaults.standard
-        for (index, filter) in filterLists.enumerated() {
-            filterLists[index].isSelected = defaults.bool(forKey: "filter_\(filter.name)")
+        for index in filterLists.indices {
+            // Use filter ID for robustness instead of name
+            let key = "filter_selected_\(filterLists[index].id.uuidString)"
+            // Provide a default value if the key doesn't exist (e.g., use the default selected state)
+            filterLists[index].isSelected = defaults.object(forKey: key) as? Bool ?? filterLists[index].isSelected
         }
     }
 
-    /// Saves selected state for filter lists to UserDefaults
+    /// Saves selected state for filter lists to UserDefaults asynchronously
     func saveSelectedState(for filterLists: [FilterList]) {
-        let defaults = UserDefaults.standard
-        for filter in filterLists {
-            defaults.set(filter.isSelected, forKey: "filter_\(filter.name)")
+        // Perform saving in a background task
+        Task.detached(priority: .background) { [defaults] in // Capture defaults
+            for filter in filterLists {
+                let key = "filter_selected_\(filter.id.uuidString)" // Use ID
+                defaults.set(filter.isSelected, forKey: key)
+            }
+             // synchronize() is generally not needed and can block; avoid it.
+             // UserDefaults automatically saves changes periodically.
+            // await ConcurrentLogManager.shared.log("Saved selection state.") // Optional logging
         }
     }
 
     /// Loads custom filter lists from UserDefaults
     func loadCustomFilterLists() -> [FilterList] {
-        if let data = UserDefaults.standard.data(forKey: customFilterListsKey),
+        if let data = defaults.data(forKey: customFilterListsKey), // Use cached defaults
            let customLists = try? JSONDecoder().decode([FilterList].self, from: data) {
             return customLists
         }
@@ -155,25 +187,38 @@ class FilterListLoader {
 
     /// Saves custom filter lists to UserDefaults
     func saveCustomFilterLists(_ customFilterLists: [FilterList]) {
-        if let data = try? JSONEncoder().encode(customFilterLists) {
-            UserDefaults.standard.set(data, forKey: customFilterListsKey)
+         // Can also run this in background if needed, though likely less frequent than selection changes
+        Task.detached(priority: .background) { [defaults, customFilterListsKey] in // Capture necessary vars
+            if let data = try? JSONEncoder().encode(customFilterLists) {
+                defaults.set(data, forKey: customFilterListsKey)
+                // await ConcurrentLogManager.shared.log("Saved custom filter lists.") // Optional
+            } else {
+                 // Log error if encoding fails
+                 await ConcurrentLogManager.shared.log("Failed to encode customFilterLists for saving.")
+            }
         }
     }
+
 
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
         guard let containerURL = getSharedContainerURL() else { return false }
+        // Check for the JSON rule file, as that's what's actually used
         let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
         return FileManager.default.fileExists(atPath: fileURL.path)
     }
 
-    /// Loads filter rules from a JSON file
     func loadFilterRules(for filter: FilterList) -> ([[String: Any]], [[String: Any]]?)? {
         guard let containerURL = getSharedContainerURL() else { return nil }
         let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
         let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
 
         do {
+             guard FileManager.default.fileExists(atPath: fileURL.path) else {
+                 // If the primary rule file doesn't exist, treat it as empty/error
+                 Task { await ConcurrentLogManager.shared.log("Rule file missing for \(filter.name): \(fileURL.path)") }
+                 return ([], nil)
+             }
             let data = try Data(contentsOf: fileURL)
             let rules = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]]
 
@@ -188,11 +233,10 @@ class FilterListLoader {
             Task {
                 await ConcurrentLogManager.shared.log("Error loading rules for \(filter.name): \(error)")
             }
-            return nil
+            return ([], nil)
         }
     }
 
-    /// Retrieves the shared container URL
     func getSharedContainerURL() -> URL? {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
     }
