@@ -1,5 +1,5 @@
 // background.js
-const NATIVE_APP_ID = "application.id";
+const NATIVE_APP_ID = "com.0xcube.wBlock.wBlock-Scripts";
 const LOG_PREFIX = "[wBlock Scripts]";
 const CHUNK_TIMEOUT = 30000; // 30 seconds
 

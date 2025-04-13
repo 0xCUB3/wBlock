@@ -9,7 +9,7 @@ import OSLog
 import SafariServices
 
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
-    static let logger = Logger(subsystem: "com.0xcube.wBlock.wBlockScripts", category: "SafariWebExtensionHandler")
+    static let logger = Logger(subsystem: "com.0xcube.wBlock.wBlock-Scripts", category: "SafariWebExtensionHandler")
     let engine = try? ContentBlockerEngineWrapper(appGroupID: "DNP7DGUB7B.wBlock")
 
     //    func beginRequest(with context: NSExtensionContext) {

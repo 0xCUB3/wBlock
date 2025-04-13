@@ -292,23 +292,22 @@
   };
 
 
-    // applyAdvancedBlockingData would then use await onLoad(true) for CSS
-    // and await onLoad(false) for scripts/scriptlets.
     const applyAdvancedBlockingData = async (data) => {
-        log.info(`(applyAdvancedBlockingData) Applying data for: ${window.location.href}`);
+        log.info(
+          `(applyAdvancedBlockingData) Applying scriptlets, scripts, css, ExtendedCss...`,
+        );
+        log.info(`(applyAdvancedBlockingData) Frame url: ${window.location.href}`);
+        log.info(`(applyAdvancedBlockingData) Data: `, data);
 
-        // Await DOMContentLoaded (or immediate if past) for JS
-        await onLoad(false);
         await applyScriptlets(data?.scriptlets);
         await applyScripts(data?.scripts);
-
-        // Await full load for CSS (potentially)
-        await onLoad(true);
         await applyCss(data?.cssInject);
-        await applyExtendedCss(data?.cssExtended); // ExtendedCss might also need full load
+        await applyExtendedCss(data?.cssExtended);
 
-        log.info(`(applyAdvancedBlockingData) Finished applying data`);
-    };
+        log.info(
+          `(applyAdvancedBlockingData) Applied scriptlets, scripts, css, ExtendedCss`,
+        );
+      };
 
   // Simplified request handler
   const requestBlockingData = async (url) => {
