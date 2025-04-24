@@ -26,31 +26,6 @@ class UpdateController: ObservableObject {
        
     private init() {}
        
-    /// Checks for app updates
-    func checkForUpdates() async {
-        isCheckingForUpdates = true
-        defer { isCheckingForUpdates = false }
-           
-        do {
-            let versionString = try await fetchLatestVersion()
-            latestVersion = versionString
-               
-            let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
-               
-            logger.debug("Current version: \(currentVersion)")
-            logger.debug("Latest version: \(versionString)")
-               
-            updateAvailable = versionString.compare(currentVersion, options: .numeric) == .orderedDescending
-            if updateAvailable {
-                logger.debug("Update available")
-            } else {
-                logger.debug("No update available")
-            }
-        } catch {
-            logger.error("Error checking for updates: \(error.localizedDescription)")
-        }
-    }
-       
     /// Schedules background updates for filter lists
     func scheduleBackgroundUpdates(filterListManager: FilterListManager) async {
         // Cancel existing timer if any

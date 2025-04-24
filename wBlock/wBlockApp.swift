@@ -42,7 +42,6 @@ struct wBlockApp: App {
                 .task {
                     // Request notification permissions
                     try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                    await updateController.checkForUpdates()
                     await updateController.scheduleBackgroundUpdates(filterListManager: filterListManager)
                 }
                 .alert(isPresented: $updateController.updateAvailable) {
