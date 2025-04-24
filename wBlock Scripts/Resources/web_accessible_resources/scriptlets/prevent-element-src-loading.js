@@ -106,6 +106,90 @@ var main = (() => {
     return new RegExp(escaped);
   };
 
+  // Scriptlets/src/helpers/trusted-types-utils.ts
+  var getTrustedTypesApi = (source) => {
+    const policyApi = source?.api?.policy;
+    if (policyApi) {
+      return policyApi;
+    }
+    const POLICY_NAME = "AGPolicy";
+    const trustedTypesWindow = window;
+    const trustedTypes = trustedTypesWindow.trustedTypes;
+    const isSupported = !!trustedTypes;
+    const TrustedTypeEnum = {
+      HTML: "TrustedHTML",
+      Script: "TrustedScript",
+      ScriptURL: "TrustedScriptURL"
+    };
+    if (!isSupported) {
+      return {
+        name: POLICY_NAME,
+        isSupported,
+        TrustedType: TrustedTypeEnum,
+        createHTML: (input) => input,
+        createScript: (input) => input,
+        createScriptURL: (input) => input,
+        create: (type, input) => input,
+        getAttributeType: () => null,
+        convertAttributeToTrusted: (tagName, attribute, value) => value,
+        getPropertyType: () => null,
+        convertPropertyToTrusted: (tagName, property, value) => value,
+        isHTML: () => false,
+        isScript: () => false,
+        isScriptURL: () => false
+      };
+    }
+    const policy = trustedTypes.createPolicy(POLICY_NAME, {
+      createHTML: (input) => input,
+      createScript: (input) => input,
+      createScriptURL: (input) => input
+    });
+    const createHTML = (input) => policy.createHTML(input);
+    const createScript = (input) => policy.createScript(input);
+    const createScriptURL = (input) => policy.createScriptURL(input);
+    const create = (type, input) => {
+      switch (type) {
+        case TrustedTypeEnum.HTML:
+          return createHTML(input);
+        case TrustedTypeEnum.Script:
+          return createScript(input);
+        case TrustedTypeEnum.ScriptURL:
+          return createScriptURL(input);
+        default:
+          return input;
+      }
+    };
+    const getAttributeType = trustedTypes.getAttributeType.bind(trustedTypes);
+    const convertAttributeToTrusted = (tagName, attribute, value, elementNS, attrNS) => {
+      const type = getAttributeType(tagName, attribute, elementNS, attrNS);
+      return type ? create(type, value) : value;
+    };
+    const getPropertyType = trustedTypes.getPropertyType.bind(trustedTypes);
+    const convertPropertyToTrusted = (tagName, property, value, elementNS) => {
+      const type = getPropertyType(tagName, property, elementNS);
+      return type ? create(type, value) : value;
+    };
+    const isHTML = trustedTypes.isHTML.bind(trustedTypes);
+    const isScript = trustedTypes.isScript.bind(trustedTypes);
+    const isScriptURL = trustedTypes.isScriptURL.bind(trustedTypes);
+    return {
+      name: POLICY_NAME,
+      isSupported,
+      TrustedType: TrustedTypeEnum,
+      createHTML,
+      createScript,
+      createScriptURL,
+      create,
+      getAttributeType,
+      convertAttributeToTrusted,
+      getPropertyType,
+      convertPropertyToTrusted,
+      isHTML,
+      isScript,
+      isScriptURL
+    };
+  };
+
   // Scriptlets/src/scriptlets/prevent-element-src-loading.js
   function preventElementSrcLoading(source, tagName, match) {
     if (typeof Proxy === "undefined" || typeof Reflect === "undefined") {
@@ -133,13 +217,7 @@ var main = (() => {
     } else {
       return;
     }
-    const hasTrustedTypes = window.trustedTypes && typeof window.trustedTypes.createPolicy === "function";
-    let policy;
-    if (hasTrustedTypes) {
-      policy = window.trustedTypes.createPolicy("AGPolicy", {
-        createScriptURL: (arg) => arg
-      });
-    }
+    const policy = getTrustedTypesApi(source);
     const SOURCE_PROPERTY_NAME = tagName === "link" ? "href" : "src";
     const ONERROR_PROPERTY_NAME = "onerror";
     const searchRegexp = toRegExp(match);
@@ -249,7 +327,8 @@ var main = (() => {
     hit,
     toRegExp,
     safeGetDescriptor,
-    noopFunc
+    noopFunc,
+    getTrustedTypesApi
   ];
   return __toCommonJS(prevent_element_src_loading_exports);
 })();

@@ -27,6 +27,7 @@ class FilterListManager: ObservableObject {
     @Published var showRecommendedFiltersAlert = false
     @Published var showResetToDefaultAlert = false
     @Published var showingNoUpdatesAlert = false
+    @Published var ruleCounts: [UUID: Int] = [:]
 
     // Dependencies
     private let loader: FilterListLoader

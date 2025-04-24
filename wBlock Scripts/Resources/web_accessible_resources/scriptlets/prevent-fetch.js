@@ -25,6 +25,26 @@ var main = (() => {
     preventFetchNames: () => preventFetchNames
   });
 
+  // Scriptlets/src/helpers/number-utils.ts
+  var nativeIsNaN = (num) => {
+    const native = Number.isNaN || window.isNaN;
+    return native(num);
+  };
+  var nativeIsFinite = (num) => {
+    const native = Number.isFinite || window.isFinite;
+    return native(num);
+  };
+  var getNumberFromString = (rawString) => {
+    const parsedDelay = parseInt(rawString, 10);
+    const validDelay = nativeIsNaN(parsedDelay) ? null : parsedDelay;
+    return validDelay;
+  };
+  function getRandomIntInclusive(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
   // Scriptlets/src/helpers/log-message.ts
   var logMessage = (source, message, forced = false, convertMessageToString = true) => {
     const {
@@ -79,6 +99,9 @@ var main = (() => {
       return;
     }
     const response = new Response(responseBody, {
+      headers: {
+        "Content-Length": `${responseBody.length}`
+      },
       status: 200,
       statusText: "OK"
     });
@@ -173,6 +196,44 @@ var main = (() => {
       }
       return `${key}:"${recordValueStr}"`;
     }).join(" ");
+  }
+  function getRandomStrByLength(length) {
+    let result = "";
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~";
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i += 1) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+  }
+  function generateRandomResponse(customResponseText) {
+    let customResponse = customResponseText;
+    if (customResponse === "true") {
+      customResponse = Math.random().toString(36).slice(-10);
+      return customResponse;
+    }
+    customResponse = customResponse.replace("length:", "");
+    const rangeRegex = /^\d+-\d+$/;
+    if (!rangeRegex.test(customResponse)) {
+      return null;
+    }
+    let rangeMin = getNumberFromString(customResponse.split("-")[0]);
+    let rangeMax = getNumberFromString(customResponse.split("-")[1]);
+    if (!nativeIsFinite(rangeMin) || !nativeIsFinite(rangeMax)) {
+      return null;
+    }
+    if (rangeMin > rangeMax) {
+      const temp = rangeMin;
+      rangeMin = rangeMax;
+      rangeMax = temp;
+    }
+    const LENGTH_RANGE_LIMIT = 500 * 1e3;
+    if (rangeMax > LENGTH_RANGE_LIMIT) {
+      return null;
+    }
+    const length = getRandomIntInclusive(rangeMin, rangeMax);
+    customResponse = getRandomStrByLength(length);
+    return customResponse;
   }
 
   // Scriptlets/src/helpers/response-utils.ts
@@ -315,6 +376,8 @@ var main = (() => {
       strResponseBody = "[]";
     } else if (responseBody === "emptyStr") {
       strResponseBody = "";
+    } else if (responseBody === "true" || responseBody.match(/^length:\d+-\d+$/)) {
+      strResponseBody = generateRandomResponse(responseBody);
     } else {
       logMessage(source, `Invalid responseBody parameter: '${responseBody}'`);
       return;
@@ -410,7 +473,13 @@ var main = (() => {
     getRequestProps,
     parseMatchProps,
     isValidParsedData,
-    getMatchPropsData
+    getMatchPropsData,
+    generateRandomResponse,
+    nativeIsFinite,
+    nativeIsNaN,
+    getNumberFromString,
+    getRandomIntInclusive,
+    getRandomStrByLength
   ];
   return __toCommonJS(prevent_fetch_exports);
 })();

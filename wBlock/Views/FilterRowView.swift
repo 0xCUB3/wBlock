@@ -99,14 +99,30 @@ struct FilterRowView: View {
             }
         }
         .task(id: filter.isSelected) {
-            self.ruleCount = await loadRuleCount()
+            let count = await loadRuleCount()
+            ruleCount = count
+            await MainActor.run {
+                filterListManager.ruleCounts[filter.id] = count
+            }
         }
         .onAppear {
-            Task { self.ruleCount = await loadRuleCount() }
+            Task {
+                let count = await loadRuleCount()
+                ruleCount = count
+                await MainActor.run {
+                    filterListManager.ruleCounts[filter.id] = count
+                }
+            }
         }
         .onChange(of: filterListManager.isUpdating) { isUpdating in
             if !isUpdating {
-                Task { self.ruleCount = await loadRuleCount() }
+                Task {
+                    let count = await loadRuleCount()
+                    ruleCount = count
+                    await MainActor.run {
+                        filterListManager.ruleCounts[filter.id] = count
+                    }
+                }
             }
         }
     }

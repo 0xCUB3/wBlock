@@ -92,15 +92,30 @@ var main = (() => {
   };
 
   // Scriptlets/src/scriptlets/inject-css-in-shadow-dom.js
-  function injectCssInShadowDom(source, cssRule, hostSelector = "") {
+  function injectCssInShadowDom(source, cssRule, hostSelector = "", cssInjectionMethod = "adoptedStyleSheets") {
     if (!Element.prototype.attachShadow || typeof Proxy === "undefined" || typeof Reflect === "undefined") {
+      return;
+    }
+    if (cssInjectionMethod !== "adoptedStyleSheets" && cssInjectionMethod !== "styleTag") {
+      logMessage(source, `Unknown cssInjectionMethod: ${cssInjectionMethod}`);
       return;
     }
     if (cssRule.match(/(url|image-set)\(.*\)/i)) {
       logMessage(source, '"url()" function is not allowed for css rules');
       return;
     }
-    const callback = (shadowRoot) => {
+    const injectStyleTag = (shadowRoot) => {
+      try {
+        const styleTag = document.createElement("style");
+        styleTag.innerText = cssRule;
+        shadowRoot.appendChild(styleTag);
+        hit(source);
+      } catch (error) {
+        logMessage(source, `Unable to inject style tag due to: 
+'${error.message}'`);
+      }
+    };
+    const injectAdoptedStyleSheets = (shadowRoot) => {
       try {
         const stylesheet = new CSSStyleSheet();
         try {
@@ -111,12 +126,19 @@ var main = (() => {
           return;
         }
         shadowRoot.adoptedStyleSheets = [...shadowRoot.adoptedStyleSheets, stylesheet];
-      } catch {
-        const styleTag = document.createElement("style");
-        styleTag.innerText = cssRule;
-        shadowRoot.appendChild(styleTag);
+        hit(source);
+      } catch (error) {
+        logMessage(source, `Unable to inject adopted style sheet due to: 
+'${error.message}'`);
+        injectStyleTag(shadowRoot);
       }
-      hit(source);
+    };
+    const callback = (shadowRoot) => {
+      if (cssInjectionMethod === "adoptedStyleSheets") {
+        injectAdoptedStyleSheets(shadowRoot);
+      } else if (cssInjectionMethod === "styleTag") {
+        injectStyleTag(shadowRoot);
+      }
     };
     hijackAttachShadow(window, hostSelector, callback);
   }

@@ -142,6 +142,90 @@ var main = (() => {
     }
   };
 
+  // Scriptlets/src/helpers/trusted-types-utils.ts
+  var getTrustedTypesApi = (source) => {
+    const policyApi = source?.api?.policy;
+    if (policyApi) {
+      return policyApi;
+    }
+    const POLICY_NAME = "AGPolicy";
+    const trustedTypesWindow = window;
+    const trustedTypes = trustedTypesWindow.trustedTypes;
+    const isSupported = !!trustedTypes;
+    const TrustedTypeEnum = {
+      HTML: "TrustedHTML",
+      Script: "TrustedScript",
+      ScriptURL: "TrustedScriptURL"
+    };
+    if (!isSupported) {
+      return {
+        name: POLICY_NAME,
+        isSupported,
+        TrustedType: TrustedTypeEnum,
+        createHTML: (input) => input,
+        createScript: (input) => input,
+        createScriptURL: (input) => input,
+        create: (type, input) => input,
+        getAttributeType: () => null,
+        convertAttributeToTrusted: (tagName, attribute, value) => value,
+        getPropertyType: () => null,
+        convertPropertyToTrusted: (tagName, property, value) => value,
+        isHTML: () => false,
+        isScript: () => false,
+        isScriptURL: () => false
+      };
+    }
+    const policy = trustedTypes.createPolicy(POLICY_NAME, {
+      createHTML: (input) => input,
+      createScript: (input) => input,
+      createScriptURL: (input) => input
+    });
+    const createHTML = (input) => policy.createHTML(input);
+    const createScript = (input) => policy.createScript(input);
+    const createScriptURL = (input) => policy.createScriptURL(input);
+    const create = (type, input) => {
+      switch (type) {
+        case TrustedTypeEnum.HTML:
+          return createHTML(input);
+        case TrustedTypeEnum.Script:
+          return createScript(input);
+        case TrustedTypeEnum.ScriptURL:
+          return createScriptURL(input);
+        default:
+          return input;
+      }
+    };
+    const getAttributeType = trustedTypes.getAttributeType.bind(trustedTypes);
+    const convertAttributeToTrusted = (tagName, attribute, value, elementNS, attrNS) => {
+      const type = getAttributeType(tagName, attribute, elementNS, attrNS);
+      return type ? create(type, value) : value;
+    };
+    const getPropertyType = trustedTypes.getPropertyType.bind(trustedTypes);
+    const convertPropertyToTrusted = (tagName, property, value, elementNS) => {
+      const type = getPropertyType(tagName, property, elementNS);
+      return type ? create(type, value) : value;
+    };
+    const isHTML = trustedTypes.isHTML.bind(trustedTypes);
+    const isScript = trustedTypes.isScript.bind(trustedTypes);
+    const isScriptURL = trustedTypes.isScriptURL.bind(trustedTypes);
+    return {
+      name: POLICY_NAME,
+      isSupported,
+      TrustedType: TrustedTypeEnum,
+      createHTML,
+      createScript,
+      createScriptURL,
+      create,
+      getAttributeType,
+      convertAttributeToTrusted,
+      getPropertyType,
+      convertPropertyToTrusted,
+      isHTML,
+      isScript,
+      isScriptURL
+    };
+  };
+
   // Scriptlets/src/helpers/node-text-utils.ts
   var handleExistingNodes = (selector, handler, parentSelector) => {
     const processNodes = (parent) => {
@@ -174,16 +258,12 @@ var main = (() => {
   var replaceNodeText = (source, node, pattern, replacement) => {
     const { textContent } = node;
     if (textContent) {
-      if (node.nodeName === "SCRIPT" && window.trustedTypes && window.trustedTypes.createPolicy) {
-        const policy = window.trustedTypes.createPolicy("AGPolicy", {
-          createScript: (string) => string
-        });
-        const modifiedText = textContent.replace(pattern, replacement);
-        const trustedReplacement = policy.createScript(modifiedText);
-        node.textContent = trustedReplacement;
-      } else {
-        node.textContent = textContent.replace(pattern, replacement);
+      let modifiedText = textContent.replace(pattern, replacement);
+      if (node.nodeName === "SCRIPT") {
+        const trustedTypesApi = getTrustedTypesApi(source);
+        modifiedText = trustedTypesApi.createScript(modifiedText);
       }
+      node.textContent = modifiedText;
       hit(source);
     }
   };
@@ -259,7 +339,8 @@ var main = (() => {
     hit,
     nodeListToArray,
     getAddedNodes,
-    toRegExp
+    toRegExp,
+    getTrustedTypesApi
   ];
   return __toCommonJS(trusted_replace_node_text_exports);
 })();

@@ -9,59 +9,45 @@ import SwiftUI
 
 struct FilterStatsBanner: View {
     @ObservedObject var filterListManager: FilterListManager
-    @State private var totalRulesCount: Int = 0
 
     private var enabledFiltersCount: Int {
         filterListManager.filterLists.filter { $0.isSelected }.count
     }
-
-    private func calculateProspectiveTotalRulesCount() async -> Int {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") else { return 0 }
-
-        let enabledFilters = filterListManager.filterLists.filter { $0.isSelected }
-
-        func countRulesForFilter(_ filter: FilterList) -> Int {
-            let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
-            let advURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
-            func count(_ url: URL) -> Int {
-                guard FileManager.default.fileExists(atPath: url.path) else { return 0 }
-                do {
-                    let data = try Data(contentsOf: url)
-                    if let arr = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] { return arr.count }
-                } catch {}
-                return 0
-            }
-            return count(fileURL) + count(advURL)
+    private var totalRulesCount: Int {
+        let enabledIDs = filterListManager.filterLists.filter { $0.isSelected }.map(\.id)
+        return enabledIDs.reduce(0) { sum, id in
+            sum + (filterListManager.ruleCounts[id] ?? 0)
         }
+    }
 
-        return await Task.detached {
-            enabledFilters.reduce(0) { $0 + countRulesForFilter($1) }
-        }.value
+    private var pillInfo: (color: Color, textColor: Color) {
+        switch totalRulesCount {
+        case 0..<140_000: return (Color(NSColor.controlBackgroundColor), .blue)
+        case 140_000..<150_000: return (.yellow.opacity(0.50), .orange)
+        default: return (.red.opacity(0.38), .red)
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 48) {
-                StatCard(
-                    title: "Enabled Lists",
-                    value: "\(enabledFiltersCount)",
-                    icon: "list.bullet.rectangle"
-                )
-                StatCard(
-                    title: "Rule Count",
-                    value: "\(totalRulesCount)",
-                    icon: "shield.lefthalf.filled"
-                )
-            }
-            .help("Projected rule count if you Apply Changes now")
+        HStack(spacing: 28) {
+            StatCard(
+                title: "Enabled Lists",
+                value: "\(enabledFiltersCount)",
+                icon: "list.bullet.rectangle",
+                pillColor: Color(NSColor.controlBackgroundColor),
+                valueColor: .blue
+            )
+            StatCard(
+                title: "Rule Count",
+                value: "\(totalRulesCount)",
+                icon: "shield.lefthalf.filled",
+                pillColor: pillInfo.color,
+                valueColor: pillInfo.textColor
+            )
         }
+        .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        .padding(.vertical, 4)
-        .task(id: filterListManager.filterLists.map(\.isSelected)) {
-            self.totalRulesCount = await calculateProspectiveTotalRulesCount()
-        }
-        .onChange(of: filterListManager.filterLists.map(\.isSelected)) { _ in
-            Task { self.totalRulesCount = await calculateProspectiveTotalRulesCount() }
-        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .help("Projected rule count if you Apply Changes now")
     }
 }
