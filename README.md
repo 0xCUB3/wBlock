@@ -2,6 +2,8 @@
   <img src="https://github.com/user-attachments/assets/cf640d7c-7713-450c-9463-ac75ed4a9c36" alt="wBlock Logo" width="128"/>
 </p>
 
+![CleanShot 2025-04-24 at 16 49 53](https://github.com/user-attachments/assets/a37e03b0-68d6-4a4b-b00a-f88da28f144c)
+
 # wBlock: The end of Safari ad-blocking B.S.
 
 wBlock is a powerful content blocker for macOS that cuts through the noise, delivering a clean and private browsing experience without the hassle. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance and maximum blocking. 
@@ -20,8 +22,6 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 - Automatic updates for filter lists (in progress)
 - Detailed logging for troubleshooting
 - Missing filter detection and easy installation
-
-![CleanShot 2025-04-24 at 16 49 53](https://github.com/user-attachments/assets/a37e03b0-68d6-4a4b-b00a-f88da28f144c)
 
 ![CleanShot 2025-04-24 at 16 50 49](https://github.com/user-attachments/assets/5efff737-7e93-4814-905b-ceb452311582)
 
