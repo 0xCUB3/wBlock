@@ -1,5 +1,4 @@
 //
-//
 //  wBlockApp.swift
 //  wBlock
 //
@@ -14,6 +13,8 @@ import UserNotifications
 struct wBlockApp: App {
     @StateObject private var filterListManager = FilterListManager()
     @StateObject private var updateController = UpdateController.shared
+
+    @State private var commandState = ContentViewCommandState()
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -30,7 +31,10 @@ struct wBlockApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(filterListManager: filterListManager)
+            ContentView(
+                filterListManager: filterListManager,
+                commandState: $commandState
+            )
                 .frame(width: 700, height: 500)
                 .fixedSize()
                 .environmentObject(updateController)
@@ -38,7 +42,6 @@ struct wBlockApp: App {
                 .task {
                     // Request notification permissions
                     try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-
                     await updateController.checkForUpdates()
                     await updateController.scheduleBackgroundUpdates(filterListManager: filterListManager)
                 }
@@ -55,7 +58,33 @@ struct wBlockApp: App {
         }
         .windowResizability(.contentSize)
         .commands {
-            CommandGroup(replacing: .newItem) { }  // Disable New Window command
+            CommandGroup(replacing: .newItem) { } // Disable New Window command
+
+            CommandMenu("wBlock Actions") {
+                Button("Check for Updates", action: { commandState.refresh() })
+                    .keyboardShortcut("r", modifiers: [.command])
+
+                Button("Apply Changes", action: { commandState.applyChanges() })
+                    .keyboardShortcut("s", modifiers: [.command])
+                    // Could be: .disabled(!filterListManager.hasUnappliedChanges)
+
+                Divider()
+
+                Button("Add Custom Filter", action: { commandState.addCustomFilter() })
+                    .keyboardShortcut("n", modifiers: [.command])
+
+                Button("Show Logs", action: { commandState.showLogs() })
+                    .keyboardShortcut("l", modifiers: [.command, .shift])
+
+                Button("Show Settings", action: { commandState.showSettings() })
+                    .keyboardShortcut(",", modifiers: [.command])
+
+                Button("Reset to Default", action: { commandState.resetToDefault() })
+                    .keyboardShortcut("r", modifiers: [.command, .option])
+
+                Button("Toggle Only Enabled Filters", action: { commandState.toggleOnlyEnabled() })
+                    .keyboardShortcut("f", modifiers: [.command, .shift])
+            }
         }
     }
 }

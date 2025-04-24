@@ -8,6 +8,16 @@
 import SwiftUI
 import SwiftData
 
+struct ContentViewCommandState {
+    var refresh: () -> Void = {}
+    var applyChanges: () -> Void = {}
+    var showSettings: () -> Void = {}
+    var showLogs: () -> Void = {}
+    var addCustomFilter: () -> Void = {}
+    var toggleOnlyEnabled: () -> Void = {}
+    var resetToDefault: () -> Void = {}
+}
+
 struct ContentView: View {
     @ObservedObject var filterListManager: FilterListManager
     @EnvironmentObject var updateController: UpdateController
@@ -17,6 +27,8 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var showingAddFilterSheet = false
     @State private var showOnlyEnabledFilters = false
+
+    @Binding var commandState: ContentViewCommandState
 
     var body: some View {
         VStack {
@@ -82,7 +94,28 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 NSApplication.shared.windows.first?.delegate = windowDelegate
             }
-           
+            // Connect menu shortcuts when View appears
+            commandState.refresh = {
+                Task { await filterListManager.checkForUpdates() }
+            }
+            commandState.applyChanges = {
+                Task { await filterListManager.checkAndEnableFilters() }
+            }
+            commandState.showSettings = {
+                showingSettings = true
+            }
+            commandState.showLogs = {
+                showingLogs = true
+            }
+            commandState.addCustomFilter = {
+                showingAddFilterSheet = true
+            }
+            commandState.toggleOnlyEnabled = {
+                showOnlyEnabledFilters.toggle()
+            }
+            commandState.resetToDefault = {
+                filterListManager.showResetToDefaultAlert = true
+            }
         }
     }
 
@@ -126,7 +159,7 @@ struct ContentView: View {
             }
             .help("Settings")
         }
-        
+
         ToolbarItem(placement: .automatic) {
             Button(action: {
                 showOnlyEnabledFilters.toggle() // Toggle the state
@@ -149,5 +182,13 @@ struct ContentView: View {
             }
             .help("More Options")
         }
+    }
+
+    init(
+        filterListManager: FilterListManager,
+        commandState: Binding<ContentViewCommandState>
+    ) {
+        self.filterListManager = filterListManager
+        self._commandState = commandState
     }
 }
