@@ -4,9 +4,6 @@
 
 # wBlock: The end of Safari ad-blocking B.S.
 
-<a href="url"><img src="https://github.com/user-attachments/assets/a37e03b0-68d6-4a4b-b00a-f88da28f144c" height="auto" width="500" style="border-radius:50%"></a>
-
-
 ![CleanShot 2025-04-24 at 16 49 53](https://github.com/user-attachments/assets/a37e03b0-68d6-4a4b-b00a-f88da28f144c)
 
 
