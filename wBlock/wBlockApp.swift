@@ -84,6 +84,9 @@ struct wBlockApp: App {
 
                 Button("Toggle Only Enabled Filters", action: { commandState.toggleOnlyEnabled() })
                     .keyboardShortcut("f", modifiers: [.command, .shift])
+                
+                Button("Cheat Sheet (Keyboard Shortcuts)", action: { commandState.showCheatSheet() })
+                    .keyboardShortcut("k", modifiers: [.command, .shift])
             }
         }
     }

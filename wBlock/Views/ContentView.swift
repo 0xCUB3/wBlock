@@ -16,6 +16,7 @@ struct ContentViewCommandState {
     var addCustomFilter: () -> Void = {}
     var toggleOnlyEnabled: () -> Void = {}
     var resetToDefault: () -> Void = {}
+    var showCheatSheet: () -> Void = {}
 }
 
 struct ContentView: View {
@@ -27,6 +28,7 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var showingAddFilterSheet = false
     @State private var showOnlyEnabledFilters = false
+    @State private var showingCheatSheet = false
 
     @Binding var commandState: ContentViewCommandState
 
@@ -53,6 +55,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showingCheatSheet) {
+            KeyboardShortcutCheatSheetView()
         }
         .alert("Enable Recommended Filters?", isPresented: $filterListManager.showRecommendedFiltersAlert) {
             Button("Enable") {
@@ -115,6 +120,9 @@ struct ContentView: View {
             }
             commandState.resetToDefault = {
                 filterListManager.showResetToDefaultAlert = true
+            }
+            commandState.showCheatSheet = {
+                showingCheatSheet = true
             }
         }
     }
