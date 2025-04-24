@@ -2,11 +2,10 @@
 //  FilterStatsBanner.swift
 //  wBlock
 //
-//  Created by Alexander Skula on 3/11/25.
+//  Created by Alexander Skula on3/11/25.
 //
 
 import SwiftUI
-import SwiftData
 
 struct FilterStatsBanner: View {
     @ObservedObject var filterListManager: FilterListManager
@@ -16,23 +15,27 @@ struct FilterStatsBanner: View {
         filterListManager.filterLists.filter { $0.isSelected }.count
     }
 
-    // Async function to calculate rule count off the main thread
-    private func calculateTotalRulesCount() async -> Int {
+    private func calculateProspectiveTotalRulesCount() async -> Int {
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") else { return 0 }
-        let fileURL = containerURL.appendingPathComponent("blockerList.json")
 
-        // Perform file reading in a background task
-        return await Task.detached { // Use detached task for potential I/O blocking
-            do {
-                let data = try Data(contentsOf: fileURL)
-                if let rules = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                    return rules.count
-                }
-            } catch {
-                // Log error appropriately if needed, maybe using filterListManager's logger
-                print("Error loading blockerList.json for stats: \(error)")
+        let enabledFilters = filterListManager.filterLists.filter { $0.isSelected }
+
+        func countRulesForFilter(_ filter: FilterList) -> Int {
+            let fileURL = containerURL.appendingPathComponent("\(filter.name).json")
+            let advURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
+            func count(_ url: URL) -> Int {
+                guard FileManager.default.fileExists(atPath: url.path) else { return 0 }
+                do {
+                    let data = try Data(contentsOf: url)
+                    if let arr = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] { return arr.count }
+                } catch {}
+                return 0
             }
-            return 0
+            return count(fileURL) + count(advURL)
+        }
+
+        return await Task.detached {
+            enabledFilters.reduce(0) { $0 + countRulesForFilter($1) }
         }.value
     }
 
@@ -41,29 +44,24 @@ struct FilterStatsBanner: View {
             HStack(spacing: 48) {
                 StatCard(
                     title: "Enabled Lists",
-                    value: "\(enabledFiltersCount)", // This is usually fast
+                    value: "\(enabledFiltersCount)",
                     icon: "list.bullet.rectangle"
                 )
-
                 StatCard(
-                    title: "Active Rules",
-                    value: "\(totalRulesCount)", // Display the state variable
+                    title: "Rule Count",
+                    value: "\(totalRulesCount)",
                     icon: "shield.lefthalf.filled"
                 )
             }
+            .help("Projected rule count if you Apply Changes now")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 4)
-        .task(id: filterListManager.filterLists.filter { $0.isSelected }.map { $0.id }) { // Re-run if selected filters change
-            self.totalRulesCount = await calculateTotalRulesCount()
+        .task(id: filterListManager.filterLists.map(\.isSelected)) {
+            self.totalRulesCount = await calculateProspectiveTotalRulesCount()
         }
-        .onChange(of: filterListManager.hasUnappliedChanges) { hasChanges in
-             // Re-calculate when changes are potentially applied (i.e., hasUnappliedChanges becomes false)
-            if !hasChanges {
-                 Task {
-                      self.totalRulesCount = await calculateTotalRulesCount()
-                 }
-            }
+        .onChange(of: filterListManager.filterLists.map(\.isSelected)) { _ in
+            Task { self.totalRulesCount = await calculateProspectiveTotalRulesCount() }
         }
     }
 }

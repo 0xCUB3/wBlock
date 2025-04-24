@@ -22,17 +22,11 @@ struct FilterRowView: View {
 
     // Async function to load rule count
     private func loadRuleCount() async -> Int {
-        // No need to calculate if not selected
-        guard filter.isSelected else { return 0 }
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "DNP7DGUB7B.wBlock") else { return 0 }
-
         let standardFileURL = containerURL.appendingPathComponent("\(filter.name).json")
         let advancedFileURL = containerURL.appendingPathComponent("\(filter.name)_advanced.json")
-
-        // Perform file reading and counting in detached tasks to avoid blocking
         let standardCount = await Task.detached { await countRules(at: standardFileURL) }.value
         let advancedCount = await Task.detached { await countRules(at: advancedFileURL) }.value
-
         return standardCount + advancedCount
     }
 
@@ -66,8 +60,7 @@ struct FilterRowView: View {
                         .help("View Source")
                     }
 
-                    // Show rule count *only* if the filter is enabled and count > 0
-                    if filter.isSelected && ruleCount > 0 {
+                    if ruleCount > 0 {
                         Text("(\(ruleCount) rules)")
                             .font(.caption2)
                             .foregroundColor(.gray)
@@ -105,16 +98,15 @@ struct FilterRowView: View {
                 }
             }
         }
-        // Load the count when the view appears or when the filter selection state changes
         .task(id: filter.isSelected) {
-             self.ruleCount = await loadRuleCount()
+            self.ruleCount = await loadRuleCount()
         }
-        // Also reload count if the underlying filter files might have changed (e.g., after an update)
+        .onAppear {
+            Task { self.ruleCount = await loadRuleCount() }
+        }
         .onChange(of: filterListManager.isUpdating) { isUpdating in
-            if !isUpdating { // When an update finishes
-                 Task {
-                     self.ruleCount = await loadRuleCount()
-                 }
+            if !isUpdating {
+                Task { self.ruleCount = await loadRuleCount() }
             }
         }
     }
