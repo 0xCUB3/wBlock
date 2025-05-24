@@ -1,24 +1,18 @@
 //
 //  ContentBlockerRequestHandler.swift
-//  wBlock Extension
+//  wBlock Filters
 //
-//  Created by Alexander Skula on 7/17/24.
+//  Created by Alexander Skula on 5/23/25.
 //
 
 import Foundation
+import wBlockCoreService
 
-class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
-    func beginRequest(with context: NSExtensionContext) {
-        if let fileURL = FileStorage.shared.getContainerURL()?.appendingPathComponent("blockerList.json"),
-           FileManager.default.fileExists(atPath: fileURL.path),
-           let attachment = NSItemProvider(contentsOf: fileURL) {
-            
-            let item = NSExtensionItem()
-            item.attachments = [attachment]
-            context.completeRequest(returningItems: [item], completionHandler: nil)
-        } else {
-            print("Failed to locate blockerList.json in shared container")
-            context.completeRequest(returningItems: nil, completionHandler: nil)
-        }
+public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
+    public func beginRequest(with context: NSExtensionContext) {
+        ContentBlockerExtensionRequestHandler.handleRequest(
+            with: context,
+            groupIdentifier: GroupIdentifier.shared.value
+        )
     }
 }
