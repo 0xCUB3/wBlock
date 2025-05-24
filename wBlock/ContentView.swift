@@ -7,13 +7,15 @@
 
 import SwiftUI
 import wBlockCoreService
+import UserNotifications
 
 struct ContentView: View {
-    @StateObject private var filterManager = AppFilterManager()
+    @ObservedObject var filterManager: AppFilterManager
     @State private var showingAddFilterSheet = false
     @State private var showingLogsView = false
     @State private var showOnlyEnabledLists = false
-    
+    @Environment(\.scenePhase) var scenePhase
+
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
     }
@@ -97,7 +99,11 @@ struct ContentView: View {
                 }
             }
         } message: {
+            #if os(iOS)
+            Text("The selected filters contain more than 50,000 rules, which exceeds Safari's limit on iOS. Only the AdGuard Base Filter will be enabled by default.")
+            #else
             Text("The selected filters contain more than 150,000 rules, which exceeds Safari's limit. Your filter selection will be automatically reduced to essential filters only.")
+            #endif
         }
         .overlay {
             if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
@@ -119,6 +125,9 @@ struct ContentView: View {
         }
         .onAppear {
             Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
+            #if os(iOS)
+            requestNotificationPermission()
+            #endif
         }
         #if os(macOS)
         .toolbar {
@@ -136,7 +145,7 @@ struct ContentView: View {
                 } label: {
                     Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                 }
-                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges) // Added hasUnappliedChanges
+                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges)
                 .help("Apply selected filters and reload Safari")
                 
                 Button {
@@ -162,8 +171,59 @@ struct ContentView: View {
             }
         }
         #endif
+        #if os(iOS)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .background && filterManager.hasUnappliedChanges {
+                scheduleNotification(delay: 1) // Reduced delay to 1 second
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
+            print("Received applyWBlockChangesNotification in ContentView.")
+            // Ensure we are on the main thread for UI updates if needed
+            // and that the app is in a state where applying changes makes sense.
+            if filterManager.hasUnappliedChanges {
+                print("Triggering applyChanges from notification observer.")
+                filterManager.showingApplyProgressSheet = true // Show progress sheet
+                Task {
+                    await filterManager.applyChanges()
+                }
+            }
+        }
+        #endif
     }
     
+    #if os(iOS)
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted {
+                print("Notification permission granted.")
+            } else if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func scheduleNotification(delay: TimeInterval = 1.0) { // Added delay parameter, default to 1 second
+        let content = UNMutableNotificationContent()
+        content.title = "Psst! You forgot something!"
+        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
+        content.sound = .default
+        content.userInfo = ["action_type": "apply_wblock_changes"] // Add userInfo for tap action
+
+        // Schedule the notification
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error.localizedDescription)")
+            } else {
+                print("Notification scheduled successfully.")
+            }
+        }
+    }
+    #endif
+
     #if os(iOS)
     private var headerView: some View {
         HStack {
@@ -178,7 +238,7 @@ struct ContentView: View {
                 Button { Task { await filterManager.checkAndEnableFilters() } } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                 }
-                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges) // Added hasUnappliedChanges
+                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges)
                 
                 Button { showingLogsView = true } label: {
                     Image(systemName: "doc.text.magnifyingglass")
@@ -205,7 +265,7 @@ struct ContentView: View {
                 valueColor: .primary
             )
             StatCard(
-                title: "Safari Rules", // Changed title to reflect compiled rules
+                title: "Safari Rules",
                 value: filterManager.lastRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
                 pillColor: ruleCountPillColor,
@@ -217,6 +277,15 @@ struct ContentView: View {
     
     private var ruleCountPillColor: Color {
         let count = filterManager.lastRuleCount
+        #if os(iOS)
+        if count >= 50_000 {
+            return .red
+        } else if count >= 48_000 {
+            return Color(red: 1.0, green: 0.85, blue: 0.3)
+        } else {
+            return .clear
+        }
+        #else
         if count >= 150_000 {
             return .red
         } else if count >= 140_000 {
@@ -224,6 +293,7 @@ struct ContentView: View {
         } else {
             return .clear
         }
+        #endif
     }
     
     private func listsForCategory(_ category: FilterListCategory) -> [FilterList] {

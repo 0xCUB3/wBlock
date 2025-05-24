@@ -23,7 +23,7 @@ struct UpdatePopupView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(alignment: .leading, spacing: 20) { // Align content to the top leading edge
             // Header (no redundant subtitle)
             HStack {
                 Text(filterManager.isLoading ? "Downloading Updates" : "Available Updates")
@@ -98,32 +98,31 @@ struct UpdatePopupView: View {
                 }
                 #if os(macOS)
                 .listStyle(.bordered(alternatesRowBackgrounds: true))
+                .frame(minHeight: 150, maxHeight: 300) // Keep frame for macOS
                 #else
-                .listStyle(.insetGrouped)
+                .listStyle(.plain) // Use plain list style for iOS, no fixed frame
                 #endif
-                .frame(height: 250)
                 .transition(.opacity)
             }
 
             // Buttons
             HStack(spacing: 20) {
                 if !filterManager.isLoading {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
-                    .keyboardShortcut(.cancelAction)
-
                     Spacer()
-                    
                     Button("Download") {
                         Task {
                             let filtersToUpdate = filterManager.availableUpdates.filter { selectedFilters.contains($0.id) }
                             await filterManager.downloadSelectedFilters(filtersToUpdate)
                         }
                     }
+                    #if os(macOS)
                     .buttonStyle(.borderedProminent)
+                    #else
+                    // Default button style for iOS
+                    #endif
                     .disabled(selectedFilters.isEmpty)
                     .keyboardShortcut(.defaultAction)
+                    Spacer()
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
@@ -134,8 +133,8 @@ struct UpdatePopupView: View {
         .frame(minWidth: 420, idealWidth: 450, maxWidth: 480,
                minHeight: 300, idealHeight: 350, maxHeight: 400)
         #else
-        .frame(minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
-               minHeight: 0, idealHeight: .infinity, maxHeight: .infinity)
+        // Ensure the VStack takes up available space and aligns content to the top
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         #endif
     }
 }

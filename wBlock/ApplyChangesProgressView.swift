@@ -111,13 +111,13 @@ struct ApplyChangesProgressView: View {
             minWidth: 420, idealWidth: 450, maxWidth: 480,
             minHeight: 300, idealHeight: 350, maxHeight: 400
         )
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         #else
         .frame(
             minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
             minHeight: 0, idealHeight: .infinity, maxHeight: .infinity
         )
         #endif
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
     
     private var titleText: String {

@@ -235,8 +235,13 @@ class AppFilterManager: ObservableObject {
             groupIdentifier: GroupIdentifier.shared.value
         )
         
-        // Check if we exceed Safari's 150k rule limit
-        if ruleCount > 150000 {
+        // Check if we exceed Safari's rule limit (150k macOS, 50k iOS)
+        #if os(iOS)
+        let ruleLimit = 50000
+        #else
+        let ruleLimit = 150000
+        #endif
+        if ruleCount > ruleLimit {
             isLoading = false
             progress = 0
             await MainActor.run {
@@ -589,17 +594,22 @@ class AppFilterManager: ObservableObject {
             filterLists[index].isSelected = false
         }
 
+
+        #if os(iOS)
+        let essentialFilters = [
+            "AdGuard Base Filter"
+        ]
+        #else
         let essentialFilters = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
             "Online Malicious URL Blocklist"
         ]
+        #endif
 
         for index in filterLists.indices {
-            if essentialFilters.contains(filterLists[index].name) {
-                filterLists[index].isSelected = true
-            }
+            filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)
         }
 
         loader.saveSelectedState(for: filterLists)

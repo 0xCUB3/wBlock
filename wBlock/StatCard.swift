@@ -38,9 +38,17 @@ struct StatCard: View {
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
         .background(
-            Capsule()
-                .fill(pillColor.opacity(0.85))
-                .shadow(color: pillColor.opacity(0.08), radius: 2, x: 0, y: 1)
+            Group {
+                #if os(iOS)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(pillColor.opacity(0.85))
+                    .shadow(color: pillColor.opacity(0.08), radius: 2, x: 0, y: 1)
+                #else
+                Capsule()
+                    .fill(pillColor.opacity(0.85))
+                    .shadow(color: pillColor.opacity(0.08), radius: 2, x: 0, y: 1)
+                #endif
+            }
         )
     }
 }

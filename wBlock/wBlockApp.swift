@@ -12,8 +12,12 @@ import SwiftData
 struct wBlockApp: App {
     #if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #elseif os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     #endif
-    
+
+    @StateObject private var filterManager = AppFilterManager()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -29,7 +33,15 @@ struct wBlockApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(filterManager: filterManager)
+                .onAppear {
+                    #if os(macOS)
+                    appDelegate.filterManager = filterManager
+                    #elseif os(iOS)
+                    // Pass filterManager to AppDelegate for iOS as well
+                    appDelegate.filterManager = filterManager
+                    #endif
+                }
         }
         .modelContainer(sharedModelContainer)
     }
