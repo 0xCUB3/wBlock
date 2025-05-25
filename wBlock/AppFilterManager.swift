@@ -367,7 +367,7 @@ class AppFilterManager: ObservableObject {
             progress = Float(processedFiltersCount) / Float(totalFiltersCount) * 0.7 // Up to 70% for conversion
 
             currentFilterName = targetInfo.primaryCategory.rawValue // More user-friendly
-            conversionStageDescription = "Converting for \(targetInfo.primaryCategory.rawValue)..."
+            conversionStageDescription = "Converting \(targetInfo.primaryCategory.rawValue)..."
             await ConcurrentLogManager.shared.log("ApplyChanges: Converting rules for \(targetInfo.bundleIdentifier) (\(targetInfo.rulesFilename)). Source lines: \(rulesString.components(separatedBy: .newlines).count)")
             
             try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
@@ -761,7 +761,7 @@ class AppFilterManager: ObservableObject {
 
     func addCustomFilterList(_ filter: FilterList) {
         if !customFilterLists.contains(where: { $0.url == filter.url }) {
-            var newFilterToAdd = filter
+            let newFilterToAdd = filter
 
             customFilterLists.append(newFilterToAdd)
             loader.saveCustomFilterLists(customFilterLists)

@@ -195,4 +195,19 @@ class FilterListLoader {
     func getSharedContainerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
     }
+
+    /// Reads the content of a filter list from the local file system
+    func readLocalFilterContent(_ filter: FilterList) -> String? {
+        guard let containerURL = getSharedContainerURL() else { return nil }
+        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        
+        do {
+            return try String(contentsOf: fileURL, encoding: .utf8)
+        } catch {
+            Task {
+                await ConcurrentLogManager.shared.log("Error reading local filter content for \(filter.name): \(error)")
+            }
+            return nil
+        }
+    }
 }
