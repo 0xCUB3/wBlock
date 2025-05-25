@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import wBlockCoreService
 
 struct ApplyChangesProgressView: View {
     @ObservedObject var filterManager: AppFilterManager

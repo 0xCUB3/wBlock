@@ -7,6 +7,7 @@
 
 import os.log
 import Foundation
+import UniformTypeIdentifiers
 
 /// Implements Safari content blocker extension logic.
 /// This handler is responsible for loading content blocking rules from the
@@ -24,60 +25,55 @@ public enum ContentBlockerExtensionRequestHandler {
     /// - Parameters:
     ///   - context: The extension context that initiated the request.
     ///   - groupIdentifier: The app group identifier used to access the shared container.
-    public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String) {
-        os_log(.info, "Start loading the content blocker")
+    public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String, rulesFilenameInAppGroup: String) {
+        os_log(.info, "ContentBlockerExtensionRequestHandler: Preparing to load rules for target file: %@", rulesFilenameInAppGroup)
 
-        // Get the shared container URL using the provided group identifier
-        guard
-            let appGroupURL = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: groupIdentifier
-            )
-        else {
-            context.cancelRequest(
-                withError: createError(code: 1001, message: "Failed to access App Group container.")
-            )
+        guard let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
+            os_log(.error, "Failed to access App Group container.")
+            context.cancelRequest(withError: createError(code: 1001, message: "Failed to access App Group container."))
             return
         }
 
-        // Construct the path to the shared blocker list file
-        let sharedFileURL = appGroupURL.appendingPathComponent(Constants.SAFARI_BLOCKER_FILE_NAME)
+        let sharedFileURL = appGroupURL.appendingPathComponent(rulesFilenameInAppGroup)
+        var rulesToLoadURL: URL?
 
-        // Determine which blocker list file to use
-        var blockerListFileURL = sharedFileURL
-        if !FileManager.default.fileExists(atPath: sharedFileURL.path) {
-            os_log(.info, "No blocker list file found. Using the default one.")
-
-            // Fall back to the default blocker list included in the bundle
-            guard
-                let defaultURL = Bundle.main.url(forResource: "blockerList", withExtension: "json")
-            else {
-                context.cancelRequest(
-                    withError: createError(
-                        code: 1002,
-                        message: "Failed to find default blocker list."
-                    )
-                )
+        if FileManager.default.fileExists(atPath: sharedFileURL.path) {
+            rulesToLoadURL = sharedFileURL
+            os_log(.info, "Found rules in app group: %@", sharedFileURL.path)
+        } else {
+            os_log(.info, "Rules file %@ not found in app group. Falling back to bundled blockerList.json.", rulesFilenameInAppGroup)
+            // Each extension should have its own "blockerList.json" as a fallback.
+            // The name "blockerList.json" is hardcoded in many of your ContentBlockerRequestHandler.swift files already.
+            if let bundledFallbackURL = Bundle.main.url(forResource: "blockerList", withExtension: "json") {
+                rulesToLoadURL = bundledFallbackURL
+                os_log(.info, "Using bundled fallback: %@", bundledFallbackURL.path)
+            } else {
+                os_log(.error, "FATAL: Bundled blockerList.json also not found for extension trying to load rules for %@.", rulesFilenameInAppGroup)
+                let emptyRules = "[]"
+                let item = NSExtensionItem()
+                item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+                context.completeRequest(returningItems: [item]) { _ in
+                    os_log(.info, "Finished loading EMPTY content blocker due to missing files for originally sought: %@", rulesFilenameInAppGroup)
+                }
                 return
             }
-            blockerListFileURL = defaultURL
         }
 
-        // Create an attachment with the blocker list file
-        guard let attachment = NSItemProvider(contentsOf: blockerListFileURL) else {
-            context.cancelRequest(
-                withError: createError(code: 1003, message: "Failed to create attachment.")
-            )
+        guard let finalURL = rulesToLoadURL, let attachment = NSItemProvider(contentsOf: finalURL) else {
+            os_log(.error, "Failed to create attachment from URL: %@", rulesToLoadURL?.path ?? "nil URL")
+            let emptyRules = "[]"
+            let item = NSExtensionItem()
+            item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+            context.completeRequest(returningItems: [item]) { _ in
+                os_log(.info, "Finished loading EMPTY content blocker due to attachment failure for: %@", rulesFilenameInAppGroup)
+            }
             return
         }
 
-        // Prepare and complete the extension request with the blocker list
         let item = NSExtensionItem()
         item.attachments = [attachment]
-
-        context.completeRequest(
-            returningItems: [item]
-        ) { _ in
-            os_log(.info, "Finished loading the content blocker")
+        context.completeRequest(returningItems: [item]) { _ in
+            os_log(.info, "Successfully completed request for content blocker rules from %@ (originally sought %@)", finalURL.path, rulesFilenameInAppGroup)
         }
     }
 

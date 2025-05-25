@@ -108,30 +108,27 @@ public enum ContentBlockerService {
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
     /// - Returns: The number of entries in the JSON array.
-    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String) -> Int {
-        os_log(.info, "Saving content blocker rules")
-
+    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String, targetRulesFilename: String) -> Int {
+        os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         do {
             guard let jsonData = jsonRules.data(using: .utf8) else {
-                // In theory, this cannot happen.
-                fatalError("Failed to convert string to bytes")
+                os_log(.error, "Failed to convert string to bytes for %@", targetRulesFilename)
+                return 0
             }
-            let rules =
-                try JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]]
+            let rules = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]]
 
-            measure(label: "Saving file") {
-                saveBlockerListFile(contents: jsonRules, groupIdentifier: groupIdentifier)
+            measure(label: "Saving pre-formatted file \(targetRulesFilename)") {
+                saveBlockerListFile(contents: jsonRules, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
             }
-
             return rules?.count ?? 0
         } catch {
             os_log(
                 .error,
-                "Failed to decode content blocker JSON: %@",
+                "Failed to decode/save pre-formatted content blocker JSON for %@: %@",
+                targetRulesFilename,
                 error.localizedDescription
             )
         }
-
         return 0
     }
 
@@ -142,31 +139,29 @@ public enum ContentBlockerService {
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
     /// - Returns: The number of Safari content blocker rules generated from the conversion.
-    public static func convertFilter(rules: String, groupIdentifier: String) -> Int {
-        let result = convertRules(rules: rules)
+    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String) -> Int {
+        let result = convertRules(rules: rules) // convertRules remains private and unchanged
 
-        measure(label: "Saving content blocking rules file") {
-            saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier)
+        measure(label: "Saving content blocking rules file \(targetRulesFilename)") {
+            saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
         }
+        // advancedRulesText handling remains as is, assuming it's for a single WebExtension or not category-specific yet.
+        if let advancedRulesText = result.advancedRulesText, !advancedRulesText.isEmpty {
+             measure(label: "Building and saving engine (global for now)") {
+                 do {
+                     let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                     _ = try webExtension.buildFilterEngine(rules: advancedRulesText)
+                 } catch {
+                     os_log(
+                         .error,
+                         "Failed to build and save the global filtering engine: %@",
+                         error.localizedDescription
+                     )
+                 }
+             }
+         }
 
-        if let advancedRulesText = result.advancedRulesText {
-            measure(label: "Building and saving engine") {
-                do {
-                    let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-
-                    // Build the engine and serialize it.
-                    _ = try webExtension.buildFilterEngine(rules: advancedRulesText)
-                } catch {
-                    os_log(
-                        .error,
-                        "Failed to build and save the filtering engine: %@",
-                        error.localizedDescription
-                    )
-                }
-            }
-        }
-
-        return result.safariRulesCount + result.advancedRulesCount
+        return result.safariRulesCount
     }
 }
 
@@ -237,26 +232,26 @@ extension ContentBlockerService {
     /// - Parameters:
     ///   - contents: String content to write to the blocker list file.
     ///   - groupIdentifier: App group identifier for accessing the shared container.
-    private static func saveBlockerListFile(contents: String, groupIdentifier: String) {
-        // Get the shared container URL.
+    private static func saveBlockerListFile(contents: String, groupIdentifier: String, filename: String) {
         guard
             let appGroupURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: groupIdentifier
             )
         else {
-            os_log(.error, "Failed to access the App Group container")
-
+            os_log(.error, "Failed to access the App Group container for file: %@", filename)
             return
         }
 
-        let sharedFileURL = appGroupURL.appendingPathComponent(Constants.SAFARI_BLOCKER_FILE_NAME)
+        let sharedFileURL = appGroupURL.appendingPathComponent(filename)
 
         do {
             try contents.data(using: .utf8)?.write(to: sharedFileURL)
+            os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
         } catch {
             os_log(
                 .error,
-                "Failed to save blockerList.json to the App Group container: %@",
+                "Failed to save %@ to the App Group container: %@",
+                filename,
                 error.localizedDescription
             )
         }

@@ -5,18 +5,43 @@
 //  Created by Alexander Skula on 5/25/25.
 //
 
-import UIKit
-import MobileCoreServices
+import Foundation
+import UniformTypeIdentifiers
+import wBlockCoreService
+import os.log
 
-class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
+public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
 
-    func beginRequest(with context: NSExtensionContext) {
-        let attachment = NSItemProvider(contentsOf: Bundle.main.url(forResource: "blockerList", withExtension: "json"))!
+    // --- CONFIGURE THESE FOR EACH EXTENSION ---
+    private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .annoyances
+    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = nil
+    private let myPlatform = Platform.iOS
+    // --- END CONFIGURATION ---
+
+    public func beginRequest(with context: NSExtensionContext) {
+        // Try primary category first
+        var targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: myPrimaryCategory, platform: myPlatform)
+
+        // If not found and there's a secondary category, try that (for combined extensions)
+        if targetInfo == nil, let secondary = mySecondaryCategory {
+            targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: secondary, platform: myPlatform)
+        }
         
-        let item = NSExtensionItem()
-        item.attachments = [attachment]
-        
-        context.completeRequest(returningItems: [item], completionHandler: nil)
+        guard let finalTargetInfo = targetInfo else {
+            os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for primaryCategory '%@' (secondary: '%@') on platform '%@'. Extension Bundle: %@",
+                   myPrimaryCategory.rawValue,
+                   mySecondaryCategory?.rawValue ?? "N/A",
+                   String(describing: myPlatform),
+                   Bundle.main.bundleIdentifier ?? "Unknown")
+            // Fallback to sending empty rules
+            let emptyRules = "[]"; let item = NSExtensionItem(); item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]; context.completeRequest(returningItems: [item]);
+            return
+        }
+
+        ContentBlockerExtensionRequestHandler.handleRequest(
+            with: context,
+            groupIdentifier: GroupIdentifier.shared.value,
+            rulesFilenameInAppGroup: finalTargetInfo.rulesFilename
+        )
     }
-    
 }

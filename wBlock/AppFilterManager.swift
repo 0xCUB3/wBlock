@@ -46,9 +46,10 @@ class AppFilterManager: ObservableObject {
     @Published var isInSavingPhase: Bool = false
     @Published var isInEnginePhase: Bool = false
     @Published var isInReloadPhase: Bool = false
+    @Published var currentPlatform: Platform
 
     // Dependencies
-    private let loader: FilterListLoader // Keep this private
+    private let loader: FilterListLoader
     private let updater: FilterListUpdater
     private let logManager: ConcurrentLogManager
 
@@ -60,9 +61,15 @@ class AppFilterManager: ObservableObject {
     }
 
     init() {
-        self.logManager = ConcurrentLogManager.shared // Use the existing shared instance
-        self.loader = FilterListLoader(logManager: self.logManager) // Pass it here
-        self.updater = FilterListUpdater(loader: self.loader, logManager: self.logManager) // And here
+        self.logManager = ConcurrentLogManager.shared
+        self.loader = FilterListLoader(logManager: self.logManager)
+        self.updater = FilterListUpdater(loader: self.loader, logManager: self.logManager)
+        
+        #if os(macOS)
+        self.currentPlatform = .macOS
+        #else
+        self.currentPlatform = .iOS
+        #endif
         
         setup()
     }
@@ -163,149 +170,167 @@ class AppFilterManager: ObservableObject {
         hasError = false
         progress = 0
         statusDescription = "Preparing to apply selected filters..."
-        
-        // Reset detailed tracking
+        await ConcurrentLogManager.shared.log("ApplyChanges: Started on \(currentPlatform == .macOS ? "macOS" : "iOS").")
+
         sourceRulesCount = 0
         conversionStageDescription = ""
         currentFilterName = ""
         processedFiltersCount = 0
+        totalFiltersCount = 0
         isInConversionPhase = false
         isInSavingPhase = false
-        isInEnginePhase = false
+        isInEnginePhase = false // Keep for global advanced rules if still used
         isInReloadPhase = false
 
-        let selectedFilters = filterLists.filter { $0.isSelected }
-        totalFiltersCount = selectedFilters.count
-        
-        if selectedFilters.isEmpty {
-            statusDescription = "No filter lists selected to apply."
-            isLoading = false
+        let allSelectedFilters = filterLists.filter { $0.isSelected }
+
+        if allSelectedFilters.isEmpty {
+            statusDescription = "No filter lists selected. Clearing rules from all extensions."
+            await ConcurrentLogManager.shared.log("ApplyChanges: No filters selected. Clearing all target extensions.")
+            // Clear rules for all relevant extensions
+            let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+            for targetInfo in platformTargets {
+                _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename)
+                _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+            }
+            isLoading = false; showingApplyProgressSheet = false; hasUnappliedChanges = false; lastRuleCount = 0
             return
         }
-
-        // Phase 1: Reading filter files (0-60% progress)
-        conversionStageDescription = "Reading filter files..."
-        var concatenatedRules = ""
-        var totalRulesRead = 0
         
-        for (index, filter) in selectedFilters.enumerated() {
-            currentFilterName = filter.name
-            processedFiltersCount = index
-            progress = Float(index) / Float(selectedFilters.count) * 0.6
-            
-            guard let containerURL = loader.getSharedContainerURL() else {
-                statusDescription = "Error: Unable to access shared container"
-                hasError = true
-                isLoading = false
-                return
+        // Group filters by their target ContentBlockerTargetInfo
+        var rulesByTargetInfo: [ContentBlockerTargetInfo: String] = [:]
+        var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
+
+        for filter in allSelectedFilters {
+            guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: currentPlatform) else {
+                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(currentPlatform == .macOS ? "macOS" : "iOS"). Skipping filter: \(filter.name)")
+                continue
             }
-            
+
+            guard let containerURL = loader.getSharedContainerURL() else {
+                statusDescription = "Error: Unable to access shared container for \(filter.name)"
+                hasError = true; isLoading = false; showingApplyProgressSheet = false; return
+            }
             let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            
+            var contentToAppend = ""
             if FileManager.default.fileExists(atPath: fileURL.path) {
                 do {
-                    let content = try String(contentsOf: fileURL, encoding: .utf8)
-                    // Use the stored sourceRuleCount if available, otherwise count on the fly
-                    let ruleCount = filter.sourceRuleCount ?? content.components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }.count
-                    totalRulesRead += ruleCount
-                    concatenatedRules += content + "\n"
-                    
-                    conversionStageDescription = "Read \(ruleCount) rules from \(filter.name)"
-                    try? await Task.sleep(nanoseconds: 50_000_000) // Small delay for UI update
+                    contentToAppend = try String(contentsOf: fileURL, encoding: .utf8) + "\n"
                 } catch {
-                    Task { await ConcurrentLogManager.shared.log("Error reading \(filter.name): \(error)") }
+                    await ConcurrentLogManager.shared.log("Error reading \(filter.name): \(error)")
                 }
+            } else {
+                await ConcurrentLogManager.shared.log("Warning: Filter file for \(filter.name) not found locally.")
             }
+            
+            rulesByTargetInfo[targetInfo, default: ""] += contentToAppend
+            sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? contentToAppend.components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }.count
         }
         
-        sourceRulesCount = totalRulesRead
-        processedFiltersCount = selectedFilters.count
-        progress = 0.6
+        sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +) // Sum of all source rules for UI
+        totalFiltersCount = rulesByTargetInfo.keys.count // Number of unique extensions to process
+
+        if totalFiltersCount == 0 {
+            statusDescription = "No matching extensions for selected filters."
+            isLoading = false; showingApplyProgressSheet = false; return
+        }
         
-        // Phase 2: Converting rules (60-75% progress)
+        var overallSafariRulesApplied = 0
+        let overallConversionStartTime = Date()
+        processedFiltersCount = 0 // Use this to track processed targets for progress
+
         isInConversionPhase = true
-        conversionStageDescription = "Converting \(sourceRulesCount) rules to Safari format..."
-        let conversionStartTime = Date()
-        
-        progress = 0.65
-        try? await Task.sleep(nanoseconds: 200_000_000) // Give UI more time to update before blocking call
-        
-        let ruleCount = ContentBlockerService.convertFilter(
-            rules: concatenatedRules,
-            groupIdentifier: GroupIdentifier.shared.value
-        )
-        
-        // Check if we exceed Safari's rule limit (150k macOS, 50k iOS)
-        #if os(iOS)
-        let ruleLimit = 50000
-        #else
-        let ruleLimit = 150000
-        #endif
-        if ruleCount > ruleLimit {
-            isLoading = false
-            progress = 0
-            await MainActor.run {
-                showingApplyProgressSheet = false
-                showingFilterLimitAlert = true
+        for (targetInfo, rulesString) in rulesByTargetInfo {
+            processedFiltersCount += 1
+            progress = Float(processedFiltersCount) / Float(totalFiltersCount) * 0.7 // Up to 70% for conversion
+
+            currentFilterName = targetInfo.primaryCategory.rawValue // More user-friendly
+            conversionStageDescription = "Converting for \(targetInfo.primaryCategory.rawValue)..."
+            await ConcurrentLogManager.shared.log("ApplyChanges: Converting rules for \(targetInfo.bundleIdentifier) (\(targetInfo.rulesFilename)). Source lines: \(rulesString.components(separatedBy: .newlines).count)")
+            
+            try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
+
+            let ruleCountForThisTarget = ContentBlockerService.convertFilter(
+                rules: rulesString.isEmpty ? "[]" : rulesString, // Ensure "[]" for empty
+                groupIdentifier: GroupIdentifier.shared.value,
+                targetRulesFilename: targetInfo.rulesFilename
+            )
+            overallSafariRulesApplied += ruleCountForThisTarget
+            await ConcurrentLogManager.shared.log("ApplyChanges: Converted \(ruleCountForThisTarget) Safari rules for \(targetInfo.bundleIdentifier).")
+
+            let ruleLimit = currentPlatform == .iOS ? 50000 : 150000
+            if ruleCountForThisTarget > ruleLimit {
+                await ConcurrentLogManager.shared.log("CRITICAL: Rule limit \(ruleLimit) exceeded for \(targetInfo.bundleIdentifier) with \(ruleCountForThisTarget) rules.")
+                statusDescription = "Rule limit exceeded for \(targetInfo.primaryCategory.rawValue) extension (\(ruleCountForThisTarget)/\(ruleLimit))."
+                hasError = true; isLoading = false;
+                await MainActor.run { // Ensure UI updates on main thread
+                    self.showingApplyProgressSheet = false
+                    self.showingFilterLimitAlert = true
+                }
+                return
             }
-            return
         }
-        
-        let conversionEndTime = Date()
-        let conversionDuration = String(format: "%.2fs", conversionEndTime.timeIntervalSince(conversionStartTime))
-        lastConversionTime = conversionDuration
-        lastRuleCount = ruleCount
-        
         isInConversionPhase = false
-        progress = 0.75
-        
-        // Phase 3: Saving and building engine (75-90% progress)
-        isInSavingPhase = true
-        conversionStageDescription = "Saving content blocking rules..."
-        progress = 0.8
-        try? await Task.sleep(nanoseconds: 150_000_000) // Give UI time to update
-        
-        isInSavingPhase = false
-        isInEnginePhase = true
-        conversionStageDescription = "Building and saving filtering engine..."
-        progress = 0.85
-        try? await Task.sleep(nanoseconds: 150_000_000) // Give UI time to update
-        
-        isInEnginePhase = false
-        progress = 0.9
+        lastRuleCount = overallSafariRulesApplied
+        lastConversionTime = String(format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
+        progress = 0.7
+        await ConcurrentLogManager.shared.log("ApplyChanges: All conversions finished. Total Safari rules: \(overallSafariRulesApplied). Time: \(lastConversionTime)")
 
-        // Phase 4: Reloading Safari (90-100% progress)
+        // Reloading phase
+        conversionStageDescription = "Reloading Safari extensions..."
         isInReloadPhase = true
-        conversionStageDescription = "Reloading Safari content blocker..."
-        let reloadStartTime = Date()
+        let overallReloadStartTime = Date()
+        var allReloadsSuccessful = true
         
-        print("Blocker ID: \(APP_CONTENT_BLOCKER_ID)")
-        let result = ContentBlockerService.reloadContentBlocker(withIdentifier: APP_CONTENT_BLOCKER_ID)
-        
-        let reloadEndTime = Date()
-        let reloadDuration = String(format: "%.2fs", reloadEndTime.timeIntervalSince(reloadStartTime))
-        lastReloadTime = reloadDuration
-        
-        isInReloadPhase = false
-        progress = 1.0
+        processedFiltersCount = 0
+        for targetInfo in rulesByTargetInfo.keys { // Reload only affected targets
+            processedFiltersCount += 1
+            progress = 0.7 + (Float(processedFiltersCount) / Float(totalFiltersCount) * 0.3) // 70% to 100%
+            currentFilterName = targetInfo.primaryCategory.rawValue
+            await ConcurrentLogManager.shared.log("ApplyChanges: Reloading \(targetInfo.bundleIdentifier)...")
 
-        switch result {
-        case .success:
-            conversionStageDescription = "Conversion completed successfully"
-            statusDescription = "Successfully loaded \(ruleCount) rules from \(selectedFilters.count) list(s) to Safari."
-            hasError = false
-            hasUnappliedChanges = false
-            Task { await ConcurrentLogManager.shared.log("ApplyChanges: SUCCESS - Loaded \(ruleCount) rules from \(selectedFilters.count) lists.") }
-        case .failure(let error):
-            conversionStageDescription = "Failed to reload Safari extension"
-            statusDescription = "Failed to reload extension: \(error.localizedDescription)"
-            hasError = true
-            Task { await ConcurrentLogManager.shared.log("ApplyChanges: FAILURE - Failed to reload extension: \(error.localizedDescription)") }
+            let reloadResult = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+            if case .failure(let error) = reloadResult {
+                allReloadsSuccessful = false
+                await ConcurrentLogManager.shared.log("ApplyChanges: FAILED to reload \(targetInfo.bundleIdentifier): \(error.localizedDescription)")
+                if !hasError { statusDescription = "Failed to reload \(targetInfo.primaryCategory.rawValue) extension." }
+                hasError = true // Mark that at least one error occurred
+            } else {
+                 await ConcurrentLogManager.shared.log("ApplyChanges: Successfully reloaded \(targetInfo.bundleIdentifier).")
+            }
+            try? await Task.sleep(nanoseconds: 20_000_000) // Small delay
         }
+        
+        // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
+        let allPlatformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        let affectedTargetBundleIDs = Set(rulesByTargetInfo.keys.map { $0.bundleIdentifier })
+        for targetInfo in allPlatformTargets {
+            if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
+                 await ConcurrentLogManager.shared.log("ApplyChanges: Ensuring \(targetInfo.bundleIdentifier) (no selected rules) is also reloaded to apply empty list.")
+                 _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename) // Ensure it has an empty list
+                 _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+            }
+        }
+
+        isInReloadPhase = false
+        lastReloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
+        progress = 1.0
+        await ConcurrentLogManager.shared.log("ApplyChanges: All reloads finished. Time: \(lastReloadTime). All successful: \(allReloadsSuccessful)")
+
+        if allReloadsSuccessful && !hasError {
+            conversionStageDescription = "Process completed successfully!"
+            statusDescription = "Applied rules to \(rulesByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules."
+            hasUnappliedChanges = false
+        } else if !hasError { // Implies reload issue was the only problem
+            statusDescription = "Converted rules, but one or more extensions failed to reload."
+        } // If hasError was already true, statusDescription would reflect the earlier error.
 
         isLoading = false
-        // Don't reset progress here - keep it at 100% to show completion
-        saveFilterLists() // Save any potential updates to sourceRuleCount from on-the-fly counting
+        // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
+        // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
+
+        saveFilterLists() // Save any state like sourceRuleCount if updated
+        await ConcurrentLogManager.shared.log("ApplyChanges: Finished. Final Status: \(statusDescription)")
     }
 
     func updateMissingFilters() async { // This is for when the "Missing Filters" sheet is shown
@@ -515,7 +540,7 @@ class AppFilterManager: ObservableObject {
         let newFilter = FilterList(id: UUID(),
                                    name: newName.isEmpty ? (url.host ?? "Custom Filter") : newName,
                                    url: url,
-                                   category: .custom,
+                                   category: FilterListCategory.custom,
                                    isSelected: true,
                                    description: "User-added filter list.",
                                    sourceRuleCount: nil)
