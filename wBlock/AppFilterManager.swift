@@ -34,7 +34,12 @@ class AppFilterManager: ObservableObject {
     @Published var showingApplyProgressSheet = false
     @Published var showingDownloadCompleteAlert = false
     @Published var downloadCompleteMessage = ""
-    @Published var showingFilterLimitAlert = false
+    
+    // Per-category rule count tracking
+    @Published var ruleCountsByCategory: [FilterListCategory: Int] = [:]
+    @Published var categoriesApproachingLimit: Set<FilterListCategory> = []
+    @Published var showingCategoryWarningAlert = false
+    @Published var categoryWarningMessage = ""
     
     // Detailed progress tracking
     @Published var sourceRulesCount: Int = 0
@@ -163,6 +168,69 @@ class AppFilterManager: ObservableObject {
         hasUnappliedChanges = true
     }
 
+    // MARK: - Per-category rule limit management
+    
+    private func resetCategoryToRecommended(_ category: FilterListCategory) async {
+        await ConcurrentLogManager.shared.log("Resetting category \(category.rawValue) to recommended filters due to rule limit exceeded.")
+        
+        // Define recommended filters per category
+        let recommendedFiltersByCategory: [FilterListCategory: [String]] = [
+            .ads: ["AdGuard Base Filter"],
+            .privacy: ["AdGuard Tracking Protection Filter", "EasyPrivacy"],
+            .security: ["Online Malicious URL Blocklist"],
+            .annoyances: ["AdGuard Annoyances Filter"],
+            .multipurpose: ["d3Host List by d3ward", "Anti-Adblock List"],
+            .foreign: [],
+            .experimental: [],
+            .custom: []
+        ]
+        
+        let recommendedForCategory = recommendedFiltersByCategory[category] ?? []
+        
+        // Disable all filters in this category first
+        for index in filterLists.indices {
+            if filterLists[index].category == category {
+                filterLists[index].isSelected = false
+            }
+        }
+        
+        // Enable only recommended filters for this category
+        for index in filterLists.indices {
+            if filterLists[index].category == category && recommendedForCategory.contains(filterLists[index].name) {
+                filterLists[index].isSelected = true
+            }
+        }
+        
+        loader.saveSelectedState(for: filterLists)
+        await ConcurrentLogManager.shared.log("Reset category \(category.rawValue) to recommended filters: \(recommendedForCategory.joined(separator: ", "))")
+    }
+    
+    func getCategoryRuleCount(_ category: FilterListCategory) -> Int {
+        return ruleCountsByCategory[category] ?? 0
+    }
+    
+    func isCategoryApproachingLimit(_ category: FilterListCategory) -> Bool {
+        return categoriesApproachingLimit.contains(category)
+    }
+    
+    func showCategoryWarning(for category: FilterListCategory) {
+        let ruleCount = getCategoryRuleCount(category)
+        let ruleLimit = currentPlatform == .iOS ? 50000 : 150000
+        let warningThreshold = Int(Double(ruleLimit) * 0.8) // 80% threshold
+        
+        categoryWarningMessage = """
+        Category "\(category.rawValue)" is approaching its rule limit:
+        
+        Current rules: \(ruleCount.formatted())
+        Limit: \(ruleLimit.formatted())
+        Warning threshold: \(warningThreshold.formatted())
+        
+        When this category exceeds \(ruleLimit.formatted()) rules, it will be automatically reset to recommended filters only to stay within Safari's content blocker limits.
+        """
+        
+        showingCategoryWarningAlert = true
+    }
+
     // MARK: - Delegated methods
 
     func applyChanges() async {
@@ -258,16 +326,85 @@ class AppFilterManager: ObservableObject {
             overallSafariRulesApplied += ruleCountForThisTarget
             await ConcurrentLogManager.shared.log("ApplyChanges: Converted \(ruleCountForThisTarget) Safari rules for \(targetInfo.bundleIdentifier).")
 
+            // Update per-category rule count
+            await MainActor.run {
+                self.ruleCountsByCategory[targetInfo.primaryCategory] = ruleCountForThisTarget
+                if let secondaryCategory = targetInfo.secondaryCategory {
+                    self.ruleCountsByCategory[secondaryCategory] = ruleCountForThisTarget
+                }
+            }
+
             let ruleLimit = currentPlatform == .iOS ? 50000 : 150000
+            let warningThreshold = currentPlatform == .iOS ? 48000 : 140000
+            
+            // Check if this category is approaching the limit
+            await MainActor.run {
+                if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
+                    self.categoriesApproachingLimit.insert(targetInfo.primaryCategory)
+                    if let secondaryCategory = targetInfo.secondaryCategory {
+                        self.categoriesApproachingLimit.insert(secondaryCategory)
+                    }
+                } else {
+                    self.categoriesApproachingLimit.remove(targetInfo.primaryCategory)
+                    if let secondaryCategory = targetInfo.secondaryCategory {
+                        self.categoriesApproachingLimit.remove(secondaryCategory)
+                    }
+                }
+            }
+            
             if ruleCountForThisTarget > ruleLimit {
                 await ConcurrentLogManager.shared.log("CRITICAL: Rule limit \(ruleLimit) exceeded for \(targetInfo.bundleIdentifier) with \(ruleCountForThisTarget) rules.")
-                statusDescription = "Rule limit exceeded for \(targetInfo.primaryCategory.rawValue) extension (\(ruleCountForThisTarget)/\(ruleLimit))."
-                hasError = true; isLoading = false;
-                await MainActor.run { // Ensure UI updates on main thread
-                    self.showingApplyProgressSheet = false
-                    self.showingFilterLimitAlert = true
+                
+                // Auto-reset this specific category instead of showing global alert
+                await resetCategoryToRecommended(targetInfo.primaryCategory)
+                if let secondaryCategory = targetInfo.secondaryCategory {
+                    await resetCategoryToRecommended(secondaryCategory)
                 }
-                return
+                
+                statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
+                await ConcurrentLogManager.shared.log("Auto-reset category \(targetInfo.primaryCategory.rawValue) due to rule limit exceeded.")
+                
+                // Re-process this target with the reset filters
+                let resetFiltersForCategory = allSelectedFilters.filter { 
+                    $0.category == targetInfo.primaryCategory || 
+                    (targetInfo.secondaryCategory != nil && $0.category == targetInfo.secondaryCategory!)
+                }
+                
+                var resetRulesString = ""
+                for filter in resetFiltersForCategory {
+                    if filter.isSelected {
+                        guard let containerURL = loader.getSharedContainerURL() else { continue }
+                        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                        if FileManager.default.fileExists(atPath: fileURL.path) {
+                            do {
+                                resetRulesString += try String(contentsOf: fileURL, encoding: .utf8) + "\n"
+                            } catch {
+                                await ConcurrentLogManager.shared.log("Error reading \(filter.name) after reset: \(error)")
+                            }
+                        }
+                    }
+                }
+                
+                let resetRuleCount = ContentBlockerService.convertFilter(
+                    rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: targetInfo.rulesFilename
+                )
+                
+                await MainActor.run {
+                    self.ruleCountsByCategory[targetInfo.primaryCategory] = resetRuleCount
+                    if let secondaryCategory = targetInfo.secondaryCategory {
+                        self.ruleCountsByCategory[secondaryCategory] = resetRuleCount
+                    }
+                    self.categoriesApproachingLimit.remove(targetInfo.primaryCategory)
+                    if let secondaryCategory = targetInfo.secondaryCategory {
+                        self.categoriesApproachingLimit.remove(secondaryCategory)
+                    }
+                }
+                
+                overallSafariRulesApplied += resetRuleCount
+                await ConcurrentLogManager.shared.log("ApplyChanges: After reset, \(targetInfo.primaryCategory.rawValue) now has \(resetRuleCount) rules.")
+                continue
             }
         }
         isInConversionPhase = false

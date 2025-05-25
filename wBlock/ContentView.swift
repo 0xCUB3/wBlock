@@ -92,18 +92,10 @@ struct ContentView: View {
         } message: {
             Text(filterManager.downloadCompleteMessage)
         }
-        .alert("Too Many Rules", isPresented: $filterManager.showingFilterLimitAlert) {
-            Button("Revert to Essential Filters") {
-                Task {
-                    await filterManager.revertToRecommendedFilters()
-                }
-            }
+        .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
+            Button("OK", role: .cancel) {}
         } message: {
-            #if os(iOS)
-            Text("The selected filters contain more than 50,000 rules, which exceeds Safari's limit on iOS. Only the AdGuard Base Filter will be enabled by default.")
-            #else
-            Text("The selected filters contain more than 150,000 rules, which exceeds Safari's limit. Your filter selection will be automatically reduced to essential filters only.")
-            #endif
+            Text(filterManager.categoryWarningMessage)
         }
         .overlay {
             if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
@@ -268,33 +260,13 @@ struct ContentView: View {
                 title: "Safari Rules",
                 value: filterManager.lastRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
-                pillColor: ruleCountPillColor,
+                pillColor: .clear, // Remove global pill color logic
                 valueColor: .primary
             )
         }
         .padding(.horizontal)
     }
     
-    private var ruleCountPillColor: Color {
-        let count = filterManager.lastRuleCount
-        #if os(iOS)
-        if count >= 50_000 {
-            return .red
-        } else if count >= 48_000 {
-            return Color(red: 1.0, green: 0.85, blue: 0.3)
-        } else {
-            return .clear
-        }
-        #else
-        if count >= 150_000 {
-            return .red
-        } else if count >= 140_000 {
-            return .yellow
-        } else {
-            return .clear
-        }
-        #endif
-    }
     
     private func listsForCategory(_ category: FilterListCategory) -> [FilterList] {
         filterManager.filterLists.filter { $0.category == category && (!showOnlyEnabledLists || $0.isSelected) }
@@ -306,10 +278,25 @@ struct ContentView: View {
     
     private func filterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(category.rawValue)
-                .font(.headline)
-                .foregroundColor(.primary)
-                .padding(.horizontal, 4)
+            HStack {
+                Text(category.rawValue)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                if filterManager.isCategoryApproachingLimit(category) {
+                    Button {
+                        filterManager.showCategoryWarning(for: category)
+                    } label: {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.orange)
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 4)
             
             VStack(spacing: 0) {
                 ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
