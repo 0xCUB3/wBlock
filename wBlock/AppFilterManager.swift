@@ -85,10 +85,59 @@ class AppFilterManager: ObservableObject {
         filterLists = loader.loadFilterLists()
         customFilterLists = loader.loadCustomFilterLists()
         loader.loadSelectedState(for: &filterLists)
-        checkAndEnableFilters() // This will eventually call applyChanges which might use rule counts
+        
+        // Load saved rule counts instead of reloading content blockers
+        loadSavedRuleCounts()
+        
         statusDescription = "Initialized with \(filterLists.count) filter list(s)."
-        // Call the new function to update versions and counts
+        // Update versions and counts in background without applying changes
         Task { await updateVersionsAndCounts() }
+    }
+    
+    private func loadSavedRuleCounts() {
+        // Load last known rule count
+        lastRuleCount = UserDefaults.standard.integer(forKey: "lastRuleCount")
+        
+        // Load category-specific rule counts
+        if let data = UserDefaults.standard.data(forKey: "ruleCountsByCategory"),
+           let savedCounts = try? JSONDecoder().decode([String: Int].self, from: data) {
+            for (key, value) in savedCounts {
+                if let category = FilterListCategory(rawValue: key) {
+                    ruleCountsByCategory[category] = value
+                }
+            }
+        }
+        
+        // Load categories approaching limit
+        if let data = UserDefaults.standard.data(forKey: "categoriesApproachingLimit"),
+           let categoryNames = try? JSONDecoder().decode([String].self, from: data) {
+            for name in categoryNames {
+                if let category = FilterListCategory(rawValue: name) {
+                    categoriesApproachingLimit.insert(category)
+                }
+            }
+        }
+    }
+    
+    private func saveRuleCounts() {
+        // Save global rule count
+        UserDefaults.standard.set(lastRuleCount, forKey: "lastRuleCount")
+        
+        // Save category-specific rule counts
+        var serializedCounts: [String: Int] = [:]
+        for (category, count) in ruleCountsByCategory {
+            serializedCounts[category.rawValue] = count
+        }
+        
+        if let data = try? JSONEncoder().encode(serializedCounts) {
+            UserDefaults.standard.set(data, forKey: "ruleCountsByCategory")
+        }
+        
+        // Save categories approaching limit
+        let categoryNames = categoriesApproachingLimit.map { $0.rawValue }
+        if let data = try? JSONEncoder().encode(categoryNames) {
+            UserDefaults.standard.set(data, forKey: "categoriesApproachingLimit")
+        }
     }
     
     func updateVersionsAndCounts() async {
@@ -112,7 +161,7 @@ class AppFilterManager: ObservableObject {
     }
 
     // MARK: - Core functionality
-    func checkAndEnableFilters() {
+    func checkAndEnableFilters(forceReload: Bool = false) {
         missingFilters.removeAll()
         for filter in filterLists where filter.isSelected {
             if !loader.filterFileExists(filter) {
@@ -121,7 +170,8 @@ class AppFilterManager: ObservableObject {
         }
         if !missingFilters.isEmpty {
             showMissingFiltersSheet = true
-        } else {
+        } else if forceReload || hasUnappliedChanges {
+            // Only apply changes if explicitly requested or if there are unapplied changes
             showingApplyProgressSheet = true
             Task {
                 await applyChanges()
@@ -238,6 +288,10 @@ class AppFilterManager: ObservableObject {
         hasError = false
         progress = 0
         statusDescription = "Preparing to apply selected filters..."
+        
+        // Give the UI a chance to update before starting heavy operations
+        try? await Task.sleep(nanoseconds: 200_000_000) // 200ms delay
+        
         await ConcurrentLogManager.shared.log("ApplyChanges: Started on \(currentPlatform == .macOS ? "macOS" : "iOS").")
 
         sourceRulesCount = 0
@@ -247,7 +301,7 @@ class AppFilterManager: ObservableObject {
         totalFiltersCount = 0
         isInConversionPhase = false
         isInSavingPhase = false
-        isInEnginePhase = false // Keep for global advanced rules if still used
+        isInEnginePhase = false
         isInReloadPhase = false
 
         let allSelectedFilters = filterLists.filter { $0.isSelected }
@@ -467,6 +521,10 @@ class AppFilterManager: ObservableObject {
         // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
 
         saveFilterLists() // Save any state like sourceRuleCount if updated
+        
+        // Save rule counts to UserDefaults for next app launch
+        saveRuleCounts()
+        
         await ConcurrentLogManager.shared.log("ApplyChanges: Finished. Final Status: \(statusDescription)")
     }
 
@@ -476,7 +534,7 @@ class AppFilterManager: ObservableObject {
 
         let totalSteps = Float(missingFilters.count)
         var completedSteps: Float = 0
-        var tempMissingFilters = self.missingFilters // Work on a temporary copy
+        let tempMissingFilters = self.missingFilters // Work on a temporary copy
 
         for filter in tempMissingFilters {
             let success = await updater.fetchAndProcessFilter(filter) // This now updates sourceRuleCount
@@ -622,7 +680,7 @@ class AppFilterManager: ObservableObject {
         var completedSteps: Float = 0
         var downloadedCount = 0
         
-        var tempMissingFilters = self.missingFilters
+        let tempMissingFilters = self.missingFilters
 
         for filter in tempMissingFilters {
             let success = await updater.fetchAndProcessFilter(filter)

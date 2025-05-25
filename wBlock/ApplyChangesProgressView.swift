@@ -97,10 +97,11 @@ struct ApplyChangesProgressView: View {
                 .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
             } else if filterManager.progress >= 1.0 && hasStatistics {
                 // Show statistics when complete
-                VStack {
-                    statisticsView
-                        .padding(20)
-                    Spacer()
+                ScrollView {
+                    VStack {
+                        statisticsView
+                            .padding(20)
+                    }
                 }
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
@@ -110,7 +111,7 @@ struct ApplyChangesProgressView: View {
         #if os(macOS)
         .frame(
             minWidth: 420, idealWidth: 450, maxWidth: 480,
-            minHeight: 300, idealHeight: 350, maxHeight: 400
+            minHeight: 350, idealHeight: 400, maxHeight: 500
         )
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         #else
@@ -119,6 +120,13 @@ struct ApplyChangesProgressView: View {
             minHeight: 0, idealHeight: .infinity, maxHeight: .infinity
         )
         #endif
+        // Set initial view state before starting the conversion process
+        .task {
+            if filterManager.isLoading {
+                // Give the UI a chance to render before starting heavy operations
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
+            }
+        }
     }
     
     private var titleText: String {
@@ -132,7 +140,8 @@ struct ApplyChangesProgressView: View {
     
     private var hasStatistics: Bool {
         filterManager.sourceRulesCount > 0 || filterManager.lastRuleCount > 0 || 
-        filterManager.lastConversionTime != "N/A" || filterManager.lastReloadTime != "N/A"
+        filterManager.lastConversionTime != "N/A" || filterManager.lastReloadTime != "N/A" ||
+        !filterManager.ruleCountsByCategory.isEmpty
     }
     
     @ViewBuilder
@@ -161,14 +170,14 @@ struct ApplyChangesProgressView: View {
             (
                 icon: "folder.badge.questionmark",
                 title: "Reading Files",
-                detail: filterManager.totalFiltersCount > 0 ? "\(filterManager.processedFiltersCount)/\(filterManager.totalFiltersCount) files" : nil,
+                detail: filterManager.totalFiltersCount > 0 ? "\(filterManager.processedFiltersCount)/\(filterManager.totalFiltersCount) extensions" : nil,
                 isActive: filterManager.processedFiltersCount < filterManager.totalFiltersCount && !filterManager.isInConversionPhase,
                 isCompleted: filterManager.processedFiltersCount >= filterManager.totalFiltersCount || filterManager.progress > 0.6
             ),
             (
                 icon: "gearshape.2",
                 title: "Converting Rules",
-                detail: nil,
+                detail: filterManager.currentFilterName.isEmpty ? nil : "Processing \(filterManager.currentFilterName)",
                 isActive: filterManager.isInConversionPhase,
                 isCompleted: filterManager.progress > 0.75
             ),
@@ -181,8 +190,8 @@ struct ApplyChangesProgressView: View {
             ),
             (
                 icon: "arrow.clockwise",
-                title: "Reloading Safari",
-                detail: nil,
+                title: "Reloading Extensions",
+                detail: filterManager.isInReloadPhase && !filterManager.currentFilterName.isEmpty ? "Reloading \(filterManager.currentFilterName)" : nil,
                 isActive: filterManager.isInReloadPhase,
                 isCompleted: filterManager.progress >= 1.0
             )
@@ -235,39 +244,77 @@ struct ApplyChangesProgressView: View {
     
     @ViewBuilder
     private var statisticsView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "chart.bar.doc.horizontal")
-                    .foregroundColor(.blue)
-                Text("Statistics")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-            }
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                let statisticsData = buildStatisticsData()
-                ForEach(Array(statisticsData.enumerated()), id: \.offset) { index, stat in
-                    statisticCard(
-                        title: stat.title,
-                        value: stat.value,
-                        icon: stat.icon,
-                        color: stat.color
-                    )
-                    .transition(.scale.combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.4).delay(Double(index) * 0.1), value: filterManager.progress)
+        VStack(alignment: .leading, spacing: 20) {
+            // Overall statistics
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                        .foregroundColor(.blue)
+                    Text("Overall Statistics")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    let statisticsData = buildOverallStatisticsData()
+                    ForEach(Array(statisticsData.enumerated()), id: \.offset) { index, stat in
+                        statisticCard(
+                            title: stat.title,
+                            value: stat.value,
+                            icon: stat.icon,
+                            color: stat.color
+                        )
+                        .transition(.scale.combined(with: .opacity))
+                        .animation(.easeInOut(duration: 0.4).delay(Double(index) * 0.1), value: filterManager.progress)
+                    }
                 }
             }
+            .padding(16)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+            
+            // Per-category statistics (if available)
+            if !filterManager.ruleCountsByCategory.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "square.grid.2x2")
+                            .foregroundColor(.orange)
+                        Text("Category Statistics")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
+                    
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        let categoryStatistics = buildCategoryStatisticsData()
+                        ForEach(Array(categoryStatistics.enumerated()), id: \.offset) { index, stat in
+                            statisticCard(
+                                title: stat.title,
+                                value: stat.value,
+                                icon: stat.icon,
+                                color: stat.color,
+                                showWarning: stat.showWarning
+                            )
+                            .transition(.scale.combined(with: .opacity))
+                            .animation(.easeInOut(duration: 0.4).delay(Double(index) * 0.1), value: filterManager.progress)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+            }
         }
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
     
-    private func buildStatisticsData() -> [(title: String, value: String, icon: String, color: Color)] {
+    private func buildOverallStatisticsData() -> [(title: String, value: String, icon: String, color: Color)] {
         var stats: [(title: String, value: String, icon: String, color: Color)] = []
         
         if filterManager.sourceRulesCount > 0 {
@@ -309,11 +356,91 @@ struct ApplyChangesProgressView: View {
         return stats
     }
     
-    private func statisticCard(title: String, value: String, icon: String, color: Color) -> some View {
+    private func buildCategoryStatisticsData() -> [(title: String, value: String, icon: String, color: Color, showWarning: Bool)] {
+        var stats: [(title: String, value: String, icon: String, color: Color, showWarning: Bool)] = []
+        
+        // Sort categories alphabetically for consistent display
+        let sortedCategories = filterManager.ruleCountsByCategory.keys.sorted { $0.rawValue < $1.rawValue }
+        
+        for category in sortedCategories {
+            // Skip "all" category as it's not a real content blocker category
+            if category == .all { continue }
+            
+            if let ruleCount = filterManager.ruleCountsByCategory[category] {
+                let showWarning = filterManager.categoriesApproachingLimit.contains(category)
+                stats.append((
+                    title: category.rawValue,
+                    value: ruleCount.formatted(),
+                    icon: categoryIcon(for: category),
+                    color: categoryColor(for: category),
+                    showWarning: showWarning
+                ))
+            }
+        }
+        
+        return stats
+    }
+    
+    private func categoryIcon(for category: FilterListCategory) -> String {
+        switch category {
+        case .ads:
+            return "rectangle.slash"
+        case .privacy:
+            return "eye.slash"
+        case .security:
+            return "shield"
+        case .multipurpose:
+            return "square.grid.2x2"
+        case .annoyances:
+            return "hand.raised"
+        case .experimental:
+            return "flask"
+        case .foreign:
+            return "globe"
+        case .custom:
+            return "gearshape"
+        default:
+            return "list.bullet"
+        }
+    }
+    
+    private func categoryColor(for category: FilterListCategory) -> Color {
+        switch category {
+        case .ads:
+            return .red
+        case .privacy:
+            return .blue
+        case .security:
+            return .green
+        case .multipurpose:
+            return .orange
+        case .annoyances:
+            return .purple
+        case .experimental:
+            return .yellow
+        case .foreign:
+            return .mint
+        case .custom:
+            return .gray
+        default:
+            return .primary
+        }
+    }
+    
+    private func statisticCard(title: String, value: String, icon: String, color: Color, showWarning: Bool = false) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(.title3)
+            ZStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .font(.title3)
+                
+                if showWarning {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 10))
+                        .offset(x: 12, y: -8)
+                }
+            }
             
             Text(value)
                 .font(.headline)

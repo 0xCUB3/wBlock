@@ -133,11 +133,11 @@ struct ContentView: View {
                 .help("Check for filter list updates")
                 
                 Button {
-                    Task { await filterManager.checkAndEnableFilters() }
+                    Task { await filterManager.checkAndEnableFilters(forceReload: true) }
                 } label: {
                     Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                 }
-                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges)
+                .disabled(filterManager.isLoading || enabledListsCount == 0)
                 .help("Apply selected filters and reload Safari")
                 
                 Button {
@@ -172,13 +172,10 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
             print("Received applyWBlockChangesNotification in ContentView.")
             // Ensure we are on the main thread for UI updates if needed
-            // and that the app is in a state where applying changes makes sense.
-            if filterManager.hasUnappliedChanges {
-                print("Triggering applyChanges from notification observer.")
-                filterManager.showingApplyProgressSheet = true // Show progress sheet
-                Task {
-                    await filterManager.applyChanges()
-                }
+            print("Triggering applyChanges from notification observer.")
+            filterManager.showingApplyProgressSheet = true // Show progress sheet
+            Task {
+                await filterManager.checkAndEnableFilters(forceReload: true)
             }
         }
         #endif
@@ -227,10 +224,10 @@ struct ContentView: View {
                 }
                 .disabled(filterManager.isLoading)
                 
-                Button { Task { await filterManager.checkAndEnableFilters() } } label: {
+                Button { Task { await filterManager.checkAndEnableFilters(forceReload: true) } } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                 }
-                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges)
+                .disabled(filterManager.isLoading || enabledListsCount == 0)
                 
                 Button { showingLogsView = true } label: {
                     Image(systemName: "doc.text.magnifyingglass")

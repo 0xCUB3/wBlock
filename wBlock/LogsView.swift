@@ -52,30 +52,27 @@ struct LogsView: View {
 
 
             // Scrollable text view showing the combined formatted logs.
-            ScrollView {
+            #if os(iOS)
+            SelectableTextView(text: logs)
+                .padding(8)
+                .background(Color.clear)
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5)))
+                .padding(.horizontal)
+            #else
+            TextEditor(text: .constant(logs)) // Use .constant if TextEditor is read-only
+                .font(.system(.body, design: .monospaced))
+                .padding(8)
+            #if os(macOS)
+                .background(Color(NSColor.textBackgroundColor))
+            #endif //TODO: add ios color
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5)))
                 #if os(iOS)
-                SelectableTextView(text: logs)
-                    .frame(height: 300) // Fixed height for consistent sizing
-                    .padding(8)
-                    .background(Color.clear)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5)))
-                #else
-                TextEditor(text: .constant(logs)) // Use .constant if TextEditor is read-only
-                    .font(.system(.body, design: .monospaced))
-                    .frame(height: 300) // Fixed height for consistent sizing
-                    .padding(8)
-                #if os(macOS)
-                    .background(Color(NSColor.textBackgroundColor))
-                #endif //TODO: add ios color
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5)))
-                    #if os(iOS)
-                    .disabled(true)
-                    #endif
+                .disabled(true)
                 #endif
-            }
-            .padding(.horizontal)
+                .padding(.horizontal)
+            #endif
 
 
             HStack(spacing: 20) {

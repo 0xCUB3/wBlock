@@ -72,10 +72,8 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "AdGuard Social Media Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks social media widgets and buttons."),
             FilterList(id: UUID(), name: "Fanboy's Annoyances Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: FilterListCategory.annoyances, description: "Hides in-page pop-ups, banners, and other unwanted page elements."),
             FilterList(id: UUID(), name: "Fanboy's Social Blocking List", url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!, category: FilterListCategory.annoyances, description: "Blocks social media content on webpages."),
-            FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."),
             FilterList(id: UUID(), name: "Online Malicious URL Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: FilterListCategory.security, isSelected: true, description: "Protects against malicious URLs, phishing sites, and malware."),
             FilterList(id: UUID(), name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Blocks ads and tracking servers to enhance privacy."),
-            FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content."),
             FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: FilterListCategory.multipurpose, isSelected: true,
                        description: "Comprehensive block list for ads and trackers."),
             FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Bypasses Anti-Adblock scripts used on some websites."),
@@ -92,16 +90,34 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "AdGuard Chinese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/224_optimized.txt")!, category: FilterListCategory.foreign)
         ]
 
+        #if os(macOS)
+        // Add macOS-only filters
+        filterLists.append(contentsOf: [
+            FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."),
+            FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content.")
+        ])
+        #endif
+
         // Set default selections for recommended filters
+        #if os(macOS)
         let recommendedFilters = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
-            "AdGuard Annoyances Filter",
             "EasyPrivacy",
+            "Online Malicious URL Blocklist",
+            "d3Host List by d3ward",
+            "Anti-Adblock List",
+            "Hagezi Pro Mini"
+        ]
+        #else
+        let recommendedFilters = [
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
             "Anti-Adblock List"
         ]
+        #endif
 
         for index in filterLists.indices {
             filterLists[index].isSelected = recommendedFilters.contains(filterLists[index].name)
@@ -172,33 +188,11 @@ class FilterListLoader {
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
         guard let containerURL = getSharedContainerURL() else { return false }
-        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt") // Check for the .txt file
-        return FileManager.default.fileExists(atPath: fileURL.path)
+        return FileManager.default.fileExists(atPath: containerURL.appendingPathComponent("\(filter.name).txt").path)
     }
-
-    // ADD THIS NEW METHOD
-    /// Reads the content of a locally stored .txt filter file
-    func readLocalFilterContent(_ filter: FilterList) -> String? {
-        guard let containerURL = getSharedContainerURL() else {
-            Task { await logManager.log("Cannot access shared container to read \(filter.name).txt") }
-            return nil
-        }
-        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            do {
-                return try String(contentsOf: fileURL, encoding: .utf8)
-            } catch {
-                Task { await logManager.log("Error reading local content of \(filter.name).txt: \(error.localizedDescription)") }
-                return nil
-            }
-        } else {
-            Task { await logManager.log("Local file \(filter.name).txt not found for rule counting.") }
-            return nil
-        }
-    }
-
+    
+    /// Gets the URL for the shared container
     func getSharedContainerURL() -> URL? {
-        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
     }
 }

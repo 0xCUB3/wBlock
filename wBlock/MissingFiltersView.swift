@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import wBlockCoreService
 
 struct MissingFiltersView: View {
     @ObservedObject var filterManager: AppFilterManager
@@ -16,8 +17,8 @@ struct MissingFiltersView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            // Header (no redundant subtitle)
+        VStack(alignment: .leading, spacing: 20) {
+            // Header
             HStack {
                 Text(filterManager.isLoading ? "Downloading Missing Filters" : "Missing Filters")
                     .font(.title2)
@@ -58,7 +59,8 @@ struct MissingFiltersView: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .frame(height: 150)
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
                 .transition(.opacity)
             } else {
                 // Filter list
@@ -70,17 +72,18 @@ struct MissingFiltersView: View {
                             Text(filter.description)
                                 .font(.caption)
                                 .foregroundColor(.gray)
-                                .lineLimit(2)
+                                .lineLimit(1)
                         }
                     }
                     .padding(.vertical, 4)
                 }
                 #if os(macOS)
                 .listStyle(.bordered(alternatesRowBackgrounds: true))
-                #else
-                .listStyle(.insetGrouped)
-                #endif
                 .frame(height: 200)
+                #else
+                .listStyle(.inset)
+                .frame(maxHeight: .infinity)
+                #endif
                 .transition(.opacity)
             }
 
@@ -103,17 +106,18 @@ struct MissingFiltersView: View {
                     .keyboardShortcut(.defaultAction)
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
+            #if os(iOS)
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+            #endif
         }
-        .padding()
-        .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
         #if os(macOS)
-        .frame(minWidth: 420, idealWidth: 450, maxWidth: 480,
-               minHeight: 300, idealHeight: 350, maxHeight: 400)
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding(20)
+        .frame(width: 400)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         #else
-        .frame(minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
-               minHeight: 0, idealHeight: .infinity, maxHeight: .infinity)
+        .padding(.top, 20)
+        .padding(.horizontal, 20)
         #endif
     }
 }
