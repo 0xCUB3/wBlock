@@ -9,5 +9,7 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
+	<key>NSHumanReadableDescription</key>
+	<string>Combines various filters to block ads, trackers, and anti-adblock scripts.</string>
 </dict>
 </plist>

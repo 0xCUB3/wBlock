@@ -4,7 +4,7 @@
         "description": "The display name for the extension."
     },
     "extension_description": {
-        "message": "This is wBlock Scripts. You should tell us what your extension does here.",
+        "message": "Blocks the peskiest ads and tracking methods, including YouTube.",
         "description": "Description of what the extension does."
     }
 }

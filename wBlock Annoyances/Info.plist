@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Add a description of what your extension does here.</string>
+	<string>Removes cookie notices, newsletter popups, and other intrusive page elements.</string>
 </dict>
 </plist>

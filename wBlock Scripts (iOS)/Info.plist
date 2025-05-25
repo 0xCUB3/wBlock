@@ -9,5 +9,7 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).SafariWebExtensionHandler</string>
 	</dict>
+	<key>NSHumanReadableDescription</key>
+	<string>Provides advanced blocking of script-based ads and tracking methods.</string>
 </dict>
 </plist>

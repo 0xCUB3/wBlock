@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Content blocker for basic Safari rules</string>
+	<string>Blocks advertisements, banners, and unwanted promotional content across websites.</string>
 </dict>
 </plist>

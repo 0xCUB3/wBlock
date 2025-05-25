@@ -39,6 +39,6 @@
 		</dict>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>This is wBlock Advanced. You should tell us what your extension does here.</string>
+	<string>Advanced extension for enhanced filtering capabilities and website compatibility fixes. Displays a toolbar button to view number of blocked elements on a webpage.</string>
 </dict>
 </plist>
