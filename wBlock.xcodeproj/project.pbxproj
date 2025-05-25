@@ -186,6 +186,13 @@
 			remoteGlobalIDString = C1F16CAA2DE355DE0031E7EF;
 			remoteInfo = "wBlock Custom (iOS)";
 		};
+		C1F16D672DE36D980031E7EF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1A41C442DE089C50056F63D;
+			remoteInfo = wBlockCoreService;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1004,6 +1011,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C1F16D682DE36D980031E7EF /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C1A41C6D2DE08AD30056F63D /* wBlock Filters */,
@@ -1866,6 +1874,11 @@
 			);
 			target = C1F16CAA2DE355DE0031E7EF /* wBlock Custom (iOS) */;
 			targetProxy = C1F16CB22DE355DE0031E7EF /* PBXContainerItemProxy */;
+		};
+		C1F16D682DE36D980031E7EF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
+			targetProxy = C1F16D672DE36D980031E7EF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

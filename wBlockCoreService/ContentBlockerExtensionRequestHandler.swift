@@ -8,74 +8,88 @@
 import os.log
 import Foundation
 
+/// Implements Safari content blocker extension logic.
+/// This handler is responsible for loading content blocking rules from the
+/// shared container and providing them to Safari extensions.
+///
+/// The rules are loaded from a shared location that is accessible by both the main app
+/// and the content blocker extension. If no custom rules are found, it falls back to
+/// the default blocker list included in the extension bundle.
 public enum ContentBlockerExtensionRequestHandler {
-    public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String, specificBlockerListFileName: String) {
-        os_log(.info, "Loading content blocker rules for file: %{public}s", specificBlockerListFileName)
+    /// Handles content blocking extension request for rules.
+    ///
+    /// This method loads the content blocker rules JSON file from the shared container
+    /// and attaches it to the extension context to be used by Safari.
+    ///
+    /// - Parameters:
+    ///   - context: The extension context that initiated the request.
+    ///   - groupIdentifier: The app group identifier used to access the shared container.
+    public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String) {
+        os_log(.info, "Start loading the content blocker")
 
+        // Get the shared container URL using the provided group identifier
         guard
             let appGroupURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: groupIdentifier
             )
         else {
-            let errorMsg = "Failed to access App Group container."
-            os_log(.error, "%{public}s", errorMsg)
             context.cancelRequest(
-                withError: createError(code: 1001, message: errorMsg)
+                withError: createError(code: 1001, message: "Failed to access App Group container.")
             )
             return
         }
 
-        let sharedFileURL = appGroupURL.appendingPathComponent(specificBlockerListFileName)
+        // Construct the path to the shared blocker list file
+        let sharedFileURL = appGroupURL.appendingPathComponent(Constants.SAFARI_BLOCKER_FILE_NAME)
+
+        // Determine which blocker list file to use
         var blockerListFileURL = sharedFileURL
-
         if !FileManager.default.fileExists(atPath: sharedFileURL.path) {
-            os_log(.info, "Shared file %{public}s not found. Trying bundle fallback.", specificBlockerListFileName)
-            // Fallback to a file with the same specific name in the extension's bundle
-            // The bundle's forResource name should not include the .json extension.
-            let resourceName = specificBlockerListFileName.hasSuffix(".json") ? String(specificBlockerListFileName.dropLast(5)) : specificBlockerListFileName
-            
-            if let bundleURL = Bundle.main.url(forResource: resourceName, withExtension: "json") {
-                 os_log(.info, "Found %{public}s in bundle. Using it as fallback.", specificBlockerListFileName)
-                blockerListFileURL = bundleURL
-            } else {
-                 // As a last resort, try the default "blockerList.json" from bundle if specific one not found
-                 if let defaultBundleURL = Bundle.main.url(forResource: "blockerList", withExtension: "json") {
-                     os_log(.default, "Specific file %{public}s not found in bundle. Falling back to default 'blockerList.json' in bundle.", specificBlockerListFileName)
-                    blockerListFileURL = defaultBundleURL
-                 } else {
-                    let errorMsg = "Failed to find %{public}s in shared container or bundle, and default 'blockerList.json' not in bundle."
-                    os_log(.error, "%{public}s", String(format: errorMsg, specificBlockerListFileName))
-                    context.cancelRequest(
-                        withError: createError(code: 1002, message: String(format: errorMsg, specificBlockerListFileName))
+            os_log(.info, "No blocker list file found. Using the default one.")
+
+            // Fall back to the default blocker list included in the bundle
+            guard
+                let defaultURL = Bundle.main.url(forResource: "blockerList", withExtension: "json")
+            else {
+                context.cancelRequest(
+                    withError: createError(
+                        code: 1002,
+                        message: "Failed to find default blocker list."
                     )
-                    return
-                 }
+                )
+                return
             }
+            blockerListFileURL = defaultURL
         }
 
-
+        // Create an attachment with the blocker list file
         guard let attachment = NSItemProvider(contentsOf: blockerListFileURL) else {
-            let errorMsg = "Failed to create attachment from %{public}s."
-            os_log(.error, "%{public}s", String(format: errorMsg, blockerListFileURL.path))
             context.cancelRequest(
-                withError: createError(code: 1003, message: String(format: errorMsg, blockerListFileURL.path))
+                withError: createError(code: 1003, message: "Failed to create attachment.")
             )
             return
         }
 
+        // Prepare and complete the extension request with the blocker list
         let item = NSExtensionItem()
         item.attachments = [attachment]
 
         context.completeRequest(
             returningItems: [item]
         ) { _ in
-            os_log(.info, "Finished loading content blocker with rules from %{public}s", blockerListFileURL.lastPathComponent)
+            os_log(.info, "Finished loading the content blocker")
         }
     }
 
+    /// Creates an NSError with the specified code and message.
+    ///
+    /// - Parameters:
+    ///   - code: The error code.
+    ///   - message: The error message.
+    /// - Returns: An NSError object with the specified parameters.
     private static func createError(code: Int, message: String) -> NSError {
         return NSError(
-            domain: "skula.wBlock.ContentBlockerExtensionRequestHandler",
+            domain: "skula.wBlock",
             code: code,
             userInfo: [NSLocalizedDescriptionKey: message]
         )
