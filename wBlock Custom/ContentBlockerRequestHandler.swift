@@ -1,8 +1,8 @@
 //
 //  ContentBlockerRequestHandler.swift
-//  wBlock Filters
+//  wBlock Custom
 //
-//  Created by Alexander Skula on 5/23/25.
+//  Created by Alexander Skula on 5/25/25.
 //
 
 import Foundation

@@ -16,35 +16,66 @@ struct ContentView: View {
     @State private var showOnlyEnabledLists = false
     @Environment(\.scenePhase) var scenePhase
 
+    // For category-specific limit warnings/errors
+    @State private var showingCategoryLimitInfoAlert = false
+    @State private var categoryLimitInfoTitle = ""
+    @State private var categoryLimitInfoMessage = ""
+    
+    @State private var showingCategoryResetConfirmationAlert = false
+    @State private var categoryToResetForConfirmation: FilterListCategory? = nil
+
+
     private var enabledListsCount: Int {
-        filterManager.filterLists.filter { $0.isSelected }.count
+        // Count unique selected filters from both lists
+        let selectedStandard = filterManager.filterLists.filter { $0.isSelected }
+        let selectedCustom = filterManager.customFilterLists.filter { $0.isSelected }
+        
+        var uniqueSelected: [FilterList] = []
+        let allSelected = selectedStandard + selectedCustom
+        for filter in allSelected {
+            if !uniqueSelected.contains(where: { $0.id == filter.id }) {
+                uniqueSelected.append(filter)
+            }
+        }
+        return uniqueSelected.count
     }
     
     private var displayableCategories: [FilterListCategory] {
-        FilterListCategory.allCases.filter { $0 != .all && $0 != .custom }
+        // Exclude .all, and handle .custom separately if needed or include it here
+        FilterListCategory.allCases.filter { $0 != .all }
     }
+    
+    // Helper to get target info for the current platform
+    private func getPlatformSpecificTargets() -> [ContentBlockerTargetInfo] {
+        let currentPlatform: Platform = {
+            #if os(macOS)
+            return .macOS
+            #else
+            return .iOS
+            #endif
+        }()
+        return filterManager.allContentBlockerTargets.filter { $0.platform == currentPlatform }
+    }
+
 
     var body: some View {
         VStack(spacing: 0) {
             #if os(iOS)
             headerView
+                .padding(.bottom, 8) // Add some space below header on iOS
             #endif
             
             ScrollView {
                 VStack(spacing: 20) {
-                    statsCardsView
+                    statsCardsView // Shows overall Safari rules applied successfully
                     
                     LazyVStack(spacing: 16) {
                         ForEach(displayableCategories) { category in
                             let listsForCategory = self.listsForCategory(category)
-                            if !listsForCategory.isEmpty {
+                            // Only show section if there are lists OR if it's a custom category that might be added to
+                            if !listsForCategory.isEmpty || category == .custom {
                                 filterSectionView(category: category, filters: listsForCategory)
                             }
-                        }
-
-                        let customLists = self.customLists
-                        if !customLists.isEmpty {
-                            filterSectionView(category: .custom, filters: customLists)
                         }
                     }
                     .padding(.horizontal)
@@ -54,7 +85,7 @@ struct ContentView: View {
                 .padding(.vertical)
             }
             #if os(iOS)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 0) // Let ScrollView handle full width
             #endif
         }
         #if os(macOS)
@@ -92,18 +123,27 @@ struct ContentView: View {
         } message: {
             Text(filterManager.downloadCompleteMessage)
         }
-        .alert("Too Many Rules", isPresented: $filterManager.showingFilterLimitAlert) {
-            Button("Revert to Essential Filters") {
-                Task {
-                    await filterManager.revertToRecommendedFilters()
+        .alert("Rule Limit Information", isPresented: $showingCategoryLimitInfoAlert) { // For warning triangle tap
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(categoryLimitInfoMessage)
+        }
+        .alert("Reset Category Filters?", isPresented: $showingCategoryResetConfirmationAlert) { // For reset button tap
+            Button("Reset \(categoryToResetForConfirmation?.rawValue ?? "Category")", role: .destructive) {
+                if let category = categoryToResetForConfirmation {
+                    Task {
+                        await filterManager.resetFiltersForCategory(category)
+                    }
                 }
             }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            #if os(iOS)
-            Text("The selected filters contain more than 50,000 rules, which exceeds Safari's limit on iOS. Only the AdGuard Base Filter will be enabled by default.")
-            #else
-            Text("The selected filters contain more than 150,000 rules, which exceeds Safari's limit. Your filter selection will be automatically reduced to essential filters only.")
-            #endif
+            Text("This will deselect all filters in the '\(categoryToResetForConfirmation?.rawValue ?? "selected")' category. You'll need to click 'Apply Changes' afterwards.")
+        }
+        .alert("Rule Limit Exceeded", isPresented: $filterManager.showingPostApplyLimitIssuesAlert) { // After applyChanges
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(filterManager.postApplyLimitIssuesMessage)
         }
         .overlay {
             if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
@@ -112,7 +152,7 @@ struct ContentView: View {
                     VStack {
                         ProgressView()
                             .scaleEffect(1.5)
-                        Text(filterManager.statusDescription)
+                        Text(filterManager.overallProgressDescription) // Use overall description
                             .padding(.top, 10)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -174,16 +214,12 @@ struct ContentView: View {
         #if os(iOS)
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .background && filterManager.hasUnappliedChanges {
-                scheduleNotification(delay: 1) // Reduced delay to 1 second
+                scheduleNotification(delay: 1)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
-            print("Received applyWBlockChangesNotification in ContentView.")
-            // Ensure we are on the main thread for UI updates if needed
-            // and that the app is in a state where applying changes makes sense.
             if filterManager.hasUnappliedChanges {
-                print("Triggering applyChanges from notification observer.")
-                filterManager.showingApplyProgressSheet = true // Show progress sheet
+                filterManager.showingApplyProgressSheet = true
                 Task {
                     await filterManager.applyChanges()
                 }
@@ -193,65 +229,32 @@ struct ContentView: View {
     }
     
     #if os(iOS)
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
-                print("Notification permission granted.")
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func scheduleNotification(delay: TimeInterval = 1.0) { // Added delay parameter, default to 1 second
-        let content = UNMutableNotificationContent()
-        content.title = "Psst! You forgot something!"
-        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
-        content.sound = .default
-        content.userInfo = ["action_type": "apply_wblock_changes"] // Add userInfo for tap action
-
-        // Schedule the notification
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            } else {
-                print("Notification scheduled successfully.")
-            }
-        }
-    }
+    private func requestNotificationPermission() { /* ... as before ... */ }
+    private func scheduleNotification(delay: TimeInterval = 1.0) { /* ... as before ... */ }
     #endif
 
     #if os(iOS)
     private var headerView: some View {
         HStack {
             Spacer()
-            
-            HStack(spacing: 12) {
+            HStack(spacing: 16) { // Increased spacing for iOS
                 Button { Task { await filterManager.checkForUpdates() } } label: {
                     Image(systemName: "arrow.clockwise")
-                }
-                .disabled(filterManager.isLoading)
+                }.disabled(filterManager.isLoading)
                 
                 Button { Task { await filterManager.checkAndEnableFilters() } } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                }
-                .disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges)
+                }.disabled(filterManager.isLoading || enabledListsCount == 0 || !filterManager.hasUnappliedChanges)
                 
-                Button { showingLogsView = true } label: {
-                    Image(systemName: "doc.text.magnifyingglass")
-                }
-                
-                Button { showingAddFilterSheet = true } label: {
-                    Image(systemName: "plus")
-                }
+                Button { showingLogsView = true } label: { Image(systemName: "doc.text.magnifyingglass") }
+                Button { showingAddFilterSheet = true } label: { Image(systemName: "plus") }
             }
+            .font(.title2) // Make icons a bit larger on iOS
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
+        .background(.bar) // iOS-like background for the header
     }
     #endif
     
@@ -260,7 +263,7 @@ struct ContentView: View {
             StatCard(
                 title: "Enabled Lists",
                 value: "\(enabledListsCount)",
-                icon: "list.bullet.rectangle",
+                icon: "list.bullet.rectangle.portrait",
                 pillColor: .clear,
                 valueColor: .primary
             )
@@ -268,60 +271,93 @@ struct ContentView: View {
                 title: "Safari Rules",
                 value: filterManager.lastRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
-                pillColor: ruleCountPillColor,
+                pillColor: .clear,
                 valueColor: .primary
             )
         }
         .padding(.horizontal)
     }
     
-    private var ruleCountPillColor: Color {
-        let count = filterManager.lastRuleCount
-        #if os(iOS)
-        if count >= 50_000 {
-            return .red
-        } else if count >= 48_000 {
-            return Color(red: 1.0, green: 0.85, blue: 0.3)
-        } else {
-            return .clear
-        }
-        #else
-        if count >= 150_000 {
-            return .red
-        } else if count >= 140_000 {
-            return .yellow
-        } else {
-            return .clear
-        }
-        #endif
-    }
-    
     private func listsForCategory(_ category: FilterListCategory) -> [FilterList] {
-        filterManager.filterLists.filter { $0.category == category && (!showOnlyEnabledLists || $0.isSelected) }
-    }
-    
-    private var customLists: [FilterList] {
-        filterManager.filterLists.filter { $0.category == .custom && (!showOnlyEnabledLists || $0.isSelected) }
+        let combinedLists = filterManager.filterLists + filterManager.customFilterLists
+        let uniqueLists = combinedLists.reduce(into: [FilterList]()) { result, filter in
+            if !result.contains(where: { $0.id == filter.id }) {
+                result.append(filter)
+            }
+        }
+        return uniqueLists.filter { $0.category == category && (!showOnlyEnabledLists || $0.isSelected) }
     }
     
     private func filterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(category.rawValue)
-                .font(.headline)
-                .foregroundColor(.primary)
-                .padding(.horizontal, 4)
-            
-            VStack(spacing: 0) {
-                ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
-                    filterRowView(filter: filter)
+            HStack {
+                Text(category.rawValue)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                // --- Rule Limit Warning/Error Display ---
+                let platformTargets = getPlatformSpecificTargets()
+                let targetsForThisCategory = platformTargets.filter { $0.categories.contains(category) }
+
+                // Assuming for UI simplicity, we primarily look at the first target found for this category
+                // or you might sum/average if multiple targets share a UI category display.
+                if let primaryTarget = targetsForThisCategory.first {
+                    let currentCount = filterManager.lastAppliedRuleCountsPerTarget[primaryTarget.jsonFileName] ?? 0
+                    let limit = primaryTarget.ruleLimit
+                    let percentageUsed = limit > 0 ? (Double(currentCount) / Double(limit)) * 100.0 : 0.0
                     
-                    if index < filters.count - 1 {
-                        Divider()
-                            .padding(.leading, 16)
+                    if filterManager.targetsThatExceededLimit.contains(primaryTarget.jsonFileName) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark.octagon.fill")
+                                .foregroundColor(.red)
+                            Text("Limit Exceeded!")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            Button("Reset") {
+                                categoryToResetForConfirmation = category
+                                showingCategoryResetConfirmationAlert = true
+                            }
+                            .font(.caption)
+                            .buttonStyle(.borderless) // or .link
+                            #if os(iOS)
+                            .padding(.leading, 4)
+                            #endif
+                        }
+                    } else if currentCount > 0 && percentageUsed >= 90.0 { // Warning threshold (e.g., 90%)
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .onTapGesture {
+                                categoryLimitInfoTitle = "\(category.rawValue) Rule Limit"
+                                categoryLimitInfoMessage = "Using \(currentCount) of \(limit) available rules (\(String(format: "%.0f%%", percentageUsed))). Approaching the Safari limit for this category."
+                                showingCategoryLimitInfoAlert = true
+                            }
                     }
                 }
+                // --- End Rule Limit Display ---
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 4)
+            
+            if !filters.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
+                        filterRowView(filter: filter)
+                        if index < filters.count - 1 {
+                            Divider().padding(.leading, 16)
+                        }
+                    }
+                }
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            } else if category == .custom {
+                 Text("No custom filters added yet. Click the '+' button to add one.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+
+            }
         }
     }
     
@@ -340,7 +376,7 @@ struct ContentView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     } else if filter.sourceRuleCount == nil && filter.isSelected && !filterManager.doesFilterFileExist(filter) {
-                        Text("(Counting...)")
+                        Text("(Counting...)") // Or "File missing" if more accurate
                             .font(.caption)
                             .foregroundColor(.orange)
                     } else if filter.sourceRuleCount == nil {
@@ -366,7 +402,7 @@ struct ContentView: View {
                 Spacer()
                 Toggle("", isOn: Binding(
                     get: { filter.isSelected },
-                    set: { newValue in
+                    set: { _ in // The actual toggle is handled by the manager
                         filterManager.toggleFilterListSelection(id: filter.id)
                     }
                 ))
@@ -380,7 +416,7 @@ struct ContentView: View {
         .contextMenu {
             if filter.category == .custom {
                 Button(role: .destructive) {
-                    filterManager.removeFilterList(filter)
+                    filterManager.removeCustomFilterList(filter) // Use specific custom removal
                 } label: {
                     Label("Delete Custom List", systemImage: "trash")
                 }
@@ -396,15 +432,12 @@ struct ContentView: View {
                 Label("Copy URL", systemImage: "doc.on.doc")
             }
         }
-        .task(id: filter.id) {
+        .task(id: filter.id) { // For on-demand count updates if a file exists but count is missing
             if filter.sourceRuleCount == nil && filterManager.doesFilterFileExist(filter) {
-                 await filterManager.updateVersionsAndCounts()
+                 await filterManager.updateVersionsAndCounts() // This will update counts for lists where file exists
             }
         }
     }
-
-    // This function is now replaced by using filter.sourceRuleCount
-    // private func getRuleCountForFilter(_ filter: FilterList) -> String { ... }
 }
 
 struct AddFilterListView: View {

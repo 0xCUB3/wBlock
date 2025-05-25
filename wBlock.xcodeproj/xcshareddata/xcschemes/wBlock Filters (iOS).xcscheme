@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C1A41C7F2DE08BDA0056F63D"
-               BuildableName = "wBlock Filters (iOS).appex"
-               BlueprintName = "wBlock Filters (iOS)"
+               BuildableName = "wBlock Ads (iOS).appex"
+               BlueprintName = "wBlock Ads (iOS)"
                ReferencedContainer = "container:wBlock.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
