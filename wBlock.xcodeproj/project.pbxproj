@@ -14,14 +14,9 @@
 		C1A41C6C2DE08AD30056F63D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1A41C762DE08AD30056F63D /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41C892DE08BDA0056F63D /* wBlock Ads (iOS).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads (iOS).appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1A41C8E2DE08BF80056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41CAD2DE08C990056F63D /* wBlock Scripts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C942DE08C980056F63D /* wBlock Scripts.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CCE2DE08CAB0056F63D /* wBlock Scripts (iOS).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts (iOS).appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1A41D1C2DE08E940056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1A41D1D2DE08E990056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1A41D1E2DE08F080056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1A41D1F2DE08F400056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16BF02DE354C30031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1F16BFA2DE354C30031E7EF /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C042DE354E40031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
@@ -37,17 +32,38 @@
 		C1F16C902DE355BC0031E7EF /* wBlock Foreign (iOS).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C872DE355BC0031E7EF /* wBlock Foreign (iOS).appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16CA22DE355CC0031E7EF /* wBlock Experimental (iOS).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C992DE355CC0031E7EF /* wBlock Experimental (iOS).appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16CB42DE355DE0031E7EF /* wBlock Custom (iOS).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16CAB2DE355DE0031E7EF /* wBlock Custom (iOS).appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1F16CC32DE35C280031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CC42DE35C2D0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CC52DE35C310031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CC62DE35C350031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CC72DE35C410031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CC82DE35C450031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CC92DE35C490031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CCA2DE35C4D0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CCB2DE35C510031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CCC2DE35C550031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16CCD2DE35C590031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D372DE36ADE0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D382DE36ADE0031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D3A2DE36AE10031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D3B2DE36AE10031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D3D2DE36AE30031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D3E2DE36AE30031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D402DE36AE50031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D412DE36AE50031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D432DE36AE70031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D442DE36AE70031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D462DE36AE90031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D472DE36AE90031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D492DE36AEC0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D4A2DE36AEC0031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D4C2DE36AF20031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D4D2DE36AF20031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D4F2DE36AF50031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D502DE36AF50031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D522DE36AF70031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D532DE36AF70031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D552DE36AF90031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D562DE36AF90031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D582DE36AFC0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D592DE36AFC0031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D5B2DE36B060031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D5C2DE36B060031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D5E2DE36B090031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D5F2DE36B090031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D612DE36B0E0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D622DE36B0E0031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C1F16D642DE36B100031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		C1F16D652DE36B100031E7EF /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -208,6 +224,182 @@
 				C1F16C222DE354FB0031E7EF /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D392DE36ADE0031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D382DE36ADE0031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D3C2DE36AE10031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D3B2DE36AE10031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D3F2DE36AE30031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D3E2DE36AE30031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D422DE36AE50031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D412DE36AE50031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D452DE36AE70031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D442DE36AE70031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D482DE36AE90031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D472DE36AE90031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D4B2DE36AEC0031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D4A2DE36AEC0031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D4E2DE36AF20031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D4D2DE36AF20031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D512DE36AF50031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D502DE36AF50031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D542DE36AF70031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D532DE36AF70031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D572DE36AF90031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D562DE36AF90031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D5A2DE36AFC0031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D592DE36AFC0031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D5D2DE36B060031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D5C2DE36B060031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D602DE36B090031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D5F2DE36B090031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D632DE36B0E0031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D622DE36B0E0031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1F16D662DE36B100031E7EF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C1F16D652DE36B100031E7EF /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -530,8 +722,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A41D1F2DE08F400056F63D /* wBlockCoreService.framework in Frameworks */,
 				C1A41C6C2DE08AD30056F63D /* Cocoa.framework in Frameworks */,
+				C1F16D372DE36ADE0031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -539,7 +731,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A41C8E2DE08BF80056F63D /* wBlockCoreService.framework in Frameworks */,
+				C1F16D462DE36AE90031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -547,7 +739,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A41D1E2DE08F080056F63D /* wBlockCoreService.framework in Frameworks */,
+				C1F16D5E2DE36B090031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -555,7 +747,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A41D1C2DE08E940056F63D /* wBlockCoreService.framework in Frameworks */,
+				C1F16D612DE36B0E0031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -563,7 +755,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A41D1D2DE08E990056F63D /* wBlockCoreService.framework in Frameworks */,
+				C1F16D642DE36B100031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -571,8 +763,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC32DE35C280031E7EF /* wBlockCoreService.framework in Frameworks */,
 				C1F16BF02DE354C30031E7EF /* Cocoa.framework in Frameworks */,
+				C1F16D3A2DE36AE10031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -580,8 +772,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC42DE35C2D0031E7EF /* wBlockCoreService.framework in Frameworks */,
 				C1F16C042DE354E40031E7EF /* Cocoa.framework in Frameworks */,
+				C1F16D3D2DE36AE30031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -589,8 +781,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC52DE35C310031E7EF /* wBlockCoreService.framework in Frameworks */,
 				C1F16C182DE354FB0031E7EF /* Cocoa.framework in Frameworks */,
+				C1F16D402DE36AE50031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -598,8 +790,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC62DE35C350031E7EF /* wBlockCoreService.framework in Frameworks */,
 				C1F16C2C2DE355150031E7EF /* Cocoa.framework in Frameworks */,
+				C1F16D432DE36AE70031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -607,7 +799,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC72DE35C410031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D492DE36AEC0031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -615,7 +807,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC82DE35C450031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D4C2DE36AF20031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -623,7 +815,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CC92DE35C490031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D4F2DE36AF50031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -631,7 +823,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CCA2DE35C4D0031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D522DE36AF70031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -639,7 +831,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CCB2DE35C510031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D552DE36AF90031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -647,7 +839,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CCC2DE35C550031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D582DE36AFC0031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -655,7 +847,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1F16CCD2DE35C590031E7EF /* wBlockCoreService.framework in Frameworks */,
+				C1F16D5B2DE36B060031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -807,6 +999,7 @@
 				C1A41C652DE08AD30056F63D /* Sources */,
 				C1A41C662DE08AD30056F63D /* Frameworks */,
 				C1A41C672DE08AD30056F63D /* Resources */,
+				C1F16D392DE36ADE0031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -829,6 +1022,7 @@
 				C1A41C7C2DE08BDA0056F63D /* Sources */,
 				C1A41C7D2DE08BDA0056F63D /* Frameworks */,
 				C1A41C7E2DE08BDA0056F63D /* Resources */,
+				C1F16D482DE36AE90031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -851,6 +1045,7 @@
 				C1A41C902DE08C980056F63D /* Sources */,
 				C1A41C912DE08C980056F63D /* Frameworks */,
 				C1A41C922DE08C980056F63D /* Resources */,
+				C1F16D602DE36B090031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -873,6 +1068,7 @@
 				C1A41CB22DE08CAB0056F63D /* Sources */,
 				C1A41CB32DE08CAB0056F63D /* Frameworks */,
 				C1A41CB42DE08CAB0056F63D /* Resources */,
+				C1F16D632DE36B0E0031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -895,6 +1091,7 @@
 				C1A41CD32DE08CC90056F63D /* Sources */,
 				C1A41CD42DE08CC90056F63D /* Frameworks */,
 				C1A41CD52DE08CC90056F63D /* Resources */,
+				C1F16D662DE36B100031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -917,6 +1114,7 @@
 				C1F16BEB2DE354C30031E7EF /* Sources */,
 				C1F16BEC2DE354C30031E7EF /* Frameworks */,
 				C1F16BED2DE354C30031E7EF /* Resources */,
+				C1F16D3C2DE36AE10031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -939,6 +1137,7 @@
 				C1F16BFF2DE354E40031E7EF /* Sources */,
 				C1F16C002DE354E40031E7EF /* Frameworks */,
 				C1F16C012DE354E40031E7EF /* Resources */,
+				C1F16D3F2DE36AE30031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -961,6 +1160,7 @@
 				C1F16C132DE354FB0031E7EF /* Sources */,
 				C1F16C142DE354FB0031E7EF /* Frameworks */,
 				C1F16C152DE354FB0031E7EF /* Resources */,
+				C1F16D422DE36AE50031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -983,6 +1183,7 @@
 				C1F16C272DE355150031E7EF /* Sources */,
 				C1F16C282DE355150031E7EF /* Frameworks */,
 				C1F16C292DE355150031E7EF /* Resources */,
+				C1F16D452DE36AE70031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1005,6 +1206,7 @@
 				C1F16C3B2DE355670031E7EF /* Sources */,
 				C1F16C3C2DE355670031E7EF /* Frameworks */,
 				C1F16C3D2DE355670031E7EF /* Resources */,
+				C1F16D4B2DE36AEC0031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1027,6 +1229,7 @@
 				C1F16C4D2DE3557D0031E7EF /* Sources */,
 				C1F16C4E2DE3557D0031E7EF /* Frameworks */,
 				C1F16C4F2DE3557D0031E7EF /* Resources */,
+				C1F16D4E2DE36AF20031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1049,6 +1252,7 @@
 				C1F16C5F2DE3558A0031E7EF /* Sources */,
 				C1F16C602DE3558A0031E7EF /* Frameworks */,
 				C1F16C612DE3558A0031E7EF /* Resources */,
+				C1F16D512DE36AF50031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1071,6 +1275,7 @@
 				C1F16C712DE355A80031E7EF /* Sources */,
 				C1F16C722DE355A80031E7EF /* Frameworks */,
 				C1F16C732DE355A80031E7EF /* Resources */,
+				C1F16D542DE36AF70031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1093,6 +1298,7 @@
 				C1F16C832DE355BC0031E7EF /* Sources */,
 				C1F16C842DE355BC0031E7EF /* Frameworks */,
 				C1F16C852DE355BC0031E7EF /* Resources */,
+				C1F16D572DE36AF90031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1115,6 +1321,7 @@
 				C1F16C952DE355CC0031E7EF /* Sources */,
 				C1F16C962DE355CC0031E7EF /* Frameworks */,
 				C1F16C972DE355CC0031E7EF /* Resources */,
+				C1F16D5A2DE36AFC0031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1137,6 +1344,7 @@
 				C1F16CA72DE355DE0031E7EF /* Sources */,
 				C1F16CA82DE355DE0031E7EF /* Frameworks */,
 				C1F16CA92DE355DE0031E7EF /* Resources */,
+				C1F16D5D2DE36B060031E7EF /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1953,7 +2161,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Filters/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads & Privacy";
@@ -1963,7 +2171,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads-Privacy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1982,7 +2190,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Filters/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads & Privacy";
@@ -1992,7 +2200,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads-Privacy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
