@@ -71,7 +71,6 @@ extension AppDelegate: UIApplicationDelegate {
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
-    // This method is called when a notification is delivered to a foreground app or when a user taps on a notification.
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
@@ -84,15 +83,9 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         completionHandler()
     }
 
-    // Optional: Handle notification when app is in foreground (if needed)
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        // Decide how to present the notification if the app is in the foreground
-        // For this specific "you forgot" notification, it's typically for when the app is backgrounded.
-        // If it could also trigger while app is foreground (e.g. scene phase changes rapidly),
-        // you might want to handle it differently or not show it.
-        // For now, let's assume it won't be shown/needed if app is foreground.
         completionHandler([]) // Don't show alert if app is open, or choose .banner, .list, .sound
     }
 }

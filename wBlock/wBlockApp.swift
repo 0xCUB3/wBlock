@@ -35,12 +35,7 @@ struct wBlockApp: App {
         WindowGroup {
             ContentView(filterManager: filterManager)
                 .onAppear {
-                    #if os(macOS)
                     appDelegate.filterManager = filterManager
-                    #elseif os(iOS)
-                    // Pass filterManager to AppDelegate for iOS as well
-                    appDelegate.filterManager = filterManager
-                    #endif
                 }
         }
         .modelContainer(sharedModelContainer)
