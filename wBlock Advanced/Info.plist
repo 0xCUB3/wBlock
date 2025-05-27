@@ -8,6 +8,10 @@
 	<dict>
 		<key>SFSafariAssociatedContentBlockers</key>
 		<array>
+			<string>skula.wBlock.wBlock-Custom</string>
+			<string>skula.wBlock.wBlock-Foreign-Experimental</string>
+			<string>skula.wBlock.wBlock-Annoyances</string>
+			<string>skula.wBlock.wBlock-Security-Multipurpose</string>
 			<string>skula.wBlock.wBlock-Ads-Privacy</string>
 		</array>
 		<key>NSExtensionPointIdentifier</key>
