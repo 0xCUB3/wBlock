@@ -138,29 +138,82 @@ public enum ContentBlockerService {
     ///   - rules: AdGuard rules to be converted.
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
-    /// - Returns: The number of Safari content blocker rules generated from the conversion.
-    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String) -> Int {
+    /// - Returns: A tuple containing the number of Safari content blocker rules generated 
+    ///           and the advanced rules text (if any).
+    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String) -> (safariRulesCount: Int, advancedRulesText: String?) {
         let result = convertRules(rules: rules) // convertRules remains private and unchanged
 
         measure(label: "Saving content blocking rules file \(targetRulesFilename)") {
             saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
         }
-        // advancedRulesText handling remains as is, assuming it's for a single WebExtension or not category-specific yet.
+        
+        // Return both the count and advanced rules text for the caller to handle engine building
+        return (safariRulesCount: result.safariRulesCount, advancedRulesText: result.advancedRulesText)
+    }
+    
+    /// Builds the filter engine with combined advanced rules from all filter groups.
+    ///
+    /// - Parameters:
+    ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) {
+        guard !combinedAdvancedRules.isEmpty else {
+            os_log(.info, "No advanced rules to build filter engine with")
+            return
+        }
+        
+        measure(label: "Building combined filter engine") {
+            do {
+                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
+                os_log(.info, "Successfully built combined filter engine with %d characters of advanced rules", combinedAdvancedRules.count)
+            } catch {
+                os_log(
+                    .error,
+                    "Failed to build combined filtering engine: %@",
+                    error.localizedDescription
+                )
+            }
+        }
+    }
+    
+    /// Clears the filter engine by building it with empty rules.
+    ///
+    /// - Parameters:
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    public static func clearFilterEngine(groupIdentifier: String) {
+        measure(label: "Clearing filter engine") {
+            do {
+                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                _ = try webExtension.buildFilterEngine(rules: "")
+                os_log(.info, "Successfully cleared filter engine")
+            } catch {
+                os_log(
+                    .error,
+                    "Failed to clear filtering engine: %@",
+                    error.localizedDescription
+                )
+            }
+        }
+    }
+    
+    /// Backward compatibility function that builds the filter engine immediately (legacy behavior).
+    /// This function is deprecated and should not be used for new code.
+    ///
+    /// - Parameters:
+    ///   - rules: AdGuard rules to be converted.
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    ///   - targetRulesFilename: Target filename for the rules.
+    /// - Returns: The number of Safari content blocker rules generated from the conversion.
+    @available(*, deprecated, message: "Use convertFilter(rules:groupIdentifier:targetRulesFilename:) -> (safariRulesCount: Int, advancedRulesText: String?) and buildCombinedFilterEngine instead")
+    public static func convertFilterLegacy(rules: String, groupIdentifier: String, targetRulesFilename: String) -> Int {
+        let result = convertFilter(rules: rules, groupIdentifier: groupIdentifier, targetRulesFilename: targetRulesFilename)
+        
+        // Legacy behavior - build engine immediately if there are advanced rules
         if let advancedRulesText = result.advancedRulesText, !advancedRulesText.isEmpty {
-             measure(label: "Building and saving engine (global for now)") {
-                 do {
-                     let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                     _ = try webExtension.buildFilterEngine(rules: advancedRulesText)
-                 } catch {
-                     os_log(
-                         .error,
-                         "Failed to build and save the global filtering engine: %@",
-                         error.localizedDescription
-                     )
-                 }
-             }
-         }
-
+            buildCombinedFilterEngine(combinedAdvancedRules: advancedRulesText, groupIdentifier: groupIdentifier)
+        }
+        
         return result.safariRulesCount
     }
 }

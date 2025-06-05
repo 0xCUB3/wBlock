@@ -308,11 +308,15 @@ class AppFilterManager: ObservableObject {
 
         if allSelectedFilters.isEmpty {
             statusDescription = "No filter lists selected. Clearing rules from all extensions."
-            await ConcurrentLogManager.shared.log("ApplyChanges: No filters selected. Clearing all target extensions.")
+            await ConcurrentLogManager.shared.log("ApplyChanges: No filters selected. Clearing all target extensions and filter engine.")
+            
+            // Clear the filter engine when no filters are selected
+            ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+            
             // Clear rules for all relevant extensions
             let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
             for targetInfo in platformTargets {
-                _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename)
+                _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
                 _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
             }
             isLoading = false; showingApplyProgressSheet = false; hasUnappliedChanges = false; lastRuleCount = 0
@@ -361,6 +365,10 @@ class AppFilterManager: ObservableObject {
         let overallConversionStartTime = Date()
         processedFiltersCount = 0 // Use this to track processed targets for progress
 
+        // Collect all advanced rules from all targets to build the engine once
+        var allAdvancedRules: [String] = []
+        var advancedRulesByTarget: [String: String] = [:] // Track advanced rules by target bundle ID
+
         isInConversionPhase = true
         for (targetInfo, rulesString) in rulesByTargetInfo {
             processedFiltersCount += 1
@@ -372,12 +380,22 @@ class AppFilterManager: ObservableObject {
             
             try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
 
-            let ruleCountForThisTarget = ContentBlockerService.convertFilter(
+            let conversionResult = ContentBlockerService.convertFilter(
                 rules: rulesString.isEmpty ? "[]" : rulesString, // Ensure "[]" for empty
                 groupIdentifier: GroupIdentifier.shared.value,
                 targetRulesFilename: targetInfo.rulesFilename
             )
+            
+            let ruleCountForThisTarget = conversionResult.safariRulesCount
             overallSafariRulesApplied += ruleCountForThisTarget
+            
+            // Collect advanced rules for later engine building
+            if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
+                allAdvancedRules.append(advancedRulesText)
+                advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
+                await ConcurrentLogManager.shared.log("ApplyChanges: Collected \(advancedRulesText.count) characters of advanced rules from \(targetInfo.bundleIdentifier).")
+            }
+            
             await ConcurrentLogManager.shared.log("ApplyChanges: Converted \(ruleCountForThisTarget) Safari rules for \(targetInfo.bundleIdentifier).")
 
             // Update per-category rule count
@@ -439,11 +457,33 @@ class AppFilterManager: ObservableObject {
                     }
                 }
                 
-                let resetRuleCount = ContentBlockerService.convertFilter(
+                let resetConversionResult = ContentBlockerService.convertFilter(
                     rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
                     groupIdentifier: GroupIdentifier.shared.value,
                     targetRulesFilename: targetInfo.rulesFilename
                 )
+                
+                let resetRuleCount = resetConversionResult.safariRulesCount
+                
+                // Also collect advanced rules from reset filters
+                if let resetAdvancedRulesText = resetConversionResult.advancedRulesText, !resetAdvancedRulesText.isEmpty {
+                    // Update the advanced rules for this specific target
+                    if let existingIndex = allAdvancedRules.firstIndex(where: { $0 == advancedRulesByTarget[targetInfo.bundleIdentifier] }) {
+                        allAdvancedRules[existingIndex] = resetAdvancedRulesText
+                    } else {
+                        allAdvancedRules.append(resetAdvancedRulesText)
+                    }
+                    advancedRulesByTarget[targetInfo.bundleIdentifier] = resetAdvancedRulesText
+                    await ConcurrentLogManager.shared.log("ApplyChanges: Updated advanced rules after reset for \(targetInfo.bundleIdentifier).")
+                } else {
+                    // Remove advanced rules for this target if reset resulted in none
+                    if let existingAdvancedRules = advancedRulesByTarget[targetInfo.bundleIdentifier],
+                       let existingIndex = allAdvancedRules.firstIndex(of: existingAdvancedRules) {
+                        allAdvancedRules.remove(at: existingIndex)
+                        advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
+                        await ConcurrentLogManager.shared.log("ApplyChanges: Removed advanced rules after reset for \(targetInfo.bundleIdentifier).")
+                    }
+                }
                 
                 await MainActor.run {
                     self.ruleCountsByCategory[targetInfo.primaryCategory] = resetRuleCount
@@ -462,6 +502,27 @@ class AppFilterManager: ObservableObject {
             }
         }
         isInConversionPhase = false
+        
+        // Build the combined filter engine with all collected advanced rules
+        if !allAdvancedRules.isEmpty {
+            conversionStageDescription = "Building combined filter engine..."
+            await ConcurrentLogManager.shared.log("ApplyChanges: Building filter engine with \(allAdvancedRules.count) groups of advanced rules.")
+            
+            let combinedAdvancedRules = allAdvancedRules.joined(separator: "\n")
+            let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
+            await ConcurrentLogManager.shared.log("ApplyChanges: Combined advanced rules: \(combinedAdvancedRules.count) characters, \(totalLines) lines from \(allAdvancedRules.count) filter groups.")
+            
+            ContentBlockerService.buildCombinedFilterEngine(
+                combinedAdvancedRules: combinedAdvancedRules,
+                groupIdentifier: GroupIdentifier.shared.value
+            )
+            
+            await ConcurrentLogManager.shared.log("ApplyChanges: Successfully built combined filter engine with all advanced rules from \(allAdvancedRules.count) groups.")
+        } else {
+            await ConcurrentLogManager.shared.log("ApplyChanges: No advanced rules found, clearing filter engine.")
+            ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+        }
+        
         lastRuleCount = overallSafariRulesApplied
         lastConversionTime = String(format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
         progress = 0.7
@@ -498,7 +559,7 @@ class AppFilterManager: ObservableObject {
         for targetInfo in allPlatformTargets {
             if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
                  await ConcurrentLogManager.shared.log("ApplyChanges: Ensuring \(targetInfo.bundleIdentifier) (no selected rules) is also reloaded to apply empty list.")
-                 _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename) // Ensure it has an empty list
+                 _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount // Ensure it has an empty list
                  _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
             }
         }
