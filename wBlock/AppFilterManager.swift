@@ -284,148 +284,107 @@ class AppFilterManager: ObservableObject {
     // MARK: - Delegated methods
 
     func applyChanges() async {
-        // Update UI state on main thread
-        await MainActor.run {
-            isLoading = true
-            hasError = false
-            progress = 0
-            statusDescription = "Preparing to apply selected filters..."
-            sourceRulesCount = 0
-            conversionStageDescription = ""
-            currentFilterName = ""
-            processedFiltersCount = 0
-            self.totalFiltersCount = 0
-            isInConversionPhase = false
-            isInSavingPhase = false
-            isInEnginePhase = false
-            isInReloadPhase = false
-        }
+        isLoading = true
+        hasError = false
+        progress = 0
+        statusDescription = "Preparing to apply selected filters..."
         
         // Give the UI a chance to update before starting heavy operations
         try? await Task.sleep(nanoseconds: 200_000_000) // 200ms delay
         
         await ConcurrentLogManager.shared.log("ApplyChanges: Started on \(currentPlatform == .macOS ? "macOS" : "iOS").")
 
-        let allSelectedFilters = await MainActor.run { filterLists.filter { $0.isSelected } }
+        sourceRulesCount = 0
+        conversionStageDescription = ""
+        currentFilterName = ""
+        processedFiltersCount = 0
+        totalFiltersCount = 0
+        isInConversionPhase = false
+        isInSavingPhase = false
+        isInEnginePhase = false
+        isInReloadPhase = false
+
+        let allSelectedFilters = filterLists.filter { $0.isSelected }
 
         if allSelectedFilters.isEmpty {
-            await MainActor.run {
-                statusDescription = "No filter lists selected. Clearing rules from all extensions."
-            }
+            statusDescription = "No filter lists selected. Clearing rules from all extensions."
             await ConcurrentLogManager.shared.log("ApplyChanges: No filters selected. Clearing all target extensions and filter engine.")
             
-            // Perform heavy operations on background thread
-            await Task.detached(priority: .userInitiated) {
-                // Clear the filter engine when no filters are selected
-                ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-                
-                // Clear rules for all relevant extensions
-                let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
-                for targetInfo in platformTargets {
-                    _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
-                    _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
-                }
-            }.value
+            // Clear the filter engine when no filters are selected
+            ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
             
-            await MainActor.run {
-                isLoading = false
-                showingApplyProgressSheet = false
-                hasUnappliedChanges = false
-                lastRuleCount = 0
+            // Clear rules for all relevant extensions
+            let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+            for targetInfo in platformTargets {
+                _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
+                _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
             }
+            isLoading = false; showingApplyProgressSheet = false; hasUnappliedChanges = false; lastRuleCount = 0
             return
         }
         
-        // Perform heavy file operations on background thread
-        let (rulesByTargetInfo, sourceRulesByTargetInfo, totalFiltersCount) = await Task.detached(priority: .userInitiated) {
-            // Group filters by their target ContentBlockerTargetInfo
-            var rulesByTargetInfo: [ContentBlockerTargetInfo: String] = [:]
-            var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
-            let currentPlatform = await MainActor.run { self.currentPlatform }
-            let loader = await MainActor.run { self.loader }
+        // Group filters by their target ContentBlockerTargetInfo
+        var rulesByTargetInfo: [ContentBlockerTargetInfo: String] = [:]
+        var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
 
-            for filter in allSelectedFilters {
-                guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: currentPlatform) else {
-                    await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(currentPlatform == .macOS ? "macOS" : "iOS"). Skipping filter: \(filter.name)")
-                    continue
-                }
+        for filter in allSelectedFilters {
+            guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: currentPlatform) else {
+                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(currentPlatform == .macOS ? "macOS" : "iOS"). Skipping filter: \(filter.name)")
+                continue
+            }
 
-                guard let containerURL = loader.getSharedContainerURL() else {
-                    await MainActor.run {
-                        self.statusDescription = "Error: Unable to access shared container for \(filter.name)"
-                        self.hasError = true
-                    }
-                    continue
+            guard let containerURL = loader.getSharedContainerURL() else {
+                statusDescription = "Error: Unable to access shared container for \(filter.name)"
+                hasError = true; isLoading = false; showingApplyProgressSheet = false; return
+            }
+            let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            var contentToAppend = ""
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                do {
+                    contentToAppend = try String(contentsOf: fileURL, encoding: .utf8) + "\n"
+                } catch {
+                    await ConcurrentLogManager.shared.log("Error reading \(filter.name): \(error)")
                 }
-                
-                let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-                var contentToAppend = ""
-                if FileManager.default.fileExists(atPath: fileURL.path) {
-                    do {
-                        contentToAppend = try String(contentsOf: fileURL, encoding: .utf8) + "\n"
-                    } catch {
-                        await ConcurrentLogManager.shared.log("Error reading \(filter.name): \(error)")
-                    }
-                } else {
-                    await ConcurrentLogManager.shared.log("Warning: Filter file for \(filter.name) not found locally.")
-                }
-                
-                rulesByTargetInfo[targetInfo, default: ""] += contentToAppend
-                sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? contentToAppend.components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }.count
+            } else {
+                await ConcurrentLogManager.shared.log("Warning: Filter file for \(filter.name) not found locally.")
             }
             
-            let totalFiltersCount = rulesByTargetInfo.keys.count // Number of unique extensions to process
-            return (rulesByTargetInfo, sourceRulesByTargetInfo, totalFiltersCount)
-        }.value
-        
-        // Update UI with the calculated values
-        await MainActor.run {
-            sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +) // Sum of all source rules for UI
-            self.totalFiltersCount = totalFiltersCount
+            rulesByTargetInfo[targetInfo, default: ""] += contentToAppend
+            sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? contentToAppend.components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }.count
         }
+        
+        sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +) // Sum of all source rules for UI
+        totalFiltersCount = rulesByTargetInfo.keys.count // Number of unique extensions to process
 
         if totalFiltersCount == 0 {
-            await MainActor.run {
-                statusDescription = "No matching extensions for selected filters."
-                isLoading = false
-                showingApplyProgressSheet = false
-            }
-            return
+            statusDescription = "No matching extensions for selected filters."
+            isLoading = false; showingApplyProgressSheet = false; return
         }
         
         var overallSafariRulesApplied = 0
         let overallConversionStartTime = Date()
-        var _processedFiltersCount = 0 // Use local variable for background thread
+        processedFiltersCount = 0 // Use this to track processed targets for progress
 
         // Collect all advanced rules from all targets to build the engine once
         var allAdvancedRules: [String] = []
         var advancedRulesByTarget: [String: String] = [:] // Track advanced rules by target bundle ID
 
-        await MainActor.run { isInConversionPhase = true }
-        
+        isInConversionPhase = true
         for (targetInfo, rulesString) in rulesByTargetInfo {
-            _processedFiltersCount += 1
-            
-            // Update UI on main thread
-            await MainActor.run {
-                processedFiltersCount = _processedFiltersCount
-                progress = Float(processedFiltersCount) / Float(totalFiltersCount) * 0.7 // Up to 70% for conversion
-                currentFilterName = targetInfo.primaryCategory.rawValue // More user-friendly
-                conversionStageDescription = "Converting \(targetInfo.primaryCategory.rawValue)..."
-            }
-            
+            processedFiltersCount += 1
+            progress = Float(processedFiltersCount) / Float(totalFiltersCount) * 0.7 // Up to 70% for conversion
+
+            currentFilterName = targetInfo.primaryCategory.rawValue // More user-friendly
+            conversionStageDescription = "Converting \(targetInfo.primaryCategory.rawValue)..."
             await ConcurrentLogManager.shared.log("ApplyChanges: Converting rules for \(targetInfo.bundleIdentifier) (\(targetInfo.rulesFilename)). Source lines: \(rulesString.components(separatedBy: .newlines).count)")
             
             try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
 
-            // Perform heavy conversion on background thread
-            let conversionResult = await Task.detached(priority: .userInitiated) {
-                ContentBlockerService.convertFilter(
-                    rules: rulesString.isEmpty ? "[]" : rulesString, // Ensure "[]" for empty
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: targetInfo.rulesFilename
-                )
-            }.value
+            let conversionResult = ContentBlockerService.convertFilter(
+                rules: rulesString.isEmpty ? "[]" : rulesString, // Ensure "[]" for empty
+                groupIdentifier: GroupIdentifier.shared.value,
+                targetRulesFilename: targetInfo.rulesFilename
+            )
             
             let ruleCountForThisTarget = conversionResult.safariRulesCount
             overallSafariRulesApplied += ruleCountForThisTarget
@@ -439,7 +398,7 @@ class AppFilterManager: ObservableObject {
             
             await ConcurrentLogManager.shared.log("ApplyChanges: Converted \(ruleCountForThisTarget) Safari rules for \(targetInfo.bundleIdentifier).")
 
-            // Update per-category rule count on main thread
+            // Update per-category rule count
             await MainActor.run {
                 self.ruleCountsByCategory[targetInfo.primaryCategory] = ruleCountForThisTarget
                 if let secondaryCategory = targetInfo.secondaryCategory {
@@ -447,7 +406,6 @@ class AppFilterManager: ObservableObject {
                 }
             }
 
-            let currentPlatform = await MainActor.run { self.currentPlatform }
             let ruleLimit = currentPlatform == .iOS ? 50000 : 150000
             let warningThreshold = currentPlatform == .iOS ? 48000 : 140000
             
@@ -475,47 +433,40 @@ class AppFilterManager: ObservableObject {
                     await resetCategoryToRecommended(secondaryCategory)
                 }
                 
-                await MainActor.run {
-                    statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
-                }
+                statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
                 await ConcurrentLogManager.shared.log("Auto-reset category \(targetInfo.primaryCategory.rawValue) due to rule limit exceeded.")
                 
-                // Re-process this target with the reset filters on background thread
-                let resetResult = await Task.detached(priority: .userInitiated) {
-                    let resetFiltersForCategory = allSelectedFilters.filter { 
-                        $0.category == targetInfo.primaryCategory || 
-                        (targetInfo.secondaryCategory != nil && $0.category == targetInfo.secondaryCategory!)
-                    }
-                    
-                    var resetRulesString = ""
-                    let loader = await MainActor.run { self.loader }
-                    for filter in resetFiltersForCategory {
-                        if filter.isSelected {
-                            guard let containerURL = loader.getSharedContainerURL() else { continue }
-                            let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-                            if FileManager.default.fileExists(atPath: fileURL.path) {
-                                do {
-                                    resetRulesString += try String(contentsOf: fileURL, encoding: .utf8) + "\n"
-                                } catch {
-                                    await ConcurrentLogManager.shared.log("Error reading \(filter.name) after reset: \(error)")
-                                }
+                // Re-process this target with the reset filters
+                let resetFiltersForCategory = allSelectedFilters.filter { 
+                    $0.category == targetInfo.primaryCategory || 
+                    (targetInfo.secondaryCategory != nil && $0.category == targetInfo.secondaryCategory!)
+                }
+                
+                var resetRulesString = ""
+                for filter in resetFiltersForCategory {
+                    if filter.isSelected {
+                        guard let containerURL = loader.getSharedContainerURL() else { continue }
+                        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                        if FileManager.default.fileExists(atPath: fileURL.path) {
+                            do {
+                                resetRulesString += try String(contentsOf: fileURL, encoding: .utf8) + "\n"
+                            } catch {
+                                await ConcurrentLogManager.shared.log("Error reading \(filter.name) after reset: \(error)")
                             }
                         }
                     }
-                    
-                    let resetConversionResult = ContentBlockerService.convertFilter(
-                        rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
-                        groupIdentifier: GroupIdentifier.shared.value,
-                        targetRulesFilename: targetInfo.rulesFilename
-                    )
-                    
-                    return resetConversionResult
-                }.value
+                }
                 
-                let resetRuleCount = resetResult.safariRulesCount
+                let resetConversionResult = ContentBlockerService.convertFilter(
+                    rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: targetInfo.rulesFilename
+                )
+                
+                let resetRuleCount = resetConversionResult.safariRulesCount
                 
                 // Also collect advanced rules from reset filters
-                if let resetAdvancedRulesText = resetResult.advancedRulesText, !resetAdvancedRulesText.isEmpty {
+                if let resetAdvancedRulesText = resetConversionResult.advancedRulesText, !resetAdvancedRulesText.isEmpty {
                     // Update the advanced rules for this specific target
                     if let existingIndex = allAdvancedRules.firstIndex(where: { $0 == advancedRulesByTarget[targetInfo.bundleIdentifier] }) {
                         allAdvancedRules[existingIndex] = resetAdvancedRulesText
@@ -550,74 +501,52 @@ class AppFilterManager: ObservableObject {
                 continue
             }
         }
-        await MainActor.run { isInConversionPhase = false }
+        isInConversionPhase = false
         
-        // Build the combined filter engine with all collected advanced rules on background thread
+        // Build the combined filter engine with all collected advanced rules
         if !allAdvancedRules.isEmpty {
-            await MainActor.run {
-                conversionStageDescription = "Building combined filter engine..."
-            }
+            conversionStageDescription = "Building combined filter engine..."
             await ConcurrentLogManager.shared.log("ApplyChanges: Building filter engine with \(allAdvancedRules.count) groups of advanced rules.")
             
-            await Task.detached(priority: .userInitiated) {
-                let combinedAdvancedRules = allAdvancedRules.joined(separator: "\n")
-                let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
-                await ConcurrentLogManager.shared.log("ApplyChanges: Combined advanced rules: \(combinedAdvancedRules.count) characters, \(totalLines) lines from \(allAdvancedRules.count) filter groups.")
-                
-                ContentBlockerService.buildCombinedFilterEngine(
-                    combinedAdvancedRules: combinedAdvancedRules,
-                    groupIdentifier: GroupIdentifier.shared.value
-                )
-                
-                await ConcurrentLogManager.shared.log("ApplyChanges: Successfully built combined filter engine with all advanced rules from \(allAdvancedRules.count) groups.")
-            }.value
+            let combinedAdvancedRules = allAdvancedRules.joined(separator: "\n")
+            let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
+            await ConcurrentLogManager.shared.log("ApplyChanges: Combined advanced rules: \(combinedAdvancedRules.count) characters, \(totalLines) lines from \(allAdvancedRules.count) filter groups.")
+            
+            ContentBlockerService.buildCombinedFilterEngine(
+                combinedAdvancedRules: combinedAdvancedRules,
+                groupIdentifier: GroupIdentifier.shared.value
+            )
+            
+            await ConcurrentLogManager.shared.log("ApplyChanges: Successfully built combined filter engine with all advanced rules from \(allAdvancedRules.count) groups.")
         } else {
             await ConcurrentLogManager.shared.log("ApplyChanges: No advanced rules found, clearing filter engine.")
-            await Task.detached(priority: .userInitiated) {
-                ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-            }.value
+            ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
         }
         
-        // Update UI with conversion results
-        await MainActor.run {
-            lastRuleCount = overallSafariRulesApplied
-            lastConversionTime = String(format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
-            progress = 0.7
-        }
+        lastRuleCount = overallSafariRulesApplied
+        lastConversionTime = String(format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
+        progress = 0.7
         await ConcurrentLogManager.shared.log("ApplyChanges: All conversions finished. Total Safari rules: \(overallSafariRulesApplied). Time: \(lastConversionTime)")
 
         // Reloading phase
-        await MainActor.run {
-            conversionStageDescription = "Reloading Safari extensions..."
-            isInReloadPhase = true
-        }
+        conversionStageDescription = "Reloading Safari extensions..."
+        isInReloadPhase = true
         let overallReloadStartTime = Date()
         var allReloadsSuccessful = true
         
-        _processedFiltersCount = 0
+        processedFiltersCount = 0
         for targetInfo in rulesByTargetInfo.keys { // Reload only affected targets
-            _processedFiltersCount += 1
-            
-            // Update UI on main thread
-            await MainActor.run {
-                processedFiltersCount = _processedFiltersCount
-                progress = 0.7 + (Float(processedFiltersCount) / Float(totalFiltersCount) * 0.3) // 70% to 100%
-                currentFilterName = targetInfo.primaryCategory.rawValue
-            }
+            processedFiltersCount += 1
+            progress = 0.7 + (Float(processedFiltersCount) / Float(totalFiltersCount) * 0.3) // 70% to 100%
+            currentFilterName = targetInfo.primaryCategory.rawValue
             await ConcurrentLogManager.shared.log("ApplyChanges: Reloading \(targetInfo.bundleIdentifier)...")
 
-            // Perform reload on background thread
-            let reloadResult = await Task.detached(priority: .userInitiated) {
-                ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
-            }.value
-            
+            let reloadResult = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
             if case .failure(let error) = reloadResult {
                 allReloadsSuccessful = false
                 await ConcurrentLogManager.shared.log("ApplyChanges: FAILED to reload \(targetInfo.bundleIdentifier): \(error.localizedDescription)")
-                await MainActor.run {
-                    if !hasError { statusDescription = "Failed to reload \(targetInfo.primaryCategory.rawValue) extension." }
-                    hasError = true // Mark that at least one error occurred
-                }
+                if !hasError { statusDescription = "Failed to reload \(targetInfo.primaryCategory.rawValue) extension." }
+                hasError = true // Mark that at least one error occurred
             } else {
                  await ConcurrentLogManager.shared.log("ApplyChanges: Successfully reloaded \(targetInfo.bundleIdentifier).")
             }
@@ -625,48 +554,39 @@ class AppFilterManager: ObservableObject {
         }
         
         // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
-        let allPlatformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { currentPlatform })
+        let allPlatformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         let affectedTargetBundleIDs = Set(rulesByTargetInfo.keys.map { $0.bundleIdentifier })
-        
-        await Task.detached(priority: .userInitiated) {
-            for targetInfo in allPlatformTargets {
-                if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
-                     await ConcurrentLogManager.shared.log("ApplyChanges: Ensuring \(targetInfo.bundleIdentifier) (no selected rules) is also reloaded to apply empty list.")
-                     _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount // Ensure it has an empty list
-                     _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
-                }
+        for targetInfo in allPlatformTargets {
+            if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
+                 await ConcurrentLogManager.shared.log("ApplyChanges: Ensuring \(targetInfo.bundleIdentifier) (no selected rules) is also reloaded to apply empty list.")
+                 _ = ContentBlockerService.convertFilter(rules: "[]", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount // Ensure it has an empty list
+                 _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
             }
-        }.value
-
-        // Update UI with final results
-        await MainActor.run {
-            isInReloadPhase = false
-            lastReloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
-            progress = 1.0
         }
-        await ConcurrentLogManager.shared.log("ApplyChanges: All reloads finished. Time: \(await MainActor.run { lastReloadTime }). All successful: \(allReloadsSuccessful)")
 
-        // Update final UI state on main thread
-        await MainActor.run {
-            if allReloadsSuccessful && !hasError {
-                conversionStageDescription = "Process completed successfully!"
-                statusDescription = "Applied rules to \(rulesByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules."
-                hasUnappliedChanges = false
-            } else if !hasError { // Implies reload issue was the only problem
-                statusDescription = "Converted rules, but one or more extensions failed to reload."
-            } // If hasError was already true, statusDescription would reflect the earlier error.
+        isInReloadPhase = false
+        lastReloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
+        progress = 1.0
+        await ConcurrentLogManager.shared.log("ApplyChanges: All reloads finished. Time: \(lastReloadTime). All successful: \(allReloadsSuccessful)")
 
-            isLoading = false
-            // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
-            // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
-        }
+        if allReloadsSuccessful && !hasError {
+            conversionStageDescription = "Process completed successfully!"
+            statusDescription = "Applied rules to \(rulesByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules."
+            hasUnappliedChanges = false
+        } else if !hasError { // Implies reload issue was the only problem
+            statusDescription = "Converted rules, but one or more extensions failed to reload."
+        } // If hasError was already true, statusDescription would reflect the earlier error.
+
+        isLoading = false
+        // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
+        // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
 
         saveFilterLists() // Save any state like sourceRuleCount if updated
         
         // Save rule counts to UserDefaults for next app launch
         saveRuleCounts()
         
-        await ConcurrentLogManager.shared.log("ApplyChanges: Finished. Final Status: \(await MainActor.run { statusDescription })")
+        await ConcurrentLogManager.shared.log("ApplyChanges: Finished. Final Status: \(statusDescription)")
     }
 
     func updateMissingFilters() async { // This is for when the "Missing Filters" sheet is shown
