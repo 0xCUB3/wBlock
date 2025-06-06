@@ -91,7 +91,7 @@ class FilterListLoader {
         ]
 
         #if os(macOS)
-        // Add macOS-only filters
+        // macOS-only filters too large for iOS
         filterLists.append(contentsOf: [
             FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."),
             FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content.")
@@ -106,8 +106,8 @@ class FilterListLoader {
             "EasyPrivacy",
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
+            "AdGuard Annoyances Filter",
             "Anti-Adblock List",
-            "Hagezi Pro Mini"
         ]
         #else
         let recommendedFilters = [
@@ -115,6 +115,7 @@ class FilterListLoader {
             "AdGuard Tracking Protection Filter",
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
+            "AdGuard Annoyances Filter",
             "Anti-Adblock List"
         ]
         #endif
