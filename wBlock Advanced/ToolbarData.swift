@@ -9,6 +9,7 @@
 //  data after a given time period, and safely coordinates access using an actor.
 import Foundation
 import SafariServices
+import wBlockCoreService
 
 /// An actor that tracks the number of blocked requests per Safari tab.
 /// Using an actor ensures that our state is safe from concurrent modifications.
@@ -24,6 +25,9 @@ actor ToolbarData {
 
     // Singleton instance for shared access to ToolbarData.
     public static let shared = ToolbarData()
+    
+    // Group UserDefaults for App Group sharing
+    private let groupDefaults: UserDefaults
 
     /// A simple structure to keep track of data for each tab.
     /// It is Codable so that it can be easily saved to and restored from UserDefaults.
@@ -46,8 +50,11 @@ actor ToolbarData {
     /// Private initializer, which attempts to restore previously saved data
     /// from UserDefaults so that the app can continue from its last state.
     private init() {
+        // Initialize group UserDefaults
+        self.groupDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
+        
         // Attempt to load persisted data using the predefined key.
-        if let data = UserDefaults.standard.data(forKey: Self.userDefaultsKey),
+        if let data = groupDefaults.data(forKey: Self.userDefaultsKey),
             let dictionary = try? JSONDecoder().decode([String: TabData].self, from: data)
         {
             tabBlockedRequests = dictionary
@@ -89,7 +96,7 @@ actor ToolbarData {
 
         // Encode the dictionary and save to persistent storage.
         if let data = try? JSONEncoder().encode(tabBlockedRequests) {
-            UserDefaults.standard.set(data, forKey: Self.userDefaultsKey)
+            groupDefaults.set(data, forKey: Self.userDefaultsKey)
         }
     }
 

@@ -14,10 +14,11 @@ class FilterListLoader {
     private let sharedContainerIdentifier = "group.skula.wBlock"
 
     // Cache the defaults instance
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
     init(logManager: ConcurrentLogManager) {
         self.logManager = logManager
+        self.defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
     }
 
     func checkAndCreateGroupFolder() {
