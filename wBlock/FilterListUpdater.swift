@@ -196,9 +196,7 @@ class FilterListUpdater {
             if let description = metadata.description, !description.isEmpty {
                 updatedFilter.description = description
             }
-            // --- Calculate and store source rule count ---
             updatedFilter.sourceRuleCount = countRulesInContent(content: content)
-            // --- End of new code for rule count ---
 
 
             await MainActor.run {

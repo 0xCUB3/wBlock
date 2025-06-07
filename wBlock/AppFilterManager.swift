@@ -453,6 +453,7 @@ class AppFilterManager: ObservableObject {
                 self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7 // Up to 70% for conversion
                 self.currentFilterName = targetInfo.primaryCategory.rawValue // More user-friendly
                 self.conversionStageDescription = "Converting \(targetInfo.primaryCategory.rawValue)..."
+                self.isInSavingPhase = true // Set saving phase for each conversion
             }
             
             // Log conversion start with source line count (only for large sets)
@@ -471,6 +472,10 @@ class AppFilterManager: ObservableObject {
                     targetRulesFilename: targetInfo.rulesFilename
                 )
             }.value
+            
+            await MainActor.run {
+                self.isInSavingPhase = false // Clear saving phase after conversion
+            }
             
             let ruleCountForThisTarget = conversionResult.safariRulesCount
             overallSafariRulesApplied += ruleCountForThisTarget

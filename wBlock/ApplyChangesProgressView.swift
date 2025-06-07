@@ -17,7 +17,8 @@ struct ApplyChangesProgressView: View {
     }
     
     private var progressPercentage: Int {
-        Int(round(filterManager.progress * 100))
+        let clampedProgress = max(0.0, min(1.0, filterManager.progress))
+        return Int(clampedProgress * 100)
     }
 
     var body: some View {
@@ -30,7 +31,6 @@ struct ApplyChangesProgressView: View {
                         Text(titleText)
                             .font(.title3)
                             .fontWeight(.medium)
-                            .animation(.easeInOut(duration: 0.4), value: titleText)
                         // Close button aligned to trailing edge (only show when complete)
                         HStack {
                             Spacer()
@@ -44,8 +44,6 @@ struct ApplyChangesProgressView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .help("Close")
-                                .transition(.scale.combined(with: .opacity))
-                                .animation(.easeInOut(duration: 0.3), value: !filterManager.isLoading)
                             }
                         }
                     }
@@ -56,9 +54,7 @@ struct ApplyChangesProgressView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
-                            .id(filterManager.conversionStageDescription) // Force recreation to prevent overlap
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.3), value: filterManager.conversionStageDescription)
+                            .frame(minHeight: 20) // Fixed height to prevent jumping
                     }
                     // Progress bar (only during conversion)
                     if filterManager.isLoading {
@@ -66,22 +62,17 @@ struct ApplyChangesProgressView: View {
                             ProgressView(value: filterManager.progress)
                                 .progressViewStyle(.linear)
                                 .scaleEffect(y: 1.2)
-                                .animation(.easeInOut(duration: 0.2), value: filterManager.progress)
                             Text("\(progressPercentage)%")
                                 .font(.caption)
                                 .fontWeight(.medium)
                                 .foregroundColor(.secondary)
-                                .animation(.easeInOut(duration: 0.2), value: progressPercentage)
+                                .monospacedDigit() // Ensures consistent width for numbers
                         }
-                        .transition(.opacity)
-                        .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
                     }
                 }
                 .padding(.top, 20)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading || (filterManager.progress >= 1.0 && hasStatistics))
             }
             
             // Content Area
@@ -93,8 +84,6 @@ struct ApplyChangesProgressView: View {
                     }
                     .padding(20)
                 }
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
             } else if filterManager.progress >= 1.0 && hasStatistics {
                 // Show statistics when complete
                 ScrollView {
@@ -103,11 +92,10 @@ struct ApplyChangesProgressView: View {
                             .padding(20)
                     }
                 }
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
+        .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
+        .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
         #if os(macOS)
         .frame(
             minWidth: 420, idealWidth: 450, maxWidth: 480,
@@ -139,9 +127,8 @@ struct ApplyChangesProgressView: View {
     }
     
     private var hasStatistics: Bool {
-        filterManager.sourceRulesCount > 0 || filterManager.lastRuleCount > 0 || 
-        filterManager.lastConversionTime != "N/A" || filterManager.lastReloadTime != "N/A" ||
-        !filterManager.ruleCountsByCategory.isEmpty
+        // Only show statistics if we have meaningful data
+        return filterManager.lastRuleCount > 0 || !filterManager.ruleCountsByCategory.isEmpty
     }
     
     @ViewBuilder
@@ -184,8 +171,8 @@ struct ApplyChangesProgressView: View {
             (
                 icon: "square.and.arrow.down",
                 title: "Saving & Building",
-                detail: nil,
-                isActive: filterManager.isInSavingPhase || filterManager.isInEnginePhase,
+                detail: (filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterManager.progress > 0.7 && filterManager.progress < 0.95)) ? "Writing files and building engines" : nil,
+                isActive: filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterManager.progress > 0.7 && filterManager.progress < 0.95),
                 isCompleted: filterManager.progress > 0.9
             ),
             (
@@ -203,39 +190,44 @@ struct ApplyChangesProgressView: View {
             Image(systemName: icon)
                 .foregroundColor(isCompleted ? .green : (isActive ? .blue : .secondary))
                 .frame(width: 20, height: 20)
-                .animation(.easeInOut(duration: 0.3), value: isCompleted)
-                .animation(.easeInOut(duration: 0.2), value: isActive)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline)
+                    .fontWeight(isActive ? .medium : .regular)
                     .foregroundColor(isCompleted ? .green : (isActive ? .primary : .secondary))
-                    .animation(.easeInOut(duration: 0.3), value: isCompleted)
-                    .animation(.easeInOut(duration: 0.2), value: isActive)
                 
-                if let detail = detail {
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .id(detail) // Force recreation to prevent overlap
-                        .animation(.easeInOut(duration: 0.2), value: detail)
+                // Reserve space for detail text to prevent layout jumping
+                Group {
+                    if let detail = detail, !detail.isEmpty {
+                        Text(detail)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(" ") // Invisible placeholder to maintain height
+                            .font(.caption)
+                            .opacity(0)
+                    }
                 }
+                .frame(minHeight: 16, alignment: .leading) // Fixed height and alignment
             }
             
             Spacer()
             
-            if isCompleted {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.subheadline)
-                    .transition(.scale.combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.4), value: isCompleted)
-            } else if isActive {
-                ProgressView()
-                    .scaleEffect(0.8)
-                    .frame(width: 16, height: 16)
-                    .transition(.scale.combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.2), value: isActive)
+            Group {
+                if isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.subheadline)
+                } else if isActive {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .frame(width: 16, height: 16)
+                } else {
+                    // Keep consistent spacing even when no icon
+                    Spacer()
+                        .frame(width: 16, height: 16)
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -254,8 +246,6 @@ struct ApplyChangesProgressView: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                 }
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
                 
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
@@ -269,8 +259,6 @@ struct ApplyChangesProgressView: View {
                             icon: stat.icon,
                             color: stat.color
                         )
-                        .transition(.scale.combined(with: .opacity))
-                        .animation(.easeInOut(duration: 0.4).delay(Double(index) * 0.1), value: filterManager.progress)
                     }
                 }
             }
@@ -287,8 +275,6 @@ struct ApplyChangesProgressView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
                     }
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
                     
                     LazyVGrid(columns: [
                         GridItem(.flexible()),
@@ -303,8 +289,6 @@ struct ApplyChangesProgressView: View {
                                 color: stat.color,
                                 showWarning: stat.showWarning
                             )
-                            .transition(.scale.combined(with: .opacity))
-                            .animation(.easeInOut(duration: 0.4).delay(Double(index) * 0.1), value: filterManager.progress)
                         }
                     }
                 }
