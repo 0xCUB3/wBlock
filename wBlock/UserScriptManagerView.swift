@@ -12,7 +12,6 @@ struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: UserScript?
-    @State private var showingScriptContent = false
     @Environment(\.dismiss) private var dismiss
     
     private var totalScriptsTitle: String {
@@ -87,7 +86,6 @@ struct UserScriptManagerView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color(.systemGroupedBackground))
     }
     
     private var scriptsList: some View {
@@ -99,7 +97,6 @@ struct UserScriptManagerView: View {
                         onTap: {
                             #if os(macOS)
                             selectedScript = script
-                            showingScriptContent = true
                             #endif
                         },
                         onToggle: {
@@ -116,7 +113,6 @@ struct UserScriptManagerView: View {
                     )
                 }
                 
-                // Add Script button at the bottom of the list
                 Button {
                     showingAddScriptSheet = true
                 } label: {
@@ -142,7 +138,6 @@ struct UserScriptManagerView: View {
                 .padding(.top, 1)
             }
         }
-        .background(Color(.systemGroupedBackground))
     }
     
     private var emptyStateView: some View {
@@ -173,7 +168,6 @@ struct UserScriptManagerView: View {
             .controlSize(.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
     }
 }
 
@@ -188,7 +182,6 @@ struct UserScriptRowView: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Script icon and info
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Image(systemName: script.isDownloaded ? "doc.text.fill" : "doc.text")
@@ -208,95 +201,42 @@ struct UserScriptRowView: View {
                                 .lineLimit(1)
                         }
                     }
-                    
                     Spacer()
                 }
                 
-                // Status badges
                 HStack(spacing: 8) {
                     if !script.version.isEmpty {
                         Badge(text: "v\(script.version)", color: .blue)
                     }
-                    
                     if !script.matches.isEmpty {
                         Badge(text: "\(script.matches.count) pattern\(script.matches.count == 1 ? "" : "s")", color: .orange)
                     }
-                    
                     if !script.isDownloaded {
                         Badge(text: "Not Downloaded", color: .red)
                     }
                 }
             }
-            
             Spacer()
-            
-            // Controls
             HStack(spacing: 12) {
-                // Update button (if downloaded)
                 if script.isDownloaded {
-                    Button {
-                        onUpdate()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.body)
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Update Script")
+                    Button { onUpdate() } label: { Image(systemName: "arrow.clockwise").font(.body) }
+                    .buttonStyle(.borderless).help("Update Script")
                 }
-                
-                // Toggle
-                Toggle("", isOn: Binding(
-                    get: { script.isEnabled },
-                    set: { _ in onToggle() }
-                ))
-                .labelsHidden()
-                .disabled(!script.isDownloaded)
+                Toggle("", isOn: Binding(get: { script.isEnabled }, set: { _ in onToggle() }))
+                .labelsHidden().disabled(!script.isDownloaded)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(
-            Color(.systemGroupedBackground)
-                .overlay(
-                    isHovered ? Color.primary.opacity(0.05) : Color.clear
-                )
-        )
+        .padding(.horizontal, 20).padding(.vertical, 12)
         #if os(macOS)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-        #endif
-        #if os(macOS)
-        .onTapGesture {
-            onTap()
-        }
+        .onHover { hovering in withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering } }
+        .onTapGesture { onTap() }
         #endif
         .contextMenu {
             #if os(macOS)
-            if script.isDownloaded {
-                Button {
-                    onTap()
-                } label: {
-                    Label("View Content", systemImage: "doc.text")
-                }
-            }
+            if script.isDownloaded { Button { onTap() } label: { Label("View Content", systemImage: "doc.text") } }
             #endif
-            
-            if script.isDownloaded {
-                Button {
-                    onUpdate()
-                } label: {
-                    Label("Update", systemImage: "arrow.clockwise")
-                }
-            }
-            
-            Button(role: .destructive) {
-                onRemove()
-            } label: {
-                Label("Remove", systemImage: "trash")
-            }
+            if script.isDownloaded { Button { onUpdate() } label: { Label("Update", systemImage: "arrow.clockwise") } }
+            Button(role: .destructive) { onRemove() } label: { Label("Remove", systemImage: "trash") }
         }
     }
 }
@@ -304,380 +244,288 @@ struct UserScriptRowView: View {
 struct Badge: View {
     let text: String
     let color: Color
-    
     var body: some View {
-        Text(text)
-            .font(.caption2)
-            .fontWeight(.medium)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.15))
-            .foregroundColor(color)
-            .cornerRadius(4)
+        Text(text).font(.caption2).fontWeight(.medium)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(color.opacity(0.15)).foregroundColor(color).cornerRadius(4)
     }
 }
 
 #if os(macOS)
+
+// MARK: - UserScriptInfoSidebar Subviews
+
+private struct ScriptNameAndDescriptionView: View {
+    let script: UserScript
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(script.name).font(.title2).fontWeight(.semibold).foregroundColor(.primary).textSelection(.enabled)
+            if !script.description.isEmpty {
+                Text(script.description).font(.body).foregroundColor(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+private struct ScriptStatusBadgesView: View {
+    let script: UserScript
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                if !script.version.isEmpty { Badge(text: "v\(script.version)", color: .blue) } // Corrected
+                Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
+            }
+            if !script.isDownloaded { Badge(text: "Not Downloaded", color: .red) } else { Badge(text: "Downloaded", color: .green) }
+        }
+    }
+}
+
+private struct ScriptFileInfoView: View {
+    let script: UserScript
+    let formatFileSize: (Int) -> String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("File Information").font(.caption).fontWeight(.medium).foregroundColor(.secondary)
+            HStack {
+                Text("Size:").font(.caption2).foregroundColor(.secondary)
+                Text(formatFileSize(script.content.count)).font(.caption).fontWeight(.medium).foregroundColor(.primary)
+                Spacer()
+            }.padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6)
+        }
+    }
+}
+
+private struct ScriptURLView: View {
+    let script: UserScript
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Source URL").font(.caption).fontWeight(.medium).foregroundColor(.secondary)
+            Text(script.url?.absoluteString ?? "N/A").font(.caption).foregroundColor(.blue).textSelection(.enabled).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+// NEW Struct for individual match pattern row
+private struct ScriptMatchPatternRowView: View {
+    let index: Int
+    let pattern: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("\(index + 1).") // Corrected
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(width: 20, alignment: .leading)
+
+            Text(pattern)
+                .font(.caption)
+                .foregroundColor(.orange)
+                .textSelection(.enabled)
+                .lineLimit(nil)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .cornerRadius(4)
+    }
+}
+
+private struct ScriptMatchPatternsView: View {
+    let script: UserScript
+    @Binding var isPatternsExpanded: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { isPatternsExpanded.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("URL Patterns (\(script.matches.count))") // Corrected
+                        .font(.caption).fontWeight(.medium).foregroundColor(.secondary)
+                    Spacer()
+                    Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
+                        .font(.caption2).foregroundColor(.secondary)
+                }
+            }
+            .buttonStyle(.plain).padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6).onHover { _ in }
+            
+            if isPatternsExpanded {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        // Use the new ScriptMatchPatternRowView here
+                        ForEach(Array(script.matches.enumerated()), id: \.offset) { indexInForEach, patternInForEach in
+                            ScriptMatchPatternRowView(index: indexInForEach, pattern: patternInForEach)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+                .frame(maxHeight: 200)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 0.5))
+            }
+        }
+    }
+}
+
+
+struct UserScriptInfoSidebar: View {
+    let script: UserScript
+    @Binding var isPatternsExpanded: Bool
+    let formatFileSize: (Int) -> String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ScriptNameAndDescriptionView(script: script)
+            ScriptStatusBadgesView(script: script)
+            if !script.content.isEmpty { ScriptFileInfoView(script: script, formatFileSize: formatFileSize) }
+            if script.url != nil { ScriptURLView(script: script) }
+            if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
+            Spacer()
+        }
+    }
+}
+
+struct ScriptContentMainView: View {
+    let script: UserScript
+    @Binding var displayedContent: String
+    @Binding var isLoadingContent: Bool
+    @Binding var showFullContent: Bool
+    let previewLength: Int
+    let formatFileSize: (Int) -> String
+    let toggleContentViewAction: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Script Content").font(.headline).fontWeight(.medium)
+                    if !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
+                        HStack(spacing: 4) {
+                            Image(systemName: "info.circle").font(.caption2).foregroundColor(.orange)
+                            Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))") // Corrected
+                                .font(.caption).foregroundColor(.secondary)
+                        }
+                    } else if showFullContent && script.content.count > previewLength {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle").font(.caption2).foregroundColor(.green)
+                            Text("Full content loaded").font(.caption).foregroundColor(.secondary)
+                        }
+                    }
+                }
+                Spacer()
+                HStack(spacing: 12) {
+                    if !script.content.isEmpty && script.content.count > previewLength {
+                        Button { toggleContentViewAction() } label: {
+                            HStack(spacing: 6) {
+                                if isLoadingContent { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
+                                else { Image(systemName: showFullContent ? "eye.slash" : "eye") }
+                                Text(showFullContent ? "Show Preview" : "Show All")
+                            }
+                        }.buttonStyle(.borderless).disabled(isLoadingContent)
+                         .help(showFullContent ? "Show preview only" : "Load full content")
+                    }
+                }
+            }.padding(.horizontal, 20).padding(.vertical, 12)
+            Divider()
+            if script.content.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc.text").font(.system(size: 48)).foregroundColor(.secondary.opacity(0.6))
+                    Text("No Content Available").font(.headline).foregroundColor(.secondary)
+                    Text("This script hasn't been downloaded yet.").font(.body).foregroundColor(.secondary)
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        Text(displayedContent).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                    }
+                }
+                .overlay( Group {
+                    if script.content.count > 100000 && showFullContent {
+                        VStack { Spacer(); HStack { Spacer()
+                            HStack(spacing: 6) { Image(systemName: "info.circle.fill").foregroundColor(.orange)
+                                Text("Large file - scrolling may be slow")
+                            }.padding(.horizontal, 8).padding(.vertical, 4).background(Color.orange.opacity(0.1)).cornerRadius(6).padding()
+                        }}
+                    }
+                }, alignment: .bottomTrailing)
+            }
+        }
+    }
+}
+
 struct UserScriptContentView: View {
     let script: UserScript
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedText: String = ""
     @State private var displayedContent: String = ""
     @State private var isLoadingContent = false
     @State private var showFullContent = false
     @State private var sidebarWidth: CGFloat = 280
     @State private var isPatternsExpanded = false
     
-    private let previewLength = 10000 // Show first 10k characters initially
+    private let previewLength = 10000
     private let minSidebarWidth: CGFloat = 250
     private let maxSidebarWidth: CGFloat = 500
     
-    var body: some View {
+    private var splitViewContent: some View { // Extracted for clarity/compiler
         HSplitView {
-            // Left sidebar with script info
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(script.name)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .textSelection(.enabled)
-                    
-                    if !script.description.isEmpty {
-                        Text(script.description)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .textSelection(.enabled)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                
-                // Status badges
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        if !script.version.isEmpty {
-                            Badge(text: "v\(script.version)", color: .blue)
-                        }
-                        
-                        Badge(
-                            text: script.isEnabled ? "Enabled" : "Disabled",
-                            color: script.isEnabled ? .green : .secondary
-                        )
-                    }
-                    
-                    if !script.isDownloaded {
-                        Badge(text: "Not Downloaded", color: .red)
-                    } else {
-                        Badge(text: "Downloaded", color: .green)
-                    }
-                }
-                
-                // File size info
-                if !script.content.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("File Information")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            Text("Size:")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                            Text(formatFileSize(script.content.count))
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                    }
-                }
-                
-                // URL
-                if let url = script.url {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Source URL")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        
-                        Text(url.absoluteString)
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .textSelection(.enabled)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                
-                // Match patterns
-                if !script.matches.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isPatternsExpanded.toggle()
-                            }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Text("URL Patterns (\(script.matches.count))")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                    .rotationEffect(.degrees(isPatternsExpanded ? 0 : 0))
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(6)
-                        .onHover { hovering in
-                            // Add subtle hover effect
-                        }
-                        
-                        if isPatternsExpanded {
-                            ScrollView {
-                                LazyVStack(alignment: .leading, spacing: 4) {
-                                    ForEach(Array(script.matches.enumerated()), id: \.offset) { index, pattern in
-                                        HStack(alignment: .top, spacing: 8) {
-                                            Text("\(index + 1).")
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                                .frame(width: 20, alignment: .leading)
-                                            
-                                            Text(pattern)
-                                                .font(.caption)
-                                                .foregroundColor(.orange)
-                                                .textSelection(.enabled)
-                                                .lineLimit(nil)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            index % 2 == 0 
-                                            ? Color.clear 
-                                            : Color(.tertiarySystemGroupedBackground)
-                                        )
-                                        .cornerRadius(4)
-                                    }
-                                }
-                                .padding(.horizontal, 4)
-                            }
-                            .frame(maxHeight: 200) // Limit height to prevent sidebar overflow
-                            .background(Color(.systemBackground))
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color(.separator), lineWidth: 0.5)
-                            )
-                        }
-                    }
-                }
-                
-                Spacer()
-            }
+            UserScriptInfoSidebar(
+                script: script,
+                isPatternsExpanded: $isPatternsExpanded,
+                formatFileSize: formatFileSize
+            )
             .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)
             .padding(20)
-            .background(Color(.systemGroupedBackground))
             
-            // Right content area
-            VStack(spacing: 0) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Script Content")
-                            .font(.headline)
-                            .fontWeight(.medium)
-                        
-                        if !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
-                            HStack(spacing: 4) {
-                                Image(systemName: "info.circle")
-                                    .font(.caption2)
-                                    .foregroundColor(.orange)
-                                Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        } else if showFullContent && script.content.count > previewLength {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle")
-                                    .font(.caption2)
-                                    .foregroundColor(.green)
-                                Text("Full content loaded")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 12) {
-                        // Show more/less button for large files
-                        if !script.content.isEmpty && script.content.count > previewLength {
-                            Button {
-                                toggleContentView()
-                            } label: {
-                                HStack(spacing: 6) {
-                                    if isLoadingContent {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                            .frame(width: 12, height: 12)
-                                    } else {
-                                        Image(systemName: showFullContent ? "eye.slash" : "eye")
-                                    }
-                                    Text(showFullContent ? "Show Preview" : "Show All")
-                                }
-                            }
-                            .buttonStyle(.borderless)
-                            .disabled(isLoadingContent)
-                            .help(showFullContent ? "Show preview only to improve performance" : "Load full content (may cause lag for very large files)")
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color(.systemGroupedBackground))
-                
-                Divider()
-                
-                // Script content
-                if script.content.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary.opacity(0.6))
-                        
-                        Text("No Content Available")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("This script hasn't been downloaded yet.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground))
-                } else {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 0) {
-                            Text(displayedContent)
-                                .font(.system(.body, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(20)
-                        }
-                    }
-                    .background(Color(.systemBackground))
-                    .overlay(
-                        // Performance indicator for large files
-                        Group {
-                            if script.content.count > 100000 && showFullContent {
-                                VStack {
-                                    Spacer()
-                                    HStack {
-                                        Spacer()
-                                        HStack(spacing: 6) {
-                                            Image(systemName: "info.circle.fill")
-                                                .font(.caption2)
-                                                .foregroundColor(.orange)
-                                            Text("Large file - scrolling may be slow")
-                                                .font(.caption2)
-                                                .foregroundColor(.orange)
-                                        }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.orange.opacity(0.1))
-                                        .cornerRadius(6)
-                                        .padding()
-                                    }
-                                }
-                            }
-                        }, alignment: .bottomTrailing
-                    )
-                }
-            }
+            ScriptContentMainView(
+                script: script,
+                displayedContent: $displayedContent,
+                isLoadingContent: $isLoadingContent,
+                showFullContent: $showFullContent,
+                previewLength: previewLength,
+                formatFileSize: formatFileSize,
+                toggleContentViewAction: toggleContentView
+            )
             .frame(minWidth: 400)
         }
-        .navigationTitle("")
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                    dismiss()
-                }
-            }
-        }
-        .frame(width: 1000, height: 700)
-        .onAppear {
-            loadInitialContent()
-        }
+    }
+
+    var body: some View {
+        splitViewContent
+            .navigationTitle("")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+            .frame(width: 1000, height: 700)
+            .onAppear { loadInitialContent() }
     }
     
     private func loadInitialContent() {
-        if script.content.isEmpty {
-            displayedContent = ""
-            return
-        }
-        
-        // For small files, show everything immediately
+        if script.content.isEmpty { displayedContent = ""; return }
         if script.content.count <= previewLength {
-            displayedContent = script.content
-            showFullContent = true
+            displayedContent = script.content; showFullContent = true
         } else {
-            // For large files, show preview first
-            displayedContent = String(script.content.prefix(previewLength))
-            showFullContent = false
+            displayedContent = String(script.content.prefix(previewLength)); showFullContent = false
         }
     }
     
     private func toggleContentView() {
         if showFullContent {
-            // Switch to preview
-            displayedContent = String(script.content.prefix(previewLength))
-            showFullContent = false
+            displayedContent = String(script.content.prefix(previewLength)); showFullContent = false
         } else {
-            // Load full content asynchronously with better performance handling
             isLoadingContent = true
-            
-            // Use a slight delay to show loading state
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 DispatchQueue.global(qos: .userInitiated).async {
                     let fullContent = script.content
-                    
                     DispatchQueue.main.async {
-                        // Update in chunks for very large files to maintain responsiveness
                         if fullContent.count > 500000 {
-                            // For very large files, update incrementally
-                            let chunkSize = 50000
-                            var currentIndex = fullContent.startIndex
-                            var chunks: [String] = []
-                            
-                            while currentIndex < fullContent.endIndex {
-                                let endIndex = fullContent.index(currentIndex, offsetBy: chunkSize, limitedBy: fullContent.endIndex) ?? fullContent.endIndex
-                                let chunk = String(fullContent[currentIndex..<endIndex])
-                                chunks.append(chunk)
-                                currentIndex = endIndex
+                            var tempContent = ""
+                            tempContent.reserveCapacity(fullContent.count) // Pre-allocate
+                            let chunkSize = 50000; var currentIdx = fullContent.startIndex
+                            while currentIdx < fullContent.endIndex {
+                                let endIdx = fullContent.index(currentIdx, offsetBy: chunkSize, limitedBy: fullContent.endIndex) ?? fullContent.endIndex
+                                tempContent.append(contentsOf: fullContent[currentIdx..<endIdx])
+                                currentIdx = endIdx
                             }
-                            
-                            displayedContent = chunks.joined()
+                            displayedContent = tempContent
                         } else {
                             displayedContent = fullContent
                         }
-                        
-                        showFullContent = true
-                        isLoadingContent = false
+                        showFullContent = true; isLoadingContent = false
                     }
                 }
             }
@@ -685,9 +533,7 @@ struct UserScriptContentView: View {
     }
     
     private func formatFileSize(_ bytes: Int) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB]
-        formatter.countStyle = .file
+        let formatter = ByteCountFormatter(); formatter.allowedUnits = [.useKB, .useMB]; formatter.countStyle = .file
         return formatter.string(fromByteCount: Int64(bytes))
     }
 }
@@ -703,119 +549,47 @@ struct AddUserScriptView: View {
     var body: some View {
         VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Add User Script")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text("Enter the URL of a userscript (ending in .user.js)")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                
-                TextField("https://example.com/script.user.js", text: $urlString)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
+                Text("Add User Script").font(.title2).fontWeight(.semibold)
+                Text("Enter the URL of a userscript (ending in .user.js)").font(.body).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                TextField("https://example.com/script.user.js", text: $urlString).textFieldStyle(.roundedBorder).autocorrectionDisabled()
                     #if os(iOS)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL).textInputAutocapitalization(.never)
                     #endif
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            }.frame(maxWidth: .infinity, alignment: .leading)
             
-            // Adaptive button layout
             if horizontalSizeClass == .compact {
-                // Vertical layout for narrow screens (iPhone)
-                VStack(spacing: 12) {
-                    Button {
-                        addScript()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                Text("Adding...")
-                            } else {
-                                Text("Add Script")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-                    
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.cancelAction)
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity)
-                }
+                VStack(spacing: 12) { createMainButton(); createCancelButton() }
             } else {
-                // Horizontal layout for wide screens (iPad, macOS)
-                HStack(spacing: 16) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.cancelAction)
-                    .buttonStyle(.bordered)
-                    
-                    Spacer()
-                    
-                    Button {
-                        addScript()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                Text("Adding...")
-                            } else {
-                                Text("Add Script")
-                            }
-                        }
-                        .frame(minWidth: 100)
-                    }
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-                }
+                HStack(spacing: 16) { createCancelButton(); Spacer(); createMainButton() }
             }
-            
             Spacer(minLength: 20)
         }
-        .padding(adaptivePadding)
-        .frame(
-            maxWidth: adaptiveMaxWidth,
-            maxHeight: adaptiveMaxHeight
-        )
+        .padding(adaptivePadding).frame(maxWidth: adaptiveMaxWidth, maxHeight: adaptiveMaxHeight)
     }
     
-    private var adaptivePadding: CGFloat {
-        horizontalSizeClass == .compact ? 20 : 30
+    private func createMainButton() -> some View {
+        Button { addScript() } label: {
+            HStack(spacing: 8) {
+                if isLoading { ProgressView().scaleEffect(0.8); Text("Adding...") } else { Text("Add Script") }
+            }.frame(minWidth: horizontalSizeClass == .compact ? .infinity : 100, maxWidth: horizontalSizeClass == .compact ? .infinity : nil)
+        }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+    }
+
+    private func createCancelButton() -> some View {
+        Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).buttonStyle(.bordered)
+            .frame(maxWidth: horizontalSizeClass == .compact ? .infinity : nil)
     }
     
-    private var adaptiveMaxWidth: CGFloat? {
-        horizontalSizeClass == .compact ? nil : 500
-    }
-    
-    private var adaptiveMaxHeight: CGFloat? {
-        horizontalSizeClass == .compact ? nil : 250
-    }
+    private var adaptivePadding: CGFloat { horizontalSizeClass == .compact ? 20 : 30 }
+    private var adaptiveMaxWidth: CGFloat? { horizontalSizeClass == .compact ? nil : 500 }
+    private var adaptiveMaxHeight: CGFloat? { horizontalSizeClass == .compact ? nil : 250 }
     
     private func addScript() {
-        guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            return
-        }
-        
+        guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
         isLoading = true
-        
         Task {
             await userScriptManager.addUserScript(from: url)
-            await MainActor.run {
-                isLoading = false
-                dismiss()
-            }
+            await MainActor.run { isLoading = false; dismiss() }
         }
     }
 }
