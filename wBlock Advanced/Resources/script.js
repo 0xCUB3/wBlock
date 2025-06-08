@@ -5696,7 +5696,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -5861,7 +5861,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -5944,7 +5944,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -6018,7 +6018,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -6084,7 +6084,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -6224,7 +6224,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -6350,7 +6350,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7019,7 +7019,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7142,7 +7142,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7569,7 +7569,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7651,7 +7651,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7711,7 +7711,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7788,7 +7788,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7885,7 +7885,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -7951,7 +7951,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -8211,7 +8211,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -8413,7 +8413,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -8577,7 +8577,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -8765,7 +8765,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -9055,7 +9055,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.setInterval = intervalWrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -9213,7 +9213,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.setTimeout = timeoutWrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -9382,7 +9382,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       base[prop] = new Proxy(base[prop], objectHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -9675,7 +9675,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -9857,7 +9857,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -10022,7 +10022,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -10088,7 +10088,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.dir = dirWrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -10155,7 +10155,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -10224,7 +10224,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.eval = new Proxy(window.eval, evalHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -10634,7 +10634,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -10769,7 +10769,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       observeDOMChanges(hideHandler, true);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -11202,7 +11202,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       connect();
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -11321,7 +11321,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hijackAttachShadow(window, hostSelector, callback);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -11431,7 +11431,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Response.prototype.json = responseJsonWrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -11847,7 +11847,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.fetch = new Proxy(window.fetch, fetchHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -12534,7 +12534,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, sendHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -13045,7 +13045,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Object.defineProperty(document, "addEventListener", descriptor);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -13178,7 +13178,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.Function = FunctionWrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -13375,7 +13375,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return true;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -13806,7 +13806,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.fetch = new Proxy(window.fetch, fetchHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14068,7 +14068,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14177,7 +14177,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14255,7 +14255,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14329,7 +14329,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14430,7 +14430,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }.bind();
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14530,7 +14530,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14647,7 +14647,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Object.defineProperty(document, "addEventListener", descriptor);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14812,7 +14812,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return true;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -14931,7 +14931,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.eval = evalWrapper.bind(window);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -15009,7 +15009,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.HTMLCanvasElement.prototype.getContext = new Proxy(window.HTMLCanvasElement.prototype.getContext, canvasHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -15283,7 +15283,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       preventInlineOnerror(tagName, searchRegexp);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -15423,7 +15423,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return new RegExp(escaped);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -15540,7 +15540,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -15672,7 +15672,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       fetch = new Proxy(fetch, fetchHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -16004,7 +16004,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return Math.random().toString(36).slice(2, 9);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -16121,7 +16121,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -16224,7 +16224,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.requestAnimationFrame = rafWrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -16388,7 +16388,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.setInterval = new Proxy(window.setInterval, setIntervalHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -16625,7 +16625,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.setTimeout = new Proxy(window.setTimeout, setTimeoutHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -16920,7 +16920,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.open.toString = nativeOpen.toString.bind(nativeOpen);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -17318,7 +17318,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       XMLHttpRequest.prototype.getAllResponseHeaders = new Proxy(XMLHttpRequest.prototype.getAllResponseHeaders, getAllHeadersHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -17635,7 +17635,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -17850,7 +17850,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -18063,7 +18063,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return new RegExp(escaped);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -18145,7 +18145,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       observeDOMChanges(removeHandler, true);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -18411,7 +18411,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -18657,7 +18657,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return _wrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -18921,7 +18921,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       _setChainPropAccess(window, property);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -19298,7 +19298,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       document.cookie = cookieToSet;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -19460,7 +19460,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -19625,7 +19625,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -19821,7 +19821,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -19894,7 +19894,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -20214,7 +20214,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.Element.prototype.getBoundingClientRect = new Proxy(window.Element.prototype.getBoundingClientRect, getBoundingClientRectHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -20543,7 +20543,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -20817,7 +20817,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -21018,7 +21018,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       EventTarget.prototype.addEventListener = new Proxy(EventTarget.prototype.addEventListener, handler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -21101,7 +21101,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       base[prop] = new Proxy(base[prop], objectHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -21572,7 +21572,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       fetch = new Proxy(fetch, fetchHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -21977,7 +21977,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       nativeConsole(`${name}: ${message}`);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -22182,7 +22182,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       base[prop] = new Proxy(nativeMethod, objectHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -22597,7 +22597,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, sendHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -22908,7 +22908,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return _wrapper;
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -23076,7 +23076,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       _setChainPropAccess(window, property);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -23434,7 +23434,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -23619,7 +23619,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -23805,7 +23805,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -23911,7 +23911,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       hit(source);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -24063,7 +24063,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -24749,7 +24749,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.fetch = new Proxy(window.fetch, fetchHandler);
     }
     function hit(source) {
-      var ADGUARD_PREFIX = "[AdGuard]";
+      var ADGUARD_PREFIX = "[wBlock]";
       if (!source.verbose) {
         return;
       }
@@ -25606,7 +25606,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     run() {
       let verbose = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      let prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '[AdGuard Extension]';
+      let prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '[wBlock Extension]';
       if (verbose) {
         initLogger$1('log', prefix);
       } else {
@@ -25825,7 +25825,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // Initialize the logger using the verbose flag from the response:
     // If verbose, use a prefix; otherwise, disable logging.
     if (message !== null && message !== void 0 && message.verbose) {
-      initLogger('log', '[AdGuard Sample App Extension]');
+      initLogger('log', '[wBlock Sample App Extension]');
     } else {
       initLogger('discard', '');
     }

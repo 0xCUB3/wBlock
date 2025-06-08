@@ -2,7 +2,7 @@
 //  UserScript.swift
 //  wBlock
 //
-//  Created by GitHub Copilot on 6/7/25.
+//  Created by Alexander Skula on 6/7/25.
 //
 
 import Foundation
@@ -25,6 +25,11 @@ public struct UserScript: Identifiable, Codable, Hashable {
     public var updateURL: String?
     public var downloadURL: String?
     public var content: String = ""
+    
+    /// Computed property to check if the userscript is downloaded and ready to use
+    public var isDownloaded: Bool {
+        return !content.isEmpty && content != ""
+    }
     
     public init(id: UUID = UUID(), name: String, url: URL? = nil, content: String = "") {
         self.id = id

@@ -183,7 +183,29 @@ class FilterListUpdater {
     /// Fetches, processes, and saves a filter list
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
-            let (data, response) = try await URLSession.shared.data(from: filter.url)
+            // Special handling for GitFlic URLs which may be blocked by Cloudflare
+            let (data, response): (Data, URLResponse)
+            if filter.url.host?.contains("gitflic.ru") == true {
+                var request = URLRequest(url: filter.url)
+                // Try to mimic a more complete browser request
+                request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+                request.setValue("text/plain,*/*", forHTTPHeaderField: "Accept")
+                request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
+                request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
+                request.setValue("gitflic.ru", forHTTPHeaderField: "Host")
+                request.setValue("https://gitflic.ru", forHTTPHeaderField: "Referer")
+                request.setValue("same-origin", forHTTPHeaderField: "Sec-Fetch-Site")
+                request.setValue("navigate", forHTTPHeaderField: "Sec-Fetch-Mode")
+                request.setValue("document", forHTTPHeaderField: "Sec-Fetch-Dest")
+                request.setValue("?1", forHTTPHeaderField: "Sec-Fetch-User")
+                request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
+                request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
+                request.timeoutInterval = 30
+                (data, response) = try await URLSession.shared.data(for: request)
+            } else {
+                (data, response) = try await URLSession.shared.data(from: filter.url)
+            }
+            
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
                   let content = String(data: data, encoding: .utf8) else {
                 await ConcurrentLogManager.shared.log("Failed to fetch \(filter.name)")

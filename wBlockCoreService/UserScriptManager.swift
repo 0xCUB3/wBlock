@@ -2,7 +2,7 @@
 //  UserScriptManager.swift
 //  wBlockCoreService
 //
-//  Created by GitHub Copilot on 6/7/25.
+//  Created by Alexander Skula on 6/7/25.
 //
 
 import Foundation
@@ -16,11 +16,20 @@ public class UserScriptManager: ObservableObject {
     @Published public var statusDescription: String = "Ready."
     @Published public var hasError: Bool = false
     @Published public var errorMessage: String = ""
+    @Published public var showingUpdateSuccessAlert = false
+    @Published public var showingUpdateErrorAlert = false
+    @Published public var updateAlertMessage = ""
     
     private let userScriptsKey = "userScripts"
     private let sharedContainerIdentifier = "group.skula.wBlock"
     private let groupUserDefaults: UserDefaults
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
+    
+    private let defaultUserScripts: [(name: String, url: String)] = [
+        ("Return YouTube Dislike", "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js"),
+        ("Bypass Paywalls Clean", "https://raw.githubusercontent.com/0xCUB3/Website/refs/heads/main/content/bpc.en.user.js"),
+        ("YouTube Classic", "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js")
+    ]
     
     public init() {
         logger.info("🔧 UserScriptManager initializing...")
@@ -123,11 +132,168 @@ public class UserScriptManager: ObservableObject {
                         logger.warning("⚠️ Failed to load content for \(script.name)")
                     }
                 }
+                
+                // Check if we need to add any missing default scripts
+                checkAndAddMissingDefaultScripts()
+                
             } catch {
                 logger.error("❌ Failed to decode userscripts: \(error)")
             }
         } else {
             logger.info("📖 No userscripts found in UserDefaults")
+            // Load default userscripts for first-time users
+            loadDefaultUserScripts()
+        }
+    }
+    
+    private func checkAndAddMissingDefaultScripts() {
+        logger.info("🔍 Checking for missing default userscripts...")
+        
+        var hasAddedNew = false
+        
+        for defaultScript in defaultUserScripts {
+            // Check if this default script already exists
+            let exists = userScripts.contains { script in
+                script.name == defaultScript.name || script.url?.absoluteString == defaultScript.url
+            }
+            
+            if !exists {
+                logger.info("➕ Adding missing default script: \(defaultScript.name)")
+                guard let url = URL(string: defaultScript.url) else { continue }
+                
+                var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
+                newUserScript.isEnabled = false
+                newUserScript.isLocal = false
+                newUserScript.description = "Default userscript - downloading..."
+                newUserScript.version = "Downloading..."
+                
+                userScripts.append(newUserScript)
+                hasAddedNew = true
+            }
+        }
+        
+        if hasAddedNew {
+            saveUserScripts()
+            
+            // Start downloading missing scripts in the background
+            Task {
+                await downloadMissingDefaultScripts()
+            }
+        } else {
+            // Check if any existing default scripts need to be downloaded
+            Task {
+                await downloadMissingDefaultScripts()
+            }
+        }
+    }
+    
+    private func downloadMissingDefaultScripts() async {
+        logger.info("📥 Checking and downloading missing default userscripts...")
+        
+        for i in 0..<userScripts.count {
+            let script = userScripts[i]
+            
+            // Check if this is a default script that needs downloading
+            let isDefaultScript = defaultUserScripts.contains { defaultScript in
+                script.name == defaultScript.name || script.url?.absoluteString == defaultScript.url
+            }
+            
+            if isDefaultScript && !script.isLocal && script.content.isEmpty, let url = script.url {
+                await downloadUserScriptInBackground(at: i, from: url)
+            }
+        }
+        
+        await MainActor.run {
+            logger.info("✅ Finished checking default userscripts")
+        }
+    }
+    
+    private func loadDefaultUserScripts() {
+        logger.info("🎯 Loading default userscripts for first-time setup...")
+        
+        for defaultScript in defaultUserScripts {
+            guard let url = URL(string: defaultScript.url) else {
+                logger.error("❌ Invalid URL for default userscript: \(defaultScript.url)")
+                continue
+            }
+            
+            var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
+            newUserScript.isEnabled = false // Default to disabled
+            newUserScript.isLocal = false // Mark as remote
+            
+            // Add placeholder metadata so they show up in the list
+            newUserScript.description = "Default userscript - downloading..."
+            newUserScript.version = "Downloading..."
+            
+            userScripts.append(newUserScript)
+            logger.info("✅ Added default userscript placeholder: \(defaultScript.name)")
+        }
+        
+        if !userScripts.isEmpty {
+            saveUserScripts()
+            logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
+            
+            // Start downloading default scripts in the background
+            Task {
+                await downloadDefaultUserScripts()
+            }
+        }
+    }
+    
+    private func downloadDefaultUserScripts() async {
+        logger.info("📥 Starting background download of default userscripts...")
+        
+        for i in 0..<userScripts.count {
+            let script = userScripts[i]
+            
+            // Only download if it's a default script and not yet downloaded
+            if !script.isLocal && script.content.isEmpty, let url = script.url {
+                await downloadUserScriptInBackground(at: i, from: url)
+            }
+        }
+        
+        await MainActor.run {
+            logger.info("✅ Finished downloading default userscripts")
+            statusDescription = "Default userscripts ready"
+        }
+    }
+    
+    private func downloadUserScriptInBackground(at index: Int, from url: URL) async {
+        logger.info("📥 Downloading userscript from: \(url)")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let content = String(data: data, encoding: .utf8) ?? ""
+            
+            await MainActor.run {
+                if index < userScripts.count {
+                    userScripts[index].content = content
+                    userScripts[index].parseMetadata()
+                    
+                    // Update description and version from metadata, but keep disabled
+                    if userScripts[index].description.isEmpty || userScripts[index].description == "Default userscript - downloading..." {
+                        userScripts[index].description = userScripts[index].description.isEmpty ? "Ready to enable" : userScripts[index].description
+                    }
+                    
+                    if userScripts[index].version == "Downloading..." {
+                        userScripts[index].version = userScripts[index].version.isEmpty ? "Downloaded" : userScripts[index].version
+                    }
+                    
+                    _ = writeUserScriptContent(userScripts[index])
+                    saveUserScripts()
+                    
+                    logger.info("✅ Downloaded and saved: \(self.userScripts[index].name)")
+                }
+            }
+        } catch {
+            await MainActor.run {
+                if index < userScripts.count {
+                    userScripts[index].description = "Download failed - tap to retry"
+                    userScripts[index].version = "Error"
+                    saveUserScripts()
+                }
+                logger.error("❌ Failed to download \(self.userScripts[index].name): \(error)")
+            }
         }
     }
     
@@ -274,6 +440,8 @@ public class UserScriptManager: ObservableObject {
                     _ = writeUserScriptContent(userScripts[index])
                     saveUserScripts()
                     statusDescription = "Updated \(userScript.name)"
+                    updateAlertMessage = "\(userScript.name) has been successfully updated."
+                    showingUpdateSuccessAlert = true
                 }
                 isLoading = false
             }
@@ -282,6 +450,43 @@ public class UserScriptManager: ObservableObject {
                 hasError = true
                 errorMessage = "Failed to update userscript: \(error.localizedDescription)"
                 statusDescription = "Update failed"
+                updateAlertMessage = "Failed to update \(userScript.name): \(error.localizedDescription)"
+                showingUpdateErrorAlert = true
+                isLoading = false
+            }
+        }
+    }
+    
+    public func downloadAndEnableUserScript(_ userScript: UserScript) async {
+        guard let url = userScript.url else { return }
+        
+        await MainActor.run {
+            isLoading = true
+            statusDescription = "Downloading \(userScript.name)..."
+        }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let content = String(data: data, encoding: .utf8) ?? ""
+            
+            await MainActor.run {
+                if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
+                    userScripts[index].content = content
+                    userScripts[index].parseMetadata()
+                    userScripts[index].isEnabled = true
+                    userScripts[index].isLocal = false
+                    
+                    _ = writeUserScriptContent(userScripts[index])
+                    saveUserScripts()
+                    statusDescription = "Downloaded and enabled \(userScript.name)"
+                }
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                hasError = true
+                errorMessage = "Failed to download userscript: \(error.localizedDescription)"
+                statusDescription = "Download failed"
                 isLoading = false
             }
         }

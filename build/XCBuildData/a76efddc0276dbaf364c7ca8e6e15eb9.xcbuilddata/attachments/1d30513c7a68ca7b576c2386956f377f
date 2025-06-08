@@ -1,4 +1,0 @@
-module FilterEngine {
-header "FilterEngine-Swift.h"
-export *
-}
