@@ -8,6 +8,7 @@
 import Foundation
 import wBlockCoreService
 import os.log
+import UniformTypeIdentifiers
 
 public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
 

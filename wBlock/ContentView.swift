@@ -157,7 +157,7 @@ struct ContentView: View {
                 } label: {
                     Label("User Scripts", systemImage: "text.document.fill")
                 }
-                .help("Manage user scripts")
+                .help("Manage userscripts")
                 
                 Button {
                     showingAddFilterSheet = true

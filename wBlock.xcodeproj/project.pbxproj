@@ -2060,7 +2060,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Advanced/wBlock_Advanced.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2093,7 +2093,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Advanced/wBlock_Advanced.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
