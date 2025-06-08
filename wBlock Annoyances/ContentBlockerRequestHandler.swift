@@ -33,7 +33,7 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
                    String(describing: myPlatform),
                    Bundle.main.bundleIdentifier ?? "Unknown")
             // Fallback to sending empty rules
-            let emptyRules = "[]"; let item = NSExtensionItem(); item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: kUTTypeJSON as String)]; context.completeRequest(returningItems: [item]);
+            let emptyRules = "[]"; let item = NSExtensionItem(); item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier)]; context.completeRequest(returningItems: [item]);
             return
         }
 
