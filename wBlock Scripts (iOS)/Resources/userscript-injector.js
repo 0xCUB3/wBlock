@@ -1,21 +1,52 @@
 /**
  * wBlock Userscript Injector for iOS Safari Web Extension
  * Injects and manages userscripts from the native app
+ * Based on the robust macOS implementation
  */
 
-// Userscript execution engine for iOS
-class UserScriptEngine {
+console.log('[wBlock Userscript Injector] Script loaded, readyState:', document.readyState);
+
+// Main userscript injection engine
+class UserScriptInjector {
     constructor() {
         this.injectedScripts = new Set();
+        this.pendingScripts = [];
+        this.hasRequestedScripts = false;
+        
+        console.log('[wBlock Userscript Injector] Initializing...');
         this.init();
     }
 
     init() {
-        // Request userscripts from native app via background script
-        this.requestUserScripts();
+        // Handle different document ready states
+        if (document.readyState === 'loading') {
+            // Document still loading, wait for DOMContentLoaded
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[wBlock Userscript Injector] DOMContentLoaded event fired');
+                this.requestAndInjectScripts();
+            });
+        } else {
+            // Document already loaded or interactive
+            console.log('[wBlock Userscript Injector] Document already ready, requesting scripts immediately');
+            this.requestAndInjectScripts();
+        }
+
+        // Also listen for window load for document-idle scripts
+        window.addEventListener('load', () => {
+            console.log('[wBlock Userscript Injector] Window load event fired');
+            this.injectPendingScripts('document-idle');
+        });
     }
 
-    async requestUserScripts() {
+    async requestAndInjectScripts() {
+        if (this.hasRequestedScripts) {
+            console.log('[wBlock Userscript Injector] Scripts already requested, skipping');
+            return;
+        }
+        
+        this.hasRequestedScripts = true;
+        console.log('[wBlock Userscript Injector] Requesting userscripts from native app...');
+        
         try {
             // Send message to background script which will communicate with native app
             const response = await browser.runtime.sendMessage({
@@ -23,32 +54,74 @@ class UserScriptEngine {
                 url: window.location.href
             });
             
-            if (response && response.userScripts) {
-                this.injectUserScripts(response.userScripts);
+            console.log('[wBlock Userscript Injector] Received response:', response);
+            
+            if (response && response.userScripts && Array.isArray(response.userScripts)) {
+                console.log(`[wBlock Userscript Injector] Got ${response.userScripts.length} userscripts`);
+                this.processUserScripts(response.userScripts);
+            } else {
+                console.log('[wBlock Userscript Injector] No userscripts received');
             }
         } catch (error) {
-            console.log('[wBlock] Could not get userscripts:', error);
+            console.error('[wBlock Userscript Injector] Failed to get userscripts:', error);
         }
     }
 
-    injectUserScripts(userScripts) {
+    processUserScripts(userScripts) {
         userScripts.forEach(script => {
-            this.injectUserScript(script);
+            console.log(`[wBlock Userscript Injector] Processing script: ${script.name}, runAt: ${script.runAt || 'document-end'}`);
+            
+            const runAt = script.runAt || 'document-end';
+            
+            if (this.shouldInjectNow(runAt)) {
+                this.injectUserScript(script);
+            } else {
+                console.log(`[wBlock Userscript Injector] Queueing script ${script.name} for later injection`);
+                this.pendingScripts.push(script);
+            }
+        });
+    }
+
+    shouldInjectNow(runAt) {
+        const readyState = document.readyState;
+        
+        switch (runAt) {
+            case 'document-start':
+                return true; // Always inject immediately for document-start
+            case 'document-end':
+                return readyState === 'interactive' || readyState === 'complete';
+            case 'document-idle':
+                return readyState === 'complete';
+            default:
+                return readyState === 'interactive' || readyState === 'complete';
+        }
+    }
+
+    injectPendingScripts(targetRunAt) {
+        console.log(`[wBlock Userscript Injector] Checking pending scripts for runAt: ${targetRunAt}`);
+        
+        this.pendingScripts = this.pendingScripts.filter(script => {
+            const runAt = script.runAt || 'document-end';
+            
+            if (runAt === targetRunAt || (targetRunAt === 'document-end' && this.shouldInjectNow(runAt))) {
+                console.log(`[wBlock Userscript Injector] Injecting pending script: ${script.name}`);
+                this.injectUserScript(script);
+                return false; // Remove from pending
+            }
+            return true; // Keep in pending
         });
     }
 
     injectUserScript(script) {
         // Avoid double injection
         if (this.injectedScripts.has(script.name)) {
+            console.log(`[wBlock Userscript Injector] Script ${script.name} already injected, skipping`);
             return;
         }
 
         try {
-            // Check if script should run at this timing
-            if (!this.shouldRunScript(script)) {
-                return;
-            }
-
+            console.log(`[wBlock Userscript Injector] Injecting userscript: ${script.name}`);
+            
             // Create script element
             const scriptElement = document.createElement('script');
             scriptElement.textContent = this.wrapUserScript(script);
@@ -65,26 +138,10 @@ class UserScriptEngine {
             }, 100);
 
             this.injectedScripts.add(script.name);
-            console.log(`[wBlock] Injected userscript: ${script.name}`);
+            console.log(`[wBlock Userscript Injector] Successfully injected userscript: ${script.name}`);
             
         } catch (error) {
-            console.error(`[wBlock] Failed to inject userscript ${script.name}:`, error);
-        }
-    }
-
-    shouldRunScript(script) {
-        const runAt = script.runAt || 'document-end';
-        const readyState = document.readyState;
-
-        switch (runAt) {
-            case 'document-start':
-                return true; // Always run if we got here
-            case 'document-end':
-                return readyState === 'interactive' || readyState === 'complete';
-            case 'document-idle':
-                return readyState === 'complete';
-            default:
-                return readyState === 'interactive' || readyState === 'complete';
+            console.error(`[wBlock Userscript Injector] Failed to inject userscript ${script.name}:`, error);
         }
     }
 
@@ -93,6 +150,7 @@ class UserScriptEngine {
         return `
 (function() {
     'use strict';
+    console.log('[wBlock] Executing userscript: ${script.name}');
     
     // Basic Greasemonkey API stubs
     const GM = {
@@ -109,6 +167,7 @@ class UserScriptEngine {
     
     try {
         ${script.content}
+        console.log('[wBlock] Userscript ${script.name} executed successfully');
     } catch (error) {
         console.error('[wBlock] Userscript error in ${script.name}:', error);
     }
@@ -117,16 +176,6 @@ class UserScriptEngine {
     }
 }
 
-// Initialize userscript engine when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        new UserScriptEngine();
-    });
-} else {
-    new UserScriptEngine();
-}
-
-// Also initialize on window load for document-idle scripts
-window.addEventListener('load', () => {
-    new UserScriptEngine();
-});
+// Initialize the userscript injector
+console.log('[wBlock Userscript Injector] Creating injector instance...');
+const injector = new UserScriptInjector();
