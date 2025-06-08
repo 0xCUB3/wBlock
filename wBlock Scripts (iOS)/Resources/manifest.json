@@ -1,0 +1,61 @@
+{
+    "manifest_version": 3,
+    "default_locale": "en",
+    "name": "__MSG_extension_name__",
+    "description": "__MSG_extension_description__",
+    "version": "1.0",
+    "icons": {
+        "48": "assets/images/icon-48.png",
+        "96": "assets/images/icon-96.png",
+        "128": "assets/images/icon-128.png",
+        "256": "assets/images/icon-256.png",
+        "512": "assets/images/icon-512.png"
+    },
+    "background": {
+        "scripts": [
+            "background.js"
+        ],
+        "type": "module",
+        "persistent": false
+    },
+    "content_scripts": [
+        {
+            "js": [
+                "content.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
+        },
+        {
+            "js": [
+                "userscript-injector.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
+        }
+    ],
+    "action": {
+        "default_popup": "pages/popup/popup.html",
+        "default_icon": {
+            "48": "assets/images/icon-48.png",
+            "64": "assets/images/icon-64.png",
+            "96": "assets/images/icon-96.png",
+            "128": "assets/images/icon-128.png",
+            "256": "assets/images/icon-256.png",
+            "512": "assets/images/icon-512.png"
+        }
+    },
+    "permissions": [
+        "<all_urls>",
+        "nativeMessaging",
+        "storage",
+        "unlimitedStorage",
+        "scripting"
+    ]
+}

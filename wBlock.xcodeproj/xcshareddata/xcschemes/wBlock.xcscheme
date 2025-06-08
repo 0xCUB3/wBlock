@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1620"
+   LastUpgradeVersion = "1640"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C19158D72C49440500319B63"
+               BlueprintIdentifier = "C1A41C2C2DE0897C0056F63D"
                BuildableName = "wBlock.app"
                BlueprintName = "wBlock"
                ReferencedContainer = "container:wBlock.xcodeproj">
@@ -44,7 +44,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C19158D72C49440500319B63"
+            BlueprintIdentifier = "C1A41C2C2DE0897C0056F63D"
             BuildableName = "wBlock.app"
             BlueprintName = "wBlock"
             ReferencedContainer = "container:wBlock.xcodeproj">
@@ -61,7 +61,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C19158D72C49440500319B63"
+            BlueprintIdentifier = "C1A41C2C2DE0897C0056F63D"
             BuildableName = "wBlock.app"
             BlueprintName = "wBlock"
             ReferencedContainer = "container:wBlock.xcodeproj">

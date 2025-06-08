@@ -1,61 +1,91 @@
 {
   "images" : [
     {
-      "filename" : "icon_16x16.png",
+      "filename" : "1.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "2.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "tinted"
+        }
+      ],
+      "filename" : "3.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "filename" : "wBlock macOS Icon 9.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "16x16"
     },
     {
-      "filename" : "icon_16x16@2x.png",
+      "filename" : "wBlock macOS Icon 8.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "16x16"
     },
     {
-      "filename" : "icon_32x32.png",
+      "filename" : "wBlock macOS Icon 7.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "32x32"
     },
     {
-      "filename" : "icon_32x32@2x.png",
+      "filename" : "wBlock macOS Icon 6.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "32x32"
     },
     {
-      "filename" : "icon_128x128.png",
+      "filename" : "wBlock macOS Icon 5.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "128x128"
     },
     {
-      "filename" : "icon_128x128@2x.png",
+      "filename" : "wBlock macOS Icon 4.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "128x128"
     },
     {
-      "filename" : "icon_256x256.png",
+      "filename" : "wBlock macOS Icon 3.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
-      "filename" : "icon_256x256@2x.png",
+      "filename" : "wBlock macOS Icon 2.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
     },
     {
-      "filename" : "icon_512x512.png",
+      "filename" : "wBlock macOS Icon 1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
-      "filename" : "icon_512x512@2x.png",
+      "filename" : "wBlock macOS Icon.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"

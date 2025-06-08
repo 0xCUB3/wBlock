@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1620"
-   wasCreatedForAppExtension = "YES"
+   LastUpgradeVersion = "1640"
    version = "2.0">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -16,9 +15,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C19158F12C49444C00319B63"
-               BuildableName = "wBlock Filters.appex"
-               BlueprintName = "wBlock Filters"
+               BlueprintIdentifier = "C1A41C682DE08AD30056F63D"
+               BuildableName = "wBlock Ads &amp; Privacy.appex"
+               BlueprintName = "wBlock Ads &amp; Privacy"
                ReferencedContainer = "container:wBlock.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -30,7 +29,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C19158D72C49440500319B63"
+               BlueprintIdentifier = "C1A41C2C2DE0897C0056F63D"
                BuildableName = "wBlock.app"
                BlueprintName = "wBlock"
                ReferencedContainer = "container:wBlock.xcodeproj">
@@ -61,7 +60,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C19158D72C49440500319B63"
+            BlueprintIdentifier = "C1A41C2C2DE0897C0056F63D"
             BuildableName = "wBlock.app"
             BlueprintName = "wBlock"
             ReferencedContainer = "container:wBlock.xcodeproj">
@@ -80,7 +79,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C19158D72C49440500319B63"
+            BlueprintIdentifier = "C1A41C2C2DE0897C0056F63D"
             BuildableName = "wBlock.app"
             BlueprintName = "wBlock"
             ReferencedContainer = "container:wBlock.xcodeproj">
