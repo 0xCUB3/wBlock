@@ -101,4 +101,32 @@
     // Return the new response.
     return responseMessage;
   });
+
+  /**
+   * Handles userscript requests from content scripts
+   */
+  browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === 'getUserScripts') {
+          // Request userscripts from native app
+          const userScriptRequest = {
+              action: 'getUserScripts',
+              url: request.url,
+              requestId: 'userscripts-' + Date.now()
+          };
+          
+          browser.runtime.sendNativeMessage('application.id', userScriptRequest)
+              .then(response => {
+                  sendResponse({
+                      userScripts: response.userScripts || []
+                  });
+              })
+              .catch(error => {
+                  console.error('[wBlock] Failed to get userscripts:', error);
+                  sendResponse({ userScripts: [] });
+              });
+          
+          // Return true to indicate async response
+          return true;
+      }
+  });
 })(browser);

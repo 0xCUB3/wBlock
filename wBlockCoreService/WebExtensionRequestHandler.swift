@@ -35,6 +35,12 @@ public enum WebExtensionRequestHandler {
         }
 
         let nativeStart = Int64(Date().timeIntervalSince1970 * 1000)
+        
+        // Check if this is a userscript request
+        if let action = message?["action"] as? String, action == "getUserScripts" {
+            handleUserScriptRequest(message: message!, context: context)
+            return
+        }
 
         let payload = message?["payload"] as? [String: Any] ?? [:]
         if let urlString = payload["url"] as? String {
@@ -162,5 +168,36 @@ public enum WebExtensionRequestHandler {
         }
 
         return nil
+    }
+
+    /// Handles userscript requests from the extension
+    ///
+    /// - Parameters:
+    ///   - message: The message containing the userscript request
+    ///   - context: The extension context to send the response
+    private static func handleUserScriptRequest(message: [String: Any?], context: NSExtensionContext) {
+        guard let urlString = message["url"] as? String else {
+            let response = createResponse(with: ["userScripts": []])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+        
+        // For now, we'll create a simple UserScriptManager instance
+        // In a real implementation, this would be shared or cached
+        Task { @MainActor in
+            let userScriptManager = UserScriptManager()
+            let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
+            
+            let userScriptPayload = userScripts.map { script in
+                [
+                    "name": script.name,
+                    "content": script.content,
+                    "runAt": script.runAt
+                ]
+            }
+            
+            let response = createResponse(with: ["userScripts": userScriptPayload])
+            context.completeRequest(returningItems: [response])
+        }
     }
 }

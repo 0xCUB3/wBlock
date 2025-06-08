@@ -24,6 +24,10 @@
 				<key>Script</key>
 				<string>script.js</string>
 			</dict>
+			<dict>
+				<key>Script</key>
+				<string>userscript-injector.js</string>
+			</dict>
 		</array>
 		<key>SFSafariToolbarItem</key>
 		<dict>
