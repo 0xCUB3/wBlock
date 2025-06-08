@@ -25,10 +25,8 @@ struct UserScriptManagerView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             headerView
             
-            // Scripts list
             if userScriptManager.userScripts.isEmpty {
                 emptyStateView
             } else {
@@ -497,7 +495,6 @@ struct UserScriptContentView: View {
             
             // Right content area
             VStack(spacing: 0) {
-                // Content header
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Script Content")

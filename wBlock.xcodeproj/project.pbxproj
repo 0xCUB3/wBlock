@@ -1594,7 +1594,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -1635,7 +1635,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -1878,7 +1878,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Filters/wBlock_Filters.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1907,7 +1907,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Filters/wBlock_Filters.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1937,7 +1937,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Filters (iOS)/wBlock Filters (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Filters (iOS)/Info.plist";
@@ -1966,7 +1966,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Filters (iOS)/wBlock Filters (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Filters (iOS)/Info.plist";
@@ -1995,7 +1995,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts (iOS)/wBlock Scripts (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Scripts (iOS)/Info.plist";
@@ -2027,7 +2027,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts (iOS)/wBlock Scripts (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Scripts (iOS)/Info.plist";
@@ -2126,7 +2126,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security & Multipurpose/wBlock_Security___Multipurpose.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2155,7 +2155,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security & Multipurpose/wBlock_Security___Multipurpose.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2184,7 +2184,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances/wBlock_Annoyances.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2213,7 +2213,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances/wBlock_Annoyances.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2242,7 +2242,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign & Experimental/wBlock_Foreign___Experimental.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2271,7 +2271,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign & Experimental/wBlock_Foreign___Experimental.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2300,7 +2300,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom/wBlock_Custom.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2329,7 +2329,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom/wBlock_Custom.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2359,7 +2359,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
@@ -2388,7 +2388,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
@@ -2418,7 +2418,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security (iOS)/wBlock Security (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security (iOS)/Info.plist";
@@ -2447,7 +2447,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security (iOS)/wBlock Security (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security (iOS)/Info.plist";
@@ -2477,7 +2477,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances (iOS)/wBlock Annoyances (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Annoyances (iOS)/Info.plist";
@@ -2506,7 +2506,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances (iOS)/wBlock Annoyances (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Annoyances (iOS)/Info.plist";
@@ -2536,7 +2536,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Multipurpose (iOS)/wBlock Multipurpose (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Multipurpose (iOS)/Info.plist";
@@ -2565,7 +2565,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Multipurpose (iOS)/wBlock Multipurpose (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Multipurpose (iOS)/Info.plist";
@@ -2595,7 +2595,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign (iOS)/wBlock Foreign (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign (iOS)/Info.plist";
@@ -2624,7 +2624,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign (iOS)/wBlock Foreign (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign (iOS)/Info.plist";
@@ -2654,7 +2654,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Experimental (iOS)/wBlock Experimental (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Experimental (iOS)/Info.plist";
@@ -2683,7 +2683,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Experimental (iOS)/wBlock Experimental (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Experimental (iOS)/Info.plist";
@@ -2713,7 +2713,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom (iOS)/wBlock Custom (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom (iOS)/Info.plist";
@@ -2742,7 +2742,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom (iOS)/wBlock Custom (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom (iOS)/Info.plist";
