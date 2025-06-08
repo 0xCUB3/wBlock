@@ -60,16 +60,16 @@ struct UserScriptManagerView: View {
                     title: totalScriptsTitle,
                     value: "\(userScriptManager.userScripts.count)",
                     icon: "doc.text",
-                    pillColor: .blue.opacity(0.1),
-                    valueColor: .blue
+                    pillColor: .clear,
+                    valueColor: .primary
                 )
                 
                 StatCard(
                     title: "Enabled",
                     value: "\(userScriptManager.userScripts.filter(\.isEnabled).count)",
-                    icon: "checkmark.circle.fill",
-                    pillColor: .green.opacity(0.1),
-                    valueColor: .green
+                    icon: "checkmark.circle",
+                    pillColor: .clear,
+                    valueColor: .primary
                 )
             }
             
@@ -200,20 +200,31 @@ struct UserScriptRowView: View {
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
                         }
+
+                        HStack(spacing: 8) {
+                            if !script.version.isEmpty {
+                                Text("v\(script.version)")
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.gray)
+                            }
+                            if !script.version.isEmpty && !script.matches.isEmpty {
+                                Text("·")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                            if !script.matches.isEmpty {
+                                Text("\(script.matches.count) pattern\(script.matches.count == 1 ? "" : "s")")
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.gray)
+                            }
+                            if !script.isDownloaded {
+                                Badge(text: "Not Downloaded", color: .red)
+                            }
+                        }
                     }
                     Spacer()
-                }
-                
-                HStack(spacing: 8) {
-                    if !script.version.isEmpty {
-                        Badge(text: "v\(script.version)", color: .blue)
-                    }
-                    if !script.matches.isEmpty {
-                        Badge(text: "\(script.matches.count) pattern\(script.matches.count == 1 ? "" : "s")", color: .orange)
-                    }
-                    if !script.isDownloaded {
-                        Badge(text: "Not Downloaded", color: .red)
-                    }
                 }
             }
             Spacer()
