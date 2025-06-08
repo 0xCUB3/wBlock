@@ -1,0 +1,48 @@
+{
+  "" : {
+    "diagnostics" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList-master.dia",
+    "emit-module-dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList-master-emit-module.dia",
+    "swift-dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList-master.swiftdeps"
+  },
+  "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/Sources/PublicSuffixList/ByteArraySuffixTrie.swift" : {
+    "const-values" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.d",
+    "diagnostics" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.dia",
+    "index-unit-output-path" : "/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.o",
+    "llvm-bc" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.bc",
+    "object" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.o",
+    "swift-dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/ByteArraySuffixTrie~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/Sources/PublicSuffixList/PublicSuffixList.swift" : {
+    "const-values" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.d",
+    "diagnostics" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.dia",
+    "index-unit-output-path" : "/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.o",
+    "llvm-bc" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.bc",
+    "object" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.o",
+    "swift-dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/PublicSuffixList~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/Sources/PublicSuffixList/SuffixTrie.swift" : {
+    "const-values" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.d",
+    "diagnostics" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.dia",
+    "index-unit-output-path" : "/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.o",
+    "llvm-bc" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.bc",
+    "object" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.o",
+    "swift-dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/SuffixTrie~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.bc",
+    "object" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/Library/Developer/Xcode/DerivedData/wBlock-cohuegpdcjqaitcutxqnuussjdkh/SourcePackages/checkouts/swift-psl/build/swift-psl.build/Debug/PublicSuffixList.build/Objects-normal/x86_64/resource_bundle_accessor~partial.swiftmodule"
+  }
+}

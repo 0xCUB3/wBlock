@@ -15,6 +15,24 @@ import os.log
 /// content scripts, dispatches configuration rules, and manages content
 /// blocking events.
 public class SafariExtensionHandler: SFSafariExtensionHandler {
+    
+    private var _userScriptManager: UserScriptManager? // Replaces the lazy var
+
+    @MainActor
+    private func getOrCreateUserScriptManager() -> UserScriptManager { // New helper method
+        if _userScriptManager == nil {
+            // UserScriptManager() is now called within a @MainActor function
+            _userScriptManager = UserScriptManager()
+        }
+        return _userScriptManager! 
+    }
+    
+    /// MainActor-isolated accessor for the userscript manager
+    @MainActor
+    private var userScriptManager: UserScriptManager { // Accessor now uses the helper
+        return getOrCreateUserScriptManager()
+    }
+
     /// Handles incoming messages from a web page.
     ///
     /// This method is invoked when the content script dispatches a message.
@@ -31,6 +49,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         from page: SFSafariPage,
         userInfo: [String: Any]?
     ) {
+        os_log(.info, "SafariExtensionHandler: Received message '%@' with userInfo: %@", messageName, String(describing: userInfo))
+        
         switch messageName {
         case "requestRules":
             // Retrieve the URL string from the incoming message.
@@ -38,6 +58,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             let urlString = userInfo?["url"] as? String ?? ""
             let topUrlString = userInfo?["topUrl"] as? String
             let requestedAt = userInfo?["requestedAt"] as? Int ?? 0
+
+            os_log(.info, "SafariExtensionHandler: Processing requestRules for URL: %@", urlString)
 
             // Convert the string into a URL. If valid, attempt to look up its
             // configuration.
@@ -57,24 +79,47 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                     if let conf = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
                         // Convert the configuration into a payload (dictionary
                         // format) consumable by the content script.
-                        let payload = convertToPayload(conf)
+                        var payload = convertToPayload(conf)
+                        
+                        // Add userscripts to the payload
+                        Task { @MainActor in
+                            let manager = userScriptManager
+                            os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
+                            let userScripts = manager.getEnabledUserScriptsForURL(urlString)
+                            os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
+                            
+                            let userScriptPayload = userScripts.map { script in
+                                os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
+                                return [
+                                    "name": script.name,
+                                    "content": script.content,
+                                    "runAt": script.runAt
+                                ]
+                            }
+                            
+                            payload["userScripts"] = userScriptPayload
+                            os_log(.info, "SafariExtensionHandler: Final payload includes %d userscripts", userScriptPayload.count)
+                            
+                            // Dispatch the payload back to the web page under the same
+                            // message name.
+                            let responseUserInfo: [String: Any] = [
+                                "requestId": requestId,
+                                "payload": payload,
+                                "requestedAt": requestedAt,
+                                // Enable verbose logging in the content script.
+                                // In the real app `verbose` flag should only be true
+                                // for debugging purposes.
+                                "verbose": true,
+                            ]
 
-                        // Dispatch the payload back to the web page under the same
-                        // message name.
-                        let responseUserInfo: [String: Any] = [
-                            "requestId": requestId,
-                            "payload": payload,
-                            "requestedAt": requestedAt,
-                            // Enable verbose logging in the content script.
-                            // In the real app `verbose` flag should only be true
-                            // for debugging purposes.
-                            "verbose": true,
-                        ]
-
-                        page.dispatchMessageToScript(
-                            withName: "requestRules",
-                            userInfo: responseUserInfo
-                        )
+                            os_log(.info, "SafariExtensionHandler: Dispatching response for requestRules with payload")
+                            page.dispatchMessageToScript(
+                                withName: "requestRules",
+                                userInfo: responseUserInfo
+                            )
+                        }
+                    } else {
+                        os_log(.info, "SafariExtensionHandler: No configuration found for URL: %@", urlString)
                     }
                 } catch {
                     os_log(
@@ -83,9 +128,45 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                         error.localizedDescription
                     )
                 }
+            } else {
+                os_log(.error, "SafariExtensionHandler: Invalid URL string: %@", urlString)
+            }
+        case "requestUserScripts":
+            // Handle standalone userscript requests
+            let requestId = userInfo?["requestId"] as? String ?? ""
+            let urlString = userInfo?["url"] as? String ?? ""
+            
+            os_log(.info, "SafariExtensionHandler: Processing requestUserScripts for URL: %@", urlString)
+            
+            Task { @MainActor in
+                let manager = userScriptManager
+                os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
+                let userScripts = manager.getEnabledUserScriptsForURL(urlString)
+                os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
+                
+                let userScriptPayload = userScripts.map { script in
+                    os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
+                    return [
+                        "name": script.name,
+                        "content": script.content,
+                        "runAt": script.runAt
+                    ]
+                }
+                
+                let responseUserInfo: [String: Any] = [
+                    "requestId": requestId,
+                    "userScripts": userScriptPayload
+                ]
+                
+                os_log(.info, "SafariExtensionHandler: Dispatching response for requestUserScripts with %d scripts", userScriptPayload.count)
+                page.dispatchMessageToScript(
+                    withName: "requestUserScripts",
+                    userInfo: responseUserInfo
+                )
             }
         default:
             // For any unknown message, no action is taken.
+            os_log(.info, "SafariExtensionHandler: Unknown message name: %@", messageName)
             return
         }
     }

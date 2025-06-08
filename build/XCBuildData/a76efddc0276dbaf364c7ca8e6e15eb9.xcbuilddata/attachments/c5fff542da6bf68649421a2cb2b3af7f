@@ -1,0 +1,4 @@
+module PublicSuffixList {
+header "PublicSuffixList-Swift.h"
+export *
+}

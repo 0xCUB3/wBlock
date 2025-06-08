@@ -1,0 +1,118 @@
+{
+  "" : {
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-master.dia",
+    "emit-module-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-master-emit-module.dia",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-master.swiftdeps"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/Constants.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Constants~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/ContentBlockerExtensionRequestHandler.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerExtensionRequestHandler~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/ContentBlockerMappingService.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerMappingService~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/ContentBlockerTargets.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/ContentBlockerTargets~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/FilterListCategory.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/FilterListCategory~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/GroupIdentifier.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/GroupIdentifier~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/UserScript.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScript~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/UserScriptManager.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/UserScriptManager~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/Utils.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/Utils~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/WebExtensionRequestHandler.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/WebExtensionRequestHandler~partial.swiftmodule"
+  },
+  "/Users/alexanderskula/wBlock/wBlockCoreService/wBlockCoreService.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlockCoreService.build/Objects-normal/x86_64/wBlockCoreService-c029e3eb2e88e61980ecef91aff65c49~partial.swiftmodule"
+  }
+}

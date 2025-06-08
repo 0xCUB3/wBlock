@@ -1,0 +1,4 @@
+module Punycode {
+header "Punycode-Swift.h"
+export *
+}

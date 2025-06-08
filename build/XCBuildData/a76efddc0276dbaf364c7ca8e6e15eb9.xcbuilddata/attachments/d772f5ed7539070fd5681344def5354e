@@ -1,0 +1,4 @@
+module ContentBlockerConverter {
+header "ContentBlockerConverter-Swift.h"
+export *
+}

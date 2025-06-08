@@ -11,8 +11,10 @@ import UserNotifications
 
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
+    @StateObject private var userScriptManager = UserScriptManager()
     @State private var showingAddFilterSheet = false
     @State private var showingLogsView = false
+    @State private var showingUserScriptsView = false
     @State private var showOnlyEnabledLists = false
     @Environment(\.scenePhase) var scenePhase
 
@@ -69,6 +71,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingLogsView) {
             LogsView()
+        }
+        .sheet(isPresented: $showingUserScriptsView) {
+            UserScriptManagerView(userScriptManager: userScriptManager)
         }
         .sheet(isPresented: $filterManager.showingUpdatePopup) {
             UpdatePopupView(filterManager: filterManager, isPresented: $filterManager.showingUpdatePopup)
@@ -146,6 +151,13 @@ struct ContentView: View {
                     Label("Show Logs", systemImage: "doc.text.magnifyingglass")
                 }
                 .help("View application logs")
+                
+                Button {
+                    showingUserScriptsView = true
+                } label: {
+                    Label("User Scripts", systemImage: "text.document.fill")
+                }
+                .help("Manage user scripts")
                 
                 Button {
                     showingAddFilterSheet = true
@@ -231,6 +243,10 @@ struct ContentView: View {
                 
                 Button { showingLogsView = true } label: {
                     Image(systemName: "doc.text.magnifyingglass")
+                }
+                
+                Button { showingUserScriptsView = true } label: {
+                    Image(systemName: "text.document.fill")
                 }
                 
                 Button { showingAddFilterSheet = true } label: {
