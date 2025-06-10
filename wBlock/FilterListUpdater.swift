@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import wBlockCoreService
 
 class FilterListUpdater {
     private let loader: FilterListLoader
     private let logManager: ConcurrentLogManager
     
     weak var filterListManager: AppFilterManager?
+    weak var userScriptManager: UserScriptManager?
 
     init(loader: FilterListLoader, logManager: ConcurrentLogManager) {
         self.loader = loader
@@ -313,5 +315,112 @@ class FilterListUpdater {
         }
 
         return updatedFilters
+    }
+    
+    /// Checks for updates to userscripts and returns those with available updates
+    func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
+        var scriptsWithUpdates: [UserScript] = []
+        
+        await withTaskGroup(of: (UserScript, Bool).self) { group in
+            for script in scripts.filter({ $0.isDownloaded && $0.updateURL != nil }) {
+                group.addTask {
+                    let hasUpdate = await self.hasScriptUpdate(for: script)
+                    return (script, hasUpdate)
+                }
+            }
+            
+            for await (script, hasUpdate) in group {
+                if hasUpdate {
+                    scriptsWithUpdates.append(script)
+                }
+            }
+        }
+        
+        return scriptsWithUpdates
+    }
+    
+    /// Checks if a specific userscript has an update available
+    private func hasScriptUpdate(for script: UserScript) async -> Bool {
+        guard let updateURLString = script.updateURL, 
+              let updateURL = URL(string: updateURLString) else {
+            return false
+        }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: updateURL)
+            guard let onlineContent = String(data: data, encoding: .utf8) else {
+                return false
+            }
+            
+            // Create a temporary script to parse the metadata
+            var tempScript = UserScript(name: script.name, content: onlineContent)
+            tempScript.parseMetadata()
+            
+            // Compare versions (if version is empty, assume update is needed)
+            if !tempScript.version.isEmpty && !script.version.isEmpty {
+                return tempScript.version != script.version
+            } else {
+                // If we can't compare versions, check if content differs
+                return onlineContent != script.content
+            }
+        } catch {
+            await ConcurrentLogManager.shared.log("Error checking update for script \(script.name): \(error.localizedDescription)")
+            return false
+        }
+    }
+    
+    /// Fetches and processes a userscript
+    func fetchAndProcessScript(_ script: UserScript) async -> (UserScript?, Bool) {
+        guard let downloadURLString = script.downloadURL ?? script.updateURL,
+              let downloadURL = URL(string: downloadURLString) else {
+            await ConcurrentLogManager.shared.log("Error: No download URL for script \(script.name)")
+            return (nil, false)
+        }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(from: downloadURL)
+            
+            guard let httpResponse = response as? HTTPURLResponse, 
+                  httpResponse.statusCode == 200,
+                  let content = String(data: data, encoding: .utf8) else {
+                await ConcurrentLogManager.shared.log("Failed to fetch script \(script.name)")
+                return (nil, false)
+            }
+            
+            var updatedScript = script
+            updatedScript.content = content
+            updatedScript.parseMetadata()
+            
+            return (updatedScript, true)
+        } catch {
+            await ConcurrentLogManager.shared.log("Error fetching script \(script.name): \(error)")
+            return (nil, false)
+        }
+    }
+    
+    /// Updates selected scripts and returns the list of successfully updated scripts
+    func updateSelectedScripts(_ selectedScripts: [UserScript], progressCallback: @escaping (Float) -> Void) async -> [UserScript] {
+        let totalSteps = Float(selectedScripts.count)
+        var completedSteps: Float = 0
+        var updatedScripts: [UserScript] = []
+        
+        for script in selectedScripts {
+            let (updatedScript, success) = await fetchAndProcessScript(script)
+            if success, let updated = updatedScript {
+                updatedScripts.append(updated)
+                await ConcurrentLogManager.shared.log("Successfully updated script \(script.name)")
+                
+                // Update the script in the userScriptManager
+                if let manager = userScriptManager {
+                    await manager.updateUserScript(updated)
+                }
+            } else {
+                await ConcurrentLogManager.shared.log("Failed to update script \(script.name)")
+            }
+            completedSteps += 1
+            progressCallback(completedSteps / totalSteps)
+        }
+        
+        return updatedScripts
     }
 }
