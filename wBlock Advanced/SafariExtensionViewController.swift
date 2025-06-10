@@ -63,7 +63,7 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
 
     /// Configures the header label
     private func configureHeaderLabel() {
-        headerLabel.stringValue = "wBlock Ad Blocker"
+        headerLabel.stringValue = "App Extension"
         headerLabel.font = NSFont.boldSystemFont(ofSize: 18)
         headerLabel.isBezeled = false
         headerLabel.isEditable = false

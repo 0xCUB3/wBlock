@@ -55,7 +55,7 @@ class AppFilterManager: ObservableObject {
 
     // Dependencies
     private let loader: FilterListLoader
-    private(set) var filterUpdater: FilterListUpdater
+    private let updater: FilterListUpdater
     private let logManager: ConcurrentLogManager
     private let groupUserDefaults: UserDefaults
 
@@ -69,7 +69,7 @@ class AppFilterManager: ObservableObject {
     init() {
         self.logManager = ConcurrentLogManager.shared
         self.loader = FilterListLoader(logManager: self.logManager)
-        self.filterUpdater = FilterListUpdater(loader: self.loader, logManager: self.logManager)
+        self.updater = FilterListUpdater(loader: self.loader, logManager: self.logManager)
         self.groupUserDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
         
         #if os(macOS)
@@ -82,7 +82,7 @@ class AppFilterManager: ObservableObject {
     }
 
     private func setup() {
-        filterUpdater.filterListManager = self
+        updater.filterListManager = self
         loader.checkAndCreateGroupFolder()
         filterLists = loader.loadFilterLists()
         customFilterLists = loader.loadCustomFilterLists()
@@ -144,7 +144,7 @@ class AppFilterManager: ObservableObject {
     
     func updateVersionsAndCounts() async {
         let initiallyLoadedLists = self.filterLists
-        let updatedListsFromServer = await filterUpdater.updateMissingVersionsAndCounts(filterLists: initiallyLoadedLists)
+        let updatedListsFromServer = await updater.updateMissingVersionsAndCounts(filterLists: initiallyLoadedLists)
         
         var newFilterLists = self.filterLists
         for updatedListFromServer in updatedListsFromServer {
@@ -761,7 +761,7 @@ class AppFilterManager: ObservableObject {
         let tempMissingFilters = self.missingFilters // Work on a temporary copy
 
         for filter in tempMissingFilters {
-            let success = await filterUpdater.fetchAndProcessFilter(filter) // This now updates sourceRuleCount
+            let success = await updater.fetchAndProcessFilter(filter) // This now updates sourceRuleCount
             if success {
                 // If successful, the filterListManager?.filterLists is updated by fetchAndProcessFilter
                 // We should remove it from our local 'missingFilters' tracking state
@@ -794,7 +794,7 @@ class AppFilterManager: ObservableObject {
         await updateVersionsAndCounts()
         
         let enabledFilters = filterLists.filter { $0.isSelected }
-        let updatedFilters = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
+        let updatedFilters = await updater.checkForUpdates(filterLists: enabledFilters)
 
         availableUpdates = updatedFilters
 
@@ -817,7 +817,7 @@ class AppFilterManager: ObservableObject {
         // Ensure counts and versions are fresh before auto-update logic
         await updateVersionsAndCounts()
 
-        let updatedFilters = await filterUpdater.autoUpdateFilters(
+        let updatedFilters = await updater.autoUpdateFilters(
             filterLists: filterLists.filter { $0.isSelected },
             progressCallback: { newProgress in
                 Task { @MainActor in
@@ -841,7 +841,7 @@ class AppFilterManager: ObservableObject {
         isLoading = true
         progress = 0
 
-        let updatedSuccessfullyFilters = await filterUpdater.updateSelectedFilters(
+        let updatedSuccessfullyFilters = await updater.updateSelectedFilters(
             selectedFilters,
             progressCallback: { newProgress in
                 Task { @MainActor in
@@ -868,7 +868,7 @@ class AppFilterManager: ObservableObject {
         progress = 0
         statusDescription = "Downloading filter updates..."
 
-        let successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
+        let successfullyUpdatedFilters = await updater.updateSelectedFilters(
             selectedFilters,
             progressCallback: { newProgress in
                 Task { @MainActor in
@@ -907,7 +907,7 @@ class AppFilterManager: ObservableObject {
         let tempMissingFilters = self.missingFilters
 
         for filter in tempMissingFilters {
-            let success = await filterUpdater.fetchAndProcessFilter(filter)
+            let success = await updater.fetchAndProcessFilter(filter)
             if success {
                 await MainActor.run {
                     self.missingFilters.removeAll { $0.id == filter.id }
@@ -997,7 +997,7 @@ class AppFilterManager: ObservableObject {
             }
 
             Task {
-                let success = await filterUpdater.fetchAndProcessFilter(newFilterToAdd)
+                let success = await updater.fetchAndProcessFilter(newFilterToAdd)
                 if success {
                     await ConcurrentLogManager.shared.log("Successfully downloaded custom filter: \(newFilterToAdd.name)")
                     hasUnappliedChanges = true
@@ -1064,10 +1064,5 @@ class AppFilterManager: ObservableObject {
             showingApplyProgressSheet = true
         }
         await applyChanges()
-    }
-    
-    // Set the UserScriptManager for the filter updater
-    public func setUserScriptManager(_ userScriptManager: UserScriptManager) {
-        filterUpdater.userScriptManager = userScriptManager
     }
 }

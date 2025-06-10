@@ -76,7 +76,7 @@ struct ContentView: View {
             UserScriptManagerView(userScriptManager: userScriptManager)
         }
         .sheet(isPresented: $filterManager.showingUpdatePopup) {
-            UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
+            UpdatePopupView(filterManager: filterManager, isPresented: $filterManager.showingUpdatePopup)
         }
         .sheet(isPresented: $filterManager.showMissingFiltersSheet) {
             MissingFiltersView(filterManager: filterManager)
@@ -122,8 +122,6 @@ struct ContentView: View {
         }
         .onAppear {
             Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
-            // Set the UserScriptManager for filter updates
-            filterManager.setUserScriptManager(userScriptManager)
             #if os(iOS)
             requestNotificationPermission()
             #endif
