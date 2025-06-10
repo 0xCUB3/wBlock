@@ -18,5 +18,6 @@ public enum FilterListCategory: String, CaseIterable, Identifiable, Codable {
     case experimental = "Experimental"
     case custom = "Custom"
     case foreign = "Foreign"
+    case scripts = "Scripts"
     public var id: String { self.rawValue }
 }
