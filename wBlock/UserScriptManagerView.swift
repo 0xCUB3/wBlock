@@ -9,7 +9,15 @@ import SwiftUI
 import wBlockCoreService
 
 struct UserScriptManagerView: View {
-    @ObservedObject var userScriptManager: UserScriptManager
+    var userScriptManager: UserScriptManager
+    
+    @State private var scripts: [UserScript] = []
+    @State private var isLoading: Bool = false
+    @State private var isRefreshing: Bool = false
+    @State private var refreshProgress: Double = 0.0
+    @State private var refreshStatus: String = ""
+    @State private var showingRefreshProgress = false
+    @State private var statusDescription: String = ""
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: UserScript?
     @Environment(\.dismiss) private var dismiss
@@ -22,35 +30,109 @@ struct UserScriptManagerView: View {
         #endif
     }
     
+    private var totalScriptsCount: Int {
+        scripts.count
+    }
+    
+    private var enabledScriptsCount: Int {
+        scripts.filter(\.isEnabled).count
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
+            HStack {
+                Text("User Scripts")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                        .font(.title2)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding([.top, .horizontal])
+            
             headerView
             
-            if userScriptManager.userScripts.isEmpty {
+            if scripts.isEmpty {
                 emptyStateView
             } else {
                 scriptsList
             }
+            
+            bottomToolbar
         }
-        .navigationTitle("User Scripts")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .help("Add User Script")
-            }
-        }
-        .sheet(isPresented: $showingAddScriptSheet) {
-            AddUserScriptView(userScriptManager: userScriptManager)
+        .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
+            refreshScripts()
+        }) {
+            AddUserScriptView(userScriptManager: userScriptManager, onScriptAdded: {
+                refreshScripts()
+            })
         }
         #if os(macOS)
         .sheet(item: $selectedScript) { script in
             UserScriptContentView(script: script)
         }
         #endif
+        .onAppear {
+            refreshScripts()
+        }
+    }
+    
+    private func refreshScripts() {
+        scripts = userScriptManager.userScripts
+        statusDescription = userScriptManager.statusDescription
+        isLoading = userScriptManager.isLoading
+    }
+    
+    private func refreshAllUserScripts() {
+        let downloadedScripts = scripts.filter { $0.isDownloaded }
+        guard !downloadedScripts.isEmpty else { return }
+        
+        isRefreshing = true
+        showingRefreshProgress = true
+        refreshProgress = 0.0
+        refreshStatus = "Starting refresh..."
+        
+        Task {
+            await ConcurrentLogManager.shared.log("🔄 Starting userscript refresh for \(downloadedScripts.count) scripts")
+            
+            for (index, script) in downloadedScripts.enumerated() {
+                await MainActor.run {
+                    refreshStatus = "Updating \(script.name)..."
+                    refreshProgress = Double(index) / Double(downloadedScripts.count)
+                }
+                
+                await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
+                await userScriptManager.updateUserScript(script)
+                
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+            }
+            
+            await MainActor.run {
+                refreshProgress = 1.0
+                refreshStatus = "Refresh complete!"
+                
+                scripts = userScriptManager.userScripts
+                statusDescription = userScriptManager.statusDescription
+                isLoading = userScriptManager.isLoading
+            }
+            
+            await ConcurrentLogManager.shared.log("✅ Userscript refresh completed successfully")
+
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+
+            await MainActor.run {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showingRefreshProgress = false
+                    isRefreshing = false
+                }
+            }
+        }
     }
     
     private var headerView: some View {
@@ -58,7 +140,7 @@ struct UserScriptManagerView: View {
             HStack(spacing: 20) {
                 StatCard(
                     title: totalScriptsTitle,
-                    value: "\(userScriptManager.userScripts.count)",
+                    value: "\(totalScriptsCount)",
                     icon: "doc.text",
                     pillColor: .clear,
                     valueColor: .primary
@@ -66,18 +148,19 @@ struct UserScriptManagerView: View {
                 
                 StatCard(
                     title: "Enabled",
-                    value: "\(userScriptManager.userScripts.filter(\.isEnabled).count)",
+                    value: "\(enabledScriptsCount)",
                     icon: "checkmark.circle",
                     pillColor: .clear,
                     valueColor: .primary
                 )
             }
             
-            if userScriptManager.isLoading {
+            if isLoading {
                 HStack(spacing: 8) {
                     ProgressView()
                         .scaleEffect(0.8)
-                    Text(userScriptManager.statusDescription)
+                        .frame(width: 16, height: 16)
+                    Text(statusDescription)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -85,13 +168,13 @@ struct UserScriptManagerView: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
     }
     
     private var scriptsList: some View {
         ScrollView {
             LazyVStack(spacing: 1) {
-                ForEach(userScriptManager.userScripts, id: \.id) { script in
+                ForEach(scripts, id: \.id) { script in
                     UserScriptRowView(
                         script: script,
                         onTap: {
@@ -100,42 +183,29 @@ struct UserScriptManagerView: View {
                             #endif
                         },
                         onToggle: {
+                            Task {
+                                await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name) to \(script.isEnabled ? "disabled" : "enabled")")
+                            }
                             userScriptManager.toggleUserScript(script)
+                            refreshScripts()
                         },
                         onUpdate: {
                             Task {
+                                await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
                                 await userScriptManager.updateUserScript(script)
+                                await ConcurrentLogManager.shared.log("✅ Successfully updated userscript: \(script.name)")
+                                refreshScripts()
                             }
                         },
                         onRemove: {
+                            Task {
+                                await ConcurrentLogManager.shared.log("🗑️ Removing userscript: \(script.name)")
+                            }
                             userScriptManager.removeUserScript(script)
+                            refreshScripts()
                         }
                     )
                 }
-                
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "plus")
-                            .font(.body)
-                        Text("Add Script")
-                            .font(.body)
-                    }
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue.opacity(0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-                            .blendMode(.overlay)
-                    )
-                }
-                .buttonStyle(.plain)
-                .help("Add a new userscript")
-                .padding(.top, 1)
             }
         }
     }
@@ -168,6 +238,66 @@ struct UserScriptManagerView: View {
             .controlSize(.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var bottomToolbar: some View {
+        VStack(spacing: 0) {
+            // Progress bar for refresh
+            if showingRefreshProgress {
+                VStack(spacing: 8) {
+                    HStack {
+                        Text(refreshStatus)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(Int(refreshProgress * 100))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    ProgressView(value: refreshProgress)
+                        .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+                .background(Color.blue.opacity(0.05))
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            
+            // Button toolbar
+            HStack(spacing: 16) {
+                Button {
+                    refreshAllUserScripts()
+                } label: {
+                    HStack(spacing: 6) {
+                        if isRefreshing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .frame(width: 12, height: 12)
+                        } else {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                        Text("Update All")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(isRefreshing || scripts.filter(\.isDownloaded).isEmpty)
+                
+                Button {
+                    showingAddScriptSheet = true
+                } label: {
+                    Label("Add Script", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            #if os(macOS)
+            .background(Color(NSColor.windowBackgroundColor).opacity(0.8))
+            #else
+            .background(Color(.systemBackground).opacity(0.8))
+            #endif
+        }
     }
 }
 
@@ -239,7 +369,9 @@ struct UserScriptRowView: View {
         }
         .padding(.horizontal, 20).padding(.vertical, 12)
         #if os(macOS)
-        .onHover { hovering in withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering } }
+        .onHover { hovering in
+            isHovered = hovering
+        }
         .onTapGesture { onTap() }
         #endif
         .contextMenu {
@@ -346,7 +478,9 @@ private struct ScriptMatchPatternsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) { isPatternsExpanded.toggle() }
+                withAnimation(.easeInOut(duration: 0.2)) { 
+                    isPatternsExpanded.toggle() 
+                }
             } label: {
                 HStack(spacing: 8) {
                     Text("URL Patterns (\(script.matches.count))") // Corrected
@@ -516,28 +650,19 @@ struct UserScriptContentView: View {
     
     private func toggleContentView() {
         if showFullContent {
-            displayedContent = String(script.content.prefix(previewLength)); showFullContent = false
+            displayedContent = String(script.content.prefix(previewLength))
+            showFullContent = false
         } else {
             isLoadingContent = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                DispatchQueue.global(qos: .userInitiated).async {
-                    let fullContent = script.content
-                    DispatchQueue.main.async {
-                        if fullContent.count > 500000 {
-                            var tempContent = ""
-                            tempContent.reserveCapacity(fullContent.count) // Pre-allocate
-                            let chunkSize = 50000; var currentIdx = fullContent.startIndex
-                            while currentIdx < fullContent.endIndex {
-                                let endIdx = fullContent.index(currentIdx, offsetBy: chunkSize, limitedBy: fullContent.endIndex) ?? fullContent.endIndex
-                                tempContent.append(contentsOf: fullContent[currentIdx..<endIdx])
-                                currentIdx = endIdx
-                            }
-                            displayedContent = tempContent
-                        } else {
-                            displayedContent = fullContent
-                        }
-                        showFullContent = true; isLoadingContent = false
-                    }
+            
+            // Move heavy computation off main thread
+            DispatchQueue.global(qos: .userInitiated).async {
+                let fullContent = script.content
+                
+                DispatchQueue.main.async {
+                    displayedContent = fullContent
+                    showFullContent = true
+                    isLoadingContent = false
                 }
             }
         }
@@ -551,7 +676,8 @@ struct UserScriptContentView: View {
 #endif
 
 struct AddUserScriptView: View {
-    @ObservedObject var userScriptManager: UserScriptManager
+    var userScriptManager: UserScriptManager
+    var onScriptAdded: () -> Void
     @State private var urlString = ""
     @State private var isLoading = false
     @Environment(\.dismiss) private var dismiss
@@ -581,7 +707,14 @@ struct AddUserScriptView: View {
     private func createMainButton() -> some View {
         Button { addScript() } label: {
             HStack(spacing: 8) {
-                if isLoading { ProgressView().scaleEffect(0.8); Text("Adding...") } else { Text("Add Script") }
+                if isLoading { 
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .frame(width: 16, height: 16) // Fixed frame to prevent layout shifts
+                    Text("Adding...") 
+                } else { 
+                    Text("Add Script") 
+                }
             }.frame(minWidth: horizontalSizeClass == .compact ? .infinity : 100, maxWidth: horizontalSizeClass == .compact ? .infinity : nil)
         }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
     }
@@ -597,10 +730,19 @@ struct AddUserScriptView: View {
     
     private func addScript() {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
+        
         isLoading = true
+        
         Task {
+            await ConcurrentLogManager.shared.log("📥 Adding new userscript from URL: \(url.absoluteString)")
             await userScriptManager.addUserScript(from: url)
-            await MainActor.run { isLoading = false; dismiss() }
+            await ConcurrentLogManager.shared.log("✅ Successfully added userscript from URL: \(url.absoluteString)")
+            
+            await MainActor.run {
+                isLoading = false
+                onScriptAdded()
+                dismiss()
+            }
         }
     }
 }

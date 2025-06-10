@@ -271,13 +271,13 @@ class FilterListUpdater {
                                  }
                             }
                         }
-                        return (currentFilter, false) // Return false for success as no update was *fetched*
+                        return (currentFilter, false)
                     }
                 }
             }
 
             for await (filter, success) in group {
-                if success { // True if filter was *fetched* and processed
+                if success {
                     updatedFilters.append(filter)
                 }
                 completedSteps += 1
