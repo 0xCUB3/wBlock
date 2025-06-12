@@ -24,7 +24,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             // UserScriptManager() is now called within a @MainActor function
             _userScriptManager = UserScriptManager()
         }
-        return _userScriptManager! 
+        return _userScriptManager!
     }
     
     /// MainActor-isolated accessor for the userscript manager
@@ -62,10 +62,23 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             os_log(.info, "SafariExtensionHandler: Processing requestRules for URL: %@", urlString)
 
             // Convert the string into a URL. If valid, attempt to look up its
-            // configuration.
-            if let url = URL(string: urlString) {
-                // Use the shared AppExtension instance to get the configuration
-                // for the given URL.
+            // configuration or honor per-site disable.
+            if let url = URL(string: urlString), let host = url.host {
+                // Check disabled sites list
+                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+                let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
+                if disabled.contains(host) {
+                    // Send empty rules so content blocker does nothing
+                    let emptyPayload: [String: Any] = [
+                        "requestId": requestId,
+                        "payload": ["css": [], "extendedCss": [], "js": [], "scriptlets": []],
+                        "requestedAt": requestedAt,
+                        "verbose": false
+                    ]
+                    page.dispatchMessageToScript(withName: "requestRules", userInfo: emptyPayload)
+                    return
+                }
+                // Otherwise proceed normally
                 do {
                     let webExtension = try WebExtension.shared(
                         groupID: GroupIdentifier.shared.value
