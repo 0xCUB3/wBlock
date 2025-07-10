@@ -30,7 +30,7 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        viewModel.loadState()
+        Task { await self.viewModel.loadState() }
     }
 
     // MARK: - Public Methods
@@ -61,3 +61,4 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
 
     // Legacy loadCurrentSiteState removed; state handled via ViewModel within SwiftUI view
 }
+

@@ -228,7 +228,7 @@ struct UpdatePopupView: View {
                             }
                             
                             // Handle script updates
-                            if let scriptManager = userScriptManager, !selectedScripts.isEmpty {
+                            if let _ = userScriptManager, !selectedScripts.isEmpty {
                                 let scriptsToUpdate = scriptsWithUpdates.filter { selectedScripts.contains($0.id) }
                                 if !scriptsToUpdate.isEmpty {
                                     _ = await filterManager.filterUpdater.updateSelectedScripts(scriptsToUpdate) { progress in

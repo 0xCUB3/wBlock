@@ -25806,6 +25806,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const handleMessage = event => {
     log('Received message: ', event);
+    
+    // Handle zapper messages separately
+    if (event.name === 'zapperController') {
+      handleZapperMessage(event.name, event.message);
+      return;
+    }
+    
     // Cast the received event message to our expected
     // RequestRulesResponseMessage type.
     const message = event.message;
@@ -25867,4 +25874,1067 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   safari.extension.dispatchMessage('requestRules', message);
   // Register the event listener for incoming messages from the extension.
   safari.self.addEventListener('message', handleMessage);
+  
+  // Load persistent zapper rules for this site
+  function loadPersistentZapperRules() {
+    log('Loading persistent zapper rules for hostname:', location.hostname);
+    
+    const tryLoadRules = (attemptCount = 0) => {
+      if (safari && safari.extension) {
+        safari.extension.dispatchMessage('zapperController', {
+          action: 'loadRules',
+          hostname: location.hostname
+        });
+        log('Dispatched loadRules message for persistent zapper rules (attempt', attemptCount + 1, ')');
+      } else {
+        log('Safari extension not available for persistent zapper rules, attempt', attemptCount + 1);
+        // Retry up to 5 times with increasing delays
+        if (attemptCount < 5) {
+          setTimeout(() => tryLoadRules(attemptCount + 1), (attemptCount + 1) * 200);
+        }
+      }
+    };
+    
+    tryLoadRules();
+  }
+  
+  // Automatically load persistent zapper rules on page load
+  // Try loading immediately
+  loadPersistentZapperRules();
+  
+  // Also try again after DOM content loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(loadPersistentZapperRules, 100);
+    });
+  } else {
+    // DOM is already ready, try again with delay
+    setTimeout(loadPersistentZapperRules, 100);
+  }
+  
+  // Final attempt after page fully loads
+  if (document.readyState !== 'complete') {
+    window.addEventListener('load', () => {
+      setTimeout(loadPersistentZapperRules, 200);
+    });
+  }
+  
+  // Inject debug functions into page scope for Safari extension compatibility
+  function injectDebugFunctions() {
+    const debugScript = document.createElement('script');
+    debugScript.textContent = `
+      // Debug functions for wBlock Element Zapper (injected into page scope)
+      window.testZapperPersistence = function() {
+        console.log('[wBlock Debug] Testing zapper persistence...');
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'testPersistence'
+        }, '*');
+      };
+      
+      window.saveTestRule = function(selector) {
+        if (!selector) {
+          selector = '.test-element, .advertisement, [data-ad]';
+        }
+        console.log('[wBlock Debug] Saving test rule:', selector, 'for hostname:', location.hostname);
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'saveRule',
+          selector: selector,
+          hostname: location.hostname
+        }, '*');
+      };
+      
+      window.loadZapperRules = function() {
+        console.log('[wBlock Debug] Manually loading zapper rules for hostname:', location.hostname);
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'loadRules',
+          hostname: location.hostname
+        }, '*');
+      };
+      
+      window.checkZapperRules = function() {
+        console.log('[wBlock Debug] Checking persistent zapper rules...');
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'checkRules',
+          hostname: location.hostname
+        }, '*');
+      };
+      
+      console.log('[wBlock Debug] Debug functions injected into page scope:', {
+        testZapperPersistence: typeof window.testZapperPersistence,
+        saveTestRule: typeof window.saveTestRule,
+        loadZapperRules: typeof window.loadZapperRules,
+        checkZapperRules: typeof window.checkZapperRules
+      });
+    `;
+    
+    (document.head || document.documentElement).appendChild(debugScript);
+    debugScript.remove();
+    
+    log('Debug functions injected into page scope');
+  }
+  
+  // Listen for debug and zapper messages from page scope
+  window.addEventListener('message', function(event) {
+    if (event.source !== window || !event.data || 
+        (event.data.source !== 'wblock-debug' && event.data.source !== 'wblock-zapper')) {
+      return;
+    }
+    
+    const data = event.data;
+    log('Received message from page scope:', data);
+    
+    switch (data.action) {
+      case 'testPersistence':
+        log('Testing zapper persistence...');
+        if (safari && safari.extension) {
+          safari.extension.dispatchMessage('zapperController', {
+            action: 'saveRule',
+            selector: '.test-zapper-persistence',
+            hostname: location.hostname
+          });
+          log('Saved test rule for hostname:', location.hostname);
+          
+          setTimeout(() => {
+            safari.extension.dispatchMessage('zapperController', {
+              action: 'loadRules',
+              hostname: location.hostname
+            });
+            log('Requested rules reload for testing');
+          }, 200);
+        }
+        break;
+        
+      case 'saveRule':
+        log('Saving test rule:', data.selector, 'for hostname:', data.hostname);
+        if (safari && safari.extension) {
+          safari.extension.dispatchMessage('zapperController', {
+            action: 'saveRule',
+            selector: data.selector,
+            hostname: data.hostname
+          });
+          log('Test rule saved, now loading to verify...');
+          
+          setTimeout(() => {
+            safari.extension.dispatchMessage('zapperController', {
+              action: 'loadRules',
+              hostname: data.hostname
+            });
+          }, 300);
+        }
+        break;
+        
+      case 'loadRules':
+        log('Manually loading zapper rules for hostname:', data.hostname);
+        loadPersistentZapperRules();
+        break;
+        
+      case 'checkRules':
+        log('Checking persistent zapper rules...');
+        const styleElement = document.getElementById('wblock-persistent-zapper-rules');
+        if (styleElement) {
+          log('Current persistent rules:', styleElement.textContent);
+        } else {
+          log('No persistent rules style element found');
+          if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', {
+              action: 'loadRules',
+              hostname: data.hostname
+            });
+            log('Requested current rules for hostname:', data.hostname);
+          }
+        }
+        break;
+    }
+  });
+  
+  // Inject debug functions when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectDebugFunctions);
+  } else {
+    injectDebugFunctions();
+  }
+  
+  // Element Zapper Integration
+  let zapperInstance = null;
+  
+  // Load element zapper on demand
+  function loadElementZapper() {
+    if (zapperInstance) {
+      zapperInstance.activate();
+      return zapperInstance;
+    }
+    
+    // Check if already loaded globally
+    if (window.wBlockZapperInstance) {
+      zapperInstance = window.wBlockZapperInstance;
+      zapperInstance.activate();
+      return zapperInstance;
+    }
+    
+    // Create a script element to inject the zapper code
+    const script = document.createElement('script');
+    script.textContent = getElementZapperCode();
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+    
+    // Initialize the zapper
+    if (window.wBlockZapperInstance) {
+      zapperInstance = window.wBlockZapperInstance;
+    }
+    
+    return zapperInstance;
+  }
+  
+  // Handle zapper activation messages
+  function handleZapperMessage(messageName, userInfo) {
+    if (messageName === 'zapperController') {
+      const action = userInfo?.action;
+      
+      switch (action) {
+        case 'activateZapper':
+          loadElementZapper();
+          break;
+          
+        case 'loadRulesResponse':
+          const rules = userInfo?.rules;
+          log('Received loadRulesResponse with rules:', rules);
+          if (rules && Array.isArray(rules) && rules.length > 0) {
+            // Apply rules even if zapper isn't active - for persistent blocking
+            applyZapperRules(rules);
+            
+            // Also apply to zapper instance if it exists
+            if (zapperInstance && zapperInstance.applyCustomRules) {
+              zapperInstance.applyCustomRules(rules);
+            }
+          } else {
+            log('No persistent zapper rules found for this hostname');
+          }
+          break;
+      }
+    }
+  }
+  
+  // Apply zapper rules to the page (for persistent blocking)
+  function applyZapperRules(rules) {
+    if (!rules || !Array.isArray(rules) || rules.length === 0) {
+      log('applyZapperRules: No rules to apply');
+      return;
+    }
+    
+    log('Applying', rules.length, 'persistent zapper rules:', rules);
+    
+    const applyRulesToDOM = () => {
+      let styleElement = document.getElementById('wblock-persistent-zapper-rules');
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = 'wblock-persistent-zapper-rules';
+        styleElement.type = 'text/css';
+        
+        // Try to append to head, fall back to documentElement
+        if (document.head) {
+          document.head.appendChild(styleElement);
+        } else if (document.documentElement) {
+          document.documentElement.appendChild(styleElement);
+        } else {
+          log('Warning: Could not find head or documentElement to append style');
+          return;
+        }
+        log('Created new persistent style element');
+      }
+      
+      // Build CSS rules for all selectors
+      const cssRules = rules.map(selector => `${selector} { display: none !important; }`).join('\n');
+      styleElement.textContent = cssRules;
+      
+      log(`Applied ${rules.length} persistent zapper rules for ${location.hostname}`);
+      log('CSS rules applied:', cssRules);
+      
+      // Also log how many elements each rule affects
+      rules.forEach(selector => {
+        try {
+          const elements = document.querySelectorAll(selector);
+          log(`Rule "${selector}" affects ${elements.length} elements`);
+        } catch (e) {
+          log(`Rule "${selector}" is invalid:`, e.message);
+        }
+      });
+    };
+    
+    // Apply rules immediately if DOM is ready, otherwise wait
+    if (document.head || document.documentElement) {
+      applyRulesToDOM();
+    } else {
+      // DOM not ready yet, wait for it
+      const checkReady = () => {
+        if (document.head || document.documentElement) {
+          applyRulesToDOM();
+        } else {
+          setTimeout(checkReady, 10);
+        }
+      };
+      checkReady();
+    }
+  }
+  
+  // Get element zapper JavaScript code
+  function getElementZapperCode() {
+    return `
+/**
+ * wBlock Element Zapper - Complete Implementation
+ * Safari-compatible element picker and hiding tool
+ */
+
+// Prevent duplicate class definition
+if (typeof window.WBlockElementZapper !== 'undefined') {
+    // Already loaded, just activate existing instance
+    if (window.wBlockZapperInstance) {
+        window.wBlockZapperInstance.activate();
+    }
+    // Don't execute the rest of the script
+} else {
+
+class WBlockElementZapper {
+    constructor() {
+        this.isActive = false;
+        this.isPickerMode = false;
+        this.isPreviewMode = false;
+        this.currentElement = null;
+        this.lastClickedElement = null; // Track clicked element for suggestions
+        this.highlightedElements = [];
+        this.candidates = [];
+        this.selectedCandidateIndex = -1;
+        this.customRules = new Set();
+        
+        this.overlay = null;
+        this.toolbar = null;
+        this.pickerPanel = null;
+        
+        this.bindEvents();
+        this.loadCustomRules();
+    }
+
+    bindEvents() {
+        document.addEventListener('mouseover', this.onMouseOver.bind(this), true);
+        document.addEventListener('mouseout', this.onMouseOut.bind(this), true);
+        document.addEventListener('click', this.onClick.bind(this), true);
+        document.addEventListener('keydown', this.onKeyDown.bind(this), true);
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initializeUI());
+        } else {
+            this.initializeUI();
+        }
+    }
+
+    initializeUI() {
+        this.createZapperInterface();
+        this.activate();
+    }
+
+    createZapperInterface() {
+        // Create overlay
+        this.overlay = document.createElement('div');
+        this.overlay.id = 'wblock-zapper-overlay';
+        this.overlay.style.cssText = \`
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            pointer-events: none !important;
+            z-index: 2147483647 !important;
+            background: transparent !important;
+        \`;
+        document.documentElement.appendChild(this.overlay);
+
+        // Create toolbar
+        this.toolbar = document.createElement('div');
+        this.toolbar.id = 'wblock-zapper-toolbar';
+        this.toolbar.style.cssText = \`
+            position: fixed !important;
+            top: 10px !important;
+            right: 10px !important;
+            background: #1c1c1e !important;
+            border: 1px solid #2c2c2e !important;
+            border-radius: 8px !important;
+            padding: 8px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            display: flex !important;
+            gap: 8px !important;
+            align-items: center !important;
+            pointer-events: auto !important;
+            z-index: 2147483648 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            font-size: 13px !important;
+        \`;
+        
+        this.toolbar.innerHTML = \`
+            <span class="zapper-status" style="font-size: 12px; color: #8e8e93; font-weight: 500; pointer-events: none;">Click elements to hide them</span>
+            <button class="zapper-button" id="toggle-picker" style="background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; line-height: 1; display: inline-flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Selector</button>
+            <button class="zapper-button danger" id="quit-zapper" style="background: #FF453A; color: #ffffff; border: 1px solid #FF453A; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; line-height: 1; display: inline-flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Exit</button>
+        \`;
+
+        // Create picker panel
+        this.pickerPanel = document.createElement('div');
+        this.pickerPanel.id = 'wblock-picker-panel';
+        this.pickerPanel.style.cssText = \`
+            position: fixed !important;
+            top: 60px !important;
+            right: 10px !important;
+            width: 300px !important;
+            max-height: 400px !important;
+            background: #1c1c1e !important;
+            border: 1px solid #2c2c2e !important;
+            border-radius: 8px !important;
+            padding: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            pointer-events: auto !important;
+            z-index: 2147483648 !important;
+            display: none !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            color: #ffffff !important;
+        \`;
+        
+        this.pickerPanel.innerHTML = \`
+            <div class="picker-section" style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #8e8e93;">CSS Selector</h4>
+                <textarea id="selector-input" placeholder="div.ad, .banner, [data-ad]" style="width: 100%; padding: 8px; border: 1px solid #2c2c2e; border-radius: 4px; background: #1c1c1e; color: #ffffff; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 11px; resize: none; min-height: 60px;"></textarea>
+                <div class="element-count" id="element-count" style="font-size: 11px; color: #8e8e93; margin-top: 4px;">Enter a CSS selector</div>
+            </div>
+
+            <div class="picker-section" style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #8e8e93;">Suggested Selectors</h4>
+                <div class="candidates-list" id="candidates-list" style="max-height: 120px; overflow-y: auto; border: 1px solid #2c2c2e; border-radius: 4px; background: #1c1c1e;"></div>
+            </div>
+
+            <div class="button-group" style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="zapper-button" id="preview-btn" style="flex: 1; background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Preview</button>
+                <button class="zapper-button primary" id="create-rule-btn" style="flex: 1; background: #0A84FF; color: #ffffff; border: 1px solid #0A84FF; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Create Rule</button>
+            </div>
+        \`;
+
+        this.overlay.appendChild(this.toolbar);
+        this.overlay.appendChild(this.pickerPanel);
+
+        // Bind UI events after elements are in DOM
+        this.bindUIEvents();
+    }
+
+    bindUIEvents() {
+        // Use setTimeout to ensure DOM is fully ready
+        setTimeout(() => {
+            const quitButton = document.getElementById('quit-zapper');
+            const toggleButton = document.getElementById('toggle-picker');
+            const previewButton = document.getElementById('preview-btn');
+            const createButton = document.getElementById('create-rule-btn');
+            const selectorInput = document.getElementById('selector-input');
+
+            console.log('Binding UI events - quit button:', quitButton);
+            console.log('Binding UI events - toggle button:', toggleButton);
+
+            if (quitButton) {
+                quitButton.addEventListener('click', (e) => {
+                    console.log('Quit button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.quit();
+                }, true);
+            }
+            
+            if (toggleButton) {
+                toggleButton.addEventListener('click', (e) => {
+                    console.log('Toggle button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.togglePicker();
+                }, true);
+            }
+            
+            if (previewButton) {
+                previewButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.togglePreview();
+                }, true);
+            }
+            
+            if (createButton) {
+                createButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.createRule();
+                }, true);
+            }
+            
+            if (selectorInput) {
+                selectorInput.addEventListener('input', () => this.onSelectorInput());
+                selectorInput.addEventListener('focus', () => this.onSelectorFocus());
+            }
+        }, 100);
+    }
+
+    activate() {
+        this.isActive = true;
+        document.body.style.cursor = 'crosshair';
+        this.updateStatus('Click elements to hide them');
+    }
+
+    quit() {
+        console.log('Quitting element zapper. Custom rules saved this session:', Array.from(this.customRules));
+        
+        // Ensure all rules are saved before quitting
+        if (this.customRules.size > 0) {
+            console.log('Ensuring all', this.customRules.size, 'rules are saved...');
+            
+            // Save all rules one more time to ensure persistence
+            this.customRules.forEach(selector => {
+                if (safari && safari.extension) {
+                    safari.extension.dispatchMessage('zapperController', {
+                        action: 'saveRule',
+                        selector: selector,
+                        hostname: location.hostname
+                    });
+                    console.log('Re-saved rule on quit:', selector);
+                } else {
+                    // Use window.postMessage to communicate with content script
+                    window.postMessage({
+                        source: 'wblock-zapper',
+                        action: 'saveRule',
+                        selector: selector,
+                        hostname: location.hostname
+                    }, '*');
+                    console.log('Sent rule to content script on quit:', selector);
+                }
+            });
+            
+            // Small delay to ensure messages are sent
+            setTimeout(() => {
+                this.finishQuit();
+            }, 200);
+        } else {
+            console.log('No custom rules to save');
+            this.finishQuit();
+        }
+    }
+    
+    finishQuit() {
+        this.isActive = false;
+        this.isPickerMode = false;
+        this.isPreviewMode = false;
+        
+        this.clearHighlights();
+        this.clearPreviews();
+        document.body.style.cursor = '';
+        
+        if (this.overlay && this.overlay.parentNode) {
+            this.overlay.parentNode.removeChild(this.overlay);
+        }
+        
+        if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', { action: 'quit' });
+        }
+        
+        console.log('Element zapper quit completed');
+    }
+
+    togglePicker() {
+        this.isPickerMode = !this.isPickerMode;
+        this.pickerPanel.style.display = this.isPickerMode ? 'block' : 'none';
+        
+        if (this.isPickerMode) {
+            this.updateStatus('Click an element to generate CSS selectors');
+            document.getElementById('toggle-picker').textContent = 'Hide';
+            this.lastClickedElement = null; // Reset clicked element
+        } else {
+            this.updateStatus('Click elements to hide them');
+            document.getElementById('toggle-picker').textContent = 'Selector';
+            this.clearPreviews();
+            this.lastClickedElement = null; // Reset clicked element
+        }
+    }
+
+    onMouseOver(event) {
+        if (!this.isActive || this.isPreviewMode) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const element = event.target;
+        if (this.shouldIgnoreElement(element)) return;
+        
+        this.currentElement = element;
+        this.highlightElement(element);
+        
+        // Only generate candidates on hover if nothing has been clicked yet
+        if (this.isPickerMode && !this.lastClickedElement) {
+            this.generateCandidates(element);
+        }
+    }
+
+    onMouseOut(event) {
+        if (!this.isActive || this.isPreviewMode) return;
+        this.clearHighlights();
+        this.currentElement = null;
+    }
+
+    onClick(event) {
+        if (!this.isActive) return;
+        
+        const element = event.target;
+        
+        // Check if this is a click on our UI elements - let them handle it
+        if (this.shouldIgnoreElement(element)) {
+            console.log('Click on UI element, ignoring:', element);
+            return;
+        }
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (this.isPickerMode) {
+            // Store the clicked element and generate candidates
+            this.lastClickedElement = element;
+            this.generateCandidates(element);
+            this.updateStatus('Element selected - choose a CSS selector below');
+        } else {
+            this.zapElement(element);
+        }
+    }
+
+    onKeyDown(event) {
+        if (!this.isActive) return;
+        
+        switch (event.key) {
+            case 'Escape':
+                event.preventDefault();
+                this.quit();
+                break;
+            case 'Delete':
+            case 'Backspace':
+                if (this.currentElement && !this.isPickerMode) {
+                    event.preventDefault();
+                    this.zapElement(this.currentElement);
+                }
+                break;
+            case 'p':
+            case 'P':
+                if (!this.isPickerMode) {
+                    event.preventDefault();
+                    this.togglePicker();
+                }
+                break;
+            case 'Enter':
+                if (this.currentElement && !this.isPickerMode) {
+                    event.preventDefault();
+                    this.zapElement(this.currentElement);
+                }
+                break;
+        }
+    }
+
+    shouldIgnoreElement(element) {
+        if (!element || element === document.documentElement || element === document.body) {
+            return true;
+        }
+        
+        // Check if element or any parent is part of the zapper UI
+        if (element.closest('#wblock-zapper-toolbar') || 
+            element.closest('#wblock-picker-panel') ||
+            element.closest('#wblock-zapper-overlay') ||
+            element.id === 'wblock-zapper-toolbar' ||
+            element.id === 'wblock-picker-panel' ||
+            element.id === 'wblock-zapper-overlay' ||
+            element.classList.contains('zapper-button') ||
+            element.classList.contains('zapper-status')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    highlightElement(element) {
+        this.clearHighlights();
+        
+        const rect = element.getBoundingClientRect();
+        const highlight = document.createElement('div');
+        highlight.className = 'element-highlight';
+        highlight.style.cssText = \`
+            position: fixed !important;
+            top: \${rect.top}px !important;
+            left: \${rect.left}px !important;
+            width: \${rect.width}px !important;
+            height: \${rect.height}px !important;
+            border: 2px solid #007AFF !important;
+            background: rgba(0, 122, 255, 0.1) !important;
+            box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.3) !important;
+            pointer-events: none !important;
+            z-index: 2147483646 !important;
+        \`;
+        
+        this.overlay.appendChild(highlight);
+        this.highlightedElements.push(highlight);
+    }
+
+    clearHighlights() {
+        this.highlightedElements.forEach(highlight => {
+            if (highlight.parentNode) {
+                highlight.parentNode.removeChild(highlight);
+            }
+        });
+        this.highlightedElements = [];
+    }
+
+    zapElement(element) {
+        if (!element) return;
+        
+        const selector = this.generateSimpleSelector(element);
+        this.applyHidingRule(selector);
+        this.saveCustomRule(selector);
+        
+        this.updateStatus(\`Hidden: \${selector}\`);
+        this.clearHighlights();
+    }
+
+    generateSimpleSelector(element) {
+        const parts = [];
+        
+        parts.push(element.tagName.toLowerCase());
+        
+        if (element.id) {
+            return \`#\${CSS.escape(element.id)}\`;
+        }
+        
+        if (element.className && typeof element.className === 'string') {
+            const classes = element.className.trim().split(/\\s+/);
+            const escapedClasses = classes.map(cls => CSS.escape(cls)).join('.');
+            return \`.\${escapedClasses}\`;
+        }
+        
+        return parts.join('');
+    }
+
+    applyHidingRule(selector) {
+        let styleElement = document.getElementById('wblock-custom-rules');
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = 'wblock-custom-rules';
+            styleElement.type = 'text/css';
+            document.head.appendChild(styleElement);
+        }
+        
+        const rule = \`\${selector} { display: none !important; }\`;
+        styleElement.textContent += rule + '\\n';
+    }
+
+    saveCustomRule(selector) {
+        console.log('Saving custom rule:', selector, 'for hostname:', location.hostname);
+        console.log('Current customRules Set before adding:', Array.from(this.customRules));
+        
+        this.customRules.add(selector);
+        console.log('Current customRules Set after adding:', Array.from(this.customRules));
+        
+        // Also add to persistent rules immediately
+        let persistentStyleElement = document.getElementById('wblock-persistent-zapper-rules');
+        if (!persistentStyleElement) {
+            persistentStyleElement = document.createElement('style');
+            persistentStyleElement.id = 'wblock-persistent-zapper-rules';
+            persistentStyleElement.type = 'text/css';
+            document.head.appendChild(persistentStyleElement);
+            console.log('Created new persistent style element');
+        }
+        
+        const rule = \`\${selector} { display: none !important; }\`;
+        persistentStyleElement.textContent += rule + '\\n';
+        console.log('Added rule to persistent style element:', rule);
+        console.log('Current persistent style content:', persistentStyleElement.textContent);
+        
+        if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', {
+                action: 'saveRule',
+                selector: selector,
+                hostname: location.hostname
+            });
+            console.log('Dispatched saveRule message to Safari extension for:', selector);
+        } else {
+            // Use window.postMessage to communicate with content script
+            window.postMessage({
+                source: 'wblock-zapper',
+                action: 'saveRule',
+                selector: selector,
+                hostname: location.hostname
+            }, '*');
+            console.log('Sent saveRule message to content script for:', selector);
+        }
+    }
+
+    loadCustomRules() {
+        if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', {
+                action: 'loadRules',
+                hostname: location.hostname
+            });
+        } else {
+            // Use window.postMessage to communicate with content script
+            window.postMessage({
+                source: 'wblock-zapper',
+                action: 'loadRules',
+                hostname: location.hostname
+            }, '*');
+            console.log('Sent loadRules message to content script');
+        }
+    }
+
+    applyCustomRules(rules) {
+        if (!rules || !Array.isArray(rules)) {
+            console.log('applyCustomRules called with no rules or invalid rules:', rules);
+            return;
+        }
+        
+        console.log('applyCustomRules called with', rules.length, 'rules:', rules);
+        console.log('Current customRules Set before applying:', Array.from(this.customRules));
+        
+        rules.forEach(selector => {
+            this.customRules.add(selector);
+            this.applyHidingRule(selector);
+            console.log('Applied custom rule:', selector);
+        });
+        
+        console.log('Current customRules Set after applying:', Array.from(this.customRules));
+    }
+
+    generateCandidates(element) {
+        this.candidates = [];
+        
+        let current = element;
+        const selectorParts = [];
+        
+        while (current && current !== document.documentElement) {
+            const parts = [];
+            
+            parts.push(current.tagName.toLowerCase());
+            
+            if (current.id) {
+                parts.push(\`#\${CSS.escape(current.id)}\`);
+            }
+            
+            if (current.className && typeof current.className === 'string') {
+                const classes = current.className.trim().split(/\\s+/);
+                classes.slice(0, 3).forEach(cls => {
+                    if (cls) {
+                        parts.push(\`.\${CSS.escape(cls)}\`);
+                    }
+                });
+            }
+            
+            const elementSelector = parts.join('');
+            selectorParts.unshift(elementSelector);
+            
+            for (let i = 0; i < selectorParts.length; i++) {
+                const candidate = selectorParts.slice(i).join(' > ');
+                if (!this.candidates.includes(candidate)) {
+                    this.candidates.push(candidate);
+                }
+            }
+            
+            current = current.parentElement;
+        }
+        
+        this.updateCandidatesList();
+    }
+
+    updateCandidatesList() {
+        const candidatesList = document.getElementById('candidates-list');
+        if (!candidatesList) return;
+        
+        candidatesList.innerHTML = '';
+        
+        this.candidates.slice(0, 10).forEach((candidate, index) => {
+            const item = document.createElement('div');
+            item.className = 'candidate-item';
+            item.style.cssText = \`
+                padding: 6px 8px;
+                cursor: pointer;
+                font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+                font-size: 10px;
+                border-bottom: 1px solid #2c2c2e;
+                word-break: break-all;
+                color: #ffffff;
+            \`;
+            item.textContent = candidate;
+            item.addEventListener('click', () => {
+                this.selectCandidate(index);
+            });
+            candidatesList.appendChild(item);
+        });
+    }
+
+    selectCandidate(index) {
+        this.selectedCandidateIndex = index;
+        const candidate = this.candidates[index];
+        
+        document.getElementById('selector-input').value = candidate;
+        
+        document.querySelectorAll('.candidate-item').forEach((item, i) => {
+            if (i === index) {
+                item.style.background = '#0A84FF';
+            } else {
+                item.style.background = 'transparent';
+            }
+        });
+        
+        // Only preview if we're already in preview mode
+        if (this.isPreviewMode) {
+            this.previewSelector(candidate);
+        }
+        this.updateElementCount(candidate);
+    }
+
+    onSelectorInput() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (selector) {
+            // Only auto-preview if we're in preview mode
+            if (this.isPreviewMode) {
+                this.previewSelector(selector);
+            }
+            this.updateElementCount(selector);
+        } else {
+            this.clearPreviews();
+            // Only reset preview mode if input is completely cleared
+            if (this.isPreviewMode) {
+                this.isPreviewMode = false;
+                const previewBtn = document.getElementById('preview-btn');
+                if (previewBtn) {
+                    previewBtn.textContent = 'Preview';
+                }
+            }
+        }
+    }
+
+    onSelectorFocus() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (selector && this.isPreviewMode) {
+            this.previewSelector(selector);
+        }
+    }
+
+    previewSelector(selector) {
+        this.clearPreviews();
+        
+        try {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (!this.shouldIgnoreElement(element)) {
+                    // Simply hide elements like the real rule would
+                    element.style.setProperty('display', 'none', 'important');
+                    element.classList.add('wblock-preview-element');
+                }
+            });
+        } catch (e) {
+            // Invalid selector
+        }
+    }
+
+    clearPreviews() {
+        document.querySelectorAll('.wblock-preview-element').forEach(element => {
+            element.style.removeProperty('display');
+            element.classList.remove('wblock-preview-element');
+        });
+    }
+
+    togglePreview() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (!selector) return;
+        
+        this.isPreviewMode = !this.isPreviewMode;
+        
+        if (this.isPreviewMode) {
+            this.previewSelector(selector);
+            document.getElementById('preview-btn').textContent = 'Stop Preview';
+            this.updateStatus('Preview: Elements will be hidden like this');
+        } else {
+            this.clearPreviews();
+            document.getElementById('preview-btn').textContent = 'Preview';
+            this.updateStatus(this.lastClickedElement ? 'Element selected - choose a CSS selector below' : 'Click an element to generate CSS selectors');
+        }
+    }
+
+    updateElementCount(selector) {
+        const countElement = document.getElementById('element-count');
+        
+        if (!selector) {
+            countElement.textContent = 'Enter a CSS selector';
+            return;
+        }
+        
+        try {
+            const elements = document.querySelectorAll(selector);
+            const count = elements.length;
+            countElement.textContent = count === 1 ? '1 element' : \`\${count} elements\`;
+        } catch (e) {
+            countElement.textContent = 'Invalid selector';
+        }
+    }
+
+    createRule() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (!selector) return;
+        
+        try {
+            document.querySelectorAll(selector);
+        } catch (e) {
+            alert('Invalid CSS selector');
+            return;
+        }
+        
+        this.applyHidingRule(selector);
+        this.saveCustomRule(selector);
+        
+        this.updateStatus(\`Rule created: \${selector}\`);
+        
+        document.getElementById('selector-input').value = '';
+        this.clearPreviews();
+        this.updateElementCount('');
+        
+        this.isPickerMode = false;
+        this.pickerPanel.style.display = 'none';
+        document.getElementById('toggle-picker').textContent = 'Selector';
+        this.lastClickedElement = null; // Reset clicked element
+        this.updateStatus('Click elements to hide them');
+    }
+
+    selectElementForPicker(element) {
+        this.generateCandidates(element);
+        
+        if (this.candidates.length > 0) {
+            this.selectCandidate(0);
+        }
+    }
+
+    updateStatus(message) {
+        const statusElement = document.querySelector('.zapper-status');
+        if (statusElement) {
+            statusElement.textContent = message;
+        }
+    }
+}
+
+// Export for external access and create global instance
+window.WBlockElementZapper = WBlockElementZapper;
+
+// Create and store global instance
+if (!window.wBlockZapperInstance) {
+    window.wBlockZapperInstance = new WBlockElementZapper();
+}
+
+} // End of else block for duplicate prevention
+`;
+  }
 })();

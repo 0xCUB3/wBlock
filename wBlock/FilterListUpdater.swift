@@ -222,10 +222,10 @@ class FilterListUpdater {
             }
             updatedFilter.sourceRuleCount = countRulesInContent(content: content)
 
-
+            let finalFilter = updatedFilter
             await MainActor.run {
-                if let index = filterListManager?.filterLists.firstIndex(where: {$0.id == updatedFilter.id}) {
-                    filterListManager?.filterLists[index] = updatedFilter
+                if let index = filterListManager?.filterLists.firstIndex(where: {$0.id == finalFilter.id}) {
+                    filterListManager?.filterLists[index] = finalFilter
                     filterListManager?.objectWillChange.send()
                 }
             }
@@ -260,20 +260,21 @@ class FilterListUpdater {
                         return (filter, success)
                     } else {
                         // If no update, still ensure count is populated if missing
-                        var currentFilter = filter
-                        if currentFilter.sourceRuleCount == nil, self.loader.filterFileExists(currentFilter) {
-                            if let localContent = self.loader.readLocalFilterContent(currentFilter) {
-                                currentFilter.sourceRuleCount = self.countRulesInContent(content: localContent)
+                        var mutableFilter = filter
+                        if mutableFilter.sourceRuleCount == nil, self.loader.filterFileExists(mutableFilter) {
+                            if let localContent = self.loader.readLocalFilterContent(mutableFilter) {
+                                mutableFilter.sourceRuleCount = self.countRulesInContent(content: localContent)
                                 // This change needs to be propagated back to AppFilterManager
+                                let finalFilter = mutableFilter
                                 await MainActor.run {
-                                     if let index = self.filterListManager?.filterLists.firstIndex(where: {$0.id == currentFilter.id}) {
-                                         self.filterListManager?.filterLists[index] = currentFilter
+                                     if let index = self.filterListManager?.filterLists.firstIndex(where: {$0.id == finalFilter.id}) {
+                                         self.filterListManager?.filterLists[index] = finalFilter
                                          self.filterListManager?.objectWillChange.send()
                                      }
                                  }
                             }
                         }
-                        return (currentFilter, false)
+                        return (mutableFilter, false)
                     }
                 }
             }

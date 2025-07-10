@@ -205,6 +205,58 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                     userInfo: responseUserInfo
                 )
             }
+        case "zapperController":
+            // Handle element zapper messages
+            guard let action = userInfo?["action"] as? String else {
+                os_log(.error, "SafariExtensionHandler: zapperController message missing action")
+                return
+            }
+            
+            os_log(.info, "SafariExtensionHandler: Processing zapperController action: %@", action)
+            
+            switch action {
+            case "saveRule":
+                if let hostname = userInfo?["hostname"] as? String,
+                   let selector = userInfo?["selector"] as? String {
+                    os_log(.info, "SafariExtensionHandler: Attempting to save zapper rule for %@ with selector: %@", hostname, selector)
+                    saveZapperRule(hostname: hostname, selector: selector)
+                    os_log(.info, "SafariExtensionHandler: Saved zapper rule for %@: %@", hostname, selector)
+                    
+                    // Immediately verify the rule was saved by loading it back
+                    let savedRules = loadZapperRules(for: hostname)
+                    os_log(.info, "SafariExtensionHandler: Verification - hostname %@ now has %d total rules: %@", hostname, savedRules.count, savedRules.joined(separator: ", "))
+                } else {
+                    os_log(.error, "SafariExtensionHandler: saveRule missing required parameters - hostname: %@, selector: %@", 
+                           userInfo?["hostname"] as? String ?? "nil", 
+                           userInfo?["selector"] as? String ?? "nil")
+                }
+                
+            case "removeRule":
+                if let hostname = userInfo?["hostname"] as? String,
+                   let selector = userInfo?["selector"] as? String {
+                    removeZapperRule(hostname: hostname, selector: selector)
+                    os_log(.info, "SafariExtensionHandler: Removed zapper rule for %@: %@", hostname, selector)
+                }
+                
+            case "loadRules":
+                if let hostname = userInfo?["hostname"] as? String {
+                    let rules = loadZapperRules(for: hostname)
+                    let response: [String: Any] = [
+                        "action": "loadRulesResponse",
+                        "rules": rules
+                    ]
+                    page.dispatchMessageToScript(withName: "zapperController", userInfo: response)
+                    os_log(.info, "SafariExtensionHandler: Loaded %d zapper rules for %@", rules.count, hostname)
+                }
+                
+            case "activateZapper":
+                // Inject the zapper content script
+                injectZapper(into: page)
+                os_log(.info, "SafariExtensionHandler: Activated element zapper")
+                
+            default:
+                os_log(.info, "SafariExtensionHandler: Unknown zapperController action: %@", action)
+            }
         default:
             // For any unknown message, no action is taken.
             os_log(.info, "SafariExtensionHandler: Unknown message name: %@", messageName)
@@ -345,5 +397,112 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         }
         
         return false
+    }
+    
+    // MARK: - Element Zapper Methods
+    
+    private func injectZapper(into page: SFSafariPage) {
+        guard let zapperHTMLPath = Bundle.main.path(forResource: "element-zapper", ofType: "html"),
+              let zapperJSPath = Bundle.main.path(forResource: "element-zapper", ofType: "js") else {
+            os_log(.error, "Zapper resource files not found in bundle.")
+            return
+        }
+        
+        do {
+            let zapperHTML = try String(contentsOfFile: zapperHTMLPath, encoding: .utf8)
+            let zapperJS = try String(contentsOfFile: zapperJSPath, encoding: .utf8)
+            
+            let message: [String: Any] = [
+                "action": "injectZapper",
+                "html": zapperHTML,
+                "js": zapperJS
+            ]
+            
+            page.dispatchMessageToScript(withName: "wblockAdvanced", userInfo: message)
+            os_log(.info, "Successfully dispatched zapper HTML and JS to the content script.")
+        } catch {
+            os_log(.error, "Error reading zapper files: %@", error.localizedDescription)
+        }
+    }
+    
+    /// Saves a CSS selector rule for the element zapper for a specific hostname
+    ///
+    /// - Parameters:
+    ///   - hostname: The hostname to save the rule for
+    ///   - selector: The CSS selector to hide elements matching this pattern
+    private func saveZapperRule(hostname: String, selector: String) {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        os_log(.info, "SafariExtensionHandler: saveZapperRule - Using UserDefaults suite: %@", GroupIdentifier.shared.value)
+        
+        // Get existing rules for this hostname
+        let key = "zapperRules_\(hostname)"
+        var existingRules = defaults?.stringArray(forKey: key) ?? []
+        os_log(.info, "SafariExtensionHandler: saveZapperRule - Found %d existing rules for key '%@': %@", existingRules.count, key, existingRules.joined(separator: ", "))
+        
+        // Add new rule if it doesn't already exist
+        if !existingRules.contains(selector) {
+            existingRules.append(selector)
+            defaults?.set(existingRules, forKey: key)
+            defaults?.synchronize() // Force sync to disk
+            os_log(.info, "SafariExtensionHandler: Successfully saved zapper rule for %@: %@ (total rules: %d)", hostname, selector, existingRules.count)
+            
+            // Verify the save worked
+            let verifyRules = defaults?.stringArray(forKey: key) ?? []
+            os_log(.info, "SafariExtensionHandler: Verification read back %d rules: %@", verifyRules.count, verifyRules.joined(separator: ", "))
+        } else {
+            os_log(.info, "SafariExtensionHandler: Zapper rule already exists for %@: %@", hostname, selector)
+        }
+    }
+    
+    /// Loads all CSS selector rules for the element zapper for a specific hostname
+    ///
+    /// - Parameters:
+    ///   - hostname: The hostname to load rules for
+    /// - Returns: Array of CSS selectors for this hostname
+    private func loadZapperRules(for hostname: String) -> [String] {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        let key = "zapperRules_\(hostname)"
+        let rules = defaults?.stringArray(forKey: key) ?? []
+        
+        os_log(.info, "SafariExtensionHandler: loadZapperRules - Loading rules for hostname '%@' with key '%@'", hostname, key)
+        os_log(.info, "SafariExtensionHandler: loadZapperRules - Found %d rules: %@", rules.count, rules.joined(separator: ", "))
+        
+        return rules
+    }
+    
+    /// Removes a specific zapper rule for a hostname
+    ///
+    /// - Parameters:
+    ///   - hostname: The hostname to remove the rule from
+    ///   - selector: The CSS selector to remove
+    private func removeZapperRule(hostname: String, selector: String) {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        let key = "zapperRules_\(hostname)"
+        var existingRules = defaults?.stringArray(forKey: key) ?? []
+        
+        if let index = existingRules.firstIndex(of: selector) {
+            existingRules.remove(at: index)
+            defaults?.set(existingRules, forKey: key)
+            os_log(.info, "SafariExtensionHandler: Removed zapper rule for %@: %@", hostname, selector)
+        }
+    }
+    
+    /// Gets all hostnames that have zapper rules
+    ///
+    /// - Returns: Array of hostnames with saved zapper rules
+    private func getAllZapperHostnames() -> [String] {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        guard let allKeys = defaults?.dictionaryRepresentation().keys else {
+            return []
+        }
+        
+        let zapperHostnames = allKeys.compactMap { key -> String? in
+            if key.hasPrefix("zapperRules_") {
+                return String(key.dropFirst("zapperRules_".count))
+            }
+            return nil
+        }
+        
+        return Array(zapperHostnames)
     }
 }
