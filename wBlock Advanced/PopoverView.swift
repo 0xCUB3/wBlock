@@ -76,7 +76,7 @@ struct PopoverView: View {
                         } else {
                             // Rules list
                             VStack(spacing: 3) {
-                                ForEach(Array(viewModel.zapperRules.enumerated()), id: \.offset) { _, rule in
+ForEach(viewModel.zapperRules, id: \.self) { rule in
                                     HStack {
                                         Text(rule.isEmpty ? "(empty rule)" : rule)
                                             .font(.system(size: 11))
