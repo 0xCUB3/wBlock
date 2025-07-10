@@ -25875,6 +25875,193 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Register the event listener for incoming messages from the extension.
   safari.self.addEventListener('message', handleMessage);
   
+  // Load persistent zapper rules for this site
+  function loadPersistentZapperRules() {
+    log('Loading persistent zapper rules for hostname:', location.hostname);
+    
+    const tryLoadRules = (attemptCount = 0) => {
+      if (safari && safari.extension) {
+        safari.extension.dispatchMessage('zapperController', {
+          action: 'loadRules',
+          hostname: location.hostname
+        });
+        log('Dispatched loadRules message for persistent zapper rules (attempt', attemptCount + 1, ')');
+      } else {
+        log('Safari extension not available for persistent zapper rules, attempt', attemptCount + 1);
+        // Retry up to 5 times with increasing delays
+        if (attemptCount < 5) {
+          setTimeout(() => tryLoadRules(attemptCount + 1), (attemptCount + 1) * 200);
+        }
+      }
+    };
+    
+    tryLoadRules();
+  }
+  
+  // Automatically load persistent zapper rules on page load
+  // Try loading immediately
+  loadPersistentZapperRules();
+  
+  // Also try again after DOM content loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(loadPersistentZapperRules, 100);
+    });
+  } else {
+    // DOM is already ready, try again with delay
+    setTimeout(loadPersistentZapperRules, 100);
+  }
+  
+  // Final attempt after page fully loads
+  if (document.readyState !== 'complete') {
+    window.addEventListener('load', () => {
+      setTimeout(loadPersistentZapperRules, 200);
+    });
+  }
+  
+  // Inject debug functions into page scope for Safari extension compatibility
+  function injectDebugFunctions() {
+    const debugScript = document.createElement('script');
+    debugScript.textContent = `
+      // Debug functions for wBlock Element Zapper (injected into page scope)
+      window.testZapperPersistence = function() {
+        console.log('[wBlock Debug] Testing zapper persistence...');
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'testPersistence'
+        }, '*');
+      };
+      
+      window.saveTestRule = function(selector) {
+        if (!selector) {
+          selector = '.test-element, .advertisement, [data-ad]';
+        }
+        console.log('[wBlock Debug] Saving test rule:', selector, 'for hostname:', location.hostname);
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'saveRule',
+          selector: selector,
+          hostname: location.hostname
+        }, '*');
+      };
+      
+      window.loadZapperRules = function() {
+        console.log('[wBlock Debug] Manually loading zapper rules for hostname:', location.hostname);
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'loadRules',
+          hostname: location.hostname
+        }, '*');
+      };
+      
+      window.checkZapperRules = function() {
+        console.log('[wBlock Debug] Checking persistent zapper rules...');
+        // Post message to content script
+        window.postMessage({
+          source: 'wblock-debug',
+          action: 'checkRules',
+          hostname: location.hostname
+        }, '*');
+      };
+      
+      console.log('[wBlock Debug] Debug functions injected into page scope:', {
+        testZapperPersistence: typeof window.testZapperPersistence,
+        saveTestRule: typeof window.saveTestRule,
+        loadZapperRules: typeof window.loadZapperRules,
+        checkZapperRules: typeof window.checkZapperRules
+      });
+    `;
+    
+    (document.head || document.documentElement).appendChild(debugScript);
+    debugScript.remove();
+    
+    log('Debug functions injected into page scope');
+  }
+  
+  // Listen for debug and zapper messages from page scope
+  window.addEventListener('message', function(event) {
+    if (event.source !== window || !event.data || 
+        (event.data.source !== 'wblock-debug' && event.data.source !== 'wblock-zapper')) {
+      return;
+    }
+    
+    const data = event.data;
+    log('Received message from page scope:', data);
+    
+    switch (data.action) {
+      case 'testPersistence':
+        log('Testing zapper persistence...');
+        if (safari && safari.extension) {
+          safari.extension.dispatchMessage('zapperController', {
+            action: 'saveRule',
+            selector: '.test-zapper-persistence',
+            hostname: location.hostname
+          });
+          log('Saved test rule for hostname:', location.hostname);
+          
+          setTimeout(() => {
+            safari.extension.dispatchMessage('zapperController', {
+              action: 'loadRules',
+              hostname: location.hostname
+            });
+            log('Requested rules reload for testing');
+          }, 200);
+        }
+        break;
+        
+      case 'saveRule':
+        log('Saving test rule:', data.selector, 'for hostname:', data.hostname);
+        if (safari && safari.extension) {
+          safari.extension.dispatchMessage('zapperController', {
+            action: 'saveRule',
+            selector: data.selector,
+            hostname: data.hostname
+          });
+          log('Test rule saved, now loading to verify...');
+          
+          setTimeout(() => {
+            safari.extension.dispatchMessage('zapperController', {
+              action: 'loadRules',
+              hostname: data.hostname
+            });
+          }, 300);
+        }
+        break;
+        
+      case 'loadRules':
+        log('Manually loading zapper rules for hostname:', data.hostname);
+        loadPersistentZapperRules();
+        break;
+        
+      case 'checkRules':
+        log('Checking persistent zapper rules...');
+        const styleElement = document.getElementById('wblock-persistent-zapper-rules');
+        if (styleElement) {
+          log('Current persistent rules:', styleElement.textContent);
+        } else {
+          log('No persistent rules style element found');
+          if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', {
+              action: 'loadRules',
+              hostname: data.hostname
+            });
+            log('Requested current rules for hostname:', data.hostname);
+          }
+        }
+        break;
+    }
+  });
+  
+  // Inject debug functions when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectDebugFunctions);
+  } else {
+    injectDebugFunctions();
+  }
+  
   // Element Zapper Integration
   let zapperInstance = null;
   
@@ -25917,11 +26104,83 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           break;
           
         case 'loadRulesResponse':
-          if (zapperInstance && zapperInstance.applyCustomRules) {
-            zapperInstance.applyCustomRules(userInfo.rules);
+          const rules = userInfo?.rules;
+          log('Received loadRulesResponse with rules:', rules);
+          if (rules && Array.isArray(rules) && rules.length > 0) {
+            // Apply rules even if zapper isn't active - for persistent blocking
+            applyZapperRules(rules);
+            
+            // Also apply to zapper instance if it exists
+            if (zapperInstance && zapperInstance.applyCustomRules) {
+              zapperInstance.applyCustomRules(rules);
+            }
+          } else {
+            log('No persistent zapper rules found for this hostname');
           }
           break;
       }
+    }
+  }
+  
+  // Apply zapper rules to the page (for persistent blocking)
+  function applyZapperRules(rules) {
+    if (!rules || !Array.isArray(rules) || rules.length === 0) {
+      log('applyZapperRules: No rules to apply');
+      return;
+    }
+    
+    log('Applying', rules.length, 'persistent zapper rules:', rules);
+    
+    const applyRulesToDOM = () => {
+      let styleElement = document.getElementById('wblock-persistent-zapper-rules');
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = 'wblock-persistent-zapper-rules';
+        styleElement.type = 'text/css';
+        
+        // Try to append to head, fall back to documentElement
+        if (document.head) {
+          document.head.appendChild(styleElement);
+        } else if (document.documentElement) {
+          document.documentElement.appendChild(styleElement);
+        } else {
+          log('Warning: Could not find head or documentElement to append style');
+          return;
+        }
+        log('Created new persistent style element');
+      }
+      
+      // Build CSS rules for all selectors
+      const cssRules = rules.map(selector => `${selector} { display: none !important; }`).join('\n');
+      styleElement.textContent = cssRules;
+      
+      log(`Applied ${rules.length} persistent zapper rules for ${location.hostname}`);
+      log('CSS rules applied:', cssRules);
+      
+      // Also log how many elements each rule affects
+      rules.forEach(selector => {
+        try {
+          const elements = document.querySelectorAll(selector);
+          log(`Rule "${selector}" affects ${elements.length} elements`);
+        } catch (e) {
+          log(`Rule "${selector}" is invalid:`, e.message);
+        }
+      });
+    };
+    
+    // Apply rules immediately if DOM is ready, otherwise wait
+    if (document.head || document.documentElement) {
+      applyRulesToDOM();
+    } else {
+      // DOM not ready yet, wait for it
+      const checkReady = () => {
+        if (document.head || document.documentElement) {
+          applyRulesToDOM();
+        } else {
+          setTimeout(checkReady, 10);
+        }
+      };
+      checkReady();
     }
   }
   
@@ -26128,6 +26387,44 @@ class WBlockElementZapper {
     }
 
     quit() {
+        console.log('Quitting element zapper. Custom rules saved this session:', Array.from(this.customRules));
+        
+        // Ensure all rules are saved before quitting
+        if (this.customRules.size > 0) {
+            console.log('Ensuring all', this.customRules.size, 'rules are saved...');
+            
+            // Save all rules one more time to ensure persistence
+            this.customRules.forEach(selector => {
+                if (safari && safari.extension) {
+                    safari.extension.dispatchMessage('zapperController', {
+                        action: 'saveRule',
+                        selector: selector,
+                        hostname: location.hostname
+                    });
+                    console.log('Re-saved rule on quit:', selector);
+                } else {
+                    // Use window.postMessage to communicate with content script
+                    window.postMessage({
+                        source: 'wblock-zapper',
+                        action: 'saveRule',
+                        selector: selector,
+                        hostname: location.hostname
+                    }, '*');
+                    console.log('Sent rule to content script on quit:', selector);
+                }
+            });
+            
+            // Small delay to ensure messages are sent
+            setTimeout(() => {
+                this.finishQuit();
+            }, 200);
+        } else {
+            console.log('No custom rules to save');
+            this.finishQuit();
+        }
+    }
+    
+    finishQuit() {
         this.isActive = false;
         this.isPickerMode = false;
         this.isPreviewMode = false;
@@ -26143,6 +26440,8 @@ class WBlockElementZapper {
         if (safari && safari.extension) {
             safari.extension.dispatchMessage('zapperController', { action: 'quit' });
         }
+        
+        console.log('Element zapper quit completed');
     }
 
     togglePicker() {
@@ -26329,7 +26628,26 @@ class WBlockElementZapper {
     }
 
     saveCustomRule(selector) {
+        console.log('Saving custom rule:', selector, 'for hostname:', location.hostname);
+        console.log('Current customRules Set before adding:', Array.from(this.customRules));
+        
         this.customRules.add(selector);
+        console.log('Current customRules Set after adding:', Array.from(this.customRules));
+        
+        // Also add to persistent rules immediately
+        let persistentStyleElement = document.getElementById('wblock-persistent-zapper-rules');
+        if (!persistentStyleElement) {
+            persistentStyleElement = document.createElement('style');
+            persistentStyleElement.id = 'wblock-persistent-zapper-rules';
+            persistentStyleElement.type = 'text/css';
+            document.head.appendChild(persistentStyleElement);
+            console.log('Created new persistent style element');
+        }
+        
+        const rule = \`\${selector} { display: none !important; }\`;
+        persistentStyleElement.textContent += rule + '\\n';
+        console.log('Added rule to persistent style element:', rule);
+        console.log('Current persistent style content:', persistentStyleElement.textContent);
         
         if (safari && safari.extension) {
             safari.extension.dispatchMessage('zapperController', {
@@ -26337,6 +26655,16 @@ class WBlockElementZapper {
                 selector: selector,
                 hostname: location.hostname
             });
+            console.log('Dispatched saveRule message to Safari extension for:', selector);
+        } else {
+            // Use window.postMessage to communicate with content script
+            window.postMessage({
+                source: 'wblock-zapper',
+                action: 'saveRule',
+                selector: selector,
+                hostname: location.hostname
+            }, '*');
+            console.log('Sent saveRule message to content script for:', selector);
         }
     }
 
@@ -26346,16 +26674,33 @@ class WBlockElementZapper {
                 action: 'loadRules',
                 hostname: location.hostname
             });
+        } else {
+            // Use window.postMessage to communicate with content script
+            window.postMessage({
+                source: 'wblock-zapper',
+                action: 'loadRules',
+                hostname: location.hostname
+            }, '*');
+            console.log('Sent loadRules message to content script');
         }
     }
 
     applyCustomRules(rules) {
-        if (!rules || !Array.isArray(rules)) return;
+        if (!rules || !Array.isArray(rules)) {
+            console.log('applyCustomRules called with no rules or invalid rules:', rules);
+            return;
+        }
+        
+        console.log('applyCustomRules called with', rules.length, 'rules:', rules);
+        console.log('Current customRules Set before applying:', Array.from(this.customRules));
         
         rules.forEach(selector => {
             this.customRules.add(selector);
             this.applyHidingRule(selector);
+            console.log('Applied custom rule:', selector);
         });
+        
+        console.log('Current customRules Set after applying:', Array.from(this.customRules));
     }
 
     generateCandidates(element) {
