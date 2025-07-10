@@ -26790,23 +26790,37 @@ class WBlockElementZapper {
             }
         });
         
-        this.previewSelector(candidate);
+        // Only preview if we're already in preview mode
+        if (this.isPreviewMode) {
+            this.previewSelector(candidate);
+        }
         this.updateElementCount(candidate);
     }
 
     onSelectorInput() {
         const selector = document.getElementById('selector-input').value.trim();
         if (selector) {
-            this.previewSelector(selector);
+            // Only auto-preview if we're in preview mode
+            if (this.isPreviewMode) {
+                this.previewSelector(selector);
+            }
             this.updateElementCount(selector);
         } else {
             this.clearPreviews();
+            // Only reset preview mode if input is completely cleared
+            if (this.isPreviewMode) {
+                this.isPreviewMode = false;
+                const previewBtn = document.getElementById('preview-btn');
+                if (previewBtn) {
+                    previewBtn.textContent = 'Preview';
+                }
+            }
         }
     }
 
     onSelectorFocus() {
         const selector = document.getElementById('selector-input').value.trim();
-        if (selector) {
+        if (selector && this.isPreviewMode) {
             this.previewSelector(selector);
         }
     }
@@ -26818,41 +26832,9 @@ class WBlockElementZapper {
             const elements = document.querySelectorAll(selector);
             elements.forEach(element => {
                 if (!this.shouldIgnoreElement(element)) {
-                    // Actually hide elements like the real rule would, but with a visual indicator
+                    // Simply hide elements like the real rule would
                     element.style.setProperty('display', 'none', 'important');
                     element.classList.add('wblock-preview-element');
-                    
-                    // Add a placeholder to show where the element was
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'wblock-preview-placeholder';
-                    placeholder.style.cssText = \`
-                        background: rgba(255, 59, 48, 0.2) !important;
-                        border: 2px dashed #FF3B30 !important;
-                        padding: 4px 8px !important;
-                        margin: 2px !important;
-                        border-radius: 4px !important;
-                        font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
-                        font-size: 11px !important;
-                        color: #FF3B30 !important;
-                        text-align: center !important;
-                        pointer-events: none !important;
-                        z-index: 1000 !important;
-                        white-space: nowrap !important;
-                        overflow: hidden !important;
-                        text-overflow: ellipsis !important;
-                        max-width: 300px !important;
-                    \`;
-                    
-                    // Create compact preview text
-                    let previewText = selector;
-                    if (selector.length > 40) {
-                        previewText = selector.substring(0, 37) + '...';
-                    }
-                    placeholder.textContent = \`🎯 PREVIEW: \${previewText}\`;
-                    
-                    // Insert placeholder where the element was
-                    element.parentNode.insertBefore(placeholder, element);
-                    element.placeholderElement = placeholder;
                 }
             });
         } catch (e) {
@@ -26864,19 +26846,6 @@ class WBlockElementZapper {
         document.querySelectorAll('.wblock-preview-element').forEach(element => {
             element.style.removeProperty('display');
             element.classList.remove('wblock-preview-element');
-            
-            // Remove placeholder if it exists
-            if (element.placeholderElement && element.placeholderElement.parentNode) {
-                element.placeholderElement.parentNode.removeChild(element.placeholderElement);
-                delete element.placeholderElement;
-            }
-        });
-        
-        // Clean up any orphaned placeholders
-        document.querySelectorAll('.wblock-preview-placeholder').forEach(placeholder => {
-            if (placeholder.parentNode) {
-                placeholder.parentNode.removeChild(placeholder);
-            }
         });
     }
 
