@@ -406,32 +406,25 @@ class AppFilterManager: ObservableObject {
         let categoryName = targetInfo.primaryCategory.rawValue
         
         for attempt in 1...maxRetries {
-            let reloadResult = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
-            
-            if case .success = reloadResult {
-                // Only log success for retries (first attempt success is implied)
+            do {
+                try await SFSafariApplication.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
                 if attempt > 1 {
                     await ConcurrentLogManager.shared.log("✅ \(categoryName) reloaded successfully (attempt \(attempt))")
                 }
                 return true
-            } else if case .failure(let error) = reloadResult {
-                // Only log errors for final attempt or first error
+            } catch {
                 if attempt == 1 || attempt == maxRetries {
                     await ConcurrentLogManager.shared.log("❌ \(categoryName) \(attempt == maxRetries ? "FAILED after \(maxRetries) attempts" : "reload failed"): \(error.localizedDescription)")
                 }
                 
-                // If this isn't the last attempt, wait and try again
                 if attempt < maxRetries {
-                    let delayMs = attempt * 200 // Increasing delay: 200ms, 400ms, 600ms, 800ms
-                    
-                    // Update UI to show retry progress for attempts beyond the first retry
+                    let delayMs = attempt * 200
                     if attempt >= 2 {
                         await MainActor.run {
                             self.conversionStageDescription = "Retrying \(categoryName) (attempt \(attempt + 1))..."
                         }
                     }
-                    
-                    try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000)) // Convert ms to nanoseconds
+                    try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000))
                 }
             }
         }
@@ -482,7 +475,7 @@ class AppFilterManager: ObservableObject {
                 let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
                 for targetInfo in platformTargets {
                     _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
-                    _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+                    await reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 }
             }.value
             

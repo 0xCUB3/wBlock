@@ -18,28 +18,27 @@ public class PopoverViewModel: ObservableObject {
     private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
 
     /// Load current site host and disabled state
-    public func loadState() {
-        SFSafariApplication.getActiveWindow { window in
-            window?.getActiveTab { tab in
-                tab?.getActivePage { optionalPage in
-                    guard let page = optionalPage else { return }
-                    page.getPropertiesWithCompletionHandler() { properties in
-                        guard let props = properties,
-                              let url = props.url,
-                              let host = url.host else { return }
-                        Task { @MainActor in
-                            self.host = host
-                            let list = self.defaults?.stringArray(forKey: "disabledSites") ?? []
-                            self.isDisabled = list.contains(host)
-                            
-                            // Load zapper rules after host is set
-                            self.loadZapperRules()
-                            
-                            os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))
-                        }
-                    }
-                }
+    public func loadState() async {
+        do {
+            guard let window = await SFSafariApplication.activeWindow(),
+                  let tab = await window.activeTab(),
+                  let page = await tab.activePage(),
+                  let properties = await page.properties(),
+                  let url = properties.url,
+                  let host = url.host else {
+                os_log(.info, "PopoverViewModel: Could not determine active host.")
+                self.host = "Unknown"
+                return
             }
+            
+            self.host = host
+            let list = self.defaults?.stringArray(forKey: "disabledSites") ?? []
+            self.isDisabled = list.contains(host)
+            
+            // Load zapper rules after host is set
+            self.loadZapperRules()
+            
+            os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))
         }
     }
 
@@ -60,32 +59,28 @@ public class PopoverViewModel: ObservableObject {
     }
     
     /// Activate the element zapper on the current page
-    public func activateElementZapper() {
+    public func activateElementZapper() async {
         os_log(.info, "PopoverViewModel: Activating element zapper")
         
-        SFSafariApplication.getActiveWindow { window in
-            window?.getActiveTab { tab in
-                tab?.getActivePage { optionalPage in
-                    guard let page = optionalPage else {
-                        os_log(.error, "PopoverViewModel: Failed to get active page for element zapper")
-                        return
-                    }
-                    
-                    // Send activation message to the page
-                    let message: [String: Any] = [
-                        "action": "activateZapper"
-                    ]
-                    
-                    page.dispatchMessageToScript(withName: "zapperController", userInfo: message)
-                    os_log(.info, "PopoverViewModel: Sent element zapper activation message")
-                    
-                    // Dismiss the popover after activating the zapper
-                    DispatchQueue.main.async {
-                        if let windowController = NSApp.keyWindow?.windowController {
-                            windowController.close()
-                        }
-                    }
-                }
+        do {
+            guard let window = await SFSafariApplication.activeWindow(),
+                  let tab = await window.activeTab(),
+                  let page = await tab.activePage() else {
+                os_log(.error, "PopoverViewModel: Failed to get active page for element zapper")
+                return
+            }
+            
+            // Send activation message to the page
+            let message: [String: Any] = [
+                "action": "activateZapper"
+            ]
+            
+            page.dispatchMessageToScript(withName: "zapperController", userInfo: message)
+            os_log(.info, "PopoverViewModel: Sent element zapper activation message")
+            
+            // Dismiss the popover after activating the zapper
+            if let windowController = NSApp.keyWindow?.windowController {
+                windowController.close()
             }
         }
     }
@@ -125,7 +120,9 @@ public class PopoverViewModel: ObservableObject {
         os_log(.info, "PopoverViewModel: Deleted zapper rule '%@' for host: %@, remaining: %d", rule, host, rules.count)
         
         // Reload the page to apply changes
-        reloadCurrentPage()
+        Task {
+            await reloadCurrentPage()
+        }
     }
     
     /// Delete all zapper rules for the current host
@@ -141,23 +138,23 @@ public class PopoverViewModel: ObservableObject {
         os_log(.info, "PopoverViewModel: Deleted all zapper rules for host: %@", host)
         
         // Reload the page to apply changes
-        reloadCurrentPage()
+        Task {
+            await reloadCurrentPage()
+        }
     }
     
     /// Reload the current page
-    private func reloadCurrentPage() {
-        SFSafariApplication.getActiveWindow { window in
-            window?.getActiveTab { tab in
-                tab?.getActivePage { optionalPage in
-                    guard let page = optionalPage else {
-                        os_log(.error, "PopoverViewModel: Failed to get active page for reload")
-                        return
-                    }
-                    
-                    page.reload()
-                    os_log(.info, "PopoverViewModel: Reloaded current page after rule deletion")
-                }
+    private func reloadCurrentPage() async {
+        do {
+            guard let window = await SFSafariApplication.activeWindow(),
+                  let tab = await window.activeTab(),
+                  let page = await tab.activePage() else {
+                os_log(.error, "PopoverViewModel: Failed to get active page for reload")
+                return
             }
+            
+            await page.reload()
+            os_log(.info, "PopoverViewModel: Reloaded current page after rule deletion")
         }
     }
     

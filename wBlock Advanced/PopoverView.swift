@@ -27,7 +27,9 @@ struct PopoverView: View {
             
             // Element Zapper button
             Button(action: {
-                viewModel.activateElementZapper()
+                Task {
+                    await viewModel.activateElementZapper()
+                }
             }) {
                 HStack {
                     Image(systemName: "target")
@@ -129,7 +131,9 @@ struct PopoverView: View {
         .padding(16)
         .frame(width: 300)
         .onAppear {
-            viewModel.loadState()
+            Task {
+                await viewModel.loadState()
+            }
         }
     }
 
