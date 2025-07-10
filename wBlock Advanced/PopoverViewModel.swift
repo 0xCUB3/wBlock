@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import SafariServices
 import wBlockCoreService
+import os.log
 
 /// ViewModel for PopoverView, managing state and persistence
 @MainActor
@@ -28,6 +29,7 @@ public class PopoverViewModel: ObservableObject {
                             self.host = host
                             let list = self.defaults?.stringArray(forKey: "disabledSites") ?? []
                             self.isDisabled = list.contains(host)
+                            os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))
                         }
                     }
                 }
@@ -35,7 +37,6 @@ public class PopoverViewModel: ObservableObject {
         }
     }
 
-    /// Save toggled disabled state for current host
     /// Save toggled disabled state for current host
     public func saveDisabledState() {
         guard !host.isEmpty else { return }
@@ -46,14 +47,9 @@ public class PopoverViewModel: ObservableObject {
             list.removeAll { $0 == host }
         }
         defaults?.setValue(list, forKey: "disabledSites")
-        // Reload the content blocker to apply change
-        // Reload the content blocker so the updated disabledSites takes effect
-        if let extID = Bundle.main.bundleIdentifier {
-            SFContentBlockerManager.reloadContentBlocker(withIdentifier: extID) { error in
-                if let error = error {
-                    print("Failed to reload content blocker: \(error.localizedDescription)")
-                }
-            }
-        }
+        
+        // The main app will automatically detect this change via UserDefaults observer
+        // and rebuild/reload all content blockers with the updated allowlist rules
+        os_log(.info, "PopoverViewModel: Updated disabled sites list for host: %@, isDisabled: %{BOOL}d, final list: %@", host, isDisabled, list.joined(separator: ", "))
     }
 }

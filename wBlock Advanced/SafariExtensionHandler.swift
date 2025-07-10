@@ -64,17 +64,24 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             // Convert the string into a URL. If valid, attempt to look up its
             // configuration or honor per-site disable.
             if let url = URL(string: urlString), let host = url.host {
-                // Check disabled sites list
+                // Check disabled sites list with subdomain support
                 let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
                 let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
-                if disabled.contains(host) {
+                
+                // Check if this host or any parent domain is disabled
+                let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+                
+                os_log(.info, "SafariExtensionHandler: Host '%@' disabled check: %{BOOL}d (disabled sites: %@)", host, isDisabled, disabled.joined(separator: ", "))
+                
+                if isDisabled {
                     // Send empty rules so content blocker does nothing
                     let emptyPayload: [String: Any] = [
                         "requestId": requestId,
-                        "payload": ["css": [], "extendedCss": [], "js": [], "scriptlets": []],
+                        "payload": ["css": [], "extendedCss": [], "js": [], "scriptlets": [], "userScripts": []],
                         "requestedAt": requestedAt,
                         "verbose": false
                     ]
+                    os_log(.info, "SafariExtensionHandler: Sending empty payload for disabled host: %@", host)
                     page.dispatchMessageToScript(withName: "requestRules", userInfo: emptyPayload)
                     return
                 }
@@ -150,6 +157,27 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             let urlString = userInfo?["url"] as? String ?? ""
             
             os_log(.info, "SafariExtensionHandler: Processing requestUserScripts for URL: %@", urlString)
+            
+            // Check if site is disabled before processing userscripts
+            if let url = URL(string: urlString), let host = url.host {
+                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+                let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
+                let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+                
+                os_log(.info, "SafariExtensionHandler: UserScripts - Host '%@' disabled check: %{BOOL}d", host, isDisabled)
+                
+                if isDisabled {
+                    // Send empty userscripts array for disabled sites
+                    let emptyResponse: [String: Any] = [
+                        "requestId": requestId,
+                        "userScripts": [],
+                        "verbose": false
+                    ]
+                    os_log(.info, "SafariExtensionHandler: Sending empty userscripts for disabled host: %@", host)
+                    page.dispatchMessageToScript(withName: "requestUserScripts", userInfo: emptyResponse)
+                    return
+                }
+            }
             
             Task { @MainActor in
                 let manager = userScriptManager
@@ -294,5 +322,28 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             let blockedCount = await ToolbarData.shared.getBlockedOnActiveTab(in: window)
             await SafariExtensionViewController.shared.updateBlockedCount(blockedCount)
         }
+    }
+    
+    /// Checks if a host is disabled, including subdomain matching.
+    /// For example, if "reddit.com" is disabled, this will return true for both "reddit.com" and "www.reddit.com"
+    ///
+    /// - Parameters:
+    ///   - host: The hostname to check
+    ///   - disabledSites: Array of disabled site hostnames
+    /// - Returns: True if the host or any parent domain is disabled
+    private func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
+        // Check for exact match first
+        if disabledSites.contains(host) {
+            return true
+        }
+        
+        // Check if any disabled site is a parent domain of this host
+        for disabledSite in disabledSites {
+            if host == disabledSite || host.hasSuffix("." + disabledSite) {
+                return true
+            }
+        }
+        
+        return false
     }
 }

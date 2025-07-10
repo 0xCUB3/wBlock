@@ -41,6 +41,10 @@ class AppFilterManager: ObservableObject {
     @Published var showingCategoryWarningAlert = false
     @Published var categoryWarningMessage = ""
     
+    // Performance tracking
+    @Published var lastFastUpdateTime: String = "N/A"
+    @Published var fastUpdateCount: Int = 0
+    
     // Detailed progress tracking
     @Published var sourceRulesCount: Int = 0
     @Published var conversionStageDescription: String = ""
@@ -58,6 +62,10 @@ class AppFilterManager: ObservableObject {
     private(set) var filterUpdater: FilterListUpdater
     private let logManager: ConcurrentLogManager
     private let groupUserDefaults: UserDefaults
+    
+    // Per-site disable tracking
+    private var lastKnownDisabledSites: [String] = []
+    private var disabledSitesCheckTimer: Timer?
 
     var customFilterLists: [FilterList] = []
     
@@ -91,9 +99,114 @@ class AppFilterManager: ObservableObject {
         // Load saved rule counts instead of reloading content blockers
         loadSavedRuleCounts()
         
+        // Set up observer for disabled sites changes
+        setupDisabledSitesObserver()
+        
         statusDescription = "Initialized with \(filterLists.count) filter list(s)."
         // Update versions and counts in background without applying changes
         Task { await updateVersionsAndCounts() }
+    }
+    
+    /// Sets up an observer to automatically rebuild content blockers when disabled sites change
+    private func setupDisabledSitesObserver() {
+        // Store the last known disabled sites to detect changes
+        lastKnownDisabledSites = groupUserDefaults.stringArray(forKey: "disabledSites") ?? []
+        
+        // Use a timer to periodically check for changes in disabled sites
+        // This is more reliable than UserDefaults notifications across app groups
+        disabledSitesCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.checkForDisabledSitesChanges()
+            }
+        }
+    }
+    
+    /// Checks for changes in disabled sites and triggers fast rebuild if needed
+    @MainActor
+    private func checkForDisabledSitesChanges() async {
+        let currentDisabledSites = groupUserDefaults.stringArray(forKey: "disabledSites") ?? []
+        
+        if currentDisabledSites != lastKnownDisabledSites {
+            await ConcurrentLogManager.shared.log("🔄 Disabled sites changed from \(lastKnownDisabledSites) to \(currentDisabledSites), fast rebuilding content blockers")
+            
+            lastKnownDisabledSites = currentDisabledSites
+            
+            // Only rebuild if we have applied filters (don't rebuild on startup)
+            if !hasUnappliedChanges && lastRuleCount > 0 {
+                await fastApplyDisabledSitesChanges()
+            }
+        }
+    }
+    
+    /// Clean up timer when the object is deallocated
+    deinit {
+        disabledSitesCheckTimer?.invalidate()
+    }
+    
+    /// Fast rebuild for disabled sites changes only - skips SafariConverterLib conversion
+    private func fastApplyDisabledSitesChanges() async {
+        await MainActor.run {
+            self.isLoading = true
+            self.statusDescription = "Updating disabled sites..."
+        }
+        
+        await ConcurrentLogManager.shared.log("🚀 Fast applying disabled sites changes without full conversion")
+        
+        // Get all platform targets that need updating
+        let platformTargets = await Task.detached {
+            ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+        }.value
+        
+        // Fast update each target's JSON files without full conversion
+        await MainActor.run {
+            self.conversionStageDescription = "Fast updating ignore rules..."
+        }
+        
+        await Task.detached {
+            for targetInfo in platformTargets {
+                // Use fast update method that only modifies ignore rules
+                _ = ContentBlockerService.fastUpdateDisabledSites(
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: targetInfo.rulesFilename
+                )
+            }
+        }.value
+        
+        // Now reload content blockers
+        await MainActor.run {
+            self.conversionStageDescription = "Reloading extensions..."
+        }
+        
+        let overallReloadStartTime = Date()
+        var successCount = 0
+        
+        for targetInfo in platformTargets {
+            let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
+            if reloadSuccess {
+                successCount += 1
+            }
+            
+            // Small delay between reloads to reduce memory pressure
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+        }
+        
+        let reloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
+        
+        await MainActor.run {
+            self.lastReloadTime = reloadTime
+            self.lastFastUpdateTime = reloadTime
+            self.fastUpdateCount += 1
+            self.isLoading = false
+            self.conversionStageDescription = ""
+            
+            if successCount == platformTargets.count {
+                self.statusDescription = "✅ Disabled sites updated successfully in \(reloadTime) (fast update #\(self.fastUpdateCount))"
+            } else {
+                self.statusDescription = "⚠️ Updated \(successCount)/\(platformTargets.count) extensions in \(reloadTime)"
+            }
+        }
+        
+        await ConcurrentLogManager.shared.log("✅ Fast disabled sites update completed: \(successCount)/\(platformTargets.count) extensions in \(reloadTime)")
     }
     
     private func loadSavedRuleCounts() {
