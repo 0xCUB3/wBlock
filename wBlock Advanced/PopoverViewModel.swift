@@ -99,10 +99,12 @@ public class PopoverViewModel: ObservableObject {
         
         os_log(.info, "PopoverViewModel: Loaded %d zapper rules for host: %@ (filtered from %d raw rules)", zapperRules.count, host, rawRules.count)
         
+        #if DEBUG
         // Debug: Log each rule
         for (index, rule) in zapperRules.enumerated() {
             os_log(.info, "PopoverViewModel: Rule %d: '%@' (length: %d)", index, rule, rule.count)
         }
+        #endif
     }
     
     /// Delete a specific zapper rule
