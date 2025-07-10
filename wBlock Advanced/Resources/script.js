@@ -25806,6 +25806,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const handleMessage = event => {
     log('Received message: ', event);
+    
+    // Handle zapper messages separately
+    if (event.name === 'zapperController') {
+      handleZapperMessage(event.name, event.message);
+      return;
+    }
+    
     // Cast the received event message to our expected
     // RequestRulesResponseMessage type.
     const message = event.message;
@@ -25867,4 +25874,657 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   safari.extension.dispatchMessage('requestRules', message);
   // Register the event listener for incoming messages from the extension.
   safari.self.addEventListener('message', handleMessage);
+  
+  // Element Zapper Integration
+  let zapperInstance = null;
+  
+  // Load element zapper on demand
+  function loadElementZapper() {
+    if (zapperInstance) {
+      zapperInstance.activate();
+      return zapperInstance;
+    }
+    
+    // Check if already loaded globally
+    if (window.wBlockZapperInstance) {
+      zapperInstance = window.wBlockZapperInstance;
+      zapperInstance.activate();
+      return zapperInstance;
+    }
+    
+    // Create a script element to inject the zapper code
+    const script = document.createElement('script');
+    script.textContent = getElementZapperCode();
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+    
+    // Initialize the zapper
+    if (window.wBlockZapperInstance) {
+      zapperInstance = window.wBlockZapperInstance;
+    }
+    
+    return zapperInstance;
+  }
+  
+  // Handle zapper activation messages
+  function handleZapperMessage(messageName, userInfo) {
+    if (messageName === 'zapperController') {
+      const action = userInfo?.action;
+      
+      switch (action) {
+        case 'activateZapper':
+          loadElementZapper();
+          break;
+          
+        case 'loadRulesResponse':
+          if (zapperInstance && zapperInstance.applyCustomRules) {
+            zapperInstance.applyCustomRules(userInfo.rules);
+          }
+          break;
+      }
+    }
+  }
+  
+  // Get element zapper JavaScript code
+  function getElementZapperCode() {
+    return `
+/**
+ * wBlock Element Zapper - Complete Implementation
+ * Safari-compatible element picker and hiding tool
+ */
+
+// Prevent duplicate class definition
+if (typeof window.WBlockElementZapper !== 'undefined') {
+    // Already loaded, just activate existing instance
+    if (window.wBlockZapperInstance) {
+        window.wBlockZapperInstance.activate();
+    }
+    // Don't execute the rest of the script
+} else {
+
+class WBlockElementZapper {
+    constructor() {
+        this.isActive = false;
+        this.isPickerMode = false;
+        this.isPreviewMode = false;
+        this.currentElement = null;
+        this.highlightedElements = [];
+        this.candidates = [];
+        this.selectedCandidateIndex = -1;
+        this.customRules = new Set();
+        
+        this.overlay = null;
+        this.toolbar = null;
+        this.pickerPanel = null;
+        
+        this.bindEvents();
+        this.loadCustomRules();
+    }
+
+    bindEvents() {
+        document.addEventListener('mouseover', this.onMouseOver.bind(this), true);
+        document.addEventListener('mouseout', this.onMouseOut.bind(this), true);
+        document.addEventListener('click', this.onClick.bind(this), true);
+        document.addEventListener('keydown', this.onKeyDown.bind(this), true);
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initializeUI());
+        } else {
+            this.initializeUI();
+        }
+    }
+
+    initializeUI() {
+        this.createZapperInterface();
+        this.activate();
+    }
+
+    createZapperInterface() {
+        // Create overlay
+        this.overlay = document.createElement('div');
+        this.overlay.id = 'wblock-zapper-overlay';
+        this.overlay.style.cssText = \`
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            pointer-events: none !important;
+            z-index: 2147483647 !important;
+            background: transparent !important;
+        \`;
+        document.documentElement.appendChild(this.overlay);
+
+        // Create toolbar
+        this.toolbar = document.createElement('div');
+        this.toolbar.id = 'wblock-zapper-toolbar';
+        this.toolbar.style.cssText = \`
+            position: fixed !important;
+            top: 10px !important;
+            right: 10px !important;
+            background: #1c1c1e !important;
+            border: 1px solid #2c2c2e !important;
+            border-radius: 8px !important;
+            padding: 8px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            display: flex !important;
+            gap: 8px !important;
+            align-items: center !important;
+            pointer-events: auto !important;
+            z-index: 2147483648 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            font-size: 13px !important;
+        \`;
+        
+        this.toolbar.innerHTML = \`
+            <span class="zapper-status" style="font-size: 12px; color: #8e8e93; font-weight: 500;">Click elements to hide them</span>
+            <button class="zapper-button" id="toggle-picker" style="background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center;">Selector</button>
+            <button class="zapper-button danger" id="quit-zapper" style="background: #FF453A; color: #ffffff; border: 1px solid #FF453A; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center;">Exit</button>
+        \`;
+
+        // Create picker panel
+        this.pickerPanel = document.createElement('div');
+        this.pickerPanel.id = 'wblock-picker-panel';
+        this.pickerPanel.style.cssText = \`
+            position: fixed !important;
+            top: 60px !important;
+            right: 10px !important;
+            width: 300px !important;
+            max-height: 400px !important;
+            background: #1c1c1e !important;
+            border: 1px solid #2c2c2e !important;
+            border-radius: 8px !important;
+            padding: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            pointer-events: auto !important;
+            z-index: 2147483648 !important;
+            display: none !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            color: #ffffff !important;
+        \`;
+        
+        this.pickerPanel.innerHTML = \`
+            <div class="picker-section" style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #8e8e93;">CSS Selector</h4>
+                <textarea id="selector-input" placeholder="div.ad, .banner, [data-ad]" style="width: 100%; padding: 8px; border: 1px solid #2c2c2e; border-radius: 4px; background: #1c1c1e; color: #ffffff; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 11px; resize: none; min-height: 60px;"></textarea>
+                <div class="element-count" id="element-count" style="font-size: 11px; color: #8e8e93; margin-top: 4px;">Enter a CSS selector</div>
+            </div>
+
+            <div class="picker-section" style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #8e8e93;">Suggested Selectors</h4>
+                <div class="candidates-list" id="candidates-list" style="max-height: 120px; overflow-y: auto; border: 1px solid #2c2c2e; border-radius: 4px; background: #1c1c1e;"></div>
+            </div>
+
+            <div class="button-group" style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="zapper-button" id="preview-btn" style="flex: 1; background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500;">Preview</button>
+                <button class="zapper-button primary" id="create-rule-btn" style="flex: 1; background: #0A84FF; color: #ffffff; border: 1px solid #0A84FF; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500;">Create Rule</button>
+            </div>
+        \`;
+
+        this.overlay.appendChild(this.toolbar);
+        this.overlay.appendChild(this.pickerPanel);
+
+        // Bind UI events after elements are in DOM
+        this.bindUIEvents();
+    }
+
+    bindUIEvents() {
+        const quitButton = document.getElementById('quit-zapper');
+        const toggleButton = document.getElementById('toggle-picker');
+        const previewButton = document.getElementById('preview-btn');
+        const createButton = document.getElementById('create-rule-btn');
+        const selectorInput = document.getElementById('selector-input');
+
+        if (quitButton) quitButton.addEventListener('click', () => this.quit());
+        if (toggleButton) toggleButton.addEventListener('click', () => this.togglePicker());
+        if (previewButton) previewButton.addEventListener('click', () => this.togglePreview());
+        if (createButton) createButton.addEventListener('click', () => this.createRule());
+        
+        if (selectorInput) {
+            selectorInput.addEventListener('input', () => this.onSelectorInput());
+            selectorInput.addEventListener('focus', () => this.onSelectorFocus());
+        }
+    }
+
+    activate() {
+        this.isActive = true;
+        document.body.style.cursor = 'crosshair';
+        this.updateStatus('Click elements to hide them');
+    }
+
+    quit() {
+        this.isActive = false;
+        this.isPickerMode = false;
+        this.isPreviewMode = false;
+        
+        this.clearHighlights();
+        this.clearPreviews();
+        document.body.style.cursor = '';
+        
+        if (this.overlay && this.overlay.parentNode) {
+            this.overlay.parentNode.removeChild(this.overlay);
+        }
+        
+        if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', { action: 'quit' });
+        }
+    }
+
+    togglePicker() {
+        this.isPickerMode = !this.isPickerMode;
+        this.pickerPanel.style.display = this.isPickerMode ? 'block' : 'none';
+        
+        if (this.isPickerMode) {
+            this.updateStatus('Select elements to build CSS selector');
+            document.getElementById('toggle-picker').textContent = 'Hide';
+        } else {
+            this.updateStatus('Click elements to hide them');
+            document.getElementById('toggle-picker').textContent = 'Selector';
+            this.clearPreviews();
+        }
+    }
+
+    onMouseOver(event) {
+        if (!this.isActive || this.isPreviewMode) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const element = event.target;
+        if (this.shouldIgnoreElement(element)) return;
+        
+        this.currentElement = element;
+        this.highlightElement(element);
+        
+        if (this.isPickerMode) {
+            this.generateCandidates(element);
+        }
+    }
+
+    onMouseOut(event) {
+        if (!this.isActive || this.isPreviewMode) return;
+        this.clearHighlights();
+        this.currentElement = null;
+    }
+
+    onClick(event) {
+        if (!this.isActive) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const element = event.target;
+        if (this.shouldIgnoreElement(element)) return;
+        
+        if (this.isPickerMode) {
+            this.selectElementForPicker(element);
+        } else {
+            this.zapElement(element);
+        }
+    }
+
+    onKeyDown(event) {
+        if (!this.isActive) return;
+        
+        switch (event.key) {
+            case 'Escape':
+                event.preventDefault();
+                this.quit();
+                break;
+            case 'Delete':
+            case 'Backspace':
+                if (this.currentElement && !this.isPickerMode) {
+                    event.preventDefault();
+                    this.zapElement(this.currentElement);
+                }
+                break;
+            case 'p':
+            case 'P':
+                if (!this.isPickerMode) {
+                    event.preventDefault();
+                    this.togglePicker();
+                }
+                break;
+            case 'Enter':
+                if (this.currentElement && !this.isPickerMode) {
+                    event.preventDefault();
+                    this.zapElement(this.currentElement);
+                }
+                break;
+        }
+    }
+
+    shouldIgnoreElement(element) {
+        if (!element || element === document.documentElement || element === document.body) {
+            return true;
+        }
+        
+        if (element.closest('#wblock-zapper-toolbar') || 
+            element.closest('#wblock-picker-panel') ||
+            element.closest('#wblock-zapper-overlay')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    highlightElement(element) {
+        this.clearHighlights();
+        
+        const rect = element.getBoundingClientRect();
+        const highlight = document.createElement('div');
+        highlight.className = 'element-highlight';
+        highlight.style.cssText = \`
+            position: fixed !important;
+            top: \${rect.top}px !important;
+            left: \${rect.left}px !important;
+            width: \${rect.width}px !important;
+            height: \${rect.height}px !important;
+            border: 2px solid #007AFF !important;
+            background: rgba(0, 122, 255, 0.1) !important;
+            box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.3) !important;
+            pointer-events: none !important;
+            z-index: 2147483646 !important;
+        \`;
+        
+        this.overlay.appendChild(highlight);
+        this.highlightedElements.push(highlight);
+    }
+
+    clearHighlights() {
+        this.highlightedElements.forEach(highlight => {
+            if (highlight.parentNode) {
+                highlight.parentNode.removeChild(highlight);
+            }
+        });
+        this.highlightedElements = [];
+    }
+
+    zapElement(element) {
+        if (!element) return;
+        
+        const selector = this.generateSimpleSelector(element);
+        this.applyHidingRule(selector);
+        this.saveCustomRule(selector);
+        
+        this.updateStatus(\`Hidden: \${selector}\`);
+        this.clearHighlights();
+    }
+
+    generateSimpleSelector(element) {
+        const parts = [];
+        
+        parts.push(element.tagName.toLowerCase());
+        
+        if (element.id) {
+            return \`#\${CSS.escape(element.id)}\`;
+        }
+        
+        if (element.className && typeof element.className === 'string') {
+            const classes = element.className.trim().split(/\\s+/);
+            const escapedClasses = classes.map(cls => CSS.escape(cls)).join('.');
+            return \`.\${escapedClasses}\`;
+        }
+        
+        return parts.join('');
+    }
+
+    applyHidingRule(selector) {
+        let styleElement = document.getElementById('wblock-custom-rules');
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = 'wblock-custom-rules';
+            styleElement.type = 'text/css';
+            document.head.appendChild(styleElement);
+        }
+        
+        const rule = \`\${selector} { display: none !important; }\`;
+        styleElement.textContent += rule + '\\n';
+    }
+
+    saveCustomRule(selector) {
+        this.customRules.add(selector);
+        
+        if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', {
+                action: 'saveRule',
+                selector: selector,
+                hostname: location.hostname
+            });
+        }
+    }
+
+    loadCustomRules() {
+        if (safari && safari.extension) {
+            safari.extension.dispatchMessage('zapperController', {
+                action: 'loadRules',
+                hostname: location.hostname
+            });
+        }
+    }
+
+    applyCustomRules(rules) {
+        if (!rules || !Array.isArray(rules)) return;
+        
+        rules.forEach(selector => {
+            this.customRules.add(selector);
+            this.applyHidingRule(selector);
+        });
+    }
+
+    generateCandidates(element) {
+        this.candidates = [];
+        
+        let current = element;
+        const selectorParts = [];
+        
+        while (current && current !== document.documentElement) {
+            const parts = [];
+            
+            parts.push(current.tagName.toLowerCase());
+            
+            if (current.id) {
+                parts.push(\`#\${CSS.escape(current.id)}\`);
+            }
+            
+            if (current.className && typeof current.className === 'string') {
+                const classes = current.className.trim().split(/\\s+/);
+                classes.slice(0, 3).forEach(cls => {
+                    if (cls) {
+                        parts.push(\`.\${CSS.escape(cls)}\`);
+                    }
+                });
+            }
+            
+            const elementSelector = parts.join('');
+            selectorParts.unshift(elementSelector);
+            
+            for (let i = 0; i < selectorParts.length; i++) {
+                const candidate = selectorParts.slice(i).join(' > ');
+                if (!this.candidates.includes(candidate)) {
+                    this.candidates.push(candidate);
+                }
+            }
+            
+            current = current.parentElement;
+        }
+        
+        this.updateCandidatesList();
+    }
+
+    updateCandidatesList() {
+        const candidatesList = document.getElementById('candidates-list');
+        if (!candidatesList) return;
+        
+        candidatesList.innerHTML = '';
+        
+        this.candidates.slice(0, 10).forEach((candidate, index) => {
+            const item = document.createElement('div');
+            item.className = 'candidate-item';
+            item.style.cssText = \`
+                padding: 6px 8px;
+                cursor: pointer;
+                font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+                font-size: 10px;
+                border-bottom: 1px solid #2c2c2e;
+                word-break: break-all;
+                color: #ffffff;
+            \`;
+            item.textContent = candidate;
+            item.addEventListener('click', () => {
+                this.selectCandidate(index);
+            });
+            candidatesList.appendChild(item);
+        });
+    }
+
+    selectCandidate(index) {
+        this.selectedCandidateIndex = index;
+        const candidate = this.candidates[index];
+        
+        document.getElementById('selector-input').value = candidate;
+        
+        document.querySelectorAll('.candidate-item').forEach((item, i) => {
+            if (i === index) {
+                item.style.background = '#0A84FF';
+            } else {
+                item.style.background = 'transparent';
+            }
+        });
+        
+        this.previewSelector(candidate);
+        this.updateElementCount(candidate);
+    }
+
+    onSelectorInput() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (selector) {
+            this.previewSelector(selector);
+            this.updateElementCount(selector);
+        } else {
+            this.clearPreviews();
+        }
+    }
+
+    onSelectorFocus() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (selector) {
+            this.previewSelector(selector);
+        }
+    }
+
+    previewSelector(selector) {
+        this.clearPreviews();
+        
+        try {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (!this.shouldIgnoreElement(element)) {
+                    element.style.setProperty('border', '2px dashed #FF3B30', 'important');
+                    element.style.setProperty('background', 'rgba(255, 59, 48, 0.15)', 'important');
+                    element.style.setProperty('opacity', '0.7', 'important');
+                    element.classList.add('wblock-preview-element');
+                }
+            });
+        } catch (e) {
+            // Invalid selector
+        }
+    }
+
+    clearPreviews() {
+        document.querySelectorAll('.wblock-preview-element').forEach(element => {
+            element.style.removeProperty('border');
+            element.style.removeProperty('background');
+            element.style.removeProperty('opacity');
+            element.classList.remove('wblock-preview-element');
+        });
+    }
+
+    togglePreview() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (!selector) return;
+        
+        this.isPreviewMode = !this.isPreviewMode;
+        
+        if (this.isPreviewMode) {
+            this.previewSelector(selector);
+            document.getElementById('preview-btn').textContent = 'Stop Preview';
+            this.updateStatus('Previewing selector');
+        } else {
+            this.clearPreviews();
+            document.getElementById('preview-btn').textContent = 'Preview';
+            this.updateStatus('Select elements to build CSS selector');
+        }
+    }
+
+    updateElementCount(selector) {
+        const countElement = document.getElementById('element-count');
+        
+        if (!selector) {
+            countElement.textContent = 'Enter a CSS selector';
+            return;
+        }
+        
+        try {
+            const elements = document.querySelectorAll(selector);
+            const count = elements.length;
+            countElement.textContent = count === 1 ? '1 element' : \`\${count} elements\`;
+        } catch (e) {
+            countElement.textContent = 'Invalid selector';
+        }
+    }
+
+    createRule() {
+        const selector = document.getElementById('selector-input').value.trim();
+        if (!selector) return;
+        
+        try {
+            document.querySelectorAll(selector);
+        } catch (e) {
+            alert('Invalid CSS selector');
+            return;
+        }
+        
+        this.applyHidingRule(selector);
+        this.saveCustomRule(selector);
+        
+        this.updateStatus(\`Rule created: \${selector}\`);
+        
+        document.getElementById('selector-input').value = '';
+        this.clearPreviews();
+        this.updateElementCount('');
+        
+        this.isPickerMode = false;
+        this.pickerPanel.style.display = 'none';
+        document.getElementById('toggle-picker').textContent = 'Selector';
+        this.updateStatus('Click elements to hide them');
+    }
+
+    selectElementForPicker(element) {
+        this.generateCandidates(element);
+        
+        if (this.candidates.length > 0) {
+            this.selectCandidate(0);
+        }
+    }
+
+    updateStatus(message) {
+        const statusElement = document.querySelector('.zapper-status');
+        if (statusElement) {
+            statusElement.textContent = message;
+        }
+    }
+}
+
+// Export for external access and create global instance
+window.WBlockElementZapper = WBlockElementZapper;
+
+// Create and store global instance
+if (!window.wBlockZapperInstance) {
+    window.wBlockZapperInstance = new WBlockElementZapper();
+}
+
+} // End of else block for duplicate prevention
+`;
+  }
 })();

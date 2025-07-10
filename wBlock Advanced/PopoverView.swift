@@ -24,6 +24,25 @@ struct PopoverView: View {
             }
             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
             .padding(.top, 8)
+            
+            // Element Zapper button
+            Button(action: {
+                viewModel.activateElementZapper()
+            }) {
+                HStack {
+                    Image(systemName: "target")
+                        .foregroundColor(.white)
+                    Text("Element Zapper")
+                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(Color.orange)
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.top, 4)
         }
         .padding(16)
         .frame(width: 300)

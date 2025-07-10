@@ -52,4 +52,35 @@ public class PopoverViewModel: ObservableObject {
         // and rebuild/reload all content blockers with the updated allowlist rules
         os_log(.info, "PopoverViewModel: Updated disabled sites list for host: %@, isDisabled: %{BOOL}d, final list: %@", host, isDisabled, list.joined(separator: ", "))
     }
+    
+    /// Activate the element zapper on the current page
+    public func activateElementZapper() {
+        os_log(.info, "PopoverViewModel: Activating element zapper")
+        
+        SFSafariApplication.getActiveWindow { window in
+            window?.getActiveTab { tab in
+                tab?.getActivePage { optionalPage in
+                    guard let page = optionalPage else {
+                        os_log(.error, "PopoverViewModel: Failed to get active page for element zapper")
+                        return
+                    }
+                    
+                    // Send activation message to the page
+                    let message: [String: Any] = [
+                        "action": "activateZapper"
+                    ]
+                    
+                    page.dispatchMessageToScript(withName: "zapperController", userInfo: message)
+                    os_log(.info, "PopoverViewModel: Sent element zapper activation message")
+                    
+                    // Dismiss the popover after activating the zapper
+                    DispatchQueue.main.async {
+                        if let windowController = NSApp.keyWindow?.windowController {
+                            windowController.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
