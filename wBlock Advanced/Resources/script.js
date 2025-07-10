@@ -26017,9 +26017,9 @@ class WBlockElementZapper {
         \`;
         
         this.toolbar.innerHTML = \`
-            <span class="zapper-status" style="font-size: 12px; color: #8e8e93; font-weight: 500;">Click elements to hide them</span>
-            <button class="zapper-button" id="toggle-picker" style="background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center;">Selector</button>
-            <button class="zapper-button danger" id="quit-zapper" style="background: #FF453A; color: #ffffff; border: 1px solid #FF453A; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center;">Exit</button>
+            <span class="zapper-status" style="font-size: 12px; color: #8e8e93; font-weight: 500; pointer-events: none;">Click elements to hide them</span>
+            <button class="zapper-button" id="toggle-picker" style="background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; pointer-events: auto; position: relative; z-index: 2147483649;">Selector</button>
+            <button class="zapper-button danger" id="quit-zapper" style="background: #FF453A; color: #ffffff; border: 1px solid #FF453A; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; pointer-events: auto; position: relative; z-index: 2147483649;">Exit</button>
         \`;
 
         // Create picker panel
@@ -26056,8 +26056,8 @@ class WBlockElementZapper {
             </div>
 
             <div class="button-group" style="display: flex; gap: 8px; margin-top: 12px;">
-                <button class="zapper-button" id="preview-btn" style="flex: 1; background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500;">Preview</button>
-                <button class="zapper-button primary" id="create-rule-btn" style="flex: 1; background: #0A84FF; color: #ffffff; border: 1px solid #0A84FF; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500;">Create Rule</button>
+                <button class="zapper-button" id="preview-btn" style="flex: 1; background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; pointer-events: auto; position: relative; z-index: 2147483649;">Preview</button>
+                <button class="zapper-button primary" id="create-rule-btn" style="flex: 1; background: #0A84FF; color: #ffffff; border: 1px solid #0A84FF; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; pointer-events: auto; position: relative; z-index: 2147483649;">Create Rule</button>
             </div>
         \`;
 
@@ -26069,21 +26069,56 @@ class WBlockElementZapper {
     }
 
     bindUIEvents() {
-        const quitButton = document.getElementById('quit-zapper');
-        const toggleButton = document.getElementById('toggle-picker');
-        const previewButton = document.getElementById('preview-btn');
-        const createButton = document.getElementById('create-rule-btn');
-        const selectorInput = document.getElementById('selector-input');
+        // Use setTimeout to ensure DOM is fully ready
+        setTimeout(() => {
+            const quitButton = document.getElementById('quit-zapper');
+            const toggleButton = document.getElementById('toggle-picker');
+            const previewButton = document.getElementById('preview-btn');
+            const createButton = document.getElementById('create-rule-btn');
+            const selectorInput = document.getElementById('selector-input');
 
-        if (quitButton) quitButton.addEventListener('click', () => this.quit());
-        if (toggleButton) toggleButton.addEventListener('click', () => this.togglePicker());
-        if (previewButton) previewButton.addEventListener('click', () => this.togglePreview());
-        if (createButton) createButton.addEventListener('click', () => this.createRule());
-        
-        if (selectorInput) {
-            selectorInput.addEventListener('input', () => this.onSelectorInput());
-            selectorInput.addEventListener('focus', () => this.onSelectorFocus());
-        }
+            console.log('Binding UI events - quit button:', quitButton);
+            console.log('Binding UI events - toggle button:', toggleButton);
+
+            if (quitButton) {
+                quitButton.addEventListener('click', (e) => {
+                    console.log('Quit button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.quit();
+                }, true);
+            }
+            
+            if (toggleButton) {
+                toggleButton.addEventListener('click', (e) => {
+                    console.log('Toggle button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.togglePicker();
+                }, true);
+            }
+            
+            if (previewButton) {
+                previewButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.togglePreview();
+                }, true);
+            }
+            
+            if (createButton) {
+                createButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.createRule();
+                }, true);
+            }
+            
+            if (selectorInput) {
+                selectorInput.addEventListener('input', () => this.onSelectorInput());
+                selectorInput.addEventListener('focus', () => this.onSelectorFocus());
+            }
+        }, 100);
     }
 
     activate() {
@@ -26150,11 +26185,16 @@ class WBlockElementZapper {
     onClick(event) {
         if (!this.isActive) return;
         
+        const element = event.target;
+        
+        // Check if this is a click on our UI elements - let them handle it
+        if (this.shouldIgnoreElement(element)) {
+            console.log('Click on UI element, ignoring:', element);
+            return;
+        }
+        
         event.preventDefault();
         event.stopPropagation();
-        
-        const element = event.target;
-        if (this.shouldIgnoreElement(element)) return;
         
         if (this.isPickerMode) {
             this.selectElementForPicker(element);
@@ -26199,9 +26239,15 @@ class WBlockElementZapper {
             return true;
         }
         
+        // Check if element or any parent is part of the zapper UI
         if (element.closest('#wblock-zapper-toolbar') || 
             element.closest('#wblock-picker-panel') ||
-            element.closest('#wblock-zapper-overlay')) {
+            element.closest('#wblock-zapper-overlay') ||
+            element.id === 'wblock-zapper-toolbar' ||
+            element.id === 'wblock-picker-panel' ||
+            element.id === 'wblock-zapper-overlay' ||
+            element.classList.contains('zapper-button') ||
+            element.classList.contains('zapper-status')) {
             return true;
         }
         
