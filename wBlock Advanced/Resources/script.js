@@ -26207,6 +26207,7 @@ class WBlockElementZapper {
         this.isPickerMode = false;
         this.isPreviewMode = false;
         this.currentElement = null;
+        this.lastClickedElement = null; // Track clicked element for suggestions
         this.highlightedElements = [];
         this.candidates = [];
         this.selectedCandidateIndex = -1;
@@ -26449,12 +26450,14 @@ class WBlockElementZapper {
         this.pickerPanel.style.display = this.isPickerMode ? 'block' : 'none';
         
         if (this.isPickerMode) {
-            this.updateStatus('Select elements to build CSS selector');
+            this.updateStatus('Click an element to generate CSS selectors');
             document.getElementById('toggle-picker').textContent = 'Hide';
+            this.lastClickedElement = null; // Reset clicked element
         } else {
             this.updateStatus('Click elements to hide them');
             document.getElementById('toggle-picker').textContent = 'Selector';
             this.clearPreviews();
+            this.lastClickedElement = null; // Reset clicked element
         }
     }
 
@@ -26470,7 +26473,8 @@ class WBlockElementZapper {
         this.currentElement = element;
         this.highlightElement(element);
         
-        if (this.isPickerMode) {
+        // Only generate candidates on hover if nothing has been clicked yet
+        if (this.isPickerMode && !this.lastClickedElement) {
             this.generateCandidates(element);
         }
     }
@@ -26496,7 +26500,10 @@ class WBlockElementZapper {
         event.stopPropagation();
         
         if (this.isPickerMode) {
-            this.selectElementForPicker(element);
+            // Store the clicked element and generate candidates
+            this.lastClickedElement = element;
+            this.generateCandidates(element);
+            this.updateStatus('Element selected - choose a CSS selector below');
         } else {
             this.zapElement(element);
         }
@@ -26811,10 +26818,41 @@ class WBlockElementZapper {
             const elements = document.querySelectorAll(selector);
             elements.forEach(element => {
                 if (!this.shouldIgnoreElement(element)) {
-                    element.style.setProperty('border', '2px dashed #FF3B30', 'important');
-                    element.style.setProperty('background', 'rgba(255, 59, 48, 0.15)', 'important');
-                    element.style.setProperty('opacity', '0.7', 'important');
+                    // Actually hide elements like the real rule would, but with a visual indicator
+                    element.style.setProperty('display', 'none', 'important');
                     element.classList.add('wblock-preview-element');
+                    
+                    // Add a placeholder to show where the element was
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'wblock-preview-placeholder';
+                    placeholder.style.cssText = \`
+                        background: rgba(255, 59, 48, 0.2) !important;
+                        border: 2px dashed #FF3B30 !important;
+                        padding: 4px 8px !important;
+                        margin: 2px !important;
+                        border-radius: 4px !important;
+                        font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+                        font-size: 11px !important;
+                        color: #FF3B30 !important;
+                        text-align: center !important;
+                        pointer-events: none !important;
+                        z-index: 1000 !important;
+                        white-space: nowrap !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                        max-width: 300px !important;
+                    \`;
+                    
+                    // Create compact preview text
+                    let previewText = selector;
+                    if (selector.length > 40) {
+                        previewText = selector.substring(0, 37) + '...';
+                    }
+                    placeholder.textContent = \`🎯 PREVIEW: \${previewText}\`;
+                    
+                    // Insert placeholder where the element was
+                    element.parentNode.insertBefore(placeholder, element);
+                    element.placeholderElement = placeholder;
                 }
             });
         } catch (e) {
@@ -26824,10 +26862,21 @@ class WBlockElementZapper {
 
     clearPreviews() {
         document.querySelectorAll('.wblock-preview-element').forEach(element => {
-            element.style.removeProperty('border');
-            element.style.removeProperty('background');
-            element.style.removeProperty('opacity');
+            element.style.removeProperty('display');
             element.classList.remove('wblock-preview-element');
+            
+            // Remove placeholder if it exists
+            if (element.placeholderElement && element.placeholderElement.parentNode) {
+                element.placeholderElement.parentNode.removeChild(element.placeholderElement);
+                delete element.placeholderElement;
+            }
+        });
+        
+        // Clean up any orphaned placeholders
+        document.querySelectorAll('.wblock-preview-placeholder').forEach(placeholder => {
+            if (placeholder.parentNode) {
+                placeholder.parentNode.removeChild(placeholder);
+            }
         });
     }
 
@@ -26840,11 +26889,11 @@ class WBlockElementZapper {
         if (this.isPreviewMode) {
             this.previewSelector(selector);
             document.getElementById('preview-btn').textContent = 'Stop Preview';
-            this.updateStatus('Previewing selector');
+            this.updateStatus('Preview: Elements will be hidden like this');
         } else {
             this.clearPreviews();
             document.getElementById('preview-btn').textContent = 'Preview';
-            this.updateStatus('Select elements to build CSS selector');
+            this.updateStatus(this.lastClickedElement ? 'Element selected - choose a CSS selector below' : 'Click an element to generate CSS selectors');
         }
     }
 
@@ -26888,6 +26937,7 @@ class WBlockElementZapper {
         this.isPickerMode = false;
         this.pickerPanel.style.display = 'none';
         document.getElementById('toggle-picker').textContent = 'Selector';
+        this.lastClickedElement = null; // Reset clicked element
         this.updateStatus('Click elements to hide them');
     }
 
