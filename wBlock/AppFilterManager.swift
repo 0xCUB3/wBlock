@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import wBlockCoreService
+import SafariServices
 
 #if os(macOS)
 let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters"
@@ -406,13 +407,13 @@ class AppFilterManager: ObservableObject {
         let categoryName = targetInfo.primaryCategory.rawValue
         
         for attempt in 1...maxRetries {
-            do {
-                try await SFSafariApplication.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+            let result = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+            if case .success = result {
                 if attempt > 1 {
                     await ConcurrentLogManager.shared.log("✅ \(categoryName) reloaded successfully (attempt \(attempt))")
                 }
                 return true
-            } catch {
+            } else if case .failure(let error) = result {
                 if attempt == 1 || attempt == maxRetries {
                     await ConcurrentLogManager.shared.log("❌ \(categoryName) \(attempt == maxRetries ? "FAILED after \(maxRetries) attempts" : "reload failed"): \(error.localizedDescription)")
                 }
@@ -475,7 +476,7 @@ class AppFilterManager: ObservableObject {
                 let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
                 for targetInfo in platformTargets {
                     _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
-                    await reloadContentBlockerWithRetry(targetInfo: targetInfo)
+                    await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 }
             }.value
             
@@ -1180,3 +1181,4 @@ class AppFilterManager: ObservableObject {
         filterUpdater.userScriptManager = userScriptManager
     }
 }
+
