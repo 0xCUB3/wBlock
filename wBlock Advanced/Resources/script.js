@@ -26277,8 +26277,8 @@ class WBlockElementZapper {
         
         this.toolbar.innerHTML = \`
             <span class="zapper-status" style="font-size: 12px; color: #8e8e93; font-weight: 500; pointer-events: none;">Click elements to hide them</span>
-            <button class="zapper-button" id="toggle-picker" style="background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; pointer-events: auto; position: relative; z-index: 2147483649;">Selector</button>
-            <button class="zapper-button danger" id="quit-zapper" style="background: #FF453A; color: #ffffff; border: 1px solid #FF453A; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; pointer-events: auto; position: relative; z-index: 2147483649;">Exit</button>
+            <button class="zapper-button" id="toggle-picker" style="background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; line-height: 1; display: inline-flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Selector</button>
+            <button class="zapper-button danger" id="quit-zapper" style="background: #FF453A; color: #ffffff; border: 1px solid #FF453A; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; min-width: 60px; text-align: center; line-height: 1; display: inline-flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Exit</button>
         \`;
 
         // Create picker panel
@@ -26315,8 +26315,8 @@ class WBlockElementZapper {
             </div>
 
             <div class="button-group" style="display: flex; gap: 8px; margin-top: 12px;">
-                <button class="zapper-button" id="preview-btn" style="flex: 1; background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; pointer-events: auto; position: relative; z-index: 2147483649;">Preview</button>
-                <button class="zapper-button primary" id="create-rule-btn" style="flex: 1; background: #0A84FF; color: #ffffff; border: 1px solid #0A84FF; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; pointer-events: auto; position: relative; z-index: 2147483649;">Create Rule</button>
+                <button class="zapper-button" id="preview-btn" style="flex: 1; background: #2c2c2e; border: 1px solid #2c2c2e; border-radius: 6px; padding: 8px 12px; cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Preview</button>
+                <button class="zapper-button primary" id="create-rule-btn" style="flex: 1; background: #0A84FF; color: #ffffff; border: 1px solid #0A84FF; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 2147483649;">Create Rule</button>
             </div>
         \`;
 

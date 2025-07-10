@@ -31,7 +31,10 @@ public class PopoverViewModel: ObservableObject {
                             self.host = host
                             let list = self.defaults?.stringArray(forKey: "disabledSites") ?? []
                             self.isDisabled = list.contains(host)
-                            self.loadZapperRules() // Load zapper rules when state is loaded
+                            
+                            // Load zapper rules after host is set
+                            self.loadZapperRules()
+                            
                             os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))
                         }
                     }
@@ -89,10 +92,22 @@ public class PopoverViewModel: ObservableObject {
     
     /// Load zapper rules for the current host
     public func loadZapperRules() {
-        guard !host.isEmpty else { return }
+        guard !host.isEmpty else { 
+            os_log(.info, "PopoverViewModel: Cannot load zapper rules - host is empty")
+            return 
+        }
         let key = "zapperRules_\(host)"
-        zapperRules = defaults?.stringArray(forKey: key) ?? []
-        os_log(.info, "PopoverViewModel: Loaded %d zapper rules for host: %@", zapperRules.count, host)
+        let rawRules = defaults?.stringArray(forKey: key) ?? []
+        
+        // Filter out empty or whitespace-only rules
+        zapperRules = rawRules.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        os_log(.info, "PopoverViewModel: Loaded %d zapper rules for host: %@ (filtered from %d raw rules)", zapperRules.count, host, rawRules.count)
+        
+        // Debug: Log each rule
+        for (index, rule) in zapperRules.enumerated() {
+            os_log(.info, "PopoverViewModel: Rule %d: '%@' (length: %d)", index, rule, rule.count)
+        }
     }
     
     /// Delete a specific zapper rule
@@ -108,6 +123,9 @@ public class PopoverViewModel: ObservableObject {
         zapperRules = rules
         
         os_log(.info, "PopoverViewModel: Deleted zapper rule '%@' for host: %@, remaining: %d", rule, host, rules.count)
+        
+        // Reload the page to apply changes
+        reloadCurrentPage()
     }
     
     /// Delete all zapper rules for the current host
@@ -121,13 +139,35 @@ public class PopoverViewModel: ObservableObject {
         zapperRules = []
         
         os_log(.info, "PopoverViewModel: Deleted all zapper rules for host: %@", host)
+        
+        // Reload the page to apply changes
+        reloadCurrentPage()
+    }
+    
+    /// Reload the current page
+    private func reloadCurrentPage() {
+        SFSafariApplication.getActiveWindow { window in
+            window?.getActiveTab { tab in
+                tab?.getActivePage { optionalPage in
+                    guard let page = optionalPage else {
+                        os_log(.error, "PopoverViewModel: Failed to get active page for reload")
+                        return
+                    }
+                    
+                    page.reload()
+                    os_log(.info, "PopoverViewModel: Reloaded current page after rule deletion")
+                }
+            }
+        }
     }
     
     /// Toggle the visibility of zapper rules section
     public func toggleZapperRules() {
         showingZapperRules.toggle()
         if showingZapperRules {
+            // Always reload rules when expanding to ensure fresh data
             loadZapperRules()
+            os_log(.info, "PopoverViewModel: Toggled zapper rules visibility to %{BOOL}d, reloaded %d rules", showingZapperRules, zapperRules.count)
         }
     }
 }

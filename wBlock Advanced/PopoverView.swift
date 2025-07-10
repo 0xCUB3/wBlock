@@ -72,6 +72,35 @@ struct PopoverView: View {
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 8)
                         } else {
+                            // Rules list
+                            VStack(spacing: 3) {
+                                ForEach(viewModel.zapperRules, id: \.self) { rule in
+                                    HStack {
+                                        Text(rule.isEmpty ? "(empty rule)" : rule)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                        
+                                        Spacer()
+                                        
+                                        Button(action: {
+                                            viewModel.deleteZapperRule(rule)
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.red)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                    .padding(.vertical, 3)
+                                    .padding(.horizontal, 6)
+                                    .background(Color.gray.opacity(0.05))
+                                    .cornerRadius(4)
+                                }
+                            }
+                            .frame(maxHeight: 120)
+                            
                             // Clear all button
                             Button(action: {
                                 viewModel.deleteAllZapperRules()
@@ -90,41 +119,12 @@ struct PopoverView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             .frame(maxWidth: .infinity, alignment: .trailing)
-                            
-                            // Rules list
-                            ScrollView {
-                                LazyVStack(spacing: 3) {
-                                    ForEach(viewModel.zapperRules, id: \.self) { rule in
-                                        HStack {
-                                            Text(rule)
-                                                .font(.system(size: 11))
-                                                .foregroundColor(.primary)
-                                                .lineLimit(1)
-                                                .truncationMode(.middle)
-                                            
-                                            Spacer()
-                                            
-                                            Button(action: {
-                                                viewModel.deleteZapperRule(rule)
-                                            }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.red)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                        .padding(.vertical, 3)
-                                        .padding(.horizontal, 6)
-                                        .background(Color.gray.opacity(0.05))
-                                        .cornerRadius(4)
-                                    }
-                                }
-                            }
-                            .frame(maxHeight: 120)
+                            .padding(.top, 8)
                         }
                     }
                     .padding(.horizontal, 4)
-                }            }
+                }
+            }
         }
         .padding(16)
         .frame(width: 300)
