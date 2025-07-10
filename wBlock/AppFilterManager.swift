@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import wBlockCoreService
+import SafariServices
 
 #if os(macOS)
 let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters"
@@ -153,8 +154,9 @@ class AppFilterManager: ObservableObject {
         await ConcurrentLogManager.shared.log("🚀 Fast applying disabled sites changes without full conversion")
         
         // Get all platform targets that need updating
+        let currentPlatform = self.currentPlatform
         let platformTargets = await Task.detached {
-            ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+            ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
         
         // Fast update each target's JSON files without full conversion
@@ -405,32 +407,25 @@ class AppFilterManager: ObservableObject {
         let categoryName = targetInfo.primaryCategory.rawValue
         
         for attempt in 1...maxRetries {
-            let reloadResult = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
-            
-            if case .success = reloadResult {
-                // Only log success for retries (first attempt success is implied)
+            let result = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+            if case .success = result {
                 if attempt > 1 {
                     await ConcurrentLogManager.shared.log("✅ \(categoryName) reloaded successfully (attempt \(attempt))")
                 }
                 return true
-            } else if case .failure(let error) = reloadResult {
-                // Only log errors for final attempt or first error
+            } else if case .failure(let error) = result {
                 if attempt == 1 || attempt == maxRetries {
                     await ConcurrentLogManager.shared.log("❌ \(categoryName) \(attempt == maxRetries ? "FAILED after \(maxRetries) attempts" : "reload failed"): \(error.localizedDescription)")
                 }
                 
-                // If this isn't the last attempt, wait and try again
                 if attempt < maxRetries {
-                    let delayMs = attempt * 200 // Increasing delay: 200ms, 400ms, 600ms, 800ms
-                    
-                    // Update UI to show retry progress for attempts beyond the first retry
+                    let delayMs = attempt * 200
                     if attempt >= 2 {
                         await MainActor.run {
                             self.conversionStageDescription = "Retrying \(categoryName) (attempt \(attempt + 1))..."
                         }
                     }
-                    
-                    try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000)) // Convert ms to nanoseconds
+                    try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000))
                 }
             }
         }
@@ -472,15 +467,16 @@ class AppFilterManager: ObservableObject {
             await ConcurrentLogManager.shared.log("🧹 No filters selected - clearing all extensions")
             
             // Perform heavy operations on background thread
+            let currentPlatform = self.currentPlatform
             await Task.detached {
                 // Clear the filter engine when no filters are selected
                 ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
                 
                 // Clear rules for all relevant extensions
-                let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+                let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
                 for targetInfo in platformTargets {
                     _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
-                    _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
+                    await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 }
             }.value
             
@@ -498,8 +494,8 @@ class AppFilterManager: ObservableObject {
         var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
 
         for filter in allSelectedFilters {
-            guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: await MainActor.run { self.currentPlatform }) else {
-                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(await MainActor.run { self.currentPlatform == .macOS ? "macOS" : "iOS" }). Skipping filter: \(filter.name)")
+            guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: self.currentPlatform) else {
+                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(self.currentPlatform == .macOS ? "macOS" : "iOS"). Skipping filter: \(filter.name)")
                 continue
             }
 
@@ -747,8 +743,9 @@ class AppFilterManager: ObservableObject {
         }
         
         // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
+        let currentPlatform = self.currentPlatform
         let allPlatformTargets = await Task.detached {
-            ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+            ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
         let affectedTargetBundleIDs = Set(rulesByTargetInfo.keys.map { $0.bundleIdentifier })
         
@@ -1184,3 +1181,4 @@ class AppFilterManager: ObservableObject {
         filterUpdater.userScriptManager = userScriptManager
     }
 }
+
