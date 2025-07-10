@@ -140,7 +140,7 @@ struct ContentView: View {
                 .help("Check for filter list updates")
                 
                 Button {
-                    Task { await filterManager.checkAndEnableFilters(forceReload: true) }
+                    filterManager.checkAndEnableFilters(forceReload: true)
                 } label: {
                     Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                 }
@@ -400,7 +400,7 @@ struct ContentView: View {
         }
         .task(id: filter.id) {
             if filter.sourceRuleCount == nil && filterManager.doesFilterFileExist(filter) {
-                 await filterManager.updateVersionsAndCounts()
+                await filterManager.updateVersionsAndCounts()
             }
         }
     }
@@ -485,3 +485,4 @@ struct AddFilterListView: View {
         dismiss()
     }
 }
+

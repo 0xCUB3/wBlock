@@ -153,8 +153,9 @@ class AppFilterManager: ObservableObject {
         await ConcurrentLogManager.shared.log("🚀 Fast applying disabled sites changes without full conversion")
         
         // Get all platform targets that need updating
+        let currentPlatform = self.currentPlatform
         let platformTargets = await Task.detached {
-            ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+            ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
         
         // Fast update each target's JSON files without full conversion
@@ -463,7 +464,7 @@ class AppFilterManager: ObservableObject {
         
         await ConcurrentLogManager.shared.log("🚀 Starting filter application process on \(currentPlatform == .macOS ? "macOS" : "iOS")")
 
-        let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+        let allSelectedFilters = self.filterLists.filter { $0.isSelected }
 
         if allSelectedFilters.isEmpty {
             await MainActor.run {
@@ -472,12 +473,13 @@ class AppFilterManager: ObservableObject {
             await ConcurrentLogManager.shared.log("🧹 No filters selected - clearing all extensions")
             
             // Perform heavy operations on background thread
+            let currentPlatform = self.currentPlatform
             await Task.detached {
                 // Clear the filter engine when no filters are selected
                 ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
                 
                 // Clear rules for all relevant extensions
-                let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+                let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
                 for targetInfo in platformTargets {
                     _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
                     _ = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
@@ -498,8 +500,8 @@ class AppFilterManager: ObservableObject {
         var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
 
         for filter in allSelectedFilters {
-            guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: await MainActor.run { self.currentPlatform }) else {
-                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(await MainActor.run { self.currentPlatform == .macOS ? "macOS" : "iOS" }). Skipping filter: \(filter.name)")
+            guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: self.currentPlatform) else {
+                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(self.currentPlatform == .macOS ? "macOS" : "iOS"). Skipping filter: \(filter.name)")
                 continue
             }
 
@@ -747,8 +749,9 @@ class AppFilterManager: ObservableObject {
         }
         
         // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
+        let currentPlatform = self.currentPlatform
         let allPlatformTargets = await Task.detached {
-            ContentBlockerTargetManager.shared.allTargets(forPlatform: await MainActor.run { self.currentPlatform })
+            ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
         let affectedTargetBundleIDs = Set(rulesByTargetInfo.keys.map { $0.bundleIdentifier })
         

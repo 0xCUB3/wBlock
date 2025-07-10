@@ -68,7 +68,7 @@ public actor ConcurrentLogManager {
         logEntries.removeAll()
         // Optionally log that logs were cleared, this will create one new entry.
         Task { // Task needed to call an actor method from a non-async context if this were ever called so
-            await self.log("Logs cleared.")
+            self.log("Logs cleared.")
         }
     }
 }
