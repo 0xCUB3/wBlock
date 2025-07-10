@@ -457,7 +457,7 @@ class AppFilterManager: ObservableObject {
         
         await ConcurrentLogManager.shared.log("🚀 Starting filter application process on \(currentPlatform == .macOS ? "macOS" : "iOS")")
 
-        let allSelectedFilters = self.filterLists.filter { $0.isSelected }
+        let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
 
         if allSelectedFilters.isEmpty {
             await MainActor.run {
