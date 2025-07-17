@@ -27,6 +27,7 @@ class AppFilterManager: ObservableObject {
     @Published var hasError: Bool = false
     @Published var progress: Float = 0
     @Published var missingFilters: [FilterList] = []
+    @Published var whitelistViewModel = WhitelistViewModel()
     @Published var availableUpdates: [FilterList] = []
     @Published var showingUpdatePopup = false
     @Published var showingNoUpdatesAlert = false
@@ -131,6 +132,7 @@ class AppFilterManager: ObservableObject {
             await ConcurrentLogManager.shared.log("🔄 Disabled sites changed from \(lastKnownDisabledSites) to \(currentDisabledSites), fast rebuilding content blockers")
             
             lastKnownDisabledSites = currentDisabledSites
+            await MainActor.run { self.whitelistViewModel.loadWhitelistedDomains() }
             
             // Only rebuild if we have applied filters (don't rebuild on startup)
             if !hasUnappliedChanges && lastRuleCount > 0 {
@@ -1181,4 +1183,3 @@ class AppFilterManager: ObservableObject {
         filterUpdater.userScriptManager = userScriptManager
     }
 }
-

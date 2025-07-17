@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showingLogsView = false
     @State private var showingUserScriptsView = false
     @State private var showOnlyEnabledLists = false
+    @State private var showingWhitelistSheet = false
     @Environment(\.scenePhase) var scenePhase
 
     private var enabledListsCount: Int {
@@ -80,6 +81,10 @@ struct ContentView: View {
         }
         .sheet(isPresented: $filterManager.showMissingFiltersSheet) {
             MissingFiltersView(filterManager: filterManager)
+        }
+        .sheet(isPresented: $showingWhitelistSheet) {
+            WhitelistManagerView(filterManager: filterManager)
+                .frame(width: 400, height: 400)
         }
         .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
             ApplyChangesProgressView(filterManager: filterManager, isPresented: $filterManager.showingApplyProgressSheet)
@@ -160,6 +165,13 @@ struct ContentView: View {
                     Label("User Scripts", systemImage: "doc.text.fill")
                 }
                 .help("Manage userscripts")
+                
+                Button {
+                    showingWhitelistSheet = true
+                } label: {
+                    Label("Whitelisted Domains", systemImage: "list.bullet.indent")
+                }
+                .help("Configure whitelisted domains")
                 
                 Button {
                     showingAddFilterSheet = true
