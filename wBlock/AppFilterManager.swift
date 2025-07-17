@@ -184,15 +184,21 @@ class AppFilterManager: ObservableObject {
         let overallReloadStartTime = Date()
         var successCount = 0
         
-        for targetInfo in platformTargets {
-            let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
-            if reloadSuccess {
-                successCount += 1
+            for targetInfo in platformTargets {
+                // Check if this extension has any rules before reloading
+                let rulesCount = self.ruleCountsByCategory[targetInfo.primaryCategory] ?? 0
+                if rulesCount > 0 {
+                    let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
+                    if reloadSuccess {
+                        successCount += 1
+                    }
+                    // Small delay between reloads to reduce memory pressure
+                    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+                } else {
+                    // Skip reload for empty extensions
+                    await ConcurrentLogManager.shared.log("⏩ Skipping reload for empty extension: \(targetInfo.primaryCategory.rawValue)")
+                }
             }
-            
-            // Small delay between reloads to reduce memory pressure
-            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
-        }
         
         let reloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
         
