@@ -24,6 +24,22 @@ struct PopoverView: View {
             }
             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
             .padding(.top, 8)
+
+                // Minimal disclaimer directly under toggle
+                VStack(spacing: 2) {
+                    Text("Safari may take a few minutes to apply changes.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                    Text("Restart Safari if needed.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 8)
+                .padding(.top, 2)
             
             // Element Zapper button
             Button(action: {
@@ -46,7 +62,8 @@ struct PopoverView: View {
             .buttonStyle(PlainButtonStyle())
             .padding(.top, 4)
             
-            // Zapper Rules section
+            
+                // Zapper Rules section
             VStack(spacing: 8) {
                 Button(action: {
                     viewModel.toggleZapperRules()
