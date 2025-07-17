@@ -1,10 +1,4 @@
-//
-//  WhitelistManagerView.swift
-//  wBlock
-//
-//  Created by Alexander Skula on 7/17/25.
-//
-
+#if os(macOS)
 import SwiftUI
 import wBlockCoreService
 import SafariServices
@@ -80,35 +74,12 @@ struct WhitelistManagerView: View {
                     .foregroundColor(.red)
                     .font(.caption)
             }
-            Spacer(minLength: 10)
-            bottomToolbar
-        }
-        .padding()
-        .frame(width: 400, height: 400)
-        .onAppear(perform: loadWhitelistedDomains)
-    }
-
-    private var bottomToolbar: some View {
-        VStack(spacing: 0) {
-            if isProcessing {
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("Processing...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(isProcessing ? "..." : "100%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    ProgressView()
-                        .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                }
+            ProgressView()
+                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
                 .padding(.horizontal, 20)
                 .padding(.vertical, 8)
                 .background(Color.blue.opacity(0.05))
                 .transition(.opacity.combined(with: .move(edge: .top)))
-            }
             HStack(spacing: 16) {
                 Button("Select All") {
                     selectedDomains = Set(whitelistedDomains)
@@ -126,6 +97,9 @@ struct WhitelistManagerView: View {
             .padding(.vertical, 12)
             .background(Color(NSColor.windowBackgroundColor).opacity(0.8))
         }
+        .padding()
+        .frame(width: 400, height: 400)
+        .onAppear(perform: loadWhitelistedDomains)
     }
 
     private func loadWhitelistedDomains() {
@@ -166,13 +140,6 @@ struct WhitelistManagerView: View {
             selectedDomains.removeAll()
             isProcessing = false
         }
-    }
-}
-
-#if DEBUG
-struct WhitelistManagerView_Previews: PreviewProvider {
-    static var previews: some View {
-        WhitelistManagerView(filterManager: AppFilterManager())
     }
 }
 #endif

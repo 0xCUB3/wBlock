@@ -82,10 +82,12 @@ struct ContentView: View {
         .sheet(isPresented: $filterManager.showMissingFiltersSheet) {
             MissingFiltersView(filterManager: filterManager)
         }
+        #if os(macOS)
         .sheet(isPresented: $showingWhitelistSheet) {
             WhitelistManagerView(filterManager: filterManager)
                 .frame(width: 400, height: 400)
         }
+        #endif
         .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
             ApplyChangesProgressView(filterManager: filterManager, isPresented: $filterManager.showingApplyProgressSheet)
         }
