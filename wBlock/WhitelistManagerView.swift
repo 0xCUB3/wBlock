@@ -18,12 +18,25 @@ struct WhitelistManagerView: View {
     @State private var selectedDomains: Set<String> = []
     @State private var isProcessing: Bool = false
 
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         VStack(spacing: 0) {
-            Text("Whitelisted Domains")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .padding(.top)
+            HStack {
+                Text("Whitelisted Domains")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                        .font(.title2)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding([.top, .horizontal])
             List {
                 let paddedDomains = whitelistedDomains + Array(repeating: "", count: max(0, 10 - whitelistedDomains.count))
                 ForEach(paddedDomains.indices, id: \ .self) { idx in
