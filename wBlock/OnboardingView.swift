@@ -191,7 +191,7 @@ struct OnboardingView: View {
                 .font(.subheadline)
             Divider()
             Text("Blocking Level: \(selectedBlockingLevel)")
-            Text("Userscripts: \(selectedUserscripts.isEmpty ? "None" : selectedUserscripts.joined(separator: ", "))")
+                Text("Userscripts: \(selectedUserscripts.isEmpty ? "None" : selectedUserscripts.compactMap { id in defaultUserScripts.first(where: { $0.id == id })?.name }.joined(separator: ", "))")
             Divider()
             if selectedBlockingLevel == BlockingLevel.complete.rawValue {
                 Text("Warning: Complete mode may break some websites. Proceed with caution.")
