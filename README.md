@@ -24,11 +24,20 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 - Detailed logging for troubleshooting
 - Missing filter detection and easy installation
 
-![CleanShot 2025-04-24 at 16 50 49](https://github.com/user-attachments/assets/5efff737-7e93-4814-905b-ceb452311582)
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 00 51" src="https://github.com/user-attachments/assets/3e6ba580-eb91-4644-a404-0cfee394617a" />
 
-![CleanShot 2025-04-24 at 16 51 25](https://github.com/user-attachments/assets/bc42f31d-a313-4216-a656-220479a259e2)
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 10" src="https://github.com/user-attachments/assets/d3ea7884-7bdc-4b96-b4bd-d657e3629d6e" />
 
-![CleanShot 2025-04-24 at 16 51 56](https://github.com/user-attachments/assets/e777e966-1c9e-48ad-913b-871823816cc4)
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 19" src="https://github.com/user-attachments/assets/70eac3d3-92b9-4ace-9ff7-3d184e7afe8d" />
+
+<img width="812" height="744" alt="CleanShot 2025-07-23 at 10 01 32" src="https://github.com/user-attachments/assets/62000eed-fe2d-4b17-a4f2-5c44760c10c8" />
+
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 52" src="https://github.com/user-attachments/assets/d69e9b2b-bb58-453a-8fcb-4aa1e912e844" />
+
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 02 10" src="https://github.com/user-attachments/assets/e46f1a62-3394-42a1-b246-d00967c6f3cb" />
+
+<img width="1179/2" height="2556/2" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
+
 
 
 ### Benchmark Results
