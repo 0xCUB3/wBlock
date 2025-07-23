@@ -156,7 +156,7 @@ struct OnboardingView: View {
                         .foregroundColor(.yellow)
                         .font(.title3)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("The \(bypassScript.name) userscript requires the \(filterName) filter list.")
+                        Text("The \(bypassScript.name) userscript requires the \(filterName)")
                             .font(.caption)
                             .foregroundColor(.orange)
                         Text("It will be enabled automatically.")
