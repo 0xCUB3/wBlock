@@ -7,22 +7,29 @@
 <img width="882" height="802" alt="CleanShot 2025-07-23 at 09 56 15" src="https://github.com/user-attachments/assets/d4a69363-f950-4d2d-8a65-4ad73d5aff80" />
 
 
-wBlock is a powerful content blocker for macOS that cuts through the noise, delivering a clean and private browsing experience without the hassle. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance and maximum blocking. 
+wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts through the noise of the modern web. It delivers a clean and private browsing experience without the hassle and battery drain. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance, low energy usage, and maximum blocking. 
 
 - Lightning-fast: Optimized for performance (~40 MB of RAM at idle)
+- Massive Filter Capacity: Supports up to 750,000 rules on macOS and 500,000 on iOS, far exceeding Safari's default limits.
 - Comprehensive protection: Blocks ads, trackers, and malware
+- Element Zapper: Instantly and permanently remove unwanted content (like cookie banners or subscribe modals) from any webpage with a single click.
+- Userscript Support: Add features like Return YouTube Dislike, Bypass Paywalls Clean, and more for a customized web experience.
 - Always up-to-date: One-click filter list updates (auto-updater coming soon!)
-- AdGuard Filters: Uses the best and most recent filter lists from AdGuard and beyond
+- Full User Control: Easily add custom filter lists, manage your own whitelist, or quickly disable blocking on a per-site basis.
 
 ## Features
 
-- Script injection for YouTube ads and more
-- Custom Filter Support
+- Massive rule limit support (750k on macOS / 500k on iOS)
+- Element Zapper for visual, one-click element removal
+- Userscript injection for YouTube ads and other site enhancements
+- Per-site blocking toggle for quick exceptions
+- Whitelist management UI
+- Custom Filter List support
 - Intuitive category-based filter management
 - Individual filter list toggling
-- Automatic updates for filter lists (in progress)
 - Detailed logging for troubleshooting
 - Missing filter detection and easy installation
+- Streamlined onboarding for new users
 
 <img width="812" height="732" alt="CleanShot 2025-07-23 at 10 00 51" src="https://github.com/user-attachments/assets/3e6ba580-eb91-4644-a404-0cfee394617a" />
 
@@ -68,7 +75,8 @@ wBlock is a free, open-source project dedicated to improving your browsing exper
 </p>
 
 ## Credits
-[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. The current implementation of wBlock Scripts relies heavily on the hard work Arjun put into his version in [WebShield](https://github.com/arjpar/WebShield). 
+[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. His ad blocker [WebShield](https://github.com/arjpar/WebShield) is pretty cool too!
+[@ameshkov](https://github.com/ameshkov/safari-blocker) for the demo project which was the basis for the advanced functionality in wBlock's latest refactoring. 
 
 ---
 
