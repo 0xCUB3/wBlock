@@ -36,7 +36,7 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 
 <img width="812" height="732" alt="CleanShot 2025-07-23 at 10 02 10" src="https://github.com/user-attachments/assets/e46f1a62-3394-42a1-b246-d00967c6f3cb" />
 
-<img width="1179/2" height="2556/2" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
+<img width="393" height="852" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
 
 
 
