@@ -57,8 +57,16 @@ struct OnboardingView: View {
                 }
             }
         }
-        .frame(minWidth: 350, maxWidth: 500, minHeight: 350, maxHeight: 600)
-        .padding()
+    .padding()
+#if os(macOS)
+    .frame(minWidth: 350, maxWidth: 500, minHeight: 350, maxHeight: 600)
+#endif
+#if os(iOS)
+    .background(
+        Color(.systemBackground)
+        .ignoresSafeArea()
+    )
+#endif
     }
 
     struct OnboardingDownloadView: View {
@@ -87,7 +95,7 @@ struct OnboardingView: View {
             Text("Welcome to wBlock!")
                 .font(.title)
                 .bold()
-            Text("Choose your preferred blocking level. You can change this later in settings.")
+            Text("Choose your preferred blocking level. You can adjust enabled filters later.")
                 .font(.subheadline)
             ForEach(BlockingLevel.allCases) { level in
                 Button(action: {
@@ -190,6 +198,32 @@ struct OnboardingView: View {
                     .foregroundColor(.red)
                     .font(.caption)
             }
+
+            // Safari extension enablement reminder
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.shield.fill")
+                        .foregroundColor(.yellow)
+                        .font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("To finish setup, make sure all wBlock extensions are enabled in Safari's extension settings.")
+                            .font(.headline)
+                        Text("After filters are applied, you must enable them in Safari > Settings > Extensions (on Mac) or Settings > Safari > Extensions (on iPhone/iPad).")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                // Apple support links
+                HStack(spacing: 16) {
+                    Link("How to enable on iPhone/iPad", destination: URL(string: "https://support.apple.com/guide/iphone/get-extensions-iphab0432bf6/ios")!)
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                    Link("How to enable on Mac", destination: URL(string: "https://support.apple.com/en-us/102343")!)
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+            }
+
             Spacer()
             HStack {
                 Button("Back") { step -= 1 }
