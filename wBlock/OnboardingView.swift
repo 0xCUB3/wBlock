@@ -206,9 +206,9 @@ struct OnboardingView: View {
                         .foregroundColor(.yellow)
                         .font(.title3)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("To finish setup, make sure all wBlock extensions are enabled in Safari's extension settings.")
+                        Text("After filters are applied, you must enable all wBlock extensions in Safari's extension settings.")
                             .font(.headline)
-                        Text("After filters are applied, you must enable them in Safari > Settings > Extensions (on Mac) or Settings > Safari > Extensions (on iPhone/iPad).")
+                        Text("You can enable them in Safari > Settings > Extensions (on Mac) or Settings > Safari > Extensions (on iPhone/iPad).")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
