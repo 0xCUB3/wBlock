@@ -26,6 +26,23 @@ struct OnboardingView: View {
         }
     }
 
+    // Helper to get the Bypass Paywalls userscript and filter list names
+    var bypassPaywallsScript: (id: String, name: String)? {
+        userScriptManager.userScripts.first(where: { $0.name.localizedCaseInsensitiveContains("bypass paywalls") })
+            .map { ($0.id.uuidString, $0.name) }
+    }
+    var bypassPaywallsFilterName: String? {
+        // Adjust this name to match your actual filter list name
+        let candidates = [
+            "Bypass Paywalls Filter",
+            "Bypass Paywalls",
+            "Bypass Paywalls (Custom)"
+        ]
+        return filterManager.filterLists.first(where: { filter in
+            candidates.contains(where: { filter.name.localizedCaseInsensitiveContains($0) })
+        })?.name
+    }
+
     var body: some View {
         VStack {
             if isApplying {
@@ -132,6 +149,22 @@ struct OnboardingView: View {
                     }
                 }
             }
+            // Show a note if Bypass Paywalls userscript is selected
+            if let bypassScript = bypassPaywallsScript, selectedUserscripts.contains(bypassScript.id), let filterName = bypassPaywallsFilterName {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.yellow)
+                        .font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("The \(bypassScript.name) userscript requires the \(filterName) filter list.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text("It will be enabled automatically.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
             Spacer()
             HStack {
                 Button("Back") { step -= 1 }
@@ -201,6 +234,14 @@ struct OnboardingView: View {
         case .complete:
             for i in updatedFilters.indices {
                 updatedFilters[i].isSelected = updatedFilters[i].category != .foreign
+            }
+        }
+        // If Bypass Paywalls userscript is selected, also enable the required filter list
+        if let bypassScript = bypassPaywallsScript, selectedUserscripts.contains(bypassScript.id), let filterName = bypassPaywallsFilterName {
+            for i in updatedFilters.indices {
+                if updatedFilters[i].name == filterName {
+                    updatedFilters[i].isSelected = true
+                }
             }
         }
         filterManager.filterLists = updatedFilters
