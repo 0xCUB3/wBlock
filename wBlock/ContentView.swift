@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var showOnlyEnabledLists = false
     @State private var showingWhitelistSheet = false
     @Environment(\.scenePhase) var scenePhase
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
 
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
@@ -28,183 +29,194 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            #if os(iOS)
-            headerView
-            #endif
-            
-            ScrollView {
-                VStack(spacing: 20) {
-                    statsCardsView
-                    
-                    LazyVStack(spacing: 16) {
-                        ForEach(displayableCategories) { category in
-                            let listsForCategory = self.listsForCategory(category)
-                            if !listsForCategory.isEmpty {
-                                filterSectionView(category: category, filters: listsForCategory)
+        ZStack {
+            VStack(spacing: 0) {
+                #if os(iOS)
+                headerView
+                #endif
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        statsCardsView
+                        
+                        LazyVStack(spacing: 16) {
+                            ForEach(displayableCategories) { category in
+                                let listsForCategory = self.listsForCategory(category)
+                                if !listsForCategory.isEmpty {
+                                    filterSectionView(category: category, filters: listsForCategory)
+                                }
+                            }
+
+                            let customLists = self.customLists
+                            if !customLists.isEmpty {
+                                filterSectionView(category: .custom, filters: customLists)
                             }
                         }
-
-                        let customLists = self.customLists
-                        if !customLists.isEmpty {
-                            filterSectionView(category: .custom, filters: customLists)
+                        .padding(.horizontal)
+                        
+                        Spacer(minLength: 20)
+                    }
+                    .padding(.vertical)
+                }
+                #if os(iOS)
+                .padding(.horizontal, 16)
+                #endif
+            }
+            #if os(macOS)
+            .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
+                   minHeight: 500, idealHeight: 650, maxHeight: .infinity)
+            #else
+            .frame(minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
+                   minHeight: 0, idealHeight: .infinity, maxHeight: .infinity)
+            #endif
+            .sheet(isPresented: $showingAddFilterSheet) {
+                AddFilterListView(filterManager: filterManager)
+            }
+            .sheet(isPresented: $showingLogsView) {
+                LogsView()
+            }
+            .sheet(isPresented: $showingUserScriptsView) {
+                UserScriptManagerView(userScriptManager: userScriptManager)
+            }
+            .sheet(isPresented: $filterManager.showingUpdatePopup) {
+                UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
+            }
+            .sheet(isPresented: $filterManager.showMissingFiltersSheet) {
+                MissingFiltersView(filterManager: filterManager)
+            }
+            #if os(macOS)
+            .sheet(isPresented: $showingWhitelistSheet) {
+                WhitelistManagerView(filterManager: filterManager)
+                    .frame(width: 400, height: 400)
+            }
+            #endif
+            .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
+                ApplyChangesProgressView(filterManager: filterManager, isPresented: $filterManager.showingApplyProgressSheet)
+            }
+            .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
+                Button("OK", role: .cancel) {}
+            }
+            .alert("Download Complete", isPresented: $filterManager.showingDownloadCompleteAlert) {
+                Button("Apply Now") {
+                    Task {
+                        await filterManager.applyDownloadedChanges()
+                    }
+                }
+                Button("Later", role: .cancel) {}
+            } message: {
+                Text(filterManager.downloadCompleteMessage)
+            }
+            .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(filterManager.categoryWarningMessage)
+            }
+            .overlay {
+                if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
+                    ZStack {
+                        Color.black.opacity(0.1).ignoresSafeArea()
+                        VStack {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                            Text(filterManager.statusDescription)
+                                .padding(.top, 10)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
                         }
+                        .padding(20)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                        .shadow(radius: 10)
                     }
-                    .padding(.horizontal)
+                }
+            }
+            .onAppear {
+                Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
+                // Set the UserScriptManager for filter updates
+                filterManager.setUserScriptManager(userScriptManager)
+                #if os(iOS)
+                requestNotificationPermission()
+                #endif
+            }
+            #if os(macOS)
+            .toolbar {
+                ToolbarItemGroup(placement: .automatic) {
+                    Button {
+                        Task { await filterManager.checkForUpdates() }
+                    } label: {
+                        Label("Check for Updates", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(filterManager.isLoading)
+                    .help("Check for filter list updates")
                     
-                    Spacer(minLength: 20)
-                }
-                .padding(.vertical)
-            }
-            #if os(iOS)
-            .padding(.horizontal, 16)
-            #endif
-        }
-        #if os(macOS)
-        .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
-               minHeight: 500, idealHeight: 650, maxHeight: .infinity)
-        #else
-        .frame(minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
-               minHeight: 0, idealHeight: .infinity, maxHeight: .infinity)
-        #endif
-        .sheet(isPresented: $showingAddFilterSheet) {
-            AddFilterListView(filterManager: filterManager)
-        }
-        .sheet(isPresented: $showingLogsView) {
-            LogsView()
-        }
-        .sheet(isPresented: $showingUserScriptsView) {
-            UserScriptManagerView(userScriptManager: userScriptManager)
-        }
-        .sheet(isPresented: $filterManager.showingUpdatePopup) {
-            UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
-        }
-        .sheet(isPresented: $filterManager.showMissingFiltersSheet) {
-            MissingFiltersView(filterManager: filterManager)
-        }
-        #if os(macOS)
-        .sheet(isPresented: $showingWhitelistSheet) {
-            WhitelistManagerView(filterManager: filterManager)
-                .frame(width: 400, height: 400)
-        }
-        #endif
-        .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
-            ApplyChangesProgressView(filterManager: filterManager, isPresented: $filterManager.showingApplyProgressSheet)
-        }
-        .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
-            Button("OK", role: .cancel) {}
-        }
-        .alert("Download Complete", isPresented: $filterManager.showingDownloadCompleteAlert) {
-            Button("Apply Now") {
-                Task {
-                    await filterManager.applyDownloadedChanges()
-                }
-            }
-            Button("Later", role: .cancel) {}
-        } message: {
-            Text(filterManager.downloadCompleteMessage)
-        }
-        .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(filterManager.categoryWarningMessage)
-        }
-        .overlay {
-            if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
-                ZStack {
-                    Color.black.opacity(0.1).ignoresSafeArea()
-                    VStack {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                        Text(filterManager.statusDescription)
-                            .padding(.top, 10)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                    Button {
+                        filterManager.checkAndEnableFilters(forceReload: true)
+                    } label: {
+                        Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                     }
-                    .padding(20)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    .shadow(radius: 10)
+                    .disabled(filterManager.isLoading || enabledListsCount == 0)
+                    .help("Apply selected filters and reload Safari")
+                    
+                    Button {
+                        showingLogsView = true
+                    } label: {
+                        Label("Show Logs", systemImage: "doc.text.magnifyingglass")
+                    }
+                    .help("View application logs")
+                    
+                    Button {
+                        showingUserScriptsView = true
+                    } label: {
+                        Label("User Scripts", systemImage: "doc.text.fill")
+                    }
+                    .help("Manage userscripts")
+                    
+                    Button {
+                        showingWhitelistSheet = true
+                    } label: {
+                        Label("Whitelisted Domains", systemImage: "list.bullet.indent")
+                    }
+                    .help("Configure whitelisted domains")
+                    
+                    Button {
+                        showingAddFilterSheet = true
+                    } label: {
+                        Label("Add Filter", systemImage: "plus")
+                    }
+                    .help("Add custom filter list from URL")
+                    
+                    Button {
+                        showOnlyEnabledLists.toggle()
+                    } label: {
+                        Label("Show Enabled Only", systemImage: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    }
+                    .help("Toggle to show only enabled filter lists")
                 }
             }
-        }
-        .onAppear {
-            Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
-            // Set the UserScriptManager for filter updates
-            filterManager.setUserScriptManager(userScriptManager)
+            #endif
             #if os(iOS)
-            requestNotificationPermission()
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                if newPhase == .background && filterManager.hasUnappliedChanges {
+                    scheduleNotification(delay: 1) // Reduced delay to 1 second
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
+                print("Received applyWBlockChangesNotification in ContentView.")
+                // Ensure we are on the main thread for UI updates if needed
+                print("Triggering applyChanges from notification observer.")
+                filterManager.showingApplyProgressSheet = true // Show progress sheet
+                Task {
+                    await filterManager.checkAndEnableFilters(forceReload: true)
+                }
+            }
             #endif
         }
-        #if os(macOS)
-        .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                Button {
-                    Task { await filterManager.checkForUpdates() }
-                } label: {
-                    Label("Check for Updates", systemImage: "arrow.clockwise")
-                }
-                .disabled(filterManager.isLoading)
-                .help("Check for filter list updates")
-                
-                Button {
-                    filterManager.checkAndEnableFilters(forceReload: true)
-                } label: {
-                    Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .disabled(filterManager.isLoading || enabledListsCount == 0)
-                .help("Apply selected filters and reload Safari")
-                
-                Button {
-                    showingLogsView = true
-                } label: {
-                    Label("Show Logs", systemImage: "doc.text.magnifyingglass")
-                }
-                .help("View application logs")
-                
-                Button {
-                    showingUserScriptsView = true
-                } label: {
-                    Label("User Scripts", systemImage: "doc.text.fill")
-                }
-                .help("Manage userscripts")
-                
-                Button {
-                    showingWhitelistSheet = true
-                } label: {
-                    Label("Whitelisted Domains", systemImage: "list.bullet.indent")
-                }
-                .help("Configure whitelisted domains")
-                
-                Button {
-                    showingAddFilterSheet = true
-                } label: {
-                    Label("Add Filter", systemImage: "plus")
-                }
-                .help("Add custom filter list from URL")
-                
-                Button {
-                    showOnlyEnabledLists.toggle()
-                } label: {
-                    Label("Show Enabled Only", systemImage: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                }
-                .help("Toggle to show only enabled filter lists")
-            }
-        }
-        #endif
         #if os(iOS)
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            if newPhase == .background && filterManager.hasUnappliedChanges {
-                scheduleNotification(delay: 1) // Reduced delay to 1 second
-            }
+        .fullScreenCover(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { _ in })) {
+            OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
-            print("Received applyWBlockChangesNotification in ContentView.")
-            // Ensure we are on the main thread for UI updates if needed
-            print("Triggering applyChanges from notification observer.")
-            filterManager.showingApplyProgressSheet = true // Show progress sheet
-            Task {
-                await filterManager.checkAndEnableFilters(forceReload: true)
-            }
+        #elseif os(macOS)
+        .sheet(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { _ in })) {
+            OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
         }
         #endif
     }

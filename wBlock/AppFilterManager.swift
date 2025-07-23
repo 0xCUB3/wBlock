@@ -448,7 +448,7 @@ class AppFilterManager: ObservableObject {
             self.isLoading = true
             self.hasError = false
             self.progress = 0
-            self.statusDescription = "Preparing to apply selected filters..."
+            self.statusDescription = "Applying filters...\n(This may take a while)"
             
             self.sourceRulesCount = 0
             self.conversionStageDescription = ""
@@ -868,6 +868,33 @@ class AppFilterManager: ObservableObject {
         } else {
             await ConcurrentLogManager.shared.log("❌ Process completed with errors: \(statusDesc)")
         }
+    }
+    
+    @MainActor
+    public func downloadAndApplyFilters(filters: [FilterList], progress: @escaping (Float) -> Void) async {
+        isLoading = true
+        hasError = false
+        statusDescription = "Downloading filter lists..."
+        progress(0)
+
+        // Download selected filters using existing updater logic
+        let _ = await filterUpdater.updateSelectedFilters(filters, progressCallback: { prog in
+            Task { @MainActor in
+                self.progress = Float(prog)
+                progress(Float(prog))
+            }
+        })
+
+        // Save after download
+        saveFilterLists()
+
+        // Apply changes (conversion, reload, etc)
+        statusDescription = "Applying filters...\n(This may take a while)"
+        await applyChanges()
+
+        isLoading = false
+        progress(1)
+        statusDescription = "Ready."
     }
 
     func updateMissingFilters() async { // This is for when the "Missing Filters" sheet is shown

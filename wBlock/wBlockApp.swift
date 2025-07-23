@@ -31,6 +31,8 @@ struct wBlockApp: App {
         }
     }()
 
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+
     var body: some Scene {
         WindowGroup {
             ContentView(filterManager: filterManager)
@@ -39,5 +41,14 @@ struct wBlockApp: App {
                 }
         }
         .modelContainer(sharedModelContainer)
+        #if os(macOS)
+        .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("Restart Onboarding…") {
+                    hasCompletedOnboarding = false
+                }
+            }
+        }
+        #endif
     }
 }
