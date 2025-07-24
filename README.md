@@ -57,7 +57,7 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 ## Quick Start
 
-1. Join the TestFlight at https://testflight.apple.com/join/DFGenhRn
+1. Join the [TestFlight](https://testflight.apple.com/join/nCjEmXVQ).
 2. Enjoy a cleaner web!
 
 ## System Requirements
