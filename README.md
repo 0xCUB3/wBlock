@@ -17,6 +17,8 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 - Always up-to-date: One-click filter list updates (auto-updater coming soon!)
 - Full User Control: Easily add custom filter lists, manage your own whitelist, or quickly disable blocking on a per-site basis.
 
+### Join the Discord server: https://discord.gg/5kmuEbwsut
+
 ## Features
 
 - Massive rule limit support (750k on macOS / 500k on iOS)
@@ -45,7 +47,6 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 <img width="393" height="852" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
 
-### Join the Discord server: https://discord.gg/5kmuEbwsut
 
 ### Benchmark Results
 
