@@ -45,7 +45,7 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 <img width="393" height="852" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
 
-
+### Join the Discord server: https://discord.gg/5kmuEbwsut
 
 ### Benchmark Results
 
