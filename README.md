@@ -1,34 +1,51 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/cf640d7c-7713-450c-9463-ac75ed4a9c36" alt="wBlock Logo" width="128"/>
+  <img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock Logo" width="128"/>
 </p>
 
 # wBlock: The end of Safari ad-blocking B.S.
 
-![CleanShot 2025-04-24 at 16 49 53](https://github.com/user-attachments/assets/a37e03b0-68d6-4a4b-b00a-f88da28f144c)
+<img width="882" height="802" alt="CleanShot 2025-07-23 at 09 56 15" src="https://github.com/user-attachments/assets/d4a69363-f950-4d2d-8a65-4ad73d5aff80" />
 
 
-wBlock is a powerful content blocker for macOS that cuts through the noise, delivering a clean and private browsing experience without the hassle. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance and maximum blocking. 
+wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts through the noise of the modern web. It delivers a clean and private browsing experience without the hassle and battery drain. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance, low energy usage, and maximum blocking. 
 
 - Lightning-fast: Optimized for performance (~40 MB of RAM at idle)
+- Massive Filter Capacity: Supports up to 750,000 rules on macOS and 500,000 on iOS, far exceeding Safari's default limits.
 - Comprehensive protection: Blocks ads, trackers, and malware
+- Element Zapper: Instantly and permanently remove unwanted content (like cookie banners or subscribe modals) from any webpage with a single click.
+- Userscript Support: Add features like Return YouTube Dislike, Bypass Paywalls Clean, and more for a customized web experience.
 - Always up-to-date: One-click filter list updates (auto-updater coming soon!)
-- AdGuard Filters: Uses the best and most recent filter lists from AdGuard and beyond
+- Full User Control: Easily add custom filter lists, manage your own whitelist, or quickly disable blocking on a per-site basis.
+
+### Join the Discord server: https://discord.gg/5kmuEbwsut
 
 ## Features
 
-- Script injection for YouTube ads and more
-- Custom Filter Support
+- Massive rule limit support (750k on macOS / 500k on iOS)
+- Element Zapper for visual, one-click element removal
+- Userscript injection for YouTube ads and other site enhancements
+- Per-site blocking toggle for quick exceptions
+- Whitelist management UI
+- Custom Filter List support
 - Intuitive category-based filter management
 - Individual filter list toggling
-- Automatic updates for filter lists (in progress)
 - Detailed logging for troubleshooting
 - Missing filter detection and easy installation
+- Streamlined onboarding for new users
 
-![CleanShot 2025-04-24 at 16 50 49](https://github.com/user-attachments/assets/5efff737-7e93-4814-905b-ceb452311582)
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 00 51" src="https://github.com/user-attachments/assets/3e6ba580-eb91-4644-a404-0cfee394617a" />
 
-![CleanShot 2025-04-24 at 16 51 25](https://github.com/user-attachments/assets/bc42f31d-a313-4216-a656-220479a259e2)
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 10" src="https://github.com/user-attachments/assets/d3ea7884-7bdc-4b96-b4bd-d657e3629d6e" />
 
-![CleanShot 2025-04-24 at 16 51 56](https://github.com/user-attachments/assets/e777e966-1c9e-48ad-913b-871823816cc4)
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 19" src="https://github.com/user-attachments/assets/70eac3d3-92b9-4ace-9ff7-3d184e7afe8d" />
+
+<img width="812" height="744" alt="CleanShot 2025-07-23 at 10 01 32" src="https://github.com/user-attachments/assets/62000eed-fe2d-4b17-a4f2-5c44760c10c8" />
+
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 52" src="https://github.com/user-attachments/assets/d69e9b2b-bb58-453a-8fcb-4aa1e912e844" />
+
+<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 02 10" src="https://github.com/user-attachments/assets/e46f1a62-3394-42a1-b246-d00967c6f3cb" />
+
+<img width="393" height="852" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
 
 
 ### Benchmark Results
@@ -41,7 +58,7 @@ wBlock is a powerful content blocker for macOS that cuts through the noise, deli
 
 ## Quick Start
 
-1. Join the TestFlight at https://testflight.apple.com/join/DFGenhRn
+1. Join the [TestFlight](https://testflight.apple.com/join/nCjEmXVQ).
 2. Enjoy a cleaner web!
 
 ## System Requirements
@@ -59,7 +76,8 @@ wBlock is a free, open-source project dedicated to improving your browsing exper
 </p>
 
 ## Credits
-[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. The current implementation of wBlock Scripts relies heavily on the hard work Arjun put into his version in [WebShield](https://github.com/arjpar/WebShield). 
+[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. His ad blocker [WebShield](https://github.com/arjpar/WebShield) is pretty cool too!
+[@ameshkov](https://github.com/ameshkov/safari-blocker) for the demo project which was the basis for the advanced functionality in wBlock's latest refactoring. 
 
 ---
 
