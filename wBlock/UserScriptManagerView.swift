@@ -237,7 +237,8 @@ struct UserScriptManagerView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .frame(maxWidth: .infinity)
+    .padding(.vertical)
     }
     
     private var bottomToolbar: some View {
