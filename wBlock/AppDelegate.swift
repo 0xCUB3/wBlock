@@ -80,6 +80,13 @@ extension AppDelegate: UIApplicationDelegate {
         if let updateType = userInfo["update"] as? String, updateType == "filterList",
            let manager = filterManager {
             Task {
+                // Check which filters have updates
+                let pending = await manager.filterUpdater.checkForUpdates(filterLists: manager.filterLists)
+                // For each pending filter, fetch and save new list
+                for filter in pending {
+                    _ = await manager.filterUpdater.fetchAndProcessFilter(filter)
+                }
+                // Apply all changes to content blockers
                 await manager.applyChanges()
                 completionHandler(.newData)
             }

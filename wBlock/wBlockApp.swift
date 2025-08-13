@@ -27,16 +27,9 @@ struct wBlockApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(filterManager: filterManager)
-                .onAppear {
-                    appDelegate.filterManager = filterManager
-                    // At launch, check for pending filter-list updates and apply if available
-                    Task {
-                        let pending = await filterManager.filterUpdater.checkForUpdates(filterLists: filterManager.filterLists)
-                        if !pending.isEmpty {
-                            await filterManager.applyChanges()
-                        }
+                    .onAppear {
+                        appDelegate.filterManager = filterManager
                     }
-                }
         }
         #if os(macOS)
         .commands {
