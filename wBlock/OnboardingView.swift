@@ -37,6 +37,7 @@ struct OnboardingView: View {
 
     let filterManager: AppFilterManager
     let userScriptManager: UserScriptManager
+    @Environment(\.dismiss) private var dismiss
 
     // Use the real default userscripts from UserScriptManager
     var defaultUserScripts: [(id: String, name: String, description: String)] {
@@ -96,10 +97,7 @@ struct OnboardingView: View {
                     .progressViewStyle(.linear)
                     .frame(maxWidth: 300)
                 VStack(spacing: 4) {
-                    Text("Downloading and installing filter lists...")
-                        .multilineTextAlignment(.center)
-                    Text("Applying filters...")
-                        .font(.headline)
+                    Text("Downloading and applying filter lists...")
                         .multilineTextAlignment(.center)
                     Text("This may take awhile")
                         .font(.caption)
@@ -132,6 +130,8 @@ struct OnboardingView: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(level == .complete)
+                .opacity(level == .complete ? 0.5 : 1.0)
             }
             Spacer()
             HStack {
@@ -249,7 +249,6 @@ struct OnboardingView: View {
                 Spacer()
                 Button("Apply & Finish") {
                     applySettings()
-                    setHasCompletedOnboarding(true)
                 }
                 .keyboardShortcut(.defaultAction)
             }
@@ -315,10 +314,12 @@ struct OnboardingView: View {
         let enabledFilters = filterManager.filterLists.filter { $0.isSelected }
         Task { @MainActor in
             await filterManager.downloadAndApplyFilters(filters: enabledFilters, progress: { progress in
-                self.applyProgress = progress
+                applyProgress = progress
             })
             isApplying = false
             setHasCompletedOnboarding(true)
+            dismiss()
+            filterManager.showingApplyProgressSheet = true
         }
     }
 }

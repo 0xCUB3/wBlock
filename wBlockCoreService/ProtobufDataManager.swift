@@ -65,7 +65,7 @@ public class ProtobufDataManager: ObservableObject {
     var publicAppData: Wblock_Data_AppData {
         appData
     }
-    @Published public private(set) var isLoading = false
+    @Published public private(set) var isLoading = true
     @Published public private(set) var lastError: Error?
     
     // MARK: - Private Properties
@@ -128,23 +128,22 @@ public class ProtobufDataManager: ObservableObject {
             // Check if migration is needed
             if !fileManager.fileExists(atPath: migrationFlagURL.path) {
                 logger.info("🔄 Starting migration from UserDefaults/SwiftData...")
-                await Task.detached(priority: .utility) { await migrateFromLegacyStorage() }.value
+                await migrateFromLegacyStorage()
                 try Data().write(to: migrationFlagURL)
                 logger.info("✅ Migration completed")
             }
             
             // Load protobuf data
             if fileManager.fileExists(atPath: dataFileURL.path) {
-                    let raw = try await Task.detached(priority: .utility) { try Data(contentsOf: dataFileURL, options: .mappedIfSafe) }.value
-                    let dataBlob = (raw as NSData).decompressed(using: .lz4) as Data? ?? raw
-                    let loadedData = try await Task.detached(priority: .utility) { try Wblock_Data_AppData(serializedData: dataBlob) }.value
+                let data = try Data(contentsOf: dataFileURL)
+                let loadedData = try Wblock_Data_AppData(serializedData: data)
                 
                 await MainActor.run {
                     self.appData = loadedData
                     self.lastError = nil
                 }
                 
-                logger.info("✅ Loaded protobuf data (\(loadedData.serializedData().count) bytes)")
+                logger.info("✅ Loaded protobuf data (\(data.count) bytes)")
             } else {
                 logger.info("📝 No existing data file, creating default data")
                 await createDefaultData()
@@ -155,7 +154,7 @@ public class ProtobufDataManager: ObservableObject {
             await MainActor.run { self.lastError = error }
             
             // Try to load backup
-            await Task.detached(priority: .utility) { await loadBackup() }.value
+            await loadBackup()
         }
         
         await MainActor.run { isLoading = false }
@@ -164,24 +163,23 @@ public class ProtobufDataManager: ObservableObject {
     private func loadBackup() async {
         guard fileManager.fileExists(atPath: backupFileURL.path) else {
             logger.info("📝 No backup file available, creating default data")
-            await Task.detached(priority: .utility) { await createDefaultData() }.value
+            await createDefaultData()
             return
         }
         
         do {
-            let rawBack = try await Task.detached(priority: .utility) { try Data(contentsOf: backupFileURL, options: .mappedIfSafe) }.value
-                let dataBlob = (rawBack as NSData).decompressed(using: .lz4) as Data? ?? rawBack
-                let loadedData = try await Task.detached(priority: .utility) { try Wblock_Data_AppData(serializedData: dataBlob) }.value
+            let backupData = try Data(contentsOf: backupFileURL)
+            let loadedData = try Wblock_Data_AppData(serializedData: backupData)
             
             await MainActor.run {
                 self.appData = loadedData
                 self.lastError = nil
             }
             
-            logger.info("✅ Loaded backup data (\(loadedData.serializedData().count) bytes)")
+            logger.info("✅ Loaded backup data (\(backupData.count) bytes)")
         } catch {
             logger.error("❌ Failed to load backup: \(error)")
-            await Task.detached(priority: .utility) { await createDefaultData() }.value
+            await createDefaultData()
         }
     }
     
@@ -243,19 +241,13 @@ public class ProtobufDataManager: ObservableObject {
             let data = try snapshot.serializedData()
             // Skip save if data hasn't changed since last write
             let previous = await MainActor.run { lastSavedData }
-                let blob: Data
-                if data.count > 1024, let comp = (data as NSData).compressed(using: .lz4) as Data? {
-                    blob = comp
-                } else {
-                    blob = data
-                }
-                if let previous = previous, previous == blob {
+            if let previous = previous, previous == data {
                 return
             }
-                try blob.write(to: dataFileURL, options: .atomic)
+                try data.write(to: dataFileURL, options: .atomic)
         logger.info("✅ Saved protobuf data (\(data.count) bytes)")
         await MainActor.run {
-                    lastSavedData = blob
+            lastSavedData = data
             lastError = nil
         }
         } catch {

@@ -13,6 +13,7 @@ struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
     @StateObject private var userScriptManager = UserScriptManager()
     @StateObject private var dataManager = ProtobufDataManager.shared
+    @State private var showOnboarding = false
     @State private var showingAddFilterSheet = false
     @State private var showingLogsView = false
     @State private var showingUserScriptsView = false
@@ -226,11 +227,18 @@ struct ContentView: View {
             #endif
         }
         #if os(iOS)
-        .fullScreenCover(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { _ in })) {
+        // Show onboarding only after data finished loading and onboarding not completed
+        .fullScreenCover(isPresented: Binding(
+            get: { !dataManager.isLoading && !hasCompletedOnboarding },
+            set: { _ in }
+        )) {
             OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
         }
         #elseif os(macOS)
-        .sheet(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { _ in })) {
+        .sheet(isPresented: Binding(
+            get: { !dataManager.isLoading && !hasCompletedOnboarding },
+            set: { _ in }
+        )) {
             OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
         }
         #endif
