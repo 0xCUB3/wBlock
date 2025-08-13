@@ -215,6 +215,7 @@ public class ProtobufDataManager: ObservableObject {
     // MARK: - Data Saving (debounced)
     private var pendingSaveWorkItem: DispatchWorkItem?
     private let saveDebounceInterval: TimeInterval = 0.5
+    private var lastSavedData: Data?
 
     public func saveData() {
         // Cancel previous pending save
@@ -236,15 +237,22 @@ public class ProtobufDataManager: ObservableObject {
         do {
             // Serialize new data from snapshot
             let data = try snapshot.serializedData()
+            // Skip save if data hasn't changed since last write
+            let previous = await MainActor.run { lastSavedData }
+            if let previous = previous, previous == data {
+                return
+            }
             let tempURL = dataFileURL.appendingPathExtension("tmp")
             try data.write(to: tempURL, options: .atomic)
-            // Replace existing file atomically, backing up the old file
-            _ = try fileManager.replaceItemAt(dataFileURL, withItemAt: tempURL, backupItemName: backupFileName)
-            logger.info("✅ Saved protobuf data (\(data.count) bytes)")
-            await MainActor.run { self.lastError = nil }
+        _ = try fileManager.replaceItemAt(dataFileURL, withItemAt: tempURL, backupItemName: backupFileName)
+        logger.info("✅ Saved protobuf data (\(data.count) bytes)")
+        await MainActor.run {
+            lastSavedData = data
+            lastError = nil
+        }
         } catch {
             logger.error("❌ Failed to save data: \(error)")
-            await MainActor.run { self.lastError = error }
+            await MainActor.run { lastError = error }
         }
     }
     
