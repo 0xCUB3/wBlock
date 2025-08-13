@@ -12,13 +12,17 @@ import UserNotifications
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
     @StateObject private var userScriptManager = UserScriptManager()
+    @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
     @State private var showingLogsView = false
     @State private var showingUserScriptsView = false
     @State private var showOnlyEnabledLists = false
     @State private var showingWhitelistSheet = false
     @Environment(\.scenePhase) var scenePhase
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+    
+    private var hasCompletedOnboarding: Bool {
+        dataManager.hasCompletedOnboarding
+    }
 
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count

@@ -16,6 +16,7 @@
 		C1A41C892DE08BDA0056F63D /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1E44F382E4CBA9300F58897 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = C1E44F372E4CBA9300F58897 /* SwiftProtobuf */; };
 		C1F16BF02DE354C30031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1F16BFA2DE354C30031E7EF /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C042DE354E40031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
@@ -501,6 +502,7 @@
 			files = (
 				C1A41C552DE08A040056F63D /* ContentBlockerConverter in Frameworks */,
 				C1A41C582DE08A0E0056F63D /* ZIPFoundation in Frameworks */,
+				C1E44F382E4CBA9300F58897 /* SwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -762,6 +764,7 @@
 			packageProductDependencies = (
 				C1A41C542DE08A040056F63D /* ContentBlockerConverter */,
 				C1A41C572DE08A0E0056F63D /* ZIPFoundation */,
+				C1E44F372E4CBA9300F58897 /* SwiftProtobuf */,
 			);
 			productName = wBlockCoreService;
 			productReference = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */;
@@ -1173,6 +1176,7 @@
 			packageReferences = (
 				C1A41C532DE08A040056F63D /* XCRemoteSwiftPackageReference "SafariConverterLib" */,
 				C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				C1E44F362E4CBA9300F58897 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C1A41C2E2DE0897C0056F63D /* Products */;
@@ -3044,6 +3048,14 @@
 				minimumVersion = 0.9.19;
 			};
 		};
+		C1E44F362E4CBA9300F58897 /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.30.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -3056,6 +3068,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		C1E44F372E4CBA9300F58897 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1E44F362E4CBA9300F58897 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

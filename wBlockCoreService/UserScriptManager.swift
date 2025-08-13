@@ -22,7 +22,7 @@ public class UserScriptManager: ObservableObject {
     
     private let userScriptsKey = "userScripts"
     private let sharedContainerIdentifier = "group.skula.wBlock"
-    private let groupUserDefaults: UserDefaults
+    private let dataManager = ProtobufDataManager.shared
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     
     private let defaultUserScripts: [(name: String, url: String)] = [
@@ -43,27 +43,12 @@ public class UserScriptManager: ObservableObject {
         let standardTest = standardDefaults.string(forKey: "wblock-test")
         logger.info("🔧 Standard UserDefaults test: \(standardTest ?? "nil")")
         
-        // Group UserDefaults
-        self.groupUserDefaults = UserDefaults(suiteName: sharedContainerIdentifier) ?? UserDefaults.standard
-        if UserDefaults(suiteName: sharedContainerIdentifier) != nil {
-            logger.info("✅ Successfully created group UserDefaults for: \(self.sharedContainerIdentifier)")
-        } else {
-            logger.error("❌ Failed to create group UserDefaults for: \(self.sharedContainerIdentifier), falling back to standard")
-        }
+        // Using ProtobufDataManager for data persistence
+        logger.info("✅ Using ProtobufDataManager for user script persistence")
         
-        groupUserDefaults.set("test", forKey: "wblock-group-test")
-        let groupTest = groupUserDefaults.string(forKey: "wblock-group-test")
-        logger.info("🔧 Group UserDefaults test: \(groupTest ?? "nil")")
-        
-        // Check if userScripts key exists
-        let existingData = groupUserDefaults.data(forKey: userScriptsKey)
-        logger.info("🔧 Existing userScripts data: \(existingData?.count ?? 0) bytes")
-        
-        // List all keys in group UserDefaults
-        let allKeys = Array(groupUserDefaults.dictionaryRepresentation().keys)
-        logger.info("🔧 All keys in group UserDefaults: \(allKeys)")
-        
-        logger.info("🔧 UserScriptManager container: \(self.sharedContainerIdentifier)")
+        // Load user scripts from protobuf data manager
+        userScripts = dataManager.getUserScripts()
+        logger.info("🔧 Loaded \(self.userScripts.count) user scripts from ProtobufDataManager")
         setup()
     }
     
@@ -108,41 +93,30 @@ public class UserScriptManager: ObservableObject {
     }
     
     private func loadUserScripts() {
-        logger.info("📖 Loading userscripts from UserDefaults...")
+        logger.info("📖 Loading userscripts from ProtobufDataManager...")
+        userScripts = dataManager.getUserScripts()
+        logger.info("📖 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
         
-        if let data = groupUserDefaults.data(forKey: userScriptsKey) {
-            logger.info("📖 Found userscripts data in UserDefaults (\(data.count) bytes)")
-            
-            do {
-                let savedUserScripts: [UserScript] = try JSONDecoder().decode([UserScript].self, from: data)
-                logger.info("📖 Decoded \(savedUserScripts.count) userscripts from storage")
-                
-                userScripts = savedUserScripts
-                
-                // Update content from stored files
-                for i in 0..<userScripts.count {
-                    let script = userScripts[i]
-                    logger.info("📖 Loading content for script: \(script.name) (ID: \(script.id))")
-                    logger.info("📖 Script enabled: \(script.isEnabled), matches: \(script.matches)")
-                    
-                    if let content = readUserScriptContent(userScripts[i]) {
-                        userScripts[i].content = content
-                        logger.info("✅ Loaded content for \(script.name) (\(content.count) characters)")
-                    } else {
-                        logger.warning("⚠️ Failed to load content for \(script.name)")
-                    }
-                }
-                
-                // Check if we need to add any missing default scripts
-                checkAndAddMissingDefaultScripts()
-                
-            } catch {
-                logger.error("❌ Failed to decode userscripts: \(error)")
-            }
-        } else {
-            logger.info("📖 No userscripts found in UserDefaults")
-            // Load default userscripts for first-time users
+        if userScripts.isEmpty {
+            logger.info("📖 No userscripts found, loading defaults")
             loadDefaultUserScripts()
+        } else {
+            // Update content from stored files
+            for i in 0..<userScripts.count {
+                let script = userScripts[i]
+                logger.info("📖 Loading content for script: \(script.name) (ID: \(script.id))")
+                logger.info("📖 Script enabled: \(script.isEnabled), matches: \(script.matches)")
+                
+                if let content = readUserScriptContent(userScripts[i]) {
+                    userScripts[i].content = content
+                    logger.info("✅ Loaded content for \(script.name) (\(content.count) characters)")
+                } else {
+                    logger.warning("⚠️ Failed to load content for \(script.name)")
+                }
+            }
+            
+            // Check if we need to add any missing default scripts
+            checkAndAddMissingDefaultScripts()
         }
     }
     
@@ -298,16 +272,9 @@ public class UserScriptManager: ObservableObject {
     }
     
     private func saveUserScripts() {
-        do {
-            let data = try JSONEncoder().encode(userScripts)
-            groupUserDefaults.set(data, forKey: userScriptsKey)
-            logger.info("💾 Saved \(self.userScripts.count) userscripts to UserDefaults (\(data.count) bytes)")
-            
-            // Force synchronization
-            let success = groupUserDefaults.synchronize()
-            logger.info("💾 UserDefaults synchronize result: \(success)")
-        } catch {
-            logger.error("❌ Failed to encode userscripts for saving: \(error)")
+        Task { @MainActor in
+            await dataManager.updateUserScripts(userScripts)
+            logger.info("💾 Saved \(self.userScripts.count) userscripts to ProtobufDataManager")
         }
     }
     

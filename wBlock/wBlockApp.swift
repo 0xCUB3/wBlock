@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import SwiftData
+import wBlockCoreService
 
 @main
 struct wBlockApp: App {
@@ -18,20 +18,12 @@ struct wBlockApp: App {
 
     @StateObject private var filterManager = AppFilterManager()
 
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+    @StateObject private var dataManager = ProtobufDataManager.shared
+    
+    private var hasCompletedOnboarding: Bool {
+        dataManager.hasCompletedOnboarding
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -40,15 +32,17 @@ struct wBlockApp: App {
                     appDelegate.filterManager = filterManager
                 }
         }
-        .modelContainer(sharedModelContainer)
         #if os(macOS)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Restart Onboarding…") {
-                    hasCompletedOnboarding = false
+                    Task { @MainActor in
+                        await dataManager.updateAppSettings(hasCompletedOnboarding: false)
+                    }
                 }
             }
         }
         #endif
     }
 }
+

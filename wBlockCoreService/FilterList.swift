@@ -17,4 +17,15 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var description: String = ""
     public var version: String = ""
     public var sourceRuleCount: Int?
+    
+    public init(id: UUID = UUID(), name: String, url: URL, category: FilterListCategory, isSelected: Bool = false, description: String = "", version: String = "", sourceRuleCount: Int? = nil) {
+        self.id = id
+        self.name = name
+        self.url = url
+        self.category = category
+        self.isSelected = isSelected
+        self.description = description
+        self.version = version
+        self.sourceRuleCount = sourceRuleCount
+    }
 }

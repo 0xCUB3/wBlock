@@ -9,8 +9,27 @@ struct OnboardingView: View {
         var id: String { rawValue }
     }
 
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
-    @AppStorage("selectedBlockingLevel") private var selectedBlockingLevel: String = BlockingLevel.recommended.rawValue
+    @StateObject private var dataManager = ProtobufDataManager.shared
+    
+    private var hasCompletedOnboarding: Bool {
+        dataManager.hasCompletedOnboarding
+    }
+
+    private func setHasCompletedOnboarding(_ value: Bool) {
+        Task { @MainActor in
+            await dataManager.setHasCompletedOnboarding(value)
+        }
+    }
+    
+    private var selectedBlockingLevel: String {
+        dataManager.selectedBlockingLevel
+    }
+
+    private func setSelectedBlockingLevel(_ value: String) {
+        Task { @MainActor in
+            await dataManager.setSelectedBlockingLevel(value)
+        }
+    }
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: Int = 0
     @State private var isApplying: Bool = false
@@ -99,7 +118,7 @@ struct OnboardingView: View {
                 .font(.subheadline)
             ForEach(BlockingLevel.allCases) { level in
                 Button(action: {
-                    selectedBlockingLevel = level.rawValue
+                    setSelectedBlockingLevel(level.rawValue)
                 }) {
                     HStack {
                         Image(systemName: selectedBlockingLevel == level.rawValue ? "largecircle.fill.circle" : "circle")
@@ -230,7 +249,7 @@ struct OnboardingView: View {
                 Spacer()
                 Button("Apply & Finish") {
                     applySettings()
-                    hasCompletedOnboarding = true
+                    setHasCompletedOnboarding(true)
                 }
                 .keyboardShortcut(.defaultAction)
             }
@@ -299,7 +318,7 @@ struct OnboardingView: View {
                 self.applyProgress = progress
             })
             isApplying = false
-            hasCompletedOnboarding = true
+            setHasCompletedOnboarding(true)
         }
     }
 }
