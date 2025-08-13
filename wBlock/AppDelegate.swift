@@ -66,7 +66,26 @@ extension AppDelegate: NSApplicationDelegate {
 extension AppDelegate: UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        // Request silent push capability (no UI notifications) and register
+        UNUserNotificationCenter.current().requestAuthorization(options: []) { _, _ in }
+        application.registerForRemoteNotifications()
         return true
+    }
+
+    /// Handle incoming silent pushes to update filter lists in background
+    func application(_ application: UIApplication,
+                     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        // Only handle filter list updates
+        if let updateType = userInfo["update"] as? String, updateType == "filterList",
+           let manager = filterManager {
+            Task {
+                await manager.applyChanges()
+                completionHandler(.newData)
+            }
+        } else {
+            completionHandler(.noData)
+        }
     }
 }
 

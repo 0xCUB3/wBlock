@@ -18,9 +18,8 @@ struct wBlockApp: App {
 
     @StateObject private var filterManager = AppFilterManager()
 
-
     @StateObject private var dataManager = ProtobufDataManager.shared
-    
+
     private var hasCompletedOnboarding: Bool {
         dataManager.hasCompletedOnboarding
     }
@@ -30,6 +29,13 @@ struct wBlockApp: App {
             ContentView(filterManager: filterManager)
                 .onAppear {
                     appDelegate.filterManager = filterManager
+                    // At launch, check for pending filter-list updates and apply if available
+                    Task {
+                        let pending = await filterManager.filterUpdater.checkForUpdates(filterLists: filterManager.filterLists)
+                        if !pending.isEmpty {
+                            await filterManager.applyChanges()
+                        }
+                    }
                 }
         }
         #if os(macOS)
