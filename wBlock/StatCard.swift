@@ -24,7 +24,13 @@ struct StatCard: View {
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text({
+                    #if os(iOS)
+                    title == "Enabled Lists" ? "Enabled" : title
+                    #else
+                    title
+                    #endif
+                }())
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
@@ -33,10 +39,12 @@ struct StatCard: View {
                     .fontWeight(.semibold)
                     .foregroundColor(valueColor)
                     .frame(minWidth: valueWidth, alignment: .leading)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 20)
+    .padding(.vertical, 12)
+    .padding(.horizontal, 20)
         .background(
             Group {
                 #if os(iOS)
