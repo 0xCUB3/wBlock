@@ -27,6 +27,17 @@ struct ContentView: View {
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
     }
+    // Sum of sourceRuleCount for selected filters as initial estimate
+    private var sourceRulesCount: Int {
+        filterManager.filterLists
+            .filter { $0.isSelected }
+            .compactMap { $0.sourceRuleCount }
+            .reduce(0, +)
+    }
+    // Show the last applied rule count, falling back to source count if no prior apply
+    private var displayedRuleCount: Int {
+        max(filterManager.lastRuleCount, sourceRulesCount)
+    }
     
     private var displayableCategories: [FilterListCategory] {
         FilterListCategory.allCases.filter { $0 != .all && $0 != .custom }
@@ -303,7 +314,7 @@ struct ContentView: View {
             )
             StatCard(
                 title: "Safari Rules",
-                value: filterManager.lastRuleCount.formatted(),
+                value: displayedRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
                 pillColor: .clear, // Remove global pill color logic
                 valueColor: .primary
