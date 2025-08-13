@@ -312,6 +312,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
     ) {
         // Use an asynchronous task to update the blocking counter.
         Task {
+            // Update the blocked count and then refresh the toolbar badge
             await ToolbarData.shared.trackBlocked(on: page, count: urls.count)
         }
     }
@@ -326,6 +327,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
     ///   - url: The destination URL (if provided).
     public override func page(_ page: SFSafariPage, willNavigateTo url: URL?) {
         Task {
+            // Reset blocked count and then refresh the toolbar badge
             await ToolbarData.shared.resetBlocked(on: page)
         }
     }
@@ -506,3 +508,4 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         return Array(zapperHostnames)
     }
 }
+
