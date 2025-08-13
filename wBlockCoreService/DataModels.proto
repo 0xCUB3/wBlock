@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package wblock.data;
+
+// Main data container for all app data
+message AppData {
+  AppSettings settings = 1;
+  repeated FilterListData filter_lists = 2;
+  repeated UserScriptData user_scripts = 3;
+  WhitelistData whitelist = 4;
+  RuleCountData rule_counts = 5;
+  PerformanceData performance = 6;
+}
+
+// App-wide settings
+message AppSettings {
+  bool has_completed_onboarding = 1;
+  string selected_blocking_level = 2;
+  int64 last_update_check = 3;
+  bool show_advanced_features = 4;
+  string app_version = 5;
+}
+
+// Filter list data structure
+message FilterListData {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+  FilterListCategory category = 4;
+  bool is_selected = 5;
+  string description = 6;
+  string version = 7;
+  optional int32 source_rule_count = 8;
+  int64 last_updated = 9;
+  bool is_custom = 10;
+  string local_file_path = 11;
+}
+
+// Filter list categories
+enum FilterListCategory {
+  FILTER_LIST_CATEGORY_UNSPECIFIED = 0;
+  FILTER_LIST_CATEGORY_ALL = 1;
+  FILTER_LIST_CATEGORY_ADS = 2;
+  FILTER_LIST_CATEGORY_PRIVACY = 3;
+  FILTER_LIST_CATEGORY_SECURITY = 4;
+  FILTER_LIST_CATEGORY_MULTIPURPOSE = 5;
+  FILTER_LIST_CATEGORY_ANNOYANCES = 6;
+  FILTER_LIST_CATEGORY_EXPERIMENTAL = 7;
+  FILTER_LIST_CATEGORY_CUSTOM = 8;
+  FILTER_LIST_CATEGORY_FOREIGN = 9;
+  FILTER_LIST_CATEGORY_SCRIPTS = 10;
+}
+
+// User script data structure
+message UserScriptData {
+  string id = 1;
+  string name = 2;
+  optional string url = 3;
+  bool is_enabled = 4;
+  string description = 5;
+  string version = 6;
+  repeated string matches = 7;
+  repeated string exclude_matches = 8;
+  repeated string includes = 9;
+  repeated string excludes = 10;
+  string run_at = 11;
+  string inject_into = 12;
+  repeated string grant = 13;
+  bool is_local = 14;
+  optional string update_url = 15;
+  optional string download_url = 16;
+  string content = 17;
+  int64 last_updated = 18;
+}
+
+// Whitelist/disabled sites data
+message WhitelistData {
+  repeated string disabled_sites = 1;
+  int64 last_updated = 2;
+}
+
+// Rule count tracking data
+message RuleCountData {
+  int32 last_rule_count = 1;
+  map<string, int32> rule_counts_by_category = 2;
+  repeated string categories_approaching_limit = 3;
+  int64 last_updated = 4;
+}
+
+// Performance and timing data
+message PerformanceData {
+  string last_conversion_time = 1;
+  string last_reload_time = 2;
+  string last_fast_update_time = 3;
+  int32 fast_update_count = 4;
+  int32 source_rules_count = 5;
+  string conversion_stage_description = 6;
+  string current_filter_name = 7;
+  int32 processed_filters_count = 8;
+  int32 total_filters_count = 9;
+  Platform current_platform = 10;
+}
+
+// Platform enumeration
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_MACOS = 1;
+  PLATFORM_IOS = 2;
+}
+
+// Extension-specific data for Safari extensions
+message ExtensionData {
+  map<string, TabData> tab_blocked_requests = 1;
+  repeated string zapper_rules = 2;
+  int64 last_updated = 3;
+}
+
+// Tab-specific blocking data
+message TabData {
+  int32 blocked_count = 1;
+  bool is_disabled = 2;
+  string host = 3;
+  int64 last_updated = 4;
+}

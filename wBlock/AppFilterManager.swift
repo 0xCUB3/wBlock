@@ -63,7 +63,7 @@ class AppFilterManager: ObservableObject {
     private let loader: FilterListLoader
     private(set) var filterUpdater: FilterListUpdater
     private let logManager: ConcurrentLogManager
-    private let groupUserDefaults: UserDefaults
+    private let dataManager = ProtobufDataManager.shared
     
     // Per-site disable tracking
     private var lastKnownDisabledSites: [String] = []
@@ -73,14 +73,16 @@ class AppFilterManager: ObservableObject {
     
     // Save filter lists
     func saveFilterLists() {
-        loader.saveFilterLists(filterLists) // This will also save the sourceRuleCount if present
+        Task { @MainActor in
+            await dataManager.updateFilterLists(filterLists)
+            // TODO: Implement updateCustomFilterLists if needed
+        }
     }
 
     init() {
         self.logManager = ConcurrentLogManager.shared
         self.loader = FilterListLoader(logManager: self.logManager)
         self.filterUpdater = FilterListUpdater(loader: self.loader, logManager: self.logManager)
-        self.groupUserDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
         
         #if os(macOS)
         self.currentPlatform = .macOS
@@ -93,12 +95,18 @@ class AppFilterManager: ObservableObject {
 
     private func setup() {
         filterUpdater.filterListManager = self
-        loader.checkAndCreateGroupFolder()
-        filterLists = loader.loadFilterLists()
-        customFilterLists = loader.loadCustomFilterLists()
-        loader.loadSelectedState(for: &filterLists)
         
-        // Load saved rule counts instead of reloading content blockers
+        // Load filter lists from protobuf data manager
+        filterLists = dataManager.getFilterLists()
+        customFilterLists = dataManager.getCustomFilterLists()
+        // If no lists stored yet, load defaults via loader and persist
+        if filterLists.isEmpty {
+            let defaultLists = loader.loadFilterLists()
+            filterLists = defaultLists
+            saveFilterLists()
+        }
+        
+        // Load saved rule counts from protobuf data
         loadSavedRuleCounts()
         
         // Set up observer for disabled sites changes
@@ -112,10 +120,10 @@ class AppFilterManager: ObservableObject {
     /// Sets up an observer to automatically rebuild content blockers when disabled sites change
     private func setupDisabledSitesObserver() {
         // Store the last known disabled sites to detect changes
-        lastKnownDisabledSites = groupUserDefaults.stringArray(forKey: "disabledSites") ?? []
+    lastKnownDisabledSites = dataManager.disabledSites
         
         // Use a timer to periodically check for changes in disabled sites
-        // This is more reliable than UserDefaults notifications across app groups
+        // This is more reliable than protobuf data notifications across app groups
         disabledSitesCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.checkForDisabledSitesChanges()
@@ -126,7 +134,7 @@ class AppFilterManager: ObservableObject {
     /// Checks for changes in disabled sites and triggers fast rebuild if needed
     @MainActor
     private func checkForDisabledSitesChanges() async {
-        let currentDisabledSites = groupUserDefaults.stringArray(forKey: "disabledSites") ?? []
+    let currentDisabledSites = dataManager.disabledSites
         
         if currentDisabledSites != lastKnownDisabledSites {
             await ConcurrentLogManager.shared.log("🔄 Disabled sites changed from \(lastKnownDisabledSites) to \(currentDisabledSites), fast rebuilding content blockers")
@@ -220,48 +228,31 @@ class AppFilterManager: ObservableObject {
     }
     
     private func loadSavedRuleCounts() {
-        // Load last known rule count
-        lastRuleCount = groupUserDefaults.integer(forKey: "lastRuleCount")
+        // Load last known rule count from protobuf data
+    lastRuleCount = dataManager.lastRuleCount
         
         // Load category-specific rule counts
-        if let data = groupUserDefaults.data(forKey: "ruleCountsByCategory"),
-           let savedCounts = try? JSONDecoder().decode([String: Int].self, from: data) {
-            for (key, value) in savedCounts {
-                if let category = FilterListCategory(rawValue: key) {
-                    ruleCountsByCategory[category] = value
-                }
+    for (categoryKey, count) in dataManager.ruleCountsByCategory {
+            if let category = FilterListCategory(rawValue: categoryKey) {
+                ruleCountsByCategory[category] = Int(count)
             }
         }
         
         // Load categories approaching limit
-        if let data = groupUserDefaults.data(forKey: "categoriesApproachingLimit"),
-           let categoryNames = try? JSONDecoder().decode([String].self, from: data) {
-            for name in categoryNames {
-                if let category = FilterListCategory(rawValue: name) {
-                    categoriesApproachingLimit.insert(category)
-                }
+    for categoryName in dataManager.categoriesApproachingLimit {
+            if let category = FilterListCategory(rawValue: categoryName) {
+                categoriesApproachingLimit.insert(category)
             }
         }
     }
     
     private func saveRuleCounts() {
-        // Save global rule count
-        groupUserDefaults.set(lastRuleCount, forKey: "lastRuleCount")
-        
-        // Save category-specific rule counts
-        var serializedCounts: [String: Int] = [:]
-        for (category, count) in ruleCountsByCategory {
-            serializedCounts[category.rawValue] = count
-        }
-        
-        if let data = try? JSONEncoder().encode(serializedCounts) {
-            groupUserDefaults.set(data, forKey: "ruleCountsByCategory")
-        }
-        
-        // Save categories approaching limit
-        let categoryNames = categoriesApproachingLimit.map { $0.rawValue }
-        if let data = try? JSONEncoder().encode(categoryNames) {
-            groupUserDefaults.set(data, forKey: "categoriesApproachingLimit")
+        Task { @MainActor in
+            await dataManager.updateRuleCounts(
+                lastRuleCount: lastRuleCount,
+                ruleCountsByCategory: ruleCountsByCategory,
+                categoriesApproachingLimit: categoriesApproachingLimit
+            )
         }
     }
     
@@ -307,7 +298,7 @@ class AppFilterManager: ObservableObject {
     func toggleFilterListSelection(id: UUID) {
         if let index = filterLists.firstIndex(where: { $0.id == id }) {
             filterLists[index].isSelected.toggle()
-            loader.saveSelectedState(for: filterLists)
+            saveFilterLists()
             hasUnappliedChanges = true
         }
     }
@@ -339,7 +330,7 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        loader.saveSelectedState(for: filterLists)
+        saveFilterLists()
         hasUnappliedChanges = true
     }
 
@@ -1201,7 +1192,7 @@ class AppFilterManager: ObservableObject {
             filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)
         }
 
-        loader.saveSelectedState(for: filterLists)
+        saveFilterLists()
         hasUnappliedChanges = false
         statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
         
@@ -1216,3 +1207,4 @@ class AppFilterManager: ObservableObject {
         filterUpdater.userScriptManager = userScriptManager
     }
 }
+

@@ -69,17 +69,6 @@ struct WhitelistManagerView: View {
                 .disabled(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isProcessing)
             }
             .padding()
-            if showError {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-            ProgressView()
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.05))
-                .transition(.opacity.combined(with: .move(edge: .top)))
             HStack(spacing: 16) {
                 Button("Select All") {
                     selectedDomains = Set(whitelistedDomains)

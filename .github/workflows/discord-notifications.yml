@@ -1,0 +1,26 @@
+name: Discord Notifications
+
+on:
+  push:
+    branches:
+      - '**'
+  issues:
+    types: [opened, edited, closed, reopened]
+  issue_comment:
+    types: [created, edited, deleted]
+  pull_request:
+    types: [opened, edited, closed, reopened]
+  pull_request_review_comment:
+    types: [created, edited, deleted]
+
+jobs:
+  notify_discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send to Discord
+        uses: Sniddl/discord-commits@v1.6
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          template: 'avatar-with-link'
+          include-extras: true
+          last-commit-only: false

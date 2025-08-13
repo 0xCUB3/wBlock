@@ -9,8 +9,27 @@ struct OnboardingView: View {
         var id: String { rawValue }
     }
 
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
-    @AppStorage("selectedBlockingLevel") private var selectedBlockingLevel: String = BlockingLevel.recommended.rawValue
+    @StateObject private var dataManager = ProtobufDataManager.shared
+    
+    private var hasCompletedOnboarding: Bool {
+        dataManager.hasCompletedOnboarding
+    }
+
+    private func setHasCompletedOnboarding(_ value: Bool) {
+        Task { @MainActor in
+            await dataManager.setHasCompletedOnboarding(value)
+        }
+    }
+    
+    private var selectedBlockingLevel: String {
+        dataManager.selectedBlockingLevel
+    }
+
+    private func setSelectedBlockingLevel(_ value: String) {
+        Task { @MainActor in
+            await dataManager.setSelectedBlockingLevel(value)
+        }
+    }
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: Int = 0
     @State private var isApplying: Bool = false
@@ -18,6 +37,7 @@ struct OnboardingView: View {
 
     let filterManager: AppFilterManager
     let userScriptManager: UserScriptManager
+    @Environment(\.dismiss) private var dismiss
 
     // Use the real default userscripts from UserScriptManager
     var defaultUserScripts: [(id: String, name: String, description: String)] {
@@ -77,10 +97,7 @@ struct OnboardingView: View {
                     .progressViewStyle(.linear)
                     .frame(maxWidth: 300)
                 VStack(spacing: 4) {
-                    Text("Downloading and installing filter lists...")
-                        .multilineTextAlignment(.center)
-                    Text("Applying filters...")
-                        .font(.headline)
+                    Text("Downloading and applying filter lists...")
                         .multilineTextAlignment(.center)
                     Text("This may take awhile")
                         .font(.caption)
@@ -99,7 +116,7 @@ struct OnboardingView: View {
                 .font(.subheadline)
             ForEach(BlockingLevel.allCases) { level in
                 Button(action: {
-                    selectedBlockingLevel = level.rawValue
+                    setSelectedBlockingLevel(level.rawValue)
                 }) {
                     HStack {
                         Image(systemName: selectedBlockingLevel == level.rawValue ? "largecircle.fill.circle" : "circle")
@@ -113,6 +130,8 @@ struct OnboardingView: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(level == .complete)
+                .opacity(level == .complete ? 0.5 : 1.0)
             }
             Spacer()
             HStack {
@@ -230,7 +249,6 @@ struct OnboardingView: View {
                 Spacer()
                 Button("Apply & Finish") {
                     applySettings()
-                    hasCompletedOnboarding = true
                 }
                 .keyboardShortcut(.defaultAction)
             }
@@ -296,10 +314,12 @@ struct OnboardingView: View {
         let enabledFilters = filterManager.filterLists.filter { $0.isSelected }
         Task { @MainActor in
             await filterManager.downloadAndApplyFilters(filters: enabledFilters, progress: { progress in
-                self.applyProgress = progress
+                applyProgress = progress
             })
             isApplying = false
-            hasCompletedOnboarding = true
+            setHasCompletedOnboarding(true)
+            dismiss()
+            filterManager.showingApplyProgressSheet = true
         }
     }
 }

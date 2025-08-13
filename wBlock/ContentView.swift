@@ -12,16 +12,32 @@ import UserNotifications
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
     @StateObject private var userScriptManager = UserScriptManager()
+    @StateObject private var dataManager = ProtobufDataManager.shared
+    @State private var showOnboarding = false
     @State private var showingAddFilterSheet = false
     @State private var showingLogsView = false
     @State private var showingUserScriptsView = false
     @State private var showOnlyEnabledLists = false
     @State private var showingWhitelistSheet = false
     @Environment(\.scenePhase) var scenePhase
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+    
+    private var hasCompletedOnboarding: Bool {
+        dataManager.hasCompletedOnboarding
+    }
 
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
+    }
+    // Sum of sourceRuleCount for selected filters as initial estimate
+    private var sourceRulesCount: Int {
+        filterManager.filterLists
+            .filter { $0.isSelected }
+            .compactMap { $0.sourceRuleCount }
+            .reduce(0, +)
+    }
+    // Show the last applied rule count, falling back to source count if no prior apply
+    private var displayedRuleCount: Int {
+        max(filterManager.lastRuleCount, sourceRulesCount)
     }
     
     private var displayableCategories: [FilterListCategory] {
@@ -211,11 +227,18 @@ struct ContentView: View {
             #endif
         }
         #if os(iOS)
-        .fullScreenCover(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { _ in })) {
+        // Show onboarding only after data finished loading and onboarding not completed
+        .fullScreenCover(isPresented: Binding(
+            get: { !dataManager.isLoading && !hasCompletedOnboarding },
+            set: { _ in }
+        )) {
             OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
         }
         #elseif os(macOS)
-        .sheet(isPresented: Binding(get: { !hasCompletedOnboarding }, set: { _ in })) {
+        .sheet(isPresented: Binding(
+            get: { !dataManager.isLoading && !hasCompletedOnboarding },
+            set: { _ in }
+        )) {
             OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
         }
         #endif
@@ -298,10 +321,10 @@ struct ContentView: View {
                 valueColor: .primary
             )
             StatCard(
-                title: "Safari Rules",
-                value: filterManager.lastRuleCount.formatted(),
+                title: "Filter Rules",
+                value: displayedRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
-                pillColor: .clear, // Remove global pill color logic
+                pillColor: .clear,
                 valueColor: .primary
             )
         }
