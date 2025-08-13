@@ -137,7 +137,8 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Bypasses Anti-Adblock scripts used on some websites."),
             FilterList(id: UUID(), name: "Bypass Paywalls Clean Filter", url: URL(string: "https://raw.githubusercontent.com/0xCUB3/Website/refs/heads/main/content/bpc-paywall-filter.txt")!, category: FilterListCategory.multipurpose, description: "Blocks paywall-related elements. Enable the corresponding userscript for best results."),
             FilterList(id: UUID(), name: "AdGuard Experimental Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: FilterListCategory.experimental, description: "Contains new rules and fixes not yet included in other filters."),
-
+            FilterList(id: UUID(), name: "EasyList Italy", url: URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!, category: FilterListCategory.foreign, description: "Italian ad-blocking rules from EasyList Italy."),
+            
             // Foreign Filter Lists
             FilterList(id: UUID(), name: "AdGuard Spanish & Portuguese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/9_optimized.txt")!, category: FilterListCategory.foreign),
             FilterList(id: UUID(), name: "Liste FR + AdGuard French Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/16_optimized.txt")!, category: FilterListCategory.foreign),
@@ -148,6 +149,10 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "AdGuard Turkish Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/13_optimized.txt")!, category: FilterListCategory.foreign),
             FilterList(id: UUID(), name: "AdGuard Chinese Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/224_optimized.txt")!, category: FilterListCategory.foreign)
         ]
+
+        #if os(iOS)
+        filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
+        #endif
 
         #if os(macOS)
         // macOS-only filters too large for iOS
@@ -175,7 +180,8 @@ class FilterListLoader {
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
             "AdGuard Annoyances Filter",
-            "Anti-Adblock List"
+            "Anti-Adblock List",
+            "AdGuard Mobile Filter", // Added for iOS/iPadOS
         ]
         #endif
 
