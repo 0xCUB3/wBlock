@@ -11,7 +11,7 @@ import UserNotifications
 
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
-    @StateObject private var userScriptManager = UserScriptManager()
+    @StateObject private var userScriptManager = UserScriptManager.shared
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showOnboarding = false
     @State private var showingAddFilterSheet = false

@@ -182,10 +182,9 @@ public enum WebExtensionRequestHandler {
             return
         }
         
-        // For now, we'll create a simple UserScriptManager instance
-        // In a real implementation, this would be shared or cached
+        // Use the shared UserScriptManager instance
         Task { @MainActor in
-            let userScriptManager = UserScriptManager()
+            let userScriptManager = UserScriptManager.shared
             let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
             
             let userScriptPayload = userScripts.map { script in

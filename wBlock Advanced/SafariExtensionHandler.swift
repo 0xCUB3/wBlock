@@ -16,15 +16,9 @@ import os.log
 /// blocking events.
 public class SafariExtensionHandler: SFSafariExtensionHandler {
     
-    private var _userScriptManager: UserScriptManager? // Replaces the lazy var
-
     @MainActor
     private func getOrCreateUserScriptManager() -> UserScriptManager { // New helper method
-        if _userScriptManager == nil {
-            // UserScriptManager() is now called within a @MainActor function
-            _userScriptManager = UserScriptManager()
-        }
-        return _userScriptManager!
+        return UserScriptManager.shared
     }
     
     /// MainActor-isolated accessor for the userscript manager

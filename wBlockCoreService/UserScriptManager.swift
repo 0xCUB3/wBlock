@@ -24,6 +24,10 @@ public class UserScriptManager: ObservableObject {
     private let sharedContainerIdentifier = "group.skula.wBlock"
     private let dataManager = ProtobufDataManager.shared
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
+    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Singleton
+    public static let shared = UserScriptManager()
     
     private let defaultUserScripts: [(name: String, url: String)] = [
         ("Return YouTube Dislike", "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js"),
@@ -31,7 +35,7 @@ public class UserScriptManager: ObservableObject {
         ("YouTube Classic", "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js")
     ]
     
-    public init() {
+    private init() {
         logger.info("🔧 UserScriptManager initializing...")
         
         // Test UserDefaults access
@@ -49,7 +53,55 @@ public class UserScriptManager: ObservableObject {
         // Load user scripts from protobuf data manager
         userScripts = dataManager.getUserScripts()
         logger.info("🔧 Loaded \(self.userScripts.count) user scripts from ProtobufDataManager")
+        
+        // Set up observer to automatically sync when data manager changes
+        dataManager.$appData
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.syncFromDataManager()
+                }
+            }
+            .store(in: &cancellables)
+        
         setup()
+    }
+    
+    private func syncFromDataManager() {
+        let newUserScripts = dataManager.getUserScripts()
+        logger.info("🔄 Syncing userscripts from data manager: \(newUserScripts.count) scripts")
+        
+        // Update content from stored files
+        var updatedScripts = newUserScripts
+        for i in 0..<updatedScripts.count {
+            if let content = readUserScriptContent(updatedScripts[i]) {
+                updatedScripts[i].content = content
+            }
+        }
+        
+        // Only update if the scripts have actually changed to avoid unnecessary UI updates
+        if !areUserScriptsEqual(userScripts, updatedScripts) {
+            userScripts = updatedScripts
+            logger.info("✅ Updated userscripts from data manager")
+        }
+    }
+    
+    private func areUserScriptsEqual(_ scripts1: [UserScript], _ scripts2: [UserScript]) -> Bool {
+        guard scripts1.count == scripts2.count else { return false }
+        
+        for i in 0..<scripts1.count {
+            let script1 = scripts1[i]
+            let script2 = scripts2[i]
+            
+            if script1.id != script2.id ||
+               script1.isEnabled != script2.isEnabled ||
+               script1.name != script2.name ||
+               script1.version != script2.version ||
+               script1.content != script2.content {
+                return false
+            }
+        }
+        
+        return true
     }
     
     private func setup() {
