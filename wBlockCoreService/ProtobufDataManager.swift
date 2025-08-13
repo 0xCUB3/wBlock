@@ -128,22 +128,23 @@ public class ProtobufDataManager: ObservableObject {
             // Check if migration is needed
             if !fileManager.fileExists(atPath: migrationFlagURL.path) {
                 logger.info("🔄 Starting migration from UserDefaults/SwiftData...")
-                await migrateFromLegacyStorage()
+                await Task.detached(priority: .utility) { await migrateFromLegacyStorage() }.value
                 try Data().write(to: migrationFlagURL)
                 logger.info("✅ Migration completed")
             }
             
             // Load protobuf data
             if fileManager.fileExists(atPath: dataFileURL.path) {
-                let data = try Data(contentsOf: dataFileURL)
-                let loadedData = try Wblock_Data_AppData(serializedData: data)
+                    let raw = try await Task.detached(priority: .utility) { try Data(contentsOf: dataFileURL, options: .mappedIfSafe) }.value
+                    let dataBlob = (raw as NSData).decompressed(using: .lz4) as Data? ?? raw
+                    let loadedData = try await Task.detached(priority: .utility) { try Wblock_Data_AppData(serializedData: dataBlob) }.value
                 
                 await MainActor.run {
                     self.appData = loadedData
                     self.lastError = nil
                 }
                 
-                logger.info("✅ Loaded protobuf data (\(data.count) bytes)")
+                logger.info("✅ Loaded protobuf data (\(loadedData.serializedData().count) bytes)")
             } else {
                 logger.info("📝 No existing data file, creating default data")
                 await createDefaultData()
@@ -154,7 +155,7 @@ public class ProtobufDataManager: ObservableObject {
             await MainActor.run { self.lastError = error }
             
             // Try to load backup
-            await loadBackup()
+            await Task.detached(priority: .utility) { await loadBackup() }.value
         }
         
         await MainActor.run { isLoading = false }
@@ -163,23 +164,24 @@ public class ProtobufDataManager: ObservableObject {
     private func loadBackup() async {
         guard fileManager.fileExists(atPath: backupFileURL.path) else {
             logger.info("📝 No backup file available, creating default data")
-            await createDefaultData()
+            await Task.detached(priority: .utility) { await createDefaultData() }.value
             return
         }
         
         do {
-            let backupData = try Data(contentsOf: backupFileURL)
-            let loadedData = try Wblock_Data_AppData(serializedData: backupData)
+            let rawBack = try await Task.detached(priority: .utility) { try Data(contentsOf: backupFileURL, options: .mappedIfSafe) }.value
+                let dataBlob = (rawBack as NSData).decompressed(using: .lz4) as Data? ?? rawBack
+                let loadedData = try await Task.detached(priority: .utility) { try Wblock_Data_AppData(serializedData: dataBlob) }.value
             
             await MainActor.run {
                 self.appData = loadedData
                 self.lastError = nil
             }
             
-            logger.info("✅ Loaded backup data (\(backupData.count) bytes)")
+            logger.info("✅ Loaded backup data (\(loadedData.serializedData().count) bytes)")
         } catch {
             logger.error("❌ Failed to load backup: \(error)")
-            await createDefaultData()
+            await Task.detached(priority: .utility) { await createDefaultData() }.value
         }
     }
     
@@ -215,6 +217,7 @@ public class ProtobufDataManager: ObservableObject {
     // MARK: - Data Saving (debounced)
     private var pendingSaveWorkItem: DispatchWorkItem?
     private let saveDebounceInterval: TimeInterval = 0.5
+    private let ioQueue = DispatchQueue(label: "com.skula.wBlock.dataIO", qos: .utility)
     private var lastSavedData: Data?
 
     public func saveData() {
@@ -226,8 +229,9 @@ public class ProtobufDataManager: ObservableObject {
                 await self?.performSaveData()
             }
         }
-        pendingSaveWorkItem = work
-        DispatchQueue.global().asyncAfter(deadline: .now() + saveDebounceInterval, execute: work)
+    pendingSaveWorkItem = work
+    // Schedule on dedicated I/O queue to ensure serialized file operations
+    ioQueue.asyncAfter(deadline: .now() + saveDebounceInterval, execute: work)
     }
 
     // Perform serialization and file I/O off the main actor to avoid blocking UI
@@ -239,15 +243,19 @@ public class ProtobufDataManager: ObservableObject {
             let data = try snapshot.serializedData()
             // Skip save if data hasn't changed since last write
             let previous = await MainActor.run { lastSavedData }
-            if let previous = previous, previous == data {
+                let blob: Data
+                if data.count > 1024, let comp = (data as NSData).compressed(using: .lz4) as Data? {
+                    blob = comp
+                } else {
+                    blob = data
+                }
+                if let previous = previous, previous == blob {
                 return
             }
-            let tempURL = dataFileURL.appendingPathExtension("tmp")
-            try data.write(to: tempURL, options: .atomic)
-        _ = try fileManager.replaceItemAt(dataFileURL, withItemAt: tempURL, backupItemName: backupFileName)
+                try blob.write(to: dataFileURL, options: .atomic)
         logger.info("✅ Saved protobuf data (\(data.count) bytes)")
         await MainActor.run {
-            lastSavedData = data
+                    lastSavedData = blob
             lastError = nil
         }
         } catch {
