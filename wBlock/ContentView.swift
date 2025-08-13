@@ -313,10 +313,10 @@ struct ContentView: View {
                 valueColor: .primary
             )
             StatCard(
-                title: "Safari Rules",
+                title: "Filter Rules",
                 value: displayedRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
-                pillColor: .clear, // Remove global pill color logic
+                pillColor: .clear,
                 valueColor: .primary
             )
         }
