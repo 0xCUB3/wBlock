@@ -232,16 +232,12 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     private func performSaveData() async {
         do {
-            // Backup existing data
-            if fileManager.fileExists(atPath: dataFileURL.path) {
-                if fileManager.fileExists(atPath: backupFileURL.path) {
-                    try? fileManager.removeItem(at: backupFileURL)
-                }
-                try fileManager.copyItem(at: dataFileURL, to: backupFileURL)
-            }
-            // Serialize and write new data
+            // Serialize new data to a temporary file
             let data = try appData.serializedData()
-            try data.write(to: dataFileURL, options: .atomic)
+            let tempURL = dataFileURL.appendingPathExtension("tmp")
+            try data.write(to: tempURL, options: .atomic)
+            // Replace existing file atomically, backing up the old file
+            _ = try fileManager.replaceItemAt(dataFileURL, withItemAt: tempURL, backupItemName: backupFileName)
             logger.info("✅ Saved protobuf data (\(data.count) bytes)")
             self.lastError = nil
         } catch {
