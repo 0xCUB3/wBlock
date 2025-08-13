@@ -212,33 +212,41 @@ public class ProtobufDataManager: ObservableObject {
         logger.info("✅ Created default data")
     }
     
-    // MARK: - Data Saving
-    public func saveData() async {
+    // MARK: - Data Saving (debounced)
+    private var pendingSaveWorkItem: DispatchWorkItem?
+    private let saveDebounceInterval: TimeInterval = 0.5
+
+    public func saveData() {
+        // Cancel previous pending save
+        pendingSaveWorkItem?.cancel()
+        // Schedule new save
+        let work = DispatchWorkItem { [weak self] in
+            Task.detached { [weak self] in
+                await self?.performSaveData()
+            }
+        }
+        pendingSaveWorkItem = work
+        DispatchQueue.global().asyncAfter(deadline: .now() + saveDebounceInterval, execute: work)
+    }
+
+    @MainActor
+    private func performSaveData() async {
         do {
-            // Create backup of current data
+            // Backup existing data
             if fileManager.fileExists(atPath: dataFileURL.path) {
-                // Remove existing backup to allow overwriting
                 if fileManager.fileExists(atPath: backupFileURL.path) {
-                    try fileManager.removeItem(at: backupFileURL)
+                    try? fileManager.removeItem(at: backupFileURL)
                 }
                 try fileManager.copyItem(at: dataFileURL, to: backupFileURL)
             }
-            
-            // Serialize and save new data
+            // Serialize and write new data
             let data = try appData.serializedData()
             try data.write(to: dataFileURL, options: .atomic)
-            
             logger.info("✅ Saved protobuf data (\(data.count) bytes)")
-            
-            await MainActor.run {
-                self.lastError = nil
-            }
-            
+            self.lastError = nil
         } catch {
             logger.error("❌ Failed to save data: \(error)")
-            await MainActor.run {
-                self.lastError = error
-            }
+            self.lastError = error
         }
     }
     
