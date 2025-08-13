@@ -229,20 +229,22 @@ public class ProtobufDataManager: ObservableObject {
         DispatchQueue.global().asyncAfter(deadline: .now() + saveDebounceInterval, execute: work)
     }
 
-    @MainActor
+    // Perform serialization and file I/O off the main actor to avoid blocking UI
     private func performSaveData() async {
+        // Snapshot appData on main actor, then serialize in background
+        let snapshot = await MainActor.run { appData }
         do {
-            // Serialize new data to a temporary file
-            let data = try appData.serializedData()
+            // Serialize new data from snapshot
+            let data = try snapshot.serializedData()
             let tempURL = dataFileURL.appendingPathExtension("tmp")
             try data.write(to: tempURL, options: .atomic)
             // Replace existing file atomically, backing up the old file
             _ = try fileManager.replaceItemAt(dataFileURL, withItemAt: tempURL, backupItemName: backupFileName)
             logger.info("✅ Saved protobuf data (\(data.count) bytes)")
-            self.lastError = nil
+            await MainActor.run { self.lastError = nil }
         } catch {
             logger.error("❌ Failed to save data: \(error)")
-            self.lastError = error
+            await MainActor.run { self.lastError = error }
         }
     }
     
