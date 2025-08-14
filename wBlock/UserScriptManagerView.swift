@@ -185,9 +185,11 @@ struct UserScriptManagerView: View {
                         onToggle: {
                             Task {
                                 await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name) to \(script.isEnabled ? "disabled" : "enabled")")
+                                await userScriptManager.toggleUserScript(script)
+                                await MainActor.run {
+                                    refreshScripts()
+                                }
                             }
-                            userScriptManager.toggleUserScript(script)
-                            refreshScripts()
                         },
                         onUpdate: {
                             Task {

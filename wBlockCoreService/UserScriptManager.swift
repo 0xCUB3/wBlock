@@ -50,20 +50,29 @@ public class UserScriptManager: ObservableObject {
         // Using ProtobufDataManager for data persistence
         logger.info("✅ Using ProtobufDataManager for user script persistence")
         
-        // Load user scripts from protobuf data manager
-        userScripts = dataManager.getUserScripts()
-        logger.info("🔧 Loaded \(self.userScripts.count) user scripts from ProtobufDataManager")
-        
-        // Set up observer to automatically sync when data manager changes
-        dataManager.$appData
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.syncFromDataManager()
-                }
+        // Initialize user scripts after data manager finishes loading saved data
+        Task { @MainActor in
+            // Wait until ProtobufDataManager has loaded existing data
+            while dataManager.isLoading {
+                try? await Task.sleep(nanoseconds: 100_000_000)
             }
-            .store(in: &cancellables)
-        
-        setup()
+            // Load existing scripts
+            self.userScripts = dataManager.getUserScripts()
+            logger.info("🔧 Loaded \(self.userScripts.count) user scripts from ProtobufDataManager")
+
+            // Initial setup (folders, defaults, downloads)
+            self.setup()
+
+            // Observe dataManager for future changes
+            dataManager.$appData
+                .sink { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        self?.syncFromDataManager()
+                    }
+                }
+                .store(in: &cancellables)
+            logger.info("✅ UserScriptManager data sync observer setup complete")
+        }
     }
     
     private func syncFromDataManager() {
@@ -76,6 +85,12 @@ public class UserScriptManager: ObservableObject {
             if let content = readUserScriptContent(updatedScripts[i]) {
                 updatedScripts[i].content = content
             }
+        }
+        
+        // If data manager has no scripts but we have defaults, don't sync from empty data manager
+        if newUserScripts.isEmpty && !userScripts.isEmpty {
+            logger.info("🔄 Data manager is empty but we have userscripts - skipping sync to preserve defaults")
+            return
         }
         
         // Only update if the scripts have actually changed to avoid unnecessary UI updates
@@ -112,25 +127,44 @@ public class UserScriptManager: ObservableObject {
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
     }
     
-    private func checkAndCreateUserScriptsFolder() {
-        guard let containerURL = getSharedContainerURL() else {
-            logger.error("❌ Failed to get shared container URL")
-            return
+    /// Returns the directory URL for storing user scripts, using the shared app group container if available, otherwise falling back to Application Support.
+    // MARK: - Scripts Directory Locations
+    /// URL for group container scripts directory, if available
+    private var groupScriptsDirectoryURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)?
+            .appendingPathComponent("userscripts")
+    }
+    /// URL for fallback scripts directory in Application Support
+    private var fallbackScriptsDirectoryURL: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("wBlock").appendingPathComponent("userscripts")
+    }
+    /// Returns appropriate scripts directory, preferring group container
+    private func getUserScriptsDirectoryURL() -> URL? {
+        if let groupURL = groupScriptsDirectoryURL {
+            return groupURL
         }
-        
-        let userScriptsURL = containerURL.appendingPathComponent("userscripts")
-        logger.info("📁 Checking userscripts folder at: \(userScriptsURL.path)")
-        
-        if !FileManager.default.fileExists(atPath: userScriptsURL.path) {
-            do {
-                try FileManager.default.createDirectory(at: userScriptsURL, withIntermediateDirectories: true, attributes: nil)
-                logger.info("✅ Created userscripts directory")
-            } catch {
-                logger.error("❌ Error creating userscripts directory: \(error)")
-                print("Error creating userscripts directory: \(error)")
+        if let fallbackURL = fallbackScriptsDirectoryURL {
+            return fallbackURL
+        }
+        logger.error("❌ Failed to determine user scripts directory")
+        return nil
+    }
+    
+    private func checkAndCreateUserScriptsFolder() {
+        // Ensure both group and fallback directories exist
+        [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach { dirURL in
+            logger.info("📁 Ensuring userscripts folder at: \(dirURL.path)")
+            if !FileManager.default.fileExists(atPath: dirURL.path) {
+                do {
+                    try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true, attributes: nil)
+                    logger.info("✅ Created userscripts directory at: \(dirURL.path)")
+                } catch {
+                    logger.error("❌ Error creating userscripts directory at \(dirURL.path): \(error)")
+                }
+            } else {
+                logger.info("✅ Userscripts directory already exists at: \(dirURL.path)")
             }
-        } else {
-            logger.info("✅ Userscripts directory already exists")
         }
     }
     
@@ -149,8 +183,11 @@ public class UserScriptManager: ObservableObject {
         userScripts = dataManager.getUserScripts()
         logger.info("📖 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
         
+        // Always check for missing default scripts, regardless of whether we have existing scripts
+        checkAndAddMissingDefaultScripts()
+        
         if userScripts.isEmpty {
-            logger.info("📖 No userscripts found, loading defaults")
+            logger.info("📖 No userscripts found after default check, loading defaults")
             loadDefaultUserScripts()
         } else {
             // Update content from stored files
@@ -166,26 +203,37 @@ public class UserScriptManager: ObservableObject {
                     logger.warning("⚠️ Failed to load content for \(script.name)")
                 }
             }
-            
-            // Check if we need to add any missing default scripts
-            checkAndAddMissingDefaultScripts()
         }
     }
     
     private func checkAndAddMissingDefaultScripts() {
         logger.info("🔍 Checking for missing default userscripts...")
+        logger.info("🔍 Current userscripts count: \(self.userScripts.count)")
+        logger.info("🔍 Default userscripts count: \(self.defaultUserScripts.count)")
+        
+        for script in userScripts {
+            logger.info("🔍 Existing script: '\(script.name)' from URL: \(script.url?.absoluteString ?? "nil")")
+        }
         
         var hasAddedNew = false
         
         for defaultScript in defaultUserScripts {
+            logger.info("🔍 Checking default script: '\(defaultScript.name)' with URL: \(defaultScript.url)")
+            
             // Check if this default script already exists
             let exists = userScripts.contains { script in
-                script.name == defaultScript.name || script.url?.absoluteString == defaultScript.url
+                let nameMatch = script.name == defaultScript.name
+                let urlMatch = script.url?.absoluteString == defaultScript.url
+                logger.info("🔍   Comparing with existing script '\(script.name)': nameMatch=\(nameMatch), urlMatch=\(urlMatch)")
+                return nameMatch || urlMatch
             }
             
             if !exists {
                 logger.info("➕ Adding missing default script: \(defaultScript.name)")
-                guard let url = URL(string: defaultScript.url) else { continue }
+                guard let url = URL(string: defaultScript.url) else { 
+                    logger.error("❌ Invalid URL for default script: \(defaultScript.url)")
+                    continue 
+                }
                 
                 var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
                 newUserScript.isEnabled = false
@@ -195,10 +243,14 @@ public class UserScriptManager: ObservableObject {
                 
                 userScripts.append(newUserScript)
                 hasAddedNew = true
+                logger.info("✅ Added default script: \(defaultScript.name)")
+            } else {
+                logger.info("✅ Default script already exists: \(defaultScript.name)")
             }
         }
         
         if hasAddedNew {
+            logger.info("💾 Saving \(self.userScripts.count) userscripts after adding defaults")
             saveUserScripts()
             
             // Start downloading missing scripts in the background
@@ -206,6 +258,7 @@ public class UserScriptManager: ObservableObject {
                 await downloadMissingDefaultScripts()
             }
         } else {
+            logger.info("ℹ️ No missing default scripts to add")
             // Check if any existing default scripts need to be downloaded
             Task {
                 await downloadMissingDefaultScripts()
@@ -256,6 +309,7 @@ public class UserScriptManager: ObservableObject {
         }
         
         if !userScripts.isEmpty {
+            logger.info("💾 About to save \(self.userScripts.count) default userscript placeholders")
             saveUserScripts()
             logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
             
@@ -325,41 +379,57 @@ public class UserScriptManager: ObservableObject {
     
     private func saveUserScripts() {
         Task { @MainActor in
+            logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
             await dataManager.updateUserScripts(userScripts)
-            logger.info("💾 Saved \(self.userScripts.count) userscripts to ProtobufDataManager")
+            logger.info("💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
         }
     }
     
     private func readUserScriptContent(_ userScript: UserScript) -> String? {
-        guard let containerURL = getSharedContainerURL() else { return nil }
-        
-        let userScriptsURL = containerURL.appendingPathComponent("userscripts")
-        let fileURL = userScriptsURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
-        
-        return try? String(contentsOf: fileURL, encoding: .utf8)
+        // Try fallback directory first (files may exist here initially)
+        if let fallbackURL = fallbackScriptsDirectoryURL {
+            let fileURL = fallbackURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
+            if FileManager.default.fileExists(atPath: fileURL.path), let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                // Migrate to group directory if available
+                if let groupURL = groupScriptsDirectoryURL {
+                    let destURL = groupURL.appendingPathComponent(fileURL.lastPathComponent)
+                    try? FileManager.default.copyItem(at: fileURL, to: destURL)
+                }
+                return content
+            }
+        }
+        // Then try group directory
+        if let groupURL = groupScriptsDirectoryURL {
+            let fileURL = groupURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
+            if FileManager.default.fileExists(atPath: fileURL.path), let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                return content
+            }
+        }
+        return nil
     }
     
     private func writeUserScriptContent(_ userScript: UserScript) -> Bool {
-        guard let containerURL = getSharedContainerURL() else { return false }
-        
-        let userScriptsURL = containerURL.appendingPathComponent("userscripts")
-        let fileURL = userScriptsURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
-        
-        do {
-            try userScript.content.write(to: fileURL, atomically: true, encoding: String.Encoding.utf8)
-            return true
-        } catch {
-            return false
+        var success = false
+        let fileName = "\(userScript.id.uuidString).user.js"
+        [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach { dirURL in
+            let fileURL = dirURL.appendingPathComponent(fileName)
+            do {
+                try userScript.content.write(to: fileURL, atomically: true, encoding: .utf8)
+                success = true
+                logger.info("💾 Wrote user script to: \(fileURL.path)")
+            } catch {
+                logger.error("❌ Failed to write script to \(fileURL.path): \(error)")
+            }
         }
+        return success
     }
     
     private func userScriptFileExists(_ userScript: UserScript) -> Bool {
-        guard let containerURL = getSharedContainerURL() else { return false }
-        
-        let userScriptsURL = containerURL.appendingPathComponent("userscripts")
-        let fileURL = userScriptsURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
-        
-        return FileManager.default.fileExists(atPath: fileURL.path)
+        let fileName = "\(userScript.id.uuidString).user.js"
+        return [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.contains { dirURL in
+            let filePath = dirURL.appendingPathComponent(fileName).path
+            return FileManager.default.fileExists(atPath: filePath)
+        }
     }
     
     // MARK: - Public Methods
@@ -403,11 +473,15 @@ public class UserScriptManager: ObservableObject {
         }
     }
     
-    public func toggleUserScript(_ userScript: UserScript) {
+    public func toggleUserScript(_ userScript: UserScript) async {
+        // Toggle the enabled state and persist immediately
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
             userScripts[index].isEnabled.toggle()
-            saveUserScripts()
             statusDescription = userScripts[index].isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
+            // Persist the change synchronously
+            logger.info("💾 Persisting userscript toggle for \(userScript.name): \(self.userScripts[index].isEnabled)")
+            await dataManager.updateUserScripts(self.userScripts)
+            logger.info("💾 Userscripts saved after toggle")
         }
     }
     

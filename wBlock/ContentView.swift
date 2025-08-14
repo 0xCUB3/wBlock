@@ -232,14 +232,14 @@ struct ContentView: View {
             get: { !dataManager.isLoading && !hasCompletedOnboarding },
             set: { _ in }
         )) {
-            OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
+            OnboardingView(filterManager: filterManager)
         }
         #elseif os(macOS)
         .sheet(isPresented: Binding(
             get: { !dataManager.isLoading && !hasCompletedOnboarding },
             set: { _ in }
         )) {
-            OnboardingView(filterManager: filterManager, userScriptManager: userScriptManager)
+            OnboardingView(filterManager: filterManager)
         }
         #endif
     }

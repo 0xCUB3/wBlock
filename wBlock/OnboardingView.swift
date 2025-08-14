@@ -36,19 +36,18 @@ struct OnboardingView: View {
     @State private var applyProgress: Float = 0.0
 
     let filterManager: AppFilterManager
-    let userScriptManager: UserScriptManager
     @Environment(\.dismiss) private var dismiss
 
     // Use the real default userscripts from UserScriptManager
     var defaultUserScripts: [(id: String, name: String, description: String)] {
-        userScriptManager.userScripts.map { script in
+        UserScriptManager.shared.userScripts.map { script in
             (id: script.id.uuidString, name: script.name, description: script.description.isEmpty ? script.url?.absoluteString ?? "" : script.description)
         }
     }
 
     // Helper to get the Bypass Paywalls userscript and filter list names
     var bypassPaywallsScript: (id: String, name: String)? {
-        userScriptManager.userScripts.first(where: { $0.name.localizedCaseInsensitiveContains("bypass paywalls") })
+        UserScriptManager.shared.userScripts.first(where: { $0.name.localizedCaseInsensitiveContains("bypass paywalls") })
             .map { ($0.id.uuidString, $0.name) }
     }
     var bypassPaywallsFilterName: String? {
@@ -248,14 +247,16 @@ struct OnboardingView: View {
                 Button("Back") { step -= 1 }
                 Spacer()
                 Button("Apply & Finish") {
-                    applySettings()
+                    Task {
+                        await applySettings()
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
             }
         }
     }
     
-    func applySettings() {
+    func applySettings() async {
         // 1. Set filter selection based on chosen blocking level
         var updatedFilters = filterManager.filterLists
         switch BlockingLevel(rawValue: selectedBlockingLevel) ?? .recommended {
@@ -297,15 +298,15 @@ struct OnboardingView: View {
             }
         }
         filterManager.filterLists = updatedFilters
-        filterManager.saveFilterLists()
+        await filterManager.saveFilterLists()
 
         // 2. Enable/disable userscripts based on onboarding selection
         let selectedScriptIDs = Set(selectedUserscripts)
-        for i in userScriptManager.userScripts.indices {
-            let script = userScriptManager.userScripts[i]
+        for script in UserScriptManager.shared.userScripts {
             let shouldEnable = selectedScriptIDs.contains(script.id.uuidString)
             if script.isEnabled != shouldEnable {
-                userScriptManager.toggleUserScript(script)
+                // Await toggle to ensure persistence
+                await UserScriptManager.shared.toggleUserScript(script)
             }
         }
 

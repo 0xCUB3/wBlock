@@ -72,10 +72,15 @@ class AppFilterManager: ObservableObject {
     var customFilterLists: [FilterList] = []
     
     // Save filter lists
-    func saveFilterLists() {
-        Task { @MainActor in
-            await dataManager.updateFilterLists(filterLists)
-            // TODO: Implement updateCustomFilterLists if needed
+    func saveFilterLists() async {
+        // Use existing updateFilterLists method from ProtobufDataManager+Extensions
+        await dataManager.updateFilterLists(filterLists)
+    }
+    
+    // Synchronous wrapper for non-async contexts
+    private func saveFilterListsSync() {
+        Task {
+            await saveFilterLists()
         }
     }
 
@@ -90,7 +95,21 @@ class AppFilterManager: ObservableObject {
         self.currentPlatform = .iOS
         #endif
         
-        setup()
+        // Wait for ProtobufDataManager to finish loading before setting up
+        Task {
+            await setupAsync()
+        }
+    }
+
+    private func setupAsync() async {
+        // Wait for ProtobufDataManager to finish loading
+        while dataManager.isLoading {
+            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        }
+        
+        await MainActor.run {
+            setup()
+        }
     }
 
     private func setup() {
@@ -99,11 +118,12 @@ class AppFilterManager: ObservableObject {
         // Load filter lists from protobuf data manager
         filterLists = dataManager.getFilterLists()
         customFilterLists = dataManager.getCustomFilterLists()
-        // If no lists stored yet, load defaults via loader and persist
-        if filterLists.isEmpty {
+        
+        // Only load defaults if truly no data exists (not just during async loading)
+        if filterLists.isEmpty && !dataManager.isLoading {
             let defaultLists = loader.loadFilterLists()
             filterLists = defaultLists
-            saveFilterLists()
+            saveFilterListsSync()
         }
         
         // Load saved rule counts from protobuf data
@@ -269,7 +289,7 @@ class AppFilterManager: ObservableObject {
             }
         }
         self.filterLists = newFilterLists
-        saveFilterLists()
+        saveFilterListsSync()
     }
 
     func doesFilterFileExist(_ filter: FilterList) -> Bool {
@@ -298,7 +318,7 @@ class AppFilterManager: ObservableObject {
     func toggleFilterListSelection(id: UUID) {
         if let index = filterLists.firstIndex(where: { $0.id == id }) {
             filterLists[index].isSelected.toggle()
-            saveFilterLists()
+            saveFilterListsSync()
             hasUnappliedChanges = true
         }
     }
@@ -330,7 +350,7 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        saveFilterLists()
+        saveFilterListsSync()
         hasUnappliedChanges = true
     }
 
@@ -843,7 +863,7 @@ class AppFilterManager: ObservableObject {
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
         // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
 
-        saveFilterLists() // Save any state like sourceRuleCount if updated
+        saveFilterListsSync() // Save any state like sourceRuleCount if updated
         
         // Save rule counts to UserDefaults for next app launch
         saveRuleCounts()
@@ -877,7 +897,7 @@ class AppFilterManager: ObservableObject {
         })
 
         // Save after download
-        saveFilterLists()
+        saveFilterListsSync()
 
         // Apply changes (conversion, reload, etc)
         statusDescription = "Applying filters...\n(This may take a while)"
@@ -911,7 +931,7 @@ class AppFilterManager: ObservableObject {
             }
         }
         
-        saveFilterLists() // Save lists as fetchAndProcessFilter might have updated counts/versions
+        saveFilterListsSync() // Save lists as fetchAndProcessFilter might have updated counts/versions
 
         // Show apply progress sheet for the subsequent apply operation
         await MainActor.run {
@@ -962,7 +982,7 @@ class AppFilterManager: ObservableObject {
             }
         )
         
-        saveFilterLists() // Save lists as autoUpdateFilters calls fetchAndProcessFilter
+        saveFilterListsSync() // Save lists as autoUpdateFilters calls fetchAndProcessFilter
 
         if !updatedFilters.isEmpty {
             await applyChanges()
@@ -992,7 +1012,7 @@ class AppFilterManager: ObservableObject {
             }
         }
         
-        saveFilterLists()
+        saveFilterListsSync()
 
         await applyChanges()
         isLoading = false
@@ -1013,7 +1033,7 @@ class AppFilterManager: ObservableObject {
             }
         )
         
-        saveFilterLists()
+        saveFilterListsSync()
         
         await MainActor.run {
             for filter in successfullyUpdatedFilters {
@@ -1056,7 +1076,7 @@ class AppFilterManager: ObservableObject {
             }
         }
         
-        saveFilterLists()
+        saveFilterListsSync()
 
         isLoading = false
         progress = 0
@@ -1137,7 +1157,7 @@ class AppFilterManager: ObservableObject {
                 if success {
                     await ConcurrentLogManager.shared.log("Successfully downloaded custom filter: \(newFilterToAdd.name)")
                     hasUnappliedChanges = true
-                    saveFilterLists()
+                    saveFilterListsSync()
                 } else {
                     await ConcurrentLogManager.shared.log("Failed to download custom filter: \(newFilterToAdd.name)")
                     await MainActor.run {
@@ -1192,7 +1212,7 @@ class AppFilterManager: ObservableObject {
             filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)
         }
 
-        saveFilterLists()
+        saveFilterListsSync()
         hasUnappliedChanges = false
         statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
         
