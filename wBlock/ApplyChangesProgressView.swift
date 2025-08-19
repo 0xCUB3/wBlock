@@ -11,20 +11,28 @@ import wBlockCoreService
 struct ApplyChangesProgressView: View {
     @ObservedObject var filterManager: AppFilterManager
     @Binding var isPresented: Bool
+    // Throttled progress shown in the UI to avoid excessive SwiftUI re-renders
+    @State private var displayedProgress: Double = 0.0
+    @State private var scheduledProgressWorkItem: DispatchWorkItem? = nil
     
     private var selectedFilters: [FilterList] {
         filterManager.filterLists.filter { $0.isSelected }
     }
+
+    // Convenience Double version of the progress (filterManager.progress is Float)
+    private var filterProgress: Double {
+        Double(filterManager.progress)
+    }
     
     private var progressPercentage: Int {
-        let clampedProgress = max(0.0, min(1.0, filterManager.progress))
-        return Int(clampedProgress * 100)
+    let clampedProgress = max(0.0, min(1.0, displayedProgress))
+    return Int(clampedProgress * 100)
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // Fixed Header - only show when we have content to show
-            if filterManager.isLoading || (filterManager.progress >= 1.0 && hasStatistics) {
+            if filterManager.isLoading || (filterProgress >= 1.0 && hasStatistics) {
                 VStack(spacing: 16) {
                     ZStack {
                         // Centered title
@@ -34,7 +42,7 @@ struct ApplyChangesProgressView: View {
                         // Close button aligned to trailing edge (only show when complete)
                         HStack {
                             Spacer()
-                            if !filterManager.isLoading && filterManager.progress >= 1.0 {
+                            if !filterManager.isLoading && filterProgress >= 1.0 {
                                 Button {
                                     isPresented = false
                                 } label: {
@@ -59,7 +67,7 @@ struct ApplyChangesProgressView: View {
                     // Progress bar (only during conversion)
                     if filterManager.isLoading {
                         VStack(spacing: 8) {
-                            ProgressView(value: filterManager.progress)
+                            ProgressView(value: displayedProgress)
                                 .progressViewStyle(.linear)
                                 .scaleEffect(y: 1.2)
                             Text("\(progressPercentage)%")
@@ -84,7 +92,7 @@ struct ApplyChangesProgressView: View {
                     }
                     .padding(20)
                 }
-            } else if filterManager.progress >= 1.0 && hasStatistics {
+            } else if filterProgress >= 1.0 && hasStatistics {
                 // Show statistics when complete
                 ScrollView {
                     VStack {
@@ -95,7 +103,8 @@ struct ApplyChangesProgressView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
-        .animation(.easeInOut(duration: 0.3), value: filterManager.progress)
+    // Animate on the throttled displayed progress to reduce UI churn
+    .animation(.easeInOut(duration: 0.24), value: displayedProgress)
         #if os(macOS)
         .frame(
             minWidth: 420, idealWidth: 450, maxWidth: 480,
@@ -110,16 +119,26 @@ struct ApplyChangesProgressView: View {
         #endif
         // Set initial view state before starting the conversion process
         .task {
+            // Initialize displayed progress
+            displayedProgress = Double(filterManager.progress)
+
             if filterManager.isLoading {
                 // Give the UI a chance to render before starting heavy operations
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
             }
         }
+        // Coalesce extremely frequent progress updates from the filter manager
+        .onChange(of: filterManager.progress) { newValue in
+            scheduleProgressUpdate(newProgress: Double(newValue))
+        }
+        .onAppear {
+            displayedProgress = Double(filterManager.progress)
+        }
     }
     
     private var titleText: String {
         // Only show "Applied" if we've actually completed a conversion
-        if filterManager.progress >= 1.0 && !filterManager.isLoading {
+    if filterProgress >= 1.0 && !filterManager.isLoading {
             return "Filter Lists Applied"
         } else {
             return "Converting Filter Lists"
@@ -159,28 +178,28 @@ struct ApplyChangesProgressView: View {
                 title: "Reading Files",
                 detail: filterManager.totalFiltersCount > 0 ? "\(filterManager.processedFiltersCount)/\(filterManager.totalFiltersCount) extensions" : nil,
                 isActive: filterManager.processedFiltersCount < filterManager.totalFiltersCount && !filterManager.isInConversionPhase,
-                isCompleted: filterManager.processedFiltersCount >= filterManager.totalFiltersCount || filterManager.progress > 0.6
+                isCompleted: filterManager.processedFiltersCount >= filterManager.totalFiltersCount || filterProgress > 0.6
             ),
             (
                 icon: "gearshape.2",
                 title: "Converting Rules",
                 detail: filterManager.currentFilterName.isEmpty ? nil : "Processing \(filterManager.currentFilterName)",
                 isActive: filterManager.isInConversionPhase,
-                isCompleted: filterManager.progress > 0.75
+                isCompleted: filterProgress > 0.75
             ),
             (
                 icon: "square.and.arrow.down",
                 title: "Saving & Building",
-                detail: (filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterManager.progress > 0.7 && filterManager.progress < 0.95)) ? "Writing files and building engines" : nil,
-                isActive: filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterManager.progress > 0.7 && filterManager.progress < 0.95),
-                isCompleted: filterManager.progress > 0.9
+                detail: (filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterProgress > 0.7 && filterProgress < 0.95)) ? "Writing files and building engines" : nil,
+                isActive: filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterProgress > 0.7 && filterProgress < 0.95),
+                isCompleted: filterProgress > 0.9
             ),
             (
                 icon: "arrow.clockwise",
                 title: "Reloading Extensions",
                 detail: filterManager.isInReloadPhase && !filterManager.currentFilterName.isEmpty ? "Reloading \(filterManager.currentFilterName)" : nil,
                 isActive: filterManager.isInReloadPhase,
-                isCompleted: filterManager.progress >= 1.0
+                isCompleted: filterProgress >= 1.0
             )
         ]
     }
@@ -190,13 +209,13 @@ struct ApplyChangesProgressView: View {
             Image(systemName: icon)
                 .foregroundColor(isCompleted ? .green : (isActive ? .blue : .secondary))
                 .frame(width: 20, height: 20)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(isActive ? .medium : .regular)
                     .foregroundColor(isCompleted ? .green : (isActive ? .primary : .secondary))
-                
+
                 // Reserve space for detail text to prevent layout jumping
                 Group {
                     if let detail = detail, !detail.isEmpty {
@@ -211,9 +230,9 @@ struct ApplyChangesProgressView: View {
                 }
                 .frame(minHeight: 16, alignment: .leading) // Fixed height and alignment
             }
-            
+
             Spacer()
-            
+
             Group {
                 if isCompleted {
                     Image(systemName: "checkmark.circle.fill")
@@ -232,6 +251,34 @@ struct ApplyChangesProgressView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    // Schedule and throttle updates to displayedProgress to avoid frequent SwiftUI re-renders.
+    private func scheduleProgressUpdate(newProgress: Double) {
+        // Cancel any previously scheduled update
+        scheduledProgressWorkItem?.cancel()
+
+        // If the new progress is significantly ahead of displayedProgress, jump to it quickly
+        let clamped = max(0.0, min(1.0, newProgress))
+        let delta = clamped - displayedProgress
+
+        // If progress jumped backwards or is a large jump forward, update immediately
+        if delta < 0 || delta > 0.15 {
+            displayedProgress = clamped
+            return
+        }
+
+        // Otherwise, animate small increments. Schedule a coalesced update after a short delay.
+        let workItem = DispatchWorkItem {
+            // Smoothly move displayedProgress towards the new value
+            withAnimation(.easeInOut(duration: 0.24)) {
+                displayedProgress = clamped
+            }
+        }
+
+        scheduledProgressWorkItem = workItem
+        // Coalesce frequent updates into 80ms windows
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: workItem)
     }
     
     @ViewBuilder
