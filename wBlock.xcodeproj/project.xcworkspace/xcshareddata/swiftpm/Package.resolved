@@ -1,5 +1,5 @@
 {
-  "originHash" : "d288760d0775e6eebe0adfbde049be1b49277c205acfbe7c8e983849e25d5f97",
+  "originHash" : "bbda819f145e27fbdaef3d820df4b80d59b4cb3584c169fa0b32734a135567e6",
   "pins" : [
     {
       "identity" : "punycodeswift",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/AdguardTeam/SafariConverterLib",
       "state" : {
         "branch" : "master",
-        "revision" : "08c4228ee834814ee9aefd3d44e12f62c8bbb840"
+        "revision" : "17c6128ca2af185ffb245c38b4f921be891bd31a"
       }
     },
     {
