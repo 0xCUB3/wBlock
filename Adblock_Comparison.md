@@ -84,7 +84,7 @@ Allows running or installing custom scripts (like Greasemonkey/Tampermonkey)—f
 AdBlock Tester scores (adblocktester.com, etc.) depend mostly on which filter lists you enable—extension features matter less. Even simple ad blockers can score 100/100 if using up-to-date and comprehensive lists; heavy, feature-rich blockers may score lower if filters are incomplete or outdated.
 
 <sup>17</sup> **Foreign Language Filter Support**:  
-Reflects whether ad blockers have official filter lists for multiple languages/regions. AdGuard supports 20+ languages with official filters; uBlock Origin Lite permits more than 15; wBlock and Wipr can load manual lists but are limited to English UI.
+Reflects whether ad blockers have official filter lists for multiple languages/regions. AdGuard supports 20+ languages with official filters; uBlock Origin Lite permits more than 15; wBlock can load manual lists but the app itself is limited to English for now.
 
 <sup>18</sup> **License**:  
 Describes the legal terms governing code and usage:  
