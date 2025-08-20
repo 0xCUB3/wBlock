@@ -67,13 +67,13 @@ Where and how filtering rules/lists are stored:
 - Unknown: Wipr is closed source.
 
 <sup>11</sup> **Element Zapper**:  
-Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. Absent in Wipr, which emphasizes simplicity and automation.
+Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. Absent in Wipr, which is more designed to be simple and don't-touch. 
 
 <sup>12</sup> **Dynamic Filtering**:  
 Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via clever workarounds in wBlock/AdGuard.
 
 <sup>13</sup> **Script Injection**:  
-Lets extension run built-in or custom JavaScript on web pages (for ad removal, circumvention, UI fixes, etc.). Safari blocks this for security, so only wBlock (and AdGuard for paid Mac app) provide real, user-accessible script injection. Most Chrome extensions do, but only within Manifest V3’s security limits.
+Lets extension run built-in or custom JavaScript on web pages (for ad removal, circumvention, UI fixes, etc.). Only available in web/app extensions, so only wBlock (and AdGuard for paid Mac app) provide true script injection. Most Chrome extensions do, but only within Manifest V3’s security limits as of 2025.
 
 <sup>14</sup> **Userscripts Support**:  
 Allows running or installing custom scripts (like Greasemonkey/Tampermonkey)—for automation, customization, or advanced blocking. Only wBlock (and AdGuard paid Mac app) support this natively. Safari App Store policies restrict this in other extensions.
@@ -89,12 +89,12 @@ Reflects whether ad blockers have official filter lists for multiple languages/r
 <sup>18</sup> **License**:  
 Describes the legal terms governing code and usage:  
 - GPL-3.0: Open-source license allowing code modification and redistribution as long as further releases are also open source.  
-- Proprietary: Closed source, user cannot freely view, modify, or redistribute code—usually found in commercial/paid software.
+- Proprietary: Closed source, so users cannot view or modify the code at all. 
 
 <sup>19</sup> **Primary Language**:  
 Refers to the main programming language(s) used.  
-- Swift: Indicates a native Apple/macOS/iOS app/extension, designed for performance and integration.  
-- JavaScript: Indicates a web-based or cross-browser extension (more universal, sometimes less efficient on macOS).  
-- Objective-C: Classic language used for older native macOS/iOS apps.
+- Swift: Indicates a native Apple/macOS/iOS app/extension, making it fully native and optimized for Apple devices. 
+- JavaScript: Indicates a web-based or cross-browser extension (more universal, usually less efficient).  
+- Objective-C: The predecessor to Swift. Also technically native, but very archaic. In AdGuard's case, there are often memory leaks that lead to ballooning memory usage. 
 
 ---
