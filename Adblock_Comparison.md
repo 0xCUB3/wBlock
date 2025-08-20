@@ -1,15 +1,15 @@
-# Overview
--# For the detailed feature comparison, see [here](hyperlink to feature comparison). 
-
 ## wBlock
 
-wBlock feels like what Safari ad blocking should have been from the start. When you install it from TestFlight, setup is straightforward: enable the Safari extensions and you're running[11].
+wBlock feels like what Safari ad blocking should have been from the start. When you install it from TestFlight, setup is straightforward - enable the three Safari extensions (wBlock Filters 1, wBlock Filters 2, and wBlock Scripts) and you're running[11].
 
 The interface is clean and native, built with SwiftUI. What's immediately impressive is the transparency - you can see exactly what's happening with detailed statistics showing 143,573 source rules converted to 117,369 Safari rules, complete with conversion and reload times[22]. If you're technically minded, this level of detail is great.
 
-[22][40]
+![wBlock Filter Lists Applied](image:22)
+![wBlock Main Settings Interface](image:40)
 
 The main settings screen shows your enabled filter lists with responsive toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized[40]. The blocking test interface shows a large percentage indicator with detailed breakdowns of what's being blocked[23].
+
+![wBlock Blocking Test Results](image:23)
 
 What sets wBlock apart is the advanced features. The element zapper works as expected - point and click to remove annoying page elements. The userscript support is impressive for Safari, letting you run custom JavaScript that normally requires extensions like Tampermonkey. Performance is solid - 40MB RAM usage is lightweight, and Protobuf storage keeps everything fast[13].
 
@@ -25,7 +25,7 @@ uBlock Origin Lite is the Chrome version of uBlock Origin, redesigned for Manife
 
 The interface keeps things simple. The main popup has an intuitive blocking level slider where you can adjust from "basic" to "optimal" to "complete" without understanding technical details[33]. This is much more approachable than original uBlock Origin's power-user matrix interface.
 
-[41]
+![uBlock Origin Lite Chrome Popup](image:41)
 
 The popup shows real-time blocking stats when you're on a website. You can see it actively blocking content with clear indicators for different blocked content types[41]. Settings are cleanly organized with categorized filter lists you can toggle based on your needs.
 
@@ -45,7 +45,8 @@ Wipr 2 is designed for users who want things to work without configuration. App 
 
 The interface is intentionally simple with clean SwiftUI design. The setup screens have friendly copy like "Welcome to Wipr!" with clear explanations[24]. This isn't a limitation but a design choice - simplicity over feature bloat.
 
-[24][42]
+![Wipr 2 App Store Screenshots](image:24)
+![Wipr 2 Test Results](image:42)
 
 Behind this simplicity is clever engineering. Wipr splits rules across multiple content blockers (Wipr 1, 2, 3, and Wipr Extra in Safari settings) to work around Safari's 150,000 rule limit per extension. The app handles this complexity automatically - you enable all blockers and let Wipr handle the rest[32].
 
@@ -65,7 +66,8 @@ AdGuard for Safari brings enterprise-level filtering to Safari, but with complex
 
 The Safari Extensions panel shows seven different extensions working together. Each handles different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity[25][27]. The interface shows version numbers, permissions required, and configuration options for each component.
 
-[25][27]
+![AdGuard Safari Extensions Panel](image:25)
+![AdGuard Safari Extension Details](image:27)
 
 The main AdGuard interface (toolbar icon) is feature-rich but can feel overwhelming. You get statistics, logging, custom filter editing, element blocking tools, and extensive configuration. Multi-language support is impressive with 20+ language filter lists and official translations.
 
@@ -78,6 +80,20 @@ The complexity is both strength and weakness. Power users appreciate granular co
 If you're willing to invest configuration time and have sufficient system resources, AdGuard provides the most comprehensive blocking available. But the learning curve and resource requirements make it less suitable for casual users or older hardware.
 
 Sources: Screenshots from Safari Extensions panel[25][27]
+
+---
+
+### Image Descriptions
+
+**image:22**: wBlock's "Filter Lists Applied" statistics popup showing 143,573 source rules converted to 117,369 Safari rules with conversion and reload timing metrics  
+**image:23**: wBlock's blocking test results interface displaying 99% blocking effectiveness with detailed statistics showing 134/135 items blocked  
+**image:24**: Wipr 2 App Store listing showing the app icon and four interface screenshots with welcome screens and simple settings  
+**image:25**: Safari Extensions settings panel showing multiple enabled AdGuard extensions (Assistant, Custom, General, Other, Privacy, Security, Social) with green checkmarks  
+**image:27**: Safari Extensions panel focused on "AdGuard for Safari" extension details showing version 1.11.16, description, and permissions requirements  
+**image:40**: wBlock's main settings interface showing enabled filter lists with toggle switches, rule counts, and categories for Ads, Privacy, and Security  
+**image:41**: uBlock Origin Lite popup interface displayed over a Softpedia webpage showing real-time blocking statistics and filter counts  
+**image:42**: Wipr 2 test results popup showing "Latest Test Results" with 135 items tested, 135 blocked, 0 not blocked, and timestamp from 12/11/2024
+
 
 
 
