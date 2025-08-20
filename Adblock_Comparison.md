@@ -6,8 +6,8 @@ The interface is clean and native, built with SwiftUI. Both the iOS and macOS ve
 
 You can see exactly what's happening with detailed statistics showing X source rules converted to Y Safari rules, complete with conversion and reload times. If you're into these kind of things, it's great to have the numbers right in front of you.
 
-https://pplx-res.cloudinary.com/image/upload/v1755727443/pplx_project_search_images/dc33e115a766ed54716411f57f570424d76fe78e.png<img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/bd3ca8aa-ee72-44e6-8b1c-7a5563c25976" />
-https://pplx-res.cloudinary.com/image/upload/v1755727149/pplx_project_search_images/124b3ae83cc27aec0c1e7e835b66f638a5f4c7dd.png<img width="812" height="732" alt="image" src="https://github.com/user-attachments/assets/db0d8dcb-9ed3-4f7c-9efb-53d1079514b0" />
+<img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/bd3ca8aa-ee72-44e6-8b1c-7a5563c25976" />
+<img width="812" height="732" alt="image" src="https://github.com/user-attachments/assets/db0d8dcb-9ed3-4f7c-9efb-53d1079514b0" />
 
 The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Advanced (macOS only) also has a nice popover that informs you of how many requests are blocked, as well as a few customization options.
 
@@ -28,7 +28,7 @@ uBlock Origin Lite is the lobotomized version of uBlock Origin, rebuilt from scr
 
 The interface keeps things simple. The main popup has an intuitive blocking level slider where you can adjust from "basic" to "optimal" to "complete" without understanding technical details, though its lack of verbosity leaves something to be desired for more advanced users. This is marginally more approachable than original uBlock Origin's power-user matrix interface.
 
-https://pplx-res.cloudinary.com/image/upload/v1755727443/pplx_project_search_images/1fc1016a0070b362d6b6173127949e4f9639e8d7.png<img width="1112" height="762" alt="image" src="https://github.com/user-attachments/assets/79f99d54-a6b6-4c54-b9d4-51fa57c34865" />
+<img width="1112" height="762" alt="image" src="https://github.com/user-attachments/assets/79f99d54-a6b6-4c54-b9d4-51fa57c34865" />
 
 The popup shows real-time blocking stats when you're on a website. You can see it actively blocking content with clear indicators for different blocked content types, though just like with wBlock, the toolbar item doesn't update immediately. Settings are cleanly organized with categorized filter lists you can toggle based on your needs, though as a webpage rather than an app.
 
@@ -67,7 +67,7 @@ Sources: [App Store](https://apps.apple.com/us/app/wipr-2/id1662217862)[37], [Al
 
 AdGuard for Safari brings enterprise-level filtering to Safari, but with more complexity. The Safari Extensions panel shows seven different extensions working together. Each handles different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity. The interface shows version numbers, permissions required, and configuration options for each component, very similar to wBlock's setup. 
 
-https://pplx-res.cloudinary.com/image/upload/v1755727149/pplx_project_search_images/5ebdb15fa94d1d6d607931659ff42c4e2d2dc4b3.png<img width="1536" height="1184" alt="image" src="https://github.com/user-attachments/assets/6a768683-5abf-4334-88ac-70b0dd49e722" />
+<img width="1536" height="1184" alt="image" src="https://github.com/user-attachments/assets/6a768683-5abf-4334-88ac-70b0dd49e722" />
 
 The main AdGuard interface (toolbar icon) is feature-rich but can often lag or cease to work entirely. On the plus side, the interface is replete with statistics, logging, custom filter editing, element blocking tools, and configuration aplenty. Multi-language support is impressive with 20+ language filter lists and official translations.
 
