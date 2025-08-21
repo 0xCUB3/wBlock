@@ -10,17 +10,14 @@ The interface is clean and native, built with SwiftUI. Both the iOS and macOS ve
 You can examine detailed statistics for source rules and how they’re converted for Safari, complete with conversion and reload times.
 
 <img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/bd3ca8aa-ee72-44e6-8b1c-7a5563c25976" />
-*Clean and simple homepage, complete with default filterlists*
 
 <img width="812" height="732" alt="image" src="https://github.com/user-attachments/assets/db0d8dcb-9ed3-4f7c-9efb-53d1079514b0" />
-*An overview of statistics after converting filterlists*
 
 You can see exactly what's happening with detailed statistics showing X source rules converted to Y Safari rules, complete with conversion and reload times. If you're into these kind of things, it's great to have the numbers right in front of you.
 
 The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Advanced (macOS only) also has a nice popover that informs you of how many requests are blocked, as well as a few customization options.
 
 <img width="318" height="326" alt="CleanShot 2025-08-20 at 18 18 11" src="https://github.com/user-attachments/assets/3bf5b7ed-a0d6-49e1-b729-a32033fff59c" />
-*Toolbar popover: Blocked request count and customization. Note: toolbar count does not update instantly due to Safari API limitations.*
 
 What sets wBlock apart is the advanced features. The element zapper works as expected (though it is still a work in progress): point, click, BAM! Gone. The userscript support is a nice touch, letting you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, you have Return YouTube Dislike and Bypass Paywalls Clean, but you can add almost any script you want!
 
@@ -37,7 +34,6 @@ uBlock Origin Lite is the lobotomized version of uBlock Origin, rebuilt from scr
 The interface keeps things simple. The main popup has an intuitive blocking level slider where you can adjust from "basic" to "optimal" to "complete" without understanding technical details, though its lack of verbosity leaves something to be desired for more advanced users. This is marginally more approachable than original uBlock Origin's power-user matrix interface.
 
 <img width="1112" height="762" alt="image" src="https://github.com/user-attachments/assets/79f99d54-a6b6-4c54-b9d4-51fa57c34865" />
-*Popup: Shows live blocking statistics for current page activity.*
 
 The popup shows real-time blocking stats when you're on a website. You can see it actively blocking content with clear indicators for different blocked content types, though just like with wBlock, the toolbar item doesn't update immediately. Settings are cleanly organized with categorized filter lists you can toggle based on your needs, though as a webpage rather than an app.
 
@@ -58,7 +54,6 @@ Wipr 2 is tailored for users seeking no-config, dependable ad blocking. Installa
 The interface is intentionally simple with clean SwiftUI design. The setup screens have friendly copy like "Welcome to Wipr!" with clear explanations.
 
 <img width="908" height="578" alt="CleanShot 2025-08-20 at 18 28 16" src="https://github.com/user-attachments/assets/e28bd3a2-276d-43ac-9870-965fcdd7eb92" />
-*Main UI: Simple toggle-driven activation, no extraneous configuration required.*
 
 Wipr dynamically allocates rule lists across multiple extensions (Wipr 1–3 and Extra) to accommodate Safari’s 150,000-rule ceiling. This process is handled automatically, requiring no intervention.
 
@@ -77,7 +72,6 @@ Sources: [App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), [All Ab
 AdGuard for Safari brings enterprise-level filtering to Safari, but with more complexity. The Safari Extensions panel shows seven different extensions working together. Each handles different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity. The interface shows version numbers, permissions required, and configuration options for each component, very similar to wBlock's setup. 
 
 <img width="1536" height="1184" alt="image" src="https://github.com/user-attachments/assets/6a768683-5abf-4334-88ac-70b0dd49e722" />
-*Safari Extensions: Seven AdGuard modules enabled in unison for full-spectrum coverage.*
 
 The main AdGuard interface (toolbar icon) is feature-rich but can often lag or cease to work entirely. On the plus side, the interface is replete with statistics, logging, custom filter editing, element blocking tools, and configuration aplenty. Multi-language support is impressive with 20+ language filter lists and official translations.
 
@@ -135,12 +129,12 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 <sup>3</sup> **Wipr 2:** Closed-source, paid, lightweight, Safari-only ad blocker.  
 <sup>4</sup> **AdGuard for Safari:** Safari extension by AdGuard (with separate paid Mac/iOS apps).
 
-<sup>5</sup> *TestFlight only*: wBlock is distributed on iOS and sometimes macOS via TestFlight, Apple's developer beta platform, not through the public App Store.
+<sup>5</sup> **TestFlight only**: wBlock is distributed on iOS and sometimes macOS via TestFlight, Apple's developer beta platform, not through the public App Store.
 
 <sup>6</sup> **RAM Usage Measurement**:  
 Numbers were measured on a 2023 M2 Pro MacBook Pro 14" with 16GB RAM, 5 tabs open, only one ad blocker active. Actual memory usage can **vary widely** based on hardware, browser version, tab contents, number of active extensions, and enabled filter lists. Lower-spec Macs and iOS devices will observe different numbers.
 
-<sup>7</sup> *Rule Capacity*:  
+<sup>7</sup> **Rule Capacity**:  
 Safari limits rule sets to about 150,000 per content blocker. Blockers work around this by using multiple bundled extensions (slots)—the numbers listed reflect the combined total when all are enabled.
 
 <sup>8</sup> **Extension Architecture**:  
