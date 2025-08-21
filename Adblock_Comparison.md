@@ -6,6 +6,7 @@
 wBlock is what Safari ad blocking arguably ought to be. Setup is efficient: enable all the Safari extensions, follow the onboarding, and you’re running. 
 
 The interface is clean and native, built with SwiftUI. Both the iOS and macOS version employ Content Blocker Extensions, which are Apple's remarkably efficient frameworks for static ad blocking. Since they run in near constant time, memory usage doesn't balloon with large lists as it might with other content blockers. 
+
 You can examine detailed statistics for source rules and how they’re converted for Safari, complete with conversion and reload times.
 
 <img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/bd3ca8aa-ee72-44e6-8b1c-7a5563c25976" />
@@ -23,7 +24,7 @@ The main settings screen shows your enabled filter lists with toggle switches. E
 
 What sets wBlock apart is the advanced features. The element zapper works as expected (though it is still a work in progress): point, click, BAM! Gone. The userscript support is a nice touch, letting you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, you have Return YouTube Dislike and Bypass Paywalls Clean, but you can add almost any script you want!
 
-The downside is that it's TestFlight only, so you can't get it from the App Store (yet). But if you want power-user features in a native interface, wBlock is a breath of fresh air.
+The app is developed just by [me](https://github.com/0xCUB3), though a few people have contributed changes. The downside is that it's TestFlight only, so you can't get it from the App Store (yet). But if you want power-user features in a native interface, wBlock is a breath of fresh air.
 
 Sources: [wBlock GitHub](https://github.com/0xCUB3/wBlock), [wBlock Wiki](https://github.com/0xCUB3/wBlock/wiki)
 
@@ -31,7 +32,7 @@ Sources: [wBlock GitHub](https://github.com/0xCUB3/wBlock), [wBlock Wiki](https:
 
 ## uBlock Origin Lite
 
-uBlock Origin Lite is the lobotomized version of uBlock Origin, rebuilt from scratch for Manifest V3. Contrary to their similar naming, the two extensions function quite differently, and you can thank Google for the fact that uBlock Origin Lite generally performs significantly worse on blocking benchmarks. It is worth noting that Safari is not restricted to Manifest v3, so uBlock Origin Lite's tradeoffs are not necessary on Apple's browser. For instance, all of uBlock Lite's "filterlists" are actually scripts, which, while bypassing Manifest v3's new restrictions, are much less efficient for static ads. Thankfully, installation is as simple as with wBlock: one click from App Store and you're protected with sensible defaults.
+uBlock Origin Lite is the lobotomized version of uBlock Origin, rebuilt from scratch for Manifest V3. Contrary to their similar naming, the two extensions function quite differently, and you can thank Google for the fact that uBlock Origin Lite generally will not be as performant or efficient at blocking ads. It is worth noting that Safari is not restricted to Manifest v3, so uBlock Origin Lite's tradeoffs are not necessary on Apple's browser. For instance, all of uBlock Lite's "filterlists" are actually scripts, which, while bypassing Manifest v3's new restrictions, are much less efficient for static ads. Thankfully, installation is as simple as with wBlock: one click from App Store and you're protected with sensible defaults.
 
 The interface keeps things simple. The main popup has an intuitive blocking level slider where you can adjust from "basic" to "optimal" to "complete" without understanding technical details, though its lack of verbosity leaves something to be desired for more advanced users. This is marginally more approachable than original uBlock Origin's power-user matrix interface.
 
@@ -162,7 +163,7 @@ Where and how filtering rules/lists are stored:
 Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. Absent in Wipr, which is more designed to be simple and don't-touch. 
 
 <sup>12</sup> **Dynamic Filtering**:  
-Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via clever workarounds in wBlock/AdGuard.
+Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via [clever workarounds(#How-wBlock-Achieves-Dynamic-Filtering-in-Safari) in wBlock/AdGuard.
 
 <sup>13</sup> **Script Injection**:  
 Lets extension run built-in or custom JavaScript on web pages (for ad removal, circumvention, UI fixes, etc.). Only available in web/app extensions, so only wBlock (and AdGuard for paid Mac app) provide true script injection. Most Chrome extensions do, but only within Manifest V3’s security limits as of 2025.
@@ -190,3 +191,13 @@ Refers to the main programming language(s) used.
 - Objective-C: The predecessor to Swift. Also technically native, but very archaic. In AdGuard's case, there are often memory leaks that lead to ballooning memory usage. 
 
 ---
+
+# How wBlock Achieves Dynamic Filtering in Safari
+
+Safari’s native content blocker API is designed for static filtering, but wBlock introduces clever workarounds to approximate dynamic filtering:
+
+## 1. Per-Site Disable with `ignore-previous-rules`
+
+When you toggle blocking for a specific site, wBlock appends a rule like:
+
+
