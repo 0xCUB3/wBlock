@@ -5,7 +5,7 @@
 
 wBlock is what Safari ad blocking arguably ought to be. Setup is efficient: enable all the Safari extensions, follow the onboarding, and you’re running. 
 
-The interface is clean and native, built with SwiftUI. Both the iOS and macOS version employ Content Blocker Extensions, which are Apple's remarkably efficient frameworks for static ad blocking. Since they run in near constant time, memory usage doesn't balloon with large lists as it might with other content blockers. 
+The interface is clean and native, built with SwiftUI. Both the iOS and macOS version employ Content Blocker Extensions, which are Apple's remarkably efficient frameworks for static ad blocking. Since they run in near constant time, memory usage doesn't balloon with large lists as it might with other content blockers. Indeed, on my M2 Pro MacBook Pro, wBlock consumes little more than a few dozen megabytes of memory at any time. 
 
 You can examine detailed statistics for source rules and how they’re converted for Safari, complete with conversion and reload times.
 
