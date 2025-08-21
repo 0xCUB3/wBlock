@@ -163,7 +163,7 @@ Where and how filtering rules/lists are stored:
 Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. Absent in Wipr, which is more designed to be simple and don't-touch. 
 
 <sup>12</sup> **Dynamic Filtering**:  
-Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via [clever workarounds(#How-wBlock-Achieves-Dynamic-Filtering-in-Safari) in wBlock/AdGuard.
+Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via [clever workarounds](#How-wBlock-Achieves-Dynamic-Filtering-in-Safari) in wBlock/AdGuard.
 
 <sup>13</sup> **Script Injection**:  
 Lets extension run built-in or custom JavaScript on web pages (for ad removal, circumvention, UI fixes, etc.). Only available in web/app extensions, so only wBlock (and AdGuard for paid Mac app) provide true script injection. Most Chrome extensions do, but only within Manifest V3’s security limits as of 2025.
