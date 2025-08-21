@@ -194,10 +194,37 @@ Refers to the main programming language(s) used.
 
 # How wBlock Achieves Dynamic Filtering in Safari
 
-Safari’s native content blocker API is designed for static filtering, but wBlock introduces clever workarounds to approximate dynamic filtering:
+Safari’s native content blocker API is designed for static filtering, but I've implemented some tricks into wBlock to approximate dynamic filtering:
 
 ## 1. Per-Site Disable with `ignore-previous-rules`
 
 When you toggle blocking for a specific site, wBlock appends a rule like:
 
+```json
+{
+  "action": {"type": "ignore-previous-rules"},
+  "trigger": {
+    "url-filter": ".",
+    "if-domain": ["site.com", ".site.com"]
+  }
+}
+```
 
+This tells Safari to *ignore all previous blocking rules* for that domain, effectively unblocking it in real time.
+
+## 2. Fast Content Blocker Rebuilds
+
+wBlock uses modular storage and fast update logic to "fake" fast content blocker reloads. If possible, only the affected category or site rules are rebuilt and reloaded, eliminating the need for a full extension reload.
+
+## 3. Userscript & Script Injection
+
+For dynamic element/blocking behavior (e.g., YouTube ad blocking, element zapper), wBlock injects userscripts. These scripts manipulate the DOM on demand, going beyond what static rules can do.
+
+## 4. Category-Based Rule Management
+
+wBlock tracks unapplied changes and only processes updates to the necessary filter sets, further speeding up dynamic-like behaviors.
+
+## Limitations
+
+- **True request-level dynamic filtering** (deciding on each request in real time) is *not possible* in Safari, as all changes require a rebuild of the static rules.
+- wBlock’s approach makes user adjustments feel nearly as fast and flexible as other browsers, but is ultimately bounded by Safari’s extension API constraints.
