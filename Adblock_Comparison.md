@@ -57,7 +57,7 @@ The interface is intentionally simple with clean SwiftUI design. The setup scree
 
 Wipr dynamically allocates rule lists across multiple extensions (Wipr 1–3 and Extra) to accommodate Safari’s 150,000-rule ceiling. This process is handled automatically, requiring no intervention.
 
-The blocking test results show effectiveness with clean statistics. You can see 135/135 items blocked with simple, clear presentation without overwhelming technical details. Automatic filter updates happen twice weekly in the background with zero user intervention. With that said, like with uBlock Origin Lite, filterlist updates are contingent on the developer's release schedule, and unlike with uBlock Origin Lite, Wipr is developed by a [single developer](https://kaylees.site). 
+The blocking test results show effectiveness with clean statistics. You can see 135/135 items blocked with simple, clear presentation without overwhelming technical details. Automatic filter updates happen twice weekly in the background with zero user intervention. With that said, like with uBlock Origin Lite, filterlist updates are contingent on the developer's release schedule, and unlike with uBlock Origin Lite, Wipr is developed by a [single developer](https://kaylees.site), much like wBlock. 
 
 Performance is excellent: 50MB RAM usage on an M2 Pro MacBook Pro, minimal battery impact, and genuinely faster page loading. Par for the course for such a simple app. Although it is the only paid option on this list, the universal purchase covers iPhone, iPad, Mac, and Vision Pro.
 
