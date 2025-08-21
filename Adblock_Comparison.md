@@ -110,7 +110,7 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 | Customization Level     | High                              | Medium               | None                  | High                 |
 | Setup Complexity        | Easy                              | Easy                 | Very Easy             | Moderate             |
 | Multi-Device Sync       | ❌                                 | ❌                   | ✅ Universal purchase  | ❌                   |
-| AdBlock Tester Score<sup>16</sup>    | 100/100                             | 97/100               | 96/100                | 94/100               |
+| [AdBlock Tester](https://adblock-tester.com) Score<sup>16</sup>    | 100/100                             | 100/100               | 96/100                | 94/100               |
 | Cost                    | Free                              | Free                 | $4.99 one-time        | Free                 |
 | Subscription Model      | ❌                                 | ❌                   | ❌                    | ❌                   |
 | Active Development      | ✅                                 | ✅                   | ✅                    | ✅                   |
