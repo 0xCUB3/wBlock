@@ -687,49 +687,65 @@ struct AddUserScriptView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Add User Script").font(.title2).fontWeight(.semibold)
-                Text("Enter the URL of a userscript (ending in .user.js)").font(.body).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
-                TextField("https://example.com/script.user.js", text: $urlString).textFieldStyle(.roundedBorder).autocorrectionDisabled()
-                    #if os(iOS)
-                    .keyboardType(.URL).textInputAutocapitalization(.never)
-                    #endif
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            
-            if horizontalSizeClass == .compact {
-                VStack(spacing: 12) { createMainButton(); createCancelButton() }
-            } else {
-                HStack(spacing: 16) { createCancelButton(); Spacer(); createMainButton() }
-            }
-            Spacer(minLength: 20)
-        }
-        .padding(adaptivePadding).frame(maxWidth: adaptiveMaxWidth, maxHeight: adaptiveMaxHeight)
-    }
-    
-    private func createMainButton() -> some View {
-        Button { addScript() } label: {
-            HStack(spacing: 8) {
-                if isLoading { 
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .frame(width: 16, height: 16) // Fixed frame to prevent layout shifts
-                    Text("Adding...") 
-                } else { 
-                    Text("Add Script") 
+        NavigationView {
+            VStack(spacing: 32) {
+                VStack(spacing: 20) {
+                    Text("Add Userscript")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Enter the URL of a userscript (ending in .user.js)")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                 }
-            }.frame(minWidth: horizontalSizeClass == .compact ? .infinity : 100, maxWidth: horizontalSizeClass == .compact ? .infinity : nil)
-        }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+                
+                VStack(spacing: 16) {
+                    TextField("https://example.com/script.user.js", text: $urlString)
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                    
+                    VStack(spacing: 12) {
+                        Button(action: addScript) {
+                            HStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .frame(width: 16, height: 16)
+                                    Text("Adding...")
+                                } else {
+                                    Text("Add Script")
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+                        
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .buttonStyle(.bordered)
+                    }
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("")
+            .navigationBarHidden(true)
+        }
     }
-
-    private func createCancelButton() -> some View {
-        Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).buttonStyle(.bordered)
-            .frame(maxWidth: horizontalSizeClass == .compact ? .infinity : nil)
-    }
-    
-    private var adaptivePadding: CGFloat { horizontalSizeClass == .compact ? 20 : 30 }
-    private var adaptiveMaxWidth: CGFloat? { horizontalSizeClass == .compact ? nil : 500 }
-    private var adaptiveMaxHeight: CGFloat? { horizontalSizeClass == .compact ? nil : 250 }
     
     private func addScript() {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
