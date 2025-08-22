@@ -9,9 +9,11 @@ import SwiftUI
 import os.log
 #if os(macOS)
 import Cocoa
+import wBlockCoreService
 #elseif os(iOS)
 import UIKit
 import UserNotifications
+import wBlockCoreService
 #endif
 
 // Define the notification name globally or in a shared place
@@ -21,6 +23,28 @@ extension Notification.Name {
 
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
+}
+
+// MARK: - Shared helper for schedule log formatting (platform-agnostic)
+fileprivate func scheduleMessage(from status: (Date?, TimeInterval?, Double)) -> String {
+    let (scheduledAt, remaining, interval) = status
+    let formatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f
+    }()
+    if let scheduledAt, let remaining {
+        if remaining == 0 {
+            return "🕒 Auto-update: due now (interval=\(interval)h). Will run on next extension trigger. ScheduledAt=\(formatter.string(from: scheduledAt))"
+        } else {
+            let hrs = Int(remaining) / 3600
+            let mins = (Int(remaining) % 3600) / 60
+            let secs = Int(remaining) % 60
+            return "🕒 Auto-update: next in \(hrs)h \(mins)m \(secs)s (scheduled \(formatter.string(from: scheduledAt))) interval=\(interval)h"
+        }
+    } else {
+        return "🕒 Auto-update: no prior run yet. First window determined after initial extension trigger (interval=\(interval)h)."
+    }
 }
 
 #if os(macOS)
@@ -65,6 +89,11 @@ extension AppDelegate: NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         os_log("macOS app finished launching; registering for remote notifications", type: .info)
         NSApp.registerForRemoteNotifications()
+        // Log next auto-update schedule status
+        Task {
+            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+            await ConcurrentLogManager.shared.log(scheduleMessage(from: status))
+        }
     }
 
     /// Handle silent push on macOS
@@ -101,6 +130,11 @@ extension AppDelegate: UIApplicationDelegate {
         // Request silent push capability (no UI notifications) and register
         UNUserNotificationCenter.current().requestAuthorization(options: []) { _, _ in }
         application.registerForRemoteNotifications()
+        // Log next auto-update schedule status
+        Task {
+            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+            await ConcurrentLogManager.shared.log(scheduleMessage(from: status))
+        }
         return true
     }
 
@@ -158,4 +192,3 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 }
 #endif
-

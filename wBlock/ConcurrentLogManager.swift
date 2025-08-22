@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import wBlockCoreService
 
 /// A concurrency‑safe logger actor that collects verbose log entries with improved readability.
 /// Each log entry is formatted as multiline block with a header and footer separator.
@@ -60,7 +61,9 @@ public actor ConcurrentLogManager {
     
     /// Returns all log entries as single string.
     public func getAllLogs() -> String {
-        logEntries.joined(separator: "\n\n") // Added an extra newline for better separation in TextEditor
+        // Ingest shared auto-update log (idempotent per fetch; we clear after ingest)
+        Task { await self.ingestSharedAutoUpdateLogIfPresent() }
+        return logEntries.joined(separator: "\n\n")
     }
     
     /// Clears all log entries.
@@ -70,5 +73,20 @@ public actor ConcurrentLogManager {
         Task { // Task needed to call an actor method from a non-async context if this were ever called so
             await self.log("Logs cleared.")
         }
+    }
+
+    // MARK: - Shared Auto-Update Log Ingestion
+    private func sharedAutoUpdateLogURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)?.appendingPathComponent("auto_update.log")
+    }
+
+    private func ingestSharedAutoUpdateLogIfPresent() async {
+        guard let url = sharedAutoUpdateLogURL(), FileManager.default.fileExists(atPath: url.path) else { return }
+        guard let content = try? String(contentsOf: url, encoding: .utf8), !content.isEmpty else { return }
+        // Split lines and add each as a log entry (tag them)
+        let lines = content.split(separator: "\n").map(String.init)
+        for l in lines { await log("[AutoUpdate] \(l)") }
+        // Clear file after ingestion to avoid duplication
+        try? FileManager.default.removeItem(at: url)
     }
 }

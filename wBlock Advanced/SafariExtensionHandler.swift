@@ -43,6 +43,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         from page: SFSafariPage,
         userInfo: [String: Any]?
     ) {
+        // Opportunistic background filter auto-update (throttled inside manager)
+        Task { await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AdvancedExtensionMessage") }
         os_log(.info, "SafariExtensionHandler: Received message '%@' with userInfo: %@", messageName, String(describing: userInfo))
         
         switch messageName {
@@ -304,6 +306,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         blockedResourcesWith urls: [URL],
         on page: SFSafariPage
     ) {
+        // Secondary trigger path (rare) – very cheap early exit if throttled
+        Task { await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BlockedResourceEvent") }
         // Use an asynchronous task to update the blocking counter.
         Task {
             // Update the blocked count and then refresh the toolbar badge
@@ -324,6 +328,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             // Reset blocked count and then refresh the toolbar badge
             await ToolbarData.shared.resetBlocked(on: page)
         }
+        // Navigation trigger (once per throttle window)
+        Task { await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "Navigation") }
     }
 
     /// Validates and updates the toolbar item (icon) in Safari.

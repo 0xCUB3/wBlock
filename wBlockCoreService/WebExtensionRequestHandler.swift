@@ -24,6 +24,8 @@ public enum WebExtensionRequestHandler {
     /// - Parameters:
     ///   - context: The extension context containing the request from the extension.
     public static func beginRequest(with context: NSExtensionContext) {
+        // Fire-and-forget throttled auto-update for iOS Scripts extension
+        Task { await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "ScriptsWebExtensionRequest") }
         let request = context.inputItems.first as? NSExtensionItem
 
         var message = getMessage(from: request)

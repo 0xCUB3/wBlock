@@ -78,6 +78,7 @@ struct LogsView: View {
             HStack(spacing: 20) {
                 Button {
                     Task {
+                        // Force ingestion of shared auto update log before displaying
                         logs = await ConcurrentLogManager.shared.getAllLogs()
                     }
                 } label: {
