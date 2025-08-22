@@ -743,7 +743,9 @@ struct AddUserScriptView: View {
             }
             .padding()
             .navigationTitle("")
+            #if os(iOS)
             .navigationBarHidden(true)
+            #endif
         }
     }
     
@@ -765,3 +767,4 @@ struct AddUserScriptView: View {
         }
     }
 }
+
