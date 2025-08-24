@@ -668,8 +668,8 @@ class AppFilterManager: ObservableObject {
                     let updatedSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
                     
                     for filter in updatedSelectedFilters {
-                        if filter.isSelected && (filter.category == targetInfo.primaryCategory || 
-                                               (targetInfo.secondaryCategory != nil && filter.category == targetInfo.secondaryCategory!)) {
+                        if filter.category == targetInfo.primaryCategory || 
+                           (targetInfo.secondaryCategory != nil && filter.category == targetInfo.secondaryCategory!) {
                             guard let containerURL = containerURL else { continue }
                             let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
                             if FileManager.default.fileExists(atPath: fileURL.path) {
