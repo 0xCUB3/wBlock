@@ -401,7 +401,7 @@ class AppFilterManager: ObservableObject {
     
     func showCategoryWarning(for category: FilterListCategory) {
         let ruleCount = getCategoryRuleCount(category)
-        let ruleLimit = currentPlatform == .iOS ? 50000 : 150000
+        let ruleLimit = 150000
         let warningThreshold = Int(Double(ruleLimit) * 0.8) // 80% threshold
         
         categoryWarningMessage = """
@@ -626,8 +626,8 @@ class AppFilterManager: ObservableObject {
                 }
             }
 
-            let ruleLimit = await MainActor.run { self.currentPlatform == .iOS ? 50000 : 150000 }
-            let warningThreshold = await MainActor.run { self.currentPlatform == .iOS ? 48000 : 140000 }
+            let ruleLimit = 150000
+            let warningThreshold = Int(Double(ruleLimit) * 0.8) // 80% threshold
             
             // Check if this category is approaching the limit
             await MainActor.run {
