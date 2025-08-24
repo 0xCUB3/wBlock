@@ -19,6 +19,7 @@ struct ContentView: View {
     @State private var showingUserScriptsView = false
     @State private var showOnlyEnabledLists = false
     @State private var showingWhitelistSheet = false
+    @State private var showingSettingsSheet = false
     @Environment(\.scenePhase) var scenePhase
     
     private var hasCompletedOnboarding: Bool {
@@ -97,6 +98,10 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingUserScriptsView) {
                 UserScriptManagerView(userScriptManager: userScriptManager)
+            }
+            // Add settings sheet
+            .sheet(isPresented: $showingSettingsSheet) {
+                SettingsView()
             }
             .sheet(isPresented: $filterManager.showingUpdatePopup) {
                 UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
@@ -210,6 +215,14 @@ struct ContentView: View {
                         Label("Show Enabled Only", systemImage: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                     }
                     .help("Toggle to show only enabled filter lists")
+                    
+                    // Add settings button to macOS toolbar
+                    Button {
+                        showingSettingsSheet = true
+                    } label: {
+                        Label("Settings", systemImage: "gear")
+                    }
+                    .help("wBlock settings")
                 }
             }
             #endif
@@ -306,6 +319,11 @@ struct ContentView: View {
                 
                 Button { showingAddFilterSheet = true } label: {
                     Image(systemName: "plus")
+                }
+                
+                // Add settings button
+                Button { showingSettingsSheet = true } label: {
+                    Image(systemName: "gear")
                 }
             }
             .buttonStyle(.plain)
@@ -538,4 +556,3 @@ struct AddFilterListView: View {
         dismiss()
     }
 }
-
