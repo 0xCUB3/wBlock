@@ -626,7 +626,7 @@ class AppFilterManager: ObservableObject {
                 }
             }
 
-            let ruleLimit = await MainActor.run { self.currentPlatform == .iOS ? 150000 : 150000 }
+            let ruleLimit = 150000
             let warningThreshold = Int(Double(ruleLimit) * 0.8) // 80% threshold
             
             // Check if this category is approaching the limit
