@@ -606,7 +606,6 @@ class AppFilterManager: ObservableObject {
             }
             
             let ruleCountForThisTarget = conversionResult.safariRulesCount
-            overallSafariRulesApplied += ruleCountForThisTarget
             
             // Collect advanced rules for later engine building
             if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
@@ -647,14 +646,16 @@ class AppFilterManager: ObservableObject {
             if ruleCountForThisTarget > ruleLimit {
                 await ConcurrentLogManager.shared.log("CRITICAL: Rule limit \(ruleLimit) exceeded for \(targetInfo.bundleIdentifier) with \(ruleCountForThisTarget) rules.")
                 
-                // Auto-reset this specific category instead of showing global alert
+                // Auto-reset this specific category and warn the user
                 await resetCategoryToRecommended(targetInfo.primaryCategory)
                 if let secondaryCategory = targetInfo.secondaryCategory {
                     await resetCategoryToRecommended(secondaryCategory)
                 }
                 
+                // Show category warning alert to inform user about the rule limit exceeded
                 await MainActor.run {
-                    self.statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
+                    self.showCategoryWarning(for: targetInfo.primaryCategory)
+                    // self.statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
                 }
                 await ConcurrentLogManager.shared.log("Auto-reset category \(targetInfo.primaryCategory.rawValue) due to rule limit exceeded.")
                 
@@ -663,9 +664,12 @@ class AppFilterManager: ObservableObject {
                     let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
                     var resetRulesString = ""
                     
-                    for filter in allSelectedFilters {
-                        if filter.isSelected && (filter.category == targetInfo.primaryCategory || 
-                                               (targetInfo.secondaryCategory != nil && filter.category == targetInfo.secondaryCategory!)) {
+                    // FIX: Get the updated filter list after reset instead of using the old allSelectedFilters
+                    let updatedSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+                    
+                    for filter in updatedSelectedFilters {
+                        if filter.category == targetInfo.primaryCategory || 
+                           (targetInfo.secondaryCategory != nil && filter.category == targetInfo.secondaryCategory!) {
                             guard let containerURL = containerURL else { continue }
                             let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
                             if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -719,6 +723,9 @@ class AppFilterManager: ObservableObject {
                 overallSafariRulesApplied += resetRuleCount
                 await ConcurrentLogManager.shared.log("🔄 After reset, \(targetInfo.primaryCategory.rawValue) now has \(resetRuleCount) rules")
                 continue
+            }
+            else {
+                overallSafariRulesApplied += ruleCountForThisTarget
             }
         }
         await MainActor.run {
