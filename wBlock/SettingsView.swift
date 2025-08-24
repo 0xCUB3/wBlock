@@ -2,8 +2,8 @@ import SwiftUI
 import wBlockCoreService
 
 struct SettingsView: View {
-    @AppStorage("disableBadgeCounter", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
-    private var disableBadgeCounter = false
+@AppStorage("isBadgeCounterEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
+private var isBadgeCounterEnabled = true
     
     @Environment(\.dismiss) private var dismiss
     
