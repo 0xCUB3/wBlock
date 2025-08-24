@@ -37,7 +37,11 @@ struct ContentView: View {
     }
     // Show the last applied rule count, falling back to source count if no prior apply
     private var displayedRuleCount: Int {
-        max(filterManager.lastRuleCount, sourceRulesCount)
+        if (filterManager.lastRuleCount > 0) {
+            return filterManager.lastRuleCount
+        } else {
+            return sourceRulesCount
+        }
     }
     
     private var displayableCategories: [FilterListCategory] {
@@ -321,7 +325,7 @@ struct ContentView: View {
                 valueColor: .primary
             )
             StatCard(
-                title: "Filter Rules",
+                title: "Applied Rules",
                 value: displayedRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
                 pillColor: .clear,
