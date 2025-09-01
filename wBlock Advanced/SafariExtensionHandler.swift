@@ -347,11 +347,20 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         validationHandler: @escaping ((Bool, String) -> Void)
     ) {
         Task {
-            // Retrieve the total number of blocked resources on the active tab.
-            let blockedCount = await ToolbarData.shared.getBlockedOnActiveTab(in: window)
-            // Determine the badge text based on the count.
-            let badgeText = blockedCount == 0 ? "" : String(blockedCount)
-            validationHandler(true, badgeText)
+            // Check if badge counter is disabled
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+            let isBadgeDisabled = defaults?.bool(forKey: "disableBadgeCounter") ?? false
+            
+            if isBadgeDisabled {
+                // Badge is disabled, show empty string
+                validationHandler(true, "")
+            } else {
+                // Retrieve the total number of blocked resources on the active tab.
+                let blockedCount = await ToolbarData.shared.getBlockedOnActiveTab(in: window)
+                // Determine the badge text based on the count.
+                let badgeText = blockedCount == 0 ? "" : String(blockedCount)
+                validationHandler(true, badgeText)
+            }
         }
     }
 
@@ -508,4 +517,3 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         return Array(zapperHostnames)
     }
 }
-
