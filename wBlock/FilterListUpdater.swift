@@ -221,6 +221,7 @@ class FilterListUpdater {
                 updatedFilter.description = description
             }
             updatedFilter.sourceRuleCount = countRulesInContent(content: content)
+            updatedFilter.lastUpdated = Date()
 
             let finalFilter = updatedFilter
             await MainActor.run {

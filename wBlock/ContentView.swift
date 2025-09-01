@@ -435,6 +435,12 @@ struct ContentView: View {
                             .font(.caption2)
                             .foregroundColor(.gray)
                     }
+                    
+                    if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
+                        Text("Last updated: \(lastUpdatedFormatted)")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
                 }
                 Spacer()
                 Toggle("", isOn: Binding(

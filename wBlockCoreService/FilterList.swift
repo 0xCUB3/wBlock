@@ -17,8 +17,9 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var description: String = ""
     public var version: String = ""
     public var sourceRuleCount: Int?
+    public var lastUpdated: Date?
     
-    public init(id: UUID = UUID(), name: String, url: URL, category: FilterListCategory, isSelected: Bool = false, description: String = "", version: String = "", sourceRuleCount: Int? = nil) {
+    public init(id: UUID = UUID(), name: String, url: URL, category: FilterListCategory, isSelected: Bool = false, description: String = "", version: String = "", sourceRuleCount: Int? = nil, lastUpdated: Date? = nil) {
         self.id = id
         self.name = name
         self.url = url
@@ -27,5 +28,28 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.description = description
         self.version = version
         self.sourceRuleCount = sourceRuleCount
+        self.lastUpdated = lastUpdated
+    }
+    
+    /// Returns a formatted string for the last updated date
+    public var lastUpdatedFormatted: String? {
+        guard let lastUpdated = lastUpdated else { return nil }
+        
+        let formatter = DateFormatter()
+        let now = Date()
+        let calendar = Calendar.current
+        
+        if calendar.isDate(lastUpdated, inSameDayAs: now) {
+            formatter.dateStyle = .none
+            formatter.timeStyle = .short
+            return "Today at \(formatter.string(from: lastUpdated))"
+        } else if let daysDifference = calendar.dateComponents([.day], from: lastUpdated, to: now).day, daysDifference < 7 {
+            formatter.dateFormat = "EEEE 'at' h:mm a"
+            return formatter.string(from: lastUpdated)
+        } else {
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+            return formatter.string(from: lastUpdated)
+        }
     }
 }

@@ -27,10 +27,7 @@ private var isBadgeCounterEnabled = true
             
             Form {
                 Section {
-                    Toggle("Show blocked item count in toolbar", isOn: Binding(
-                        get: { !disableBadgeCounter },
-                        set: { disableBadgeCounter = !$0 }
-                    ))
+                    Toggle("Show blocked item count in toolbar", isOn: $isBadgeCounterEnabled)
                     .toggleStyle(.switch)
                 }
                 

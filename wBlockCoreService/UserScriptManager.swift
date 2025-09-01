@@ -349,6 +349,7 @@ public class UserScriptManager: ObservableObject {
                 if index < userScripts.count {
                     userScripts[index].content = content
                     userScripts[index].parseMetadata()
+                    userScripts[index].lastUpdated = Date()
                     
                     // Update description and version from metadata, but keep disabled
                     if userScripts[index].description.isEmpty || userScripts[index].description == "Default userscript - downloading..." {
@@ -449,6 +450,7 @@ public class UserScriptManager: ObservableObject {
                 var newUserScript = UserScript(name: url.lastPathComponent.replacingOccurrences(of: ".user.js", with: ""), url: url, content: content)
                 newUserScript.parseMetadata()
                 newUserScript.isEnabled = true
+                newUserScript.lastUpdated = Date()
                 
                 // Check if script already exists
                 if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
@@ -529,6 +531,7 @@ public class UserScriptManager: ObservableObject {
                     userScripts[index].grant = tempUserScript.grant
                     userScripts[index].updateURL = tempUserScript.updateURL
                     userScripts[index].downloadURL = tempUserScript.downloadURL
+                    userScripts[index].lastUpdated = Date()
                     
                     _ = writeUserScriptContent(userScripts[index])
                     saveUserScripts()
@@ -568,6 +571,7 @@ public class UserScriptManager: ObservableObject {
                     userScripts[index].parseMetadata()
                     userScripts[index].isEnabled = true
                     userScripts[index].isLocal = false
+                    userScripts[index].lastUpdated = Date()
                     
                     _ = writeUserScriptContent(userScripts[index])
                     saveUserScripts()

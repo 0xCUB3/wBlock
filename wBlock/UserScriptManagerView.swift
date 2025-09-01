@@ -352,6 +352,16 @@ struct UserScriptRowView: View {
                                     .fontWeight(.medium)
                                     .foregroundColor(.gray)
                             }
+                            if let lastUpdated = script.lastUpdatedFormatted {
+                                if (!script.version.isEmpty || !script.matches.isEmpty) {
+                                    Text("·")
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                }
+                                Text("Updated \(lastUpdated.lowercased())")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
                             if !script.isDownloaded {
                                 Badge(text: "Not Downloaded", color: .red)
                             }

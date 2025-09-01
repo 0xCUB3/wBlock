@@ -25,6 +25,7 @@ public struct UserScript: Identifiable, Codable, Hashable {
     public var updateURL: String?
     public var downloadURL: String?
     public var content: String = ""
+    public var lastUpdated: Date?
     
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {
@@ -173,5 +174,27 @@ public struct UserScript: Identifiable, Codable, Hashable {
         }
         
         return false
+    }
+    
+    /// Returns a formatted string for the last updated date
+    public var lastUpdatedFormatted: String? {
+        guard let lastUpdated = lastUpdated else { return nil }
+        
+        let formatter = DateFormatter()
+        let now = Date()
+        let calendar = Calendar.current
+        
+        if calendar.isDate(lastUpdated, inSameDayAs: now) {
+            formatter.dateStyle = .none
+            formatter.timeStyle = .short
+            return "Today at \(formatter.string(from: lastUpdated))"
+        } else if let daysDifference = calendar.dateComponents([.day], from: lastUpdated, to: now).day, daysDifference < 7 {
+            formatter.dateFormat = "EEEE 'at' h:mm a"
+            return formatter.string(from: lastUpdated)
+        } else {
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+            return formatter.string(from: lastUpdated)
+        }
     }
 }
