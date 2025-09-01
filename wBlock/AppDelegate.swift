@@ -184,7 +184,7 @@ extension AppDelegate: NSApplicationDelegate {
     }
     
     private func setupCronFallback() {
-        guard let bundlePath = Bundle.main.bundlePath else { return }
+        let bundlePath = Bundle.main.bundlePath
         
         // Create cron entry that runs every 6 hours
         let cronCommand = "0 */6 * * * /usr/bin/open -j -g -a '\(bundlePath)' --args --background-filter-update"
@@ -367,3 +367,4 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 }
 #endif
+
