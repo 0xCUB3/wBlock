@@ -13,6 +13,7 @@ import wBlockCoreService
 #elseif os(iOS)
 import UIKit
 import UserNotifications
+import BackgroundTasks
 import wBlockCoreService
 #endif
 
@@ -23,6 +24,10 @@ extension Notification.Name {
 
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
+    
+    #if os(iOS)
+    private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
+    #endif
 }
 
 // MARK: - Shared helper for schedule log formatting (platform-agnostic)
@@ -89,10 +94,113 @@ extension AppDelegate: NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         os_log("macOS app finished launching; registering for remote notifications", type: .info)
         NSApp.registerForRemoteNotifications()
+        
+        // Setup periodic auto-update system for macOS
+        setupMacOSAutoUpdate()
+        
+        // Opportunistic update on app launch
+        Task {
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
+        }
+        
         // Log next auto-update schedule status
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
             await ConcurrentLogManager.shared.log(scheduleMessage(from: status))
+        }
+    }
+    
+    func applicationWillBecomeActive(_ notification: Notification) {
+        // Opportunistic update when app becomes active
+        Task {
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
+        }
+    }
+    
+    // MARK: - macOS Auto-Update System
+    
+    private func setupMacOSAutoUpdate() {
+        // Create a timer that fires every 6 hours when the app is running
+        Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { _ in
+            Task {
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "PeriodicTimer")
+            }
+        }
+        
+        // Try to register a system-level launch agent for true background updates
+        registerMacOSLaunchAgent()
+        
+        // Fallback: setup cron job as alternative
+        setupCronFallback()
+    }
+    
+    private func registerMacOSLaunchAgent() {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        let launchAgentID = "\(bundleID).filter-updater"
+        
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
+        let launchAgentsDir = homeDir.appendingPathComponent("Library/LaunchAgents")
+        let plistPath = launchAgentsDir.appendingPathComponent("\(launchAgentID).plist")
+        
+        // Create LaunchAgents directory if it doesn't exist
+        try? FileManager.default.createDirectory(at: launchAgentsDir, withIntermediateDirectories: true)
+        
+        // Create launch agent plist
+        let launchAgent: [String: Any] = [
+            "Label": launchAgentID,
+            "ProgramArguments": [
+                "/usr/bin/open",
+                "-j", // Launch hidden
+                "-g", // Don't bring to front
+                "-a",
+                Bundle.main.bundlePath,
+                "--args",
+                "--background-filter-update"
+            ],
+            "StartInterval": 6 * 60 * 60, // 6 hours
+            "RunAtLoad": false,
+            "KeepAlive": false
+        ]
+        
+        do {
+            let plistData = try PropertyListSerialization.data(fromPropertyList: launchAgent, format: .xml, options: 0)
+            try plistData.write(to: plistPath)
+            
+            // Load the launch agent
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+            process.arguments = ["load", "-w", plistPath.path]
+            try process.run()
+            process.waitUntilExit()
+            
+            if process.terminationStatus == 0 {
+                os_log("macOS launch agent registered successfully", type: .info)
+            } else {
+                os_log("Failed to register macOS launch agent", type: .error)
+            }
+        } catch {
+            os_log("Failed to setup macOS launch agent: %{public}@", type: .error, error.localizedDescription)
+        }
+    }
+    
+    private func setupCronFallback() {
+        guard let bundlePath = Bundle.main.bundlePath else { return }
+        
+        // Create cron entry that runs every 6 hours
+        let cronCommand = "0 */6 * * * /usr/bin/open -j -g -a '\(bundlePath)' --args --background-filter-update"
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", "echo '\(cronCommand)' | crontab -"]
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            if process.terminationStatus == 0 {
+                os_log("Cron job setup successfully", type: .info)
+            }
+        } catch {
+            os_log("Failed to setup cron job: %{public}@", type: .error, error.localizedDescription)
         }
     }
 
@@ -130,6 +238,18 @@ extension AppDelegate: UIApplicationDelegate {
         // Request silent push capability (no UI notifications) and register
         UNUserNotificationCenter.current().requestAuthorization(options: []) { _, _ in }
         application.registerForRemoteNotifications()
+        
+        // Register background task for filter updates
+        registerBackgroundTasks()
+        
+        // Schedule initial background task
+        scheduleBackgroundFilterUpdate()
+        
+        // Opportunistic update on app launch
+        Task {
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
+        }
+        
         // Log next auto-update schedule status
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
@@ -168,6 +288,61 @@ extension AppDelegate: UIApplicationDelegate {
             }
         } else {
             completionHandler(.noData)
+        }
+    }
+    
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        // Opportunistic update when returning to foreground
+        Task {
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground")
+        }
+    }
+    
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        // Schedule next background task when entering background
+        scheduleBackgroundFilterUpdate()
+    }
+    
+    // MARK: - Background Task Management
+    
+    private func registerBackgroundTasks() {
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
+            self.handleBackgroundFilterUpdate(task: task as! BGAppRefreshTask)
+        }
+    }
+    
+    private func scheduleBackgroundFilterUpdate() {
+        let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 6 * 60 * 60) // 6 hours minimum
+        
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            os_log("Background filter update task scheduled successfully", type: .info)
+        } catch {
+            os_log("Failed to schedule background filter update: %{public}@", type: .error, error.localizedDescription)
+        }
+    }
+    
+    private func handleBackgroundFilterUpdate(task: BGAppRefreshTask) {
+        os_log("Background filter update task started", type: .info)
+        
+        // Schedule next occurrence immediately
+        scheduleBackgroundFilterUpdate()
+        
+        task.expirationHandler = {
+            os_log("Background filter update task expired", type: .info)
+            task.setTaskCompleted(success: false)
+        }
+        
+        Task {
+            do {
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BackgroundTask")
+                os_log("Background filter update completed successfully", type: .info)
+                task.setTaskCompleted(success: true)
+            } catch {
+                os_log("Background filter update failed: %{public}@", type: .error, error.localizedDescription)
+                task.setTaskCompleted(success: false)
+            }
         }
     }
 }

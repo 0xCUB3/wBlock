@@ -29,6 +29,7 @@ struct wBlockApp: App {
             ContentView(filterManager: filterManager)
                     .onAppear {
                         appDelegate.filterManager = filterManager
+                        handleLaunchArguments()
                     }
         }
         #if os(macOS)
@@ -42,6 +43,21 @@ struct wBlockApp: App {
             }
         }
         #endif
+    }
+    
+    private func handleLaunchArguments() {
+        let arguments = CommandLine.arguments
+        if arguments.contains("--background-filter-update") {
+            Task {
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "LaunchAgent")
+                // Exit after background update completes
+                #if os(macOS)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    NSApp.terminate(nil)
+                }
+                #endif
+            }
+        }
     }
 }
 

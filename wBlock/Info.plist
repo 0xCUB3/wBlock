@@ -5,6 +5,11 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>background-app-refresh</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.alexanderskula.wblock.filter-update</string>
 	</array>
 </dict>
 </plist>
