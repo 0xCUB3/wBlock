@@ -1,3 +1,7 @@
+<blockquote style="border-left: 6px solid #a259ec; background: #f5f1fa; padding: 0.75em 1em; color: #5b2a91; font-weight: bold; font-size: 1.07em; margin-bottom: 1.5em;">
+⚠️ For a comparison between wBlock and other mainstream Safari ad blockers like <b>uBlock Origin Lite</b>, <b>AdGuard for Safari</b>, and <b>Wipr</b>, see <b><a href="Adblock_Comparison.md">Adblock_Comparison.md</a></b>.
+</blockquote>
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock Logo" width="128"/>
 </p>
