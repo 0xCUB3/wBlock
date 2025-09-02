@@ -1,7 +1,3 @@
-> [!WARNING]
-> **For a comparison between wBlock and other mainstream Safari ad blockers like uBlock Origin Lite, AdGuard for Safari, and Wipr, see [Adblock_Comparison.md](Adblock_Comparison.md).**
-
-
 <p align="center">
   <img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock Logo" width="128"/>
 </p>
@@ -20,6 +16,9 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 - Userscript Support: Add features like Return YouTube Dislike, Bypass Paywalls Clean, and more for a customized web experience.
 - Always up-to-date: One-click filter list updates (auto-updater coming soon!)
 - Full User Control: Easily add custom filter lists, manage your own whitelist, or quickly disable blocking on a per-site basis.
+
+> [!IMPORTANT]
+> **For an in-depth comparison between wBlock and other mainstream Safari ad blockers like uBlock Origin Lite, AdGuard for Safari, and Wipr, see [Adblock_Comparison.md](Adblock_Comparison.md).**
 
 ### Join the Discord server: https://discord.gg/5kmuEbwsut
 
