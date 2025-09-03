@@ -17,14 +17,12 @@ public struct ContentBlockerTargetInfo: Hashable {
     public let platform: Platform
     public let bundleIdentifier: String
     public let rulesFilename: String
-    public let secondaryCategory: FilterListCategory?
 
-    init(primaryCategory: FilterListCategory, platform: Platform, bundleIdentifier: String, rulesFilename: String, secondaryCategory: FilterListCategory? = nil) {
+    init(primaryCategory: FilterListCategory, platform: Platform, bundleIdentifier: String, rulesFilename: String) {
         self.primaryCategory = primaryCategory
         self.platform = platform
         self.bundleIdentifier = bundleIdentifier
         self.rulesFilename = rulesFilename
-        self.secondaryCategory = secondaryCategory
     }
 
     // Implement Hashable
@@ -44,17 +42,24 @@ public class ContentBlockerTargetManager {
 
     private init() {
         targets = [
-            // macOS Targets
-            ContentBlockerTargetInfo(primaryCategory: .ads, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Ads-Privacy", rulesFilename: "rules_ads_privacy_macos.json", secondaryCategory: .privacy),
-            ContentBlockerTargetInfo(primaryCategory: .security, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Security-Multipurpose", rulesFilename: "rules_security_multipurpose_macos.json", secondaryCategory: .multipurpose),
-            ContentBlockerTargetInfo(primaryCategory: .annoyances, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Annoyances", rulesFilename: "rules_annoyances_macos.json"),
-            ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign-Experimental", rulesFilename: "rules_foreign_experimental_macos.json", secondaryCategory: .experimental),
-            ContentBlockerTargetInfo(primaryCategory: .custom, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Custom", rulesFilename: "rules_custom_macos.json")
+            // Universal targets for both macOS and iOS
+            ContentBlockerTargetInfo(primaryCategory: .ads, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Ads-Privacy", rulesFilename: "rules_ads_privacy.json"),
+            ContentBlockerTargetInfo(primaryCategory: .security, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Security-Multipurpose", rulesFilename: "rules_security_multipurpose.json"),
+            ContentBlockerTargetInfo(primaryCategory: .annoyances, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Annoyances", rulesFilename: "rules_annoyances.json"),
+            ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign-Experimental", rulesFilename: "rules_foreign_experimental.json"),
+            ContentBlockerTargetInfo(primaryCategory: .custom, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Custom", rulesFilename: "rules_custom.json"),
+            
+            // iOS uses the same extensions and rules files
+            ContentBlockerTargetInfo(primaryCategory: .ads, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Ads-Privacy", rulesFilename: "rules_ads_privacy.json"),
+            ContentBlockerTargetInfo(primaryCategory: .security, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Security-Multipurpose", rulesFilename: "rules_security_multipurpose.json"),
+            ContentBlockerTargetInfo(primaryCategory: .annoyances, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Annoyances", rulesFilename: "rules_annoyances.json"),
+            ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign-Experimental", rulesFilename: "rules_foreign_experimental.json"),
+            ContentBlockerTargetInfo(primaryCategory: .custom, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Custom", rulesFilename: "rules_custom.json")
         ]
     }
 
     public func targetInfo(forCategory category: FilterListCategory, platform: Platform) -> ContentBlockerTargetInfo? {
-        return targets.first { $0.platform == platform && ($0.primaryCategory == category || $0.secondaryCategory == category) }
+        return targets.first { $0.platform == platform && $0.primaryCategory == category }
     }
     
     public func allTargets(forPlatform platform: Platform) -> [ContentBlockerTargetInfo] {

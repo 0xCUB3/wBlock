@@ -10,11 +10,7 @@ import Combine
 import wBlockCoreService
 import SafariServices
 
-#if os(macOS)
 let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters"
-#else
-let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters-iOS"
-#endif
 
 @MainActor
 class AppFilterManager: ObservableObject {
@@ -36,6 +32,11 @@ class AppFilterManager: ObservableObject {
     @Published var showingApplyProgressSheet = false
     @Published var showingDownloadCompleteAlert = false
     @Published var downloadCompleteMessage = ""
+    
+    // iOS-specific extension handling
+    @Published var showingExtensionSetupAlert = false
+    @Published var extensionSetupMessage = ""
+    @Published var disabledExtensionsList: [String] = []
     
     // Per-category rule count tracking
     @Published var ruleCountsByCategory: [FilterListCategory: Int] = [:]
@@ -110,6 +111,11 @@ class AppFilterManager: ObservableObject {
         await MainActor.run {
             setup()
         }
+        
+        #if os(iOS)
+        // Check extension status on iOS to help users diagnose issues
+        await checkExtensionStatus()
+        #endif
     }
 
     private func setup() {
@@ -419,11 +425,161 @@ class AppFilterManager: ObservableObject {
 
     // MARK: - Helper Methods
     
+    /// Checks if we can communicate with extensions (iOS-specific issue)
+    func checkExtensionStatus() async {
+        #if os(iOS)
+        await ConcurrentLogManager.shared.log("📱 Checking iOS extension status...")
+        
+        let allTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        var enabledCount = 0
+        var disabledExtensions: [String] = []
+        
+        for target in allTargets {
+            // Try a quick reload to test if extension is enabled
+            let result = ContentBlockerService.reloadContentBlocker(withIdentifier: target.bundleIdentifier)
+            if case .success = result {
+                enabledCount += 1
+                await ConcurrentLogManager.shared.log("  ✅ \(target.primaryCategory.rawValue): Enabled")
+            } else if case .failure(let error) = result {
+                if error.localizedDescription.contains("Couldn't communicate with a helper application") {
+                    disabledExtensions.append(target.primaryCategory.rawValue)
+                    await ConcurrentLogManager.shared.log("  ❌ \(target.primaryCategory.rawValue): Not enabled in Settings")
+                } else {
+                    await ConcurrentLogManager.shared.log("  ⚠️ \(target.primaryCategory.rawValue): \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        if !disabledExtensions.isEmpty {
+            await ConcurrentLogManager.shared.log("\n⚠️ IMPORTANT: The following extensions are not enabled:")
+            for ext in disabledExtensions {
+                await ConcurrentLogManager.shared.log("  - \(ext)")
+            }
+            await ConcurrentLogManager.shared.log("\n📲 To enable extensions on iOS:")
+            await ConcurrentLogManager.shared.log("1. Open Settings app")
+            await ConcurrentLogManager.shared.log("2. Go to Safari → Extensions")
+            await ConcurrentLogManager.shared.log("3. Enable each wBlock extension")
+            await ConcurrentLogManager.shared.log("4. Return to this app and try again\n")
+            
+            // Show UI alert for user
+            await MainActor.run {
+                self.disabledExtensionsList = disabledExtensions
+                self.extensionSetupMessage = """
+                The following Safari extensions need to be enabled manually in Settings:
+
+                \(disabledExtensions.map { "• \($0)" }.joined(separator: "\n"))
+
+                To enable them:
+                1. Open Settings app
+                2. Go to Safari → Extensions
+                3. Toggle ON each wBlock extension
+                4. Return to this app and try reloading
+                """
+                self.showingExtensionSetupAlert = true
+            }
+        } else if enabledCount == allTargets.count {
+            await ConcurrentLogManager.shared.log("✅ All extensions are enabled and working!")
+        }
+        #else
+        await ConcurrentLogManager.shared.log("🖥 macOS: Extension checks not needed")
+        #endif
+    }
+    
+    /// Opens iOS Settings app to the Safari Extensions section
+    func openSafariExtensionSettings() {
+        #if os(iOS)
+        guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+        
+        if UIApplication.shared.canOpenURL(settingsUrl) {
+            UIApplication.shared.open(settingsUrl)
+        }
+        #endif
+    }
+    
     /// Attempts to reload a content blocker with up to 5 retry attempts
     /// Returns true if successful, false if all attempts failed
     private func reloadContentBlockerWithRetry(targetInfo: ContentBlockerTargetInfo) async -> Bool {
         let maxRetries = 5
         let categoryName = targetInfo.primaryCategory.rawValue
+        
+        // Debug logging
+        await ConcurrentLogManager.shared.log("🔍 DEBUG: Attempting to reload extension:")
+        await ConcurrentLogManager.shared.log("  - Category: \(categoryName)")
+        await ConcurrentLogManager.shared.log("  - Bundle ID: \(targetInfo.bundleIdentifier)")
+        await ConcurrentLogManager.shared.log("  - Platform: \(targetInfo.platform)")
+        await ConcurrentLogManager.shared.log("  - Rules file: \(targetInfo.rulesFilename)")
+        
+        #if os(iOS)
+        // iOS-specific checks
+        await ConcurrentLogManager.shared.log("🔍 iOS Extension Debug:")
+        await ConcurrentLogManager.shared.log("  - App Group ID: \(GroupIdentifier.shared.value)")
+        
+        // Check if we can create SFContentBlockerManager at all
+        await ConcurrentLogManager.shared.log("  - Testing SFContentBlockerManager availability...")
+        
+        // Try to get state of content blocker
+        await withCheckedContinuation { continuation in
+            SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: targetInfo.bundleIdentifier) { state, error in
+                Task {
+                    if let error = error {
+                        await ConcurrentLogManager.shared.log("  - Extension state check failed: \(error.localizedDescription)")
+                        let nsError = error as NSError
+                        await ConcurrentLogManager.shared.log("  - State error domain: \(nsError.domain), code: \(nsError.code)")
+                    } else if let state = state {
+                        await ConcurrentLogManager.shared.log("  - Extension state: enabled=\(state.isEnabled)")
+                    } else {
+                        await ConcurrentLogManager.shared.log("  - Extension state: no state returned")
+                    }
+                }
+                continuation.resume()
+            }
+        }
+        #endif
+        
+        // Check if the rules file exists in app group
+        if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
+            let rulesFileURL = groupURL.appendingPathComponent(targetInfo.rulesFilename)
+            let fileExists = FileManager.default.fileExists(atPath: rulesFileURL.path)
+            await ConcurrentLogManager.shared.log("  - App Group URL: \(groupURL.path)")
+            await ConcurrentLogManager.shared.log("  - Rules file exists: \(fileExists)")
+            if fileExists {
+                if let attributes = try? FileManager.default.attributesOfItem(atPath: rulesFileURL.path),
+                   let fileSize = attributes[.size] as? Int64 {
+                    await ConcurrentLogManager.shared.log("  - Rules file size: \(fileSize) bytes")
+                    
+                    // Check if file is too large (Safari has ~150k rule limit)
+                    if fileSize > 1_000_000 { // 1MB threshold
+                        await ConcurrentLogManager.shared.log("  ⚠️ Rules file is very large - may cause extension issues")
+                    }
+                    
+                    // Try to validate JSON structure
+                    do {
+                        let jsonData = try Data(contentsOf: rulesFileURL)
+                        let jsonObject = try JSONSerialization.jsonObject(with: jsonData)
+                        if let rulesArray = jsonObject as? [[String: Any]] {
+                            await ConcurrentLogManager.shared.log("  - Rules count: \(rulesArray.count)")
+                            if rulesArray.count > 150_000 {
+                                await ConcurrentLogManager.shared.log("  ⚠️ Rules count exceeds Safari limit (150k)")
+                            }
+                        }
+                    } catch {
+                        await ConcurrentLogManager.shared.log("  ❌ Rules file JSON validation failed: \(error)")
+                    }
+                }
+            }
+            
+            // Check app group permissions
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(atPath: groupURL.path)
+                await ConcurrentLogManager.shared.log("  - App Group contents: \(contents.count) items")
+            } catch {
+                await ConcurrentLogManager.shared.log("  ❌ Cannot read app group directory: \(error)")
+            }
+        } else {
+            await ConcurrentLogManager.shared.log("  ❌ Cannot access app group container!")
+        }
         
         for attempt in 1...maxRetries {
             let result = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
@@ -433,9 +589,61 @@ class AppFilterManager: ObservableObject {
                 }
                 return true
             } else if case .failure(let error) = result {
-                if attempt == 1 || attempt == maxRetries {
-                    await ConcurrentLogManager.shared.log("❌ \(categoryName) \(attempt == maxRetries ? "FAILED after \(maxRetries) attempts" : "reload failed"): \(error.localizedDescription)")
+                let nsError = error as NSError
+                await ConcurrentLogManager.shared.log("❌ \(categoryName) reload failed (attempt \(attempt)/\(maxRetries)):")
+                await ConcurrentLogManager.shared.log("  - Error domain: \(nsError.domain)")
+                await ConcurrentLogManager.shared.log("  - Error code: \(nsError.code)")
+                await ConcurrentLogManager.shared.log("  - Error: \(error.localizedDescription)")
+                
+                // Check for specific error codes
+                if nsError.domain == "WKErrorDomain" {
+                    await ConcurrentLogManager.shared.log("  - WebKit error detected")
+                    if nsError.code == 6 {
+                        await ConcurrentLogManager.shared.log("  - Error code 6: Cannot access blocker list file")
+                    }
+                } else if nsError.domain == "NSCocoaErrorDomain" {
+                    if nsError.code == 4097 {
+                        await ConcurrentLogManager.shared.log("  - NSCocoaErrorDomain 4097: XPC Connection Interrupted")
+                        await ConcurrentLogManager.shared.log("  - Possible causes: Extension crashed, memory pressure, or process termination")
+                    } else if nsError.code == 4099 {
+                        await ConcurrentLogManager.shared.log("  - NSCocoaErrorDomain 4099: XPC Connection Invalid")
+                        await ConcurrentLogManager.shared.log("  - Possible causes: Extension not properly registered, permission issues, or service unavailable")
+                        #if os(iOS)
+                        await ConcurrentLogManager.shared.log("  - Even if enabled in Settings, extension may have issues loading")
+                        #endif
+                    } else {
+                        await ConcurrentLogManager.shared.log("  - NSCocoaErrorDomain \(nsError.code): Unknown error")
+                    }
                 }
+                
+                #if os(iOS)
+                // iOS-specific: Check if this might be an extension activation issue
+                if error.localizedDescription.contains("Couldn't communicate with a helper application") {
+                    await ConcurrentLogManager.shared.log("  ⚠️ iOS Extension not enabled in Settings > Safari > Extensions")
+                    await ConcurrentLogManager.shared.log("  ⚠️ User must manually enable '\(categoryName)' extension")
+                    
+                    // On the final attempt, trigger the setup alert if not already shown
+                    if attempt == maxRetries {
+                        await MainActor.run {
+                            if !self.showingExtensionSetupAlert {
+                                self.disabledExtensionsList = [categoryName]
+                                self.extensionSetupMessage = """
+                                The '\(categoryName)' Safari extension is not enabled.
+                                
+                                Error: \(error.localizedDescription)
+                                
+                                To fix this:
+                                1. Open Settings app
+                                2. Go to Safari → Extensions
+                                3. Toggle ON the '\(categoryName)' extension
+                                4. Return to this app and try again
+                                """
+                                self.showingExtensionSetupAlert = true
+                            }
+                        }
+                    }
+                }
+                #endif
                 
                 if attempt < maxRetries {
                     let delayMs = attempt * 200
@@ -620,9 +828,6 @@ class AppFilterManager: ObservableObject {
             // Update per-category rule count on main thread
             await MainActor.run {
                 self.ruleCountsByCategory[targetInfo.primaryCategory] = ruleCountForThisTarget
-                if let secondaryCategory = targetInfo.secondaryCategory {
-                    self.ruleCountsByCategory[secondaryCategory] = ruleCountForThisTarget
-                }
             }
 
             let ruleLimit = 150000
@@ -632,14 +837,8 @@ class AppFilterManager: ObservableObject {
             await MainActor.run {
                 if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
                     self.categoriesApproachingLimit.insert(targetInfo.primaryCategory)
-                    if let secondaryCategory = targetInfo.secondaryCategory {
-                        self.categoriesApproachingLimit.insert(secondaryCategory)
-                    }
                 } else {
                     self.categoriesApproachingLimit.remove(targetInfo.primaryCategory)
-                    if let secondaryCategory = targetInfo.secondaryCategory {
-                        self.categoriesApproachingLimit.remove(secondaryCategory)
-                    }
                 }
             }
             
@@ -648,9 +847,6 @@ class AppFilterManager: ObservableObject {
                 
                 // Auto-reset this specific category and warn the user
                 await resetCategoryToRecommended(targetInfo.primaryCategory)
-                if let secondaryCategory = targetInfo.secondaryCategory {
-                    await resetCategoryToRecommended(secondaryCategory)
-                }
                 
                 // Show category warning alert to inform user about the rule limit exceeded
                 await MainActor.run {
@@ -668,8 +864,7 @@ class AppFilterManager: ObservableObject {
                     let updatedSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
                     
                     for filter in updatedSelectedFilters {
-                        if filter.category == targetInfo.primaryCategory || 
-                           (targetInfo.secondaryCategory != nil && filter.category == targetInfo.secondaryCategory!) {
+                        if filter.category == targetInfo.primaryCategory {
                             guard let containerURL = containerURL else { continue }
                             let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
                             if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -711,13 +906,7 @@ class AppFilterManager: ObservableObject {
                 
                 await MainActor.run {
                     self.ruleCountsByCategory[targetInfo.primaryCategory] = resetRuleCount
-                    if let secondaryCategory = targetInfo.secondaryCategory {
-                        self.ruleCountsByCategory[secondaryCategory] = resetRuleCount
-                    }
                     self.categoriesApproachingLimit.remove(targetInfo.primaryCategory)
-                    if let secondaryCategory = targetInfo.secondaryCategory {
-                        self.categoriesApproachingLimit.remove(secondaryCategory)
-                    }
                 }
                 
                 overallSafariRulesApplied += resetRuleCount

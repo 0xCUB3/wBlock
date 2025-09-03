@@ -26,22 +26,40 @@ public enum ContentBlockerExtensionRequestHandler {
     ///   - context: The extension context that initiated the request.
     ///   - groupIdentifier: The app group identifier used to access the shared container.
     public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String, rulesFilenameInAppGroup: String) {
-        os_log(.info, "ContentBlockerExtensionRequestHandler: Preparing to load rules for target file: %@", rulesFilenameInAppGroup)
+        os_log(.info, "ContentBlockerExtensionRequestHandler: Starting request")
+        os_log(.info, "  - Group ID: %@", groupIdentifier)
+        os_log(.info, "  - Target rules file: %@", rulesFilenameInAppGroup)
+        os_log(.info, "  - Bundle ID: %@", Bundle.main.bundleIdentifier ?? "Unknown")
+        
+        #if os(iOS)
+        os_log(.info, "  - Platform: iOS")
+        #else
+        os_log(.info, "  - Platform: macOS")
+        #endif
 
         guard let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
-            os_log(.error, "Failed to access App Group container.")
+            os_log(.error, "CRITICAL: Failed to access App Group container for group: %@", groupIdentifier)
             context.cancelRequest(withError: createError(code: 1001, message: "Failed to access App Group container."))
             return
         }
+        
+        os_log(.info, "  - App Group URL: %@", appGroupURL.path)
 
         let sharedFileURL = appGroupURL.appendingPathComponent(rulesFilenameInAppGroup)
         var rulesToLoadURL: URL?
 
         if FileManager.default.fileExists(atPath: sharedFileURL.path) {
             rulesToLoadURL = sharedFileURL
-            os_log(.info, "Found rules in app group: %@", sharedFileURL.path)
+            // Get file size for debugging
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: sharedFileURL.path),
+               let fileSize = attributes[.size] as? Int64 {
+                os_log(.info, "Found rules in app group: %@ (size: %lld bytes)", sharedFileURL.path, fileSize)
+            } else {
+                os_log(.info, "Found rules in app group: %@", sharedFileURL.path)
+            }
         } else {
-            os_log(.info, "Rules file %@ not found in app group. Falling back to bundled blockerList.json.", rulesFilenameInAppGroup)
+            os_log(.info, "Rules file %@ not found in app group at path: %@", rulesFilenameInAppGroup, sharedFileURL.path)
+            os_log(.info, "Falling back to bundled blockerList.json.")
             // Each extension should have its own "blockerList.json" as a fallback.
             // The name "blockerList.json" is hardcoded in many of your ContentBlockerRequestHandler.swift files already.
             if let bundledFallbackURL = Bundle.main.url(forResource: "blockerList", withExtension: "json") {

@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/wBlock Security & Multipurpose-primary.dia",
+    "emit-module-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/wBlock Security & Multipurpose-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/wBlock Security & Multipurpose-primary-emit-module.dia",
+    "pch" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/wBlock Security & Multipurpose-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/wBlock Security & Multipurpose-primary.swiftdeps"
+  },
+  "/Users/alexanderskula/wBlock/wBlock Security & Multipurpose/ContentBlockerRequestHandler.swift" : {
+    "const-values" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.swiftconstvalues",
+    "dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.d",
+    "diagnostics" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.dia",
+    "index-unit-output-path" : "/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.o",
+    "llvm-bc" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.bc",
+    "object" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.o",
+    "swift-dependencies" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler.swiftdeps",
+    "swiftmodule" : "/Users/alexanderskula/wBlock/build/wBlock.build/Debug/wBlock Security & Multipurpose.build/Objects-normal/x86_64/ContentBlockerRequestHandler~partial.swiftmodule"
+  }
+}

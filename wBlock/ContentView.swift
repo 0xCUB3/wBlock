@@ -343,7 +343,7 @@ struct ContentView: View {
                 valueColor: .primary
             )
             StatCard(
-                title: "Applied Rules",
+                title: "Rules",
                 value: displayedRuleCount.formatted(),
                 icon: "shield.lefthalf.filled",
                 pillColor: .clear,
