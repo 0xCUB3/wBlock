@@ -9,7 +9,5 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
-	<key>NSHumanReadableDescription</key>
-	<string>Combines security protection and multi-purpose filtering for comprehensive blocking.</string>
 </dict>
 </plist>

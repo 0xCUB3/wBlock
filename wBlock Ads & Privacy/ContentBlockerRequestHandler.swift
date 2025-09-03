@@ -1,6 +1,6 @@
 //
 //  ContentBlockerRequestHandler.swift
-//  wBlock Annoyances
+//  wBlock Ads & Privacy
 //
 //  Created by Alexander Skula on 9/3/25.
 //
