@@ -88,7 +88,13 @@ public enum ContentBlockerService {
     public static func reloadContentBlocker(
         withIdentifier identifier: String
     ) -> Result<Void, Error> {
-        os_log(.info, "Start reloading the content blocker")
+        os_log(.info, "Start reloading content blocker with identifier: %@", identifier)
+        
+        #if os(iOS)
+        os_log(.info, "Platform: iOS - Extension must be enabled in Settings > Safari > Extensions")
+        #else
+        os_log(.info, "Platform: macOS")
+        #endif
 
         let result = measure(label: "Reload safari") {
             reloadContentBlockerSynchronously(withIdentifier: identifier)
@@ -96,21 +102,27 @@ public enum ContentBlockerService {
 
         switch result {
         case .success:
-            os_log(.info, "Content blocker reloaded successfully.")
+            os_log(.info, "Content blocker %@ reloaded successfully.", identifier)
         case .failure(let error):
+            let nsError = error as NSError
+            os_log(.error, "Failed to reload content blocker %@", identifier)
+            os_log(.error, "  - Error domain: %@", nsError.domain)
+            os_log(.error, "  - Error code: %d", nsError.code)
+            os_log(.error, "  - Error description: %@", error.localizedDescription)
+            
             // WKErrorDomain error 6 is a common error when the content blocker
             // cannot access the blocker list file.
             if error.localizedDescription.contains("WKErrorDomain error 6") {
                 os_log(
                     .error,
-                    "Failed to reload content blocker, could not access blocker list file: %@",
-                    error.localizedDescription
+                    "Error code 6: Could not access blocker list file for %@",
+                    identifier
                 )
-            } else {
+            } else if error.localizedDescription.contains("Couldn't communicate with a helper application") {
                 os_log(
                     .error,
-                    "Failed to reload content blocker: %@",
-                    error.localizedDescription
+                    "Extension %@ is not enabled or not properly installed. On iOS, user must enable it in Settings.",
+                    identifier
                 )
             }
         }

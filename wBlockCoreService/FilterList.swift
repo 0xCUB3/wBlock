@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import wBlockCoreService
 
 public struct FilterList: Identifiable, Codable, Hashable {
     public let id: UUID

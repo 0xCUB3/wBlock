@@ -266,10 +266,7 @@ public actor SharedAutoUpdateManager {
         var advancedRulesSnippets: [String] = []
 
         for target in targets {
-            let targetCategories: [FilterListCategory] = {
-                if let secondary = target.secondaryCategory { return [target.primaryCategory, secondary] }
-                return [target.primaryCategory]
-            }()
+            let targetCategories: [FilterListCategory] = [target.primaryCategory]
 
             let intersects = !updatedCategories.isDisjoint(with: targetCategories)
             let existingAdvanced = loadStoredAdvancedRules(for: target)

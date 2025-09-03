@@ -2,10 +2,13 @@
 //  ContentBlockerRequestHandler.swift
 //  wBlock Annoyances
 //
-//  Created by Alexander Skula on 5/25/25.
+//  Created by Alexander Skula on 9/3/25.
 //
 
-import Foundation
+#if os(iOS)
+import UIKit
+import MobileCoreServices
+#endif
 import wBlockCoreService
 import os.log
 import UniformTypeIdentifiers
@@ -14,23 +17,17 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
 
     // --- CONFIGURE THESE FOR EACH EXTENSION ---
     private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .annoyances
-    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = nil
+    #if os(iOS)
+    private let myPlatform = Platform.iOS
+    #else
     private let myPlatform = Platform.macOS
+    #endif
     // --- END CONFIGURATION ---
 
     public func beginRequest(with context: NSExtensionContext) {
-        // Try primary category first
-        var targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: myPrimaryCategory, platform: myPlatform)
-
-        // If not found and there's a secondary category, try that (for combined extensions)
-        if targetInfo == nil, let secondary = mySecondaryCategory {
-            targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: secondary, platform: myPlatform)
-        }
-        
-        guard let finalTargetInfo = targetInfo else {
-            os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for primaryCategory '%@' (secondary: '%@') on platform '%@'. Extension Bundle: %@",
+        guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: myPrimaryCategory, platform: myPlatform) else {
+            os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for primaryCategory '%@' on platform '%@'. Extension Bundle: %@",
                    myPrimaryCategory.rawValue,
-                   mySecondaryCategory?.rawValue ?? "N/A",
                    String(describing: myPlatform),
                    Bundle.main.bundleIdentifier ?? "Unknown")
             // Fallback to sending empty rules
@@ -41,7 +38,8 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
         ContentBlockerExtensionRequestHandler.handleRequest(
             with: context,
             groupIdentifier: GroupIdentifier.shared.value,
-            rulesFilenameInAppGroup: finalTargetInfo.rulesFilename
+            rulesFilenameInAppGroup: targetInfo.rulesFilename
         )
     }
 }
+
