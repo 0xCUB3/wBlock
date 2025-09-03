@@ -16,7 +16,7 @@ import UniformTypeIdentifiers
 public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
 
     // --- CONFIGURE THESE FOR EACH EXTENSION ---
-    private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .ads
+    private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .annoyances
     #if os(iOS)
     private let myPlatform = Platform.iOS
     #else
