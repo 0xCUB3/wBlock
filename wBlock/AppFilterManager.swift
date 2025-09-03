@@ -532,8 +532,8 @@ class AppFilterManager: ObservableObject {
                     } else {
                         await ConcurrentLogManager.shared.log("  - Extension state: no state returned")
                     }
+                    continuation.resume()
                 }
-                continuation.resume()
             }
         }
         #endif
