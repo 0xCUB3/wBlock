@@ -242,13 +242,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		C135A4792E6F70800053CD15 /* Exceptions for "wBlock Login Item" folder in "wBlock Login Item" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"wBlock-Login-Item-Info.plist",
-			);
-			target = C135A46C2E6F70410053CD15 /* wBlock Login Item */;
-		};
 		C1A41C3A2DE0897D0056F63D /* Exceptions for "wBlock" folder in "wBlock" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -345,9 +338,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C135A46E2E6F70410053CD15 /* wBlock Login Item */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C135A4792E6F70800053CD15 /* Exceptions for "wBlock Login Item" folder in "wBlock Login Item" target */,
-			);
 			path = "wBlock Login Item";
 			sourceTree = "<group>";
 		};

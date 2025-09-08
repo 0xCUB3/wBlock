@@ -134,7 +134,7 @@ struct AutoUpdateSettingsView: View {
         let identifiers = (Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String]) ?? []
         let hasTaskID = identifiers.contains("com.alexanderskula.wblock.filter-update")
         let bgModes = (Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]) ?? []
-        let hasProcessing = bgModes.contains("background-processing")
+        let hasProcessing = bgModes.contains("processing")
 
         let (title, color): (String, Color) = {
             switch status {
