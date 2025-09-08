@@ -1,1 +1,99 @@
 .claude/settings.local.json
+
+# ========================
+# .gitignore for Xcode 16 
+# ========================
+# Source: https://gist.github.com/aksamitsah/355510624caff6b04e49f8f634b75159
+# Tags: Xcode, gitignore, Swift, iOS, macOS, Development
+# A comprehensive .gitignore file tailored for Xcode 16 projects.
+# Excludes auto-generated, system-specific, and unnecessary files.
+# Suitable for Swift, Objective-C, CocoaPods, Carthage, and more.
+
+# --- macOS Files ---
+# Ignore system-generated files specific to macOS.
+.DS_Store
+.Trashes
+.AppleDouble
+.LSOverride
+
+# --- Xcode ---
+# Exclude user-specific and build-related files.
+xcuserdata/                       # User-specific data
+*.xcscmblueprint                  # Source control configurations
+*.xccheckout                      # Versioned workspace data
+*.xcworkspace                     # Workspace data
+DerivedData/                      # Build data and intermediates
+*.xcodeproj/*.pbxuser             # User-specific project data
+*.xcodeproj/*.perspectivev3       # Perspective settings
+*.xcodeproj/xcuserdata/           # User-specific settings
+*.xcodeproj/project.xcworkspace/  # Internal workspace references
+
+# --- Swift Package Manager ---
+# Ignore Swift Package Manager build files and package resolution.
+.build/
+.swiftpm/
+Package.resolved
+
+# --- CocoaPods ---
+# Exclude CocoaPods dependencies and lock files.
+Pods/
+Podfile.lock
+project.xcworkspace
+
+# --- Carthage ---
+# Ignore Carthage build artifacts and checkouts.
+Carthage/Build/
+Carthage/Checkouts/
+
+# --- Fastlane ---
+# Prevent versioning of Fastlane artifacts.
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# --- Archives ---
+# Ignore Xcode archive files.
+*.xcarchive
+
+# --- Playgrounds ---
+# Exclude generated files in Swift Playgrounds.
+timeline.xctimeline
+playground.xcworkspace
+
+# --- Bundler ---
+# Ignore Bundler files.
+.bundle/
+
+# --- Simulator ---
+# Ignore simulator runtime files.
+*.simruntime
+
+# --- Logs ---
+# Exclude log files.
+*.log
+*.xcresult
+
+# --- Temporary and Backup Files ---
+# Ignore temporary, swap, and backup files.
+*.tmp
+*.swp
+*~.nib
+*.bak
+
+# --- Build Artifacts ---
+# Ignore build artifacts for various languages and platforms.
+*.o
+*.pyc
+*.class
+*.jar
+*.dll
+*.so
+*.dylib
+*.exe
+
+# --- Configuration ---
+# Exclude environment and editor-specific configurations.
+.env
+.vscode/
+*.code-snippets
