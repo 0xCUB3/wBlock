@@ -26,7 +26,7 @@ class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
     
     #if os(iOS)
-    private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
+    private let backgroundTaskIdentifier = "skula.wblock.filter-update"
     #endif
 }
 

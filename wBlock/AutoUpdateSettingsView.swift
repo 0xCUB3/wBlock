@@ -132,7 +132,7 @@ struct AutoUpdateSettingsView: View {
     private func iosBackgroundStatusBanner() -> some View {
         let status = UIApplication.shared.backgroundRefreshStatus
         let identifiers = (Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String]) ?? []
-        let hasTaskID = identifiers.contains("com.alexanderskula.wblock.filter-update")
+        let hasTaskID = identifiers.contains("skula.wblock.filter-update")
         let bgModes = (Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]) ?? []
         let hasProcessing = bgModes.contains("processing")
 
