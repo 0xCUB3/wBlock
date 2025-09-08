@@ -26,7 +26,11 @@ struct StatCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text({
                     #if os(iOS)
-                    title == "Enabled Lists" ? "Enabled" : title
+                    switch title {
+                    case "Enabled Lists": "Enabled"
+                    case "Applied Rules": "Rules"
+                    default: title
+                    }
                     #else
                     title
                     #endif
@@ -41,6 +45,8 @@ struct StatCard: View {
                     .frame(minWidth: valueWidth, alignment: .leading)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .minimumScaleFactor(0.6)
+                    .allowsTightening(true)
             }
         }
     .padding(.vertical, 12)
