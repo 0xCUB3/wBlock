@@ -1637,7 +1637,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = skula.wblock.LoginItem;
+				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.LoginItem;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -1673,7 +1673,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = skula.wblock.LoginItem;
+				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.LoginItem;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;

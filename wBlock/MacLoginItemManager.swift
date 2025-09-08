@@ -15,7 +15,7 @@ import os.log
 
 enum MacLoginItemManager {
     // Update to match the embedded Login Item target bundle identifier if present
-    private static let loginItemIdentifier = "skula.wblock.LoginItem"
+    private static let loginItemIdentifier = "skula.wBlock.LoginItem"
     private static let log = Logger(subsystem: "com.skula.wBlock", category: "LoginItem")
 
     static func isAvailable() -> Bool {
@@ -110,7 +110,7 @@ enum MacLoginItemManager {
 
     // MARK: - LaunchAgent fallback
     private static func launchAgentIdentifier() -> String {
-        (Bundle.main.bundleIdentifier ?? "skula.wblock") + ".filter-updater"
+        (Bundle.main.bundleIdentifier ?? "skula.wBlock") + ".filter-updater"
     }
 
     private static func launchAgentPlistURL() -> URL? {

@@ -8,7 +8,7 @@
 	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>skula.wblock.filter-update</string>
+		<string>skula.wBlock.filter-update</string>
 	</array>
 </dict>
 </plist>
