@@ -21,6 +21,20 @@
                ReferencedContainer = "container:wBlock.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C135A46C2E6F70410053CD15"
+               BuildableName = "wBlock Login Item.app"
+               BlueprintName = "wBlock Login Item"
+               ReferencedContainer = "container:wBlock.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
