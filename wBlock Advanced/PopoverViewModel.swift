@@ -32,7 +32,7 @@ public class PopoverViewModel: ObservableObject {
             }
             
             self.host = host
-            let list = self.defaults?.stringArray(forKey: "disabledSites") ?? []
+            let list = ProtobufDataManager.shared.getWhitelistedDomains()
             self.isDisabled = list.contains(host)
             
             // Load zapper rules after host is set
@@ -45,13 +45,12 @@ public class PopoverViewModel: ObservableObject {
     /// Save toggled disabled state for current host
     public func saveDisabledState() {
         guard !host.isEmpty else { return }
-        var list = defaults?.stringArray(forKey: "disabledSites") ?? []
-        if isDisabled {
-            if !list.contains(host) { list.append(host) }
-        } else {
-            list.removeAll { $0 == host }
+        var list = ProtobufDataManager.shared.getWhitelistedDomains()
+        if isDisabled { if !list.contains(host) { list.append(host) } }
+        else { list.removeAll { $0 == host } }
+        Task { @MainActor in
+            await ProtobufDataManager.shared.setWhitelistedDomains(list)
         }
-        defaults?.setValue(list, forKey: "disabledSites")
         
         // The main app will automatically detect this change via UserDefaults observer
         // and rebuild/reload all content blockers with the updated allowlist rules

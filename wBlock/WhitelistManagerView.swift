@@ -92,8 +92,9 @@ struct WhitelistManagerView: View {
     }
 
     private func loadWhitelistedDomains() {
-        let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-        whitelistedDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
+        Task { @MainActor in
+            whitelistedDomains = ProtobufDataManager.shared.getWhitelistedDomains()
+        }
     }
     
     private func addDomain() {
@@ -101,8 +102,7 @@ struct WhitelistManagerView: View {
         guard !trimmed.isEmpty else { return }
         isProcessing = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-            let currentDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
+            let currentDomains = whitelistedDomains
             guard !currentDomains.contains(trimmed) else {
                 showError = true
                 errorMessage = "Domain already whitelisted."
@@ -110,8 +110,10 @@ struct WhitelistManagerView: View {
                 return
             }
             let updatedDomains = currentDomains + [trimmed]
-            userDefaults.set(updatedDomains, forKey: "disabledSites")
-            whitelistedDomains = updatedDomains
+            Task { @MainActor in
+                await ProtobufDataManager.shared.setWhitelistedDomains(updatedDomains)
+                whitelistedDomains = updatedDomains
+            }
             newDomain = ""
             showError = false
             isProcessing = false
@@ -121,13 +123,14 @@ struct WhitelistManagerView: View {
     private func deleteSelectedDomains() {
         isProcessing = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-            let currentDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
+            let currentDomains = whitelistedDomains
             let updatedDomains = currentDomains.filter { !selectedDomains.contains($0) }
-            userDefaults.set(updatedDomains, forKey: "disabledSites")
-            whitelistedDomains = updatedDomains
-            selectedDomains.removeAll()
-            isProcessing = false
+            Task { @MainActor in
+                await ProtobufDataManager.shared.setWhitelistedDomains(updatedDomains)
+                whitelistedDomains = updatedDomains
+                selectedDomains.removeAll()
+                isProcessing = false
+            }
         }
     }
 }

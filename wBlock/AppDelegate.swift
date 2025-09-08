@@ -127,11 +127,8 @@ extension AppDelegate: NSApplicationDelegate {
             }
         }
         
-        // Try to register a system-level launch agent for true background updates
-        registerMacOSLaunchAgent()
-        
-        // Fallback: setup cron job as alternative
-        setupCronFallback()
+        // For Mac App Store compliance prefer SMAppService Login Item managed via Settings.
+        // LaunchAgent/cron setup has been removed from automatic path.
     }
     
     private func registerMacOSLaunchAgent() {
@@ -367,4 +364,3 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 }
 #endif
-

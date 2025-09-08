@@ -30,6 +30,11 @@ private var isBadgeCounterEnabled = true
                     Toggle("Show blocked item count in toolbar", isOn: $isBadgeCounterEnabled)
                     .toggleStyle(.switch)
                 }
+                Section {
+                    AutoUpdateSettingsView()
+                } header: {
+                    Text("Auto-Update")
+                }
                 
                 Section {
                     HStack {

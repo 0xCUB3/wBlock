@@ -79,11 +79,11 @@ struct WhitelistView: View {
 
 class WhitelistViewModel: ObservableObject {
     @Published var whitelistedDomains: [String] = []
-    private let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-    private let disabledSitesKey = "disabledSites"
 
     func loadWhitelistedDomains() {
-        whitelistedDomains = userDefaults.stringArray(forKey: disabledSitesKey) ?? []
+        Task { @MainActor in
+            whitelistedDomains = ProtobufDataManager.shared.getWhitelistedDomains()
+        }
     }
 
     func addDomain(_ domain: String) -> Result<Void, Error> {
@@ -94,7 +94,9 @@ class WhitelistViewModel: ObservableObject {
         if !whitelistedDomains.contains(domain) {
             let updated = whitelistedDomains + [domain]
             whitelistedDomains = updated
-            userDefaults.set(updated, forKey: disabledSitesKey)
+            Task { @MainActor in
+                await ProtobufDataManager.shared.setWhitelistedDomains(updated)
+            }
         }
         return .success(())
     }
@@ -102,7 +104,9 @@ class WhitelistViewModel: ObservableObject {
     func removeDomain(_ domain: String) {
         let updated = whitelistedDomains.filter { $0 != domain }
         whitelistedDomains = updated
-        userDefaults.set(updated, forKey: disabledSitesKey)
+        Task { @MainActor in
+            await ProtobufDataManager.shared.setWhitelistedDomains(updated)
+        }
     }
 }
 
@@ -127,5 +131,4 @@ extension WhitelistViewModel {
         return domain.range(of: domainRegex, options: .regularExpression) != nil
     }
 }
-
 

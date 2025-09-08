@@ -247,8 +247,16 @@ public enum ContentBlockerService {
     /// - Parameter groupIdentifier: The app group identifier for shared storage.
     /// - Returns: Array of disabled site hostnames.
     private static func getDisabledSites(groupIdentifier: String) -> [String] {
-        let defaults = UserDefaults(suiteName: groupIdentifier)
-        return defaults?.stringArray(forKey: "disabledSites") ?? []
+        // Bridge to protobuf-managed whitelist to avoid UserDefaults
+        // Access via MainActor because ProtobufDataManager is @MainActor
+        var sites: [String] = []
+        let semaphore = DispatchSemaphore(value: 0)
+        Task { @MainActor in
+            sites = ProtobufDataManager.shared.getWhitelistedDomains()
+            semaphore.signal()
+        }
+        semaphore.wait()
+        return sites
     }
     
     /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.

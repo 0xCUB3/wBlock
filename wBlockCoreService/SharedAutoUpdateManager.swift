@@ -59,65 +59,62 @@ public actor SharedAutoUpdateManager {
     /// Returns status about the next eligible auto-update time for UI/logging.
     /// - Returns: (scheduledAt, secondsRemaining, intervalHours). If no schedule yet, scheduledAt is nil.
     public func nextScheduleStatus() async -> (Date?, TimeInterval?, Double) {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
+        let store = AutoUpdateStore.shared
+        let interval = await store.getIntervalHours()
         let now = Date().timeIntervalSince1970
-        if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double {
+        if let nextEligible = await store.getNextEligible() {
             let remaining = max(0, nextEligible - now)
             return (Date(timeIntervalSince1970: nextEligible), remaining, interval)
         }
-        // Fallback: derive from lastCheck if present, but no jitter window yet
-        if let lastCheck = defaults.object(forKey: lastCheckKey) as? Double {
+        if let lastCheck = await store.getLastCheck() {
             let theoretical = lastCheck + interval * 3600
-            if theoretical <= now { // already due, but no trigger yet
+            if theoretical <= now {
                 return (Date(timeIntervalSince1970: now), 0, interval)
             } else {
                 return (Date(timeIntervalSince1970: theoretical), theoretical - now, interval)
             }
         }
-        // No prior run – return nil schedule
         return (nil, nil, interval)
     }
 
     // MARK: - Core Logic
     private func runIfNeeded(trigger: String) async {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        let store = AutoUpdateStore.shared
         let now = Date().timeIntervalSince1970
 
         // Respect enable flag
-        if defaults.object(forKey: enabledKey) as? Bool == false {
+        if await store.isEnabled() == false {
             os_log("Auto-update disabled (trigger: %{public}@)", log: log, type: .info, trigger)
             return
         }
 
-        let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
+        let interval = await store.getIntervalHours()
 
         // New jitter-aware scheduling: prefer nextEligibleTime if present
-        if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double, now < nextEligible {
+        if let nextEligible = await store.getNextEligible(), now < nextEligible {
             appendSharedLog("⏳ Auto-update throttled (trigger: \(trigger)) nextEligible in \(Int(nextEligible - now))s")
             return // Still inside jittered window
         }
 
         // Backward compatibility: if nextEligible not set, fall back to lastCheck logic once
-        if defaults.object(forKey: nextEligibleKey) == nil, let lastCheck = defaults.object(forKey: lastCheckKey) as? Double, now - lastCheck < interval * 3600 {
+        if await store.getNextEligible() == nil, let lastCheck = await store.getLastCheck(), now - lastCheck < interval * 3600 {
             return
         }
 
         // Compute jittered next eligible time and store it up-front to avoid stampede
         let jitterFactor = Double.random(in: jitterMin...jitterMax)
         let nextEligibleTime = now + interval * 3600 * jitterFactor
-    defaults.set(nextEligibleTime, forKey: nextEligibleKey)
-    defaults.set(now, forKey: lastCheckKey) // Keep legacy key updated too
-    appendSharedLog("🔄 Auto-update window reached (trigger: \(trigger)) next window at \(Date(timeIntervalSince1970: nextEligibleTime))")
+        await store.setNextEligible(nextEligibleTime)
+        appendSharedLog("🔄 Auto-update window reached (trigger: \(trigger)) next window at \(Date(timeIntervalSince1970: nextEligibleTime))")
 
         do {
-            let (allFilters, selectedFilters) = try loadFilterListsFromDefaults(defaults: defaults)
+            let (allFilters, selectedFilters) = await loadFilterLists()
             guard !selectedFilters.isEmpty else {
                 appendSharedLog("⚠️ No selected filters; skipping auto-update.")
                 return
             }
 
-            let updates = try await checkForUpdates(filters: selectedFilters, defaults: defaults)
+            let updates = try await checkForUpdates(filters: selectedFilters)
             guard !updates.isEmpty else {
                 appendSharedLog("✅ No filter updates found (trigger: \(trigger))")
                 return
@@ -127,7 +124,7 @@ public actor SharedAutoUpdateManager {
             appendSharedLog("📥 Updates detected: \(updates.map { $0.name }.joined(separator: ", "))")
 
             // Fetch & store updated content
-            let updatedFilterSet = try await fetchAndStoreFilters(updates, defaults: defaults)
+            let updatedFilterSet = try await fetchAndStoreFilters(updates)
             appendSharedLog("📦 Downloaded & stored \(updatedFilterSet.count) updated filter(s)")
 
             // Merge updated filters back into full list model
@@ -138,8 +135,10 @@ public actor SharedAutoUpdateManager {
                 }
             }
 
-            // Persist metadata (versions, counts)
-            saveFilterListsToDefaults(merged, defaults: defaults)
+            // Persist metadata (versions, counts) into protobuf
+            await MainActor.run {
+                Task { await ProtobufDataManager.shared.updateFilterLists(merged) }
+            }
 
             // Determine impacted categories for partial target reconversion
             let updatedCategorySet = Set(updatedFilterSet.map { $0.category })
@@ -147,53 +146,39 @@ public actor SharedAutoUpdateManager {
             // Re-convert & reload only impacted targets; rebuild engine from per-target stored advanced rules
             try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected }, updatedCategories: updatedCategorySet)
             appendSharedLog("✅ Auto-update cycle complete (updated categories: \(updatedCategorySet.map{ $0.rawValue }.joined(separator: ", "))) ")
+            // Mark last successful check
+            await store.setLastCheck(now)
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("❌ Auto-update failed: \(error.localizedDescription)")
         }
     }
 
-    // MARK: - Loading / Saving
-    private func loadFilterListsFromDefaults(defaults: UserDefaults) throws -> ([FilterList], [FilterList]) {
-        var lists: [FilterList] = []
-        if let data = defaults.data(forKey: "filterLists"), let decoded = try? JSONDecoder().decode([FilterList].self, from: data) { lists.append(contentsOf: decoded) }
-        if let customData = defaults.data(forKey: "customFilterLists"), let decodedCustom = try? JSONDecoder().decode([FilterList].self, from: customData) { lists.append(contentsOf: decodedCustom) }
-        // Restore selection state
-        for idx in lists.indices {
-            let key = "filter_selected_\(lists[idx].id.uuidString)"
-            if let sel = defaults.object(forKey: key) as? Bool { lists[idx].isSelected = sel }
-        }
+    // MARK: - Loading
+    private func loadFilterLists() async -> ([FilterList], [FilterList]) {
+        let lists = await MainActor.run { ProtobufDataManager.shared.getFilterLists() }
         let selected = lists.filter { $0.isSelected }
         return (lists, selected)
     }
 
-    private func saveFilterListsToDefaults(_ lists: [FilterList], defaults: UserDefaults) {
-        let defaultLists = lists.filter { $0.category != .custom }
-        let customLists = lists.filter { $0.category == .custom }
-        if let data = try? JSONEncoder().encode(defaultLists) { defaults.set(data, forKey: "filterLists") }
-        if let cdata = try? JSONEncoder().encode(customLists) { defaults.set(cdata, forKey: "customFilterLists") }
-        for fl in lists { defaults.set(fl.isSelected, forKey: "filter_selected_\(fl.id.uuidString)") }
-    }
-
     // MARK: - Update Detection
-    private func checkForUpdates(filters: [FilterList], defaults: UserDefaults) async throws -> [FilterList] {
+    private func checkForUpdates(filters: [FilterList]) async throws -> [FilterList] {
         var result: [FilterList] = []
         await withTaskGroup(of: (FilterList, Bool).self) { group in
-            for f in filters { group.addTask { (f, await self.hasUpdate(for: f, defaults: defaults)) } }
+            for f in filters { group.addTask { (f, await self.hasUpdate(for: f)) } }
             for await (f, needs) in group where needs { result.append(f) }
         }
         return result
     }
 
-    private func hasUpdate(for filter: FilterList, defaults: UserDefaults) async -> Bool {
+    private func hasUpdate(for filter: FilterList) async -> Bool {
         // Compare remote signature (ETag/Last-Modified) – fall back to full body diff
         var request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
 
-        let etagKey = etagStoreKeyPrefix + filter.id.uuidString
-        let lmKey = lastModifiedStoreKeyPrefix + filter.id.uuidString
-
-        if let etag = defaults.string(forKey: etagKey) { request.addValue(etag, forHTTPHeaderField: "If-None-Match") }
-        if let lm = defaults.string(forKey: lmKey) { request.addValue(lm, forHTTPHeaderField: "If-Modified-Since") }
+        // Apply validators from JSON store
+        let store = AutoUpdateStore.shared
+        if let etag = await store.getETag(for: filter.id.uuidString) { request.addValue(etag, forHTTPHeaderField: "If-None-Match") }
+        if let lm = await store.getLastModified(for: filter.id.uuidString) { request.addValue(lm, forHTTPHeaderField: "If-Modified-Since") }
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -201,8 +186,8 @@ public actor SharedAutoUpdateManager {
             if http.statusCode == 304 { return false } // Not modified via conditional request
 
             // Update stored validators for later
-            if let newEtag = http.value(forHTTPHeaderField: "ETag") { defaults.set(newEtag, forKey: etagKey) }
-            if let newLM = http.value(forHTTPHeaderField: "Last-Modified") { defaults.set(newLM, forKey: lmKey) }
+            if let newEtag = http.value(forHTTPHeaderField: "ETag") { await store.setETag(newEtag, for: filter.id.uuidString) }
+            if let newLM = http.value(forHTTPHeaderField: "Last-Modified") { await store.setLastModified(newLM, for: filter.id.uuidString) }
 
             // Compare body with local file if exists
             if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
@@ -220,7 +205,7 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Fetch & Store
-    private func fetchAndStoreFilters(_ filters: [FilterList], defaults: UserDefaults) async throws -> [FilterList] {
+    private func fetchAndStoreFilters(_ filters: [FilterList]) async throws -> [FilterList] {
         var updated: [FilterList] = []
         await withTaskGroup(of: FilterList?.self) { group in
             for filter in filters {

@@ -60,9 +60,14 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             // Convert the string into a URL. If valid, attempt to look up its
             // configuration or honor per-site disable.
             if let url = URL(string: urlString), let host = url.host {
-                // Check disabled sites list with subdomain support
-                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-                let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
+                // Check disabled sites list with subdomain support (protobuf)
+                var disabled: [String] = []
+                let sem = DispatchSemaphore(value: 0)
+                Task { @MainActor in
+                    disabled = ProtobufDataManager.shared.getWhitelistedDomains()
+                    sem.signal()
+                }
+                sem.wait()
                 
                 // Check if this host or any parent domain is disabled
                 let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
@@ -156,8 +161,13 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             
             // Check if site is disabled before processing userscripts
             if let url = URL(string: urlString), let host = url.host {
-                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-                let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
+                var disabled: [String] = []
+                let sem = DispatchSemaphore(value: 0)
+                Task { @MainActor in
+                    disabled = ProtobufDataManager.shared.getWhitelistedDomains()
+                    sem.signal()
+                }
+                sem.wait()
                 let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
                 
                 os_log(.info, "SafariExtensionHandler: UserScripts - Host '%@' disabled check: %{BOOL}d", host, isDisabled)
