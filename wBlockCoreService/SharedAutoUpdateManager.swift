@@ -52,8 +52,8 @@ public actor SharedAutoUpdateManager {
     private init() {}
 
     // Public entry point invoked by extensions.
-    public func maybeRunAutoUpdate(trigger: String) {
-        Task { await runIfNeeded(trigger: trigger) }
+    public func maybeRunAutoUpdate(trigger: String, force: Bool = false) async {
+        await runIfNeeded(trigger: trigger, force: force)
     }
 
     /// Returns status about the next eligible auto-update time for UI/logging.
@@ -80,7 +80,7 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Core Logic
-    private func runIfNeeded(trigger: String) async {
+    private func runIfNeeded(trigger: String, force: Bool = false) async {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         let now = Date().timeIntervalSince1970
 
@@ -92,15 +92,20 @@ public actor SharedAutoUpdateManager {
 
         let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
 
-        // New jitter-aware scheduling: prefer nextEligibleTime if present
-        if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double, now < nextEligible {
-            appendSharedLog("⏳ Auto-update throttled (trigger: \(trigger)) nextEligible in \(Int(nextEligible - now))s")
-            return // Still inside jittered window
-        }
+        // Skip throttling if force is true
+        if !force {
+            // New jitter-aware scheduling: prefer nextEligibleTime if present
+            if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double, now < nextEligible {
+                appendSharedLog("⏳ Auto-update throttled (trigger: \(trigger)) nextEligible in \(Int(nextEligible - now))s")
+                return // Still inside jittered window
+            }
 
-        // Backward compatibility: if nextEligible not set, fall back to lastCheck logic once
-        if defaults.object(forKey: nextEligibleKey) == nil, let lastCheck = defaults.object(forKey: lastCheckKey) as? Double, now - lastCheck < interval * 3600 {
-            return
+            // Backward compatibility: if nextEligible not set, fall back to lastCheck logic once
+            if defaults.object(forKey: nextEligibleKey) == nil, let lastCheck = defaults.object(forKey: lastCheckKey) as? Double, now - lastCheck < interval * 3600 {
+                return
+            }
+        } else {
+            appendSharedLog("🚀 Force update (trigger: \(trigger)) bypassing throttle")
         }
 
         // Compute jittered next eligible time and store it up-front to avoid stampede
@@ -111,7 +116,7 @@ public actor SharedAutoUpdateManager {
     appendSharedLog("🔄 Auto-update window reached (trigger: \(trigger)) next window at \(Date(timeIntervalSince1970: nextEligibleTime))")
 
         do {
-            let (allFilters, selectedFilters) = try loadFilterListsFromDefaults(defaults: defaults)
+            let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             guard !selectedFilters.isEmpty else {
                 appendSharedLog("⚠️ No selected filters; skipping auto-update.")
                 return
@@ -139,7 +144,7 @@ public actor SharedAutoUpdateManager {
             }
 
             // Persist metadata (versions, counts)
-            saveFilterListsToDefaults(merged, defaults: defaults)
+            await saveFilterListsToProtobuf(merged)
 
             // Determine impacted categories for partial target reconversion
             let updatedCategorySet = Set(updatedFilterSet.map { $0.category })
@@ -156,15 +161,55 @@ public actor SharedAutoUpdateManager {
     // MARK: - Loading / Saving
     private func loadFilterListsFromDefaults(defaults: UserDefaults) throws -> ([FilterList], [FilterList]) {
         var lists: [FilterList] = []
-        if let data = defaults.data(forKey: "filterLists"), let decoded = try? JSONDecoder().decode([FilterList].self, from: data) { lists.append(contentsOf: decoded) }
-        if let customData = defaults.data(forKey: "customFilterLists"), let decodedCustom = try? JSONDecoder().decode([FilterList].self, from: customData) { lists.append(contentsOf: decodedCustom) }
+        if let data = defaults.data(forKey: "filterLists"), let decoded = try? JSONDecoder().decode([FilterList].self, from: data) {
+            lists.append(contentsOf: decoded)
+            appendSharedLog("📋 Loaded \(decoded.count) default filter lists")
+        } else {
+            appendSharedLog("⚠️ No default filter lists found in UserDefaults")
+        }
+        if let customData = defaults.data(forKey: "customFilterLists"), let decodedCustom = try? JSONDecoder().decode([FilterList].self, from: customData) {
+            lists.append(contentsOf: decodedCustom)
+            appendSharedLog("📋 Loaded \(decodedCustom.count) custom filter lists")
+        }
         // Restore selection state
+        var selectedCount = 0
         for idx in lists.indices {
             let key = "filter_selected_\(lists[idx].id.uuidString)"
-            if let sel = defaults.object(forKey: key) as? Bool { lists[idx].isSelected = sel }
+            if let sel = defaults.object(forKey: key) as? Bool {
+                lists[idx].isSelected = sel
+                if sel { selectedCount += 1 }
+            }
         }
+        appendSharedLog("📋 Total filters: \(lists.count), Selected: \(selectedCount)")
         let selected = lists.filter { $0.isSelected }
         return (lists, selected)
+    }
+
+    private func loadFilterListsFromProtobuf() async -> ([FilterList], [FilterList]) {
+        // Wait for ProtobufDataManager to finish loading data
+        let dataManager = await MainActor.run { ProtobufDataManager.shared }
+        while await MainActor.run { dataManager.isLoading } {
+            appendSharedLog("⏳ Waiting for ProtobufDataManager to finish loading...")
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+        }
+        
+        let allFilters = await MainActor.run { dataManager.getFilterLists() }
+        let selectedFilters = allFilters.filter { $0.isSelected }
+        
+        appendSharedLog("📋 Loaded \(allFilters.count) total filter lists from protobuf")
+        appendSharedLog("📋 Selected filters: \(selectedFilters.count)")
+        
+        if let error = await MainActor.run { dataManager.lastError } {
+            appendSharedLog("❌ ProtobufDataManager error: \(error)")
+        }
+        
+        return (allFilters, selectedFilters)
+    }
+
+    private func saveFilterListsToProtobuf(_ lists: [FilterList]) async {
+        let dataManager = await MainActor.run { ProtobufDataManager.shared }
+        await dataManager.updateFilterLists(lists)
+        appendSharedLog("💾 Saved \(lists.count) filter lists to protobuf storage")
     }
 
     private func saveFilterListsToDefaults(_ lists: [FilterList], defaults: UserDefaults) {

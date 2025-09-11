@@ -27,6 +27,10 @@ class AppDelegate: NSObject {
     
     #if os(iOS)
     private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
+    private let backgroundProcessingIdentifier = "com.alexanderskula.wblock.filter-processing"
+    #else
+    // macOS-only scheduler holder
+    private var backgroundScheduler: NSBackgroundActivityScheduler?
     #endif
 }
 
@@ -120,88 +124,32 @@ extension AppDelegate: NSApplicationDelegate {
     // MARK: - macOS Auto-Update System
     
     private func setupMacOSAutoUpdate() {
-        // Create a timer that fires every 6 hours when the app is running
+        // Opportunistic periodic trigger while app is running
         Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { _ in
+            Task { await self.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
+        }
+
+        // System-optimized background scheduling (macOS 10.10+) — works when app is running
+        let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
+        scheduler.repeats = true
+        scheduler.interval = 6 * 60 * 60 // Target ~6 hours
+        scheduler.tolerance = 60 * 60    // Allow 1h flexibility for power/thermal conditions
+        scheduler.schedule { completion in
             Task {
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "PeriodicTimer")
+                await self.runMacOSBackgroundUpdate(trigger: "BackgroundActivity")
+                completion(NSBackgroundActivityScheduler.Result.finished)
             }
         }
-        
-        // Try to register a system-level launch agent for true background updates
-        registerMacOSLaunchAgent()
-        
-        // Fallback: setup cron job as alternative
-        setupCronFallback()
+        self.backgroundScheduler = scheduler
     }
-    
-    private func registerMacOSLaunchAgent() {
-        guard let bundleID = Bundle.main.bundleIdentifier else { return }
-        let launchAgentID = "\(bundleID).filter-updater"
-        
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let launchAgentsDir = homeDir.appendingPathComponent("Library/LaunchAgents")
-        let plistPath = launchAgentsDir.appendingPathComponent("\(launchAgentID).plist")
-        
-        // Create LaunchAgents directory if it doesn't exist
-        try? FileManager.default.createDirectory(at: launchAgentsDir, withIntermediateDirectories: true)
-        
-        // Create launch agent plist
-        let launchAgent: [String: Any] = [
-            "Label": launchAgentID,
-            "ProgramArguments": [
-                "/usr/bin/open",
-                "-j", // Launch hidden
-                "-g", // Don't bring to front
-                "-a",
-                Bundle.main.bundlePath,
-                "--args",
-                "--background-filter-update"
-            ],
-            "StartInterval": 6 * 60 * 60, // 6 hours
-            "RunAtLoad": false,
-            "KeepAlive": false
-        ]
-        
-        do {
-            let plistData = try PropertyListSerialization.data(fromPropertyList: launchAgent, format: .xml, options: 0)
-            try plistData.write(to: plistPath)
-            
-            // Load the launch agent
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-            process.arguments = ["load", "-w", plistPath.path]
-            try process.run()
-            process.waitUntilExit()
-            
-            if process.terminationStatus == 0 {
-                os_log("macOS launch agent registered successfully", type: .info)
-            } else {
-                os_log("Failed to register macOS launch agent", type: .error)
-            }
-        } catch {
-            os_log("Failed to setup macOS launch agent: %{public}@", type: .error, error.localizedDescription)
-        }
-    }
-    
-    private func setupCronFallback() {
-        let bundlePath = Bundle.main.bundlePath
-        
-        // Create cron entry that runs every 6 hours
-        let cronCommand = "0 */6 * * * /usr/bin/open -j -g -a '\(bundlePath)' --args --background-filter-update"
-        
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", "echo '\(cronCommand)' | crontab -"]
-        
-        do {
-            try process.run()
-            process.waitUntilExit()
-            if process.terminationStatus == 0 {
-                os_log("Cron job setup successfully", type: .info)
-            }
-        } catch {
-            os_log("Failed to setup cron job: %{public}@", type: .error, error.localizedDescription)
-        }
+
+    private func runMacOSBackgroundUpdate(trigger: String) async {
+        // If an XPC service exists in future builds, prefer it; else fallback in-process
+        #if os(macOS)
+        let usedXPC = await FilterUpdateClient.shared.updateFilters()
+        if usedXPC { return }
+        #endif
+        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
     }
 
     /// Handle silent push on macOS
@@ -239,11 +187,12 @@ extension AppDelegate: UIApplicationDelegate {
         UNUserNotificationCenter.current().requestAuthorization(options: []) { _, _ in }
         application.registerForRemoteNotifications()
         
-        // Register background task for filter updates
+        // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
         
-        // Schedule initial background task
+        // Schedule initial background refresh + processing tasks
         scheduleBackgroundFilterUpdate()
+        scheduleBackgroundProcessingUpdate()
         
         // Opportunistic update on app launch
         Task {
@@ -309,8 +258,11 @@ extension AppDelegate: UIApplicationDelegate {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
             self.handleBackgroundFilterUpdate(task: task as! BGAppRefreshTask)
         }
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundProcessingIdentifier, using: nil) { task in
+            self.handleBackgroundProcessingUpdate(task: task as! BGProcessingTask)
+        }
     }
-    
+
     private func scheduleBackgroundFilterUpdate() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 6 * 60 * 60) // 6 hours minimum
@@ -320,6 +272,19 @@ extension AppDelegate: UIApplicationDelegate {
             os_log("Background filter update task scheduled successfully", type: .info)
         } catch {
             os_log("Failed to schedule background filter update: %{public}@", type: .error, error.localizedDescription)
+        }
+    }
+
+    private func scheduleBackgroundProcessingUpdate() {
+        let request = BGProcessingTaskRequest(identifier: backgroundProcessingIdentifier)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = true // prefer on charger for heavy conversions
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 12 * 60 * 60) // be conservative
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            os_log("Background processing task scheduled successfully", type: .info)
+        } catch {
+            os_log("Failed to schedule background processing task: %{public}@", type: .error, error.localizedDescription)
         }
     }
     
@@ -345,6 +310,25 @@ extension AppDelegate: UIApplicationDelegate {
             }
         }
     }
+
+    private func handleBackgroundProcessingUpdate(task: BGProcessingTask) {
+        os_log("Background processing update task started", type: .info)
+
+        // Reschedule next processing task
+        scheduleBackgroundProcessingUpdate()
+
+        task.expirationHandler = {
+            os_log("Background processing update task expired", type: .info)
+            task.setTaskCompleted(success: false)
+        }
+
+        Task {
+            // Processing path can do the same work, but BGProcessing offers longer time
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BackgroundProcessing")
+            os_log("Background processing update task finished", type: .info)
+            task.setTaskCompleted(success: true)
+        }
+    }
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
@@ -367,4 +351,3 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 }
 #endif
-

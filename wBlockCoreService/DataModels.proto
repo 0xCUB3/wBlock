@@ -51,7 +51,7 @@ enum FilterListCategory {
   FILTER_LIST_CATEGORY_SCRIPTS = 10;
 }
 
-// User script data structure
+// Userscript data structure
 message UserScriptData {
   string id = 1;
   string name = 2;

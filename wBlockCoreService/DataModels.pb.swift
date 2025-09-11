@@ -252,7 +252,7 @@ struct Wblock_Data_FilterListData: Sendable {
   fileprivate var _sourceRuleCount: Int32? = nil
 }
 
-/// User script data structure
+/// Userscript data structure
 struct Wblock_Data_UserScriptData: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for

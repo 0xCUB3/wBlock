@@ -10,6 +10,7 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.alexanderskula.wblock.filter-update</string>
+		<string>com.alexanderskula.wblock.filter-processing</string>
 	</array>
 </dict>
 </plist>

@@ -41,7 +41,7 @@ struct UserScriptManagerView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("User Scripts")
+                Text("Userscripts")
                     .font(.title2)
                     .fontWeight(.semibold)
                 Spacer()
@@ -54,7 +54,8 @@ struct UserScriptManagerView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding([.top, .horizontal])
+            .padding(.horizontal)
+            .padding(.top, 8)
             
             headerView
             
@@ -66,6 +67,9 @@ struct UserScriptManagerView: View {
             
             bottomToolbar
         }
+        #if os(iOS)
+        .background(Color(.systemGroupedBackground))
+        #endif
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
         }) {
@@ -173,40 +177,47 @@ struct UserScriptManagerView: View {
     
     private var scriptsList: some View {
         ScrollView {
-            LazyVStack(spacing: 1) {
-                ForEach(scripts, id: \.id) { script in
-                    UserScriptRowView(
-                        script: script,
-                        onTap: {
-                            #if os(macOS)
-                            selectedScript = script
-                            #endif
-                        },
-                        onToggle: {
-                            Task {
-                                await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name) to \(script.isEnabled ? "disabled" : "enabled")")
-                                await userScriptManager.toggleUserScript(script)
-                                await MainActor.run {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
+                    VStack(spacing: 0) {
+                        UserScriptRowView(
+                            script: script,
+                            onTap: {
+                                #if os(macOS)
+                                selectedScript = script
+                                #endif
+                            },
+                            onToggle: {
+                                Task {
+                                    await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name) to \(script.isEnabled ? "disabled" : "enabled")")
+                                    await userScriptManager.toggleUserScript(script)
+                                    await MainActor.run {
+                                        refreshScripts()
+                                    }
+                                }
+                            },
+                            onUpdate: {
+                                Task {
+                                    await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
+                                    await userScriptManager.updateUserScript(script)
+                                    await ConcurrentLogManager.shared.log("✅ Successfully updated userscript: \(script.name)")
                                     refreshScripts()
                                 }
-                            }
-                        },
-                        onUpdate: {
-                            Task {
-                                await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
-                                await userScriptManager.updateUserScript(script)
-                                await ConcurrentLogManager.shared.log("✅ Successfully updated userscript: \(script.name)")
+                            },
+                            onRemove: {
+                                Task {
+                                    await ConcurrentLogManager.shared.log("🗑️ Removing userscript: \(script.name)")
+                                }
+                                userScriptManager.removeUserScript(script)
                                 refreshScripts()
                             }
-                        },
-                        onRemove: {
-                            Task {
-                                await ConcurrentLogManager.shared.log("🗑️ Removing userscript: \(script.name)")
-                            }
-                            userScriptManager.removeUserScript(script)
-                            refreshScripts()
+                        )
+                        
+                        if index < scripts.count - 1 {
+                            Divider()
+                                .padding(.leading, 56) // Align with text content
                         }
-                    )
+                    }
                 }
             }
         }
@@ -219,7 +230,7 @@ struct UserScriptManagerView: View {
                 .foregroundColor(.secondary.opacity(0.6))
             
             VStack(spacing: 8) {
-                Text("No User Scripts")
+                Text("No Userscripts")
                     .font(.title2)
                     .fontWeight(.medium)
                 
@@ -232,7 +243,7 @@ struct UserScriptManagerView: View {
             Button {
                 showingAddScriptSheet = true
             } label: {
-                Label("Add User Script", systemImage: "plus")
+                Label("Add Userscript", systemImage: "plus")
                     .font(.body)
                     .fontWeight(.medium)
             }
@@ -298,7 +309,7 @@ struct UserScriptManagerView: View {
             #if os(macOS)
             .background(Color(NSColor.windowBackgroundColor).opacity(0.8))
             #else
-            .background(Color(.systemBackground).opacity(0.8))
+            .background(Color(.systemGroupedBackground))
             #endif
         }
     }
@@ -314,73 +325,86 @@ struct UserScriptRowView: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
+            Image(systemName: script.isDownloaded ? "doc.text.fill" : "doc.text")
+                .foregroundColor(script.isDownloaded ? .blue : .secondary)
+                .font(.title3)
+                .frame(width: 24)
+            
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Image(systemName: script.isDownloaded ? "doc.text.fill" : "doc.text")
-                        .foregroundColor(script.isDownloaded ? .blue : .secondary)
-                        .font(.title3)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(script.name)
-                            .font(.headline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                        
-                        if !script.description.isEmpty {
-                            Text(script.description)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
+                Text(script.name)
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                if !script.description.isEmpty {
+                    Text(script.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
 
-                        HStack(spacing: 8) {
-                            if !script.version.isEmpty {
-                                Text("v\(script.version)")
-                                    .font(.caption2)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.gray)
-                            }
-                            if !script.version.isEmpty && !script.matches.isEmpty {
-                                Text("·")
-                                    .font(.caption2)
-                                    .foregroundColor(.gray)
-                            }
-                            if !script.matches.isEmpty {
-                                Text("\(script.matches.count) pattern\(script.matches.count == 1 ? "" : "s")")
-                                    .font(.caption2)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.gray)
-                            }
-                            if let lastUpdated = script.lastUpdatedFormatted {
-                                if (!script.version.isEmpty || !script.matches.isEmpty) {
-                                    Text("·")
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                }
-                                Text("Updated \(lastUpdated.lowercased())")
-                                    .font(.caption2)
-                                    .foregroundColor(.gray)
-                            }
-                            if !script.isDownloaded {
-                                Badge(text: "Not Downloaded", color: .red)
-                            }
-                        }
+                HStack(spacing: 8) {
+                    if !script.version.isEmpty {
+                        Text("v\(script.version)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gray)
                     }
-                    Spacer()
+                    if !script.version.isEmpty && !script.matches.isEmpty {
+                        Text("·")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
+                    if !script.matches.isEmpty {
+                        Text("\(script.matches.count) pattern\(script.matches.count == 1 ? "" : "s")")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gray)
+                    }
+                    if let lastUpdated = script.lastUpdatedFormatted {
+                        if (!script.version.isEmpty || !script.matches.isEmpty) {
+                            Text("·")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                        Text("Updated \(lastUpdated.lowercased())")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
+                    if !script.isDownloaded {
+                        Badge(text: "Not Downloaded", color: .red)
+                    }
                 }
             }
+            
             Spacer()
-            HStack(spacing: 12) {
+            
+            HStack(spacing: 8) {
                 if script.isDownloaded {
-                    Button { onUpdate() } label: { Image(systemName: "arrow.clockwise").font(.body) }
-                    .buttonStyle(.borderless).help("Update Script")
+                    Button { onUpdate() } label: { 
+                        Image(systemName: "arrow.clockwise")
+                            .font(.body) 
+                    }
+                    .buttonStyle(.borderless)
+                    .frame(width: 32, height: 32)
+                    #if os(macOS)
+                    .help("Update Script")
+                    #endif
                 }
                 Toggle("", isOn: Binding(get: { script.isEnabled }, set: { _ in onToggle() }))
-                .labelsHidden().disabled(!script.isDownloaded)
+                    .labelsHidden()
+                    .disabled(!script.isDownloaded)
+                    .frame(width: 40)
             }
         }
-        .padding(.horizontal, 20).padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
         #if os(macOS)
         .onHover { hovering in
             isHovered = hovering

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C1A287482E73617D00F5B43D /* FilterUpdateService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1A2874F2E7361D000F5B43D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41C4D2DE089C50056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41C4E2DE089C50056F63D /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C1A41C552DE08A040056F63D /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A41C542DE08A040056F63D /* ContentBlockerConverter */; };
@@ -169,6 +171,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		C1A2874D2E73617D00F5B43D /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				C1A287482E73617D00F5B43D /* FilterUpdateService.xpc in Embed XPC Services */,
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A41C522DE089C50056F63D /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -205,6 +218,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = FilterUpdateService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C2D2DE0897C0056F63D /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C452DE089C50056F63D /* wBlockCoreService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = wBlockCoreService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Ads & Privacy.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -223,6 +237,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C1A2874C2E73617D00F5B43D /* Exceptions for "FilterUpdateService" folder in "FilterUpdateService" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1A2873C2E73617D00F5B43D /* FilterUpdateService */;
+		};
 		C1A41C3A2DE0897D0056F63D /* Exceptions for "wBlock" folder in "wBlock" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -317,6 +338,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		C1A2873E2E73617D00F5B43D /* FilterUpdateService */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1A2874C2E73617D00F5B43D /* Exceptions for "FilterUpdateService" folder in "FilterUpdateService" target */,
+			);
+			path = FilterUpdateService;
+			sourceTree = "<group>";
+		};
 		C1A41C2F2DE0897C0056F63D /* wBlock */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -449,6 +478,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C1A2873A2E73617D00F5B43D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1A2874F2E7361D000F5B43D /* wBlockCoreService.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A41C2A2DE0897C0056F63D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -612,6 +649,7 @@
 				C1F16C642DE3558A0031E7EF /* wBlock Annoyances (iOS) */,
 				C1F16C882DE355BC0031E7EF /* wBlock Foreign (iOS) */,
 				C1F16CAC2DE355DE0031E7EF /* wBlock Custom (iOS) */,
+				C1A2873E2E73617D00F5B43D /* FilterUpdateService */,
 				C1A41C6A2DE08AD30056F63D /* Frameworks */,
 				C1A41C2E2DE0897C0056F63D /* Products */,
 			);
@@ -634,6 +672,7 @@
 				C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */,
 				C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */,
 				C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */,
+				C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -659,6 +698,28 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		C1A2873C2E73617D00F5B43D /* FilterUpdateService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1A287492E73617D00F5B43D /* Build configuration list for PBXNativeTarget "FilterUpdateService" */;
+			buildPhases = (
+				C1A287392E73617D00F5B43D /* Sources */,
+				C1A2873A2E73617D00F5B43D /* Frameworks */,
+				C1A2873B2E73617D00F5B43D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C1A2873E2E73617D00F5B43D /* FilterUpdateService */,
+			);
+			name = FilterUpdateService;
+			packageProductDependencies = (
+			);
+			productName = FilterUpdateService;
+			productReference = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */;
+			productType = "com.apple.product-type.xpc-service";
+		};
 		C1A41C2C2DE0897C0056F63D /* wBlock */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C1A41C3B2DE0897D0056F63D /* Build configuration list for PBXNativeTarget "wBlock" */;
@@ -668,6 +729,7 @@
 				C1A41C2B2DE0897C0056F63D /* Resources */,
 				C1A41C522DE089C50056F63D /* Embed Frameworks */,
 				C1A41C7B2DE08AD30056F63D /* Embed Foundation Extensions */,
+				C1A2874D2E73617D00F5B43D /* Embed XPC Services */,
 			);
 			buildRules = (
 			);
@@ -1060,9 +1122,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					C1A2873C2E73617D00F5B43D = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					C1A41C2C2DE0897C0056F63D = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -1140,11 +1205,19 @@
 				C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */,
 				C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */,
 				C1A41CD62DE08CC90056F63D /* wBlock Advanced */,
+				C1A2873C2E73617D00F5B43D /* FilterUpdateService */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		C1A2873B2E73617D00F5B43D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A41C2B2DE0897C0056F63D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1267,6 +1340,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		C1A287392E73617D00F5B43D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A41C292DE0897C0056F63D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1531,6 +1611,92 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		C1A2874A2E73617D00F5B43D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FilterUpdateService/FilterUpdateService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FilterUpdateService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FilterUpdateService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C1A2874B2E73617D00F5B43D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FilterUpdateService/FilterUpdateService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FilterUpdateService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FilterUpdateService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		C1A41C3C2DE0897D0056F63D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1748,7 +1914,7 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -1795,7 +1961,7 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -2807,6 +2973,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		C1A287492E73617D00F5B43D /* Build configuration list for PBXNativeTarget "FilterUpdateService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1A2874A2E73617D00F5B43D /* Debug */,
+				C1A2874B2E73617D00F5B43D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C1A41C282DE0897C0056F63D /* Build configuration list for PBXProject "wBlock" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

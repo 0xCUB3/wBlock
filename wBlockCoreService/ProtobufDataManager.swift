@@ -270,7 +270,7 @@ public class ProtobufDataManager: ObservableObject {
         // Migrate filter lists
         await migrateFilterLists(from: groupDefaults, to: &migratedData)
         
-        // Migrate user scripts
+        // Migrate userscripts
         await migrateUserScripts(from: groupDefaults, to: &migratedData)
         
         // Migrate whitelist data

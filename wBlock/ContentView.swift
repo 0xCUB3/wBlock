@@ -191,7 +191,7 @@ struct ContentView: View {
                     Button {
                         showingUserScriptsView = true
                     } label: {
-                        Label("User Scripts", systemImage: "doc.text.fill")
+                        Label("Userscripts", systemImage: "doc.text.fill")
                     }
                     .help("Manage userscripts")
                     

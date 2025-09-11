@@ -48,9 +48,9 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔧 Standard UserDefaults test: \(standardTest ?? "nil")")
         
         // Using ProtobufDataManager for data persistence
-        logger.info("✅ Using ProtobufDataManager for user script persistence")
+        logger.info("✅ Using ProtobufDataManager for userscript persistence")
         
-        // Initialize user scripts after data manager finishes loading saved data
+        // Initialize userscripts after data manager finishes loading saved data
         Task { @MainActor in
             // Wait until ProtobufDataManager has loaded existing data
             while dataManager.isLoading {
@@ -58,7 +58,7 @@ public class UserScriptManager: ObservableObject {
             }
             // Load existing scripts
             self.userScripts = dataManager.getUserScripts()
-            logger.info("🔧 Loaded \(self.userScripts.count) user scripts from ProtobufDataManager")
+            logger.info("🔧 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
 
             // Initial setup (folders, defaults, downloads)
             self.setup()
@@ -127,7 +127,7 @@ public class UserScriptManager: ObservableObject {
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
     }
     
-    /// Returns the directory URL for storing user scripts, using the shared app group container if available, otherwise falling back to Application Support.
+    /// Returns the directory URL for storing userscripts, using the shared app group container if available, otherwise falling back to Application Support.
     // MARK: - Scripts Directory Locations
     /// URL for group container scripts directory, if available
     private var groupScriptsDirectoryURL: URL? {
@@ -147,7 +147,7 @@ public class UserScriptManager: ObservableObject {
         if let fallbackURL = fallbackScriptsDirectoryURL {
             return fallbackURL
         }
-        logger.error("❌ Failed to determine user scripts directory")
+        logger.error("❌ Failed to determine userscripts directory")
         return nil
     }
     
@@ -417,7 +417,7 @@ public class UserScriptManager: ObservableObject {
             do {
                 try userScript.content.write(to: fileURL, atomically: true, encoding: .utf8)
                 success = true
-                logger.info("💾 Wrote user script to: \(fileURL.path)")
+                logger.info("💾 Wrote userscript to: \(fileURL.path)")
             } catch {
                 logger.error("❌ Failed to write script to \(fileURL.path): \(error)")
             }

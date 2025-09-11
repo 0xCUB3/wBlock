@@ -117,7 +117,7 @@ extension ProtobufDataManager {
         await saveData()
     }
     
-    // MARK: - User Scripts
+    // MARK: - Userscripts
     public func getUserScripts() -> [UserScript] {
         return appData.userScripts.map { protoData in
             var script = UserScript(
@@ -168,7 +168,7 @@ extension ProtobufDataManager {
             
             updatedData.userScripts[index] = protoUserScript
         } else {
-            // Add new user script
+            // Add new userscript
             var protoUserScript = Wblock_Data_UserScriptData()
             protoUserScript.id = userScript.id.uuidString
             protoUserScript.name = userScript.name
