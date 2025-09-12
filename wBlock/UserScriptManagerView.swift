@@ -68,7 +68,7 @@ struct UserScriptManagerView: View {
             bottomToolbar
         }
         #if os(iOS)
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         #endif
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
