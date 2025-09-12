@@ -721,8 +721,19 @@ struct AddUserScriptView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
     var body: some View {
+        #if os(iOS)
         NavigationView {
-            VStack(spacing: 32) {
+            mainContent
+                .navigationTitle("")
+                .navigationBarHidden(true)
+        }
+        #else
+        mainContent
+        #endif
+    }
+    
+    private var mainContent: some View {
+        VStack(spacing: 32) {
                 VStack(spacing: 20) {
                     Text("Add Userscript")
                         .font(.largeTitle)
@@ -745,42 +756,55 @@ struct AddUserScriptView: View {
                         .textInputAutocapitalization(.never)
                         #endif
                     
-                    VStack(spacing: 12) {
+                    #if os(iOS)
+                    VStack(spacing: 16) {
                         Button(action: addScript) {
-                            HStack {
+                            HStack(spacing: 8) {
                                 if isLoading {
                                     ProgressView()
                                         .scaleEffect(0.8)
-                                        .frame(width: 16, height: 16)
-                                    Text("Adding...")
-                                } else {
-                                    Text("Add Script")
                                 }
+                                Text(isLoading ? "Adding..." : "Add Script")
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
                         }
                         .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                         .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
                         
                         Button("Cancel") {
                             dismiss()
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
                         .buttonStyle(.bordered)
+                        .controlSize(.large)
                     }
+                    #else
+                    HStack(spacing: 12) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                        .keyboardShortcut(.cancelAction)
+                        
+                        Button(action: addScript) {
+                            if isLoading {
+                                HStack(spacing: 6) {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("Adding...")
+                                }
+                            } else {
+                                Text("Add Script")
+                            }
+                        }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+                    }
+                    #endif
                 }
                 .padding(.horizontal)
                 
                 Spacer()
-            }
-            .padding()
-            .navigationTitle("")
-            #if os(iOS)
-            .navigationBarHidden(true)
-            #endif
         }
+        .padding()
     }
     
     private func addScript() {
