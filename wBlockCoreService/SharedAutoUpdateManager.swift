@@ -402,7 +402,7 @@ public actor SharedAutoUpdateManager {
                 let lines = fullString.components(separatedBy: .newlines)
                 
                 // Process all lines except the last (which may be incomplete)
-                let linesToProcess = position + chunkSize >= data.count ? lines : Array(lines.dropLast())
+                let linesToProcess = position + chunkSize >= data.count ? lines[..] : lines.dropLast()
                 
                 for line in linesToProcess {
                     let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
