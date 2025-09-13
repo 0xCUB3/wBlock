@@ -560,7 +560,7 @@ class AppFilterManager: ObservableObject {
 
             // Efficiently combine rules from multiple files without loading all into memory at once
             let conversionResult = await Task.detached {
-                return self.convertFiltersMemoryEfficient(filters: filters, targetInfo: targetInfo)
+                return await self.convertFiltersMemoryEfficient(filters: filters, targetInfo: targetInfo)
             }.value
             
             await MainActor.run {
@@ -570,7 +570,7 @@ class AppFilterManager: ObservableObject {
             let ruleCountForThisTarget = conversionResult.safariRulesCount
             
             // Store advanced rules for later engine building
-            if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
+            if let advancedRulesText = conversionResult.advancedRulesText, !conversionResult.advancedRulesText!.isEmpty {
                 advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
             }
             
@@ -653,7 +653,7 @@ class AppFilterManager: ObservableObject {
                 let resetRuleCount = resetResult.safariRulesCount
                 
                 // Update advanced rules from reset filters
-                if let resetAdvancedRulesText = resetResult.advancedRulesText, !resetAdvancedRulesText.isEmpty {
+                if let resetAdvancedRulesText = resetResult.advancedRulesText, !resetResult.advancedRulesText!.isEmpty {
                     advancedRulesByTarget[targetInfo.bundleIdentifier] = resetAdvancedRulesText
                 } else {
                     // Remove advanced rules for this target if reset resulted in none
@@ -697,7 +697,7 @@ class AppFilterManager: ObservableObject {
         let overallReloadStartTime = Date()
         var allReloadsSuccessful = true
         
-        for targetInfo in rulesByTargetInfo.keys { // Reload only affected targets
+        for targetInfo in filtersByTargetInfo.keys { // Reload only affected targets
             await MainActor.run {
                 self.processedFiltersCount += 1
                 self.progress = 0.7 + (Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.2) // 70% to 90%
@@ -721,10 +721,12 @@ class AppFilterManager: ObservableObject {
         
         // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
         let currentPlatform = self.currentPlatform
+        
         let allPlatformTargets = await Task.detached {
             ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
-        let affectedTargetBundleIDs = Set(rulesByTargetInfo.keys.map { $0.bundleIdentifier })
+        
+        let affectedTargetBundleIDs = Set(filtersByTargetInfo.keys.map { $0.bundleIdentifier })
         
         for targetInfo in allPlatformTargets {
             if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
