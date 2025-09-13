@@ -61,8 +61,11 @@
     
     // Cleanup cache if it grows too large
     if (cache.size >= CACHE_CLEANUP_THRESHOLD) {
-      const keysToDelete = Array.from(cache.keys()).slice(0, cache.size - MAX_CACHE_SIZE);
-      keysToDelete.forEach(k => cache.delete(k));
+      const iterator = cache.keys();
+      for (let i = 0; i < cache.size - MAX_CACHE_SIZE; i++) {
+        cache.delete(iterator.next().value);
+      }
+    }
     }
     
     return message;
