@@ -23,6 +23,8 @@
   // content script requests quickly while also updating the cache in the
   // background.
   const cache = new Map();
+  const MAX_CACHE_SIZE = 1000;
+  const CACHE_CLEANUP_THRESHOLD = 1200;
   // Returns a cache key for the given URL and top-level URL.
   const cacheKey = (url, topUrl) => `${url}#${topUrl ?? ''}`;
   /**
@@ -56,6 +58,13 @@
     // Save the new message in the cache for the given URL.
     const key = cacheKey(url, topUrl);
     cache.set(key, message);
+    
+    // Cleanup cache if it grows too large
+    if (cache.size >= CACHE_CLEANUP_THRESHOLD) {
+      const keysToDelete = Array.from(cache.keys()).slice(0, cache.size - MAX_CACHE_SIZE);
+      keysToDelete.forEach(k => cache.delete(k));
+    }
+    
     return message;
   };
   /**

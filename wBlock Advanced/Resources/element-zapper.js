@@ -19,6 +19,12 @@ class WBlockElementZapper {
         this.toolbar = null;
         this.pickerPanel = null;
         
+        // Bind event handlers to this instance for proper cleanup
+        this.boundOnMouseOver = this.onMouseOver.bind(this);
+        this.boundOnMouseOut = this.onMouseOut.bind(this);
+        this.boundOnClick = this.onClick.bind(this);
+        this.boundOnKeyDown = this.onKeyDown.bind(this);
+        
         this.bindEvents();
         this.loadCustomRules();
     }
@@ -28,10 +34,10 @@ class WBlockElementZapper {
      */
     bindEvents() {
         // Document event listeners
-        document.addEventListener('mouseover', this.onMouseOver.bind(this), true);
-        document.addEventListener('mouseout', this.onMouseOut.bind(this), true);
-        document.addEventListener('click', this.onClick.bind(this), true);
-        document.addEventListener('keydown', this.onKeyDown.bind(this), true);
+        document.addEventListener('mouseover', this.boundOnMouseOver, true);
+        document.addEventListener('mouseout', this.boundOnMouseOut, true);
+        document.addEventListener('click', this.boundOnClick, true);
+        document.addEventListener('keydown', this.boundOnKeyDown, true);
         
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
@@ -98,6 +104,12 @@ class WBlockElementZapper {
     quit() {
         this.isActive = false;
         this.isPickerMode = false;
+        
+        // Clean up event listeners to prevent memory leaks
+        document.removeEventListener('mouseover', this.boundOnMouseOver, true);
+        document.removeEventListener('mouseout', this.boundOnMouseOut, true);
+        document.removeEventListener('click', this.boundOnClick, true);
+        document.removeEventListener('keydown', this.boundOnKeyDown, true);
         this.isPreviewMode = false;
         
         // Cleanup highlights
