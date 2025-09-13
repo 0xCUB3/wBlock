@@ -224,13 +224,9 @@ class FilterListLoader {
     /// Saves selected state for filter lists to UserDefaults
     func saveSelectedState(for filterLists: [FilterList]) {
         Task.detached(priority: .background) { [defaults] in
-            // Batch UserDefaults updates for better performance
-            let updates = filterLists.map { filter in
-                ("filter_selected_\(filter.id.uuidString)", filter.isSelected)
-            }
-            
-            for (key, value) in updates {
-                defaults.set(value, forKey: key)
+            for filter in filterLists {
+                let key = "filter_selected_\(filter.id.uuidString)"
+                defaults.set(filter.isSelected, forKey: key)
             }
         }
     }
