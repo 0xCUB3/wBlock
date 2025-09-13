@@ -1249,13 +1249,19 @@ class AppFilterManager: ObservableObject {
     
     /// Efficiently count lines in data without loading into String
     private func countLinesInData(_ data: Data) -> Int {
+        guard !data.isEmpty else { return 0 }
         var count = 0
         let newline = UInt8(ascii: "\n")
         
-        for byte in data {
+        data.forEach { byte in
             if byte == newline {
                 count += 1
             }
+        }
+        
+        // Account for the last line if the file doesn't end with a newline
+        if data.last != newline {
+            count += 1
         }
         
         return count
