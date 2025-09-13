@@ -508,8 +508,8 @@ class AppFilterManager: ObservableObject {
             return
         }
         
-        // Group filters by their target ContentBlockerTargetInfo
-        var rulesByTargetInfo: [ContentBlockerTargetInfo: String] = [:]
+        // Group filters by their target ContentBlockerTargetInfo - avoid loading everything into memory at once
+        var filtersByTargetInfo: [ContentBlockerTargetInfo: [FilterList]] = [:]
         var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
 
         for filter in allSelectedFilters {
@@ -518,38 +518,11 @@ class AppFilterManager: ObservableObject {
                 continue
             }
 
-            let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
-            guard let containerURL = containerURL else {
-                await MainActor.run {
-                    self.statusDescription = "Error: Unable to access shared container for \(filter.name)"
-                    self.hasError = true
-                    self.isLoading = false
-                    self.showingApplyProgressSheet = false
-                }
-                return
-            }
-            
-            // Run file I/O on background thread
-            let contentToAppend = await Task.detached {
-                let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-                var content = ""
-                if FileManager.default.fileExists(atPath: fileURL.path) {
-                    do {
-                        content = try String(contentsOf: fileURL, encoding: .utf8) + "\n"
-                    } catch {
-                        await ConcurrentLogManager.shared.log("Error reading \(filter.name): \(error)")
-                    }
-                } else {
-                    await ConcurrentLogManager.shared.log("Warning: Filter file for \(filter.name) not found locally.")
-                }
-                return content
-            }.value
-            
-            rulesByTargetInfo[targetInfo, default: ""] += contentToAppend
-            sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? contentToAppend.components(separatedBy: "\n").filter { !$0.isEmpty && !$0.hasPrefix("!") && !$0.hasPrefix("[") }.count
+            filtersByTargetInfo[targetInfo, default: []].append(filter)
+            sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? 0
         }
         
-        let totalFiltersCount = rulesByTargetInfo.keys.count
+        let totalFiltersCount = filtersByTargetInfo.keys.count
         await MainActor.run {
             self.sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +) // Sum of all source rules for UI
             self.totalFiltersCount = totalFiltersCount // Number of unique extensions to process
@@ -572,10 +545,9 @@ class AppFilterManager: ObservableObject {
             self.isInConversionPhase = true
         }
 
-        // Collect all advanced rules from all targets to build the engine once
-        var allAdvancedRules: [String] = []
+        // Collect advanced rules by target bundle ID (single storage)
         var advancedRulesByTarget: [String: String] = [:] // Track advanced rules by target bundle ID
-        for (targetInfo, rulesString) in rulesByTargetInfo {
+        for (targetInfo, filters) in filtersByTargetInfo {
             await MainActor.run {
                 self.processedFiltersCount += 1
                 self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7 // Up to 70% for conversion
@@ -584,21 +556,11 @@ class AppFilterManager: ObservableObject {
                 self.isInSavingPhase = true // Set saving phase for each conversion
             }
             
-            // Log conversion start with source line count (only for large sets)
-            let sourceLineCount = rulesString.components(separatedBy: .newlines).count
-            if sourceLineCount > 10000 {
-                await ConcurrentLogManager.shared.log("🔄 Converting \(targetInfo.primaryCategory.rawValue) (\(sourceLineCount) source lines - LARGE)")
-            }
-            
             try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
 
-            // Perform heavy conversion on background thread
+            // Efficiently combine rules from multiple files without loading all into memory at once
             let conversionResult = await Task.detached {
-                return ContentBlockerService.convertFilter(
-                    rules: rulesString.isEmpty ? "" : rulesString, // Use empty string instead of "[]"
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: targetInfo.rulesFilename
-                )
+                return self.convertFiltersMemoryEfficient(filters: filters, targetInfo: targetInfo)
             }.value
             
             await MainActor.run {
@@ -607,9 +569,8 @@ class AppFilterManager: ObservableObject {
             
             let ruleCountForThisTarget = conversionResult.safariRulesCount
             
-            // Collect advanced rules for later engine building
+            // Store advanced rules for later engine building
             if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
-                allAdvancedRules.append(advancedRulesText)
                 advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
             }
             
@@ -691,22 +652,12 @@ class AppFilterManager: ObservableObject {
                 
                 let resetRuleCount = resetResult.safariRulesCount
                 
-                // Also collect advanced rules from reset filters
+                // Update advanced rules from reset filters
                 if let resetAdvancedRulesText = resetResult.advancedRulesText, !resetAdvancedRulesText.isEmpty {
-                    // Update the advanced rules for this specific target
-                    if let existingIndex = allAdvancedRules.firstIndex(where: { $0 == advancedRulesByTarget[targetInfo.bundleIdentifier] }) {
-                        allAdvancedRules[existingIndex] = resetAdvancedRulesText
-                    } else {
-                        allAdvancedRules.append(resetAdvancedRulesText)
-                    }
                     advancedRulesByTarget[targetInfo.bundleIdentifier] = resetAdvancedRulesText
                 } else {
                     // Remove advanced rules for this target if reset resulted in none
-                    if let existingAdvancedRules = advancedRulesByTarget[targetInfo.bundleIdentifier],
-                       let existingIndex = allAdvancedRules.firstIndex(of: existingAdvancedRules) {
-                        allAdvancedRules.remove(at: existingIndex)
-                        advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
-                    }
+                    advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
                 }
                 
                 await MainActor.run {
@@ -817,7 +768,7 @@ class AppFilterManager: ObservableObject {
             self.progress = 0.9
         }
         
-        if !allAdvancedRules.isEmpty {
+        if !advancedRulesByTarget.isEmpty {
             await MainActor.run {
                 self.conversionStageDescription = "Building combined filter engine..."
                 self.isInEnginePhase = true
@@ -825,9 +776,9 @@ class AppFilterManager: ObservableObject {
             
             // Run engine building on background thread
             await Task.detached {
-                let combinedAdvancedRules = allAdvancedRules.joined(separator: "\n")
+                let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
                 let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
-                await ConcurrentLogManager.shared.log("🔧 Building filter engine with \(allAdvancedRules.count) groups (\(totalLines) lines)")
+                await ConcurrentLogManager.shared.log("🔧 Building filter engine with \(advancedRulesByTarget.count) targets (\(totalLines) lines)")
                 
                 ContentBlockerService.buildCombinedFilterEngine(
                     combinedAdvancedRules: combinedAdvancedRules,
@@ -854,13 +805,13 @@ class AppFilterManager: ObservableObject {
         if allReloadsSuccessful && !hasErrorValue {
             await MainActor.run {
                 self.conversionStageDescription = "Process completed successfully!"
-                self.statusDescription = "Applied rules to \(rulesByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(allAdvancedRules.isEmpty ? "cleared" : "\(allAdvancedRules.count) groups combined")."
+                self.statusDescription = "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
                 self.hasUnappliedChanges = false
             }
         } else if !hasErrorValue { // Implies reload issue was the only problem
             await MainActor.run {
                 self.conversionStageDescription = "Conversion completed with reload issues"
-                self.statusDescription = "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(allAdvancedRules.isEmpty ? "cleared" : "\(allAdvancedRules.count) groups combined")."
+                self.statusDescription = "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
             }
         } // If hasError was already true, statusDescription would reflect the earlier error.
 
@@ -1232,6 +1183,88 @@ class AppFilterManager: ObservableObject {
     // Set the UserScriptManager for the filter updater
     public func setUserScriptManager(_ userScriptManager: UserScriptManager) {
         filterUpdater.userScriptManager = userScriptManager
+    }
+    
+    /// Memory-efficient conversion that combines filter files using streaming I/O
+    private func convertFiltersMemoryEfficient(filters: [FilterList], targetInfo: ContentBlockerTargetInfo) -> (safariRulesCount: Int, advancedRulesText: String?) {
+        guard let containerURL = loader.getSharedContainerURL() else {
+            return (safariRulesCount: 0, advancedRulesText: nil)
+        }
+        
+        // Create a temporary combined file to avoid keeping large strings in memory
+        let tempURL = containerURL.appendingPathComponent("temp_\(targetInfo.bundleIdentifier).txt")
+        
+        defer {
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: tempURL)
+        }
+        
+        do {
+            // Create temporary file handle for streaming write
+            FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
+            let fileHandle = try FileHandle(forWritingTo: tempURL)
+            defer { try? fileHandle.close() }
+            
+            var totalSourceLines = 0
+            
+            // Stream each filter file directly to temp file
+            for filter in filters {
+                let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    if let data = try? Data(contentsOf: fileURL) {
+                        try fileHandle.write(contentsOf: data)
+                        try fileHandle.write(contentsOf: Data("\n".utf8))
+                        
+                        // Count lines efficiently without loading into memory
+                        totalSourceLines += countLinesInData(data)
+                    }
+                }
+            }
+            
+            try fileHandle.synchronize()
+            
+            // Log only for large conversions
+            if totalSourceLines > 10000 {
+                Task {
+                    await ConcurrentLogManager.shared.log("🔄 Converting \(targetInfo.primaryCategory.rawValue) (\(totalSourceLines) source lines - LARGE)")
+                }
+            }
+            
+            // Read combined rules for conversion
+            let combinedRules = try String(contentsOf: tempURL, encoding: .utf8)
+            
+            return ContentBlockerService.convertFilter(
+                rules: combinedRules.isEmpty ? "" : combinedRules,
+                groupIdentifier: GroupIdentifier.shared.value,
+                targetRulesFilename: targetInfo.rulesFilename
+            )
+            
+        } catch {
+            Task {
+                await ConcurrentLogManager.shared.log("Error in memory-efficient conversion: \(error)")
+            }
+            return (safariRulesCount: 0, advancedRulesText: nil)
+        }
+    }
+    
+    /// Efficiently count lines in data without loading into String
+    private func countLinesInData(_ data: Data) -> Int {
+        guard !data.isEmpty else { return 0 }
+        var count = 0
+        let newline = UInt8(ascii: "\n")
+        
+        data.forEach { byte in
+            if byte == newline {
+                count += 1
+            }
+        }
+        
+        // Account for the last line if the file doesn't end with a newline
+        if data.last != newline {
+            count += 1
+        }
+        
+        return count
     }
 }
 

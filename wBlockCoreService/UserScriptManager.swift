@@ -26,6 +26,15 @@ public class UserScriptManager: ObservableObject {
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
     
+    // Configured URLSession for better resource management
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        config.urlCache = URLCache(memoryCapacity: 2 * 1024 * 1024, diskCapacity: 0, diskPath: nil) // 2MB memory, no disk cache
+        return URLSession(configuration: config)
+    }()
+    
     // MARK: - Singleton
     public static let shared = UserScriptManager()
     
@@ -342,7 +351,7 @@ public class UserScriptManager: ObservableObject {
         logger.info("📥 Downloading userscript from: \(url)")
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await urlSession.data(from: url)
             let content = String(data: data, encoding: .utf8) ?? ""
             
             await MainActor.run {
@@ -443,7 +452,7 @@ public class UserScriptManager: ObservableObject {
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await urlSession.data(from: url)
             let content = String(data: data, encoding: .utf8) ?? ""
             
             await MainActor.run {
@@ -511,7 +520,7 @@ public class UserScriptManager: ObservableObject {
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await urlSession.data(from: url)
             let content = String(data: data, encoding: .utf8) ?? ""
             
             await MainActor.run {
@@ -562,7 +571,7 @@ public class UserScriptManager: ObservableObject {
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await urlSession.data(from: url)
             let content = String(data: data, encoding: .utf8) ?? ""
             
             await MainActor.run {

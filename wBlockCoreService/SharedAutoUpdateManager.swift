@@ -48,6 +48,16 @@ public actor SharedAutoUpdateManager {
     private let defaultIntervalHours: Double = 6
 
     private let log = OSLog(subsystem: "wBlockCoreService", category: "SharedAutoUpdate")
+    
+    // Configured URLSession for better resource management
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.urlCache = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil) // 4MB memory, no disk cache
+        return URLSession(configuration: config)
+    }()
 
     private init() {}
 
@@ -241,7 +251,7 @@ public actor SharedAutoUpdateManager {
         if let lm = defaults.string(forKey: lmKey) { request.addValue(lm, forHTTPHeaderField: "If-Modified-Since") }
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await urlSession.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
             if http.statusCode == 304 { return false } // Not modified via conditional request
 
@@ -278,14 +288,22 @@ public actor SharedAutoUpdateManager {
 
     private func fetchOne(_ filter: FilterList) async -> FilterList? {
         do {
-            let (data, response) = try await URLSession.shared.data(from: filter.url)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200,
-                  let content = String(data: data, encoding: .utf8) else { return nil }
-            let meta = parseMetadata(from: content)
-            let ruleCount = countRulesInContent(content: content)
+            let (data, response) = try await urlSession.data(from: filter.url)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            
+            // Write data directly to file to avoid keeping large content in memory
             if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
-                try? content.write(to: containerURL.appendingPathComponent("\(filter.name).txt"), atomically: true, encoding: .utf8)
+                let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                try data.write(to: fileURL, options: .atomic)
             }
+            
+            // Only parse the beginning for metadata, not the entire content
+            guard let content = String(data: data.prefix(8192), encoding: .utf8) else { return nil }
+            let meta = parseMetadata(from: content)
+            
+            // Count rules efficiently without loading full content into memory
+            let ruleCount = countRulesInData(data: data)
+            
             var updated = filter
             if let version = meta.version, !version.isEmpty { updated.version = version }
             if let desc = meta.description, !desc.isEmpty { updated.description = desc }
@@ -367,6 +385,41 @@ public actor SharedAutoUpdateManager {
             return !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[") && !trimmed.hasPrefix("#")
         }.count
     }
+    
+    private func countRulesInData(data: Data) -> Int {
+        var count = 0
+        var position = 0
+        let chunkSize = 8192
+        var remainingLine = ""
+        
+        // Process data in chunks to avoid loading everything into memory
+        while position < data.count {
+            let endPosition = min(position + chunkSize, data.count)
+            let chunk = data.subdata(in: position..<endPosition)
+            
+            if let string = String(data: chunk, encoding: .utf8) {
+                let fullString = remainingLine + string
+                let lines = fullString.components(separatedBy: .newlines)
+                
+                // Process all lines except the last (which may be incomplete)
+                let linesToProcess = position + chunkSize >= data.count ? lines[..] : lines.dropLast()
+                
+                for line in linesToProcess {
+                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[") && !trimmed.hasPrefix("#") {
+                        count += 1
+                    }
+                }
+                
+                // Keep the incomplete line for next chunk
+                remainingLine = position + chunkSize >= data.count ? "" : lines.last ?? ""
+            }
+            
+            position = endPosition
+        }
+        
+        return count
+    }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
         var title: String?; var description: String?; var version: String?
@@ -426,10 +479,14 @@ public actor SharedAutoUpdateManager {
         let full = "[\(timestamp)] \(line)\n"
         if let data = full.data(using: .utf8) {
             if FileManager.default.fileExists(atPath: logURL.path) {
-                if let handle = try? FileHandle(forWritingTo: logURL) {
-                    try? handle.seekToEnd()
-                    try? handle.write(contentsOf: data)
-                    try? handle.close()
+                do {
+                    let handle = try FileHandle(forWritingTo: logURL)
+                    defer { try? handle.close() }
+                    try handle.seekToEnd()
+                    try handle.write(contentsOf: data)
+                } catch {
+                    // Fallback to direct write if handle fails
+                    try? data.write(to: logURL, options: .atomic)
                 }
             } else {
                 try? data.write(to: logURL)

@@ -15,6 +15,9 @@ public actor ConcurrentLogManager {
     /// The maximum number of log entries to keep in memory.
     private let maxLogEntries: Int = 10_000 // Or your preferred limit
     
+    /// Trigger cleanup when we exceed this threshold
+    private let cleanupThreshold: Int = 12_000
+    
     /// In‑memory storage for log entries.
     private var logEntries: [String] = []
     
@@ -52,7 +55,7 @@ public actor ConcurrentLogManager {
         """
         
         logEntries.append(formattedEntry)
-        if logEntries.count > maxLogEntries {
+        if logEntries.count > cleanupThreshold {
             logEntries.removeFirst(logEntries.count - maxLogEntries)
         }
         // Also print to the console for live debugging.
