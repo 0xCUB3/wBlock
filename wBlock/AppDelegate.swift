@@ -125,8 +125,8 @@ extension AppDelegate: NSApplicationDelegate {
     
     private func setupMacOSAutoUpdate() {
         // Opportunistic periodic trigger while app is running
-        Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { _ in
-            Task { await self.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
+        Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
+            Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
         // System-optimized background scheduling (macOS 10.10+) — works when app is running

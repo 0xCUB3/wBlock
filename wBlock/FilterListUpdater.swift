@@ -14,6 +14,15 @@ class FilterListUpdater {
     
     weak var filterListManager: AppFilterManager?
     weak var userScriptManager: UserScriptManager?
+    
+    // Configured URLSession for better resource management
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        config.urlCache = URLCache(memoryCapacity: 2 * 1024 * 1024, diskCapacity: 0, diskPath: nil) // 2MB memory, no disk cache
+        return URLSession(configuration: config)
+    }()
 
     init(loader: FilterListLoader, logManager: ConcurrentLogManager) {
         self.loader = loader
@@ -22,10 +31,15 @@ class FilterListUpdater {
 
     /// Counts effective rules in a given filter list content string.
     private func countRulesInContent(content: String) -> Int {
-        return content.components(separatedBy: .newlines).filter { line in
-            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            return !trimmedLine.isEmpty && !trimmedLine.hasPrefix("!") && !trimmedLine.hasPrefix("[") && !trimmedLine.hasPrefix("#")
-        }.count
+        var count = 0
+        // More efficient than components(separatedBy:) which creates an array
+        content.enumerateLines { line, _ in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[") && !trimmed.hasPrefix("#") {
+                count += 1
+            }
+        }
+        return count
     }
 
     /// Updates missing versions for filter lists and returns a dictionary of indices and versions
@@ -71,7 +85,7 @@ class FilterListUpdater {
     /// Fetches version information from a filter list URL
     func fetchVersionFromURL(for filter: FilterList) async -> String? {
         do {
-            let (data, response) = try await URLSession.shared.data(from: filter.url)
+            let (data, response) = try await urlSession.data(from: filter.url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 await ConcurrentLogManager.shared.log("Failed to fetch version from URL for \(filter.name): Invalid response")
                 return nil

@@ -48,6 +48,16 @@ public actor SharedAutoUpdateManager {
     private let defaultIntervalHours: Double = 6
 
     private let log = OSLog(subsystem: "wBlockCoreService", category: "SharedAutoUpdate")
+    
+    // Configured URLSession for better resource management
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.urlCache = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil) // 4MB memory, no disk cache
+        return URLSession(configuration: config)
+    }()
 
     private init() {}
 
@@ -241,7 +251,7 @@ public actor SharedAutoUpdateManager {
         if let lm = defaults.string(forKey: lmKey) { request.addValue(lm, forHTTPHeaderField: "If-Modified-Since") }
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await urlSession.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
             if http.statusCode == 304 { return false } // Not modified via conditional request
 
@@ -278,7 +288,7 @@ public actor SharedAutoUpdateManager {
 
     private func fetchOne(_ filter: FilterList) async -> FilterList? {
         do {
-            let (data, response) = try await URLSession.shared.data(from: filter.url)
+            let (data, response) = try await urlSession.data(from: filter.url)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
             
             // Write data directly to file to avoid keeping large content in memory
@@ -379,15 +389,30 @@ public actor SharedAutoUpdateManager {
     private func countRulesInData(data: Data) -> Int {
         var count = 0
         var position = 0
+        let chunkSize = 8192
+        var remainingLine = ""
         
         // Process data in chunks to avoid loading everything into memory
-        let chunkSize = 8192
         while position < data.count {
             let endPosition = min(position + chunkSize, data.count)
             let chunk = data.subdata(in: position..<endPosition)
             
             if let string = String(data: chunk, encoding: .utf8) {
-                count += countRulesInContent(content: string)
+                let fullString = remainingLine + string
+                let lines = fullString.components(separatedBy: .newlines)
+                
+                // Process all lines except the last (which may be incomplete)
+                let linesToProcess = position + chunkSize >= data.count ? lines : Array(lines.dropLast())
+                
+                for line in linesToProcess {
+                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[") && !trimmed.hasPrefix("#") {
+                        count += 1
+                    }
+                }
+                
+                // Keep the incomplete line for next chunk
+                remainingLine = position + chunkSize >= data.count ? "" : lines.last ?? ""
             }
             
             position = endPosition
