@@ -309,6 +309,9 @@ struct OnboardingView: View {
                 await UserScriptManager.shared.toggleUserScript(script)
             }
         }
+        
+        // 2.5. Mark userscript initial setup as complete
+        UserScriptManager.shared.markInitialSetupComplete()
 
         // 3. Download and install enabled filter lists
         isApplying = true

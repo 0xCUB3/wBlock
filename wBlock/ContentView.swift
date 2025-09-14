@@ -136,6 +136,16 @@ struct ContentView: View {
             } message: {
                 Text(filterManager.categoryWarningMessage)
             }
+            .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
+                Button("Remove Older Versions", role: .destructive) {
+                    userScriptManager.confirmDuplicateRemoval()
+                }
+                Button("Keep All", role: .cancel) {
+                    userScriptManager.cancelDuplicateRemoval()
+                }
+            } message: {
+                Text(userScriptManager.duplicatesMessage)
+            }
             .overlay {
                 if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
                     ZStack {
