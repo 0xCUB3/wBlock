@@ -9,7 +9,7 @@ import SwiftUI
 import wBlockCoreService
 
 struct UserScriptManagerView: View {
-    var userScriptManager: UserScriptManager
+    @ObservedObject var userScriptManager: UserScriptManager
     
     @State private var scripts: [UserScript] = []
     @State private var isLoading: Bool = false
@@ -84,6 +84,17 @@ struct UserScriptManagerView: View {
         #endif
         .onAppear {
             refreshScripts()
+        }
+        .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
+            Button("Remove Older Versions", role: .destructive) {
+                userScriptManager.confirmDuplicateRemoval()
+                refreshScripts()
+            }
+            Button("Keep All", role: .cancel) {
+                userScriptManager.cancelDuplicateRemoval()
+            }
+        } message: {
+            Text(userScriptManager.duplicatesMessage)
         }
     }
     

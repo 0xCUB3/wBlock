@@ -19,6 +19,9 @@ public class UserScriptManager: ObservableObject {
     @Published public var showingUpdateSuccessAlert = false
     @Published public var showingUpdateErrorAlert = false
     @Published public var updateAlertMessage = ""
+    @Published public var showingDuplicatesAlert = false
+    @Published public var duplicatesMessage = ""
+    @Published public var pendingDuplicatesToRemove: [UserScript] = []
     
     private let userScriptsKey = "userScripts"
     private let sharedContainerIdentifier = "group.skula.wBlock"
@@ -128,6 +131,153 @@ public class UserScriptManager: ObservableObject {
         return true
     }
     
+    /// Efficiently detects duplicate userscripts based on case-insensitive name matching
+    private func detectDuplicateUserScripts() -> [(older: UserScript, newer: UserScript)] {
+        guard userScripts.count > 1 else { return [] }
+        
+        logger.info("🔍 Checking for duplicate userscripts among \(self.userScripts.count) scripts...")
+        
+        // Track seen names (case-insensitive) and their indices
+        var seenNames = [String: Int]() // lowercase name -> index of most recent script
+        var duplicatePairs: [(older: UserScript, newer: UserScript)] = []
+        
+        // Process scripts in reverse order to keep the most recent (last in array)
+        for (index, script) in userScripts.enumerated().reversed() {
+            let lowercaseName = script.name.lowercased()
+            
+            // Check for name duplicates (case-insensitive)
+            if let existingIndex = seenNames[lowercaseName] {
+                let existingScript = userScripts[existingIndex]
+                
+                // Determine which script is newer
+                let shouldKeepCurrent = compareScriptsForDuplicateRemoval(current: script, existing: existingScript)
+                
+                if shouldKeepCurrent {
+                    logger.info("🔍 Found duplicate: keeping '\(script.name)' over '\(existingScript.name)'")
+                    duplicatePairs.append((older: existingScript, newer: script))
+                    seenNames[lowercaseName] = index
+                } else {
+                    logger.info("🔍 Found duplicate: keeping '\(existingScript.name)' over '\(script.name)'")
+                    duplicatePairs.append((older: script, newer: existingScript))
+                }
+            } else {
+                seenNames[lowercaseName] = index
+            }
+        }
+        
+        logger.info("🔍 Found \(duplicatePairs.count) duplicate pairs")
+        return duplicatePairs
+    }
+    
+    /// Removes specific duplicate userscripts
+    private func removeDuplicateUserScripts(_ duplicatesToRemove: [UserScript]) {
+        guard !duplicatesToRemove.isEmpty else { return }
+        
+        logger.info("🗑️ Removing \(duplicatesToRemove.count) duplicate userscripts...")
+        
+        var indicesToRemove = Set<Int>()
+        var removedFiles = [String]()
+        
+        // Find indices of scripts to remove
+        for duplicateScript in duplicatesToRemove {
+            if let index = userScripts.firstIndex(where: { $0.id == duplicateScript.id }) {
+                indicesToRemove.insert(index)
+                removeUserScriptFile(duplicateScript)
+                removedFiles.append(duplicateScript.name)
+            }
+        }
+        
+        // Remove duplicates in reverse order to maintain indices
+        let sortedIndices = indicesToRemove.sorted(by: >)
+        for index in sortedIndices {
+            userScripts.remove(at: index)
+        }
+        
+        logger.info("✅ Removed \(indicesToRemove.count) duplicate userscripts: \(removedFiles.joined(separator: ", "))")
+        
+        // Save the cleaned list
+        saveUserScripts()
+    }
+    
+    /// Compares two scripts to determine which one to keep during duplicate removal
+    /// Returns true if current script should be kept, false if existing script should be kept
+    private func compareScriptsForDuplicateRemoval(current: UserScript, existing: UserScript) -> Bool {
+        // Prefer scripts with content over empty ones
+        if current.isDownloaded && !existing.isDownloaded {
+            return true
+        }
+        if !current.isDownloaded && existing.isDownloaded {
+            return false
+        }
+        
+        // If both have lastUpdated dates, prefer the more recent one
+        if let currentDate = current.lastUpdated, let existingDate = existing.lastUpdated {
+            return currentDate > existingDate
+        }
+        
+        // Prefer the one with a lastUpdated date
+        if current.lastUpdated != nil && existing.lastUpdated == nil {
+            return true
+        }
+        if current.lastUpdated == nil && existing.lastUpdated != nil {
+            return false
+        }
+        
+        // Prefer enabled scripts over disabled ones
+        if current.isEnabled && !existing.isEnabled {
+            return true
+        }
+        if !current.isEnabled && existing.isEnabled {
+            return false
+        }
+        
+        // Prefer remote scripts (with URL) over local ones
+        if current.url != nil && existing.url == nil {
+            return true
+        }
+        if current.url == nil && existing.url != nil {
+            return false
+        }
+        
+        // If all else is equal, keep the current one (later in the array)
+        return true
+    }
+    
+    /// Checks for duplicates and presents confirmation dialog to user
+    private func checkForDuplicatesAndAskForConfirmation() {
+        let duplicatePairs = detectDuplicateUserScripts()
+        
+        if !duplicatePairs.isEmpty {
+            let duplicatesToRemove = duplicatePairs.map { $0.older }
+            pendingDuplicatesToRemove = duplicatesToRemove
+            
+            let duplicateNames = duplicatePairs.map { pair in
+                "• '\(pair.older.name)' (keeping '\(pair.newer.name)')"
+            }.joined(separator: "\n")
+            
+            duplicatesMessage = "Found \(duplicatePairs.count) duplicate userscript(s):\n\n\(duplicateNames)\n\nWould you like to remove the older versions?"
+            showingDuplicatesAlert = true
+            
+            logger.info("📋 Asking user to confirm removal of \(duplicatesToRemove.count) duplicate userscripts")
+        }
+    }
+    
+    /// Remove the file associated with a userscript
+    private func removeUserScriptFile(_ userScript: UserScript) {
+        let fileName = "\(userScript.id.uuidString).user.js"
+        [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach { dirURL in
+            let fileURL = dirURL.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                do {
+                    try FileManager.default.removeItem(at: fileURL)
+                    logger.info("🗑️ Removed file: \(fileURL.path)")
+                } catch {
+                    logger.error("❌ Failed to remove file \(fileURL.path): \(error)")
+                }
+            }
+        }
+    }
+    
     private func setup() {
         logger.info("🔧 Setting up UserScriptManager...")
         checkAndCreateUserScriptsFolder()
@@ -191,6 +341,9 @@ public class UserScriptManager: ObservableObject {
         logger.info("📖 Loading userscripts from ProtobufDataManager...")
         userScripts = dataManager.getUserScripts()
         logger.info("📖 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
+        
+        // Check for duplicates and ask user for confirmation
+        checkForDuplicatesAndAskForConfirmation()
         
         // Always check for missing default scripts, regardless of whether we have existing scripts
         checkAndAddMissingDefaultScripts()
@@ -471,6 +624,10 @@ public class UserScriptManager: ObservableObject {
                 }
                 
                 _ = writeUserScriptContent(newUserScript)
+                
+                // Check for duplicates after adding
+                checkForDuplicatesAndAskForConfirmation()
+                
                 saveUserScripts()
                 isLoading = false
             }
@@ -631,5 +788,28 @@ public class UserScriptManager: ObservableObject {
         }
         
         return matchingScripts
+    }
+    
+    /// Manually triggers duplicate userscript removal and cleanup
+    public func cleanupDuplicateUserScripts() {
+        logger.info("🧹 Manual cleanup of duplicate userscripts requested")
+        checkForDuplicatesAndAskForConfirmation()
+    }
+    
+    /// Confirms removal of pending duplicate userscripts
+    public func confirmDuplicateRemoval() {
+        logger.info("✅ User confirmed removal of \(self.pendingDuplicatesToRemove.count) duplicate userscripts")
+        removeDuplicateUserScripts(pendingDuplicatesToRemove)
+        pendingDuplicatesToRemove = []
+        showingDuplicatesAlert = false
+        statusDescription = "Removed duplicate userscripts"
+    }
+    
+    /// Cancels removal of pending duplicate userscripts
+    public func cancelDuplicateRemoval() {
+        logger.info("❌ User cancelled removal of duplicate userscripts")
+        pendingDuplicatesToRemove = []
+        showingDuplicatesAlert = false
+        statusDescription = "Duplicate removal cancelled"
     }
 }
