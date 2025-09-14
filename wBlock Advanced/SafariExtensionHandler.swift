@@ -347,11 +347,11 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         validationHandler: @escaping ((Bool, String) -> Void)
     ) {
         Task {
-            // Check if badge counter is disabled
+            // Check if badge counter is enabled (matches SettingsView.swift key)
             let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-            let isBadgeDisabled = defaults?.bool(forKey: "disableBadgeCounter") ?? false
+            let isBadgeCounterEnabled = defaults?.bool(forKey: "isBadgeCounterEnabled") ?? true
             
-            if isBadgeDisabled {
+            if !isBadgeCounterEnabled {
                 // Badge is disabled, show empty string
                 validationHandler(true, "")
             } else {
