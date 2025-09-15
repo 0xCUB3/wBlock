@@ -313,28 +313,34 @@ struct ContentView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .disabled(filterManager.isLoading)
+                .accessibilityLabel("Check for Updates")
                 
                 Button { Task { await filterManager.checkAndEnableFilters(forceReload: true) } } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                 }
                 .disabled(filterManager.isLoading || enabledListsCount == 0)
+                .accessibilityLabel("Apply Changes")
                 
                 Button { showingLogsView = true } label: {
                     Image(systemName: "doc.text.magnifyingglass")
                 }
+                .accessibilityLabel("Show Logs")
                 
                 Button { showingUserScriptsView = true } label: {
                     Image(systemName: "doc.text.fill")
                 }
+                .accessibilityLabel("Userscripts")
                 
                 Button { showingAddFilterSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("Add Filter")
                 
                 // Add settings button
                 Button { showingSettingsSheet = true } label: {
                     Image(systemName: "gear")
                 }
+                .accessibilityLabel("Settings")
             }
             .buttonStyle(.plain)
         }
