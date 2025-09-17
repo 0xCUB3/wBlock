@@ -606,8 +606,12 @@ class UserScriptInjector {
         info: {
             script: {
                 name: '${script.name}',
-                version: '1.0.0'
-            }
+                version: '${script.version || "1.0.0"}',
+                description: '${script.description || ""}',
+                namespace: 'wblock'
+            },
+            scriptHandler: 'wBlock',
+            version: '1.0.0'
         },
         notification: wBlockPopup.showNotification.bind(wBlockPopup),
         popup: {
@@ -638,7 +642,31 @@ class UserScriptInjector {
             } catch (e) {
                 console.warn('[wBlock] Failed to delete value for key:', key);
             }
-        }
+        },
+        listValues: () => {
+            try {
+                const keys = [];
+                const prefix = 'wblock_gm_';
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(prefix)) {
+                        keys.push(key.substring(prefix.length));
+                    }
+                }
+                return keys;
+            } catch (e) {
+                console.warn('[wBlock] Failed to list values:', e);
+                return [];
+            }
+        },
+        getResourceURL: (resourceName) => {
+            // For basic compatibility, return the resource name as-is
+            // In a full implementation, this would resolve @resource directives
+            console.warn('[wBlock] GM_getResourceURL called with:', resourceName);
+            return resourceName;
+        },
+        // Provide access to the real window object for popup blocking
+        unsafeWindow: window
     };
     
     // Legacy GM functions
@@ -647,7 +675,10 @@ class UserScriptInjector {
     window.GM_getValue = GM.getValue;
     window.GM_setValue = GM.setValue;
     window.GM_deleteValue = GM.deleteValue;
+    window.GM_listValues = GM.listValues;
     window.GM_openInTab = GM.openInTab;
+    window.GM_getResourceURL = GM.getResourceURL;
+    window.unsafeWindow = GM.unsafeWindow;
     
     // wBlock-specific API
     window.wBlock = {
@@ -665,6 +696,17 @@ class UserScriptInjector {
         console.log('[wBlock] Userscript ${script.name} executed successfully');
     } catch (error) {
         console.error('[wBlock] Userscript error in ${script.name}:', error);
+        console.error('[wBlock] Error stack:', error.stack);
+        
+        // Show a notification for critical userscript errors
+        if (window.wBlock && window.wBlock.showNotification) {
+            window.wBlock.showNotification({
+                title: 'Userscript Error',
+                message: \`Error in \${script.name}: \${error.message}\`,
+                timeout: 8000,
+                position: 'top-right'
+            });
+        }
     }
 })();
         `;

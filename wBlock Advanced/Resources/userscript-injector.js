@@ -248,25 +248,106 @@ if (window.wBlockUserscriptInjectorHasRun) {
         info: {
             script: {
                 name: '${script.name || 'Unknown Script'}',
-                version: '${script.version || '1.0.0'}'
+                version: '${script.version || '1.0.0'}',
+                description: '${script.description || ''}',
+                namespace: 'wblock'
             },
             scriptHandler: 'wBlock Injector',
-            version: '0.1.1' // Incremented version for this logging update
+            version: '0.1.1'
         },
-        log: function(...args) { console.log('[UserScript:${script.name}]', ...args); }
-        // TODO: Implement other GM functions by messaging the extension
-        // GM_setValue: async function(key, value) { console.log('GM_setValue called'); /* browser.runtime.sendMessage(...) */ },
-        // GM_getValue: async function(key, defaultValue) { console.log('GM_getValue called'); /* browser.runtime.sendMessage(...) */ },
+        log: function(...args) { console.log('[UserScript:${script.name}]', ...args); },
+        
+        // Greasemonkey API implementations using localStorage
+        getValue: function(key, defaultValue) {
+            try {
+                const stored = localStorage.getItem('wblock_gm_' + key);
+                return stored !== null ? JSON.parse(stored) : defaultValue;
+            } catch (e) {
+                console.warn('[wBlock] Failed to get value for key:', key, e);
+                return defaultValue;
+            }
+        },
+        
+        setValue: function(key, value) {
+            try {
+                localStorage.setItem('wblock_gm_' + key, JSON.stringify(value));
+            } catch (e) {
+                console.warn('[wBlock] Failed to save value for key:', key, e);
+            }
+        },
+        
+        deleteValue: function(key) {
+            try {
+                localStorage.removeItem('wblock_gm_' + key);
+            } catch (e) {
+                console.warn('[wBlock] Failed to delete value for key:', key, e);
+            }
+        },
+        
+        listValues: function() {
+            try {
+                const keys = [];
+                const prefix = 'wblock_gm_';
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(prefix)) {
+                        keys.push(key.substring(prefix.length));
+                    }
+                }
+                return keys;
+            } catch (e) {
+                console.warn('[wBlock] Failed to list values:', e);
+                return [];
+            }
+        },
+        
+        getResourceURL: function(resourceName) {
+            // For basic compatibility, return the resource name as-is
+            // In a full implementation, this would resolve @resource directives
+            console.warn('[wBlock] GM_getResourceURL called with:', resourceName);
+            return resourceName;
+        },
+        
+        openInTab: function(url) {
+            return window.open(url, '_blank');
+        },
+        
+        notification: function(options) {
+            console.log('[wBlock] GM_notification called with:', options);
+            // Basic notification implementation
+            if (typeof options === 'string') {
+                console.log('[wBlock] Notification:', options);
+            } else if (options && options.text) {
+                console.log('[wBlock] Notification:', options.text);
+            }
+        },
+        
+        // Provide access to the real window object for popup blocking
+        unsafeWindow: window
     };
     
     window.GM_info = GM.info;
     window.GM = GM; // Expose the GM object
+    
+    // Legacy GM function aliases
+    window.GM_getValue = GM.getValue;
+    window.GM_setValue = GM.setValue;
+    window.GM_deleteValue = GM.deleteValue;
+    window.GM_listValues = GM.listValues;
+    window.GM_getResourceURL = GM.getResourceURL;
+    window.GM_openInTab = GM.openInTab;
+    window.GM_notification = GM.notification;
+    window.unsafeWindow = GM.unsafeWindow;
 
     try {
         ${script.content}
         console.log('[wBlock UserScript] Finished executing: ${script.name}');
     } catch (error) {
         console.error('[wBlock UserScript Execution Error] in ${script.name}:', error);
+        console.error('[wBlock UserScript Error Stack]:', error.stack);
+        
+        // Show a console warning for userscript errors
+        console.warn(\`[wBlock] Error in userscript "\${script.name}": \${error.message}\`);
     }
 })();
         `;
