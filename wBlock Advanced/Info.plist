@@ -38,7 +38,7 @@
 			<key>Image</key>
 			<string>ToolbarItemIcon.png</string>
 			<key>Label</key>
-			<string>App Extension</string>
+			<string>wBlock</string>
 		</dict>
 		<key>SFSafariWebsiteAccess</key>
 		<dict>
