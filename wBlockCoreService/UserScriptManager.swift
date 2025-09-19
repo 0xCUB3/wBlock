@@ -26,7 +26,6 @@ public class UserScriptManager: ObservableObject {
     
     private let userScriptsKey = "userScripts"
     private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
-    private let deletedDefaultScriptsKey = "deletedDefaultScripts"
     private let sharedContainerIdentifier = "group.skula.wBlock"
     private let dataManager = ProtobufDataManager.shared
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
@@ -46,7 +45,7 @@ public class UserScriptManager: ObservableObject {
     
     private let defaultUserScripts: [(name: String, url: String)] = [
         ("Return YouTube Dislike", "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js"),
-        ("Bypass Paywalls Clean", "https://raw.githubusercontent.com/0xCUB3/Website/refs/heads/main/content/bpc.en.user.js"),
+        ("Bypass Paywalls Clean", "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript%2Fbpc.en.user.js"),
         ("YouTube Classic", "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js")
     ]
     
@@ -134,100 +133,137 @@ public class UserScriptManager: ObservableObject {
         return true
     }
     
-    /// Efficiently detects duplicate userscripts based on case-insensitive name matching
+    /// Simple and reliable duplicate detection - only finds truly duplicate scripts
     private func detectDuplicateUserScripts() -> [(older: UserScript, newer: UserScript)] {
         guard userScripts.count > 1 else { return [] }
         
-        logger.info("🔍 Checking for duplicate userscripts among \(self.userScripts.count) scripts...")
+        logger.info("🔍 Simple duplicate detection among \(self.userScripts.count) scripts...")
         
-        // Debug: List all scripts with their names
-        for (index, script) in userScripts.enumerated() {
-            logger.info("🔍 Script[\(index)]: '\(script.name)' (ID: \(script.id)) enabled: \(script.isEnabled)")
-        }
+        var duplicates: [(older: UserScript, newer: UserScript)] = []
         
-        // Track seen names (case-insensitive) and their indices
-        var seenNames = [String: Int]() // lowercase name -> index of most recent script
-        var duplicatePairs: [(older: UserScript, newer: UserScript)] = []
-        
-        // Process scripts in reverse order to keep the most recent (last in array)
-        for (index, script) in userScripts.enumerated().reversed() {
-            let lowercaseName = script.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            logger.info("🔍 Processing script '\(script.name)' -> normalized: '\(lowercaseName)'")
-            
-            // Check for name duplicates (case-insensitive)
-            if let existingIndex = seenNames[lowercaseName] {
-                let existingScript = userScripts[existingIndex]
-                logger.info("🔍 DUPLICATE FOUND! '\(script.name)' vs '\(existingScript.name)'")
+        // Compare each script with every other script
+        for i in 0..<userScripts.count {
+            for j in (i+1)..<userScripts.count {
+                let script1 = userScripts[i]
+                let script2 = userScripts[j]
                 
-                // Determine which script is newer
-                let shouldKeepCurrent = compareScriptsForDuplicateRemoval(current: script, existing: existingScript)
-                
-                if shouldKeepCurrent {
-                    logger.info("🔍 Keeping '\(script.name)' over '\(existingScript.name)'")
-                    duplicatePairs.append((older: existingScript, newer: script))
-                    seenNames[lowercaseName] = index
-                } else {
-                    logger.info("🔍 Keeping '\(existingScript.name)' over '\(script.name)'")
-                    duplicatePairs.append((older: script, newer: existingScript))
+                // Check if they're duplicates by URL (exact match)
+                if let url1 = script1.url?.absoluteString,
+                   let url2 = script2.url?.absoluteString,
+                   !url1.isEmpty && !url2.isEmpty && url1 == url2 {
+                    
+                    logger.info("🔍 URL DUPLICATE: '\(script1.name)' vs '\(script2.name)' (URL: \(url1))")
+                    
+                    // Keep the enabled one, or the first one if both have same status
+                    if script2.isEnabled && !script1.isEnabled {
+                        duplicates.append((older: script1, newer: script2))
+                    } else {
+                        duplicates.append((older: script2, newer: script1))
+                    }
+                    continue
                 }
-            } else {
-                seenNames[lowercaseName] = index
-                logger.info("🔍 First occurrence of '\(lowercaseName)'")
+                
+                // Check if they're duplicates by name (simple case-insensitive match)
+                let name1 = script1.name.lowercased().trimmingCharacters(in: .whitespaces)
+                let name2 = script2.name.lowercased().trimmingCharacters(in: .whitespaces)
+                
+                if name1 == name2 {
+                    logger.info("🔍 NAME DUPLICATE: '\(script1.name)' (v\(script1.version)) vs '\(script2.name)' (v\(script2.version))")
+                    
+                    // Keep the one with the newer version
+                    let script1Version = parseVersionNumber(script1.version)
+                    let script2Version = parseVersionNumber(script2.version)
+                    
+                    if script2Version > script1Version {
+                        logger.info("🔍 Keeping '\(script2.name)' (v\(script2.version)) over '\(script1.name)' (v\(script1.version)) - newer version")
+                        duplicates.append((older: script1, newer: script2))
+                    } else if script1Version > script2Version {
+                        logger.info("🔍 Keeping '\(script1.name)' (v\(script1.version)) over '\(script2.name)' (v\(script2.version)) - newer version")
+                        duplicates.append((older: script2, newer: script1))
+                    } else {
+                        // Same version or can't parse - keep the enabled one, or the first one
+                        if script2.isEnabled && !script1.isEnabled {
+                            logger.info("🔍 Same version - keeping enabled '\(script2.name)' over disabled '\(script1.name)'")
+                            duplicates.append((older: script1, newer: script2))
+                        } else {
+                            logger.info("🔍 Same version - keeping first '\(script1.name)' over '\(script2.name)'")
+                            duplicates.append((older: script2, newer: script1))
+                        }
+                    }
+                }
             }
         }
         
-        logger.info("🔍 Found \(duplicatePairs.count) duplicate pairs")
-        return duplicatePairs
+        logger.info("🔍 Found \(duplicates.count) duplicate pairs")
+        return duplicates
     }
     
-    /// Removes specific duplicate userscripts completely (files + protobuf)
-    private func removeDuplicateUserScripts(_ duplicatesToRemove: [UserScript]) {
+    /// Parse version string to a comparable number (e.g., "2.3.1" -> 20301)
+    private func parseVersionNumber(_ version: String) -> Int {
+        let cleanVersion = version.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanVersion.isEmpty else { return 0 }
+        
+        // Extract numeric parts from version string
+        let components = cleanVersion.components(separatedBy: CharacterSet.decimalDigits.inverted)
+            .filter { !$0.isEmpty }
+            .compactMap { Int($0) }
+        
+        guard !components.isEmpty else { return 0 }
+        
+        // Convert to comparable number: major*10000 + minor*100 + patch
+        var versionNumber = 0
+        for (index, component) in components.prefix(3).enumerated() {
+            let multiplier = [10000, 100, 1][index]
+            versionNumber += component * multiplier
+        }
+        
+        logger.info("🔍 Parsed version '\(version)' -> \(versionNumber)")
+        return versionNumber
+    }
+    
+    /// Simple removal of duplicate userscripts
+    private func removeDuplicateUserScripts(_ duplicatesToRemove: [UserScript]) async {
         guard !duplicatesToRemove.isEmpty else { return }
         
-        logger.info("🗑️ Removing \(duplicatesToRemove.count) duplicate userscripts completely...")
+        logger.info("🗑️ Removing \(duplicatesToRemove.count) duplicate userscripts...")
         
-        var indicesToRemove = Set<Int>()
-        var removedFiles = [String]()
+        // Get IDs of scripts to remove
+        let idsToRemove = Set(duplicatesToRemove.map { $0.id })
+        logger.info("🗑️ Scripts to remove by ID: \(idsToRemove)")
         
-        // Find indices of scripts to remove and delete their files
-        for duplicateScript in duplicatesToRemove {
-            if let index = userScripts.firstIndex(where: { $0.id == duplicateScript.id }) {
-                indicesToRemove.insert(index)
-                
-                // Check if this is a default script being deleted and track it
-                if let scriptURL = duplicateScript.url?.absoluteString {
-                    let isDefaultScript = defaultUserScripts.contains { defaultScript in
-                        defaultScript.url == scriptURL
-                    }
-                    if isDefaultScript {
-                        addToDeletedDefaultScripts(scriptURL)
-                        logger.info("🗑️ Tracking deletion of default script: '\(duplicateScript.name)'")
-                    }
-                }
-                
-                // Remove the physical files
-                removeUserScriptFile(duplicateScript)
-                removedFiles.append(duplicateScript.name)
-                
-                logger.info("🗑️ Marked for removal: '\(duplicateScript.name)' (ID: \(duplicateScript.id))")
+        // Remove files first
+        for script in duplicatesToRemove {
+            removeUserScriptFile(script)
+            logger.info("🗑️ Removed file for: '\(script.name)' (ID: \(script.id))")
+        }
+        
+        // Filter out the scripts to remove from the array
+        let originalCount = userScripts.count
+        userScripts = userScripts.filter { script in
+            let shouldKeep = !idsToRemove.contains(script.id)
+            if !shouldKeep {
+                logger.info("🗑️ Filtering out script: '\(script.name)' (ID: \(script.id))")
             }
+            return shouldKeep
         }
         
-        // Remove duplicates in reverse order to maintain indices
-        let sortedIndices = indicesToRemove.sorted(by: >)
-        for index in sortedIndices {
-            let removedScript = userScripts[index]
-            logger.info("🗑️ Removing from array: '\(removedScript.name)' at index \(index)")
-            userScripts.remove(at: index)
+        logger.info("🗑️ Array size changed from \(originalCount) to \(self.userScripts.count)")
+        
+        // Save to protobuf immediately and await completion
+        logger.info("💾 About to save \(self.userScripts.count) scripts to protobuf...")
+        await dataManager.updateUserScripts(userScripts)
+        logger.info("💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
+        
+        // Verify the save worked by checking what's in protobuf
+        let savedScripts = dataManager.getUserScripts()
+        logger.info("💾 Verification: protobuf now contains \(savedScripts.count) scripts")
+        
+        // Log the IDs of remaining scripts for debugging
+        for script in userScripts {
+            logger.info("💾 Remaining in memory: '\(script.name)' (ID: \(script.id))")
         }
-        
-        logger.info("✅ Removed \(indicesToRemove.count) duplicate userscripts from memory: \(removedFiles.joined(separator: ", "))")
-        
-        // Force save to protobuf to ensure complete removal
-        Task { @MainActor in
-            logger.info("💾 Force saving cleaned userscripts to protobuf...")
-            await dataManager.updateUserScripts(userScripts)
-            logger.info("💾 Successfully removed duplicates from protobuf storage")
+        for script in savedScripts {
+            logger.info("💾 Saved in protobuf: '\(script.name)' (ID: \(script.id))")
         }
     }
     
@@ -304,31 +340,33 @@ public class UserScriptManager: ObservableObject {
         }
     }
     
-    /// Remove the file associated with a userscript from all possible locations
+    /// Remove the file associated with a userscript from ALL possible locations to prevent resurrection
     private func removeUserScriptFile(_ userScript: UserScript) {
         let fileName = "\(userScript.id.uuidString).user.js"
-        var filesRemoved = 0
+        var totalRemoved = 0
         
-        // Remove from all possible directory locations
+        // Remove from ALL possible directory locations to prevent resurrection
         [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach { dirURL in
             let fileURL = dirURL.appendingPathComponent(fileName)
+            let locationName = dirURL.path.contains("Group Containers") ? "group container" : "application support"
+            
             if FileManager.default.fileExists(atPath: fileURL.path) {
                 do {
                     try FileManager.default.removeItem(at: fileURL)
-                    filesRemoved += 1
-                    logger.info("🗑️ Successfully removed file: \(fileURL.path)")
+                    totalRemoved += 1
+                    logger.info("🗑️ Successfully removed file from \(locationName): \(fileURL.path)")
                 } catch {
-                    logger.error("❌ Failed to remove file \(fileURL.path): \(error)")
+                    logger.error("❌ Failed to remove file from \(locationName) \(fileURL.path): \(error)")
                 }
             } else {
-                logger.info("ℹ️ File not found (already removed?): \(fileURL.path)")
+                logger.info("ℹ️ File not found in \(locationName): \(fileURL.path)")
             }
         }
         
-        if filesRemoved == 0 {
+        if totalRemoved == 0 {
             logger.warning("⚠️ No files were found to remove for userscript: \(userScript.name) (ID: \(userScript.id))")
         } else {
-            logger.info("✅ Removed \(filesRemoved) file(s) for userscript: \(userScript.name)")
+            logger.info("✅ Completely removed \(totalRemoved) file(s) for userscript: \(userScript.name) - no resurrection possible")
         }
     }
     
@@ -429,34 +467,18 @@ public class UserScriptManager: ObservableObject {
     private func checkAndAddMissingDefaultScripts() {
         logger.info("🔍 Checking for missing default userscripts...")
         logger.info("🔍 Current userscripts count: \(self.userScripts.count)")
-        logger.info("🔍 Default userscripts count: \(self.defaultUserScripts.count)")
-        
-        for script in userScripts {
-            logger.info("🔍 Existing script: '\(script.name)' from URL: \(script.url?.absoluteString ?? "nil")")
-        }
         
         var hasAddedNew = false
         
         for defaultScript in defaultUserScripts {
-            logger.info("🔍 Checking default script: '\(defaultScript.name)' with URL: \(defaultScript.url)")
+            logger.info("🔍 Checking default script: '\(defaultScript.name)'")
             
-            // Skip if this default script was previously deleted
-            if isDefaultScriptDeleted(defaultScript.url) {
-                logger.info("🗑️ Skipping previously deleted default script: '\(defaultScript.name)'")
-                continue
+            // Simple check - does this URL already exist?
+            let existsByURL = userScripts.contains { script in
+                script.url?.absoluteString == defaultScript.url
             }
             
-            // Check if this default script already exists (by name OR URL)
-            let existingScript = userScripts.first { script in
-                let nameMatch = script.name.lowercased() == defaultScript.name.lowercased()
-                let urlMatch = script.url?.absoluteString == defaultScript.url
-                logger.info("🔍   Comparing with existing script '\(script.name)': nameMatch=\(nameMatch), urlMatch=\(urlMatch)")
-                return nameMatch || urlMatch
-            }
-            
-            let exists = existingScript != nil
-            
-            if !exists {
+            if !existsByURL {
                 logger.info("➕ Adding missing default script: \(defaultScript.name)")
                 guard let url = URL(string: defaultScript.url) else { 
                     logger.error("❌ Invalid URL for default script: \(defaultScript.url)")
@@ -680,12 +702,6 @@ public class UserScriptManager: ObservableObject {
                 newUserScript.isEnabled = true
                 newUserScript.lastUpdated = Date()
                 
-                // If this is a previously deleted default script, remove it from the deleted list
-                let urlString = url.absoluteString
-                if isDefaultScriptDeleted(urlString) {
-                    removeFromDeletedDefaultScripts(urlString)
-                }
-                
                 // Check if script already exists
                 if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
                     userScripts[existingIndex] = newUserScript
@@ -697,7 +713,7 @@ public class UserScriptManager: ObservableObject {
                 
                 _ = writeUserScriptContent(newUserScript)
                 
-                // Always check for duplicates after adding a script
+                // Check for duplicates after adding a script
                 checkForDuplicatesAndAskForConfirmation()
                 
                 saveUserScripts()
@@ -727,23 +743,15 @@ public class UserScriptManager: ObservableObject {
     
     public func removeUserScript(_ userScript: UserScript) {
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-            // Check if this is a default script being deleted and track it
-            if let scriptURL = userScript.url?.absoluteString {
-                let isDefaultScript = defaultUserScripts.contains { defaultScript in
-                    defaultScript.url == scriptURL
-                }
-                if isDefaultScript {
-                    addToDeletedDefaultScripts(scriptURL)
-                    logger.info("🗑️ Tracking manual deletion of default script: '\(userScript.name)'")
-                }
-            }
-            
             // Remove file
             removeUserScriptFile(userScript)
             
+            // Remove from memory
             userScripts.remove(at: index)
             saveUserScripts()
             statusDescription = "Removed \(userScript.name)"
+            
+            logger.info("🗑️ Removed userscript: '\(userScript.name)'")
         }
     }
     
@@ -883,14 +891,16 @@ public class UserScriptManager: ObservableObject {
         
         logger.info("✅ User confirmed removal of \(count) duplicate userscripts: \(scriptNames)")
         
-        removeDuplicateUserScripts(pendingDuplicatesToRemove)
-        
-        // Clear pending state
-        pendingDuplicatesToRemove = []
-        showingDuplicatesAlert = false
-        statusDescription = "Removed \(count) duplicate userscript\(count == 1 ? "" : "s")"
-        
-        logger.info("🎉 Duplicate removal completed successfully")
+        Task { @MainActor in
+            await removeDuplicateUserScripts(pendingDuplicatesToRemove)
+            
+            // Clear pending state
+            pendingDuplicatesToRemove = []
+            showingDuplicatesAlert = false
+            statusDescription = "Removed \(count) duplicate userscript\(count == 1 ? "" : "s")"
+            
+            logger.info("🎉 Duplicate removal completed successfully")
+        }
     }
     
     /// Cancels removal of pending duplicate userscripts
@@ -940,32 +950,4 @@ public class UserScriptManager: ObservableObject {
         checkForDuplicatesAndAskForConfirmation()
     }
     
-    // MARK: - Deleted Default Scripts Tracking
-    
-    /// Get the list of deleted default script URLs
-    private func getDeletedDefaultScripts() -> Set<String> {
-        let deleted = UserDefaults.standard.array(forKey: deletedDefaultScriptsKey) as? [String] ?? []
-        return Set(deleted)
-    }
-    
-    /// Add a default script URL to the deleted list
-    private func addToDeletedDefaultScripts(_ url: String) {
-        var deleted = getDeletedDefaultScripts()
-        deleted.insert(url)
-        UserDefaults.standard.set(Array(deleted), forKey: deletedDefaultScriptsKey)
-        logger.info("🗑️ Added '\(url)' to deleted default scripts list")
-    }
-    
-    /// Check if a default script URL has been deleted
-    private func isDefaultScriptDeleted(_ url: String) -> Bool {
-        return getDeletedDefaultScripts().contains(url)
-    }
-    
-    /// Remove a default script URL from the deleted list (if user manually re-adds it)
-    private func removeFromDeletedDefaultScripts(_ url: String) {
-        var deleted = getDeletedDefaultScripts()
-        deleted.remove(url)
-        UserDefaults.standard.set(Array(deleted), forKey: deletedDefaultScriptsKey)
-        logger.info("🔄 Removed '\(url)' from deleted default scripts list")
-    }
 }
