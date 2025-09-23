@@ -349,7 +349,13 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         Task {
             // Check if badge counter is enabled (matches SettingsView.swift key)
             let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-            let isBadgeCounterEnabled = defaults?.bool(forKey: "isBadgeCounterEnabled") ?? true
+            let storedValue = defaults?.object(forKey: "isBadgeCounterEnabled") as? Bool
+            let isBadgeCounterEnabled = storedValue ?? true
+
+            // Persist default so extension and host app share the same initial state
+            if storedValue == nil {
+                defaults?.set(true, forKey: "isBadgeCounterEnabled")
+            }
             
             if !isBadgeCounterEnabled {
                 // Badge is disabled, show empty string
