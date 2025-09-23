@@ -7,6 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		750C5D462E82D75100FC2F60 /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		750C5D492E82D75100FC2F60 /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D4C2E82D75100FC2F60 /* wBlock Annoyances.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C032DE354E40031E7EF /* wBlock Annoyances.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D4E2E82D75100FC2F60 /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D502E82D75100FC2F60 /* wBlock Ads & Privacy iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D512E82D75100FC2F60 /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D522E82D75100FC2F60 /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D532E82D75100FC2F60 /* wBlock Custom.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D542E82D75100FC2F60 /* wBlock Security & Multipurpose iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C512DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D552E82D75100FC2F60 /* wBlock Custom iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D562E82D75100FC2F60 /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C172DE354FB0031E7EF /* wBlock Foreign & Experimental.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D582E82D75100FC2F60 /* FilterUpdateService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A287482E73617D00F5B43D /* FilterUpdateService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A2874F2E7361D000F5B43D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41C4D2DE089C50056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
@@ -49,6 +64,118 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		750C5D252E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1A41C442DE089C50056F63D;
+			remoteInfo = wBlockCoreService;
+		};
+		750C5D272E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1A41C682DE08AD30056F63D;
+			remoteInfo = "wBlock Filters";
+		};
+		750C5D292E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1A41C7F2DE08BDA0056F63D;
+			remoteInfo = "wBlock Filters (iOS)";
+		};
+		750C5D2B2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1A41CB52DE08CAB0056F63D;
+			remoteInfo = "wBlock Scripts (iOS)";
+		};
+		750C5D2D2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1A41CD62DE08CC90056F63D;
+			remoteInfo = "wBlock Advanced";
+		};
+		750C5D2F2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16BEE2DE354C30031E7EF;
+			remoteInfo = "wBlock Security & Multipurpose";
+		};
+		750C5D312E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C022DE354E40031E7EF;
+			remoteInfo = "wBlock Annoyances";
+		};
+		750C5D332E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C162DE354FB0031E7EF;
+			remoteInfo = "wBlock Foreign & Experimental";
+		};
+		750C5D352E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C2A2DE355150031E7EF;
+			remoteInfo = "wBlock Custom";
+		};
+		750C5D372E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C3E2DE355670031E7EF;
+			remoteInfo = "wBlock Privacy iOS";
+		};
+		750C5D392E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C502DE3557D0031E7EF;
+			remoteInfo = "wBlock Security (iOS)";
+		};
+		750C5D3B2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C622DE3558A0031E7EF;
+			remoteInfo = "wBlock Annoyances (iOS)";
+		};
+		750C5D3D2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C742DE355A80031E7EF;
+			remoteInfo = "wBlock Multipurpose iOS";
+		};
+		750C5D3F2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C862DE355BC0031E7EF;
+			remoteInfo = "wBlock Foreign (iOS)";
+		};
+		750C5D412E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16C982DE355CC0031E7EF;
+			remoteInfo = "wBlock Experimental iOS";
+		};
+		750C5D432E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1F16CAA2DE355DE0031E7EF;
+			remoteInfo = "wBlock Custom (iOS)";
+		};
 		C19A20582E6F596900E66F69 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
@@ -171,6 +298,50 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		750C5D482E82D75100FC2F60 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				750C5D492E82D75100FC2F60 /* wBlockCoreService.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		750C5D4A2E82D75100FC2F60 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */,
+				750C5D4C2E82D75100FC2F60 /* wBlock Annoyances.appex in Embed Foundation Extensions */,
+				750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
+				750C5D4E2E82D75100FC2F60 /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */,
+				750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */,
+				750C5D502E82D75100FC2F60 /* wBlock Ads & Privacy iOS.appex in Embed Foundation Extensions */,
+				750C5D512E82D75100FC2F60 /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */,
+				750C5D522E82D75100FC2F60 /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */,
+				750C5D532E82D75100FC2F60 /* wBlock Custom.appex in Embed Foundation Extensions */,
+				750C5D542E82D75100FC2F60 /* wBlock Security & Multipurpose iOS.appex in Embed Foundation Extensions */,
+				750C5D552E82D75100FC2F60 /* wBlock Custom iOS.appex in Embed Foundation Extensions */,
+				750C5D562E82D75100FC2F60 /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		750C5D572E82D75100FC2F60 /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				750C5D582E82D75100FC2F60 /* FilterUpdateService.xpc in Embed XPC Services */,
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A2874D2E73617D00F5B43D /* Embed XPC Services */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -218,6 +389,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		750C5D5C2E82D75100FC2F60 /* wBlock beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "wBlock beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		750C5D5E2E82D75200FC2F60 /* wBlock copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "wBlock copy-Info.plist"; path = "/Users/shindgewongxj/Documents/GitHub/wBlock/wBlock copy-Info.plist"; sourceTree = "<absolute>"; };
 		C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = FilterUpdateService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C2D2DE0897C0056F63D /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C452DE089C50056F63D /* wBlockCoreService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = wBlockCoreService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -237,6 +410,37 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		750C5D5D2E82D75100FC2F60 /* Exceptions for "wBlock" folder in "wBlock beta" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AppDelegate.swift,
+				AppFilterManager.swift,
+				ApplyChangesProgressView.swift,
+				ConcurrentLogManager.swift,
+				ContentView.swift,
+				DataMigration.swift,
+				FilterListLoader.swift,
+				FilterListUpdater.swift,
+				Info.plist,
+				LogsView.swift,
+				MigrationView.swift,
+				MissingFiltersView.swift,
+				OnboardingView.swift,
+				ProtoBufManager.swift,
+				Protos/wblock_data.proto,
+				"Resources/App Icons/AppIcon.icon",
+				"Resources/App Icons/AppIconBeta.icon",
+				Resources/Assets.xcassets,
+				SettingsView.swift,
+				StatCard.swift,
+				UpdatePopupView.swift,
+				UserScriptManagerView.swift,
+				wBlockApp.swift,
+				WhitelistManagerView.swift,
+				WhitelistView.swift,
+			);
+			target = 750C5D232E82D75100FC2F60 /* wBlock beta */;
+		};
 		C1A2874C2E73617D00F5B43D /* Exceptions for "FilterUpdateService" folder in "FilterUpdateService" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -350,6 +554,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				C1A41C3A2DE0897D0056F63D /* Exceptions for "wBlock" folder in "wBlock" target */,
+				750C5D5D2E82D75100FC2F60 /* Exceptions for "wBlock" folder in "wBlock beta" target */,
 			);
 			path = wBlock;
 			sourceTree = "<group>";
@@ -478,6 +683,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		750C5D452E82D75100FC2F60 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				750C5D462E82D75100FC2F60 /* wBlockCoreService.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A2873A2E73617D00F5B43D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -651,6 +864,7 @@
 				C1F16CAC2DE355DE0031E7EF /* wBlock Custom (iOS) */,
 				C1A2873E2E73617D00F5B43D /* FilterUpdateService */,
 				C1A41C6A2DE08AD30056F63D /* Frameworks */,
+				750C5D5E2E82D75200FC2F60 /* wBlock copy-Info.plist */,
 				C1A41C2E2DE0897C0056F63D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -673,6 +887,7 @@
 				C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */,
 				C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */,
 				C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */,
+				750C5D5C2E82D75100FC2F60 /* wBlock beta.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -698,6 +913,47 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		750C5D232E82D75100FC2F60 /* wBlock beta */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 750C5D592E82D75100FC2F60 /* Build configuration list for PBXNativeTarget "wBlock beta" */;
+			buildPhases = (
+				750C5D442E82D75100FC2F60 /* Sources */,
+				750C5D452E82D75100FC2F60 /* Frameworks */,
+				750C5D472E82D75100FC2F60 /* Resources */,
+				750C5D482E82D75100FC2F60 /* Embed Frameworks */,
+				750C5D4A2E82D75100FC2F60 /* Embed Foundation Extensions */,
+				750C5D572E82D75100FC2F60 /* Embed XPC Services */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				750C5D242E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D262E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D282E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D2A2E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D2C2E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D2E2E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D302E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D322E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D342E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D362E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D382E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D3A2E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D3C2E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D3E2E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D402E82D75100FC2F60 /* PBXTargetDependency */,
+				750C5D422E82D75100FC2F60 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C1A41C2F2DE0897C0056F63D /* wBlock */,
+			);
+			name = "wBlock beta";
+			packageProductDependencies = (
+			);
+			productName = wBlock;
+			productReference = 750C5D5C2E82D75100FC2F60 /* wBlock beta.app */;
+			productType = "com.apple.product-type.application";
+		};
 		C1A2873C2E73617D00F5B43D /* FilterUpdateService */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C1A287492E73617D00F5B43D /* Build configuration list for PBXNativeTarget "FilterUpdateService" */;
@@ -1192,6 +1448,7 @@
 			projectRoot = "";
 			targets = (
 				C1A41C2C2DE0897C0056F63D /* wBlock */,
+				750C5D232E82D75100FC2F60 /* wBlock beta */,
 				C1A41C442DE089C50056F63D /* wBlockCoreService */,
 				C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */,
 				C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */,
@@ -1211,6 +1468,13 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		750C5D472E82D75100FC2F60 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A2873B2E73617D00F5B43D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1340,6 +1604,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		750C5D442E82D75100FC2F60 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C1A287392E73617D00F5B43D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1469,6 +1740,140 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		750C5D242E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
+			targetProxy = 750C5D252E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D262E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */;
+			targetProxy = 750C5D272E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D282E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads & Privacy iOS */;
+			targetProxy = 750C5D292E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D2A2E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
+			targetProxy = 750C5D2B2E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D2C2E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
+			targetProxy = 750C5D2D2E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D2E2E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */;
+			targetProxy = 750C5D2F2E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D302E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = C1F16C022DE354E40031E7EF /* wBlock Annoyances */;
+			targetProxy = 750C5D312E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D322E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = C1F16C162DE354FB0031E7EF /* wBlock Foreign & Experimental */;
+			targetProxy = 750C5D332E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D342E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = C1F16C2A2DE355150031E7EF /* wBlock Custom */;
+			targetProxy = 750C5D352E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D362E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16C3E2DE355670031E7EF /* wBlock Privacy iOS */;
+			targetProxy = 750C5D372E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D382E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16C502DE3557D0031E7EF /* wBlock Security & Multipurpose iOS */;
+			targetProxy = 750C5D392E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D3A2E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */;
+			targetProxy = 750C5D3B2E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D3C2E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16C742DE355A80031E7EF /* wBlock Multipurpose iOS */;
+			targetProxy = 750C5D3D2E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D3E2E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16C862DE355BC0031E7EF /* wBlock Foreign & Experimental iOS */;
+			targetProxy = 750C5D3F2E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D402E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16C982DE355CC0031E7EF /* wBlock Experimental iOS */;
+			targetProxy = 750C5D412E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
+		750C5D422E82D75100FC2F60 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				xros,
+			);
+			target = C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */;
+			targetProxy = 750C5D432E82D75100FC2F60 /* PBXContainerItemProxy */;
+		};
 		C1A41C4C2DE089C50056F63D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
@@ -1611,6 +2016,100 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		750C5D5A2E82D75100FC2F60 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconBeta;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 108;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wBlock copy-Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.3.1;
+				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		750C5D5B2E82D75100FC2F60 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconBeta;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 108;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "wBlock copy-Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.3.1;
+				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
 		C1A2874A2E73617D00F5B43D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2975,6 +3474,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		750C5D592E82D75100FC2F60 /* Build configuration list for PBXNativeTarget "wBlock beta" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				750C5D5A2E82D75100FC2F60 /* Debug */,
+				750C5D5B2E82D75100FC2F60 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C1A287492E73617D00F5B43D /* Build configuration list for PBXNativeTarget "FilterUpdateService" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
