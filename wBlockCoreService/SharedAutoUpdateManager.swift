@@ -89,6 +89,12 @@ public actor SharedAutoUpdateManager {
         return (nil, nil, interval)
     }
 
+    /// Clears the cached auto-update window so future runs re-evaluate scheduling.
+    public func resetScheduleAfterConfigurationChange() {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        defaults.removeObject(forKey: nextEligibleKey)
+    }
+
     // MARK: - Core Logic
     private func runIfNeeded(trigger: String, force: Bool = false) async {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
