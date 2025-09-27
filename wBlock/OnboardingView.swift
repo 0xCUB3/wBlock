@@ -301,14 +301,9 @@ struct OnboardingView: View {
         await filterManager.saveFilterLists()
 
         // 2. Enable/disable userscripts based on onboarding selection
-        let selectedScriptIDs = Set(selectedUserscripts)
-        for script in UserScriptManager.shared.userScripts {
-            let shouldEnable = selectedScriptIDs.contains(script.id.uuidString)
-            if script.isEnabled != shouldEnable {
-                // Await toggle to ensure persistence
-                await UserScriptManager.shared.toggleUserScript(script)
-            }
-        }
+        let selectedScriptIDs = Set(selectedUserscripts.compactMap { UUID(uuidString: $0) })
+        // Single, deterministic batch apply
+        await UserScriptManager.shared.setEnabledScripts(withIDs: selectedScriptIDs)
         
         // 2.5. Mark userscript initial setup as complete
         UserScriptManager.shared.markInitialSetupComplete()

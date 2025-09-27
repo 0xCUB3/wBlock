@@ -740,6 +740,37 @@ public class UserScriptManager: ObservableObject {
             logger.info("💾 Userscripts saved after toggle")
         }
     }
+
+    /// Sets the enabled state for a userscript explicitly (idempotent)
+    public func setUserScript(_ userScript: UserScript, isEnabled: Bool) async {
+        if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
+            guard userScripts[index].isEnabled != isEnabled else { return }
+            userScripts[index].isEnabled = isEnabled
+            statusDescription = isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
+            logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
+            await dataManager.updateUserScripts(self.userScripts)
+            logger.info("💾 Userscripts saved after setEnabled")
+        }
+    }
+
+    /// Batch apply enabled state using a set of IDs (single persistence write)
+    public func setEnabledScripts(withIDs enabledIDs: Set<UUID>) async {
+        var changed = false
+        for i in userScripts.indices {
+            let shouldEnable = enabledIDs.contains(userScripts[i].id)
+            if userScripts[i].isEnabled != shouldEnable {
+                userScripts[i].isEnabled = shouldEnable
+                changed = true
+            }
+        }
+        if changed {
+            logger.info("💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
+            await dataManager.updateUserScripts(self.userScripts)
+            logger.info("💾 Userscripts saved after batch setEnabled")
+        } else {
+            logger.info("ℹ️ No userscript enable state changes to persist (batch)")
+        }
+    }
     
     public func removeUserScript(_ userScript: UserScript) {
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
