@@ -101,7 +101,7 @@ struct ContentView: View {
             }
             // Add settings sheet
             .sheet(isPresented: $showingSettingsSheet) {
-                SettingsView()
+                SettingsView(filterManager: filterManager)
             }
             .sheet(isPresented: $filterManager.showingUpdatePopup) {
                 UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)

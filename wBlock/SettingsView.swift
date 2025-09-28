@@ -2,6 +2,7 @@ import SwiftUI
 import wBlockCoreService
 
 struct SettingsView: View {
+    let filterManager: AppFilterManager
     @AppStorage("isBadgeCounterEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
     private var isBadgeCounterEnabled = true
     @AppStorage("autoUpdateEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
@@ -12,6 +13,8 @@ struct SettingsView: View {
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
     @State private var nextScheduleLine = "Next: Loading…"
     @State private var timer: Timer?
+    @State private var showingRestartConfirmation = false
+    @State private var isRestarting = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -68,6 +71,14 @@ struct SettingsView: View {
         }
         .onDisappear {
             stopTimer()
+        }
+        .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Restart", role: .destructive) {
+                restartOnboarding()
+            }
+        } message: {
+            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
         }
         #endif
     }
@@ -136,6 +147,21 @@ struct SettingsView: View {
                 Text("About")
             }
             .textCase(.none)
+
+            Section {
+                Button(role: .destructive) {
+                    showingRestartConfirmation = true
+                } label: {
+                    HStack {
+                        if isRestarting {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                        }
+                        Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                    }
+                }
+                .disabled(isRestarting)
+            }
         }
     }
 }
@@ -160,6 +186,43 @@ private extension SettingsView {
                 }
             }
         )
+    }
+
+    private func resetUserDefaults() {
+        if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
+            suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
+        }
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+        }
+    }
+
+    private func restartOnboarding() {
+        guard !isRestarting else { return }
+        isRestarting = true
+        showingRestartConfirmation = false
+        stopTimer()
+
+        Task {
+            defer {
+                Task { @MainActor in isRestarting = false }
+            }
+            resetUserDefaults()
+            await ProtobufDataManager.shared.resetToDefaultData()
+            await filterManager.resetForOnboarding()
+            await UserScriptManager.shared.simulateFreshInstall()
+            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            await MainActor.run {
+                isBadgeCounterEnabled = true
+                autoUpdateEnabled = true
+                autoUpdateIntervalHours = 6.0
+                nextScheduleLine = "Next: Loading…"
+            }
+            await updateScheduleLine()
+            await MainActor.run {
+                dismiss()
+            }
+        }
     }
 
     private func intervalDescription(hours: Double) -> String {
