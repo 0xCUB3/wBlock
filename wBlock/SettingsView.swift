@@ -19,68 +19,61 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        #if os(iOS)
-        NavigationView {
-            formContent
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+        let content: AnyView = {
+            #if os(iOS)
+            return AnyView(
+                NavigationView {
+                    formContent
+                    .navigationTitle("Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { dismiss() }
+                        }
                     }
                 }
-            }
-        }
-        .task {
-            await updateScheduleLine()
-            await MainActor.run { startTimer() }
-        }
-        .onDisappear {
-            stopTimer()
-        }
-        #else
-        VStack(spacing: 0) {
-            HStack {
-                Text("Settings")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding([.top, .horizontal])
-            
-            formContent
-                .formStyle(.grouped)
+            )
+            #else
+            return AnyView(
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Settings")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        Spacer()
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                                .font(.title2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding([.top, .horizontal])
 
-            Spacer()
-        }
-        #if os(macOS)
-        .frame(minWidth: 350, minHeight: 200)
-        #endif
-        .task {
-            await updateScheduleLine()
-            await MainActor.run { startTimer() }
-        }
-        .onDisappear {
-            stopTimer()
-        }
-        .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Restart", role: .destructive) {
-                restartOnboarding()
+                    formContent
+                        .formStyle(.grouped)
+
+                    Spacer()
+                }
+                #if os(macOS)
+                .frame(minWidth: 350, minHeight: 200)
+                #endif
+            )
+            #endif
+        }()
+
+        return content
+            .task {
+                await updateScheduleLine()
+                await MainActor.run { startTimer() }
             }
-        } message: {
-            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
-        }
-        #endif
+            .onDisappear { stopTimer() }
+            .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Restart", role: .destructive) { restartOnboarding() }
+            } message: {
+                Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+            }
     }
     
     private var formContent: some View {
@@ -191,10 +184,12 @@ private extension SettingsView {
     private func resetUserDefaults() {
         if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
             suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
+            suiteDefaults.synchronize()
         }
         if let bundleID = Bundle.main.bundleIdentifier {
             UserDefaults.standard.removePersistentDomain(forName: bundleID)
         }
+        UserDefaults.standard.synchronize()
     }
 
     private func restartOnboarding() {
@@ -209,9 +204,10 @@ private extension SettingsView {
             }
             resetUserDefaults()
             await ProtobufDataManager.shared.resetToDefaultData()
+            await ProtobufDataManager.shared.setHasCompletedOnboarding(false)
             await filterManager.resetForOnboarding()
-            await UserScriptManager.shared.simulateFreshInstall()
-            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            UserScriptManager.shared.simulateFreshInstall()
+            SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
             await MainActor.run {
                 isBadgeCounterEnabled = true
                 autoUpdateEnabled = true
