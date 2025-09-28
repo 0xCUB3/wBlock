@@ -24,6 +24,7 @@ extension Notification.Name {
 
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
+    var hasPendingApplyNotification = false
     
     #if os(iOS)
     private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
@@ -339,7 +340,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 
         if let actionType = userInfo["action_type"] as? String, actionType == "apply_wblock_changes" {
             print("Apply changes notification tapped. Posting internal notification.")
-            NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
+            if filterManager != nil {
+                NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
+            } else {
+                hasPendingApplyNotification = true
+            }
         }
         completionHandler()
     }
