@@ -179,31 +179,8 @@ struct OnboardingView: View {
         "SD": ["ar"],
     ]
 
-    private static let fallbackLanguagesByCountry: [String: Set<String>] = {
-        var mapping: [String: Set<String>] = [:]
-        let languageKey = NSLocale.Key.languageCode.rawValue
-        let countryKey = NSLocale.Key.countryCode.rawValue
-        for identifier in Locale.availableIdentifiers {
-            let components = Locale.components(fromIdentifier: identifier)
-            guard let country = components[countryKey]?.uppercased(),
-                  !country.isEmpty,
-                  let language = components[languageKey]?.lowercased(),
-                  !language.isEmpty else { continue }
-            mapping[country, default: []].insert(language)
-        }
-        return mapping
-    }()
-    private static var _foreignFilterMetadataByURL: [String: FilterList]? = nil
-    private static var foreignFilterMetadataByURL: [String: FilterList] {
-        if let cached = _foreignFilterMetadataByURL {
-            return cached
-        }
-        let loader = FilterListLoader(logManager: ConcurrentLogManager.shared)
-        let defaults = loader.loadFilterLists()
-        let result = Dictionary(uniqueKeysWithValues: defaults.filter { $0.category == .foreign }.map { ($0.url.absoluteString, $0) })
-        _foreignFilterMetadataByURL = result
-        return result
-    }
+    private static let fallbackLanguagesByCountry: [String: Set<String>] = buildLanguagesByCountry()
+    private static let foreignFilterMetadataByURL: [String: FilterList] = buildForeignFilterMetadata()
     private static let countryOptions: [CountryOption] = {
         let current = Locale.current
         return Locale.isoRegionCodes.compactMap { code -> CountryOption? in
@@ -218,6 +195,28 @@ struct OnboardingView: View {
         let code: String
         let name: String
         var id: String { code }
+    }
+
+    private static func buildLanguagesByCountry() -> [String: Set<String>] {
+        let languageKey = NSLocale.Key.languageCode.rawValue
+        let countryKey = NSLocale.Key.countryCode.rawValue
+        var mapping: [String: Set<String>] = [:]
+        for identifier in Locale.availableIdentifiers {
+            let components = Locale.components(fromIdentifier: identifier)
+            guard let country = components[countryKey]?.uppercased(),
+                  !country.isEmpty,
+                  let language = components[languageKey]?.lowercased(),
+                  !language.isEmpty else { continue }
+            mapping[country, default: []].insert(language)
+        }
+        return mapping
+    }
+
+    private static func buildForeignFilterMetadata() -> [String: FilterList] {
+        let loader = FilterListLoader(logManager: ConcurrentLogManager.shared)
+        return Dictionary(uniqueKeysWithValues: loader.loadFilterLists()
+            .filter { $0.category == .foreign }
+            .map { ($0.url.absoluteString, $0) })
     }
 
     init(filterManager: AppFilterManager) {

@@ -194,7 +194,7 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "Xfiles", url: URL(string: "https://raw.githubusercontent.com/gioxx/xfiles/master/filtri.txt")!, category: .foreign, description: "Italian adblock filter list.", languages: ["it"], trustLevel: "low"),
             FilterList(id: UUID(), name: "xinggsf", url: URL(string: "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt")!, category: .foreign, description: "Blocks ads on the Chinese video platforms (MangoTV, DouYu and others).", languages: ["zh"], trustLevel: "high"),
             FilterList(id: UUID(), name: "YousList", url: URL(string: "https://raw.githubusercontent.com/yous/YousList/master/youslist.txt")!, category: .foreign, description: "Filter that blocks ads on Korean sites.", languages: ["ko"], trustLevel: "high"),
-        ])
+        ])])])
         #if os(iOS)
         filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         #endif
