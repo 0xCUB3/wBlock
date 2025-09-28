@@ -183,6 +183,28 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
     
+    @MainActor
+    public func resetToDefaultData() async {
+        logger.info("🔄 Resetting protobuf data to default state")
+        pendingSaveWorkItem?.cancel()
+        do {
+            if fileManager.fileExists(atPath: dataFileURL.path) {
+                try fileManager.removeItem(at: dataFileURL)
+            }
+        } catch {
+            logger.error("⚠️ Failed to remove data file during reset: \(error.localizedDescription)")
+        }
+        do {
+            if fileManager.fileExists(atPath: backupFileURL.path) {
+                try fileManager.removeItem(at: backupFileURL)
+            }
+        } catch {
+            logger.error("⚠️ Failed to remove backup file during reset: \(error.localizedDescription)")
+        }
+        lastSavedData = nil
+        await createDefaultData()
+    }
+
     private func createDefaultData() async {
         var defaultData = Wblock_Data_AppData()
         
@@ -438,4 +460,3 @@ private struct LegacyUserScript: Codable {
     var downloadURL: String?
     var content: String
 }
-

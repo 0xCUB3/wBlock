@@ -18,8 +18,20 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var version: String = ""
     public var sourceRuleCount: Int?
     public var lastUpdated: Date?
-    
-    public init(id: UUID = UUID(), name: String, url: URL, category: FilterListCategory, isSelected: Bool = false, description: String = "", version: String = "", sourceRuleCount: Int? = nil, lastUpdated: Date? = nil) {
+    public var languages: [String] = []
+    public var trustLevel: String? = nil
+
+    public init(id: UUID = UUID(),
+                name: String,
+                url: URL,
+                category: FilterListCategory,
+                isSelected: Bool = false,
+                description: String = "",
+                version: String = "",
+                sourceRuleCount: Int? = nil,
+                lastUpdated: Date? = nil,
+                languages: [String] = [],
+                trustLevel: String? = nil) {
         self.id = id
         self.name = name
         self.url = url
@@ -29,6 +41,8 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.version = version
         self.sourceRuleCount = sourceRuleCount
         self.lastUpdated = lastUpdated
+        self.languages = languages
+        self.trustLevel = trustLevel
     }
     
     /// Returns a formatted string for the last updated date

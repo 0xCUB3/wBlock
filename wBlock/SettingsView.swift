@@ -2,6 +2,7 @@ import SwiftUI
 import wBlockCoreService
 
 struct SettingsView: View {
+    let filterManager: AppFilterManager
     @AppStorage("isBadgeCounterEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
     private var isBadgeCounterEnabled = true
     @AppStorage("autoUpdateEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
@@ -12,64 +13,67 @@ struct SettingsView: View {
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
     @State private var nextScheduleLine = "Next: Loading…"
     @State private var timer: Timer?
+    @State private var showingRestartConfirmation = false
+    @State private var isRestarting = false
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        #if os(iOS)
-        NavigationView {
-            formContent
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+        let content: AnyView = {
+            #if os(iOS)
+            return AnyView(
+                NavigationView {
+                    formContent
+                    .navigationTitle("Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { dismiss() }
+                        }
                     }
                 }
-            }
-        }
-        .task {
-            await updateScheduleLine()
-            await MainActor.run { startTimer() }
-        }
-        .onDisappear {
-            stopTimer()
-        }
-        #else
-        VStack(spacing: 0) {
-            HStack {
-                Text("Settings")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding([.top, .horizontal])
-            
-            formContent
-                .formStyle(.grouped)
+            )
+            #else
+            return AnyView(
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Settings")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        Spacer()
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                                .font(.title2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding([.top, .horizontal])
 
-            Spacer()
-        }
-        #if os(macOS)
-        .frame(minWidth: 350, minHeight: 200)
-        #endif
-        .task {
-            await updateScheduleLine()
-            await MainActor.run { startTimer() }
-        }
-        .onDisappear {
-            stopTimer()
-        }
-        #endif
+                    formContent
+                        .formStyle(.grouped)
+
+                    Spacer()
+                }
+                #if os(macOS)
+                .frame(minWidth: 350, minHeight: 200)
+                #endif
+            )
+            #endif
+        }()
+
+        return content
+            .task {
+                await updateScheduleLine()
+                await MainActor.run { startTimer() }
+            }
+            .onDisappear { stopTimer() }
+            .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Restart", role: .destructive) { restartOnboarding() }
+            } message: {
+                Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+            }
     }
     
     private var formContent: some View {
@@ -136,6 +140,21 @@ struct SettingsView: View {
                 Text("About")
             }
             .textCase(.none)
+
+            Section {
+                Button(role: .destructive) {
+                    showingRestartConfirmation = true
+                } label: {
+                    HStack {
+                        if isRestarting {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                        }
+                        Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                    }
+                }
+                .disabled(isRestarting)
+            }
         }
     }
 }
@@ -160,6 +179,46 @@ private extension SettingsView {
                 }
             }
         )
+    }
+
+    private func resetUserDefaults() {
+        if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
+            suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
+            suiteDefaults.synchronize()
+        }
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+        }
+        UserDefaults.standard.synchronize()
+    }
+
+    private func restartOnboarding() {
+        guard !isRestarting else { return }
+        isRestarting = true
+        showingRestartConfirmation = false
+        stopTimer()
+
+        Task {
+            defer {
+                Task { @MainActor in isRestarting = false }
+            }
+            resetUserDefaults()
+            await ProtobufDataManager.shared.resetToDefaultData()
+            await ProtobufDataManager.shared.setHasCompletedOnboarding(false)
+            await filterManager.resetForOnboarding()
+            UserScriptManager.shared.simulateFreshInstall()
+            SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            await MainActor.run {
+                isBadgeCounterEnabled = true
+                autoUpdateEnabled = true
+                autoUpdateIntervalHours = 6.0
+                nextScheduleLine = "Next: Loading…"
+            }
+            await updateScheduleLine()
+            await MainActor.run {
+                dismiss()
+            }
+        }
     }
 
     private func intervalDescription(hours: Double) -> String {

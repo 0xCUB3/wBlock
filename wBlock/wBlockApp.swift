@@ -29,6 +29,10 @@ struct wBlockApp: App {
             ContentView(filterManager: filterManager)
                     .onAppear {
                         appDelegate.filterManager = filterManager
+                        if appDelegate.hasPendingApplyNotification {
+                            appDelegate.hasPendingApplyNotification = false
+                            NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
+                        }
                         handleLaunchArguments()
                     }
         }
@@ -60,4 +64,3 @@ struct wBlockApp: App {
         }
     }
 }
-

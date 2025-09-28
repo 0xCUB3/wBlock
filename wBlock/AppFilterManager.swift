@@ -101,6 +101,55 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// Resets the manager to its initial state so onboarding can run again.
+    @MainActor
+    func resetForOnboarding() async {
+        isLoading = true
+        statusDescription = "Resetting…"
+        hasUnappliedChanges = false
+        showingApplyProgressSheet = false
+        showingUpdatePopup = false
+        showingDownloadCompleteAlert = false
+        downloadCompleteMessage = ""
+        missingFilters = []
+        availableUpdates = []
+        showMissingFiltersSheet = false
+        ruleCountsByCategory = [:]
+        categoriesApproachingLimit = []
+        showingCategoryWarningAlert = false
+        categoryWarningMessage = ""
+        lastRuleCount = 0
+        lastFastUpdateTime = "N/A"
+        fastUpdateCount = 0
+        sourceRulesCount = 0
+        conversionStageDescription = ""
+        currentFilterName = ""
+        processedFiltersCount = 0
+        totalFiltersCount = 0
+        isInConversionPhase = false
+        isInSavingPhase = false
+        isInEnginePhase = false
+        isInReloadPhase = false
+
+        filterLists = []
+        customFilterLists = []
+
+        let defaultLists = loader.loadFilterLists()
+        filterLists = defaultLists
+        saveFilterListsSync()
+
+        await dataManager.updateRuleCounts(
+            lastRuleCount: 0,
+            ruleCountsByCategory: [:],
+            categoriesApproachingLimit: []
+        )
+
+        ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+
+        statusDescription = "Ready."
+        isLoading = false
+    }
+
     private func setupAsync() async {
         // Wait for ProtobufDataManager to finish loading
         while dataManager.isLoading {
@@ -1269,4 +1318,3 @@ class AppFilterManager: ObservableObject {
         return count
     }
 }
-
