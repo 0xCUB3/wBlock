@@ -193,11 +193,17 @@ struct OnboardingView: View {
         }
         return mapping
     }()
-    private static let foreignFilterMetadataByURL: [String: FilterList] = {
+    private static var _foreignFilterMetadataByURL: [String: FilterList]? = nil
+    private static var foreignFilterMetadataByURL: [String: FilterList] {
+        if let cached = _foreignFilterMetadataByURL {
+            return cached
+        }
         let loader = FilterListLoader(logManager: ConcurrentLogManager.shared)
         let defaults = loader.loadFilterLists()
-        return Dictionary(uniqueKeysWithValues: defaults.filter { $0.category == .foreign }.map { ($0.url.absoluteString, $0) })
-    }()
+        let result = Dictionary(uniqueKeysWithValues: defaults.filter { $0.category == .foreign }.map { ($0.url.absoluteString, $0) })
+        _foreignFilterMetadataByURL = result
+        return result
+    }
     private static let countryOptions: [CountryOption] = {
         let current = Locale.current
         return Locale.isoRegionCodes.compactMap { code -> CountryOption? in
