@@ -74,10 +74,12 @@ struct SettingsView: View {
     
     private var formContent: some View {
         Form {
+            #if os(macOS)
             Section {
                 Toggle("Show blocked item count in toolbar", isOn: $isBadgeCounterEnabled)
-                .toggleStyle(.switch)
+                    .toggleStyle(.switch)
             }
+            #endif
 
             Section {
                 Toggle("Enable Auto-Updates", isOn: $autoUpdateEnabled)
