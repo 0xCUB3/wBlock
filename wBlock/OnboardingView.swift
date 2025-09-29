@@ -444,20 +444,7 @@ struct OnboardingView: View {
     }
 
     private func regionalToggle(for filter: FilterList, expandsCommunity: Bool = true) -> some View {
-        Toggle(isOn: Binding(
-            get: { selectedRegionalFilters.contains(filter.id) },
-            set: { isOn in
-                if isOn {
-                    selectedRegionalFilters.insert(filter.id)
-                } else {
-                    selectedRegionalFilters.remove(filter.id)
-                }
-                hasManuallyEditedRegionalSelection = true
-                if expandsCommunity {
-                    isCommunityExpanded = true
-                }
-            }
-        )) {
+        HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(filter.name)
                     .font(.headline)
@@ -478,8 +465,24 @@ struct OnboardingView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { selectedRegionalFilters.contains(filter.id) },
+                set: { isOn in
+                    if isOn {
+                        selectedRegionalFilters.insert(filter.id)
+                    } else {
+                        selectedRegionalFilters.remove(filter.id)
+                    }
+                    hasManuallyEditedRegionalSelection = true
+                    if expandsCommunity {
+                        isCommunityExpanded = true
+                    }
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
         }
-        .toggleStyle(.switch)
     }
 
     var userscriptStep: some View {
