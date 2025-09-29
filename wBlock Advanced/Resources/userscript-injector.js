@@ -243,7 +243,23 @@ if (window.wBlockUserscriptInjectorHasRun) {
 (function() {
     'use strict';
     console.log('[wBlock UserScript] Executing: ${script.name}');
-    
+
+    // Get reference to the actual page window (not the isolated extension context)
+    // This is the real unsafeWindow that can access page variables
+    const unsafeWindow = (function() {
+        try {
+            // Try to access the page's window through various methods
+            if (typeof window.wrappedJSObject !== 'undefined') {
+                return window.wrappedJSObject;
+            }
+            // In Safari, the window object we have IS the page context when injected via <script> tag
+            return window;
+        } catch (e) {
+            console.warn('[wBlock] Could not access page context, falling back to regular window');
+            return window;
+        }
+    })();
+
     const GM = {
         info: {
             script: {
@@ -253,10 +269,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 namespace: 'wblock'
             },
             scriptHandler: 'wBlock Injector',
-            version: '0.1.1'
+            version: '0.2.0'
         },
         log: function(...args) { console.log('[UserScript:${script.name}]', ...args); },
-        
+
         // Greasemonkey API implementations using localStorage
         getValue: function(key, defaultValue) {
             try {
@@ -267,7 +283,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return defaultValue;
             }
         },
-        
+
         setValue: function(key, value) {
             try {
                 localStorage.setItem('wblock_gm_' + key, JSON.stringify(value));
@@ -275,7 +291,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 console.warn('[wBlock] Failed to save value for key:', key, e);
             }
         },
-        
+
         deleteValue: function(key) {
             try {
                 localStorage.removeItem('wblock_gm_' + key);
@@ -283,7 +299,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 console.warn('[wBlock] Failed to delete value for key:', key, e);
             }
         },
-        
+
         listValues: function() {
             try {
                 const keys = [];
@@ -300,18 +316,23 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return [];
             }
         },
-        
+
         getResourceURL: function(resourceName) {
             // For basic compatibility, return the resource name as-is
             // In a full implementation, this would resolve @resource directives
             console.warn('[wBlock] GM_getResourceURL called with:', resourceName);
             return resourceName;
         },
-        
-        openInTab: function(url) {
-            return window.open(url, '_blank');
+
+        openInTab: function(url, options) {
+            const openInBackground = options && options.active === false;
+            const newWindow = window.open(url, '_blank');
+            if (!openInBackground && newWindow) {
+                newWindow.focus();
+            }
+            return newWindow;
         },
-        
+
         notification: function(options) {
             console.log('[wBlock] GM_notification called with:', options);
             // Basic notification implementation
@@ -321,14 +342,86 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 console.log('[wBlock] Notification:', options.text);
             }
         },
-        
-        // Provide access to the real window object for popup blocking
-        unsafeWindow: window
+
+        xmlhttpRequest: function(details) {
+            // GM_xmlhttpRequest implementation using fetch API
+            console.log('[wBlock] GM_xmlhttpRequest called with:', details);
+
+            if (!details || !details.url) {
+                console.error('[wBlock] GM_xmlhttpRequest: No URL provided');
+                return;
+            }
+
+            const method = (details.method || 'GET').toUpperCase();
+            const headers = details.headers || {};
+            const data = details.data;
+
+            const fetchOptions = {
+                method: method,
+                headers: headers,
+                credentials: details.anonymous ? 'omit' : 'include'
+            };
+
+            if (data && (method === 'POST' || method === 'PUT')) {
+                fetchOptions.body = data;
+            }
+
+            fetch(details.url, fetchOptions)
+                .then(response => {
+                    const responseHeaders = {};
+                    response.headers.forEach((value, key) => {
+                        responseHeaders[key] = value;
+                    });
+
+                    return response.text().then(responseText => ({
+                        status: response.status,
+                        statusText: response.statusText,
+                        responseHeaders: responseHeaders,
+                        responseText: responseText,
+                        response: responseText
+                    }));
+                })
+                .then(result => {
+                    if (details.onload) {
+                        details.onload({
+                            status: result.status,
+                            statusText: result.statusText,
+                            responseHeaders: result.responseHeaders,
+                            responseText: result.responseText,
+                            response: result.response,
+                            readyState: 4,
+                            finalUrl: details.url
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('[wBlock] GM_xmlhttpRequest error:', error);
+                    if (details.onerror) {
+                        details.onerror({
+                            error: error.message,
+                            statusText: error.message
+                        });
+                    }
+                });
+
+            // Return an abort controller-like object
+            return {
+                abort: function() {
+                    console.log('[wBlock] GM_xmlhttpRequest abort called');
+                }
+            };
+        },
+
+        // Provide access to the real page window object
+        unsafeWindow: unsafeWindow
     };
-    
+
+    // Make sure unsafeWindow is defined at the global scope first
+    window.unsafeWindow = unsafeWindow;
+
     window.GM_info = GM.info;
     window.GM = GM; // Expose the GM object
-    
+
     // Legacy GM function aliases
     window.GM_getValue = GM.getValue;
     window.GM_setValue = GM.setValue;
@@ -337,7 +430,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_getResourceURL = GM.getResourceURL;
     window.GM_openInTab = GM.openInTab;
     window.GM_notification = GM.notification;
-    window.unsafeWindow = GM.unsafeWindow;
+    window.GM_xmlhttpRequest = GM.xmlhttpRequest;
 
     try {
         ${script.content}
@@ -345,7 +438,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     } catch (error) {
         console.error('[wBlock UserScript Execution Error] in ${script.name}:', error);
         console.error('[wBlock UserScript Error Stack]:', error.stack);
-        
+
         // Show a console warning for userscript errors
         console.warn(\`[wBlock] Error in userscript "\${script.name}": \${error.message}\`);
     }
