@@ -46,7 +46,8 @@ public class UserScriptManager: ObservableObject {
     private let defaultUserScripts: [(name: String, url: String)] = [
         ("Return YouTube Dislike", "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js"),
         ("Bypass Paywalls Clean", "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript%2Fbpc.en.user.js"),
-        ("YouTube Classic", "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js")
+        ("YouTube Classic", "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"),
+        ("AdGuard Extra", "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js")
     ]
     
     private init() {

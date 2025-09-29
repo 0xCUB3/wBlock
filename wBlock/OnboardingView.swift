@@ -252,7 +252,6 @@ struct OnboardingView: View {
             .map { ($0.id.uuidString, $0.name) }
     }
     var bypassPaywallsFilterName: String? {
-        // Adjust this name to match your actual filter list name
         let candidates = [
             "Bypass Paywalls Filter",
             "Bypass Paywalls",
