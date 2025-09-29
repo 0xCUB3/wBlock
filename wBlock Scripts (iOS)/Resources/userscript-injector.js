@@ -67,7 +67,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         requestUserScripts() {
             const requestId = 'userscripts-' + Date.now();
             const messagePayload = {
-                action: 'requestUserScripts', // Consistent action name
+                action: 'getUserScripts', // Must match background.js listener
                 requestId: requestId,
                 url: window.location.href
             };
