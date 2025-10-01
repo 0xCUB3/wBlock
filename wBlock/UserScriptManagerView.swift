@@ -55,7 +55,7 @@ struct UserScriptManagerView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.top, 20)
             
             headerView
             

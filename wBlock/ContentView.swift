@@ -470,7 +470,9 @@ struct ContentView: View {
         }
         .padding(16)
         .id(filter.id)
+        #if os(iOS)
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
+        #endif
         .contentShape(.interaction, Rectangle())
         .contextMenu {
             if filter.category == .custom {
