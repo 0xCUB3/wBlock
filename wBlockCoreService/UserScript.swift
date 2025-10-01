@@ -21,6 +21,7 @@ public struct UserScript: Identifiable, Codable, Hashable {
     public var runAt: String = "document-end"
     public var injectInto: String = "auto"
     public var grant: [String] = []
+    public var require: [String] = []
     public var isLocal: Bool = true
     public var updateURL: String?
     public var downloadURL: String?
@@ -85,6 +86,10 @@ public struct UserScript: Identifiable, Codable, Hashable {
                 case "@grant":
                     if !self.grant.contains(value) {
                         self.grant.append(value)
+                    }
+                case "@require":
+                    if !self.require.contains(value) {
+                        self.require.append(value)
                     }
                 case "@updateURL":
                     self.updateURL = value
