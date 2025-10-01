@@ -415,63 +415,63 @@ struct ContentView: View {
     }
     
     private func filterRowView(filter: FilterList) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(filter.name)
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    
-                    if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
-                        Text("(\(sourceCount.formatted()) rules)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    } else if filter.sourceRuleCount == nil && filter.isSelected && !filterManager.doesFilterFileExist(filter) {
-                        Text("(Counting...)")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    } else if filter.sourceRuleCount == nil {
-                        Text("(N/A rules)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if !filter.description.isEmpty {
-                        Text(filter.description)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    
-                    if !filter.version.isEmpty {
-                        Text("Version: \(filter.version)")
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                    }
-                    
-                    if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
-                        Text("Last updated: \(lastUpdatedFormatted)")
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                    }
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(filter.name)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
+                    Text("(\(sourceCount.formatted()) rules)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else if filter.sourceRuleCount == nil && filter.isSelected && !filterManager.doesFilterFileExist(filter) {
+                    Text("(Counting...)")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                } else if filter.sourceRuleCount == nil {
+                    Text("(N/A rules)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { filter.isSelected },
-                    set: { newValue in
-                        filterManager.toggleFilterListSelection(id: filter.id)
-                    }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .frame(alignment: .center)
+
+                if !filter.description.isEmpty {
+                    Text(filter.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if !filter.version.isEmpty {
+                    Text("Version: \(filter.version)")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                }
+
+                if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
+                    Text("Last updated: \(lastUpdatedFormatted)")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                }
             }
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { filter.isSelected },
+                set: { newValue in
+                    filterManager.toggleFilterListSelection(id: filter.id)
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .frame(alignment: .center)
         }
         .padding(16)
-        .contentShape(Rectangle())
+        .id(filter.id)
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
+        .contentShape(.interaction, Rectangle())
         .contextMenu {
             if filter.category == .custom {
                 Button(role: .destructive) {
