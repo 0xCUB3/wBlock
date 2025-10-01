@@ -16,21 +16,10 @@ struct WhitelistManagerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Whitelisted Domains")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
+            SheetHeader(title: "Whitelisted Domains") {
+                dismiss()
             }
-            .padding([.top, .horizontal])
+
             List {
                 let paddedDomains = whitelistedDomains + Array(repeating: "", count: max(0, 10 - whitelistedDomains.count))
                 ForEach(paddedDomains.indices, id: \ .self) { idx in
@@ -69,7 +58,7 @@ struct WhitelistManagerView: View {
                 .disabled(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isProcessing)
             }
             .padding()
-            HStack(spacing: 16) {
+            SheetBottomToolbar {
                 Button("Select All") {
                     selectedDomains = Set(whitelistedDomains)
                 }
@@ -82,9 +71,6 @@ struct WhitelistManagerView: View {
                 .disabled(selectedDomains.isEmpty || isProcessing)
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(Color(NSColor.windowBackgroundColor).opacity(0.8))
         }
         .padding()
         .frame(width: 400, height: 400)

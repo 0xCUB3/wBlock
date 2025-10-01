@@ -36,19 +36,9 @@ struct SettingsView: View {
             #else
             return AnyView(
                 VStack(spacing: 0) {
-                    HStack {
-                        Text("Settings")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Spacer()
-                        Button { dismiss() } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
-                                .font(.title2)
-                        }
-                        .buttonStyle(.plain)
+                    SheetHeader(title: "Settings") {
+                        dismiss()
                     }
-                    .padding([.top, .horizontal])
 
                     formContent
                         .formStyle(.grouped)

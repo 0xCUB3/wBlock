@@ -34,22 +34,9 @@ struct LogsView: View {
 
     var body: some View {
         VStack(spacing: 15) {
-            HStack {
-                Text("wBlock Logs")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
+            SheetHeader(title: "wBlock Logs") {
+                dismiss()
             }
-            .padding([.top, .horizontal])
-
 
             // Scrollable text view showing the combined formatted logs.
             #if os(iOS)
@@ -75,7 +62,7 @@ struct LogsView: View {
             #endif
 
 
-            HStack(spacing: 20) {
+            SheetBottomToolbar {
                 Button {
                     Task {
                         // Force ingestion of shared auto update log before displaying
@@ -85,7 +72,6 @@ struct LogsView: View {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
                 .keyboardShortcut("r", modifiers: .command)
-
 
                 Button(role: .destructive) {
                     Task {
@@ -97,9 +83,7 @@ struct LogsView: View {
                     Label("Clear Logs", systemImage: "trash")
                 }
             }
-            .padding([.bottom, .horizontal])
         }
-        .padding(.top, 5)
         #if os(macOS)
         .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
                minHeight: 500, idealHeight: 650, maxHeight: .infinity)

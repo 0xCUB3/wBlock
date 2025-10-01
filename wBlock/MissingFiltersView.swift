@@ -17,51 +17,24 @@ struct MissingFiltersView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 0) {
             // Header
-            HStack {
-                Text(filterManager.isLoading ? "Downloading Missing Filters" : "Missing Filters")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
-                Spacer()
-                if !filterManager.isLoading {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
-                            .font(.title2)
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.scale.combined(with: .opacity))
-                }
+            SheetHeader(
+                title: filterManager.isLoading ? "Downloading Missing Filters" : "Missing Filters",
+                isLoading: filterManager.isLoading
+            ) {
+                dismiss()
             }
+            .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
 
             // Filter list or progress view
             if filterManager.isLoading {
                 // Download progress view
-                VStack(spacing: 16) {
-                    VStack(spacing: 8) {
-                        ProgressView(value: filterManager.progress)
-                            .progressViewStyle(.linear)
-                            .scaleEffect(y: 1.2)
-                            .animation(.easeInOut(duration: 0.2), value: filterManager.progress)
-                        Text("\(progressPercentage)%")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                            .animation(.easeInOut(duration: 0.2), value: progressPercentage)
-                    }
-                    .padding(.horizontal)
-                    Text("After downloading, filter lists will be applied automatically.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 200)
-                .transition(.opacity)
+                ProgressViewWithStatus(
+                    progress: Double(filterManager.progress),
+                    statusText: "\(progressPercentage)%",
+                    description: "After downloading, filter lists will be applied automatically."
+                )
             } else {
                 // Filter list
                 List(filterManager.missingFilters, id: \.id) { filter in
@@ -88,8 +61,8 @@ struct MissingFiltersView: View {
             }
 
             // Buttons
-            HStack(spacing: 20) {
-                if !filterManager.isLoading {
+            if !filterManager.isLoading {
+                SheetBottomToolbar {
                     Button("Cancel") {
                         dismiss()
                     }
@@ -106,18 +79,10 @@ struct MissingFiltersView: View {
                     .keyboardShortcut(.defaultAction)
                 }
             }
-            #if os(iOS)
-            .padding(.horizontal)
-            .padding(.bottom, 8)
-            #endif
         }
         #if os(macOS)
-        .padding(20)
         .frame(width: 400)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-        #else
-        .padding(.top, 20)
-        .padding(.horizontal, 20)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: SheetDesign.cornerRadius))
         #endif
     }
 }

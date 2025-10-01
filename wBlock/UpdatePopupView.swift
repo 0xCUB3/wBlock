@@ -41,52 +41,24 @@ struct UpdatePopupView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) { // Align content to the top leading edge
-            // Header (no redundant subtitle)
-            HStack {
-                Text(filterManager.isLoading ? "Downloading Updates" : "Available Updates")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
-                Spacer()
-                if !filterManager.isLoading {
-                    Button {
-                        isPresented = false
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
-                            .font(.title2)
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.scale.combined(with: .opacity))
-                }
+        VStack(spacing: 0) {
+            // Header
+            SheetHeader(
+                title: filterManager.isLoading ? "Downloading Updates" : "Available Updates",
+                isLoading: filterManager.isLoading
+            ) {
+                isPresented = false
             }
+            .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
 
             // Filter list or progress view
             if filterManager.isLoading {
                 // Download progress view
-                VStack(spacing: 16) {
-                    VStack(spacing: 8) {
-                        ProgressView(value: filterManager.progress)
-                            .progressViewStyle(.linear)
-                            .scaleEffect(y: 1.2)
-                            .animation(.easeInOut(duration: 0.2), value: filterManager.progress)
-                        
-                        Text("\(progressPercentage)%")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                            .animation(.easeInOut(duration: 0.2), value: progressPercentage)
-                    }
-                    .padding(.horizontal)
-                    
-                    Text("After downloading, filter lists will be applied automatically.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(height: 200)
-                .transition(.opacity)
+                ProgressViewWithStatus(
+                    progress: Double(filterManager.progress),
+                    statusText: "\(progressPercentage)%",
+                    description: "After downloading, filter lists will be applied automatically."
+                )
             } else {
                 // Filter selection list
                 List {
@@ -216,8 +188,8 @@ struct UpdatePopupView: View {
             }
 
             // Buttons
-            HStack(spacing: 20) {
-                if !filterManager.isLoading {
+            if !filterManager.isLoading {
+                SheetBottomToolbar {
                     Spacer()
                     Button("Download") {
                         Task {
@@ -226,7 +198,7 @@ struct UpdatePopupView: View {
                             if !filtersToUpdate.isEmpty {
                                 await filterManager.downloadSelectedFilters(filtersToUpdate)
                             }
-                            
+
                             // Handle script updates
                             if let _ = userScriptManager, !selectedScripts.isEmpty {
                                 let scriptsToUpdate = scriptsWithUpdates.filter { selectedScripts.contains($0.id) }
@@ -241,19 +213,13 @@ struct UpdatePopupView: View {
                             }
                         }
                     }
-                    #if os(macOS)
                     .buttonStyle(.borderedProminent)
-                    #else
-                    // Default button style for iOS
-                    #endif
                     .disabled(selectedFilters.isEmpty && selectedScripts.isEmpty)
                     .keyboardShortcut(.defaultAction)
                     Spacer()
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
         }
-        .padding()
         .animation(.easeInOut(duration: 0.4), value: filterManager.isLoading)
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 450, maxWidth: 480,

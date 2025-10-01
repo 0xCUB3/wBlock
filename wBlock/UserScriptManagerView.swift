@@ -39,37 +39,21 @@ struct UserScriptManagerView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Userscripts")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
+        SheetContainer {
+            SheetHeader(title: "Userscripts") {
+                dismiss()
             }
-            .padding(.horizontal)
-            .padding(.top, 20)
-            
+
             headerView
-            
+
             if scripts.isEmpty {
                 emptyStateView
             } else {
                 scriptsList
             }
-            
+
             bottomToolbar
         }
-        #if os(iOS)
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
-        #endif
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
         }) {
@@ -235,34 +219,14 @@ struct UserScriptManagerView: View {
     }
     
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.6))
-            
-            VStack(spacing: 8) {
-                Text("No Userscripts")
-                    .font(.title2)
-                    .fontWeight(.medium)
-                
-                Text("Add userscripts to customize your browsing experience")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            
-            Button {
-                showingAddScriptSheet = true
-            } label: {
-                Label("Add Userscript", systemImage: "plus")
-                    .font(.body)
-                    .fontWeight(.medium)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+        EmptyStateView(
+            icon: "doc.text.magnifyingglass",
+            title: "No Userscripts",
+            description: "Add userscripts to customize your browsing experience",
+            actionTitle: "Add Userscript"
+        ) {
+            showingAddScriptSheet = true
         }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical)
     }
     
     private var bottomToolbar: some View {
@@ -279,18 +243,18 @@ struct UserScriptManagerView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    
+
                     ProgressView(value: refreshProgress)
                         .progressViewStyle(LinearProgressViewStyle(tint: .blue))
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, SheetDesign.bottomToolbarHorizontalPadding)
                 .padding(.vertical, 8)
                 .background(Color.blue.opacity(0.05))
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            
+
             // Button toolbar
-            HStack(spacing: 16) {
+            SheetBottomToolbar {
                 Button {
                     refreshAllUserScripts()
                 } label: {
@@ -307,7 +271,7 @@ struct UserScriptManagerView: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(isRefreshing || scripts.filter(\.isDownloaded).isEmpty)
-                
+
                 Button {
                     showingAddScriptSheet = true
                 } label: {
@@ -315,13 +279,6 @@ struct UserScriptManagerView: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            #if os(macOS)
-            .background(Color(NSColor.windowBackgroundColor).opacity(0.8))
-            #else
-            .background(Color(.systemGroupedBackground))
-            #endif
         }
     }
 }
