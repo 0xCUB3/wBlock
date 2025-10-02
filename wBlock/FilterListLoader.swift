@@ -195,16 +195,15 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "xinggsf", url: URL(string: "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt")!, category: .foreign, description: "Blocks ads on the Chinese video platforms (MangoTV, DouYu and others).", languages: ["zh"], trustLevel: "high"),
             FilterList(id: UUID(), name: "YousList", url: URL(string: "https://raw.githubusercontent.com/yous/YousList/master/youslist.txt")!, category: .foreign, description: "Filter that blocks ads on Korean sites.", languages: ["ko"], trustLevel: "high"),
         ])
+        filterLists.append(FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."))
+
         #if os(iOS)
         filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         #endif
 
         #if os(macOS)
         // macOS-only filters too large for iOS
-        filterLists.append(contentsOf: [
-            FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."),
-            FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content.")
-        ])
+        filterLists.append(FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content."))
         #endif
 
         // Set default selections for recommended filters
@@ -222,6 +221,7 @@ class FilterListLoader {
         let recommendedFilters = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "EasyPrivacy",
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
             "AdGuard Annoyances Filter",

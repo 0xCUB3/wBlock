@@ -1206,7 +1206,8 @@ class AppFilterManager: ObservableObject {
 
         #if os(iOS)
         let essentialFilters = [
-            "AdGuard Base Filter"
+            "AdGuard Base Filter",
+            "EasyPrivacy"
         ]
         #else
         let essentialFilters = [
