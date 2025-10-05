@@ -90,7 +90,7 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 | macOS Support           | ✅ TestFlight only<sup>5</sup>     | ✅          | ✅               | ✅               |
 | iOS Support             | ✅ TestFlight only<sup>5</sup>     | ✅          | ✅               | ✅               |
 | RAM Usage (MB)          | 40MB<sup>6</sup>                  | 120MB<sup>6</sup>   | 50MB<sup>6</sup>     | 600MB<sup>6</sup>     |
-| Total Rule Capacity     | 750,000 macOS / 450,000 iOS<sup>7</sup> | N/A                 | 900,000 macOS / 300,000 iOS | 1,050,000 macOS / 350,000 iOS |
+| Total Rule Capacity     | 750,000 <sup>7</sup> | N/A                 | 900,000 macOS / 300,000 iOS | 1,050,000 macOS / 350,000 iOS |
 | GitHub Stars            | 1,400                              | 2,600                | N/A                   | 1,100                |
 | Open Source             | ✅                                 | ✅                    | ❌                    | ✅                    |
 | License<sup>18</sup>    | GPL-3.0                           | GPL-3.0              | Proprietary           | GPL-3.0              |
