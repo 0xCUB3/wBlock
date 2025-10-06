@@ -383,6 +383,18 @@ class AppFilterManager: ObservableObject {
         }
 
         // Enable only the recommended filters
+        #if os(iOS)
+        let recommendedFilters = [
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
+            "AdGuard Annoyances Filter",
+            "AdGuard Mobile Ads Filter",
+            "EasyPrivacy",
+            "Online Malicious URL Blocklist",
+            "d3Host List by d3ward",
+            "Anti-Adblock List"
+        ]
+        #else
         let recommendedFilters = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
@@ -392,6 +404,7 @@ class AppFilterManager: ObservableObject {
             "d3Host List by d3ward",
             "Anti-Adblock List"
         ]
+        #endif
 
         for index in filterLists.indices {
             if recommendedFilters.contains(filterLists[index].name) {
