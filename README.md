@@ -67,7 +67,7 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 ## System Requirements
 
-- macOS 14 (Sonoma) or later - earlier OS support coming soon
+- macOS 14 Sonoma / iOS 17 / iPadOS 17 or newer
 
 ## Support wBlock's Development
 
