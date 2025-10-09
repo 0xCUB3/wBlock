@@ -90,56 +90,32 @@ struct ContentView: View {
             ))
         }
         #elseif os(macOS)
-        if #available(macOS 15.0, *) {
-            TabView {
-                Tab("Filters", systemImage: "list.bullet.rectangle") {
-                    filtersView
+        // Use same liquid glass bottom tab bar as iOS
+        TabView {
+            filtersView
+                .tabItem {
+                    Label("Filters", systemImage: "list.bullet.rectangle")
                 }
-                Tab("Userscripts", systemImage: "doc.text.fill") {
-                    UserScriptManagerView(userScriptManager: userScriptManager)
+            userscriptsView
+                .tabItem {
+                    Label("Userscripts", systemImage: "doc.text.fill")
                 }
-                Tab("Whitelist", systemImage: "list.bullet.indent") {
-                    WhitelistManagerView(filterManager: filterManager)
+            WhitelistManagerView(filterManager: filterManager)
+                .tabItem {
+                    Label("Whitelist", systemImage: "list.bullet.indent")
                 }
-                Tab("Settings", systemImage: "gear") {
-                    SettingsView(filterManager: filterManager)
+            SettingsView(filterManager: filterManager)
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
                 }
-            }
-            .modifier(ContentModifiers(
-                filterManager: filterManager,
-                userScriptManager: userScriptManager,
-                dataManager: dataManager,
-                showingAddFilterSheet: $showingAddFilterSheet,
-                scenePhase: scenePhase
-            ))
-        } else {
-            // macOS 14 fallback
-            TabView {
-                filtersView
-                    .tabItem {
-                        Label("Filters", systemImage: "list.bullet.rectangle")
-                    }
-                UserScriptManagerView(userScriptManager: userScriptManager)
-                    .tabItem {
-                        Label("Userscripts", systemImage: "doc.text.fill")
-                    }
-                WhitelistManagerView(filterManager: filterManager)
-                    .tabItem {
-                        Label("Whitelist", systemImage: "list.bullet.indent")
-                    }
-                SettingsView(filterManager: filterManager)
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
-            }
-            .modifier(ContentModifiers(
-                filterManager: filterManager,
-                userScriptManager: userScriptManager,
-                dataManager: dataManager,
-                showingAddFilterSheet: $showingAddFilterSheet,
-                scenePhase: scenePhase
-            ))
         }
+        .modifier(ContentModifiers(
+            filterManager: filterManager,
+            userScriptManager: userScriptManager,
+            dataManager: dataManager,
+            showingAddFilterSheet: $showingAddFilterSheet,
+            scenePhase: scenePhase
+        ))
         #endif
     }
 
@@ -524,7 +500,7 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             .onAppear {
-                Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
+                Task { await ConcurrentLogManager.shared.info(.startup, "wBlock application appeared", metadata: [:]) }
                 filterManager.setUserScriptManager(userScriptManager)
                 #if os(iOS)
                 requestNotificationPermission()

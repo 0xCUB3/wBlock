@@ -24,7 +24,7 @@ class FilterListLoader {
     func checkAndCreateGroupFolder() {
         guard let containerURL = getSharedContainerURL() else {
             Task {
-                await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
+                await ConcurrentLogManager.shared.error(.system, "Unable to access shared container")
             }
             return
         }
@@ -33,11 +33,11 @@ class FilterListLoader {
             do {
                 try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true, attributes: nil)
                 Task {
-                    await ConcurrentLogManager.shared.log("Created shared container directory")
+                    await ConcurrentLogManager.shared.debug(.system, "Created shared container directory")
                 }
             } catch {
                 Task {
-                    await ConcurrentLogManager.shared.log("Error creating shared container directory: \(error)")
+                    await ConcurrentLogManager.shared.error(.system, "Failed to create shared container directory", metadata: ["error": "\(error)"])
                 }
             }
         }
@@ -247,7 +247,7 @@ class FilterListLoader {
             defaults.set(data, forKey: "filterLists")
         } else {
             Task {
-                await ConcurrentLogManager.shared.log("Failed to encode default filterLists for saving.")
+                await ConcurrentLogManager.shared.error(.system, "Failed to encode default filterLists")
             }
         }
 
@@ -291,7 +291,7 @@ class FilterListLoader {
             if let data = try? JSONEncoder().encode(customFilterLists) {
                 defaults.set(data, forKey: customFilterListsKey)
             } else {
-                await ConcurrentLogManager.shared.log("Failed to encode customFilterLists for saving.")
+                await ConcurrentLogManager.shared.error(.system, "Failed to encode customFilterLists")
             }
         }
     }
@@ -316,7 +316,7 @@ class FilterListLoader {
             return try String(contentsOf: fileURL, encoding: .utf8)
         } catch {
             Task {
-                await ConcurrentLogManager.shared.log("Error reading local filter content for \(filter.name): \(error)")
+                await ConcurrentLogManager.shared.error(.filterUpdate, "Failed to read filter content", metadata: ["filter": filter.name, "error": "\(error)"])
             }
             return nil
         }

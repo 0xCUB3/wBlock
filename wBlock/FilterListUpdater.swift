@@ -55,9 +55,9 @@ class FilterListUpdater {
                 if let newVersion = await fetchVersionFromURL(for: modifiedFilter) {
                     modifiedFilter.version = newVersion
                     filterWasModifiedThisIteration = true
-                    await ConcurrentLogManager.shared.log("Fetched version for \(modifiedFilter.name): \(newVersion)")
+                    await ConcurrentLogManager.shared.info(.filterUpdate, "Fetched version for filter", metadata: ["filter": modifiedFilter.name, "version": newVersion])
                 } else {
-                    await ConcurrentLogManager.shared.log("Failed to fetch version for \(modifiedFilter.name)")
+                    await ConcurrentLogManager.shared.error(.filterUpdate, "Failed to fetch version for filter", metadata: ["filter": modifiedFilter.name])
                 }
             }
 
@@ -68,9 +68,9 @@ class FilterListUpdater {
                     let ruleCount = countRulesInContent(content: localContent)
                     modifiedFilter.sourceRuleCount = ruleCount
                     filterWasModifiedThisIteration = true
-                    await ConcurrentLogManager.shared.log("Calculated source rule count for \(modifiedFilter.name): \(ruleCount)")
+                    await ConcurrentLogManager.shared.info(.filterUpdate, "Calculated source rule count for filter", metadata: ["filter": modifiedFilter.name, "ruleCount": "\(ruleCount)"])
                 } else {
-                    await ConcurrentLogManager.shared.log("Failed to read local content for rule counting for \(modifiedFilter.name).")
+                    await ConcurrentLogManager.shared.error(.filterUpdate, "Failed to read local content for rule counting", metadata: ["filter": modifiedFilter.name])
                 }
             }
             
@@ -87,11 +87,11 @@ class FilterListUpdater {
         do {
             let (data, response) = try await urlSession.data(from: filter.url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                await ConcurrentLogManager.shared.log("Failed to fetch version from URL for \(filter.name): Invalid response")
+                await ConcurrentLogManager.shared.error(.network, "Failed to fetch version from URL", metadata: ["filter": filter.name, "reason": "Invalid response"])
                 return nil
             }
             guard let content = String(data: data, encoding: .utf8) else {
-                await ConcurrentLogManager.shared.log("Unable to parse content from \(filter.url)")
+                await ConcurrentLogManager.shared.error(.network, "Unable to parse content from URL", metadata: ["url": filter.url.absoluteString])
                 return nil
             }
 
@@ -99,7 +99,7 @@ class FilterListUpdater {
             let metadata = parseMetadata(from: content)
             return metadata.version ?? "Unknown"
         } catch {
-            await ConcurrentLogManager.shared.log("Error fetching version from URL for \(filter.name): \(error.localizedDescription)")
+            await ConcurrentLogManager.shared.error(.network, "Error fetching version from URL", metadata: ["filter": filter.name, "error": error.localizedDescription])
             return nil
         }
     }
@@ -191,7 +191,7 @@ class FilterListUpdater {
                 return true // If local file doesn't exist, consider it as needing an update
             }
         } catch {
-            await ConcurrentLogManager.shared.log("Error checking update for \(filter.name): \(error.localizedDescription)")
+            await ConcurrentLogManager.shared.error(.filterUpdate, "Error checking update for filter", metadata: ["filter": filter.name, "error": error.localizedDescription])
             return false
         }
     }
@@ -224,7 +224,7 @@ class FilterListUpdater {
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
                   let content = String(data: data, encoding: .utf8) else {
-                await ConcurrentLogManager.shared.log("Failed to fetch \(filter.name)")
+                await ConcurrentLogManager.shared.error(.network, "Failed to fetch filter", metadata: ["filter": filter.name])
                 return false
             }
 
@@ -246,7 +246,7 @@ class FilterListUpdater {
             }
 
             guard let containerURL = loader.getSharedContainerURL() else {
-                await ConcurrentLogManager.shared.log("Error: Unable to access shared container")
+                await ConcurrentLogManager.shared.error(.system, "Unable to access shared container", metadata: [:])
                 return false
             }
 
@@ -254,7 +254,7 @@ class FilterListUpdater {
 
             return true
         } catch {
-            await ConcurrentLogManager.shared.log("Error fetching \(filter.name): \(error)")
+            await ConcurrentLogManager.shared.error(.network, "Error fetching filter", metadata: ["filter": filter.name, "error": "\(error)"])
             return false
         }
     }
@@ -304,9 +304,9 @@ class FilterListUpdater {
         }
 
         if !updatedFilters.isEmpty {
-            await ConcurrentLogManager.shared.log("Found updates for filters: \(updatedFilters.map { $0.name }.joined(separator: ", "))")
+            await ConcurrentLogManager.shared.info(.filterUpdate, "Found updates for filters", metadata: ["filters": updatedFilters.map { $0.name }.joined(separator: ", "), "count": "\(updatedFilters.count)"])
         } else {
-            await ConcurrentLogManager.shared.log("No updates found for current filters.")
+            await ConcurrentLogManager.shared.info(.filterUpdate, "No updates found for current filters", metadata: [:])
         }
 
         return updatedFilters
@@ -322,9 +322,9 @@ class FilterListUpdater {
             let success = await fetchAndProcessFilter(filter)
             if success {
                 updatedFilters.append(filter)
-                await ConcurrentLogManager.shared.log("Successfully updated \(filter.name)")
+                await ConcurrentLogManager.shared.info(.filterUpdate, "Successfully updated filter", metadata: ["filter": filter.name])
             } else {
-                await ConcurrentLogManager.shared.log("Failed to update \(filter.name)")
+                await ConcurrentLogManager.shared.error(.filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
             }
             completedSteps += 1
             progressCallback(completedSteps / totalSteps)
@@ -380,7 +380,7 @@ class FilterListUpdater {
                 return onlineContent != script.content
             }
         } catch {
-            await ConcurrentLogManager.shared.log("Error checking update for script \(script.name): \(error.localizedDescription)")
+            await ConcurrentLogManager.shared.error(.userScript, "Error checking update for script", metadata: ["script": script.name, "error": error.localizedDescription])
             return false
         }
     }
@@ -389,7 +389,7 @@ class FilterListUpdater {
     func fetchAndProcessScript(_ script: UserScript) async -> (UserScript?, Bool) {
         guard let downloadURLString = script.downloadURL ?? script.updateURL,
               let downloadURL = URL(string: downloadURLString) else {
-            await ConcurrentLogManager.shared.log("Error: No download URL for script \(script.name)")
+            await ConcurrentLogManager.shared.error(.userScript, "No download URL for script", metadata: ["script": script.name])
             return (nil, false)
         }
         
@@ -399,7 +399,7 @@ class FilterListUpdater {
             guard let httpResponse = response as? HTTPURLResponse, 
                   httpResponse.statusCode == 200,
                   let content = String(data: data, encoding: .utf8) else {
-                await ConcurrentLogManager.shared.log("Failed to fetch script \(script.name)")
+                await ConcurrentLogManager.shared.error(.network, "Failed to fetch script", metadata: ["script": script.name])
                 return (nil, false)
             }
             
@@ -409,7 +409,7 @@ class FilterListUpdater {
             
             return (updatedScript, true)
         } catch {
-            await ConcurrentLogManager.shared.log("Error fetching script \(script.name): \(error)")
+            await ConcurrentLogManager.shared.error(.network, "Error fetching script", metadata: ["script": script.name, "error": "\(error)"])
             return (nil, false)
         }
     }
@@ -424,14 +424,14 @@ class FilterListUpdater {
             let (updatedScript, success) = await fetchAndProcessScript(script)
             if success, let updated = updatedScript {
                 updatedScripts.append(updated)
-                await ConcurrentLogManager.shared.log("Successfully updated script \(script.name)")
+                await ConcurrentLogManager.shared.info(.userScript, "Successfully updated script", metadata: ["script": script.name])
                 
                 // Update the script in the userScriptManager
                 if let manager = userScriptManager {
                     await manager.updateUserScript(updated)
                 }
             } else {
-                await ConcurrentLogManager.shared.log("Failed to update script \(script.name)")
+                await ConcurrentLogManager.shared.error(.userScript, "Failed to update script", metadata: ["script": script.name])
             }
             completedSteps += 1
             progressCallback(completedSteps / totalSteps)

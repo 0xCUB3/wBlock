@@ -142,7 +142,7 @@ struct UserScriptManagerView: View {
         refreshStatus = "Starting refresh..."
 
         Task {
-            await ConcurrentLogManager.shared.log("🔄 Starting userscript refresh for \(downloadedScripts.count) scripts")
+            await ConcurrentLogManager.shared.info(.userScript, "Starting userscript refresh", metadata: ["count": "\(downloadedScripts.count)"])
 
             for (index, script) in downloadedScripts.enumerated() {
                 await MainActor.run {
@@ -150,7 +150,7 @@ struct UserScriptManagerView: View {
                     refreshProgress = Double(index) / Double(downloadedScripts.count)
                 }
 
-                await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
+                await ConcurrentLogManager.shared.debug(.userScript, "Updating userscript", metadata: ["script": script.name])
                 await userScriptManager.updateUserScript(script)
 
                 try? await Task.sleep(nanoseconds: 100_000_000)
@@ -165,7 +165,7 @@ struct UserScriptManagerView: View {
                 isLoading = userScriptManager.isLoading
             }
 
-            await ConcurrentLogManager.shared.log("✅ Userscript refresh completed successfully")
+            await ConcurrentLogManager.shared.info(.userScript, "Userscript refresh completed successfully", metadata: [:])
 
             try? await Task.sleep(nanoseconds: 1_000_000_000)
 
@@ -272,9 +272,9 @@ struct UserScriptManagerView: View {
                 if script.isDownloaded {
                     Button {
                         Task {
-                            await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
+                            await ConcurrentLogManager.shared.debug(.userScript, "Updating userscript", metadata: ["script": script.name])
                             await userScriptManager.updateUserScript(script)
-                            await ConcurrentLogManager.shared.log("✅ Successfully updated userscript: \(script.name)")
+                            await ConcurrentLogManager.shared.info(.userScript, "Successfully updated userscript", metadata: ["script": script.name])
                             refreshScripts()
                         }
                     } label: {
@@ -290,7 +290,7 @@ struct UserScriptManagerView: View {
                     get: { script.isEnabled },
                     set: { _ in
                         Task {
-                            await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name)")
+                            await ConcurrentLogManager.shared.debug(.userScript, "Toggling userscript", metadata: ["script": script.name])
                             await userScriptManager.toggleUserScript(script)
                             await MainActor.run {
                                 refreshScripts()
@@ -334,7 +334,7 @@ struct UserScriptManagerView: View {
             }
             Button(role: .destructive) {
                 Task {
-                    await ConcurrentLogManager.shared.log("🗑️ Removing userscript: \(script.name)")
+                    await ConcurrentLogManager.shared.info(.userScript, "Removing userscript", metadata: ["script": script.name])
                 }
                 userScriptManager.removeUserScript(script)
                 refreshScripts()
@@ -813,9 +813,9 @@ struct AddUserScriptView: View {
         isLoading = true
 
         Task {
-            await ConcurrentLogManager.shared.log("📥 Adding new userscript from URL: \(url.absoluteString)")
+            await ConcurrentLogManager.shared.info(.userScript, "Adding new userscript from URL", metadata: ["url": url.absoluteString])
             await userScriptManager.addUserScript(from: url)
-            await ConcurrentLogManager.shared.log("✅ Successfully added userscript from URL: \(url.absoluteString)")
+            await ConcurrentLogManager.shared.info(.userScript, "Successfully added userscript from URL", metadata: ["url": url.absoluteString])
 
             await MainActor.run {
                 isLoading = false

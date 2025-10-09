@@ -107,11 +107,11 @@ extension AppDelegate: NSApplicationDelegate {
         Task {
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
         }
-        
+
         // Log next auto-update schedule status
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            await ConcurrentLogManager.shared.log(scheduleMessage(from: status))
+            await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
         }
     }
     
@@ -199,11 +199,11 @@ extension AppDelegate: UIApplicationDelegate {
         Task {
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
         }
-        
+
         // Log next auto-update schedule status
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            await ConcurrentLogManager.shared.log(scheduleMessage(from: status))
+            await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
         }
         return true
     }

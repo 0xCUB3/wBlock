@@ -210,7 +210,7 @@ class AppFilterManager: ObservableObject {
     let currentDisabledSites = dataManager.disabledSites
         
         if currentDisabledSites != lastKnownDisabledSites {
-            await ConcurrentLogManager.shared.log("🔄 Disabled sites changed from \(lastKnownDisabledSites) to \(currentDisabledSites), fast rebuilding content blockers")
+            await ConcurrentLogManager.shared.info(.whitelist, "Disabled sites changed, fast rebuilding content blockers", metadata: ["previousCount": "\(lastKnownDisabledSites.count)", "newCount": "\(currentDisabledSites.count)"])
             
             lastKnownDisabledSites = currentDisabledSites
             await MainActor.run { self.whitelistViewModel.loadWhitelistedDomains() }
@@ -234,7 +234,7 @@ class AppFilterManager: ObservableObject {
             self.statusDescription = "Updating disabled sites..."
         }
         
-        await ConcurrentLogManager.shared.log("🚀 Fast applying disabled sites changes without full conversion")
+        await ConcurrentLogManager.shared.info(.whitelist, "Fast applying disabled sites changes without full conversion", metadata: [:])
         
         // Get all platform targets that need updating
         let currentPlatform = self.currentPlatform
@@ -277,7 +277,7 @@ class AppFilterManager: ObservableObject {
                     try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
                 } else {
                     // Skip reload for empty extensions
-                    await ConcurrentLogManager.shared.log("⏩ Skipping reload for empty extension: \(targetInfo.primaryCategory.rawValue)")
+                    await ConcurrentLogManager.shared.debug(.filterApply, "Skipping reload for empty extension", metadata: ["category": targetInfo.primaryCategory.rawValue])
                 }
             }
         
@@ -297,7 +297,7 @@ class AppFilterManager: ObservableObject {
             }
         }
         
-        await ConcurrentLogManager.shared.log("✅ Fast disabled sites update completed: \(successCount)/\(platformTargets.count) extensions in \(reloadTime)")
+        await ConcurrentLogManager.shared.info(.whitelist, "Fast disabled sites update completed", metadata: ["successCount": "\(successCount)", "totalCount": "\(platformTargets.count)", "reloadTime": reloadTime])
     }
     
     private func loadSavedRuleCounts() {
@@ -436,7 +436,7 @@ class AppFilterManager: ObservableObject {
     // MARK: - Per-category rule limit management
     
     private func resetCategoryToRecommended(_ category: FilterListCategory) async {
-        await ConcurrentLogManager.shared.log("Resetting category \(category.rawValue) to recommended filters due to rule limit exceeded.")
+        await ConcurrentLogManager.shared.warning(.filterApply, "Resetting category to recommended filters due to rule limit exceeded", metadata: ["category": category.rawValue])
         
         // Define recommended filters per category
         let recommendedFiltersByCategory: [FilterListCategory: [String]] = [
@@ -467,7 +467,7 @@ class AppFilterManager: ObservableObject {
         }
         
         loader.saveSelectedState(for: filterLists)
-        await ConcurrentLogManager.shared.log("Reset category \(category.rawValue) to recommended filters: \(recommendedForCategory.joined(separator: ", "))")
+        await ConcurrentLogManager.shared.info(.filterApply, "Reset category to recommended filters", metadata: ["category": category.rawValue, "filters": recommendedForCategory.joined(separator: ", ")])
     }
     
     func getCategoryRuleCount(_ category: FilterListCategory) -> Int {
@@ -508,12 +508,12 @@ class AppFilterManager: ObservableObject {
             let result = ContentBlockerService.reloadContentBlocker(withIdentifier: targetInfo.bundleIdentifier)
             if case .success = result {
                 if attempt > 1 {
-                    await ConcurrentLogManager.shared.log("✅ \(categoryName) reloaded successfully (attempt \(attempt))")
+                    await ConcurrentLogManager.shared.info(.filterApply, "Content blocker reloaded successfully after retry", metadata: ["category": categoryName, "attempt": "\(attempt)"])
                 }
                 return true
             } else if case .failure(let error) = result {
                 if attempt == 1 || attempt == maxRetries {
-                    await ConcurrentLogManager.shared.log("❌ \(categoryName) \(attempt == maxRetries ? "FAILED after \(maxRetries) attempts" : "reload failed"): \(error.localizedDescription)")
+                    await ConcurrentLogManager.shared.error(.filterApply, attempt == maxRetries ? "Content blocker reload failed after all attempts" : "Content blocker reload failed", metadata: ["category": categoryName, "attempt": "\(attempt)", "maxRetries": "\(maxRetries)", "error": error.localizedDescription])
                 }
                 
                 if attempt < maxRetries {
@@ -557,7 +557,7 @@ class AppFilterManager: ObservableObject {
             self.isInReloadPhase = false
         }
         
-        await ConcurrentLogManager.shared.log("🚀 Starting filter application process on \(currentPlatform == .macOS ? "macOS" : "iOS")")
+        await ConcurrentLogManager.shared.info(.filterApply, "Starting filter application process", metadata: ["platform": currentPlatform == .macOS ? "macOS" : "iOS"])
 
         let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
 
@@ -565,7 +565,7 @@ class AppFilterManager: ObservableObject {
             await MainActor.run {
                 self.statusDescription = "No filter lists selected. Clearing rules from all extensions."
             }
-            await ConcurrentLogManager.shared.log("🧹 No filters selected - clearing all extensions")
+            await ConcurrentLogManager.shared.info(.filterApply, "No filters selected - clearing all extensions", metadata: [:])
             
             // Perform heavy operations on background thread
             let currentPlatform = self.currentPlatform
@@ -596,7 +596,7 @@ class AppFilterManager: ObservableObject {
 
         for filter in allSelectedFilters {
             guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: filter.category, platform: self.currentPlatform) else {
-                await ConcurrentLogManager.shared.log("Warning: No target extension found for category \(filter.category.rawValue) on \(self.currentPlatform == .macOS ? "macOS" : "iOS"). Skipping filter: \(filter.name)")
+                await ConcurrentLogManager.shared.warning(.filterApply, "No target extension found for category, skipping filter", metadata: ["category": filter.category.rawValue, "platform": self.currentPlatform == .macOS ? "macOS" : "iOS", "filter": filter.name])
                 continue
             }
 
@@ -672,7 +672,7 @@ class AppFilterManager: ObservableObject {
             
             // Single consolidated log per target
             let advancedCount = conversionResult.advancedRulesText?.isEmpty == false ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count : 0
-            await ConcurrentLogManager.shared.log("✅ \(targetInfo.primaryCategory.rawValue): \(ruleCountForThisTarget) Safari rules, \(advancedCount) advanced rules")
+            await ConcurrentLogManager.shared.info(.filterApply, "Converted category rules", metadata: ["category": targetInfo.primaryCategory.rawValue, "safariRules": "\(ruleCountForThisTarget)", "advancedRules": "\(advancedCount)"])
             
             // Update per-category rule count on main thread
             await MainActor.run {
@@ -701,7 +701,7 @@ class AppFilterManager: ObservableObject {
             }
             
             if ruleCountForThisTarget > ruleLimit {
-                await ConcurrentLogManager.shared.log("CRITICAL: Rule limit \(ruleLimit) exceeded for \(targetInfo.bundleIdentifier) with \(ruleCountForThisTarget) rules.")
+                await ConcurrentLogManager.shared.error(.filterApply, "Rule limit exceeded for category", metadata: ["bundleId": targetInfo.bundleIdentifier, "ruleCount": "\(ruleCountForThisTarget)", "ruleLimit": "\(ruleLimit)"])
                 
                 // Auto-reset this specific category and warn the user
                 await resetCategoryToRecommended(targetInfo.primaryCategory)
@@ -714,7 +714,7 @@ class AppFilterManager: ObservableObject {
                     self.showCategoryWarning(for: targetInfo.primaryCategory)
                     // self.statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
                 }
-                await ConcurrentLogManager.shared.log("Auto-reset category \(targetInfo.primaryCategory.rawValue) due to rule limit exceeded.")
+                await ConcurrentLogManager.shared.info(.filterApply, "Auto-reset category due to rule limit exceeded", metadata: ["category": targetInfo.primaryCategory.rawValue])
                 
                 // Re-process this target with the reset filters - on background thread
                 let resetResult = await Task.detached {
@@ -733,7 +733,7 @@ class AppFilterManager: ObservableObject {
                                 do {
                                     resetRulesString += try String(contentsOf: fileURL, encoding: .utf8) + "\n"
                                 } catch {
-                                    await ConcurrentLogManager.shared.log("Error reading \(filter.name) after reset: \(error)")
+                                    await ConcurrentLogManager.shared.error(.filterApply, "Error reading filter after reset", metadata: ["filter": filter.name, "error": "\(error)"])
                                 }
                             }
                         }
@@ -768,7 +768,7 @@ class AppFilterManager: ObservableObject {
                 }
                 
                 overallSafariRulesApplied += resetRuleCount
-                await ConcurrentLogManager.shared.log("🔄 After reset, \(targetInfo.primaryCategory.rawValue) now has \(resetRuleCount) rules")
+                await ConcurrentLogManager.shared.info(.filterApply, "After reset, category now has fewer rules", metadata: ["category": targetInfo.primaryCategory.rawValue, "ruleCount": "\(resetRuleCount)"])
                 continue
             }
             else {
@@ -785,7 +785,7 @@ class AppFilterManager: ObservableObject {
             self.applyProgressViewModel.updateProgress(self.progress)
             self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
         }
-        await ConcurrentLogManager.shared.log("✅ All conversions finished: \(overallSafariRulesApplied) Safari rules in \(await MainActor.run { self.lastConversionTime })")
+        await ConcurrentLogManager.shared.info(.filterApply, "All conversions finished", metadata: ["totalRules": "\(overallSafariRulesApplied)", "conversionTime": await MainActor.run { self.lastConversionTime }])
 
         // Reloading phase - reload all content blockers FIRST before building advanced engine
         await MainActor.run {
@@ -869,9 +869,9 @@ class AppFilterManager: ObservableObject {
         }
         
         if allReloadsSuccessful {
-            await ConcurrentLogManager.shared.log("✅ All content blocker reloads completed successfully in \(await MainActor.run { self.lastReloadTime })")
+            await ConcurrentLogManager.shared.info(.filterApply, "All content blocker reloads completed successfully", metadata: ["reloadTime": await MainActor.run { self.lastReloadTime }])
         } else {
-            await ConcurrentLogManager.shared.log("⚠️ Some content blocker reloads failed after retries, continuing with advanced rules processing")
+            await ConcurrentLogManager.shared.warning(.filterApply, "Some content blocker reloads failed after retries, continuing with advanced rules processing", metadata: [:])
         }
 
         // Small delay before building advanced engine to let system recover from reloads
@@ -896,7 +896,7 @@ class AppFilterManager: ObservableObject {
             await Task.detached {
                 let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
                 let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
-                await ConcurrentLogManager.shared.log("🔧 Building filter engine with \(advancedRulesByTarget.count) targets (\(totalLines) lines)")
+                await ConcurrentLogManager.shared.info(.filterApply, "Building filter engine", metadata: ["targetCount": "\(advancedRulesByTarget.count)", "totalLines": "\(totalLines)"])
                 
                 ContentBlockerService.buildCombinedFilterEngine(
                     combinedAdvancedRules: combinedAdvancedRules,
@@ -908,7 +908,7 @@ class AppFilterManager: ObservableObject {
                 self.isInEnginePhase = false
             }
         } else {
-            await ConcurrentLogManager.shared.log("🔧 No advanced rules found, clearing filter engine")
+            await ConcurrentLogManager.shared.debug(.filterApply, "No advanced rules found, clearing filter engine", metadata: [:])
             // Run on background thread
             await Task.detached {
                 ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
@@ -963,11 +963,11 @@ class AppFilterManager: ObservableObject {
         let statusDesc = await MainActor.run { self.statusDescription }
         
         if allReloadsSuccessful && !hasErrorValueForLog {
-            await ConcurrentLogManager.shared.log("🎉 Process completed successfully: \(statusDesc)")
+            await ConcurrentLogManager.shared.info(.filterApply, "Process completed successfully", metadata: ["status": statusDesc])
         } else if !hasErrorValueForLog {
-            await ConcurrentLogManager.shared.log("⚠️ Process completed with reload issues: \(statusDesc)")
+            await ConcurrentLogManager.shared.warning(.filterApply, "Process completed with reload issues", metadata: ["status": statusDesc])
         } else {
-            await ConcurrentLogManager.shared.log("❌ Process completed with errors: \(statusDesc)")
+            await ConcurrentLogManager.shared.error(.filterApply, "Process completed with errors", metadata: ["status": statusDesc])
         }
     }
     
@@ -1058,7 +1058,7 @@ class AppFilterManager: ObservableObject {
         } else {
             showingNoUpdatesAlert = true
             statusDescription = "No updates available."
-            Task { await ConcurrentLogManager.shared.log("No updates available.") }
+            Task { await ConcurrentLogManager.shared.info(.autoUpdate, "No updates available", metadata: [:]) }
         }
 
         isLoading = false
@@ -1228,14 +1228,14 @@ class AppFilterManager: ObservableObject {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             statusDescription = "Invalid URL provided: \(urlString)"
             hasError = true
-            Task { await ConcurrentLogManager.shared.log("Error: Invalid URL provided for new filter list - \(urlString)") }
+            Task { await ConcurrentLogManager.shared.error(.system, "Invalid URL provided for new filter list", metadata: ["url": urlString]) }
             return
         }
         
         if filterLists.contains(where: { $0.url == url }) {
             statusDescription = "Filter list with this URL already exists: \(url.absoluteString)"
             hasError = true
-            Task { await ConcurrentLogManager.shared.log("Error: Filter list with URL \(url.absoluteString) already exists.") }
+            Task { await ConcurrentLogManager.shared.error(.system, "Filter list with URL already exists", metadata: ["url": url.absoluteString]) }
             return
         }
         
@@ -1256,7 +1256,7 @@ class AppFilterManager: ObservableObject {
         loader.saveFilterLists(filterLists)
         statusDescription = "Removed filter(s): \(removedNames)"
         hasError = false
-        Task { await ConcurrentLogManager.shared.log("Removed filter(s) at offsets: \(removedNames)") }
+        Task { await ConcurrentLogManager.shared.info(.system, "Removed filters", metadata: ["filters": removedNames]) }
     }
     
     func removeFilterList(_ listToRemove: FilterList) {
@@ -1277,17 +1277,17 @@ class AppFilterManager: ObservableObject {
             filterLists.append(newFilterToAdd)
             
             Task {
-                await ConcurrentLogManager.shared.log("Added custom filter: \(newFilterToAdd.name)")
+                await ConcurrentLogManager.shared.info(.system, "Added custom filter", metadata: ["filter": newFilterToAdd.name])
             }
 
             Task {
                 let success = await filterUpdater.fetchAndProcessFilter(newFilterToAdd)
                 if success {
-                    await ConcurrentLogManager.shared.log("Successfully downloaded custom filter: \(newFilterToAdd.name)")
+                    await ConcurrentLogManager.shared.info(.filterUpdate, "Successfully downloaded custom filter", metadata: ["filter": newFilterToAdd.name])
                     hasUnappliedChanges = true
                     saveFilterListsSync()
                 } else {
-                    await ConcurrentLogManager.shared.log("Failed to download custom filter: \(newFilterToAdd.name)")
+                    await ConcurrentLogManager.shared.error(.filterUpdate, "Failed to download custom filter", metadata: ["filter": newFilterToAdd.name])
                     await MainActor.run {
                         removeCustomFilterList(newFilterToAdd)
                     }
@@ -1295,7 +1295,7 @@ class AppFilterManager: ObservableObject {
             }
         } else {
             Task {
-                await ConcurrentLogManager.shared.log("Custom filter with URL \(filter.url) already exists")
+                await ConcurrentLogManager.shared.warning(.system, "Custom filter with URL already exists", metadata: ["url": filter.url.absoluteString])
             }
         }
     }
@@ -1312,7 +1312,7 @@ class AppFilterManager: ObservableObject {
             try? FileManager.default.removeItem(at: fileURL)
         }
         Task {
-            await ConcurrentLogManager.shared.log("Removed custom filter: \(filter.name)")
+            await ConcurrentLogManager.shared.info(.system, "Removed custom filter", metadata: ["filter": filter.name])
         }
         hasUnappliedChanges = true
     }
@@ -1397,7 +1397,7 @@ class AppFilterManager: ObservableObject {
             // Log only for large conversions
             if totalSourceLines > 10000 {
                 Task {
-                    await ConcurrentLogManager.shared.log("🔄 Converting \(targetInfo.primaryCategory.rawValue) (\(totalSourceLines) source lines - LARGE)")
+                    await ConcurrentLogManager.shared.debug(.filterApply, "Converting large category", metadata: ["category": targetInfo.primaryCategory.rawValue, "sourceLines": "\(totalSourceLines)"])
                 }
             }
             
@@ -1412,7 +1412,7 @@ class AppFilterManager: ObservableObject {
             
         } catch {
             Task {
-                await ConcurrentLogManager.shared.log("Error in memory-efficient conversion: \(error)")
+                await ConcurrentLogManager.shared.error(.filterApply, "Error in memory-efficient conversion", metadata: ["error": "\(error)"])
             }
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
