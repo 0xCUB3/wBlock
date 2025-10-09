@@ -20,8 +20,9 @@ struct StatCard: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(valueColor)
+                .foregroundStyle(valueColor)
                 .frame(width: 32)
+                .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text({
@@ -36,12 +37,12 @@ struct StatCard: View {
                     #endif
                 }())
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 Text(value)
                     .font(.title2.monospacedDigit())
                     .fontWeight(.semibold)
-                    .foregroundColor(valueColor)
+                    .foregroundStyle(valueColor)
                     .frame(minWidth: valueWidth, alignment: .leading)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -49,20 +50,26 @@ struct StatCard: View {
                     .allowsTightening(true)
             }
         }
-    .padding(.vertical, 12)
-    .padding(.horizontal, 20)
-        .background(
-            Group {
-                #if os(iOS)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .background {
+            #if os(iOS)
+            if #available(iOS 26.0, *) {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(pillColor.opacity(0.85))
-                    .shadow(color: pillColor.opacity(0.08), radius: 2, x: 0, y: 1)
-                #else
-                Capsule()
-                    .fill(pillColor.opacity(0.85))
-                    .shadow(color: pillColor.opacity(0.08), radius: 2, x: 0, y: 1)
-                #endif
+                    .fill(.regularMaterial)
+            } else {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(.regularMaterial)
             }
-        )
+            #else
+            if #available(macOS 26.0, *) {
+                Capsule()
+                    .fill(.regularMaterial)
+            } else {
+                Capsule()
+                    .fill(.regularMaterial)
+            }
+            #endif
+        }
     }
 }

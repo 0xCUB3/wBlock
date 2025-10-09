@@ -66,6 +66,7 @@ struct SettingsView: View {
             }
     }
     
+    @ViewBuilder
     private var formContent: some View {
         Form {
             #if os(macOS)
@@ -74,6 +75,27 @@ struct SettingsView: View {
                     .toggleStyle(.switch)
             }
             #endif
+
+            Section {
+                Button {
+                    Task { await filterManager.checkForUpdates() }
+                } label: {
+                    HStack {
+                        Label("Check for Filterlist Updates", systemImage: "arrow.clockwise")
+                        Spacer()
+                    }
+                }
+                .disabled(filterManager.isLoading)
+
+                NavigationLink {
+                    LogsView()
+                } label: {
+                    Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                }
+            } header: {
+                Text("Actions")
+            }
+            .textCase(.none)
 
             Section {
                 Toggle("Enable Auto-Updates", isOn: $autoUpdateEnabled)
@@ -85,7 +107,7 @@ struct SettingsView: View {
                         in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
                         step: 1
                     ) {
-                        Text("Auto-Update Frequency")
+                        Text("Update Frequency")
                     } minimumValueLabel: {
                         Text("1h")
                     } maximumValueLabel: {
@@ -103,7 +125,7 @@ struct SettingsView: View {
                 }
                 .disabled(!autoUpdateEnabled)
             } header: {
-                Text("Auto-Update")
+                Text("Filterlist Auto-Update")
             }
             .textCase(.none)
             .onChange(of: autoUpdateEnabled) { isEnabled in

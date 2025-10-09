@@ -346,16 +346,17 @@ struct OnboardingView: View {
                 }) {
                     HStack {
                         Image(systemName: selectedBlockingLevel == level.rawValue ? "largecircle.fill.circle" : "circle")
+                            .symbolRenderingMode(.hierarchical)
                         VStack(alignment: .leading) {
                             Text(level.rawValue)
                                 .font(.headline)
                             Text(blockingLevelDescription(level))
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 .disabled(level == .complete)
                 .opacity(level == .complete ? 0.5 : 1.0)
             }
@@ -503,7 +504,7 @@ struct OnboardingView: View {
                         Text(script.name)
                         Text(script.description)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -511,8 +512,9 @@ struct OnboardingView: View {
             if let bypassScript = bypassPaywallsScript, selectedUserscripts.contains(bypassScript.id), let filterName = bypassPaywallsFilterName {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.yellow)
+                        .foregroundStyle(.yellow)
                         .font(.title3)
+                        .symbolRenderingMode(.multicolor)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("The \(bypassScript.name) userscript requires the \(filterName)")
                             .font(.caption)
@@ -555,8 +557,9 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.shield.fill")
-                        .foregroundColor(.yellow)
+                        .foregroundStyle(.yellow)
                         .font(.title3)
+                        .symbolRenderingMode(.multicolor)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("After filters are applied, you must enable all wBlock extensions in Safari's extension settings.")
                             .font(.headline)
