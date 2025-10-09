@@ -22635,6 +22635,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const handleMessage = event => {
     log.debug('Received message: ', event);
+
+    // Handle zapper messages separately
+    if (event.name === 'zapperController') {
+      handleZapperMessage(event.name, event.message);
+      return;
+    }
+
     // Cast the received event message to our expected
     // RequestRulesResponseMessage type.
     const message = event.message;
@@ -22705,24 +22712,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   
   // Load persistent zapper rules for this site
   function loadPersistentZapperRules() {
-    log('Loading persistent zapper rules for hostname:', location.hostname);
-    
+    log.info('Loading persistent zapper rules for hostname:', location.hostname);
+
     const tryLoadRules = (attemptCount = 0) => {
       if (safari && safari.extension) {
         safari.extension.dispatchMessage('zapperController', {
           action: 'loadRules',
           hostname: location.hostname
         });
-        log('Dispatched loadRules message for persistent zapper rules (attempt', attemptCount + 1, ')');
+        log.info('Dispatched loadRules message for persistent zapper rules (attempt', attemptCount + 1, ')');
       } else {
-        log('Safari extension not available for persistent zapper rules, attempt', attemptCount + 1);
+        log.info('Safari extension not available for persistent zapper rules, attempt', attemptCount + 1);
         // Retry up to 5 times with increasing delays
         if (attemptCount < 5) {
           setTimeout(() => tryLoadRules(attemptCount + 1), (attemptCount + 1) * 200);
         }
       }
     };
-    
+
     tryLoadRules();
   }
   
@@ -22925,25 +22932,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   function handleZapperMessage(messageName, userInfo) {
     if (messageName === 'zapperController') {
       const action = userInfo?.action;
-      
+
       switch (action) {
         case 'activateZapper':
           loadElementZapper();
           break;
-          
+
         case 'loadRulesResponse':
           const rules = userInfo?.rules;
-          log('Received loadRulesResponse with rules:', rules);
+          log.info('Received loadRulesResponse with rules:', rules);
           if (rules && Array.isArray(rules) && rules.length > 0) {
             // Apply rules even if zapper isn't active - for persistent blocking
             applyZapperRules(rules);
-            
+
             // Also apply to zapper instance if it exists
             if (zapperInstance && zapperInstance.applyCustomRules) {
               zapperInstance.applyCustomRules(rules);
             }
           } else {
-            log('No persistent zapper rules found for this hostname');
+            log.info('No persistent zapper rules found for this hostname');
           }
           break;
       }
@@ -22953,45 +22960,45 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Apply zapper rules to the page (for persistent blocking)
   function applyZapperRules(rules) {
     if (!rules || !Array.isArray(rules) || rules.length === 0) {
-      log('applyZapperRules: No rules to apply');
+      log.info('applyZapperRules: No rules to apply');
       return;
     }
-    
-    log('Applying', rules.length, 'persistent zapper rules:', rules);
-    
+
+    log.info('Applying', rules.length, 'persistent zapper rules:', rules);
+
     const applyRulesToDOM = () => {
       let styleElement = document.getElementById('wblock-persistent-zapper-rules');
       if (!styleElement) {
         styleElement = document.createElement('style');
         styleElement.id = 'wblock-persistent-zapper-rules';
         styleElement.type = 'text/css';
-        
+
         // Try to append to head, fall back to documentElement
         if (document.head) {
           document.head.appendChild(styleElement);
         } else if (document.documentElement) {
           document.documentElement.appendChild(styleElement);
         } else {
-          log('Warning: Could not find head or documentElement to append style');
+          log.info('Warning: Could not find head or documentElement to append style');
           return;
         }
-        log('Created new persistent style element');
+        log.info('Created new persistent style element');
       }
-      
+
       // Build CSS rules for all selectors
       const cssRules = rules.map(selector => `${selector} { display: none !important; }`).join('\n');
       styleElement.textContent = cssRules;
-      
-      log(`Applied ${rules.length} persistent zapper rules for ${location.hostname}`);
-      log('CSS rules applied:', cssRules);
-      
+
+      log.info(`Applied ${rules.length} persistent zapper rules for ${location.hostname}`);
+      log.info('CSS rules applied:', cssRules);
+
       // Also log how many elements each rule affects
       rules.forEach(selector => {
         try {
           const elements = document.querySelectorAll(selector);
-          log(`Rule "${selector}" affects ${elements.length} elements`);
+          log.info(`Rule "${selector}" affects ${elements.length} elements`);
         } catch (e) {
-          log(`Rule "${selector}" is invalid:`, e.message);
+          log.info(`Rule "${selector}" is invalid:`, e.message);
         }
       });
     };
