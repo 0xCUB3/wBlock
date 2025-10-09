@@ -16,157 +16,165 @@ struct SettingsView: View {
     @State private var showingRestartConfirmation = false
     @State private var isRestarting = false
 
-    @Environment(\.dismiss) private var dismiss
-
     var body: some View {
-        let content: AnyView = {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    LazyVStack(spacing: 16) {
+                        #if os(macOS)
+                        settingsSectionView(title: "Display") {
+                            HStack {
+                                Text("Show blocked item count in toolbar")
+                                    .font(.body)
+                                Spacer()
+                                Toggle("", isOn: $isBadgeCounterEnabled)
+                                    .labelsHidden()
+                                    .toggleStyle(.switch)
+                            }
+                            .padding(16)
+                        }
+                        #endif
+
+                        settingsSectionView(title: "Actions") {
+                            NavigationLink {
+                                LogsView()
+                            } label: {
+                                HStack {
+                                    Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(16)
+                        }
+
+                        settingsSectionView(title: "Filter Auto-Update") {
+                            VStack(spacing: 0) {
+                                HStack {
+                                    Text("Enable Auto-Updates")
+                                        .font(.body)
+                                    Spacer()
+                                    Toggle("", isOn: $autoUpdateEnabled)
+                                        .labelsHidden()
+                                        .toggleStyle(.switch)
+                                }
+                                .padding(16)
+
+                                Divider()
+                                    .padding(.leading, 16)
+
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Update Frequency")
+                                        .font(.body)
+                                        .fontWeight(.medium)
+
+                                    Slider(
+                                        value: autoUpdateIntervalBinding,
+                                        in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
+                                        step: 1
+                                    ) {
+                                        Text("Frequency")
+                                    } minimumValueLabel: {
+                                        Text("1h")
+                                            .font(.caption2)
+                                    } maximumValueLabel: {
+                                        Text("7d")
+                                            .font(.caption2)
+                                    }
+
+                                    HStack {
+                                        Text(intervalDescription(hours: autoUpdateIntervalHours))
+                                        Spacer()
+                                        Text(nextScheduleLine)
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                }
+                                .disabled(!autoUpdateEnabled)
+                                .padding(16)
+                            }
+                        }
+
+                        settingsSectionView(title: "About") {
+                            HStack {
+                                Text("wBlock Version")
+                                    .font(.body)
+                                Spacer()
+                                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(16)
+                        }
+
+                        settingsSectionView(title: "Danger Zone") {
+                            Button(role: .destructive) {
+                                showingRestartConfirmation = true
+                            } label: {
+                                HStack {
+                                    if isRestarting {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .padding(.trailing, 8)
+                                    }
+                                    Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                                    Spacer()
+                                }
+                            }
+                            .disabled(isRestarting)
+                            .padding(16)
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    Spacer(minLength: 20)
+                }
+                .padding(.vertical)
+            }
             #if os(iOS)
-            return AnyView(
-                NavigationView {
-                    formContent
-                    .navigationTitle("Settings")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") { dismiss() }
-                        }
-                    }
-                }
-            )
-            #else
-            return AnyView(
-                VStack(spacing: 0) {
-                    SheetHeader(title: "Settings") {
-                        dismiss()
-                    }
-
-                    formContent
-                        .formStyle(.grouped)
-
-                    Spacer()
-                }
-                #if os(macOS)
-                .frame(minWidth: 350, minHeight: 200)
-                #endif
-            )
+            .padding(.horizontal, 16)
+            .navigationBarTitleDisplayMode(.inline)
             #endif
-        }()
-
-        return content
-            .task {
+        }
+        .task {
+            await updateScheduleLine()
+            await MainActor.run { startTimer() }
+        }
+        .onDisappear { stopTimer() }
+        .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Restart", role: .destructive) { restartOnboarding() }
+        } message: {
+            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+        }
+        .onChange(of: autoUpdateEnabled) { isEnabled in
+            Task {
+                await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
                 await updateScheduleLine()
-                await MainActor.run { startTimer() }
+                await MainActor.run {
+                    if isEnabled {
+                        startTimer()
+                    } else {
+                        stopTimer()
+                    }
+                }
             }
-            .onDisappear { stopTimer() }
-            .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Restart", role: .destructive) { restartOnboarding() }
-            } message: {
-                Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
-            }
+        }
     }
-    
-    @ViewBuilder
-    private var formContent: some View {
-        Form {
-            #if os(macOS)
-            Section {
-                Toggle("Show blocked item count in toolbar", isOn: $isBadgeCounterEnabled)
-                    .toggleStyle(.switch)
-            }
-            #endif
 
-            Section {
-                Button {
-                    Task { await filterManager.checkForUpdates() }
-                } label: {
-                    HStack {
-                        Label("Check for Filterlist Updates", systemImage: "arrow.clockwise")
-                        Spacer()
-                    }
-                }
-                .disabled(filterManager.isLoading)
+    private func settingsSectionView<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
+                .padding(.horizontal, 4)
 
-                NavigationLink {
-                    LogsView()
-                } label: {
-                    Label("View Logs", systemImage: "doc.text.magnifyingglass")
-                }
-            } header: {
-                Text("Actions")
+            VStack(spacing: 0) {
+                content()
             }
-            .textCase(.none)
-
-            Section {
-                Toggle("Enable Auto-Updates", isOn: $autoUpdateEnabled)
-                    .toggleStyle(.switch)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Slider(
-                        value: autoUpdateIntervalBinding,
-                        in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
-                        step: 1
-                    ) {
-                        Text("Update Frequency")
-                    } minimumValueLabel: {
-                        Text("1h")
-                    } maximumValueLabel: {
-                        Text("7d")
-                    }
-
-                    HStack {
-                        Text(intervalDescription(hours: autoUpdateIntervalHours))
-                        Spacer()
-                        Text(nextScheduleLine)
-                    }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                }
-                .disabled(!autoUpdateEnabled)
-            } header: {
-                Text("Filterlist Auto-Update")
-            }
-            .textCase(.none)
-            .onChange(of: autoUpdateEnabled) { isEnabled in
-                Task {
-                    await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-                    await updateScheduleLine()
-                    await MainActor.run {
-                        if isEnabled {
-                            startTimer()
-                        } else {
-                            stopTimer()
-                        }
-                    }
-                }
-            }
-            Section {
-                HStack {
-                    Text("wBlock Version")
-                    Spacer()
-                    Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")
-                        .foregroundColor(.secondary)
-                }
-            } header: {
-                Text("About")
-            }
-            .textCase(.none)
-
-            Section {
-                Button(role: .destructive) {
-                    showingRestartConfirmation = true
-                } label: {
-                    HStack {
-                        if isRestarting {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                        }
-                        Text(isRestarting ? "Restarting…" : "Restart Onboarding")
-                    }
-                }
-                .disabled(isRestarting)
-            }
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
     }
 }
@@ -227,9 +235,6 @@ private extension SettingsView {
                 nextScheduleLine = "Next: Loading…"
             }
             await updateScheduleLine()
-            await MainActor.run {
-                dismiss()
-            }
         }
     }
 

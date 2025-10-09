@@ -423,7 +423,6 @@
 				Info.plist,
 				LogsView.swift,
 				MigrationView.swift,
-				MissingFiltersView.swift,
 				OnboardingView.swift,
 				ProtoBufManager.swift,
 				Protos/wblock_data.proto,

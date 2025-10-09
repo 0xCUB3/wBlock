@@ -13,15 +13,10 @@ struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
     @StateObject private var userScriptManager = UserScriptManager.shared
     @StateObject private var dataManager = ProtobufDataManager.shared
-    @State private var showOnboarding = false
     @State private var showingAddFilterSheet = false
-    @State private var showingLogsView = false
-    @State private var showingUserScriptsView = false
     @State private var showOnlyEnabledLists = false
-    @State private var showingWhitelistSheet = false
-    @State private var showingSettingsSheet = false
     @Environment(\.scenePhase) var scenePhase
-    
+
     private var hasCompletedOnboarding: Bool {
         dataManager.hasCompletedOnboarding
     }
@@ -29,14 +24,14 @@ struct ContentView: View {
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
     }
-    // Sum of sourceRuleCount for selected filters as initial estimate
+
     private var sourceRulesCount: Int {
         filterManager.filterLists
             .filter { $0.isSelected }
             .compactMap { $0.sourceRuleCount }
             .reduce(0, +)
     }
-    // Show the last applied rule count, falling back to source count if no prior apply
+
     private var displayedRuleCount: Int {
         if (filterManager.lastRuleCount > 0) {
             return filterManager.lastRuleCount
@@ -44,314 +39,228 @@ struct ContentView: View {
             return sourceRulesCount
         }
     }
-    
+
     private var displayableCategories: [FilterListCategory] {
         FilterListCategory.allCases.filter { $0 != .all && $0 != .custom }
     }
 
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                #if os(iOS)
-                headerView
-                #endif
-                
-                ScrollView {
-                    VStack(spacing: 20) {
-                        statsCardsView
-                        
-                        LazyVStack(spacing: 16) {
-                            ForEach(displayableCategories) { category in
-                                let listsForCategory = self.listsForCategory(category)
-                                if !listsForCategory.isEmpty {
-                                    filterSectionView(category: category, filters: listsForCategory)
-                                }
-                            }
-
-                            let customLists = self.customLists
-                            if !customLists.isEmpty {
-                                filterSectionView(category: .custom, filters: customLists)
-                            }
-                        }
-                        .padding(.horizontal)
-                        
-                        Spacer(minLength: 20)
-                    }
-                    .padding(.vertical)
+        #if os(iOS)
+        if #available(iOS 18.0, *) {
+            TabView {
+                Tab("Filters", systemImage: "list.bullet.rectangle") {
+                    filtersView
                 }
-                #if os(iOS)
-                .padding(.horizontal, 16)
-                #endif
-            }
-            #if os(macOS)
-            .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
-                   minHeight: 500, idealHeight: 650, maxHeight: .infinity)
-            #else
-            .frame(minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
-                   minHeight: 0, idealHeight: .infinity, maxHeight: .infinity)
-            #endif
-            .sheet(isPresented: $showingAddFilterSheet) {
-                AddFilterListView(filterManager: filterManager)
-            }
-            .sheet(isPresented: $showingLogsView) {
-                LogsView()
-            }
-            .sheet(isPresented: $showingUserScriptsView) {
-                UserScriptManagerView(userScriptManager: userScriptManager)
-            }
-            // Add settings sheet
-            .sheet(isPresented: $showingSettingsSheet) {
-                SettingsView(filterManager: filterManager)
-            }
-            .sheet(isPresented: $filterManager.showingUpdatePopup) {
-                UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
-            }
-            .sheet(isPresented: $filterManager.showMissingFiltersSheet) {
-                MissingFiltersView(filterManager: filterManager)
-            }
-            #if os(macOS)
-            .sheet(isPresented: $showingWhitelistSheet) {
-                WhitelistManagerView(filterManager: filterManager)
-                    .frame(width: 400, height: 400)
-            }
-            #endif
-            .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
-                ApplyChangesProgressView(
-                    viewModel: filterManager.applyProgressViewModel,
-                    isPresented: $filterManager.showingApplyProgressSheet
-                )
-            }
-            .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
-                Button("OK", role: .cancel) {}
-            }
-            .alert("Download Complete", isPresented: $filterManager.showingDownloadCompleteAlert) {
-                Button("Apply Now") {
-                    Task {
-                        await filterManager.applyDownloadedChanges()
-                    }
+                Tab("Userscripts", systemImage: "doc.text.fill") {
+                    userscriptsView
                 }
-                Button("Later", role: .cancel) {}
-            } message: {
-                Text(filterManager.downloadCompleteMessage)
-            }
-            .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(filterManager.categoryWarningMessage)
-            }
-            .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
-                Button("Remove Older Versions", role: .destructive) {
-                    userScriptManager.confirmDuplicateRemoval()
-                }
-                Button("Keep All", role: .cancel) {
-                    userScriptManager.cancelDuplicateRemoval()
-                }
-            } message: {
-                Text(userScriptManager.duplicatesMessage)
-            }
-            .overlay {
-                if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingFiltersSheet && !filterManager.showingUpdatePopup {
-                    ZStack {
-                        Color.black.opacity(0.1).ignoresSafeArea()
-                        VStack {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                            Text(filterManager.statusDescription)
-                                .padding(.top, 10)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(20)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                        .shadow(radius: 10)
-                    }
+                Tab("Settings", systemImage: "gear") {
+                    settingsView
                 }
             }
-            .onAppear {
-                Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
-                // Set the UserScriptManager for filter updates
-                filterManager.setUserScriptManager(userScriptManager)
-                #if os(iOS)
-                requestNotificationPermission()
-                #endif
-            }
-            #if os(macOS)
-            .toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    Button {
-                        Task { await filterManager.checkForUpdates() }
-                    } label: {
-                        Label("Check for Updates", systemImage: "arrow.clockwise")
+            .modifier(ContentModifiers(
+                filterManager: filterManager,
+                userScriptManager: userScriptManager,
+                dataManager: dataManager,
+                showingAddFilterSheet: $showingAddFilterSheet,
+                scenePhase: scenePhase
+            ))
+        } else {
+            // iOS 17 fallback
+            TabView {
+                filtersView
+                    .tabItem {
+                        Label("Filters", systemImage: "list.bullet.rectangle")
                     }
-                    .disabled(filterManager.isLoading)
-                    .help("Check for filter list updates")
-                    
-                    Button {
-                        filterManager.checkAndEnableFilters(forceReload: true)
-                    } label: {
-                        Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .disabled(filterManager.isLoading || enabledListsCount == 0)
-                    .help("Apply selected filters and reload Safari")
-                    
-                    Button {
-                        showingLogsView = true
-                    } label: {
-                        Label("Show Logs", systemImage: "doc.text.magnifyingglass")
-                    }
-                    .help("View application logs")
-                    
-                    Button {
-                        showingUserScriptsView = true
-                    } label: {
+                userscriptsView
+                    .tabItem {
                         Label("Userscripts", systemImage: "doc.text.fill")
                     }
-                    .help("Manage userscripts")
-                    
-                    Button {
-                        showingWhitelistSheet = true
-                    } label: {
-                        Label("Whitelisted Domains", systemImage: "list.bullet.indent")
-                    }
-                    .help("Configure whitelisted domains")
-                    
-                    Button {
-                        showingAddFilterSheet = true
-                    } label: {
-                        Label("Add Filter", systemImage: "plus")
-                    }
-                    .help("Add custom filter list from URL")
-                    
-                    Button {
-                        showOnlyEnabledLists.toggle()
-                    } label: {
-                        Label("Show Enabled Only", systemImage: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                    }
-                    .help("Toggle to show only enabled filter lists")
-                    
-                    // Add settings button to macOS toolbar
-                    Button {
-                        showingSettingsSheet = true
-                    } label: {
+                settingsView
+                    .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
-                    .help("wBlock settings")
-                }
             }
-            #endif
-            #if os(iOS)
-            .onChange(of: scenePhase) { oldPhase, newPhase in
-                if newPhase == .background && filterManager.hasUnappliedChanges {
-                    scheduleNotification(delay: 1) // Reduced delay to 1 second
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
-                print("Received applyWBlockChangesNotification in ContentView.")
-                // Ensure we are on the main thread for UI updates if needed
-                print("Triggering applyChanges from notification observer.")
-                filterManager.showingApplyProgressSheet = true // Show progress sheet
-                Task {
-                    await filterManager.checkAndEnableFilters(forceReload: true)
-                }
-            }
-            #endif
-        }
-        #if os(iOS)
-        // Show onboarding only after data finished loading and onboarding not completed
-        .fullScreenCover(isPresented: Binding(
-            get: { !dataManager.isLoading && !hasCompletedOnboarding },
-            set: { _ in }
-        )) {
-            OnboardingView(filterManager: filterManager)
+            .modifier(ContentModifiers(
+                filterManager: filterManager,
+                userScriptManager: userScriptManager,
+                dataManager: dataManager,
+                showingAddFilterSheet: $showingAddFilterSheet,
+                scenePhase: scenePhase
+            ))
         }
         #elseif os(macOS)
-        .sheet(isPresented: Binding(
-            get: { !dataManager.isLoading && !hasCompletedOnboarding },
-            set: { _ in }
-        )) {
-            OnboardingView(filterManager: filterManager)
+        if #available(macOS 15.0, *) {
+            TabView {
+                Tab("Filters", systemImage: "list.bullet.rectangle") {
+                    filtersView
+                }
+                Tab("Userscripts", systemImage: "doc.text.fill") {
+                    UserScriptManagerView(userScriptManager: userScriptManager)
+                }
+                Tab("Whitelist", systemImage: "list.bullet.indent") {
+                    WhitelistManagerView(filterManager: filterManager)
+                }
+                Tab("Settings", systemImage: "gear") {
+                    SettingsView(filterManager: filterManager)
+                }
+            }
+            .modifier(ContentModifiers(
+                filterManager: filterManager,
+                userScriptManager: userScriptManager,
+                dataManager: dataManager,
+                showingAddFilterSheet: $showingAddFilterSheet,
+                scenePhase: scenePhase
+            ))
+        } else {
+            // macOS 14 fallback
+            TabView {
+                filtersView
+                    .tabItem {
+                        Label("Filters", systemImage: "list.bullet.rectangle")
+                    }
+                UserScriptManagerView(userScriptManager: userScriptManager)
+                    .tabItem {
+                        Label("Userscripts", systemImage: "doc.text.fill")
+                    }
+                WhitelistManagerView(filterManager: filterManager)
+                    .tabItem {
+                        Label("Whitelist", systemImage: "list.bullet.indent")
+                    }
+                SettingsView(filterManager: filterManager)
+                    .tabItem {
+                        Label("Settings", systemImage: "gear")
+                    }
+            }
+            .modifier(ContentModifiers(
+                filterManager: filterManager,
+                userScriptManager: userScriptManager,
+                dataManager: dataManager,
+                showingAddFilterSheet: $showingAddFilterSheet,
+                scenePhase: scenePhase
+            ))
         }
         #endif
     }
-    
-    #if os(iOS)
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
-                print("Notification permission granted.")
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
-            }
-        }
-    }
 
-    private func scheduleNotification(delay: TimeInterval = 1.0) { // Added delay parameter, default to 1 second
-        let content = UNMutableNotificationContent()
-        content.title = "Psst! You forgot something!"
-        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
-        content.sound = .default
-        content.userInfo = ["action_type": "apply_wblock_changes"] // Add userInfo for tap action
+    private var filtersView: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    statsCardsView
 
-        // Schedule the notification
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+                    LazyVStack(spacing: 16) {
+                        ForEach(displayableCategories) { category in
+                            let listsForCategory = self.listsForCategory(category)
+                            if !listsForCategory.isEmpty {
+                                filterSectionView(category: category, filters: listsForCategory)
+                            }
+                        }
 
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            } else {
-                print("Notification scheduled successfully.")
-            }
-        }
-    }
-    #endif
+                        let customLists = self.customLists
+                        if !customLists.isEmpty {
+                            filterSectionView(category: .custom, filters: customLists)
+                        }
+                    }
+                    .padding(.horizontal)
 
-    #if os(iOS)
-    private var headerView: some View {
-        HStack {
-            Spacer()
-            
-            HStack(spacing: 12) {
-                Button { Task { await filterManager.checkForUpdates() } } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Spacer(minLength: 20)
                 }
-                .disabled(filterManager.isLoading)
-                .accessibilityLabel("Check for Updates")
-                
-                Button { Task { await filterManager.checkAndEnableFilters(forceReload: true) } } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
+                .padding(.vertical)
+            }
+            #if os(iOS)
+            .padding(.horizontal, 16)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Task {
+                            await filterManager.checkAndEnableFilters(forceReload: true)
+                        }
+                    } label: {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                    }
+                    .disabled(filterManager.isLoading || enabledListsCount == 0)
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    HStack {
+                        Button {
+                            Task {
+                                await filterManager.checkForUpdates()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.down.circle")
+                        }
+                        .disabled(filterManager.isLoading)
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        Button {
+                            showOnlyEnabledLists.toggle()
+                        } label: {
+                            Image(systemName: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        }
+                    }
+                }
+            }
+            #endif
+        }
+        #if os(macOS)
+        .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
+               minHeight: 500, idealHeight: 650, maxHeight: .infinity)
+        .toolbar {
+            ToolbarItemGroup(placement: .automatic) {
+                Button {
+                    Task {
+                        await filterManager.checkAndEnableFilters(forceReload: true)
+                    }
+                } label: {
+                    Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .disabled(filterManager.isLoading || enabledListsCount == 0)
-                .accessibilityLabel("Apply Changes")
-                
-                Button { showingLogsView = true } label: {
-                    Image(systemName: "doc.text.magnifyingglass")
+
+                Button {
+                    showingAddFilterSheet = true
+                } label: {
+                    Label("Add Filter", systemImage: "plus")
                 }
-                .accessibilityLabel("Show Logs")
-                
-                Button { showingUserScriptsView = true } label: {
-                    Image(systemName: "doc.text.fill")
+                Button {
+                    showOnlyEnabledLists.toggle()
+                } label: {
+                    Label("Show Enabled Only", systemImage: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                 }
-                .accessibilityLabel("Userscripts")
-                
-                Button { showingAddFilterSheet = true } label: {
-                    Image(systemName: "plus")
-                }
-                .accessibilityLabel("Add Filter")
-                
-                // Add settings button
-                Button { showingSettingsSheet = true } label: {
-                    Image(systemName: "gear")
-                }
-                .accessibilityLabel("Settings")
             }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        #endif
     }
-    #endif
-    
+
+    private var userscriptsView: some View {
+        NavigationStack {
+            UserScriptManagerView(userScriptManager: userScriptManager)
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            Task {
+                                await filterManager.checkAndEnableFilters(forceReload: true)
+                            }
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                        .disabled(filterManager.isLoading || enabledListsCount == 0)
+                    }
+                }
+                #endif
+        }
+    }
+
+    private var settingsView: some View {
+        SettingsView(filterManager: filterManager)
+    }
+
     private var statsCardsView: some View {
         HStack(spacing: 12) {
             StatCard(
@@ -371,23 +280,22 @@ struct ContentView: View {
         }
         .padding(.horizontal)
     }
-    
-    
+
     private func listsForCategory(_ category: FilterListCategory) -> [FilterList] {
         filterManager.filterLists.filter { $0.category == category && (!showOnlyEnabledLists || $0.isSelected) }
     }
-    
+
     private var customLists: [FilterList] {
         filterManager.filterLists.filter { $0.category == .custom && (!showOnlyEnabledLists || $0.isSelected) }
     }
-    
+
     private func filterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(category.rawValue)
                     .font(.headline)
                     .foregroundColor(.primary)
-                
+
                 if filterManager.isCategoryApproachingLimit(category) {
                     Button {
                         filterManager.showCategoryWarning(for: category)
@@ -398,15 +306,15 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                
+
                 Spacer()
             }
             .padding(.horizontal, 4)
-            
+
             VStack(spacing: 0) {
                 ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
                     filterRowView(filter: filter)
-                    
+
                     if index < filters.count - 1 {
                         Divider()
                             .padding(.leading, 16)
@@ -416,7 +324,7 @@ struct ContentView: View {
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
     }
-    
+
     private func filterRowView(filter: FilterList) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
@@ -448,17 +356,27 @@ struct ContentView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if !filter.version.isEmpty {
-                    Text("Version: \(filter.version)")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
-                }
+                HStack(spacing: 4) {
+                    if !filter.version.isEmpty {
+                        Text("Version \(filter.version)")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
 
-                if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
-                    Text("Last updated: \(lastUpdatedFormatted)")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                    if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
+                        if !filter.version.isEmpty {
+                            Text("·")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                        Text(lastUpdatedFormatted)
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             Spacer()
             Toggle("", isOn: Binding(
@@ -503,8 +421,175 @@ struct ContentView: View {
         }
     }
 
-    // This function is now replaced by using filter.sourceRuleCount
-    // private func getRuleCountForFilter(_ filter: FilterList) -> String { ... }
+    #if os(iOS)
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted {
+                print("Notification permission granted.")
+            } else if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func scheduleNotification(delay: TimeInterval = 1.0) {
+        let content = UNMutableNotificationContent()
+        content.title = "Psst! You forgot something!"
+        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
+        content.sound = .default
+        content.userInfo = ["action_type": "apply_wblock_changes"]
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error.localizedDescription)")
+            } else {
+                print("Notification scheduled successfully.")
+            }
+        }
+    }
+    #endif
+}
+
+struct ContentModifiers: ViewModifier {
+    @ObservedObject var filterManager: AppFilterManager
+    @ObservedObject var userScriptManager: UserScriptManager
+    let dataManager: ProtobufDataManager
+    @Binding var showingAddFilterSheet: Bool
+    let scenePhase: ScenePhase
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: $showingAddFilterSheet) {
+                AddFilterListView(filterManager: filterManager)
+            }
+            .sheet(isPresented: $filterManager.showingUpdatePopup) {
+                UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
+            }
+            .sheet(isPresented: $filterManager.showMissingItemsSheet) {
+                MissingItemsView(filterManager: filterManager)
+            }
+            .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
+                ApplyChangesProgressView(
+                    viewModel: filterManager.applyProgressViewModel,
+                    isPresented: $filterManager.showingApplyProgressSheet
+                )
+            }
+            .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
+                Button("OK", role: .cancel) {}
+            }
+            .alert("Download Complete", isPresented: $filterManager.showingDownloadCompleteAlert) {
+                Button("Apply Now") {
+                    Task {
+                        await filterManager.applyDownloadedChanges()
+                    }
+                }
+                Button("Later", role: .cancel) {}
+            } message: {
+                Text(filterManager.downloadCompleteMessage)
+            }
+            .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(filterManager.categoryWarningMessage)
+            }
+            .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
+                Button("Remove Older Versions", role: .destructive) {
+                    userScriptManager.confirmDuplicateRemoval()
+                }
+                Button("Keep All", role: .cancel) {
+                    userScriptManager.cancelDuplicateRemoval()
+                }
+            } message: {
+                Text(userScriptManager.duplicatesMessage)
+            }
+            .overlay {
+                if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingItemsSheet && !filterManager.showingUpdatePopup {
+                    ZStack {
+                        Color.black.opacity(0.1).ignoresSafeArea()
+                        VStack {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                            Text(filterManager.statusDescription)
+                                .padding(.top, 10)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(20)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                        .shadow(radius: 10)
+                    }
+                }
+            }
+            .onAppear {
+                Task { await ConcurrentLogManager.shared.log("wBlock application appeared.") }
+                filterManager.setUserScriptManager(userScriptManager)
+                #if os(iOS)
+                requestNotificationPermission()
+                #endif
+            }
+            #if os(iOS)
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                if newPhase == .background && filterManager.hasUnappliedChanges {
+                    scheduleNotification(delay: 1)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
+                print("Received applyWBlockChangesNotification in ContentView.")
+                print("Triggering applyChanges from notification observer.")
+                filterManager.showingApplyProgressSheet = true
+                Task {
+                    await filterManager.checkAndEnableFilters(forceReload: true)
+                }
+            }
+            .fullScreenCover(isPresented: Binding(
+                get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
+                set: { _ in }
+            )) {
+                OnboardingView(filterManager: filterManager)
+            }
+            #elseif os(macOS)
+            .sheet(isPresented: Binding(
+                get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
+                set: { _ in }
+            )) {
+                OnboardingView(filterManager: filterManager)
+            }
+            #endif
+    }
+
+    #if os(iOS)
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted {
+                print("Notification permission granted.")
+            } else if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func scheduleNotification(delay: TimeInterval = 1.0) {
+        let content = UNMutableNotificationContent()
+        content.title = "Psst! You forgot something!"
+        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
+        content.sound = .default
+        content.userInfo = ["action_type": "apply_wblock_changes"]
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error.localizedDescription)")
+            } else {
+                print("Notification scheduled successfully.")
+            }
+        }
+    }
+    #endif
 }
 
 struct AddFilterListView: View {
@@ -526,7 +611,7 @@ struct AddFilterListView: View {
                 Text("Filter Name (Optional):").font(.caption)
                 TextField("e.g., My Ad Block List", text: $filterName)
             }
-            
+
             VStack(alignment: .leading) {
                 Text("Filter URL:").font(.caption)
                 TextField("https://example.com/filter.txt", text: $filterURLString)
@@ -539,9 +624,9 @@ struct AddFilterListView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Spacer()
-                
+
                 Button("Add") {
                     validateAndAdd()
                 }
@@ -563,7 +648,7 @@ struct AddFilterListView: View {
 
     private func validateAndAdd() {
         let trimmedURL = filterURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         guard !trimmedURL.isEmpty,
               let url = URL(string: trimmedURL),
               url.scheme != nil,
@@ -572,7 +657,7 @@ struct AddFilterListView: View {
             showErrorAlert = true
             return
         }
-        
+
         if filterManager.filterLists.contains(where: { $0.url == url }) {
             errorMessage = "A filter list with this URL already exists."
             showErrorAlert = true

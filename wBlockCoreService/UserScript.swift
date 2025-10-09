@@ -40,35 +40,43 @@ public struct UserScript: Identifiable, Codable, Hashable {
         self.content = content
     }
     
+    /// Remove emojis from a string
+    private func removeEmojis(from string: String) -> String {
+        return string.unicodeScalars
+            .filter { !$0.properties.isEmoji && !$0.properties.isEmojiPresentation }
+            .reduce("") { $0 + String($1) }
+            .trimmingCharacters(in: .whitespaces)
+    }
+
     /// Extract metadata from userscript content
     public mutating func parseMetadata() {
         let lines = content.components(separatedBy: .newlines)
         var inMetadataBlock = false
-        
+
         for line in lines {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-            
+
             if trimmedLine.hasPrefix("// ==UserScript==") {
                 inMetadataBlock = true
                 continue
             }
-            
+
             if trimmedLine.hasPrefix("// ==/UserScript==") {
                 break
             }
-            
+
             if inMetadataBlock && trimmedLine.hasPrefix("// @") {
                 let components = trimmedLine.dropFirst(3).components(separatedBy: " ")
                 guard components.count >= 2 else { continue }
-                
+
                 let key = String(components[0])
                 let value = components.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
-                
+
                 switch key {
                 case "@name":
-                    self.name = value
+                    self.name = removeEmojis(from: value)
                 case "@description":
-                    self.description = value
+                    self.description = removeEmojis(from: value)
                 case "@version":
                     self.version = value
                 case "@match":

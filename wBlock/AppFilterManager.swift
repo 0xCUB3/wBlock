@@ -27,12 +27,13 @@ class AppFilterManager: ObservableObject {
     @Published var hasError: Bool = false
     @Published var progress: Float = 0
     @Published var missingFilters: [FilterList] = []
+    @Published var missingUserScripts: [UserScript] = []
     @Published var whitelistViewModel = WhitelistViewModel()
     @Published var availableUpdates: [FilterList] = []
     @Published var showingUpdatePopup = false
     @Published var showingNoUpdatesAlert = false
     @Published var hasUnappliedChanges = false
-    @Published var showMissingFiltersSheet = false
+    @Published var showMissingItemsSheet = false
     @Published var showingApplyProgressSheet = false
     @Published var showingDownloadCompleteAlert = false
     @Published var downloadCompleteMessage = ""
@@ -116,7 +117,7 @@ class AppFilterManager: ObservableObject {
         downloadCompleteMessage = ""
         missingFilters = []
         availableUpdates = []
-        showMissingFiltersSheet = false
+        showMissingItemsSheet = false
         ruleCountsByCategory = [:]
         categoriesApproachingLimit = []
         showingCategoryWarningAlert = false
@@ -351,13 +352,26 @@ class AppFilterManager: ObservableObject {
     // MARK: - Core functionality
     func checkAndEnableFilters(forceReload: Bool = false) {
         missingFilters.removeAll()
+        missingUserScripts.removeAll()
+
+        // Check for missing filters
         for filter in filterLists where filter.isSelected {
             if !loader.filterFileExists(filter) {
                 missingFilters.append(filter)
             }
         }
-        if !missingFilters.isEmpty {
-            showMissingFiltersSheet = true
+
+        // Check for missing userscripts
+        if let userScriptManager = filterUpdater.userScriptManager {
+            for script in userScriptManager.userScripts where script.isEnabled {
+                if !script.isDownloaded {
+                    missingUserScripts.append(script)
+                }
+            }
+        }
+
+        if !missingFilters.isEmpty || !missingUserScripts.isEmpty {
+            showMissingItemsSheet = true
         } else if forceReload || hasUnappliedChanges {
             // Only apply changes if explicitly requested or if there are unapplied changes
             showingApplyProgressSheet = true
@@ -1024,11 +1038,19 @@ class AppFilterManager: ObservableObject {
         statusDescription = "Checking for updates..."
         // Ensure counts are up-to-date before checking for updates
         await updateVersionsAndCounts()
-        
+
         let enabledFilters = filterLists.filter { $0.isSelected }
         let updatedFilters = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
 
         availableUpdates = updatedFilters
+
+        // Also check for userscript updates
+        if let userScriptManager = filterUpdater.userScriptManager {
+            let downloadedScripts = userScriptManager.userScripts.filter { $0.isDownloaded }
+            for script in downloadedScripts {
+                await userScriptManager.updateUserScript(script)
+            }
+        }
 
         if !availableUpdates.isEmpty {
             showingUpdatePopup = true
@@ -1038,7 +1060,7 @@ class AppFilterManager: ObservableObject {
             statusDescription = "No updates available."
             Task { await ConcurrentLogManager.shared.log("No updates available.") }
         }
-        
+
         isLoading = false
     }
 
@@ -1127,39 +1149,69 @@ class AppFilterManager: ObservableObject {
         }
     }
     
-    func downloadMissingFilters() async {
+    func downloadMissingItems() async {
         isLoading = true
         progress = 0
-        statusDescription = "Downloading missing filters..."
+        statusDescription = "Downloading missing items..."
 
-        let totalSteps = Float(missingFilters.count)
-        var completedSteps: Float = 0
-        var downloadedCount = 0
-        
         let tempMissingFilters = self.missingFilters
+        let tempMissingScripts = self.missingUserScripts
+        let totalSteps = Float(tempMissingFilters.count + tempMissingScripts.count)
+        var completedSteps: Float = 0
+        var downloadedFiltersCount = 0
+        var downloadedScriptsCount = 0
 
+        // Download missing filters
         for filter in tempMissingFilters {
             let success = await filterUpdater.fetchAndProcessFilter(filter)
             if success {
                 await MainActor.run {
                     self.missingFilters.removeAll { $0.id == filter.id }
                 }
-                downloadedCount += 1
+                downloadedFiltersCount += 1
             }
             completedSteps += 1
             await MainActor.run {
                 self.progress = completedSteps / totalSteps
             }
         }
-        
+
+        // Download missing userscripts
+        if let userScriptManager = filterUpdater.userScriptManager {
+            for script in tempMissingScripts {
+                if let url = script.url {
+                    await userScriptManager.addUserScript(from: url)
+                    await MainActor.run {
+                        self.missingUserScripts.removeAll { $0.id == script.id }
+                    }
+                    downloadedScriptsCount += 1
+                }
+                completedSteps += 1
+                await MainActor.run {
+                    self.progress = completedSteps / totalSteps
+                }
+            }
+        }
+
         saveFilterListsSync()
 
         isLoading = false
         progress = 0
-        
+
+        var message = "Downloaded "
+        var parts: [String] = []
+        if downloadedFiltersCount > 0 {
+            parts.append("\(downloadedFiltersCount) filter\(downloadedFiltersCount == 1 ? "" : "s")")
+        }
+        if downloadedScriptsCount > 0 {
+            parts.append("\(downloadedScriptsCount) userscript\(downloadedScriptsCount == 1 ? "" : "s")")
+        }
+        message += parts.joined(separator: " and ")
+        message += ". Would you like to apply them now?"
+
         await MainActor.run {
-            showMissingFiltersSheet = false
-            downloadCompleteMessage = "Downloaded \(downloadedCount) missing filter(s). Would you like to apply them now?"
+            showMissingItemsSheet = false
+            downloadCompleteMessage = message
             showingDownloadCompleteAlert = true
         }
     }

@@ -10,7 +10,7 @@ import wBlockCoreService
 
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
-    
+
     @State private var scripts: [UserScript] = []
     @State private var isLoading: Bool = false
     @State private var isRefreshing: Bool = false
@@ -20,40 +20,65 @@ struct UserScriptManagerView: View {
     @State private var statusDescription: String = ""
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: UserScript?
-    @Environment(\.dismiss) private var dismiss
-    
-    private var totalScriptsTitle: String {
-        #if os(macOS)
-        return "Total Scripts"
-        #else
-        return "Scripts"
-        #endif
-    }
-    
+    @State private var showOnlyEnabled = false
+
     private var totalScriptsCount: Int {
         scripts.count
     }
-    
+
     private var enabledScriptsCount: Int {
         scripts.filter(\.isEnabled).count
     }
-    
+
+    private var displayedScripts: [UserScript] {
+        showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
+    }
+
     var body: some View {
-        SheetContainer {
-            SheetHeader(title: "Userscripts") {
-                dismiss()
+        ScrollView {
+            VStack(spacing: 20) {
+                // Stats cards
+                statsCardsView
+
+                // Scripts list
+                if scripts.isEmpty {
+                    emptyStateView
+                        .padding(.top, 40)
+                } else {
+                    scriptsListView
+                }
+
+                Spacer(minLength: 20)
             }
-
-            headerView
-
-            if scripts.isEmpty {
-                emptyStateView
-            } else {
-                scriptsList
-            }
-
-            bottomToolbar
+            .padding(.vertical)
         }
+        #if os(iOS)
+        .padding(.horizontal, 16)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                HStack {
+                    if !scripts.filter(\.isDownloaded).isEmpty {
+                        Button {
+                            refreshAllUserScripts()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .disabled(isRefreshing)
+                    }
+                    Button {
+                        showingAddScriptSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    Button {
+                        showOnlyEnabled.toggle()
+                    } label: {
+                        Image(systemName: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    }
+                }
+            }
+        }
+        #endif
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
         }) {
@@ -61,11 +86,9 @@ struct UserScriptManagerView: View {
                 refreshScripts()
             })
         }
-        #if os(macOS)
         .sheet(item: $selectedScript) { script in
             UserScriptContentView(script: script)
         }
-        #endif
         .onAppear {
             refreshScripts()
         }
@@ -80,50 +103,71 @@ struct UserScriptManagerView: View {
         } message: {
             Text(userScriptManager.duplicatesMessage)
         }
+        .overlay {
+            if showingRefreshProgress {
+                ZStack {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView(value: refreshProgress)
+                            .progressViewStyle(.linear)
+                            .frame(width: 200)
+                        Text(refreshStatus)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("\(Int(refreshProgress * 100))%")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(20)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .shadow(radius: 10)
+                }
+            }
+        }
     }
-    
+
     private func refreshScripts() {
         scripts = userScriptManager.userScripts
         statusDescription = userScriptManager.statusDescription
         isLoading = userScriptManager.isLoading
     }
-    
+
     private func refreshAllUserScripts() {
         let downloadedScripts = scripts.filter { $0.isDownloaded }
         guard !downloadedScripts.isEmpty else { return }
-        
+
         isRefreshing = true
         showingRefreshProgress = true
         refreshProgress = 0.0
         refreshStatus = "Starting refresh..."
-        
+
         Task {
             await ConcurrentLogManager.shared.log("🔄 Starting userscript refresh for \(downloadedScripts.count) scripts")
-            
+
             for (index, script) in downloadedScripts.enumerated() {
                 await MainActor.run {
                     refreshStatus = "Updating \(script.name)..."
                     refreshProgress = Double(index) / Double(downloadedScripts.count)
                 }
-                
+
                 await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
                 await userScriptManager.updateUserScript(script)
-                
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+
+                try? await Task.sleep(nanoseconds: 100_000_000)
             }
-            
+
             await MainActor.run {
                 refreshProgress = 1.0
                 refreshStatus = "Refresh complete!"
-                
+
                 scripts = userScriptManager.userScripts
                 statusDescription = userScriptManager.statusDescription
                 isLoading = userScriptManager.isLoading
             }
-            
+
             await ConcurrentLogManager.shared.log("✅ Userscript refresh completed successfully")
 
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
 
             await MainActor.run {
                 withAnimation(.easeOut(duration: 0.3)) {
@@ -133,273 +177,194 @@ struct UserScriptManagerView: View {
             }
         }
     }
-    
-    private var headerView: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 20) {
-                StatCard(
-                    title: totalScriptsTitle,
-                    value: "\(totalScriptsCount)",
-                    icon: "doc.text",
-                    pillColor: .clear,
-                    valueColor: .primary
-                )
-                
-                StatCard(
-                    title: "Enabled",
-                    value: "\(enabledScriptsCount)",
-                    icon: "checkmark.circle",
-                    pillColor: .clear,
-                    valueColor: .primary
-                )
-            }
-            
-            if isLoading {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .frame(width: 16, height: 16)
-                    Text(statusDescription)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 8)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-    }
-    
-    private var scriptsList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
-                    VStack(spacing: 0) {
-                        UserScriptRowView(
-                            script: script,
-                            onTap: {
-                                #if os(macOS)
-                                selectedScript = script
-                                #endif
-                            },
-                            onToggle: {
-                                Task {
-                                    await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name) to \(script.isEnabled ? "disabled" : "enabled")")
-                                    await userScriptManager.toggleUserScript(script)
-                                    await MainActor.run {
-                                        refreshScripts()
-                                    }
-                                }
-                            },
-                            onUpdate: {
-                                Task {
-                                    await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
-                                    await userScriptManager.updateUserScript(script)
-                                    await ConcurrentLogManager.shared.log("✅ Successfully updated userscript: \(script.name)")
-                                    refreshScripts()
-                                }
-                            },
-                            onRemove: {
-                                Task {
-                                    await ConcurrentLogManager.shared.log("🗑️ Removing userscript: \(script.name)")
-                                }
-                                userScriptManager.removeUserScript(script)
-                                refreshScripts()
-                            }
-                        )
-                        
-                        if index < scripts.count - 1 {
-                            Divider()
-                                .padding(.leading, 56) // Align with text content
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private var emptyStateView: some View {
-        EmptyStateView(
-            icon: "doc.text.magnifyingglass",
-            title: "No Userscripts",
-            description: "Add userscripts to customize your browsing experience",
-            actionTitle: "Add Userscript"
-        ) {
-            showingAddScriptSheet = true
-        }
-    }
-    
-    private var bottomToolbar: some View {
-        VStack(spacing: 0) {
-            // Progress bar for refresh
-            if showingRefreshProgress {
-                VStack(spacing: 8) {
-                    HStack {
-                        Text(refreshStatus)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(Int(refreshProgress * 100))%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
 
-                    ProgressView(value: refreshProgress)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                }
-                .padding(.horizontal, SheetDesign.bottomToolbarHorizontalPadding)
-                .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.05))
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            // Button toolbar
-            SheetBottomToolbar {
-                Button {
-                    refreshAllUserScripts()
-                } label: {
-                    HStack(spacing: 6) {
-                        if isRefreshing {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .frame(width: 12, height: 12)
-                        } else {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                        }
-                        Text("Update All")
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(isRefreshing || scripts.filter(\.isDownloaded).isEmpty)
-
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Label("Add Script", systemImage: "plus")
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-    }
-}
-
-struct UserScriptRowView: View {
-    let script: UserScript
-    let onTap: () -> Void
-    let onToggle: () -> Void
-    let onUpdate: () -> Void
-    let onRemove: () -> Void
-    
-    @State private var isHovered = false
-    
-    var body: some View {
+    private var statsCardsView: some View {
         HStack(spacing: 12) {
-            Image(systemName: script.isDownloaded ? "doc.text.fill" : "doc.text")
-                .foregroundColor(script.isDownloaded ? .blue : .secondary)
-                .font(.title3)
-                .frame(width: 24)
-            
+            StatCard(
+                title: "Scripts",
+                value: "\(totalScriptsCount)",
+                icon: "doc.text",
+                pillColor: .clear,
+                valueColor: .primary
+            )
+
+            StatCard(
+                title: "Enabled",
+                value: "\(enabledScriptsCount)",
+                icon: "checkmark.circle",
+                pillColor: .clear,
+                valueColor: .primary
+            )
+        }
+        .padding(.horizontal)
+    }
+
+    private var scriptsListView: some View {
+        LazyVStack(spacing: 16) {
+            VStack(spacing: 0) {
+                ForEach(Array(displayedScripts.enumerated()), id: \.element.id) { index, script in
+                    scriptRowView(script: script)
+
+                    if index < displayedScripts.count - 1 {
+                        Divider()
+                            .padding(.leading, 16)
+                    }
+                }
+            }
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.horizontal)
+    }
+
+    private func scriptRowView(script: UserScript) -> some View {
+        HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(script.name)
-                    .font(.headline)
+                    .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
+                    .fixedSize(horizontal: false, vertical: true)
+
                 if !script.description.isEmpty {
                     Text(script.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     if !script.version.isEmpty {
-                        Text("v\(script.version)")
+                        Text("Version \(script.version)")
                             .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.gray)
-                    }
-                    if !script.version.isEmpty && !script.matches.isEmpty {
-                        Text("·")
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                    }
-                    if !script.matches.isEmpty {
-                        Text("\(script.matches.count) pattern\(script.matches.count == 1 ? "" : "s")")
-                            .font(.caption2)
-                            .fontWeight(.medium)
                             .foregroundColor(.gray)
                     }
                     if let lastUpdated = script.lastUpdatedFormatted {
-                        if (!script.version.isEmpty || !script.matches.isEmpty) {
+                        if !script.version.isEmpty {
                             Text("·")
                                 .font(.caption2)
                                 .foregroundColor(.gray)
                         }
-                        Text("Updated \(lastUpdated.lowercased())")
+                        Text(lastUpdated)
                             .font(.caption2)
                             .foregroundColor(.gray)
-                    }
-                    if !script.isDownloaded {
-                        Badge(text: "Not Downloaded", color: .red)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if !script.isDownloaded {
+                    Text("Not Downloaded")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.red.opacity(0.15))
+                        .foregroundColor(.red)
+                        .cornerRadius(4)
+                }
             }
-            
+
             Spacer()
-            
+
             HStack(spacing: 8) {
                 if script.isDownloaded {
-                    Button { onUpdate() } label: { 
+                    Button {
+                        Task {
+                            await ConcurrentLogManager.shared.log("📝 Updating userscript: \(script.name)")
+                            await userScriptManager.updateUserScript(script)
+                            await ConcurrentLogManager.shared.log("✅ Successfully updated userscript: \(script.name)")
+                            refreshScripts()
+                        }
+                    } label: {
                         Image(systemName: "arrow.clockwise")
-                            .font(.body) 
                     }
                     .buttonStyle(.borderless)
-                    .frame(width: 32, height: 32)
                     #if os(macOS)
                     .help("Update Script")
                     #endif
                 }
-                Toggle("", isOn: Binding(get: { script.isEnabled }, set: { _ in onToggle() }))
-                    .labelsHidden()
-                    .disabled(!script.isDownloaded)
-                    .frame(width: 40)
+
+                Toggle("", isOn: Binding(
+                    get: { script.isEnabled },
+                    set: { _ in
+                        Task {
+                            await ConcurrentLogManager.shared.log("🔄 Toggling userscript: \(script.name)")
+                            await userScriptManager.toggleUserScript(script)
+                            await MainActor.run {
+                                refreshScripts()
+                            }
+                        }
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .disabled(!script.isDownloaded)
+                .frame(alignment: .center)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        #if os(macOS)
-        .onHover { hovering in
-            isHovered = hovering
+        .padding(16)
+        .id(script.id)
+        .contentShape(.interaction, Rectangle())
+        .onTapGesture {
+            if script.isDownloaded {
+                selectedScript = script
+            }
         }
-        .onTapGesture { onTap() }
-        #endif
         .contextMenu {
             #if os(macOS)
-            if script.isDownloaded { Button { onTap() } label: { Label("View Content", systemImage: "doc.text") } }
+            if script.isDownloaded {
+                Button {
+                    selectedScript = script
+                } label: {
+                    Label("View Content", systemImage: "doc.text")
+                }
+            }
             #endif
-            if script.isDownloaded { Button { onUpdate() } label: { Label("Update", systemImage: "arrow.clockwise") } }
-            Button(role: .destructive) { onRemove() } label: { Label("Remove", systemImage: "trash") }
+            if script.isDownloaded {
+                Button {
+                    Task {
+                        await userScriptManager.updateUserScript(script)
+                        refreshScripts()
+                    }
+                } label: {
+                    Label("Update", systemImage: "arrow.clockwise")
+                }
+            }
+            Button(role: .destructive) {
+                Task {
+                    await ConcurrentLogManager.shared.log("🗑️ Removing userscript: \(script.name)")
+                }
+                userScriptManager.removeUserScript(script)
+                refreshScripts()
+            } label: {
+                Label("Remove", systemImage: "trash")
+            }
         }
     }
-}
 
-struct Badge: View {
-    let text: String
-    let color: Color
-    var body: some View {
-        Text(text).font(.caption2).fontWeight(.medium)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(color.opacity(0.15)).foregroundColor(color).cornerRadius(4)
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary.opacity(0.6))
+            Text("No Userscripts")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            Text("Add userscripts to customize your browsing experience")
+                .font(.body)
+                .foregroundColor(.secondary)
+            Button {
+                showingAddScriptSheet = true
+            } label: {
+                Label("Add Userscript", systemImage: "plus")
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
-
-#if os(macOS)
 
 // MARK: - UserScriptInfoSidebar Subviews
 
@@ -420,10 +385,16 @@ private struct ScriptStatusBadgesView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                if !script.version.isEmpty { Badge(text: "v\(script.version)", color: .blue) } // Corrected
+                if !script.version.isEmpty {
+                    Badge(text: "v\(script.version)", color: .blue)
+                }
                 Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
             }
-            if !script.isDownloaded { Badge(text: "Not Downloaded", color: .red) } else { Badge(text: "Downloaded", color: .green) }
+            if !script.isDownloaded {
+                Badge(text: "Not Downloaded", color: .red)
+            } else {
+                Badge(text: "Downloaded", color: .green)
+            }
         }
     }
 }
@@ -453,27 +424,25 @@ private struct ScriptURLView: View {
     }
 }
 
-// NEW Struct for individual match pattern row
 private struct ScriptMatchPatternRowView: View {
     let index: Int
     let pattern: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("\(index + 1).") // Corrected
+        HStack(alignment: .top, spacing: 6) {
+            Text("\(index + 1).")
                 .font(.caption2)
                 .foregroundColor(.secondary)
-                .frame(width: 20, alignment: .leading)
+                .frame(width: 18, alignment: .trailing)
 
             Text(pattern)
                 .font(.caption)
                 .foregroundColor(.orange)
                 .textSelection(.enabled)
                 .lineLimit(nil)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .cornerRadius(4)
+        .padding(.vertical, 2)
     }
 }
 
@@ -483,12 +452,12 @@ private struct ScriptMatchPatternsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) { 
-                    isPatternsExpanded.toggle() 
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isPatternsExpanded.toggle()
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Text("URL Patterns (\(script.matches.count))") // Corrected
+                    Text("URL Patterns (\(script.matches.count))")
                         .font(.caption).fontWeight(.medium).foregroundColor(.secondary)
                     Spacer()
                     Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
@@ -496,11 +465,10 @@ private struct ScriptMatchPatternsView: View {
                 }
             }
             .buttonStyle(.plain).padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6).onHover { _ in }
-            
+
             if isPatternsExpanded {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        // Use the new ScriptMatchPatternRowView here
                         ForEach(Array(script.matches.enumerated()), id: \.offset) { indexInForEach, patternInForEach in
                             ScriptMatchPatternRowView(index: indexInForEach, pattern: patternInForEach)
                         }
@@ -531,6 +499,7 @@ struct UserScriptInfoSidebar: View {
     }
 }
 
+#if os(macOS)
 struct ScriptContentMainView: View {
     let script: UserScript
     @Binding var displayedContent: String
@@ -548,7 +517,7 @@ struct ScriptContentMainView: View {
                     if !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle").font(.caption2).foregroundColor(.orange)
-                            Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))") // Corrected
+                            Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))")
                                 .font(.caption).foregroundColor(.secondary)
                         }
                     } else if showFullContent && script.content.count > previewLength {
@@ -599,6 +568,7 @@ struct ScriptContentMainView: View {
         }
     }
 }
+#endif
 
 struct UserScriptContentView: View {
     let script: UserScript
@@ -608,12 +578,70 @@ struct UserScriptContentView: View {
     @State private var showFullContent = false
     @State private var sidebarWidth: CGFloat = 280
     @State private var isPatternsExpanded = false
-    
+
     private let previewLength = 10000
+    #if os(macOS)
     private let minSidebarWidth: CGFloat = 250
     private let maxSidebarWidth: CGFloat = 500
-    
-    private var splitViewContent: some View { // Extracted for clarity/compiler
+    #endif
+
+    var body: some View {
+        #if os(iOS)
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    UserScriptInfoSidebar(
+                        script: script,
+                        isPatternsExpanded: $isPatternsExpanded,
+                        formatFileSize: formatFileSize
+                    )
+                    .padding(.horizontal)
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Script Content")
+                            .font(.headline)
+                            .fontWeight(.medium)
+
+                        if script.content.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary.opacity(0.6))
+                                Text("No Content Available")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                Text("This script hasn't been downloaded yet.")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                        } else {
+                            Text(displayedContent)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.vertical)
+            }
+            .navigationTitle(script.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .onAppear { loadInitialContent() }
+        #else
         HSplitView {
             UserScriptInfoSidebar(
                 script: script,
@@ -622,7 +650,7 @@ struct UserScriptContentView: View {
             )
             .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)
             .padding(20)
-            
+
             ScriptContentMainView(
                 script: script,
                 displayedContent: $displayedContent,
@@ -634,16 +662,13 @@ struct UserScriptContentView: View {
             )
             .frame(minWidth: 400)
         }
+        .navigationTitle("")
+        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+        .frame(width: 1000, height: 700)
+        .onAppear { loadInitialContent() }
+        #endif
     }
 
-    var body: some View {
-        splitViewContent
-            .navigationTitle("")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
-            .frame(width: 1000, height: 700)
-            .onAppear { loadInitialContent() }
-    }
-    
     private func loadInitialContent() {
         if script.content.isEmpty { displayedContent = ""; return }
         if script.content.count <= previewLength {
@@ -652,18 +677,17 @@ struct UserScriptContentView: View {
             displayedContent = String(script.content.prefix(previewLength)); showFullContent = false
         }
     }
-    
+
     private func toggleContentView() {
         if showFullContent {
             displayedContent = String(script.content.prefix(previewLength))
             showFullContent = false
         } else {
             isLoadingContent = true
-            
-            // Move heavy computation off main thread
+
             DispatchQueue.global(qos: .userInitiated).async {
                 let fullContent = script.content
-                
+
                 DispatchQueue.main.async {
                     displayedContent = fullContent
                     showFullContent = true
@@ -672,13 +696,22 @@ struct UserScriptContentView: View {
             }
         }
     }
-    
+
     private func formatFileSize(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter(); formatter.allowedUnits = [.useKB, .useMB]; formatter.countStyle = .file
         return formatter.string(fromByteCount: Int64(bytes))
     }
 }
-#endif
+
+struct Badge: View {
+    let text: String
+    let color: Color
+    var body: some View {
+        Text(text).font(.caption2).fontWeight(.medium)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(color.opacity(0.15)).foregroundColor(color).cornerRadius(4)
+    }
+}
 
 struct AddUserScriptView: View {
     var userScriptManager: UserScriptManager
@@ -686,8 +719,7 @@ struct AddUserScriptView: View {
     @State private var urlString = ""
     @State private var isLoading = false
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    
+
     var body: some View {
         #if os(iOS)
         NavigationView {
@@ -699,92 +731,92 @@ struct AddUserScriptView: View {
         mainContent
         #endif
     }
-    
+
     private var mainContent: some View {
         VStack(spacing: 32) {
-                VStack(spacing: 20) {
-                    Text("Add Userscript")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Enter the URL of a userscript (ending in .user.js)")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                
-                VStack(spacing: 16) {
-                    TextField("https://example.com/script.user.js", text: $urlString)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        #if os(iOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        #endif
-                    
+            VStack(spacing: 20) {
+                Text("Add Userscript")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+
+                Text("Enter the URL of a userscript (ending in .user.js)")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            VStack(spacing: 16) {
+                TextField("https://example.com/script.user.js", text: $urlString)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
                     #if os(iOS)
-                    VStack(spacing: 16) {
-                        Button(action: addScript) {
-                            HStack(spacing: 8) {
-                                if isLoading {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                }
-                                Text(isLoading ? "Adding..." : "Add Script")
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-                        
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                    }
-                    #else
-                    HStack(spacing: 12) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                        .keyboardShortcut(.cancelAction)
-                        
-                        Button(action: addScript) {
-                            if isLoading {
-                                HStack(spacing: 6) {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                    Text("Adding...")
-                                }
-                            } else {
-                                Text("Add Script")
-                            }
-                        }
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-                    }
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
                     #endif
+
+                #if os(iOS)
+                VStack(spacing: 16) {
+                    Button(action: addScript) {
+                        HStack(spacing: 8) {
+                            if isLoading {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            }
+                            Text(isLoading ? "Adding..." : "Add Script")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
                 }
-                .padding(.horizontal)
-                
-                Spacer()
+                #else
+                HStack(spacing: 12) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.cancelAction)
+
+                    Button(action: addScript) {
+                        if isLoading {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Adding...")
+                            }
+                        } else {
+                            Text("Add Script")
+                        }
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+                }
+                #endif
+            }
+            .padding(.horizontal)
+
+            Spacer()
         }
         .padding()
     }
-    
+
     private func addScript() {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
-        
+
         isLoading = true
-        
+
         Task {
             await ConcurrentLogManager.shared.log("📥 Adding new userscript from URL: \(url.absoluteString)")
             await userScriptManager.addUserScript(from: url)
             await ConcurrentLogManager.shared.log("✅ Successfully added userscript from URL: \(url.absoluteString)")
-            
+
             await MainActor.run {
                 isLoading = false
                 onScriptAdded()
@@ -793,4 +825,3 @@ struct AddUserScriptView: View {
         }
     }
 }
-
