@@ -22812,78 +22812,71 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     
     (document.head || document.documentElement).appendChild(debugScript);
     debugScript.remove();
-    
-    log('Debug functions injected into page scope');
+
+    log.info('Debug functions injected into page scope');
   }
   
   // Listen for debug and zapper messages from page scope
   window.addEventListener('message', function(event) {
-    if (event.source !== window || !event.data || 
+    if (event.source !== window || !event.data ||
         (event.data.source !== 'wblock-debug' && event.data.source !== 'wblock-zapper')) {
       return;
     }
-    
+
     const data = event.data;
-    log('Received message from page scope:', data);
-    
+    log.info('Received message from page scope:', data);
+
     switch (data.action) {
       case 'testPersistence':
-        log('Testing zapper persistence...');
+        log.info('Testing zapper persistence...');
         if (safari && safari.extension) {
           safari.extension.dispatchMessage('zapperController', {
             action: 'saveRule',
             selector: '.test-zapper-persistence',
             hostname: location.hostname
           });
-          log('Saved test rule for hostname:', location.hostname);
-          
+          log.info('Saved test rule for hostname:', location.hostname);
+
           setTimeout(() => {
             safari.extension.dispatchMessage('zapperController', {
               action: 'loadRules',
               hostname: location.hostname
             });
-            log('Requested rules reload for testing');
+            log.info('Requested rules reload for testing');
           }, 200);
         }
         break;
-        
+
       case 'saveRule':
-        log('Saving test rule:', data.selector, 'for hostname:', data.hostname);
+        log.info('Saving rule:', data.selector, 'for hostname:', data.hostname);
         if (safari && safari.extension) {
           safari.extension.dispatchMessage('zapperController', {
             action: 'saveRule',
             selector: data.selector,
             hostname: data.hostname
           });
-          log('Test rule saved, now loading to verify...');
-          
-          setTimeout(() => {
-            safari.extension.dispatchMessage('zapperController', {
-              action: 'loadRules',
-              hostname: data.hostname
-            });
-          }, 300);
+          log.info('Rule saved via safari.extension');
         }
         break;
-        
+
       case 'loadRules':
-        log('Manually loading zapper rules for hostname:', data.hostname);
+        log.info('Manually loading zapper rules for hostname:', data.hostname);
         loadPersistentZapperRules();
         break;
-        
+
       case 'checkRules':
-        log('Checking persistent zapper rules...');
+        log.info('Checking persistent zapper rules...');
         const styleElement = document.getElementById('wblock-persistent-zapper-rules');
         if (styleElement) {
-          log('Current persistent rules:', styleElement.textContent);
+          log.info('Current persistent rules:', styleElement.textContent);
         } else {
-          log('No persistent rules style element found');
+          log.info('No persistent rules style element found');
           if (safari && safari.extension) {
             safari.extension.dispatchMessage('zapperController', {
               action: 'loadRules',
               hostname: data.hostname
             });
-            log('Requested current rules for hostname:', data.hostname);
+            log.info('Requested current rules for hostname:', data.hostname);
           }
         }
         break;
