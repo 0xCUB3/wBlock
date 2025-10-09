@@ -102,7 +102,6 @@ public actor SharedAutoUpdateManager {
 
         // Respect enable flag
         if defaults.object(forKey: enabledKey) as? Bool == false {
-            os_log("Auto-update disabled (trigger: %{public}@)", log: log, type: .info, trigger)
             return
         }
 
@@ -112,7 +111,6 @@ public actor SharedAutoUpdateManager {
         if !force {
             // New jitter-aware scheduling: prefer nextEligibleTime if present
             if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double, now < nextEligible {
-                appendSharedLog("⏳ Auto-update throttled (trigger: \(trigger)) nextEligible in \(Int(nextEligible - now))s")
                 return // Still inside jittered window
             }
 
@@ -120,8 +118,6 @@ public actor SharedAutoUpdateManager {
             if defaults.object(forKey: nextEligibleKey) == nil, let lastCheck = defaults.object(forKey: lastCheckKey) as? Double, now - lastCheck < interval * 3600 {
                 return
             }
-        } else {
-            appendSharedLog("🚀 Force update (trigger: \(trigger)) bypassing throttle")
         }
 
         // Compute jittered next eligible time and store it up-front to avoid stampede
@@ -129,27 +125,25 @@ public actor SharedAutoUpdateManager {
         let nextEligibleTime = now + interval * 3600 * jitterFactor
     defaults.set(nextEligibleTime, forKey: nextEligibleKey)
     defaults.set(now, forKey: lastCheckKey) // Keep legacy key updated too
-    appendSharedLog("🔄 Auto-update window reached (trigger: \(trigger)) next window at \(Date(timeIntervalSince1970: nextEligibleTime))")
+    appendSharedLog("Auto-update started")
 
         do {
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             guard !selectedFilters.isEmpty else {
-                appendSharedLog("⚠️ No selected filters; skipping auto-update.")
                 return
             }
 
             let updates = try await checkForUpdates(filters: selectedFilters, defaults: defaults)
             guard !updates.isEmpty else {
-                appendSharedLog("✅ No filter updates found (trigger: \(trigger))")
-                return
+                return // No updates found, silently exit
             }
 
-            os_log("Found %d filter updates (trigger: %{public}@) — applying", log: log, type: .info, updates.count, trigger)
-            appendSharedLog("📥 Updates detected: \(updates.map { $0.name }.joined(separator: ", "))")
+            // Only log when updates are actually found
+            os_log("Found %d filter updates — applying", log: log, type: .info, updates.count)
+            appendSharedLog("Updates found: \(updates.map { $0.name }.joined(separator: ", "))")
 
             // Fetch & store updated content
             let updatedFilterSet = try await fetchAndStoreFilters(updates, defaults: defaults)
-            appendSharedLog("📦 Downloaded & stored \(updatedFilterSet.count) updated filter(s)")
 
             // Merge updated filters back into full list model
             var merged = allFilters
@@ -167,10 +161,10 @@ public actor SharedAutoUpdateManager {
 
             // Re-convert & reload only impacted targets; rebuild engine from per-target stored advanced rules
             try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected }, updatedCategories: updatedCategorySet)
-            appendSharedLog("✅ Auto-update cycle complete (updated categories: \(updatedCategorySet.map{ $0.rawValue }.joined(separator: ", "))) ")
+            appendSharedLog("Auto-update complete")
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
-            appendSharedLog("❌ Auto-update failed: \(error.localizedDescription)")
+            appendSharedLog("Auto-update failed: \(error.localizedDescription)")
         }
     }
 
@@ -179,24 +173,17 @@ public actor SharedAutoUpdateManager {
         var lists: [FilterList] = []
         if let data = defaults.data(forKey: "filterLists"), let decoded = try? JSONDecoder().decode([FilterList].self, from: data) {
             lists.append(contentsOf: decoded)
-            appendSharedLog("📋 Loaded \(decoded.count) default filter lists")
-        } else {
-            appendSharedLog("⚠️ No default filter lists found in UserDefaults")
         }
         if let customData = defaults.data(forKey: "customFilterLists"), let decodedCustom = try? JSONDecoder().decode([FilterList].self, from: customData) {
             lists.append(contentsOf: decodedCustom)
-            appendSharedLog("📋 Loaded \(decodedCustom.count) custom filter lists")
         }
         // Restore selection state
-        var selectedCount = 0
         for idx in lists.indices {
             let key = "filter_selected_\(lists[idx].id.uuidString)"
             if let sel = defaults.object(forKey: key) as? Bool {
                 lists[idx].isSelected = sel
-                if sel { selectedCount += 1 }
             }
         }
-        appendSharedLog("📋 Total filters: \(lists.count), Selected: \(selectedCount)")
         let selected = lists.filter { $0.isSelected }
         return (lists, selected)
     }
@@ -205,27 +192,18 @@ public actor SharedAutoUpdateManager {
         // Wait for ProtobufDataManager to finish loading data
         let dataManager = await MainActor.run { ProtobufDataManager.shared }
         while await MainActor.run { dataManager.isLoading } {
-            appendSharedLog("⏳ Waiting for ProtobufDataManager to finish loading...")
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
-        
+
         let allFilters = await MainActor.run { dataManager.getFilterLists() }
         let selectedFilters = allFilters.filter { $0.isSelected }
-        
-        appendSharedLog("📋 Loaded \(allFilters.count) total filter lists from protobuf")
-        appendSharedLog("📋 Selected filters: \(selectedFilters.count)")
-        
-        if let error = await MainActor.run { dataManager.lastError } {
-            appendSharedLog("❌ ProtobufDataManager error: \(error)")
-        }
-        
+
         return (allFilters, selectedFilters)
     }
 
     private func saveFilterListsToProtobuf(_ lists: [FilterList]) async {
         let dataManager = await MainActor.run { ProtobufDataManager.shared }
         await dataManager.updateFilterLists(lists)
-        appendSharedLog("💾 Saved \(lists.count) filter lists to protobuf storage")
     }
 
     private func saveFilterListsToDefaults(_ lists: [FilterList], defaults: UserDefaults) {
@@ -314,11 +292,9 @@ public actor SharedAutoUpdateManager {
             if let version = meta.version, !version.isEmpty { updated.version = version }
             if let desc = meta.description, !desc.isEmpty { updated.description = desc }
             updated.sourceRuleCount = ruleCount
-            appendSharedLog("↻ Updated filter: \(filter.name) (version: \(updated.version), rules: \(ruleCount))")
             return updated
         } catch {
             os_log("Fetch error for %{public}@ – %{public}@", log: log, type: .error, filter.name, error.localizedDescription)
-            appendSharedLog("⚠️ Failed updating filter: \(filter.name) – \(error.localizedDescription)")
             return nil
         }
     }
@@ -357,7 +333,6 @@ public actor SharedAutoUpdateManager {
                         }
                     }
                 }
-                appendSharedLog("🛠 Reconverting target: \(target.bundleIdentifier) categories: \(targetCategories.map{ $0.rawValue }.joined(separator: ", ")) filters: \(filtersForTarget.map{ $0.name }.joined(separator: ", "))")
                 let conversion = ContentBlockerService.convertFilter(rules: combined.isEmpty ? "" : combined, groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename)
                 if let adv = conversion.advancedRulesText, !adv.isEmpty {
                     storeAdvancedRules(adv, for: target)
@@ -367,20 +342,16 @@ public actor SharedAutoUpdateManager {
                     removeStoredAdvancedRules(for: target)
                 }
                 _ = ContentBlockerService.reloadContentBlocker(withIdentifier: target.bundleIdentifier)
-                appendSharedLog("🔁 Reloaded target extension: \(target.bundleIdentifier)")
             } else if let existingAdvanced = existingAdvanced, !existingAdvanced.isEmpty {
                 // Reuse stored advanced rules without reconversion
                 advancedRulesSnippets.append(existingAdvanced)
-                appendSharedLog("♻️ Reused cached advanced rules for target: \(target.bundleIdentifier)")
             }
         }
 
         if !advancedRulesSnippets.isEmpty {
             ContentBlockerService.buildCombinedFilterEngine(combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"), groupIdentifier: GroupIdentifier.shared.value)
-            appendSharedLog("🧠 Rebuilt advanced engine with \(advancedRulesSnippets.count) snippet(s)")
         } else {
             ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-            appendSharedLog("🧹 Cleared advanced engine (no advanced rules)")
         }
     }
 
