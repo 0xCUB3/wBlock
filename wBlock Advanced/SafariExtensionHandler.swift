@@ -246,9 +246,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                 }
                 
             case "activateZapper":
-                // Inject the zapper content script
-                injectZapper(into: page)
-                os_log(.info, "SafariExtensionHandler: Activated element zapper")
+                // The zapper is activated directly from script.js now
+                os_log(.info, "SafariExtensionHandler: Received activateZapper (handled by script.js)")
                 
             default:
                 os_log(.info, "SafariExtensionHandler: Unknown zapperController action: %@", action)
@@ -417,30 +416,6 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
     }
     
     // MARK: - Element Zapper Methods
-    
-    private func injectZapper(into page: SFSafariPage) {
-        guard let zapperHTMLPath = Bundle.main.path(forResource: "element-zapper", ofType: "html"),
-              let zapperJSPath = Bundle.main.path(forResource: "element-zapper", ofType: "js") else {
-            os_log(.error, "Zapper resource files not found in bundle.")
-            return
-        }
-        
-        do {
-            let zapperHTML = try String(contentsOfFile: zapperHTMLPath, encoding: .utf8)
-            let zapperJS = try String(contentsOfFile: zapperJSPath, encoding: .utf8)
-            
-            let message: [String: Any] = [
-                "action": "injectZapper",
-                "html": zapperHTML,
-                "js": zapperJS
-            ]
-            
-            page.dispatchMessageToScript(withName: "wblockAdvanced", userInfo: message)
-            os_log(.info, "Successfully dispatched zapper HTML and JS to the content script.")
-        } catch {
-            os_log(.error, "Error reading zapper files: %@", error.localizedDescription)
-        }
-    }
     
     /// Saves a CSS selector rule for the element zapper for a specific hostname
     ///
