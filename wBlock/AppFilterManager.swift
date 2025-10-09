@@ -630,14 +630,15 @@ class AppFilterManager: ObservableObject {
                 self.conversionStageDescription = "Converting \(targetInfo.primaryCategory.rawValue)..."
                 self.isInSavingPhase = true // Set saving phase for each conversion
 
-                // Update ViewModel
+                // Batched ViewModel update - single call with all data
                 self.applyProgressViewModel.updateProgress(self.progress)
                 self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
                 self.applyProgressViewModel.updateProcessedCount(self.processedFiltersCount, total: totalFiltersCount)
                 self.applyProgressViewModel.updateStageDescription("Converting \(targetInfo.primaryCategory.rawValue)...")
             }
-            
-            try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
+
+            // Yield to prevent main thread starvation on iOS
+            await Task.yield()
 
             // Efficiently combine rules from multiple files without loading all into memory at once
             let conversionResult = await Task.detached {
@@ -792,10 +793,14 @@ class AppFilterManager: ObservableObject {
                 self.progress = 0.7 + (Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.2) // 70% to 90%
                 self.currentFilterName = targetInfo.primaryCategory.rawValue
 
-                // Update ViewModel
+                // Batched ViewModel update
                 self.applyProgressViewModel.updateProgress(self.progress)
                 self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
             }
+
+            // Yield to prevent blocking
+            await Task.yield()
+
             // Reload with retry logic (logging handled in helper function)
             let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
             

@@ -73,26 +73,45 @@ class ApplyChangesViewModel: ObservableObject {
     }
 
     private func setupThrottling() {
-        // Throttle progress updates to 30 FPS (0.033s interval)
+        // iOS-optimized throttling: Much more conservative than macOS
+        // to prevent main thread starvation under resource constraints
+
+        #if os(iOS)
+        // iOS: 10 FPS for progress (0.1s interval) - reduces main thread load
+        let progressInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.1)
+        // iOS: 5 FPS for phases (0.2s interval)
+        let phaseInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.2)
+        // iOS: 2 FPS for details (0.5s interval)
+        let detailsInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.5)
+        #else
+        // macOS: 30 FPS for progress (0.033s interval) - can handle faster updates
+        let progressInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.033)
+        // macOS: 20 FPS for phases (0.05s interval)
+        let phaseInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.05)
+        // macOS: 10 FPS for details (0.1s interval)
+        let detailsInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.1)
+        #endif
+
+        // Throttle progress updates with platform-specific intervals
         // Using 'latest: true' ensures we always get the most recent value
         progressSubject
-            .throttle(for: .seconds(0.033), scheduler: RunLoop.main, latest: true)
+            .throttle(for: progressInterval, scheduler: RunLoop.main, latest: true)
             .sink { [weak self] progress in
                 self?.state.progress = progress
             }
             .store(in: &cancellables)
 
-        // Phase updates are less frequent, throttle at 20 FPS
+        // Phase updates are less frequent
         phaseSubject
-            .throttle(for: .seconds(0.05), scheduler: RunLoop.main, latest: true)
+            .throttle(for: phaseInterval, scheduler: RunLoop.main, latest: true)
             .sink { [weak self] phase in
                 self?.updatePhase(phase)
             }
             .store(in: &cancellables)
 
-        // Detail updates throttled at 10 FPS for text changes
+        // Detail updates throttled the most for text changes
         detailsSubject
-            .throttle(for: .seconds(0.1), scheduler: RunLoop.main, latest: true)
+            .throttle(for: detailsInterval, scheduler: RunLoop.main, latest: true)
             .sink { [weak self] details in
                 self?.updateDetails(details)
             }
