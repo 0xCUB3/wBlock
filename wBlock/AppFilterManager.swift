@@ -46,8 +46,11 @@ class AppFilterManager: ObservableObject {
     // Performance tracking
     @Published var lastFastUpdateTime: String = "N/A"
     @Published var fastUpdateCount: Int = 0
-    
-    // Detailed progress tracking
+
+    // New ViewModel-based progress tracking
+    @Published var applyProgressViewModel = ApplyChangesViewModel()
+
+    // Legacy progress tracking (kept for backward compatibility)
     @Published var sourceRulesCount: Int = 0
     @Published var conversionStageDescription: String = ""
     @Published var currentFilterName: String = ""
@@ -522,7 +525,13 @@ class AppFilterManager: ObservableObject {
             self.hasError = false
             self.progress = 0
             self.statusDescription = "Applying filters...\n(This may take a while)"
-            
+
+            // Reset and initialize new ViewModel
+            self.applyProgressViewModel.reset()
+            self.applyProgressViewModel.updateIsLoading(true)
+            self.applyProgressViewModel.updateProgress(0)
+
+            // Legacy properties (kept for backward compatibility)
             self.sourceRulesCount = 0
             self.conversionStageDescription = ""
             self.currentFilterName = ""
@@ -533,9 +542,6 @@ class AppFilterManager: ObservableObject {
             self.isInEnginePhase = false
             self.isInReloadPhase = false
         }
-        
-        // Give the UI a chance to update before starting heavy operations
-        try? await Task.sleep(nanoseconds: 200_000_000) // 200ms delay
         
         await ConcurrentLogManager.shared.log("🚀 Starting filter application process on \(currentPlatform == .macOS ? "macOS" : "iOS")")
 
@@ -588,6 +594,10 @@ class AppFilterManager: ObservableObject {
         await MainActor.run {
             self.sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +) // Sum of all source rules for UI
             self.totalFiltersCount = totalFiltersCount // Number of unique extensions to process
+
+            // Update ViewModel
+            self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
+            self.applyProgressViewModel.updateStageDescription("Starting conversion...")
         }
 
         if totalFiltersCount == 0 {
@@ -605,6 +615,9 @@ class AppFilterManager: ObservableObject {
         await MainActor.run {
             self.processedFiltersCount = 0 // Use this to track processed targets for progress
             self.isInConversionPhase = true
+
+            // Update ViewModel phase
+            self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
         }
 
         // Collect advanced rules by target bundle ID (single storage)
@@ -616,6 +629,12 @@ class AppFilterManager: ObservableObject {
                 self.currentFilterName = targetInfo.primaryCategory.rawValue // More user-friendly
                 self.conversionStageDescription = "Converting \(targetInfo.primaryCategory.rawValue)..."
                 self.isInSavingPhase = true // Set saving phase for each conversion
+
+                // Update ViewModel
+                self.applyProgressViewModel.updateProgress(self.progress)
+                self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
+                self.applyProgressViewModel.updateProcessedCount(self.processedFiltersCount, total: totalFiltersCount)
+                self.applyProgressViewModel.updateStageDescription("Converting \(targetInfo.primaryCategory.rawValue)...")
             }
             
             try? await Task.sleep(nanoseconds: 50_000_000) // UI update chance
@@ -746,6 +765,10 @@ class AppFilterManager: ObservableObject {
             self.lastRuleCount = overallSafariRulesApplied
             self.lastConversionTime = String(format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
             self.progress = 0.7
+
+            // Update ViewModel - conversion complete
+            self.applyProgressViewModel.updateProgress(self.progress)
+            self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
         }
         await ConcurrentLogManager.shared.log("✅ All conversions finished: \(overallSafariRulesApplied) Safari rules in \(await MainActor.run { self.lastConversionTime })")
 
@@ -754,6 +777,10 @@ class AppFilterManager: ObservableObject {
             self.conversionStageDescription = "Reloading Safari extensions..."
             self.isInReloadPhase = true
             self.processedFiltersCount = 0
+
+            // Update ViewModel - starting reload phase
+            self.applyProgressViewModel.updatePhaseCompletion(saving: true, reloading: false)
+            self.applyProgressViewModel.updateStageDescription("Reloading Safari extensions...")
         }
         
         let overallReloadStartTime = Date()
@@ -764,6 +791,10 @@ class AppFilterManager: ObservableObject {
                 self.processedFiltersCount += 1
                 self.progress = 0.7 + (Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.2) // 70% to 90%
                 self.currentFilterName = targetInfo.primaryCategory.rawValue
+
+                // Update ViewModel
+                self.applyProgressViewModel.updateProgress(self.progress)
+                self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
             }
             // Reload with retry logic (logging handled in helper function)
             let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
@@ -830,6 +861,10 @@ class AppFilterManager: ObservableObject {
         // NOW build the combined filter engine AFTER all content blockers are reloaded
         await MainActor.run {
             self.progress = 0.9
+
+            // Update ViewModel
+            self.applyProgressViewModel.updateProgress(self.progress)
+            self.applyProgressViewModel.updatePhaseCompletion(reloading: true)
         }
         
         if !advancedRulesByTarget.isEmpty {
@@ -863,6 +898,9 @@ class AppFilterManager: ObservableObject {
         
         await MainActor.run {
             self.progress = 1.0
+
+            // Update ViewModel to 100%
+            self.applyProgressViewModel.updateProgress(1.0)
         }
 
         let hasErrorValue = await MainActor.run { self.hasError }
@@ -881,6 +919,17 @@ class AppFilterManager: ObservableObject {
 
         await MainActor.run {
             self.isLoading = false
+
+            // Update ViewModel with final statistics
+            self.applyProgressViewModel.updateStatistics(
+                sourceRules: self.sourceRulesCount,
+                safariRules: self.lastRuleCount,
+                conversionTime: self.lastConversionTime,
+                reloadTime: self.lastReloadTime,
+                ruleCountsByCategory: self.ruleCountsByCategory,
+                categoriesApproachingLimit: self.categoriesApproachingLimit
+            )
+            self.applyProgressViewModel.updateIsLoading(false)
         }
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
         // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error

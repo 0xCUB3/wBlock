@@ -415,7 +415,6 @@
 			membershipExceptions = (
 				AppDelegate.swift,
 				AppFilterManager.swift,
-				ApplyChangesProgressView.swift,
 				ConcurrentLogManager.swift,
 				ContentView.swift,
 				DataMigration.swift,

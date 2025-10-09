@@ -116,7 +116,10 @@ struct ContentView: View {
             }
             #endif
             .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
-                ApplyChangesProgressView(filterManager: filterManager, isPresented: $filterManager.showingApplyProgressSheet)
+                ApplyChangesProgressView(
+                    viewModel: filterManager.applyProgressViewModel,
+                    isPresented: $filterManager.showingApplyProgressSheet
+                )
             }
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
                 Button("OK", role: .cancel) {}

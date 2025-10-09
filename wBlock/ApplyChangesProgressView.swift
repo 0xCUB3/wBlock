@@ -2,109 +2,34 @@
 //  ApplyChangesProgressView.swift
 //  wBlock
 //
-//  Created by Alexander Skula on 5/24/25.
+//  Created by Alexander Skula on 10/09/25.
 //
 
 import SwiftUI
 import wBlockCoreService
 
 struct ApplyChangesProgressView: View {
-    @ObservedObject var filterManager: AppFilterManager
+    @ObservedObject var viewModel: ApplyChangesViewModel
     @Binding var isPresented: Bool
-    // Throttled progress shown in the UI to avoid excessive SwiftUI re-renders
-    @State private var displayedProgress: Double = 0.0
-    @State private var scheduledProgressWorkItem: DispatchWorkItem? = nil
-    
-    private var selectedFilters: [FilterList] {
-        filterManager.filterLists.filter { $0.isSelected }
-    }
-
-    // Convenience Double version of the progress (filterManager.progress is Float)
-    private var filterProgress: Double {
-        Double(filterManager.progress)
-    }
-    
-    private var progressPercentage: Int {
-    let clampedProgress = max(0.0, min(1.0, displayedProgress))
-    return Int(clampedProgress * 100)
-    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed Header - only show when we have content to show
-            if filterManager.isLoading || (filterProgress >= 1.0 && hasStatistics) {
-                VStack(spacing: 16) {
-                    ZStack {
-                        // Centered title
-                        Text(titleText)
-                            .font(.title3)
-                            .fontWeight(.medium)
-                        // Close button aligned to trailing edge (only show when complete)
-                        HStack {
-                            Spacer()
-                            if !filterManager.isLoading && filterProgress >= 1.0 {
-                                Button {
-                                    isPresented = false
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.secondary)
-                                }
-                                .buttonStyle(.plain)
-                                .help("Close")
-                            }
-                        }
-                    }
-                    // Only show phase description if not redundant
-                    if filterManager.isLoading && !filterManager.conversionStageDescription.isEmpty && filterManager.conversionStageDescription != titleText {
-                        Text(filterManager.conversionStageDescription)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .frame(minHeight: 20) // Fixed height to prevent jumping
-                    }
-                    // Progress bar (only during conversion)
-                    if filterManager.isLoading {
-                        VStack(spacing: 8) {
-                            ProgressView(value: displayedProgress)
-                                .progressViewStyle(.linear)
-                                .scaleEffect(y: 1.2)
-                            Text("\(progressPercentage)%")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
-                                .monospacedDigit() // Ensures consistent width for numbers
-                        }
-                    }
-                }
-                .padding(.top, 20)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 16)
+            // Header section
+            if viewModel.state.isLoading || viewModel.state.isComplete {
+                headerView
+                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
             }
-            
-            // Content Area
-            if filterManager.isLoading {
-                // Show phase indicators during conversion
-                ScrollView {
-                    VStack(spacing: 16) {
-                        phaseIndicatorsView
-                    }
-                    .padding(20)
-                }
-            } else if filterProgress >= 1.0 && hasStatistics {
-                // Show statistics when complete
-                ScrollView {
-                    VStack {
-                        statisticsView
-                            .padding(20)
-                    }
-                }
+
+            // Content section
+            if viewModel.state.isLoading {
+                progressContent
+            } else if viewModel.state.isComplete {
+                statisticsContent
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: filterManager.isLoading)
-    // Animate on the throttled displayed progress to reduce UI churn
-    .animation(.easeInOut(duration: 0.24), value: displayedProgress)
+        .animation(.easeInOut(duration: 0.25), value: viewModel.state.isLoading)
         #if os(macOS)
         .frame(
             minWidth: 420, idealWidth: 450, maxWidth: 480,
@@ -112,99 +37,254 @@ struct ApplyChangesProgressView: View {
         )
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         #else
-        .frame(
-            minWidth: 0, idealWidth: .infinity, maxWidth: .infinity,
-            minHeight: 0, idealHeight: .infinity, maxHeight: .infinity
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
-        // Set initial view state before starting the conversion process
-        .task {
-            // Initialize displayed progress
-            displayedProgress = Double(filterManager.progress)
+    }
 
-            if filterManager.isLoading {
-                // Give the UI a chance to render before starting heavy operations
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
+    // MARK: - Header
+
+    private var headerView: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                Text(titleText)
+                    .font(.title3)
+                    .fontWeight(.medium)
+
+                HStack {
+                    Spacer()
+                    if viewModel.state.isComplete {
+                        Button {
+                            isPresented = false
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Close")
+                    }
+                }
             }
-        }
-        // Coalesce extremely frequent progress updates from the filter manager
-        .onChange(of: filterManager.progress) { newValue in
-            scheduleProgressUpdate(newProgress: Double(newValue))
-        }
-        .onAppear {
-            displayedProgress = Double(filterManager.progress)
-        }
-    }
-    
-    private var titleText: String {
-        // Only show "Applied" if we've actually completed a conversion
-    if filterProgress >= 1.0 && !filterManager.isLoading {
-            return "Filter Lists Applied"
-        } else {
-            return "Converting Filter Lists"
-        }
-    }
-    
-    private var hasStatistics: Bool {
-        // Only show statistics if we have meaningful data
-        return filterManager.lastRuleCount > 0 || !filterManager.ruleCountsByCategory.isEmpty
-    }
-    
-    @ViewBuilder
-    private var phaseIndicatorsView: some View {
-        VStack(spacing: 0) {
-            ForEach(phaseData, id: \.title) { phase in
-                phaseRow(
-                    icon: phase.icon,
-                    title: phase.title,
-                    detail: phase.detail,
-                    isActive: phase.isActive,
-                    isCompleted: phase.isCompleted
-                )
-                
-                if phase.title != phaseData.last?.title {
-                    Divider()
-                        .padding(.leading, 32)
+
+            if viewModel.state.isLoading && !viewModel.state.stageDescription.isEmpty {
+                Text(viewModel.state.stageDescription)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+
+            if viewModel.state.isLoading {
+                VStack(spacing: 8) {
+                    ProgressView(value: viewModel.state.progress)
+                        .progressViewStyle(.linear)
+                        .scaleEffect(y: 1.2)
+
+                    Text("\(viewModel.state.progressPercentage)%")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .monospacedDigit()
                 }
             }
         }
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
-    
-    private var phaseData: [(icon: String, title: String, detail: String?, isActive: Bool, isCompleted: Bool)] {
-        [
-            (
+
+    private var titleText: String {
+        viewModel.state.isComplete ? "Filter Lists Applied" : "Converting Filter Lists"
+    }
+
+    // MARK: - Progress Content
+
+    private var progressContent: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                phaseIndicatorsView
+            }
+            .padding(20)
+        }
+    }
+
+    private var phaseIndicatorsView: some View {
+        VStack(spacing: 0) {
+            PhaseRow(
                 icon: "folder.badge.questionmark",
                 title: "Reading Files",
-                detail: filterManager.totalFiltersCount > 0 ? "\(filterManager.processedFiltersCount)/\(filterManager.totalFiltersCount) extensions" : nil,
-                isActive: filterManager.processedFiltersCount < filterManager.totalFiltersCount && !filterManager.isInConversionPhase,
-                isCompleted: filterManager.processedFiltersCount >= filterManager.totalFiltersCount || filterProgress > 0.6
-            ),
-            (
+                detail: phaseReadingDetail,
+                isActive: !viewModel.state.isReadingComplete,
+                isCompleted: viewModel.state.isReadingComplete
+            )
+
+            Divider().padding(.leading, 32)
+
+            PhaseRow(
                 icon: "gearshape.2",
                 title: "Converting Rules",
-                detail: filterManager.currentFilterName.isEmpty ? nil : "Processing \(filterManager.currentFilterName)",
-                isActive: filterManager.isInConversionPhase,
-                isCompleted: filterProgress > 0.75
-            ),
-            (
+                detail: phaseConvertingDetail,
+                isActive: viewModel.state.isReadingComplete && !viewModel.state.isConvertingComplete,
+                isCompleted: viewModel.state.isConvertingComplete
+            )
+
+            Divider().padding(.leading, 32)
+
+            PhaseRow(
                 icon: "square.and.arrow.down",
                 title: "Saving & Building",
-                detail: (filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterProgress > 0.7 && filterProgress < 0.95)) ? "Writing files and building engines" : nil,
-                isActive: filterManager.isInSavingPhase || filterManager.isInEnginePhase || (filterProgress > 0.7 && filterProgress < 0.95),
-                isCompleted: filterProgress > 0.9
-            ),
-            (
+                detail: phaseSavingDetail,
+                isActive: viewModel.state.isConvertingComplete && !viewModel.state.isSavingComplete,
+                isCompleted: viewModel.state.isSavingComplete
+            )
+
+            Divider().padding(.leading, 32)
+
+            PhaseRow(
                 icon: "arrow.clockwise",
                 title: "Reloading Extensions",
-                detail: filterManager.isInReloadPhase && !filterManager.currentFilterName.isEmpty ? "Reloading \(filterManager.currentFilterName)" : nil,
-                isActive: filterManager.isInReloadPhase,
-                isCompleted: filterProgress >= 1.0
+                detail: phaseReloadingDetail,
+                isActive: viewModel.state.isSavingComplete && !viewModel.state.isReloadingComplete,
+                isCompleted: viewModel.state.isReloadingComplete
             )
-        ]
+        }
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
-    
-    private func phaseRow(icon: String, title: String, detail: String?, isActive: Bool, isCompleted: Bool) -> some View {
+
+    // Phase detail helpers (memoized via computed properties)
+    private var phaseReadingDetail: String? {
+        guard viewModel.state.totalCount > 0 else { return nil }
+        return "\(viewModel.state.processedCount)/\(viewModel.state.totalCount) extensions"
+    }
+
+    private var phaseConvertingDetail: String? {
+        guard !viewModel.state.currentFilterName.isEmpty else { return nil }
+        return "Processing \(viewModel.state.currentFilterName)"
+    }
+
+    private var phaseSavingDetail: String? {
+        guard viewModel.state.isConvertingComplete && !viewModel.state.isSavingComplete else { return nil }
+        return "Writing files and building engines"
+    }
+
+    private var phaseReloadingDetail: String? {
+        guard viewModel.state.isSavingComplete && !viewModel.state.isReloadingComplete,
+              !viewModel.state.currentFilterName.isEmpty else { return nil }
+        return "Reloading \(viewModel.state.currentFilterName)"
+    }
+
+    // MARK: - Statistics Content
+
+    private var statisticsContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                overallStatisticsSection
+
+                if !viewModel.state.ruleCountsByCategory.isEmpty {
+                    categoryStatisticsSection
+                }
+            }
+            .padding(20)
+        }
+    }
+
+    private var overallStatisticsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "chart.bar.doc.horizontal")
+                    .foregroundColor(.blue)
+                Text("Overall Statistics")
+                    .font(.headline)
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                if viewModel.state.sourceRulesCount > 0 {
+                    ProgressStatCard(title: "Source Rules", value: viewModel.state.sourceRulesCount.formatted(), icon: "doc.text", color: .orange)
+                }
+                if viewModel.state.safariRulesCount > 0 {
+                    ProgressStatCard(title: "Safari Rules", value: viewModel.state.safariRulesCount.formatted(), icon: "shield.lefthalf.filled", color: .blue)
+                }
+                if viewModel.state.conversionTime != "N/A" {
+                    ProgressStatCard(title: "Conversion", value: viewModel.state.conversionTime, icon: "clock", color: .green)
+                }
+                if viewModel.state.reloadTime != "N/A" {
+                    ProgressStatCard(title: "Reload", value: viewModel.state.reloadTime, icon: "arrow.clockwise", color: .purple)
+                }
+            }
+        }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var categoryStatisticsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "square.grid.2x2")
+                    .foregroundColor(.orange)
+                Text("Category Statistics")
+                    .font(.headline)
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(sortedCategories, id: \.rawValue) { category in
+                    if let count = viewModel.state.ruleCountsByCategory[category], category != .all {
+                        ProgressStatCard(
+                            title: category.rawValue,
+                            value: count.formatted(),
+                            icon: categoryIcon(for: category),
+                            color: categoryColor(for: category),
+                            showWarning: viewModel.state.categoriesApproachingLimit.contains(category)
+                        )
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var sortedCategories: [FilterListCategory] {
+        viewModel.state.ruleCountsByCategory.keys.sorted { $0.rawValue < $1.rawValue }
+    }
+
+    // MARK: - Helpers
+
+    private func categoryIcon(for category: FilterListCategory) -> String {
+        switch category {
+        case .ads: return "rectangle.slash"
+        case .privacy: return "eye.slash"
+        case .security: return "shield"
+        case .multipurpose: return "square.grid.2x2"
+        case .annoyances: return "hand.raised"
+        case .experimental: return "flask"
+        case .foreign: return "globe"
+        case .custom: return "gearshape"
+        default: return "list.bullet"
+        }
+    }
+
+    private func categoryColor(for category: FilterListCategory) -> Color {
+        switch category {
+        case .ads: return .red
+        case .privacy: return .blue
+        case .security: return .green
+        case .multipurpose: return .orange
+        case .annoyances: return .purple
+        case .experimental: return .yellow
+        case .foreign: return .mint
+        case .custom: return .gray
+        default: return .primary
+        }
+    }
+}
+
+// MARK: - Subviews
+
+struct PhaseRow: View {
+    let icon: String
+    let title: String
+    let detail: String?
+    let isActive: Bool
+    let isCompleted: Bool
+
+    var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .foregroundColor(isCompleted ? .green : (isActive ? .blue : .secondary))
@@ -216,19 +296,18 @@ struct ApplyChangesProgressView: View {
                     .fontWeight(isActive ? .medium : .regular)
                     .foregroundColor(isCompleted ? .green : (isActive ? .primary : .secondary))
 
-                // Reserve space for detail text to prevent layout jumping
                 Group {
                     if let detail = detail, !detail.isEmpty {
                         Text(detail)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     } else {
-                        Text(" ") // Invisible placeholder to maintain height
+                        Text(" ")
                             .font(.caption)
                             .opacity(0)
                     }
                 }
-                .frame(minHeight: 16, alignment: .leading) // Fixed height and alignment
+                .frame(minHeight: 16, alignment: .leading)
             }
 
             Spacer()
@@ -243,7 +322,6 @@ struct ApplyChangesProgressView: View {
                         .scaleEffect(0.8)
                         .frame(width: 16, height: 16)
                 } else {
-                    // Keep consistent spacing even when no icon
                     Spacer()
                         .frame(width: 16, height: 16)
                 }
@@ -252,219 +330,22 @@ struct ApplyChangesProgressView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
+}
 
-    // Schedule and throttle updates to displayedProgress to avoid frequent SwiftUI re-renders.
-    private func scheduleProgressUpdate(newProgress: Double) {
-        // Cancel any previously scheduled update
-        scheduledProgressWorkItem?.cancel()
+struct ProgressStatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    var showWarning: Bool = false
 
-        // If the new progress is significantly ahead of displayedProgress, jump to it quickly
-        let clamped = max(0.0, min(1.0, newProgress))
-        let delta = clamped - displayedProgress
-
-        // If progress jumped backwards or is a large jump forward, update immediately
-        if delta < 0 || delta > 0.15 {
-            displayedProgress = clamped
-            return
-        }
-
-        // Otherwise, animate small increments. Schedule a coalesced update after a short delay.
-        let workItem = DispatchWorkItem {
-            // Smoothly move displayedProgress towards the new value
-            withAnimation(.easeInOut(duration: 0.24)) {
-                displayedProgress = clamped
-            }
-        }
-
-        scheduledProgressWorkItem = workItem
-        // Coalesce frequent updates into 80ms windows
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: workItem)
-    }
-    
-    @ViewBuilder
-    private var statisticsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Overall statistics
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: "chart.bar.doc.horizontal")
-                        .foregroundColor(.blue)
-                    Text("Overall Statistics")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                }
-                
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 12) {
-                    let statisticsData = buildOverallStatisticsData()
-                    ForEach(Array(statisticsData.enumerated()), id: \.offset) { index, stat in
-                        statisticCard(
-                            title: stat.title,
-                            value: stat.value,
-                            icon: stat.icon,
-                            color: stat.color
-                        )
-                    }
-                }
-            }
-            .padding(16)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-            
-            // Per-category statistics (if available)
-            if !filterManager.ruleCountsByCategory.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: "square.grid.2x2")
-                            .foregroundColor(.orange)
-                        Text("Category Statistics")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 12) {
-                        let categoryStatistics = buildCategoryStatisticsData()
-                        ForEach(Array(categoryStatistics.enumerated()), id: \.offset) { index, stat in
-                            statisticCard(
-                                title: stat.title,
-                                value: stat.value,
-                                icon: stat.icon,
-                                color: stat.color,
-                                showWarning: stat.showWarning
-                            )
-                        }
-                    }
-                }
-                .padding(16)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-            }
-        }
-    }
-    
-    private func buildOverallStatisticsData() -> [(title: String, value: String, icon: String, color: Color)] {
-        var stats: [(title: String, value: String, icon: String, color: Color)] = []
-        
-        if filterManager.sourceRulesCount > 0 {
-            stats.append((
-                title: "Source Rules",
-                value: filterManager.sourceRulesCount.formatted(),
-                icon: "doc.text",
-                color: .orange
-            ))
-        }
-        
-        if filterManager.lastRuleCount > 0 {
-            stats.append((
-                title: "Safari Rules",
-                value: filterManager.lastRuleCount.formatted(),
-                icon: "shield.lefthalf.filled",
-                color: .blue
-            ))
-        }
-        
-        if filterManager.lastConversionTime != "N/A" {
-            stats.append((
-                title: "Conversion",
-                value: filterManager.lastConversionTime,
-                icon: "clock",
-                color: .green
-            ))
-        }
-        
-        if filterManager.lastReloadTime != "N/A" {
-            stats.append((
-                title: "Reload",
-                value: filterManager.lastReloadTime,
-                icon: "arrow.clockwise",
-                color: .purple
-            ))
-        }
-        
-        return stats
-    }
-    
-    private func buildCategoryStatisticsData() -> [(title: String, value: String, icon: String, color: Color, showWarning: Bool)] {
-        var stats: [(title: String, value: String, icon: String, color: Color, showWarning: Bool)] = []
-        
-        // Sort categories alphabetically for consistent display
-        let sortedCategories = filterManager.ruleCountsByCategory.keys.sorted { $0.rawValue < $1.rawValue }
-        
-        for category in sortedCategories {
-            // Skip "all" category as it's not a real content blocker category
-            if category == .all { continue }
-            
-            if let ruleCount = filterManager.ruleCountsByCategory[category] {
-                let showWarning = filterManager.categoriesApproachingLimit.contains(category)
-                stats.append((
-                    title: category.rawValue,
-                    value: ruleCount.formatted(),
-                    icon: categoryIcon(for: category),
-                    color: categoryColor(for: category),
-                    showWarning: showWarning
-                ))
-            }
-        }
-        
-        return stats
-    }
-    
-    private func categoryIcon(for category: FilterListCategory) -> String {
-        switch category {
-        case .ads:
-            return "rectangle.slash"
-        case .privacy:
-            return "eye.slash"
-        case .security:
-            return "shield"
-        case .multipurpose:
-            return "square.grid.2x2"
-        case .annoyances:
-            return "hand.raised"
-        case .experimental:
-            return "flask"
-        case .foreign:
-            return "globe"
-        case .custom:
-            return "gearshape"
-        default:
-            return "list.bullet"
-        }
-    }
-    
-    private func categoryColor(for category: FilterListCategory) -> Color {
-        switch category {
-        case .ads:
-            return .red
-        case .privacy:
-            return .blue
-        case .security:
-            return .green
-        case .multipurpose:
-            return .orange
-        case .annoyances:
-            return .purple
-        case .experimental:
-            return .yellow
-        case .foreign:
-            return .mint
-        case .custom:
-            return .gray
-        default:
-            return .primary
-        }
-    }
-    
-    private func statisticCard(title: String, value: String, icon: String, color: Color, showWarning: Bool = false) -> some View {
+    var body: some View {
         VStack(spacing: 6) {
             ZStack {
                 Image(systemName: icon)
                     .foregroundColor(color)
                     .font(.title3)
-                
+
                 if showWarning {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.yellow)
@@ -472,14 +353,14 @@ struct ApplyChangesProgressView: View {
                         .offset(x: 12, y: -8)
                 }
             }
-            
+
             Text(value)
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-            
+
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
