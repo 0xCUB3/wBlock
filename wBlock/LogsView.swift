@@ -122,8 +122,7 @@ struct LogsView: View {
                             selectedLevel = level
                         } label: {
                             HStack {
-                                Text(level.emoji)
-                                Text(level.rawValue.capitalized)
+                                Text("\(level.emoji) \(level.rawValue.capitalized)")
                                 if selectedLevel == level {
                                     Image(systemName: "checkmark")
                                 }
