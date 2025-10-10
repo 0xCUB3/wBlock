@@ -100,10 +100,6 @@ struct ContentView: View {
                 .tabItem {
                     Label("Userscripts", systemImage: "doc.text.fill")
                 }
-            WhitelistManagerView(filterManager: filterManager)
-                .tabItem {
-                    Label("Whitelist", systemImage: "list.bullet.indent")
-                }
             SettingsView(filterManager: filterManager)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
@@ -196,6 +192,15 @@ struct ContentView: View {
                     Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .disabled(filterManager.isLoading || enabledListsCount == 0)
+
+                Button {
+                    Task {
+                        await filterManager.checkForUpdates()
+                    }
+                } label: {
+                    Label("Check for Updates", systemImage: "arrow.down.circle")
+                }
+                .disabled(filterManager.isLoading)
 
                 Button {
                     showingAddFilterSheet = true

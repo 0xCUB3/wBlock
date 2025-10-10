@@ -12,69 +12,56 @@ struct WhitelistManagerView: View {
     @State private var selectedDomains: Set<String> = []
     @State private var isProcessing: Bool = false
 
-    @Environment(\.dismiss) private var dismiss
-
     var body: some View {
-        VStack(spacing: 0) {
-            SheetHeader(title: "Whitelisted Domains") {
-                dismiss()
-            }
-
-            List {
-                let paddedDomains = whitelistedDomains + Array(repeating: "", count: max(0, 10 - whitelistedDomains.count))
-                ForEach(paddedDomains.indices, id: \ .self) { idx in
-                    let domain = paddedDomains[idx]
-                    HStack {
-                        if domain.isEmpty {
-                            Text("")
-                        } else {
-                            Toggle(isOn: Binding(
-                                get: { selectedDomains.contains(domain) },
-                                set: { checked in
-                                    if checked {
-                                        selectedDomains.insert(domain)
-                                    } else {
-                                        selectedDomains.remove(domain)
-                                    }
-                                }
-                            )) {
-                                Text(domain)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                        }
-                        Spacer()
+        NavigationStack {
+            VStack(spacing: 0) {
+                List(selection: $selectedDomains) {
+                    ForEach(whitelistedDomains, id: \.self) { domain in
+                        Text(domain)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .tag(domain)
                     }
                 }
-            }
-            .frame(maxHeight: 300)
-            HStack {
-                TextField("Add domain (e.g. example.com)", text: $newDomain, onCommit: addDomain)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .frame(minWidth: 200)
-                Button("Add") {
-                    addDomain()
+
+                Divider()
+
+                HStack {
+                    TextField("Add domain (e.g. example.com)", text: $newDomain, onCommit: addDomain)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(minWidth: 200)
                 }
-                .disabled(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isProcessing)
+                .padding()
             }
-            .padding()
-            SheetBottomToolbar {
-                Button("Select All") {
-                    selectedDomains = Set(whitelistedDomains)
+            .navigationTitle("Whitelisted Domains")
+            .toolbar {
+                ToolbarItemGroup(placement: .automatic) {
+                    Button {
+                        selectedDomains = Set(whitelistedDomains)
+                    } label: {
+                        Label("Select All", systemImage: "checklist")
+                    }
+                    .disabled(whitelistedDomains.isEmpty || isProcessing)
+
+                    Button {
+                        addDomain()
+                    } label: {
+                        Label("Add Domain", systemImage: "plus")
+                    }
+                    .disabled(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isProcessing)
+
+                    Button {
+                        deleteSelectedDomains()
+                    } label: {
+                        Label("Delete Selected", systemImage: "trash")
+                    }
+                    .disabled(selectedDomains.isEmpty || isProcessing)
                 }
-                .buttonStyle(.bordered)
-                .disabled(whitelistedDomains.isEmpty || isProcessing)
-                Button("Delete Selected") {
-                    deleteSelectedDomains()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(selectedDomains.isEmpty || isProcessing)
-                Spacer()
             }
+            .onAppear(perform: loadWhitelistedDomains)
         }
-        .padding()
-        .frame(width: 400, height: 400)
-        .onAppear(perform: loadWhitelistedDomains)
+        .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
+               minHeight: 500, idealHeight: 650, maxHeight: .infinity)
     }
 
     private func loadWhitelistedDomains() {

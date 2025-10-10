@@ -61,7 +61,7 @@ struct UserScriptManagerView: View {
                         Button {
                             refreshAllUserScripts()
                         } label: {
-                            Image(systemName: "arrow.clockwise")
+                            Image(systemName: "arrow.down.circle")
                         }
                         .disabled(isRefreshing)
                     }
@@ -75,6 +75,31 @@ struct UserScriptManagerView: View {
                     } label: {
                         Image(systemName: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                     }
+                }
+            }
+        }
+        #elseif os(macOS)
+        .toolbar {
+            ToolbarItemGroup(placement: .automatic) {
+                if !scripts.filter(\.isDownloaded).isEmpty {
+                    Button {
+                        refreshAllUserScripts()
+                    } label: {
+                        Label("Check for Updates", systemImage: "arrow.down.circle")
+                    }
+                    .disabled(isRefreshing)
+                }
+
+                Button {
+                    showingAddScriptSheet = true
+                } label: {
+                    Label("Add Userscript", systemImage: "plus")
+                }
+
+                Button {
+                    showOnlyEnabled.toggle()
+                } label: {
+                    Label("Show Enabled Only", systemImage: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                 }
             }
         }

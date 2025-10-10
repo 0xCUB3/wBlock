@@ -40,14 +40,40 @@ struct SettingsView: View {
                                 LogsView()
                             } label: {
                                 HStack {
-                                    Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                                    Text("View Logs")
+                                        .font(.body)
                                     Spacer()
+                                    Image(systemName: "doc.text.magnifyingglass")
+                                        .foregroundColor(.secondary)
                                     Image(systemName: "chevron.right")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
+                            .buttonStyle(.plain)
                             .padding(16)
+
+                            #if os(macOS)
+                            Divider()
+                                .padding(.leading, 16)
+
+                            NavigationLink {
+                                WhitelistManagerView(filterManager: filterManager)
+                            } label: {
+                                HStack {
+                                    Text("Manage Whitelist")
+                                        .font(.body)
+                                    Spacer()
+                                    Image(systemName: "list.bullet.indent")
+                                        .foregroundColor(.secondary)
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .padding(16)
+                            #endif
                         }
 
                         settingsSectionView(title: "Filter Auto-Update") {
