@@ -17132,6 +17132,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
     const message = request;
+    if (message && message.action === "getUserScripts") {
+      const userScriptRequest = {
+        action: "getUserScripts",
+        url: message.url,
+        requestId: "userscripts-" + Date.now()
+      };
+
+      try {
+        const response = await browser.runtime.sendNativeMessage("application.id", userScriptRequest);
+        const scripts = response && response.userScripts ? response.userScripts : [];
+        return { userScripts: scripts };
+      } catch (error) {
+        console.error("[wBlock] Failed to get userscripts:", error);
+        return { userScripts: [] };
+      }
+    }
     const tabId = ((_sender$tab = sender.tab) === null || _sender$tab === void 0 ? void 0 : _sender$tab.id) ?? 0;
     const frameId = sender.frameId ?? 0;
     let blankFrame = false;

@@ -79,7 +79,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     if (browser.runtime.lastError) {
                         console.error('[wBlock] Error sending message to native via browser.runtime.sendMessage:', browser.runtime.lastError);
                     } else {
-                        console.log('[wBlock] browser.runtime.sendMessage response (if any):', response);
+                        console.log('[wBlock] browser.runtime.sendMessage response:', response);
+                        // Handle the response directly from the callback
+                        if (response && response.userScripts) {
+                            console.log('[wBlock] Extracted userscripts from callback response:', response.userScripts);
+                            this.injectUserScripts(response.userScripts);
+                        } else {
+                            console.log('[wBlock] No userscripts found in callback response.');
+                        }
                     }
                 }).catch(error => {
                      console.error('[wBlock] Failed to send message via browser.runtime.sendMessage:', error);

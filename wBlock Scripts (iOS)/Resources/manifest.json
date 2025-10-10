@@ -30,6 +30,16 @@
             "all_frames": true,
             "match_about_blank": true,
             "match_origin_as_fallback": true
+        },
+        {
+            "js": [
+                "userscript-injector.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
         }
     ],
     "action": {
