@@ -6,145 +6,155 @@
 //
 
 import SwiftUI
-import Combine
+// The production target exposes FilterListCategory via wBlockCoreService.
+#if canImport(wBlockCoreService)
 import wBlockCoreService
+#else
+// Fallback used by previews and static analysis when the module is unavailable.
+enum FilterListCategory: String, CaseIterable, Hashable {
+    case all, ads, privacy, security, multipurpose, annoyances, experimental, foreign, custom
+}
+#endif
 
-/// Consolidated state for the apply changes process
-struct ApplyChangesState: Equatable {
-    var progress: Double = 0.0
-    var isLoading: Bool = false
+/// The phases the apply flow walks through.
+enum ApplyChangesPhase: String, CaseIterable, Identifiable {
+    case reading
+    case converting
+    case saving
+    case reloading
 
-    // Phase completion tracking
-    var isReadingComplete: Bool = false
-    var isConvertingComplete: Bool = false
-    var isSavingComplete: Bool = false
-    var isReloadingComplete: Bool = false
+    var id: String { rawValue }
 
-    // Current phase details
-    var currentFilterName: String = ""
-    var processedCount: Int = 0
-    var totalCount: Int = 0
-    var stageDescription: String = ""
-
-    // Statistics (shown when complete)
-    var sourceRulesCount: Int = 0
-    var safariRulesCount: Int = 0
-    var conversionTime: String = "N/A"
-    var reloadTime: String = "N/A"
-    var ruleCountsByCategory: [FilterListCategory: Int] = [:]
-    var categoriesApproachingLimit: Set<FilterListCategory> = []
-
-    var isComplete: Bool {
-        !isLoading && progress >= 1.0
+    var title: String {
+        switch self {
+        case .reading: return "Reading Files"
+        case .converting: return "Converting Rules"
+        case .saving: return "Saving & Building"
+        case .reloading: return "Reloading Extensions"
+        }
     }
 
-    var progressPercentage: Int {
-        Int(max(0.0, min(1.0, progress)) * 100)
+    var systemImage: String {
+        switch self {
+        case .reading: return "folder.badge.questionmark"
+        case .converting: return "gearshape.2"
+        case .saving: return "square.and.arrow.down"
+        case .reloading: return "arrow.clockwise"
+        }
     }
 }
 
-/// Dedicated ViewModel for the apply changes progress view
-/// Throttles rapid updates from AppFilterManager to prevent UI freezing
+/// Status flags for each phase row.
+enum ApplyChangesPhaseStatus: Equatable {
+    case pending
+    case active
+    case complete
+}
+
+/// Model used to render the phase list in the progress sheet.
+struct ApplyChangesPhaseProgress: Equatable, Identifiable {
+    let phase: ApplyChangesPhase
+    var status: ApplyChangesPhaseStatus
+
+    var id: ApplyChangesPhase { phase }
+}
+
+/// Summary statistics surfaced once the run finishes.
+struct ApplyChangesSummary: Equatable {
+    var sourceRules: Int
+    var safariRules: Int
+    var conversionTime: String
+    var reloadTime: String
+    var ruleCountsByCategory: [FilterListCategory: Int]
+    var categoriesApproachingLimit: Set<FilterListCategory>
+}
+
+/// Consolidated state for the apply progress presentation.
+struct ApplyChangesState: Equatable {
+    var isLoading: Bool = false
+    var progress: Double = 0
+    var statusMessage: String = ""
+    var currentFilterName: String = ""
+    var processedCount: Int = 0
+    var totalCount: Int = 0
+    var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map { ApplyChangesPhaseProgress(phase: $0, status: .pending) }
+    var summary: ApplyChangesSummary? = nil
+
+    var progressPercentage: Int {
+        Int((0...1).clamp(progress) * 100)
+    }
+
+    var isComplete: Bool {
+        summary != nil
+    }
+}
+
+private extension ClosedRange where Bound == Double {
+    func clamp(_ value: Double) -> Double {
+        Swift.min(Swift.max(lowerBound, value), upperBound)
+    }
+}
+
+/// Dedicated ViewModel for the apply changes sheet.
+/// Keeps the API surface identical to the existing manager while greatly simplifying state updates.
 @MainActor
 class ApplyChangesViewModel: ObservableObject {
     @Published private(set) var state = ApplyChangesState()
 
-    private let progressSubject = PassthroughSubject<Double, Never>()
-    private let phaseSubject = PassthroughSubject<PhaseUpdate, Never>()
-    private let detailsSubject = PassthroughSubject<DetailUpdate, Never>()
-    private var cancellables = Set<AnyCancellable>()
+    private var lastProgressValue: Double = 0
+    private var lastProgressUpdate: Date = .distantPast
+    private let minProgressInterval: TimeInterval = 0.05
+    private let minProgressDelta: Double = 0.01
 
-    enum PhaseUpdate {
-        case reading(Bool)
-        case converting(Bool)
-        case saving(Bool)
-        case reloading(Bool)
-    }
-
-    struct DetailUpdate {
-        var currentFilterName: String?
-        var processedCount: Int?
-        var totalCount: Int?
-        var stageDescription: String?
-    }
-
-    init() {
-        setupThrottling()
-    }
-
-    private func setupThrottling() {
-        // iOS-optimized throttling: Much more conservative than macOS
-        // to prevent main thread starvation under resource constraints
-
-        #if os(iOS)
-        // iOS: 10 FPS for progress (0.1s interval) - reduces main thread load
-        let progressInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.1)
-        // iOS: 5 FPS for phases (0.2s interval)
-        let phaseInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.2)
-        // iOS: 2 FPS for details (0.5s interval)
-        let detailsInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.5)
-        #else
-        // macOS: 30 FPS for progress (0.033s interval) - can handle faster updates
-        let progressInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.033)
-        // macOS: 20 FPS for phases (0.05s interval)
-        let phaseInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.05)
-        // macOS: 10 FPS for details (0.1s interval)
-        let detailsInterval: RunLoop.SchedulerTimeType.Stride = .seconds(0.1)
-        #endif
-
-        // Throttle progress updates with platform-specific intervals
-        // Using 'latest: true' ensures we always get the most recent value
-        progressSubject
-            .throttle(for: progressInterval, scheduler: RunLoop.main, latest: true)
-            .sink { [weak self] progress in
-                self?.state.progress = progress
-            }
-            .store(in: &cancellables)
-
-        // Phase updates are less frequent
-        phaseSubject
-            .throttle(for: phaseInterval, scheduler: RunLoop.main, latest: true)
-            .sink { [weak self] phase in
-                self?.updatePhase(phase)
-            }
-            .store(in: &cancellables)
-
-        // Detail updates throttled the most for text changes
-        detailsSubject
-            .throttle(for: detailsInterval, scheduler: RunLoop.main, latest: true)
-            .sink { [weak self] details in
-                self?.updateDetails(details)
-            }
-            .store(in: &cancellables)
-    }
-
-    // MARK: - Public Update Methods
+    // MARK: - Public API expected by AppFilterManager
 
     func updateProgress(_ progress: Float) {
-        progressSubject.send(Double(progress))
+        let value = (0...1).clamp(Double(progress))
+        let now = Date()
+
+        let delta = abs(value - lastProgressValue)
+        if delta < minProgressDelta && now.timeIntervalSince(lastProgressUpdate) < minProgressInterval {
+            return
+        }
+
+        lastProgressValue = value
+        lastProgressUpdate = now
+        state.progress = value
     }
 
     func updateIsLoading(_ isLoading: Bool) {
         state.isLoading = isLoading
+        if isLoading {
+            resetPhases()
+            resetProgressTracking()
+        }
     }
 
     func updatePhaseCompletion(reading: Bool? = nil, converting: Bool? = nil, saving: Bool? = nil, reloading: Bool? = nil) {
-        if let reading = reading { phaseSubject.send(.reading(reading)) }
-        if let converting = converting { phaseSubject.send(.converting(converting)) }
-        if let saving = saving { phaseSubject.send(.saving(saving)) }
-        if let reloading = reloading { phaseSubject.send(.reloading(reloading)) }
+        if let reading = reading { setPhase(.reading, isComplete: reading) }
+        if let converting = converting { setPhase(.converting, isComplete: converting) }
+        if let saving = saving { setPhase(.saving, isComplete: saving) }
+        if let reloading = reloading { setPhase(.reloading, isComplete: reloading) }
     }
 
     func updateCurrentFilter(_ name: String) {
-        detailsSubject.send(DetailUpdate(currentFilterName: name))
+        guard name != state.currentFilterName else { return }
+        state.currentFilterName = name
     }
 
     func updateProcessedCount(_ processed: Int, total: Int) {
-        detailsSubject.send(DetailUpdate(processedCount: processed, totalCount: total))
+        let clampedProcessed = max(0, processed)
+        let clampedTotal = max(0, total)
+
+        guard clampedProcessed != state.processedCount || clampedTotal != state.totalCount else { return }
+
+        state.processedCount = clampedProcessed
+        state.totalCount = clampedTotal
     }
 
     func updateStageDescription(_ description: String) {
-        detailsSubject.send(DetailUpdate(stageDescription: description))
+        guard description != state.statusMessage else { return }
+        state.statusMessage = description
     }
 
     func updateStatistics(
@@ -153,51 +163,96 @@ class ApplyChangesViewModel: ObservableObject {
         conversionTime: String,
         reloadTime: String,
         ruleCountsByCategory: [FilterListCategory: Int],
-        categoriesApproachingLimit: Set<FilterListCategory>
+        categoriesApproachingLimit: Set<FilterListCategory>,
+        statusMessage: String? = nil
     ) {
-        state.sourceRulesCount = sourceRules
-        state.safariRulesCount = safariRules
-        state.conversionTime = conversionTime
-        state.reloadTime = reloadTime
-        state.ruleCountsByCategory = ruleCountsByCategory
-        state.categoriesApproachingLimit = categoriesApproachingLimit
+        state.summary = ApplyChangesSummary(
+            sourceRules: sourceRules,
+            safariRules: safariRules,
+            conversionTime: conversionTime,
+            reloadTime: reloadTime,
+            ruleCountsByCategory: ruleCountsByCategory,
+            categoriesApproachingLimit: categoriesApproachingLimit
+        )
+        markAllPhasesComplete()
+        state.isLoading = false
+        state.progress = 1
+        lastProgressValue = 1
+        lastProgressUpdate = Date()
+
+        if let statusMessage, !statusMessage.isEmpty {
+            state.statusMessage = statusMessage
+        } else if state.statusMessage.isEmpty || state.statusMessage.lowercased().contains("reloading") {
+            state.statusMessage = "Filters applied successfully."
+        }
     }
 
     func reset() {
         state = ApplyChangesState()
+        resetProgressTracking()
     }
 
-    // MARK: - Private Update Handlers
+    // MARK: - Helpers
 
-    private func updatePhase(_ phase: PhaseUpdate) {
-        switch phase {
-        case .reading(let complete):
-            state.isReadingComplete = complete
-        case .converting(let complete):
-            state.isConvertingComplete = complete
-        case .saving(let complete):
-            state.isSavingComplete = complete
-        case .reloading(let complete):
-            state.isReloadingComplete = complete
-        }
+    private func resetProgressTracking() {
+        lastProgressValue = 0
+        lastProgressUpdate = .distantPast
     }
 
-    private func updateDetails(_ details: DetailUpdate) {
-        if let name = details.currentFilterName {
-            state.currentFilterName = name
-        }
-        if let processed = details.processedCount {
-            state.processedCount = processed
-        }
-        if let total = details.totalCount {
-            state.totalCount = total
-        }
-        if let description = details.stageDescription {
-            state.stageDescription = description
+    private func resetPhases() {
+        state.phases = ApplyChangesPhase.allCases.map { phase in
+            ApplyChangesPhaseProgress(phase: phase, status: phase == .reading ? .active : .pending)
         }
     }
 
-    deinit {
-        cancellables.forEach { $0.cancel() }
+    private func markAllPhasesComplete() {
+        state.phases = state.phases.map { phase in
+            var updated = phase
+            updated.status = .complete
+            return updated
+        }
+    }
+
+    private func setPhase(_ phase: ApplyChangesPhase, isComplete: Bool) {
+        updatePhase(phase) { phaseProgress in
+            phaseProgress.status = isComplete ? .complete : .active
+        }
+
+        if isComplete {
+            activateNextPendingPhase(after: phase)
+        } else {
+            resetPhasesAfter(phase)
+        }
+    }
+
+    private func updatePhase(_ phase: ApplyChangesPhase, mutate: (inout ApplyChangesPhaseProgress) -> Void) {
+        guard let index = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
+        var mutablePhases = state.phases
+        mutate(&mutablePhases[index])
+        state.phases = mutablePhases
+    }
+
+    private func activateNextPendingPhase(after phase: ApplyChangesPhase) {
+        guard let currentIndex = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
+        var mutablePhases = state.phases
+
+        if let nextIndex = mutablePhases[currentIndex...].dropFirst().firstIndex(where: { $0.status == .pending }) {
+            mutablePhases[nextIndex].status = .active
+        }
+
+        state.phases = mutablePhases
+    }
+
+    private func resetPhasesAfter(_ phase: ApplyChangesPhase) {
+        guard let currentIndex = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
+        var mutablePhases = state.phases
+
+        for index in mutablePhases.indices where index > currentIndex {
+            if mutablePhases[index].status == .complete {
+                mutablePhases[index].status = .pending
+            }
+        }
+
+        state.phases = mutablePhases
     }
 }

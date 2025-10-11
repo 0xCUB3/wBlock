@@ -557,6 +557,13 @@ class AppFilterManager: ObservableObject {
             self.isInReloadPhase = false
         }
         
+        // Allow the apply progress UI to render fully before heavy work begins.
+        let shouldDelayForUI = await MainActor.run { self.showingApplyProgressSheet }
+        if shouldDelayForUI {
+            await Task.yield()
+            try? await Task.sleep(nanoseconds: 120_000_000) // ~0.12s for sheet presentation
+        }
+
         await ConcurrentLogManager.shared.info(.filterApply, "Starting filter application process", metadata: ["platform": currentPlatform == .macOS ? "macOS" : "iOS"])
 
         let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
@@ -946,7 +953,8 @@ class AppFilterManager: ObservableObject {
                 conversionTime: self.lastConversionTime,
                 reloadTime: self.lastReloadTime,
                 ruleCountsByCategory: self.ruleCountsByCategory,
-                categoriesApproachingLimit: self.categoriesApproachingLimit
+                categoriesApproachingLimit: self.categoriesApproachingLimit,
+                statusMessage: self.statusDescription
             )
             self.applyProgressViewModel.updateIsLoading(false)
         }
