@@ -82,6 +82,7 @@ wBlock is a free, open-source project dedicated to improving your browsing exper
 ## Credits
 [@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. His ad blocker [WebShield](https://github.com/arjpar/WebShield) is pretty cool too!
 [@ameshkov](https://github.com/ameshkov/safari-blocker) for the demo project which was the basis for the advanced functionality in wBlock's latest refactoring. 
+[@shindgewongxj](https://github.com/shindgewongxj) for the lovely icon. 
 
 ---
 
