@@ -2,8 +2,7 @@
 //  LiquidGlassDesignSystem.swift
 //  wBlock
 //
-//  Created by Claude on 10/9/25.
-//  Native iOS 26 / macOS 26 Liquid Glass implementation
+//  Created by Alexander Skula on 10/9/25.
 //
 
 import SwiftUI

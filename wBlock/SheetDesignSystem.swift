@@ -2,7 +2,7 @@
 //  SheetDesignSystem.swift
 //  wBlock
 //
-//  Created by Claude on 10/1/25.
+//  Created by Alexander Skula on 10/1/25.
 //
 
 import SwiftUI
