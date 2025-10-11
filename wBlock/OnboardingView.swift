@@ -1,5 +1,8 @@
 import SwiftUI
 import wBlockCoreService
+#if os(iOS)
+import UserNotifications
+#endif
 
 struct OnboardingView: View {
     enum BlockingLevel: String, CaseIterable, Identifiable {
@@ -41,10 +44,16 @@ struct OnboardingView: View {
     @State private var regionInfoMessage: String?
     @State private var hasManuallyEditedRegionalSelection = false
     @State private var isCommunityExpanded = false
+#if os(iOS)
+    @State private var wantsReminderNotifications: Bool = true
+#endif
 
     let filterManager: AppFilterManager
     
     private static let selectedCountryDefaultsKey = "onboardingSelectedCountryCode"
+    #if os(iOS)
+    private static let reminderPreferenceKey = "onboardingWantsReminderNotifications"
+    #endif
     private static let fallbackLocale = Locale(identifier: "en_US")
     private static let manualCountryLanguageOverrides: [String: [String]] = [
         // North America
@@ -235,6 +244,10 @@ struct OnboardingView: View {
         _recommendedRegionalFilters = State(initialValue: [])
         _optionalRegionalFilters = State(initialValue: [])
         _regionInfoMessage = State(initialValue: nil)
+#if os(iOS)
+    let storedReminderPreference = defaults.object(forKey: Self.reminderPreferenceKey) as? Bool ?? true
+    _wantsReminderNotifications = State(initialValue: storedReminderPreference)
+#endif
     }
     private let sharedDefaults: UserDefaults
     @Environment(\.dismiss) private var dismiss
@@ -579,6 +592,10 @@ struct OnboardingView: View {
                 }
             }
 
+#if os(iOS)
+            reminderCard
+#endif
+
             Spacer()
             HStack {
                 Button("Back") { step -= 1 }
@@ -642,6 +659,9 @@ struct OnboardingView: View {
             }
         }
         sharedDefaults.set(selectedCountryCode.uppercased(), forKey: Self.selectedCountryDefaultsKey)
+#if os(iOS)
+    sharedDefaults.set(wantsReminderNotifications, forKey: Self.reminderPreferenceKey)
+#endif
         filterManager.filterLists = updatedFilters
         await filterManager.saveFilterLists()
 
@@ -662,6 +682,9 @@ struct OnboardingView: View {
             })
             isApplying = false
             setHasCompletedOnboarding(true)
+#if os(iOS)
+            await requestNotificationPermissionIfNeeded()
+#endif
             dismiss()
             filterManager.showingApplyProgressSheet = true
         }
@@ -737,6 +760,55 @@ struct OnboardingView: View {
             regionInfoMessage = "Only community-maintained lists are available for \(countryName(for: normalizedCode)). Enable them if you're comfortable."
         }
     }
+
+#if os(iOS)
+    private var reminderCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Reminder notifications")
+                        .font(.headline)
+                    Text("If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } icon: {
+                Image(systemName: "bell.badge")
+                    .foregroundStyle(.yellow)
+            }
+
+            Toggle("Send me reminders about unapplied changes", isOn: $wantsReminderNotifications)
+                .toggleStyle(.switch)
+        }
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @MainActor
+    private func requestNotificationPermissionIfNeeded() async {
+        guard wantsReminderNotifications else { return }
+
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            do {
+                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                let metadata: [String: String] = [
+                    "granted": granted ? "true" : "false"
+                ]
+                await ConcurrentLogManager.shared.info(.startup, "Requested notification permission during onboarding", metadata: metadata)
+            } catch {
+                await ConcurrentLogManager.shared.error(.startup, "Failed to request notification permission", metadata: ["error": error.localizedDescription])
+            }
+        case .denied, .authorized, .provisional, .ephemeral:
+            break
+        @unknown default:
+            break
+        }
+    }
+#endif
 
     private func languagesForCountry(_ code: String) -> Set<String> {
         let normalized = code.uppercased()

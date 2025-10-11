@@ -20,6 +20,8 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var lastUpdated: Date?
     public var languages: [String] = []
     public var trustLevel: String? = nil
+    public var etag: String? = nil
+    public var serverLastModified: String? = nil
 
     public init(id: UUID = UUID(),
                 name: String,
@@ -31,7 +33,9 @@ public struct FilterList: Identifiable, Codable, Hashable {
                 sourceRuleCount: Int? = nil,
                 lastUpdated: Date? = nil,
                 languages: [String] = [],
-                trustLevel: String? = nil) {
+                trustLevel: String? = nil,
+                etag: String? = nil,
+                serverLastModified: String? = nil) {
         self.id = id
         self.name = name
         self.url = url
@@ -43,6 +47,8 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.lastUpdated = lastUpdated
         self.languages = languages
         self.trustLevel = trustLevel
+        self.etag = etag
+        self.serverLastModified = serverLastModified
     }
     
     /// Returns a formatted string for the last updated date

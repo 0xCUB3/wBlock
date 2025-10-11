@@ -409,37 +409,9 @@ struct ContentView: View {
         }
     }
 
-    #if os(iOS)
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
-                print("Notification permission granted.")
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
-            }
-        }
-    }
 
-    private func scheduleNotification(delay: TimeInterval = 1.0) {
-        let content = UNMutableNotificationContent()
-        content.title = "Psst! You forgot something!"
-        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
-        content.sound = .default
-        content.userInfo = ["action_type": "apply_wblock_changes"]
-
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            } else {
-                print("Notification scheduled successfully.")
-            }
-        }
-    }
-    #endif
 }
+    
 
 struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
@@ -514,9 +486,6 @@ struct ContentModifiers: ViewModifier {
             .onAppear {
                 Task { await ConcurrentLogManager.shared.info(.startup, "wBlock application appeared", metadata: [:]) }
                 filterManager.setUserScriptManager(userScriptManager)
-                #if os(iOS)
-                requestNotificationPermission()
-                #endif
             }
             #if os(iOS)
             .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -547,18 +516,8 @@ struct ContentModifiers: ViewModifier {
             }
             #endif
     }
-
+    
     #if os(iOS)
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
-                print("Notification permission granted.")
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
-            }
-        }
-    }
-
     private func scheduleNotification(delay: TimeInterval = 1.0) {
         let content = UNMutableNotificationContent()
         content.title = "Psst! You forgot something!"
@@ -579,6 +538,7 @@ struct ContentModifiers: ViewModifier {
     }
     #endif
 }
+    
 
 struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager

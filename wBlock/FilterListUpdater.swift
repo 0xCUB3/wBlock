@@ -175,25 +175,75 @@ class FilterListUpdater {
         return filtersWithUpdates
     }
 
-    /// Checks if a filter has an update by comparing online content with local content
+    /// Checks if a filter has an update by comparing lightweight metadata before falling back to full downloads
     func hasUpdate(for filter: FilterList) async -> Bool {
-        guard let containerURL = loader.getSharedContainerURL() else { return false }
-        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        do {
+            var headRequest = URLRequest(url: filter.url)
+            headRequest.httpMethod = "HEAD"
+
+            if let etag = filter.etag, !etag.isEmpty {
+                headRequest.setValue(etag, forHTTPHeaderField: "If-None-Match")
+            }
+
+            if let lastModified = filter.serverLastModified, !lastModified.isEmpty {
+                headRequest.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+            }
+
+            let (_, response) = try await urlSession.data(for: headRequest)
+
+            if let httpResponse = response as? HTTPURLResponse {
+                switch httpResponse.statusCode {
+                case 304:
+                    return false
+                case 200:
+                    let remoteETag = httpResponse.value(forHTTPHeaderField: "ETag")
+                    if let remoteETag, let localETag = filter.etag, remoteETag == localETag {
+                        return false
+                    }
+
+                    let remoteLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+                    if let remoteLastModified,
+                       let localLastModified = filter.serverLastModified,
+                       remoteLastModified == localLastModified {
+                        return false
+                    }
+
+                    // Metadata indicates a potential update; confirm by inspecting content when needed
+                    return try await compareRemoteToLocal(filter: filter)
+                default:
+                    break
+                }
+            }
+        } catch {
+            // Some providers reject HEAD or conditional requests; fall back to a direct comparison
+            await ConcurrentLogManager.shared.debug(.filterUpdate, "HEAD check failed, falling back to full comparison", metadata: ["filter": filter.name, "error": error.localizedDescription])
+        }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: filter.url)
-            let onlineContent = String(data: data, encoding: .utf8) ?? ""
-
-            if FileManager.default.fileExists(atPath: fileURL.path) {
-                let localContent = try String(contentsOf: fileURL, encoding: .utf8)
-                return onlineContent != localContent
-            } else {
-                return true // If local file doesn't exist, consider it as needing an update
-            }
+            return try await compareRemoteToLocal(filter: filter)
         } catch {
             await ConcurrentLogManager.shared.error(.filterUpdate, "Error checking update for filter", metadata: ["filter": filter.name, "error": error.localizedDescription])
             return false
         }
+    }
+
+    /// Downloads remote content and compares it against the locally cached version
+    private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
+        let (data, response) = try await urlSession.data(from: filter.url)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard let onlineContent = String(data: data, encoding: .utf8) else {
+            throw URLError(.cannotDecodeContentData)
+        }
+
+        if let localContent = loader.readLocalFilterContent(filter) {
+            return onlineContent != localContent
+        }
+
+        // If we do not have a local copy yet, treat it as needing an update
+        return true
     }
 
     /// Fetches, processes, and saves a filter list
@@ -217,9 +267,9 @@ class FilterListUpdater {
                 request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
                 request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
                 request.timeoutInterval = 30
-                (data, response) = try await URLSession.shared.data(for: request)
+                (data, response) = try await urlSession.data(for: request)
             } else {
-                (data, response) = try await URLSession.shared.data(from: filter.url)
+                (data, response) = try await urlSession.data(from: filter.url)
             }
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
@@ -236,6 +286,10 @@ class FilterListUpdater {
             }
             updatedFilter.sourceRuleCount = countRulesInContent(content: content)
             updatedFilter.lastUpdated = Date()
+            if let httpResponse = response as? HTTPURLResponse {
+                updatedFilter.etag = httpResponse.value(forHTTPHeaderField: "ETag")
+                updatedFilter.serverLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+            }
 
             let finalFilter = updatedFilter
             await MainActor.run {
@@ -363,7 +417,7 @@ class FilterListUpdater {
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: updateURL)
+            let (data, _) = try await urlSession.data(from: updateURL)
             guard let onlineContent = String(data: data, encoding: .utf8) else {
                 return false
             }
@@ -394,7 +448,7 @@ class FilterListUpdater {
         }
         
         do {
-            let (data, response) = try await URLSession.shared.data(from: downloadURL)
+            let (data, response) = try await urlSession.data(from: downloadURL)
             
             guard let httpResponse = response as? HTTPURLResponse, 
                   httpResponse.statusCode == 200,

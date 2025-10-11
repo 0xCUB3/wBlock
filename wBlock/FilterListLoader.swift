@@ -67,7 +67,12 @@ class FilterListLoader {
                         isSelected: savedFilter.isSelected, // Preserve user's selection
                         description: defaultFilter.description, // Use default description (may have been updated)
                         version: savedFilter.version, // Keep version info
-                        sourceRuleCount: savedFilter.sourceRuleCount // Keep rule count
+                        sourceRuleCount: savedFilter.sourceRuleCount, // Keep rule count
+                        lastUpdated: savedFilter.lastUpdated,
+                        languages: defaultFilter.languages.isEmpty ? savedFilter.languages : defaultFilter.languages,
+                        trustLevel: defaultFilter.trustLevel ?? savedFilter.trustLevel,
+                        etag: savedFilter.etag,
+                        serverLastModified: savedFilter.serverLastModified
                     )
                     filterLists.append(updatedFilter)
                 } else {
@@ -108,7 +113,12 @@ class FilterListLoader {
                     isSelected: existingFilter.isSelected, // Preserve user's selection
                     description: customFilter.description, // Use custom filter description (may have been updated)
                     version: existingFilter.version, // Keep version info
-                    sourceRuleCount: existingFilter.sourceRuleCount // Keep rule count
+                    sourceRuleCount: existingFilter.sourceRuleCount,
+                    lastUpdated: existingFilter.lastUpdated,
+                    languages: existingFilter.languages,
+                    trustLevel: existingFilter.trustLevel,
+                    etag: existingFilter.etag,
+                    serverLastModified: existingFilter.serverLastModified
                 )
                 filterLists[existingIndex] = updatedCustomFilter
             } else {
