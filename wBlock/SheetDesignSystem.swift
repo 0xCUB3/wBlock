@@ -58,6 +58,7 @@ struct SheetHeader: View {
         }
         .padding(.horizontal, SheetDesign.headerHorizontalPadding)
         .padding(.top, SheetDesign.headerTopPadding)
+        .background(Color.clear)
     }
 }
 
@@ -76,23 +77,7 @@ struct SheetBottomToolbar<Content: View>: View {
         }
         .padding(.horizontal, SheetDesign.bottomToolbarHorizontalPadding)
         .padding(.vertical, SheetDesign.bottomToolbarVerticalPadding)
-        #if os(macOS)
-        .background {
-            if #available(macOS 26.0, *) {
-                Color(NSColor.windowBackgroundColor).opacity(0.95)
-            } else {
-                Color(NSColor.windowBackgroundColor).opacity(0.8)
-            }
-        }
-        #else
-        .background {
-            if #available(iOS 26.0, *) {
-                Color(.systemGroupedBackground)
-            } else {
-                Color(.systemGroupedBackground)
-            }
-        }
-        #endif
+        .background(Color.clear)
     }
 }
 

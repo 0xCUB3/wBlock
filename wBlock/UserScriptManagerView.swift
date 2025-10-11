@@ -7,6 +7,11 @@
 
 import SwiftUI
 import wBlockCoreService
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
@@ -741,112 +746,264 @@ struct Badge: View {
 struct AddUserScriptView: View {
     var userScriptManager: UserScriptManager
     var onScriptAdded: () -> Void
-    @State private var urlString = ""
-    @State private var isLoading = false
+
     @Environment(\.dismiss) private var dismiss
+    @State private var urlInput: String = ""
+    @State private var validationState: ValidationState = .idle
+    @State private var isAdding: Bool = false
+    @State private var showHints: Bool = false
+    @FocusState private var urlFieldFocused: Bool
 
     var body: some View {
-        #if os(iOS)
-        NavigationView {
-            mainContent
-                .navigationTitle("")
-                .navigationBarHidden(true)
-        }
-        #else
-        mainContent
-        #endif
-    }
-
-    private var mainContent: some View {
-        VStack(spacing: 32) {
-            VStack(spacing: 20) {
-                Text("Add Userscript")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-
-                Text("Enter the URL of a userscript (ending in .user.js)")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+        SheetContainer {
+            SheetHeader(title: "Add Userscript", isLoading: isAdding) {
+                dismiss()
             }
 
-            VStack(spacing: 16) {
-                TextField("https://example.com/script.user.js", text: $urlString)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    entryCard
+                    requirementsCard
+                }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+
+            SheetBottomToolbar {
+                cancelButton
+                Spacer()
+                addButton
+            }
+        }
+        .interactiveDismissDisabled(isAdding)
+        .onAppear {
+            urlFieldFocused = true
+        }
+        .onChange(of: urlInput) { _, newValue in
+            validateInput(newValue)
+        }
+    }
+
+    // MARK: - UI Sections
+
+    private var entryCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Script URL")
+                    .font(.headline)
+                Text("Paste the direct .user.js link. wBlock will download and install it for you.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 8) {
+                TextField("https://example.com/script.user.js", text: $urlInput)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     #if os(iOS)
-                    .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
                     #endif
+                    .focused($urlFieldFocused)
 
-                #if os(iOS)
-                VStack(spacing: 16) {
-                    Button(action: addScript) {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            }
-                            Text(isLoading ? "Adding..." : "Add Script")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-
-                    Button("Cancel") {
-                        dismiss()
+                HStack(spacing: 12) {
+                    Button {
+                        pasteFromClipboard()
+                    } label: {
+                        Label("Paste", systemImage: "doc.on.clipboard")
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.large)
-                }
-                #else
-                HStack(spacing: 12) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.cancelAction)
 
-                    Button(action: addScript) {
-                        if isLoading {
-                            HStack(spacing: 6) {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                Text("Adding...")
-                            }
-                        } else {
-                            Text("Add Script")
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            urlInput = ""
                         }
+                    } label: {
+                        Label("Clear", systemImage: "xmark.circle")
                     }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-                }
-                #endif
-            }
-            .padding(.horizontal)
+                    .buttonStyle(.bordered)
+                    .disabled(urlInput.isEmpty)
 
-            Spacer()
+                    Spacer()
+
+                    validationBadge
+                }
+            }
+
+            validationMessage
         }
-        .padding()
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private func addScript() {
-        guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
+    private var requirementsCard: some View {
+        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
+            VStack(alignment: .leading, spacing: 8) {
+                requirementRow(icon: "link", text: "Starts with https://")
+                requirementRow(icon: "doc.text", text: "Ends with .user.js")
+                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
+            }
+            .padding(.top, 8)
+        } label: {
+            HStack {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("URL requirements")
+                        .font(.headline)
+                    Text("Tap to review userscript guidelines.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+    }
 
-        isLoading = true
+    private var validationBadge: some View {
+        Group {
+            switch validationState {
+            case .idle:
+                EmptyView()
+            case .invalid:
+                Label("Invalid", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            case .valid:
+                Label("Ready", systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: validationState)
+    }
 
-        Task {
+    private var validationMessage: some View {
+        Group {
+            switch validationState {
+            case .idle:
+                Text("We’ll fetch the script and enable it automatically.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .invalid(let message):
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            case .valid:
+                Text("Looks good! Tap Add Script to continue.")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: validationState)
+    }
+
+    private func requirementRow(icon: String, text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(.secondary)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var cancelButton: some View {
+        Button("Cancel") {
+            dismiss()
+        }
+        .secondaryActionButtonStyle()
+        .disabled(isAdding)
+        .keyboardShortcut(.cancelAction)
+    }
+
+    private var addButton: some View {
+        Button(action: submit) {
+            HStack(spacing: 8) {
+                if isAdding {
+                    ProgressView()
+                        .scaleEffect(0.9)
+                }
+                Text(isAdding ? "Adding…" : "Add Script")
+                    .fontWeight(.semibold)
+            }
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSubmit)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    // MARK: - Submission
+
+    private var canSubmit: Bool {
+        switch validationState {
+        case .valid: return !isAdding
+        default: return false
+        }
+    }
+
+    private func submit() {
+        guard case .valid(let url) = validationState else { return }
+
+        isAdding = true
+
+        Task(priority: .userInitiated) {
             await ConcurrentLogManager.shared.info(.userScript, "Adding new userscript from URL", metadata: ["url": url.absoluteString])
             await userScriptManager.addUserScript(from: url)
             await ConcurrentLogManager.shared.info(.userScript, "Successfully added userscript from URL", metadata: ["url": url.absoluteString])
 
             await MainActor.run {
-                isLoading = false
+                isAdding = false
                 onScriptAdded()
                 dismiss()
             }
         }
     }
+
+    // MARK: - Validation & Utilities
+
+    private func validateInput(_ newValue: String) {
+        let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmed.isEmpty else {
+            validationState = .idle
+            return
+        }
+
+        guard let components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              ["https", "http"].contains(scheme),
+              let host = components.host,
+              !host.isEmpty,
+              trimmed.lowercased().hasSuffix(".user.js"),
+              let url = components.url else {
+            validationState = .invalid("Provide a valid https:// link ending in .user.js")
+            return
+        }
+
+        validationState = .valid(url)
+    }
+
+    private func pasteFromClipboard() {
+        #if os(iOS)
+        if let string = UIPasteboard.general.string {
+            urlInput = string
+        }
+        #elseif os(macOS)
+        if let string = NSPasteboard.general.string(forType: .string) {
+            urlInput = string
+        }
+        #endif
+    }
+
+    // MARK: - Types
+
+    private enum ValidationState: Equatable {
+        case idle
+        case invalid(String)
+        case valid(URL)
+    }
+
 }

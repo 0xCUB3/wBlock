@@ -8,6 +8,13 @@
 import SwiftUI
 import wBlockCoreService
 import UserNotifications
+import Combine
+import SafariServices
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
@@ -575,77 +582,313 @@ struct ContentModifiers: ViewModifier {
 
 struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager
-    @Environment(\.dismiss) var dismiss
 
-    @State private var filterName: String = ""
-    @State private var filterURLString: String = ""
-    @State private var showErrorAlert = false
-    @State private var errorMessage = ""
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focusedField: Field?
+
+    @State private var nameInput: String = ""
+    @State private var urlInput: String = ""
+    @State private var validationState: ValidationState = .idle
+    @State private var showRequirements: Bool = false
+    @State private var isSaving: Bool = false
 
     var body: some View {
-        VStack(spacing: 15) {
-            Text("Add Custom Filter List")
-                .font(.title3)
-                .fontWeight(.medium)
-
-            VStack(alignment: .leading) {
-                Text("Filter Name (Optional):").font(.caption)
-                TextField("e.g., My Ad Block List", text: $filterName)
+        SheetContainer {
+            SheetHeader(title: "Add Filter List", isLoading: isSaving) {
+                dismiss()
             }
 
-            VStack(alignment: .leading) {
-                Text("Filter URL:").font(.caption)
-                TextField("https://example.com/filter.txt", text: $filterURLString)
-            }
-
-            Spacer()
-
-            HStack {
-                Button("Cancel", role: .cancel) {
-                    dismiss()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    entryCard
+                    requirementsCard
                 }
-                .keyboardShortcut(.cancelAction)
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
 
+            SheetBottomToolbar {
+                cancelButton
                 Spacer()
-
-                Button("Add") {
-                    validateAndAdd()
-                }
-                .disabled(filterURLString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .keyboardShortcut(.defaultAction)
+                addButton
             }
         }
-        .textFieldStyle(.roundedBorder)
-        .padding()
-        #if os(macOS)
-        .frame(width: 400, height: 220)
-        #endif
-        .alert("Invalid Input", isPresented: $showErrorAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
+        .interactiveDismissDisabled(isSaving)
+        .onAppear {
+            focusedField = .url
+        }
+        .onChange(of: urlInput) { _, newValue in
+            validateInput(newValue)
         }
     }
 
-    private func validateAndAdd() {
-        let trimmedURL = filterURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+    // MARK: - Content Sections
 
-        guard !trimmedURL.isEmpty,
-              let url = URL(string: trimmedURL),
-              url.scheme != nil,
-              url.host != nil else {
-            errorMessage = "The URL entered is not valid. Please enter a complete and correct URL (e.g., http:// or https://)."
-            showErrorAlert = true
+    private var entryCard: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Filter details")
+                    .font(.headline)
+                Text("Paste the URL to a supported filter list. You can optionally provide a custom name.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Filter name (optional)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    TextField("e.g. My Essential Filters", text: $nameInput)
+                        .textFieldStyle(.roundedBorder)
+                        #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                        #endif
+                        .autocorrectionDisabled()
+                        .focused($focusedField, equals: .name)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Filter URL")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    TextField("https://example.com/filter.txt", text: $urlInput)
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        #endif
+                        .focused($focusedField, equals: .url)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            pasteFromClipboard()
+                        } label: {
+                            Label("Paste", systemImage: "doc.on.clipboard")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                urlInput = ""
+                            }
+                        } label: {
+                            Label("Clear", systemImage: "xmark.circle")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(urlInput.isEmpty)
+
+                        Spacer()
+
+                        validationBadge
+                    }
+                }
+            }
+
+            validationMessage
+        }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var requirementsCard: some View {
+        DisclosureGroup(isExpanded: $showRequirements.animation(.easeInOut(duration: 0.2))) {
+            VStack(alignment: .leading, spacing: 8) {
+                requirementRow(icon: "link", description: "Starts with https://")
+                requirementRow(icon: "doc.text", description: "Points to a filter file (.txt, .list, .json)")
+                requirementRow(icon: "checkmark.shield", description: "Hosted by a trusted provider")
+                requirementRow(icon: "arrow.triangle.2.circlepath", description: "Accessible without authentication")
+            }
+            .padding(.top, 8)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("URL requirements")
+                        .font(.headline)
+                    Text("Tap to review filter list guidelines.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var validationBadge: some View {
+        Group {
+            switch validationState {
+            case .idle:
+                EmptyView()
+            case .invalid:
+                Label("Invalid", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            case .duplicate:
+                Label("Duplicate", systemImage: "exclamationmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            case .valid:
+                Label("Ready", systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: validationState)
+    }
+
+    private var validationMessage: some View {
+        Group {
+            switch validationState {
+            case .idle:
+                Text("We’ll download and enable the filter automatically.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .invalid:
+                Text("Provide a valid https:// link to a filter file ending in .txt, .list, or .json.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            case .duplicate:
+                Text("A filter list with this URL already exists in wBlock.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            case .valid:
+                Text("Looks good! Tap Add Filter to continue.")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: validationState)
+    }
+
+    private func requirementRow(icon: String, description: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(.secondary)
+            Text(description)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var cancelButton: some View {
+        Button("Cancel") {
+            dismiss()
+        }
+        .secondaryActionButtonStyle()
+        .disabled(isSaving)
+        .keyboardShortcut(.cancelAction)
+    }
+
+    private var addButton: some View {
+        Button(action: submit) {
+            HStack(spacing: 8) {
+                if isSaving {
+                    ProgressView()
+                        .scaleEffect(0.9)
+                }
+                Text(isSaving ? "Adding…" : "Add Filter")
+                    .fontWeight(.semibold)
+            }
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSubmit)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    private var canSubmit: Bool {
+        if case .valid = validationState, !isSaving {
+            return true
+        }
+        return false
+    }
+
+    private func submit() {
+        guard case .valid(let url) = validationState else { return }
+
+        isSaving = true
+
+        Task { @MainActor in
+            let trimmedName = nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+            let finalName = trimmedName.isEmpty ? defaultName(for: url) : trimmedName
+            filterManager.addFilterList(name: finalName, urlString: url.absoluteString)
+            isSaving = false
+            dismiss()
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func validateInput(_ rawValue: String) {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmed.isEmpty else {
+            validationState = .idle
             return
         }
 
-        if filterManager.filterLists.contains(where: { $0.url == url }) {
-            errorMessage = "A filter list with this URL already exists."
-            showErrorAlert = true
+        guard let components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              scheme == "https",
+              let host = components.host,
+              !host.isEmpty,
+              let url = components.url else {
+            validationState = .invalid
             return
         }
 
-        filterManager.addFilterList(name: filterName, urlString: trimmedURL)
-        dismiss()
+        let allowedExtensions = ["txt", "list", "json", "dat"]
+        let pathExtension = url.pathExtension.lowercased()
+        guard allowedExtensions.contains(pathExtension) else {
+            validationState = .invalid
+            return
+        }
+
+        if filterManager.filterLists.contains(where: { $0.url.absoluteString.lowercased() == url.absoluteString.lowercased() }) {
+            validationState = .duplicate
+            return
+        }
+
+        validationState = .valid(url)
+    }
+
+    private func defaultName(for url: URL) -> String {
+        let lastComponent = url.deletingPathExtension().lastPathComponent
+        if lastComponent.isEmpty {
+            return url.host ?? "Custom Filter"
+        }
+        return lastComponent.replacingOccurrences(of: "-", with: " ").replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func pasteFromClipboard() {
+        #if os(iOS)
+        if let string = UIPasteboard.general.string {
+            urlInput = string
+        }
+        #elseif os(macOS)
+        if let string = NSPasteboard.general.string(forType: .string) {
+            urlInput = string
+        }
+        #endif
+    }
+
+    private enum ValidationState: Equatable {
+        case idle
+        case invalid
+        case duplicate
+        case valid(URL)
+    }
+
+    private enum Field: Hashable {
+        case name
+        case url
     }
 }
+
