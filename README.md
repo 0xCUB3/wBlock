@@ -74,7 +74,7 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 wBlock is a free, open-source project dedicated to improving your browsing experience. If you find it valuable, consider supporting its developer and ongoing development (funded through the "About This Hack" page):
 
 <p align="center">
-  <a href="https://opencollective.com/about-this-hack" target="_blank">
+  <a href="https://opencollective.com/skula/projects/wblock" target="_blank">
     <img src="https://opencollective.com/about-this-hack/donate/button@2x.png?color=blue" width=300 />
   </a>
 </p>
