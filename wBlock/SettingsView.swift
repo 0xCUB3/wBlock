@@ -149,6 +149,7 @@ struct SettingsView: View {
                                     Spacer()
                                 }
                             }
+                            .buttonStyle(.plain)
                             .disabled(isRestarting)
                             .padding(16)
                         }

@@ -35,8 +35,6 @@ class AppFilterManager: ObservableObject {
     @Published var hasUnappliedChanges = false
     @Published var showMissingItemsSheet = false
     @Published var showingApplyProgressSheet = false
-    @Published var showingDownloadCompleteAlert = false
-    @Published var downloadCompleteMessage = ""
     
     // Per-category rule count tracking
     @Published var ruleCountsByCategory: [FilterListCategory: Int] = [:]
@@ -113,8 +111,6 @@ class AppFilterManager: ObservableObject {
         hasUnappliedChanges = false
         showingApplyProgressSheet = false
         showingUpdatePopup = false
-        showingDownloadCompleteAlert = false
-        downloadCompleteMessage = ""
         missingFilters = []
         availableUpdates = []
         showMissingItemsSheet = false
@@ -538,7 +534,7 @@ class AppFilterManager: ObservableObject {
             self.isLoading = true
             self.hasError = false
             self.progress = 0
-            self.statusDescription = "Applying filters...\n(This may take a while)"
+            self.statusDescription = "Checking for updates..."
 
             // Reset and initialize new ViewModel
             self.applyProgressViewModel.reset()
@@ -556,7 +552,7 @@ class AppFilterManager: ObservableObject {
             self.isInEnginePhase = false
             self.isInReloadPhase = false
         }
-        
+
         // Allow the apply progress UI to render fully before heavy work begins.
         let shouldDelayForUI = await MainActor.run { self.showingApplyProgressSheet }
         if shouldDelayForUI {
@@ -565,6 +561,51 @@ class AppFilterManager: ObservableObject {
         }
 
         await ConcurrentLogManager.shared.info(.filterApply, "Starting filter application process", metadata: ["platform": currentPlatform == .macOS ? "macOS" : "iOS"])
+
+        // First, check for and download updates for enabled filters
+        await MainActor.run {
+            self.statusDescription = "Checking for updates..."
+            self.applyProgressViewModel.updateStageDescription("Checking for updates...")
+            self.applyProgressViewModel.updatePhaseCompletion(updating: false) // Mark as active
+        }
+
+        await updateVersionsAndCounts()
+
+        let enabledFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+        if !enabledFilters.isEmpty {
+            let updatedFilters = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
+
+            await MainActor.run {
+                self.applyProgressViewModel.updateUpdatesFound(updatedFilters.count)
+            }
+
+            if !updatedFilters.isEmpty {
+                await MainActor.run {
+                    self.statusDescription = "Downloading \(updatedFilters.count) update(s)..."
+                    self.applyProgressViewModel.updateStageDescription("Downloading \(updatedFilters.count) update(s)...")
+                }
+
+                await ConcurrentLogManager.shared.info(.filterApply, "Found and downloading updates before applying", metadata: ["count": "\(updatedFilters.count)"])
+
+                _ = await filterUpdater.updateSelectedFilters(updatedFilters, progressCallback: { prog in
+                    Task { @MainActor in
+                        self.progress = prog * 0.1 // Use first 10% of progress for updates
+                        self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
+                    }
+                })
+
+                saveFilterListsSync()
+            } else {
+                await ConcurrentLogManager.shared.info(.filterApply, "No updates available", metadata: [:])
+            }
+        }
+
+        // Mark updating phase as complete
+        await MainActor.run {
+            self.applyProgressViewModel.updatePhaseCompletion(updating: true, reading: false)
+            self.statusDescription = "Applying filters...\n(This may take a while)"
+            self.applyProgressViewModel.updateStageDescription("Applying filters...")
+        }
 
         let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
 
@@ -1138,9 +1179,9 @@ class AppFilterManager: ObservableObject {
                 }
             }
         )
-        
+
         saveFilterListsSync()
-        
+
         await MainActor.run {
             for filter in successfullyUpdatedFilters {
                 self.availableUpdates.removeAll { $0.id == filter.id }
@@ -1149,12 +1190,15 @@ class AppFilterManager: ObservableObject {
 
         isLoading = false
         progress = 0
-        
+
+        // Close the update popup and show apply progress sheet
         await MainActor.run {
             showingUpdatePopup = false
-            downloadCompleteMessage = "Downloaded \(successfullyUpdatedFilters.count) filter update(s). Would you like to apply them now?"
-            showingDownloadCompleteAlert = true
+            showingApplyProgressSheet = true
         }
+
+        // Automatically apply changes after download
+        await applyChanges()
     }
     
     func downloadMissingItems() async {
@@ -1219,17 +1263,13 @@ class AppFilterManager: ObservableObject {
 
         await MainActor.run {
             showMissingItemsSheet = false
-            downloadCompleteMessage = message
-            showingDownloadCompleteAlert = true
-        }
-    }
-    
-    func applyDownloadedChanges() async {
-        await MainActor.run {
             showingApplyProgressSheet = true
         }
+
+        // Automatically apply changes after download
         await applyChanges()
     }
+    
 
     // MARK: - List Management
     func addFilterList(name: String, urlString: String) {

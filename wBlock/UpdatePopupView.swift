@@ -199,7 +199,7 @@ struct UpdatePopupView: View {
                                 if !filtersToUpdate.isEmpty {
                                     await filterManager.downloadSelectedFilters(filtersToUpdate)
                                 }
-                                
+
                                 // Handle script updates
                                 if let _ = userScriptManager, !selectedScripts.isEmpty {
                                     let scriptsToUpdate = scriptsWithUpdates.filter { selectedScripts.contains($0.id) }
@@ -214,7 +214,7 @@ struct UpdatePopupView: View {
                                 }
                             }
                         } label: {
-                            Label("Download Updates", systemImage: "arrow.down.circle.fill")
+                            Label("Update & Apply", systemImage: "arrow.triangle.2.circlepath.circle.fill")
                                 .fontWeight(.semibold)
                         }
                         .primaryActionButtonStyle()

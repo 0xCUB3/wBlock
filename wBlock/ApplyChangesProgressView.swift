@@ -33,7 +33,7 @@ struct ApplyChangesProgressView: View {
         .animation(.easeInOut(duration: 0.2), value: viewModel.state.isLoading)
         .animation(.easeInOut(duration: 0.2), value: viewModel.state.isComplete)
         #if os(macOS)
-        .frame(minWidth: 420, idealWidth: 460, maxWidth: 500, minHeight: 360, idealHeight: 400, maxHeight: 520)
+        .frame(minWidth: 420, idealWidth: 460, maxWidth: 500, minHeight: 420, idealHeight: 480, maxHeight: 580)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         #else
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -120,6 +120,18 @@ struct ApplyChangesProgressView: View {
 
     private func detail(for step: ApplyChangesPhaseProgress) -> String? {
         switch step.phase {
+        case .updating:
+            if step.status == .complete {
+                let count = viewModel.state.updatesFound
+                if count > 0 {
+                    return "Downloaded \(count) update\(count == 1 ? "" : "s")"
+                } else {
+                    return "No updates available"
+                }
+            } else if step.status == .active {
+                return "Checking enabled filter lists"
+            }
+            return nil
         case .reading:
             guard viewModel.state.totalCount > 0 else { return nil }
             return "Preparing \(viewModel.state.totalCount) extension\(viewModel.state.totalCount == 1 ? "" : "s")"

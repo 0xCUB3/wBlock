@@ -164,14 +164,6 @@ struct ContentView: View {
                 ToolbarItem(placement: .primaryAction) {
                     HStack {
                         Button {
-                            Task {
-                                await filterManager.checkForUpdates()
-                            }
-                        } label: {
-                            Image(systemName: "arrow.down.circle")
-                        }
-                        .disabled(filterManager.isLoading)
-                        Button {
                             showingAddFilterSheet = true
                         } label: {
                             Image(systemName: "plus")
@@ -199,15 +191,6 @@ struct ContentView: View {
                     Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .disabled(filterManager.isLoading || enabledListsCount == 0)
-
-                Button {
-                    Task {
-                        await filterManager.checkForUpdates()
-                    }
-                } label: {
-                    Label("Check for Updates", systemImage: "arrow.down.circle")
-                }
-                .disabled(filterManager.isLoading)
 
                 Button {
                     showingAddFilterSheet = true
@@ -439,16 +422,6 @@ struct ContentModifiers: ViewModifier {
             }
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
                 Button("OK", role: .cancel) {}
-            }
-            .alert("Download Complete", isPresented: $filterManager.showingDownloadCompleteAlert) {
-                Button("Apply Now") {
-                    Task {
-                        await filterManager.applyDownloadedChanges()
-                    }
-                }
-                Button("Later", role: .cancel) {}
-            } message: {
-                Text(filterManager.downloadCompleteMessage)
             }
             .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
                 Button("OK", role: .cancel) {}
