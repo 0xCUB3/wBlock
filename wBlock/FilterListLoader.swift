@@ -209,6 +209,7 @@ class FilterListLoader {
 
         #if os(iOS)
         filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
+        filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile App Banners", url: URL(string: "https://filters.adtidy.org/ios/filters/20_optimized.txt")!, category: FilterListCategory.annoyances, isSelected: false, description: "Blocks irritating banners that promote mobile apps of websites."))
         #endif
 
         #if os(macOS)
