@@ -206,6 +206,7 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "YousList", url: URL(string: "https://raw.githubusercontent.com/yous/YousList/master/youslist.txt")!, category: .foreign, description: "Filter that blocks ads on Korean sites.", languages: ["ko"], trustLevel: "high"),
         ])
         filterLists.append(FilterList(id: UUID(), name: "EasyPrivacy", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks tracking scripts, web beacons, and other privacy-invasive elements."))
+        filterLists.append(FilterList(id: UUID(), name: "AdGuard URL Tracking Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt")!, category: FilterListCategory.privacy, isSelected: false, description: "Removes tracking parameters from URLs (utm_source, fbclid, gclid, etc.) to enhance privacy."))
 
         #if os(iOS)
         filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
@@ -223,6 +224,7 @@ class FilterListLoader {
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
+            "AdGuard URL Tracking Filter",
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
             "AdGuard Annoyances Filter",
@@ -233,6 +235,7 @@ class FilterListLoader {
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
+            "AdGuard URL Tracking Filter",
             "Online Malicious URL Blocklist",
             "d3Host List by d3ward",
             "AdGuard Annoyances Filter",

@@ -8,7 +8,6 @@ struct OnboardingView: View {
     enum BlockingLevel: String, CaseIterable, Identifiable {
         case minimal = "Minimal"
         case recommended = "Recommended"
-        case complete = "Complete"
         var id: String { rawValue }
     }
 
@@ -370,8 +369,6 @@ struct OnboardingView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .disabled(level == .complete)
-                .opacity(level == .complete ? 0.5 : 1.0)
             }
             Spacer()
             HStack {
@@ -388,8 +385,6 @@ struct OnboardingView: View {
             return "Only AdGuard Base filter. Lightest protection, best compatibility."
         case .recommended:
             return "Default filters for balanced blocking and compatibility."
-        case .complete:
-            return "All filters (except foreign languages). May break some sites, so it is not recommended. Use with caution."
         }
     }
     
@@ -560,11 +555,6 @@ struct OnboardingView: View {
             Text("Regional filters: \(selectedRegionalFilterNames.isEmpty ? "None" : selectedRegionalFilterNames.joined(separator: ", "))")
             Text("Userscripts: \(selectedUserscripts.isEmpty ? "None" : selectedUserscripts.compactMap { id in defaultUserScripts.first(where: { $0.id == id })?.name }.joined(separator: ", "))")
             Divider()
-            if selectedBlockingLevel == BlockingLevel.complete.rawValue {
-                Text("Warning: Complete mode may break some websites. Proceed with caution.")
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
 
             // Safari extension enablement reminder
             VStack(alignment: .leading, spacing: 8) {
@@ -629,6 +619,7 @@ struct OnboardingView: View {
                 "AdGuard Tracking Protection Filter",
                 "AdGuard Annoyances Filter",
                 "EasyPrivacy",
+                "AdGuard URL Tracking Filter",
                 "Online Malicious URL Blocklist",
                 "d3Host List by d3ward",
                 "Anti-Adblock List"
@@ -637,10 +628,6 @@ struct OnboardingView: View {
                 if recommendedFilters.contains(updatedFilters[i].name) {
                     updatedFilters[i].isSelected = true
                 }
-            }
-        case .complete:
-            for i in updatedFilters.indices {
-                updatedFilters[i].isSelected = updatedFilters[i].category != .foreign
             }
         }
         // If Bypass Paywalls userscript is selected, also enable the required filter list
