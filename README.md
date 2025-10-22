@@ -140,11 +140,8 @@ wBlock is a free, open-source project dedicated to improving your browsing exper
 **Q: How does wBlock compare to other Safari ad blockers?**
 A: Check out our detailed [comparison guide](Adblock_Comparison.md) comparing wBlock to uBlock Origin Lite, AdGuard for Safari, and Wipr.
 
-**Q: Why do I need to re-enroll in TestFlight for macOS?**
-A: Apple's review process has been challenging. The current public build is broken, but the alpha build is stable. This is the last time you'll need to switch—the App Store release is pending approval.
-
 **Q: Can I use my own filter lists?**
-A: Yes! wBlock supports any AdGuard-compatible filter list. Just add the URL in the Custom Filter Lists section.
+A: Yes! wBlock supports any AdGuard-compatible filter list and many more. Just add the URL in the Custom Filter Lists section.
 
 **Q: Does wBlock slow down Safari?**
 A: No. wBlock uses Safari's native content blocking API, which is extremely efficient. It uses only ~40 MB of RAM at idle and has minimal performance impact.
@@ -154,6 +151,9 @@ A: Yes! Full userscript support with the Greasemonkey API is available on both i
 
 **Q: How often do filters update?**
 A: You can configure auto-updates from 1 hour to 7 days, or disable them and update manually. wBlock uses HTTP headers to check for changes efficiently.
+
+**Q: Is the element zapper available on iOS?**
+A: Not yet.
 
 ---
 
