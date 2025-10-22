@@ -69,22 +69,9 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 <div align="center">
 
-### Userscript Management
-*Organize filters by category with individual list toggling*
-
 <img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" width="600"/>
 
----
-
-### Settings & Customization
-*Configure auto-updates, notifications, and preferences*
-
 <img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings & Customization" width="600"/>
-
----
-
-### iOS Interface
-*Full-featured ad blocking on iPhone and iPad*
 
 <img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS Interface" width="300"/>
 
