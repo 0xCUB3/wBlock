@@ -1,7 +1,3 @@
-> [!WARNING]
-> **For a comparison between wBlock and other mainstream Safari ad blockers like uBlock Origin Lite, AdGuard for Safari, and Wipr, see [Adblock_Comparison.md](Adblock_Comparison.md).**
-
-
 <p align="center">
   <img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock Logo" width="128"/>
 </p>
@@ -27,6 +23,9 @@
 <img width="982" height="834" alt="image" src="https://github.com/user-attachments/assets/3fd411ac-f781-4db5-bd4e-4cea82edf3d7" />
 
 wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts through the noise of the modern web. It delivers a clean and private browsing experience without the hassle and battery drain. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance, low energy usage, and maximum blocking.
+
+> [!NOTE]
+> **Want to see how wBlock compares to other ad blockers?** Check out our detailed [comparison guide](Adblock_Comparison.md) comparing wBlock to uBlock Origin Lite, AdGuard for Safari, and Wipr.
 
 ## Key Features
 
