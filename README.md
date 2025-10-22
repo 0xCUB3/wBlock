@@ -65,11 +65,35 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 - **Smart Notifications**: Alerts for available updates and filter application issues
 - **Missing Filter Detection**: Easy installation prompts for recommended but missing filters
 
-<img width="1824/4" height="1528/4" alt="CleanShot 2025-10-22 at 06 57 42@2x" src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" />
+## Screenshots
 
-<img width="1824/4" height="1528/4" alt="CleanShot 2025-10-22 at 06 58 43@2x" src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" />
-
-<img width="1206/8" height="2622/8" alt="image" src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" />
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" width="456"/>
+      <br/>
+      <strong>Filter Management</strong>
+      <br/>
+      <em>Organize filters by category with individual list toggling</em>
+    </td>
+    <td align="center" width="50%">
+      <img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings & Customization" width="456"/>
+      <br/>
+      <strong>Settings & Customization</strong>
+      <br/>
+      <em>Configure auto-updates, notifications, and preferences</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS Interface" width="300"/>
+      <br/>
+      <strong>iOS Interface</strong>
+      <br/>
+      <em>Full-featured ad blocking on iPhone and iPad</em>
+    </td>
+  </tr>
+</table>
 
 
 ### Benchmark Results
