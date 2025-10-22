@@ -249,6 +249,28 @@ class FilterListUpdater {
         return true
     }
 
+    /// Validates if content appears to be a valid filter list
+    private func isValidFilterContent(_ content: String) -> Bool {
+        let lines = content.components(separatedBy: .newlines)
+        var ruleCount = 0
+        var hasComments = false
+
+        for line in lines.prefix(100) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if trimmed.hasPrefix("!") || trimmed.hasPrefix("#") {
+                hasComments = true
+                continue
+            }
+
+            if !trimmed.isEmpty && !trimmed.hasPrefix("[") {
+                ruleCount += 1
+            }
+        }
+
+        return ruleCount >= 3 || (hasComments && ruleCount >= 1)
+    }
+
     /// Fetches, processes, and saves a filter list
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
@@ -275,9 +297,18 @@ class FilterListUpdater {
                 (data, response) = try await urlSession.data(from: filter.url)
             }
             
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
-                  let content = String(data: data, encoding: .utf8) else {
-                await ConcurrentLogManager.shared.error(.network, "Failed to fetch filter", metadata: ["filter": filter.name])
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                await ConcurrentLogManager.shared.error(.network, "Failed to fetch filter - HTTP error", metadata: ["filter": filter.name, "statusCode": "\((response as? HTTPURLResponse)?.statusCode ?? 0)"])
+                return false
+            }
+
+            guard let content = String(data: data, encoding: .utf8) else {
+                await ConcurrentLogManager.shared.error(.network, "Failed to decode filter content", metadata: ["filter": filter.name])
+                return false
+            }
+
+            guard isValidFilterContent(content) else {
+                await ConcurrentLogManager.shared.error(.network, "Downloaded content does not appear to be a valid filter list", metadata: ["filter": filter.name, "contentLength": "\(content.count)"])
                 return false
             }
 

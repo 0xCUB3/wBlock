@@ -1347,12 +1347,18 @@ class AppFilterManager: ObservableObject {
                 let success = await filterUpdater.fetchAndProcessFilter(newFilterToAdd)
                 if success {
                     await ConcurrentLogManager.shared.info(.filterUpdate, "Successfully downloaded custom filter", metadata: ["filter": newFilterToAdd.name])
-                    hasUnappliedChanges = true
+                    await MainActor.run {
+                        self.hasUnappliedChanges = true
+                        self.statusDescription = "✅ Filter '\(newFilterToAdd.name)' added successfully. Apply changes to enable it."
+                        self.hasError = false
+                    }
                     saveFilterListsSync()
                 } else {
                     await ConcurrentLogManager.shared.error(.filterUpdate, "Failed to download custom filter", metadata: ["filter": newFilterToAdd.name])
                     await MainActor.run {
                         removeCustomFilterList(newFilterToAdd)
+                        self.statusDescription = "❌ Failed to add filter. The URL may be invalid or the content is not a valid filter list."
+                        self.hasError = true
                     }
                 }
             }

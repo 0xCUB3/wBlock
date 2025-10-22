@@ -797,17 +797,10 @@ struct AddFilterListView: View {
 
         guard let components = URLComponents(string: trimmed),
               let scheme = components.scheme?.lowercased(),
-              scheme == "https",
+              scheme == "https" || scheme == "http",
               let host = components.host,
               !host.isEmpty,
               let url = components.url else {
-            validationState = .invalid
-            return
-        }
-
-        let allowedExtensions = ["txt", "list", "json", "dat"]
-        let pathExtension = url.pathExtension.lowercased()
-        guard allowedExtensions.contains(pathExtension) else {
             validationState = .invalid
             return
         }
