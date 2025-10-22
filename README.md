@@ -108,17 +108,13 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 **Download from the App Store**: [wBlock on iOS](https://apps.apple.com/app/wblock/id6746388723)
 
-### macOS - TestFlight (Temporary)
+### macOS - Temporary Issue
 
-Apple has been rejecting the macOS App Store submission for unclear reasons, and appeals have been met with silence. The app is currently "in review," which prevents updating the existing TestFlight build.
+Unfortunately, Apple has been giving me a hard time with the macOS App Store review process. The app has been rejected for reasons that don't seem to align with the guidelines, and they have been ghosting my follow-ups. The app is currently "in review," which prevents me from updating the existing TestFlight build.
 
-**The current public TestFlight build is broken.** For a functioning build, please uninstall the current version and install the **alpha version**, which is currently stable:
+**I realize the current public TestFlight build is broken.** In the meantime, there is nothing I can do as I cannot seed new TestFlight builds. If you need a temporary solution, I recommend installing AdGuard for Safari, which is also free. 
 
-**Alpha TestFlight (Stable)**: [Join TestFlight](https://testflight.apple.com/join/F93erUGR)
-
-This is the last time you'll need to re-enroll in TestFlight. The App Store release should be approved soon.
-
-Thank you for your patience and understanding during this frustrating review process. Your support means everything!
+Thank you so much for your patience and understanding during this frustrating process. Your support means the world to me, and I'm doing everything I can to get wBlock officially on the Mac App Store.
 
 ---
 
