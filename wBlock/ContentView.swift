@@ -327,6 +327,21 @@ struct ContentView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                if let limitReason = filter.limitExceededReason {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption2)
+                        Text(limitReason)
+                            .font(.caption2)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .foregroundColor(.orange)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                }
+
                 HStack(spacing: 4) {
                     if !filter.version.isEmpty {
                         Text("Version \(filter.version)")
@@ -353,12 +368,17 @@ struct ContentView: View {
             Toggle("", isOn: Binding(
                 get: { filter.isSelected },
                 set: { newValue in
-                    filterManager.toggleFilterListSelection(id: filter.id)
+                    if newValue && filter.limitExceededReason != nil {
+                        filterManager.showCategoryWarning(for: filter.category)
+                    } else {
+                        filterManager.toggleFilterListSelection(id: filter.id)
+                    }
                 }
             ))
             .labelsHidden()
             .toggleStyle(.switch)
             .frame(alignment: .center)
+            .disabled(filter.limitExceededReason != nil && !filter.isSelected)
         }
         .padding(16)
         .id(filter.id)
@@ -427,6 +447,15 @@ struct ContentModifiers: ViewModifier {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(filterManager.categoryWarningMessage)
+            }
+            .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                if filterManager.autoDisabledFilters.isEmpty {
+                    Text("Some filters were automatically disabled because their category exceeded Safari's 150,000 rule limit.")
+                } else {
+                    Text("The following filters were automatically disabled:\n\n\(filterManager.autoDisabledFilters.map { $0.name }.joined(separator: "\n"))\n\nTo re-enable these filters, disable other filters in the same category first.")
+                }
             }
             .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
                 Button("Remove Older Versions", role: .destructive) {

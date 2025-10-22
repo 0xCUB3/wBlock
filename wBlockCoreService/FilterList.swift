@@ -22,6 +22,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var trustLevel: String? = nil
     public var etag: String? = nil
     public var serverLastModified: String? = nil
+    public var limitExceededReason: String? = nil // Reason why filter was auto-disabled due to rule limits
 
     public init(id: UUID = UUID(),
                 name: String,
@@ -35,7 +36,8 @@ public struct FilterList: Identifiable, Codable, Hashable {
                 languages: [String] = [],
                 trustLevel: String? = nil,
                 etag: String? = nil,
-                serverLastModified: String? = nil) {
+                serverLastModified: String? = nil,
+                limitExceededReason: String? = nil) {
         self.id = id
         self.name = name
         self.url = url
@@ -49,6 +51,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.trustLevel = trustLevel
         self.etag = etag
         self.serverLastModified = serverLastModified
+        self.limitExceededReason = limitExceededReason
     }
     
     /// Returns a formatted string for the last updated date

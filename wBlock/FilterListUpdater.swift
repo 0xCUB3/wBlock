@@ -153,12 +153,15 @@ class FilterListUpdater {
         return (title, description, version)
     }
 
-    /// Checks for updates and returns a list of filters that have updates
     func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
         var filtersWithUpdates: [FilterList] = []
 
         await withTaskGroup(of: (FilterList, Bool).self) { group in
             for filter in filterLists {
+                if filter.limitExceededReason != nil {
+                    continue
+                }
+
                 group.addTask {
                     let hasUpdate = await self.hasUpdate(for: filter)
                     return (filter, hasUpdate)

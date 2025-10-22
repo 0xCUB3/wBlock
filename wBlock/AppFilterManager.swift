@@ -35,6 +35,8 @@ class AppFilterManager: ObservableObject {
     @Published var hasUnappliedChanges = false
     @Published var showMissingItemsSheet = false
     @Published var showingApplyProgressSheet = false
+    @Published var autoDisabledFilters: [FilterList] = [] // Filters auto-disabled due to rule limits
+    @Published var showingAutoDisabledAlert = false
     
     // Per-category rule count tracking
     @Published var ruleCountsByCategory: [FilterListCategory: Int] = [:]
@@ -380,6 +382,12 @@ class AppFilterManager: ObservableObject {
     func toggleFilterListSelection(id: UUID) {
         if let index = filterLists.firstIndex(where: { $0.id == id }) {
             filterLists[index].isSelected.toggle()
+
+            if filterLists[index].isSelected {
+                filterLists[index].limitExceededReason = nil
+                autoDisabledFilters.removeAll { $0.id == id }
+            }
+
             saveFilterListsSync()
             hasUnappliedChanges = true
         }
@@ -433,8 +441,7 @@ class AppFilterManager: ObservableObject {
     
     private func resetCategoryToRecommended(_ category: FilterListCategory) async {
         await ConcurrentLogManager.shared.warning(.filterApply, "Resetting category to recommended filters due to rule limit exceeded", metadata: ["category": category.rawValue])
-        
-        // Define recommended filters per category
+
         let recommendedFiltersByCategory: [FilterListCategory: [String]] = [
             .ads: ["AdGuard Base Filter"],
             .privacy: ["AdGuard Tracking Protection Filter", "EasyPrivacy"],
@@ -445,25 +452,34 @@ class AppFilterManager: ObservableObject {
             .experimental: [],
             .custom: []
         ]
-        
+
         let recommendedForCategory = recommendedFiltersByCategory[category] ?? []
-        
-        // Disable all filters in this category first
+        var disabledFiltersInCategory: [FilterList] = []
+
         for index in filterLists.indices {
             if filterLists[index].category == category {
+                if filterLists[index].isSelected && !recommendedForCategory.contains(filterLists[index].name) {
+                    filterLists[index].limitExceededReason = "Automatically disabled because the '\(category.rawValue)' category exceeded Safari's 150,000 rule limit. To re-enable, disable other filters in this category first."
+                    disabledFiltersInCategory.append(filterLists[index])
+                }
                 filterLists[index].isSelected = false
             }
         }
-        
-        // Enable only recommended filters for this category
+
         for index in filterLists.indices {
             if filterLists[index].category == category && recommendedForCategory.contains(filterLists[index].name) {
                 filterLists[index].isSelected = true
+                filterLists[index].limitExceededReason = nil
             }
         }
-        
+
+        await MainActor.run {
+            self.autoDisabledFilters.removeAll { $0.category == category }
+            self.autoDisabledFilters.append(contentsOf: disabledFiltersInCategory)
+        }
+
         loader.saveSelectedState(for: filterLists)
-        await ConcurrentLogManager.shared.info(.filterApply, "Reset category to recommended filters", metadata: ["category": category.rawValue, "filters": recommendedForCategory.joined(separator: ", ")])
+        await ConcurrentLogManager.shared.info(.filterApply, "Reset category to recommended filters", metadata: ["category": category.rawValue, "filters": recommendedForCategory.joined(separator: ", "), "autoDisabled": "\(disabledFiltersInCategory.count)"])
     }
     
     func getCategoryRuleCount(_ category: FilterListCategory) -> Int {
@@ -756,11 +772,10 @@ class AppFilterManager: ObservableObject {
                 if let secondaryCategory = targetInfo.secondaryCategory {
                     await resetCategoryToRecommended(secondaryCategory)
                 }
-                
-                // Show category warning alert to inform user about the rule limit exceeded
+
                 await MainActor.run {
                     self.showCategoryWarning(for: targetInfo.primaryCategory)
-                    // self.statusDescription = "Auto-reset \(targetInfo.primaryCategory.rawValue) filters due to rule limit exceeded (\(ruleCountForThisTarget)/\(ruleLimit)). Continuing with other categories..."
+                    self.showingAutoDisabledAlert = true
                 }
                 await ConcurrentLogManager.shared.info(.filterApply, "Auto-reset category due to rule limit exceeded", metadata: ["category": targetInfo.primaryCategory.rawValue])
                 
