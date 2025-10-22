@@ -8,34 +8,65 @@
 
 # wBlock: The end of Safari ad-blocking B.S.
 
-<img width="882" height="802" alt="CleanShot 2025-07-23 at 09 56 15" src="https://github.com/user-attachments/assets/d4a69363-f950-4d2d-8a65-4ad73d5aff80" />
+<p align="center">
+  <a href="https://apps.apple.com/app/wblock/id6746388723">
+    <img src="https://img.shields.io/badge/iOS-App_Store-0D96F6?style=for-the-badge&logo=app-store&logoColor=white" alt="iOS App Store"/>
+  </a>
+  <a href="https://testflight.apple.com/join/F93erUGR">
+    <img src="https://img.shields.io/badge/macOS-TestFlight-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="macOS TestFlight"/>
+  </a>
+  <a href="https://discord.gg/Y3yTFPpbXr">
+    <img src="https://img.shields.io/badge/Discord-Join_Us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"/>
+  </a>
+</p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.1-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/macOS-14%2B-000000?style=flat-square&logo=apple&logoColor=white" alt="macOS 14+"/>
+  <img src="https://img.shields.io/badge/iOS-17%2B-000000?style=flat-square&logo=apple&logoColor=white" alt="iOS 17+"/>
+  <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" alt="License"/>
+</p>
 
-wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts through the noise of the modern web. It delivers a clean and private browsing experience without the hassle and battery drain. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance, low energy usage, and maximum blocking. 
+<img width="882" height="802" alt="CleanShot 2025-07-23 at 09 56 15" src="(https://github.com/user-attachments/assets/f90d7260-2b1f-490d-9e12-b44ff68871e6)" />
 
-- Lightning-fast: Optimized for performance (~40 MB of RAM at idle)
-- Massive Filter Capacity: Supports up to 750,000 rules on macOS and 500,000 on iOS, far exceeding Safari's default limits.
-- Comprehensive protection: Blocks ads, trackers, and malware
-- Element Zapper: Instantly and permanently remove unwanted content (like cookie banners or subscribe modals) from any webpage with a single click.
-- Userscript Support: Add features like Return YouTube Dislike, Bypass Paywalls Clean, and more for a customized web experience.
-- Always up-to-date: One-click filter list updates (auto-updater coming soon!)
-- Full User Control: Easily add custom filter lists, manage your own whitelist, or quickly disable blocking on a per-site basis.
+wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts through the noise of the modern web. It delivers a clean and private browsing experience without the hassle and battery drain. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance, low energy usage, and maximum blocking.
 
-### Join the Discord server: https://discord.gg/5kmuEbwsut
+## Key Features
 
-## Features
+- **Massive Filter Capacity**: Up to 750,000 rules on macOS and iOS, far exceeding Safari's default limits
+- **Lightning-Fast Performance**: Optimized for speed and efficiency (~40 MB of RAM at idle)
+- **Comprehensive Protection**: Blocks ads, trackers, malware, and annoyances
+- **Element Zapper**: Instantly and permanently remove unwanted content (cookie banners, modals) with a single click
+- **Userscript Support**: Add features like Return YouTube Dislike, Bypass Paywalls Clean, and more
+- **Auto-Updates**: Background filter updates with smart scheduling and efficient change detection
+- **Full User Control**: Custom filter lists, whitelist management, per-site blocking toggle
+- **Modern UI**: Beautiful liquid glass design with refined visual polish
 
-- Massive rule limit support (750k on macOS / 500k on iOS)
-- Element Zapper for visual, one-click element removal
-- Userscript injection for YouTube ads and other site enhancements
-- Per-site blocking toggle for quick exceptions
-- Whitelist management UI
-- Custom Filter List support
-- Intuitive category-based filter management
-- Individual filter list toggling
-- Detailed logging for troubleshooting
-- Missing filter detection and easy installation
-- Streamlined onboarding for new users
+### Join the Discord server: https://discord.gg/Y3yTFPpbXr
+
+## Detailed Features
+
+### Power User Tools
+- **750k rules on macOS / 750k on iOS**: Industry-leading filter capacity using multiple content blocker extensions
+- **Element Zapper**: Visual, one-click element removal with smart CSS selector suggestions
+- **Userscript Engine**: Full Greasemonkey API with `@require` support for external dependencies
+- **Custom Filter Lists**: Add any AdGuard-compatible filter list via URL
+- **Advanced Filtering**: Category-based management with individual filter list toggling
+
+### Control & Customization
+- **Per-Site Toggle**: Instantly disable wBlock on specific websites
+- **Whitelist Management**: Dedicated UI for adding, viewing, and removing whitelisted domains
+- **Auto-Update Configuration**: Set intervals from 1 hour to 7 days, or disable entirely
+- **Regional Filters**: Select filters optimized for your language and location during onboarding
+- **Badge Counter Toggle**: Show/hide blocked item counts in Safari toolbar
+
+### Quality of Life
+- **Streamlined Apply Flow**: Automatic update checks before applying filters
+- **Progress Tracking**: Detailed phase visualization (updating, processing, applying)
+- **Comprehensive Logging**: Full diagnostics with clear indicators for easy scanning
+- **Filter Timestamps**: Track when your blocking rules were last refreshed
+- **Smart Notifications**: Alerts for available updates and filter application issues
+- **Missing Filter Detection**: Easy installation prompts for recommended but missing filters
 
 <img width="812" height="732" alt="CleanShot 2025-07-23 at 10 00 51" src="https://github.com/user-attachments/assets/3e6ba580-eb91-4644-a404-0cfee394617a" />
 
@@ -60,18 +91,48 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 ![CleanShot 2025-04-24 at 16 53 30](https://github.com/user-attachments/assets/5504f841-e6fb-4359-9074-7d0fc23d5c48)
 
 
-## Quick Start
+## Download
 
-1. Join the [TestFlight](https://testflight.apple.com/join/nCjEmXVQ).
-2. Enjoy a cleaner web!
+### iOS - Now Available on the App Store!
+
+**Download from the App Store**: [wBlock on iOS](https://apps.apple.com/app/wblock/id6746388723)
+
+### macOS - TestFlight (Temporary)
+
+Apple has been rejecting the macOS App Store submission for unclear reasons, and appeals have been met with silence. The app is currently "in review," which prevents updating the existing TestFlight build.
+
+**The current public TestFlight build is broken.** For a functioning build, please uninstall the current version and install the **alpha version**, which is currently stable:
+
+**Alpha TestFlight (Stable)**: [Join TestFlight](https://testflight.apple.com/join/F93erUGR)
+
+This is the last time you'll need to re-enroll in TestFlight. The App Store release should be approved soon.
+
+Thank you for your patience and understanding during this frustrating review process. Your support means everything!
+
+---
 
 ## System Requirements
 
-- macOS 14 Sonoma / iOS 17 / iPadOS 17 or newer
+- **macOS**: 14 Sonoma or newer
+- **iOS/iPadOS**: 17 or newer
+
+## Technical Highlights
+
+### Performance & Architecture
+- **Protocol Buffers Storage**: Off-thread serialization with LZ4 compression for blazing-fast data operations
+- **Memory-Efficient Processing**: Streaming I/O with grouped filter processing prevents excessive memory usage
+- **Throttled UI Updates**: Dedicated ViewModel prevents SwiftUI re-render freezing during intensive operations
+- **Multiple Extension Architecture**: 5 content blocker extensions on iOS, 5 on macOS for maximum rule capacity
+
+### Modern Development
+- **SafariConverterLib v4.0.4**: Latest AdGuard converter for optimal filter compatibility
+- **AdGuard Scriptlets v2.2.9**: Up-to-date scriptlet injection for advanced blocking
+- **Async/Await Throughout**: Modern Swift concurrency for responsive UI
+- **Accessibility First**: VoiceOver support with comprehensive accessibility labels
 
 ## Support wBlock's Development
 
-wBlock is a free, open-source project dedicated to improving your browsing experience. If you find it valuable, consider supporting its developer and ongoing development (funded through the "About This Hack" page):
+wBlock is a free, open-source project dedicated to improving your browsing experience. If you find it valuable, consider supporting its developer and ongoing development:
 
 <p align="center">
   <a href="https://opencollective.com/skula/projects/wblock" target="_blank">
@@ -80,9 +141,37 @@ wBlock is a free, open-source project dedicated to improving your browsing exper
 </p>
 
 ## Credits
-[@arjpar](https://github.com/arjpar) for helping out a bunch, especially with scripts. His ad blocker [WebShield](https://github.com/arjpar/WebShield) is pretty cool too!
-[@ameshkov](https://github.com/ameshkov/safari-blocker) for the demo project which was the basis for the advanced functionality in wBlock's latest refactoring. 
-[@shindgewongxj](https://github.com/shindgewongxj) for the lovely icon. 
+
+- **[@arjpar](https://github.com/arjpar)** - Major contributions, especially with userscripts. Check out his ad blocker [WebShield](https://github.com/arjpar/WebShield)!
+- **[@ameshkov](https://github.com/ameshkov/safari-blocker)** - Demo project that formed the basis for wBlock's advanced functionality
+- **[@shindgewongxj](https://github.com/shindgewongxj)** - Beautiful icon design
+
+## Links
+
+- **Discord Community**: [Join the server](https://discord.gg/Y3yTFPpbXr)
+- **Comparison Guide**: [wBlock vs. Other Ad Blockers](Adblock_Comparison.md)
+- **Privacy Policy**: [View Policy](https://github.com/0xCUB3/wBlock/blob/main/PRIVACY.md)
+- **Issue Tracker**: [Report Bugs & Request Features](https://github.com/0xCUB3/wBlock/issues)
+
+## FAQ
+
+**Q: How does wBlock compare to other Safari ad blockers?**
+A: Check out our detailed [comparison guide](Adblock_Comparison.md) comparing wBlock to uBlock Origin Lite, AdGuard for Safari, and Wipr.
+
+**Q: Why do I need to re-enroll in TestFlight for macOS?**
+A: Apple's review process has been challenging. The current public build is broken, but the alpha build is stable. This is the last time you'll need to switch—the App Store release is pending approval.
+
+**Q: Can I use my own filter lists?**
+A: Yes! wBlock supports any AdGuard-compatible filter list. Just add the URL in the Custom Filter Lists section.
+
+**Q: Does wBlock slow down Safari?**
+A: No. wBlock uses Safari's native content blocking API, which is extremely efficient. It uses only ~40 MB of RAM at idle and has minimal performance impact.
+
+**Q: Will userscripts work on iOS?**
+A: Yes! Full userscript support with the Greasemonkey API is available on both iOS and macOS.
+
+**Q: How often do filters update?**
+A: You can configure auto-updates from 1 hour to 7 days, or disable them and update manually. wBlock uses HTTP headers to check for changes efficiently.
 
 ---
 
