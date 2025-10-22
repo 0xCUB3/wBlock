@@ -12,9 +12,6 @@
   <a href="https://apps.apple.com/app/wblock/id6746388723">
     <img src="https://img.shields.io/badge/iOS-App_Store-0D96F6?style=for-the-badge&logo=app-store&logoColor=white" alt="iOS App Store"/>
   </a>
-  <a href="https://testflight.apple.com/join/F93erUGR">
-    <img src="https://img.shields.io/badge/macOS-TestFlight-0D96F6?style=for-the-badge&logo=apple&logoColor=white" alt="macOS TestFlight"/>
-  </a>
   <a href="https://discord.gg/Y3yTFPpbXr">
     <img src="https://img.shields.io/badge/Discord-Join_Us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"/>
   </a>
@@ -68,19 +65,11 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 - **Smart Notifications**: Alerts for available updates and filter application issues
 - **Missing Filter Detection**: Easy installation prompts for recommended but missing filters
 
-<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 00 51" src="https://github.com/user-attachments/assets/3e6ba580-eb91-4644-a404-0cfee394617a" />
+<img width="1824/4" height="1528/4" alt="CleanShot 2025-10-22 at 06 57 42@2x" src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" />
 
-<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 10" src="https://github.com/user-attachments/assets/d3ea7884-7bdc-4b96-b4bd-d657e3629d6e" />
+<img width="1824/4" height="1528/4" alt="CleanShot 2025-10-22 at 06 58 43@2x" src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" />
 
-<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 19" src="https://github.com/user-attachments/assets/70eac3d3-92b9-4ace-9ff7-3d184e7afe8d" />
-
-<img width="812" height="744" alt="CleanShot 2025-07-23 at 10 01 32" src="https://github.com/user-attachments/assets/62000eed-fe2d-4b17-a4f2-5c44760c10c8" />
-
-<img width="812" height="732" alt="CleanShot 2025-07-23 at 10 01 52" src="https://github.com/user-attachments/assets/d69e9b2b-bb58-453a-8fcb-4aa1e912e844" />
-
-<img width="796" height="734" alt="CleanShot 2025-08-17 at 18 26 22" src="https://github.com/user-attachments/assets/6a084d2b-2451-4848-a92a-10fef0e23a92" />
-
-<img width="393" height="852" alt="image" src="https://github.com/user-attachments/assets/9556d5ee-0f17-4af4-a37d-0aa1707b9ac0" />
+<img width="1206/8" height="2622/8" alt="image" src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" />
 
 
 ### Benchmark Results
