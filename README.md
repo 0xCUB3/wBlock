@@ -24,7 +24,7 @@
   <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" alt="License"/>
 </p>
 
-<img width="882" height="802" alt="CleanShot 2025-07-23 at 09 56 15" src="(https://github.com/user-attachments/assets/f90d7260-2b1f-490d-9e12-b44ff68871e6)" />
+<img width="982" height="834" alt="image" src="https://github.com/user-attachments/assets/3fd411ac-f781-4db5-bd4e-4cea82edf3d7" />
 
 wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts through the noise of the modern web. It delivers a clean and private browsing experience without the hassle and battery drain. Using AdGuard's filters and more, wBlock gives you the best of all worlds: high performance, low energy usage, and maximum blocking.
 
@@ -69,24 +69,22 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" width="456"/>
+    <td align="center" width="33%">
+      <img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" style="width: 100%; height: 382px; object-fit: cover;"/>
       <br/>
       <strong>Filter Management</strong>
       <br/>
       <em>Organize filters by category with individual list toggling</em>
     </td>
-    <td align="center" width="50%">
-      <img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings & Customization" width="456"/>
+    <td align="center" width="33%">
+      <img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings & Customization" style="width: 100%; height: 382px; object-fit: cover;"/>
       <br/>
       <strong>Settings & Customization</strong>
       <br/>
       <em>Configure auto-updates, notifications, and preferences</em>
     </td>
-  </tr>
-  <tr>
-    <td align="center" colspan="2">
-      <img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS Interface" width="300"/>
+    <td align="center" width="33%">
+      <img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS Interface" style="width: 100%; height: 382px; object-fit: contain;"/>
       <br/>
       <strong>iOS Interface</strong>
       <br/>
