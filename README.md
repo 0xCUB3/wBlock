@@ -67,40 +67,28 @@ wBlock is a powerful content blocker for macOS, iOS, and iPadOS that cuts throug
 
 ## Screenshots
 
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" style="width: 100%; height: 382px; object-fit: cover;"/>
-      <br/>
-      <strong>Filter Management</strong>
-      <br/>
-      <em>Organize filters by category with individual list toggling</em>
-    </td>
-    <td align="center" width="33%">
-      <img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings & Customization" style="width: 100%; height: 382px; object-fit: cover;"/>
-      <br/>
-      <strong>Settings & Customization</strong>
-      <br/>
-      <em>Configure auto-updates, notifications, and preferences</em>
-    </td>
-    <td align="center" width="33%">
-      <img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS Interface" style="width: 100%; height: 382px; object-fit: contain;"/>
-      <br/>
-      <strong>iOS Interface</strong>
-      <br/>
-      <em>Full-featured ad blocking on iPhone and iPad</em>
-    </td>
-  </tr>
-</table>
+<div align="center">
 
+### Userscript Management
+*Organize filters by category with individual list toggling*
 
-### Benchmark Results
+<img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" width="600"/>
 
-![CleanShot 2025-04-24 at 16 52 36](https://github.com/user-attachments/assets/d83e7bad-6240-46e7-94d3-cf7af8be51c5)
-* Better than uBlock Origin!
+---
 
-![CleanShot 2025-04-24 at 16 53 30](https://github.com/user-attachments/assets/5504f841-e6fb-4359-9074-7d0fc23d5c48)
+### Settings & Customization
+*Configure auto-updates, notifications, and preferences*
 
+<img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings & Customization" width="600"/>
+
+---
+
+### iOS Interface
+*Full-featured ad blocking on iPhone and iPad*
+
+<img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS Interface" width="300"/>
+
+</div>
 
 ## Download
 
