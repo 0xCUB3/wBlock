@@ -39,7 +39,7 @@ High performance, low energy usage, maximum blocking.
 
 </div>
 
-<table>
+<table align="center">
 <tr>
 <td width="50%" valign="top">
 
