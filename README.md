@@ -78,7 +78,6 @@ High performance, low energy usage, maximum blocking.
 
 <div align="center">
 
-> [!NOTE]
 > **Want to see how wBlock stacks up?** Check out our [comparison guide](Adblock_Comparison.md) vs uBlock Origin Lite, AdGuard, and Wipr.
 
 </div>
