@@ -145,10 +145,7 @@ High performance, low energy usage, maximum blocking.
 
 ### macOS
 
-[![TestFlight](https://img.shields.io/badge/Alpha-TestFlight-0D96F6?style=for-the-badge&logo=apple&logoColor=white)](https://testflight.apple.com/join/F93erUGR)
-
-> **Note:** Apple is currently blocking the App Store release. The public TestFlight is broken—use the alpha build above.
-> This is the last TestFlight re-enrollment. App Store release pending.
+> **Note:** Apple is currently blocking the App Store release. The public TestFlight is broken. There is currently no reliable way to run wBlock. Hopefully, the app review process will be finished soon. 
 
 </div>
 
