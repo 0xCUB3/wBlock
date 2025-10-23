@@ -10,7 +10,6 @@
 
 [![Download on App Store](https://img.shields.io/badge/Download_on-App_Store-black?style=flat&logo=apple&logoColor=white)](https://apps.apple.com/app/wblock/id6746388723)
 [![Join Discord](https://img.shields.io/badge/Join-Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
-[![TestFlight](https://img.shields.io/badge/macOS-TestFlight-0D96F6?style=flat&logo=apple&logoColor=white)](https://testflight.apple.com/join/F93erUGR)
 
 ![Version](https://img.shields.io/badge/v1.0.1-gray?style=flat&label=version)
 ![Platform](https://img.shields.io/badge/macOS_14+_|_iOS_17+-gray?style=flat&logo=apple&logoColor=white)
