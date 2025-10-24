@@ -36,25 +36,38 @@ class AppDelegate: NSObject {
 }
 
 // MARK: - Shared helper for schedule log formatting (platform-agnostic)
-fileprivate func scheduleMessage(from status: (Date?, TimeInterval?, Double)) -> String {
-    let (scheduledAt, remaining, interval) = status
+fileprivate func scheduleMessage(from status: (Date?, TimeInterval?, Double, Date?, Bool, Bool)) -> String {
+    let (scheduledAt, remaining, interval, lastSuccessful, isRunning, isOverdue) = status
     let formatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return f
     }()
+
+    var message = ""
     if let scheduledAt, let remaining {
-        if remaining == 0 {
-            return "🕒 Auto-update: due now (interval=\(interval)h). Will run on next extension trigger. ScheduledAt=\(formatter.string(from: scheduledAt))"
+        if isRunning {
+            message = "🔄 Auto-update: currently running"
+        } else if isOverdue {
+            message = "⚠️ Auto-update: overdue (will run on next trigger)"
+        } else if remaining == 0 {
+            message = "🕒 Auto-update: due now (will run on next trigger)"
         } else {
             let hrs = Int(remaining) / 3600
             let mins = (Int(remaining) % 3600) / 60
             let secs = Int(remaining) % 60
-            return "🕒 Auto-update: next in \(hrs)h \(mins)m \(secs)s (scheduled \(formatter.string(from: scheduledAt))) interval=\(interval)h"
+            message = "🕒 Auto-update: next in \(hrs)h \(mins)m \(secs)s"
         }
+        message += " · Scheduled: \(formatter.string(from: scheduledAt))"
     } else {
-        return "🕒 Auto-update: no prior run yet. First window determined after initial extension trigger (interval=\(interval)h)."
+        message = "🕒 Auto-update: no prior run yet (interval=\(interval)h)"
     }
+
+    if let lastSuccessful {
+        message += " · Last success: \(formatter.string(from: lastSuccessful))"
+    }
+
+    return message
 }
 
 #if os(macOS)
@@ -116,28 +129,40 @@ extension AppDelegate: NSApplicationDelegate {
     }
     
     func applicationWillBecomeActive(_ notification: Notification) {
-        // Opportunistic update when app becomes active
+        // Check if update is overdue when app becomes active
         Task {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
+            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+            let (_, remaining, _, _, isRunning, isOverdue) = status
+
+            // If overdue or due within 5 minutes, force update
+            if isOverdue || (remaining != nil && remaining! < 300 && !isRunning) {
+                await SharedAutoUpdateManager.shared.forceNextUpdate()
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive", force: true)
+            } else {
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
+            }
         }
     }
     
     // MARK: - macOS Auto-Update System
     
     private func setupMacOSAutoUpdate() {
-        // Opportunistic periodic trigger while app is running
-        Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
+        // More aggressive periodic trigger while app is running (check every 30 minutes)
+        Timer.scheduledTimer(withTimeInterval: 30 * 60, repeats: true) { [weak self] _ in
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
         // System-optimized background scheduling (macOS 10.10+) — works when app is running
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
         let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
         scheduler.repeats = true
-        scheduler.interval = 6 * 60 * 60 // Target ~6 hours
-        scheduler.tolerance = 60 * 60    // Allow 1h flexibility for power/thermal conditions
-        scheduler.schedule { completion in
+        scheduler.interval = intervalHours * 60 * 60 // Use configured interval
+        scheduler.tolerance = min(intervalHours * 0.2, 1.0) * 60 * 60 // 20% tolerance, max 1 hour
+        scheduler.qualityOfService = .utility
+        scheduler.schedule { [weak self] completion in
             Task {
-                await self.runMacOSBackgroundUpdate(trigger: "BackgroundActivity")
+                await self?.runMacOSBackgroundUpdate(trigger: "BackgroundActivityScheduler")
                 completion(NSBackgroundActivityScheduler.Result.finished)
             }
         }
@@ -145,12 +170,23 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     private func runMacOSBackgroundUpdate(trigger: String) async {
+        // Check if update is overdue
+        let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+        let (_, _, _, _, isRunning, isOverdue) = status
+
         // If an XPC service exists in future builds, prefer it; else fallback in-process
         #if os(macOS)
         let usedXPC = await FilterUpdateClient.shared.updateFilters()
         if usedXPC { return }
         #endif
-        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
+
+        // Force update if overdue
+        if isOverdue && !isRunning {
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+        } else {
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
+        }
     }
 
     /// Handle silent push on macOS
@@ -242,9 +278,20 @@ extension AppDelegate: UIApplicationDelegate {
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Opportunistic update when returning to foreground
+        // Check if update is overdue when returning to foreground
         Task {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground")
+            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+            let (_, remaining, _, _, isRunning, isOverdue) = status
+
+            // If overdue or due within 5 minutes, force update
+            if isOverdue || (remaining != nil && remaining! < 300 && !isRunning) {
+                os_log("App entering foreground with overdue/due update - forcing update", type: .info)
+                await SharedAutoUpdateManager.shared.forceNextUpdate()
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground", force: true)
+            } else {
+                // Normal opportunistic update
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground")
+            }
         }
     }
     
@@ -266,48 +313,88 @@ extension AppDelegate: UIApplicationDelegate {
 
     private func scheduleBackgroundFilterUpdate() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 6 * 60 * 60) // 6 hours minimum
-        
+        // Use configured interval, but cap at reasonable limits
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
+        // Schedule for 75% of interval to account for iOS's discretionary nature
+        let delaySeconds = min(max(intervalHours * 0.75, 1.0), 12.0) * 60 * 60 // Between 1-12 hours
+        request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
+
         do {
+            // Cancel and resubmit atomically
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
             try BGTaskScheduler.shared.submit(request)
-            os_log("Background filter update task scheduled successfully", type: .info)
-        } catch {
-            os_log("Failed to schedule background filter update: %{public}@", type: .error, error.localizedDescription)
+            os_log("Background filter update task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+        } catch let error as NSError {
+            if error.domain == "BGTaskSchedulerErrorDomain" {
+                switch error.code {
+                case 1: os_log("BGTaskScheduler: Identifier not in Info.plist", type: .error)
+                case 2: os_log("BGTaskScheduler: Too many pending tasks", type: .error)
+                case 3: os_log("BGTaskScheduler: Background tasks unavailable", type: .error)
+                default: os_log("BGTaskScheduler error: %{public}@", type: .error, error.localizedDescription)
+                }
+            } else {
+                os_log("Failed to schedule background filter update: %{public}@", type: .error, error.localizedDescription)
+            }
         }
     }
 
     private func scheduleBackgroundProcessingUpdate() {
         let request = BGProcessingTaskRequest(identifier: backgroundProcessingIdentifier)
         request.requiresNetworkConnectivity = true
-        request.requiresExternalPower = true // prefer on charger for heavy conversions
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 12 * 60 * 60) // be conservative
+        request.requiresExternalPower = false // Don't require power - be more aggressive
+        // Schedule processing task for full interval (less critical than app refresh)
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
+        let delaySeconds = min(max(intervalHours, 2.0), 24.0) * 60 * 60 // Between 2-24 hours
+        request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
         do {
+            // Cancel and resubmit atomically
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingIdentifier)
             try BGTaskScheduler.shared.submit(request)
-            os_log("Background processing task scheduled successfully", type: .info)
-        } catch {
-            os_log("Failed to schedule background processing task: %{public}@", type: .error, error.localizedDescription)
+            os_log("Background processing task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+        } catch let error as NSError {
+            if error.domain == "BGTaskSchedulerErrorDomain" {
+                switch error.code {
+                case 1: os_log("BGTaskScheduler: Processing identifier not in Info.plist", type: .error)
+                case 2: os_log("BGTaskScheduler: Too many pending processing tasks", type: .error)
+                case 3: os_log("BGTaskScheduler: Background processing unavailable", type: .error)
+                default: os_log("BGTaskScheduler processing error: %{public}@", type: .error, error.localizedDescription)
+                }
+            } else {
+                os_log("Failed to schedule background processing task: %{public}@", type: .error, error.localizedDescription)
+            }
         }
     }
     
     private func handleBackgroundFilterUpdate(task: BGAppRefreshTask) {
         os_log("Background filter update task started", type: .info)
-        
-        // Schedule next occurrence immediately
-        scheduleBackgroundFilterUpdate()
-        
+
+        var taskCompleted = false
+
         task.expirationHandler = {
-            os_log("Background filter update task expired", type: .info)
-            task.setTaskCompleted(success: false)
+            os_log("Background filter update task expired", type: .warning)
+            if !taskCompleted {
+                taskCompleted = true
+                task.setTaskCompleted(success: false)
+                // Schedule next attempt sooner due to failure
+                self.scheduleBackgroundFilterUpdate()
+            }
         }
-        
+
         Task {
-            do {
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BackgroundTask")
+            // Always force update since background tasks are precious and rare
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGAppRefreshTask", force: true)
+
+            if !taskCompleted {
+                taskCompleted = true
                 os_log("Background filter update completed successfully", type: .info)
                 task.setTaskCompleted(success: true)
-            } catch {
-                os_log("Background filter update failed: %{public}@", type: .error, error.localizedDescription)
-                task.setTaskCompleted(success: false)
+
+                // Schedule next occurrence after success
+                self.scheduleBackgroundFilterUpdate()
+                self.scheduleBackgroundProcessingUpdate()
             }
         }
     }
@@ -315,19 +402,32 @@ extension AppDelegate: UIApplicationDelegate {
     private func handleBackgroundProcessingUpdate(task: BGProcessingTask) {
         os_log("Background processing update task started", type: .info)
 
-        // Reschedule next processing task
-        scheduleBackgroundProcessingUpdate()
+        var taskCompleted = false
 
         task.expirationHandler = {
-            os_log("Background processing update task expired", type: .info)
-            task.setTaskCompleted(success: false)
+            os_log("Background processing update task expired", type: .warning)
+            if !taskCompleted {
+                taskCompleted = true
+                task.setTaskCompleted(success: false)
+                // Schedule next attempt
+                self.scheduleBackgroundProcessingUpdate()
+            }
         }
 
         Task {
-            // Processing path can do the same work, but BGProcessing offers longer time
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BackgroundProcessing")
-            os_log("Background processing update task finished", type: .info)
-            task.setTaskCompleted(success: true)
+            // Force update for processing tasks as well
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGProcessingTask", force: true)
+
+            if !taskCompleted {
+                taskCompleted = true
+                os_log("Background processing update task finished successfully", type: .info)
+                task.setTaskCompleted(success: true)
+
+                // Schedule next occurrence after success
+                self.scheduleBackgroundFilterUpdate()
+                self.scheduleBackgroundProcessingUpdate()
+            }
         }
     }
 }

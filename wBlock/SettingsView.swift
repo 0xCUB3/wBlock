@@ -12,6 +12,9 @@ struct SettingsView: View {
     private let minimumAutoUpdateIntervalHours: Double = 1
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
     @State private var nextScheduleLine = "Next: Loading…"
+    @State private var lastUpdateLine = "Last: Never"
+    @State private var isOverdue = false
+    @State private var isUpdating = false
     @State private var timer: Timer?
     @State private var showingRestartConfirmation = false
     @State private var isRestarting = false
@@ -110,14 +113,41 @@ struct SettingsView: View {
                                             .font(.caption2)
                                     }
 
-                                    HStack {
-                                        Text(intervalDescription(hours: autoUpdateIntervalHours))
-                                        Spacer()
-                                        Text(nextScheduleLine)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text(intervalDescription(hours: autoUpdateIntervalHours))
+                                            Spacer()
+                                            if isUpdating {
+                                                ProgressView()
+                                                    .scaleEffect(0.8)
+                                                    .padding(.trailing, 4)
+                                                Text("Updating...")
+                                                    .foregroundColor(.blue)
+                                            } else {
+                                                Text(nextScheduleLine)
+                                                    .foregroundColor(isOverdue ? .orange : .secondary)
+                                            }
+                                        }
+                                        .font(.caption)
+                                        .lineLimit(1)
+
+                                        Text(lastUpdateLine)
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
                                     }
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
+
+                                    Button {
+                                        Task { await performManualUpdate() }
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "arrow.triangle.2.circlepath")
+                                            Text("Update Now")
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(isUpdating || !autoUpdateEnabled)
+                                    .padding(.top, 4)
                                 }
                                 .disabled(!autoUpdateEnabled)
                                 .padding(16)
@@ -254,7 +284,7 @@ private extension SettingsView {
             await ProtobufDataManager.shared.setHasCompletedOnboarding(false)
             await filterManager.resetForOnboarding()
             UserScriptManager.shared.simulateFreshInstall()
-            SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
             await MainActor.run {
                 isBadgeCounterEnabled = true
                 autoUpdateEnabled = true
@@ -283,13 +313,17 @@ private extension SettingsView {
         return Int(hours) == 1 ? "Every 1 hour" : "Every \(Int(hours)) hours"
     }
 
-    private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?) -> String {
+    private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool) -> String {
         guard let scheduledAt, let remaining else {
             return "Next: Waiting"
         }
 
+        if isOverdue {
+            return "Next: Overdue"
+        }
+
         if remaining <= 0 {
-            return "Next: Now"
+            return "Next: Checking..."
         }
 
         let componentsFormatter = DateComponentsFormatter()
@@ -310,15 +344,69 @@ private extension SettingsView {
         return "Next: in \(relative) · \(timeString)"
     }
 
-    private func updateScheduleLine() async {
+    private func formatLastUpdate(date: Date?) -> String {
+        guard let date else {
+            return "Last: Never"
+        }
+
+        let now = Date()
+        let interval = now.timeIntervalSince(date)
+
+        if interval < 60 {
+            return "Last: Just now"
+        }
+
+        let componentsFormatter = DateComponentsFormatter()
+        componentsFormatter.allowedUnits = [.day, .hour, .minute]
+        componentsFormatter.unitsStyle = .short
+        componentsFormatter.maximumUnitCount = 1
+        if let relative = componentsFormatter.string(from: interval) {
+            return "Last: \(relative) ago"
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        dateFormatter.timeStyle = .short
+        return "Last: \(dateFormatter.string(from: date))"
+    }
+
+    private func updateScheduleLine(shouldTriggerOverdue: Bool = true) async {
         guard autoUpdateEnabled else {
-            await MainActor.run { nextScheduleLine = "Next: Disabled" }
+            await MainActor.run {
+                nextScheduleLine = "Next: Disabled"
+                lastUpdateLine = "Last: N/A"
+                isOverdue = false
+            }
             return
         }
 
         let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-        let description = formatSchedule(scheduledAt: status.0, remaining: status.1)
-        await MainActor.run { nextScheduleLine = description }
+        let (scheduledAt, remaining, _, lastSuccessful, isRunning, overdueFlag) = status
+
+        let scheduleDescription = formatSchedule(scheduledAt: scheduledAt, remaining: remaining, isOverdue: overdueFlag)
+        let lastDescription = formatLastUpdate(date: lastSuccessful)
+
+        await MainActor.run {
+            nextScheduleLine = scheduleDescription
+            lastUpdateLine = lastDescription
+            isUpdating = isRunning
+            isOverdue = overdueFlag
+        }
+
+        // Trigger overdue updates ONLY on first call (not recursive)
+        if shouldTriggerOverdue && overdueFlag && !isRunning {
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "SettingsOverdueDetection", force: true)
+            // Refresh display WITHOUT retriggering overdue check
+            await updateScheduleLine(shouldTriggerOverdue: false)
+        }
+    }
+
+    private func performManualUpdate() async {
+        await MainActor.run { isUpdating = true }
+        await SharedAutoUpdateManager.shared.forceNextUpdate()
+        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "ManualUpdateButton", force: true)
+        await updateScheduleLine()
     }
 
     @MainActor
