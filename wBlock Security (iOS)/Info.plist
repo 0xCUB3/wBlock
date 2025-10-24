@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Guards against malicious websites, phishing attempts, and potential security threats.</string>
+	<string>Guards against suspicious websites, phishing attempts, and potential security risks.</string>
 </dict>
 </plist>

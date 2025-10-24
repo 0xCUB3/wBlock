@@ -19,6 +19,7 @@ message AppSettings {
   int64 last_update_check = 3;
   bool show_advanced_features = 4;
   string app_version = 5;
+  int32 last_terminology_sanitization_version = 6;
 }
 
 // Filter list data structure

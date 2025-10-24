@@ -64,7 +64,7 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 - **Network request blocking** via declarative content blocking rules (advertisements, trackers)
 - **Cookie and local storage filtering** through Safari content blocker rule actions
 - **CSS injection** for cosmetic filtering and element hiding
-- **Script blocking** for malware and unwanted JavaScript execution
+- **Script blocking** for unwanted software and JavaScript execution
 - **Pop-up and redirect prevention** using Safari content blocking patterns
 
 ### Configuration & Management

@@ -31,7 +31,7 @@ wBlock processes the following data entirely on your device:
 
 ### 1. Content Blocking Rules
 - **What:** Filter lists downloaded from third-party sources (AdGuard, EasyList, etc.)
-- **Purpose:** To block ads, trackers, and malicious content on websites you visit
+- **Purpose:** To block ads, trackers, and unwanted content on websites you visit
 - **Storage:** Stored locally in the app's shared container on your device
 - **Processing:** Converted to Safari content blocking format locally on your device
 

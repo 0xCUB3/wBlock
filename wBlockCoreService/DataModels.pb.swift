@@ -136,7 +136,7 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var settings: Wblock_Data_AppSettings {
+  var settings: Wblock_Data_AppSettings {
     get {return _storage._settings ?? Wblock_Data_AppSettings()}
     set {_uniqueStorage()._settings = newValue}
   }
@@ -145,17 +145,17 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   /// Clears the value of `settings`. Subsequent reads from it will return its default value.
   mutating func clearSettings() {_uniqueStorage()._settings = nil}
 
-  public var filterLists: [Wblock_Data_FilterListData] {
+  var filterLists: [Wblock_Data_FilterListData] {
     get {return _storage._filterLists}
     set {_uniqueStorage()._filterLists = newValue}
   }
 
-  public var userScripts: [Wblock_Data_UserScriptData] {
+  var userScripts: [Wblock_Data_UserScriptData] {
     get {return _storage._userScripts}
     set {_uniqueStorage()._userScripts = newValue}
   }
 
-  public var whitelist: Wblock_Data_WhitelistData {
+  var whitelist: Wblock_Data_WhitelistData {
     get {return _storage._whitelist ?? Wblock_Data_WhitelistData()}
     set {_uniqueStorage()._whitelist = newValue}
   }
@@ -164,7 +164,7 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   /// Clears the value of `whitelist`. Subsequent reads from it will return its default value.
   mutating func clearWhitelist() {_uniqueStorage()._whitelist = nil}
 
-  public var ruleCounts: Wblock_Data_RuleCountData {
+  var ruleCounts: Wblock_Data_RuleCountData {
     get {return _storage._ruleCounts ?? Wblock_Data_RuleCountData()}
     set {_uniqueStorage()._ruleCounts = newValue}
   }
@@ -173,7 +173,7 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   /// Clears the value of `ruleCounts`. Subsequent reads from it will return its default value.
   mutating func clearRuleCounts() {_uniqueStorage()._ruleCounts = nil}
 
-  public var performance: Wblock_Data_PerformanceData {
+  var performance: Wblock_Data_PerformanceData {
     get {return _storage._performance ?? Wblock_Data_PerformanceData()}
     set {_uniqueStorage()._performance = newValue}
   }
@@ -204,6 +204,8 @@ struct Wblock_Data_AppSettings: Sendable {
   var showAdvancedFeatures: Bool = false
 
   var appVersion: String = String()
+
+  var lastTerminologySanitizationVersion: Int32 = 0
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -616,6 +618,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     3: .standard(proto: "last_update_check"),
     4: .standard(proto: "show_advanced_features"),
     5: .standard(proto: "app_version"),
+    6: .standard(proto: "last_terminology_sanitization_version"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -629,6 +632,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
       case 3: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdateCheck) }()
       case 4: try { try decoder.decodeSingularBoolField(value: &self.showAdvancedFeatures) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self.appVersion) }()
+      case 6: try { try decoder.decodeSingularInt32Field(value: &self.lastTerminologySanitizationVersion) }()
       default: break
       }
     }
@@ -650,6 +654,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if !self.appVersion.isEmpty {
       try visitor.visitSingularStringField(value: self.appVersion, fieldNumber: 5)
     }
+    if self.lastTerminologySanitizationVersion != 0 {
+      try visitor.visitSingularInt32Field(value: self.lastTerminologySanitizationVersion, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -659,6 +666,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if lhs.lastUpdateCheck != rhs.lastUpdateCheck {return false}
     if lhs.showAdvancedFeatures != rhs.showAdvancedFeatures {return false}
     if lhs.appVersion != rhs.appVersion {return false}
+    if lhs.lastTerminologySanitizationVersion != rhs.lastTerminologySanitizationVersion {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1235,4 +1243,3 @@ extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     return true
   }
 }
-

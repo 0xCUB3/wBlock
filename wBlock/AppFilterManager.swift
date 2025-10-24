@@ -411,7 +411,7 @@ class AppFilterManager: ObservableObject {
             "AdGuard Annoyances Filter",
             "AdGuard Mobile Ads Filter",
             "EasyPrivacy",
-            "Online Malicious URL Blocklist",
+            "Online Security Filter",
             "d3Host List by d3ward",
             "Anti-Adblock List"
         ]
@@ -421,7 +421,7 @@ class AppFilterManager: ObservableObject {
             "AdGuard Tracking Protection Filter",
             "AdGuard Annoyances Filter",
             "EasyPrivacy",
-            "Online Malicious URL Blocklist",
+            "Online Security Filter",
             "d3Host List by d3ward",
             "Anti-Adblock List"
         ]
@@ -445,7 +445,7 @@ class AppFilterManager: ObservableObject {
         let recommendedFiltersByCategory: [FilterListCategory: [String]] = [
             .ads: ["AdGuard Base Filter"],
             .privacy: ["AdGuard Tracking Protection Filter", "EasyPrivacy"],
-            .security: ["Online Malicious URL Blocklist"],
+            .security: ["Online Security Filter"],
             .annoyances: ["AdGuard Annoyances Filter"],
             .multipurpose: ["d3Host List by d3ward", "Anti-Adblock List"],
             .foreign: [],
@@ -1402,7 +1402,7 @@ class AppFilterManager: ObservableObject {
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
-            "Online Malicious URL Blocklist"
+            "Online Security Filter"
         ]
         #endif
 

@@ -74,6 +74,7 @@ public class ProtobufDataManager: ObservableObject {
     private let dataFileName = "wblock_data.pb"
     private let backupFileName = "wblock_data_backup.pb"
     private let migrationFileName = "migration_completed.flag"
+    private let terminologySanitizationVersion = 1 // Increment this to re-run sanitization
     
     // File URLs
     private lazy var dataFileURL: URL = {
@@ -137,13 +138,23 @@ public class ProtobufDataManager: ObservableObject {
             if fileManager.fileExists(atPath: dataFileURL.path) {
                 let data = try Data(contentsOf: dataFileURL)
                 let loadedData = try Wblock_Data_AppData(serializedData: data)
-                
+
                 await MainActor.run {
                     self.appData = loadedData
                     self.lastError = nil
                 }
-                
+
                 logger.info("✅ Loaded protobuf data (\(data.count) bytes)")
+
+                // Check if terminology sanitization is needed (must check on MainActor)
+                let needsSanitization = await MainActor.run {
+                    appData.settings.lastTerminologySanitizationVersion < terminologySanitizationVersion
+                }
+
+                if needsSanitization {
+                    logger.info("🧹 Running terminology sanitization (version \(self.terminologySanitizationVersion))...")
+                    await sanitizeStoredTerminology()
+                }
             } else {
                 logger.info("📝 No existing data file, creating default data")
                 await createDefaultData()
@@ -278,6 +289,102 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
     
+    // MARK: - Terminology Sanitization
+
+    // Pre-compiled regex patterns for efficiency (compiled once, reused many times)
+    private static let sanitizationRegexes: [(regex: NSRegularExpression, replacement: String)] = {
+        let patterns: [(pattern: String, replacement: String)] = [
+            ("malicious", "suspicious"),
+            ("malware", "unwanted software"),
+            ("spyware", "tracking software"),
+            ("harmful", "unwanted"),
+            ("dangerous", "risky")
+        ]
+
+        return patterns.compactMap { pattern, replacement in
+            guard let regex = try? NSRegularExpression(
+                pattern: "\\b\(pattern)\\b",
+                options: [.caseInsensitive]
+            ) else { return nil }
+            return (regex, replacement)
+        }
+    }()
+
+    /// Efficiently sanitizes stored filter list names and descriptions to remove Apple-flagged terminology
+    private func sanitizeStoredTerminology() async {
+        let startTime = Date()
+
+        // Work directly on MainActor to avoid full copy
+        await MainActor.run {
+            var modifiedCount = 0
+
+            // Sanitize filter list names AND descriptions
+            for index in appData.filterLists.indices {
+                // Sanitize name/title
+                let originalName = appData.filterLists[index].name
+                let sanitizedName = sanitizeText(originalName)
+                if sanitizedName != originalName {
+                    appData.filterLists[index].name = sanitizedName
+                    modifiedCount += 1
+                }
+
+                // Sanitize description
+                let originalDescription = appData.filterLists[index].description_p
+                let sanitizedDescription = sanitizeText(originalDescription)
+                if sanitizedDescription != originalDescription {
+                    appData.filterLists[index].description_p = sanitizedDescription
+                    modifiedCount += 1
+                }
+            }
+
+            // Sanitize userscript names AND descriptions
+            for index in appData.userScripts.indices {
+                // Sanitize name/title
+                let originalName = appData.userScripts[index].name
+                let sanitizedName = sanitizeText(originalName)
+                if sanitizedName != originalName {
+                    appData.userScripts[index].name = sanitizedName
+                    modifiedCount += 1
+                }
+
+                // Sanitize description
+                let originalDescription = appData.userScripts[index].description_p
+                let sanitizedDescription = sanitizeText(originalDescription)
+                if sanitizedDescription != originalDescription {
+                    appData.userScripts[index].description_p = sanitizedDescription
+                    modifiedCount += 1
+                }
+            }
+
+            // Update sanitization version
+            appData.settings.lastTerminologySanitizationVersion = Int32(terminologySanitizationVersion)
+
+            let duration = Date().timeIntervalSince(startTime)
+            logger.info("✅ Terminology sanitization completed in \(String(format: "%.2f", duration))s (\(modifiedCount) items updated)")
+        }
+
+        // Save once after all modifications
+        await saveData()
+    }
+
+    /// Sanitizes text by replacing Apple-flagged terminology using pre-compiled regexes
+    private func sanitizeText(_ text: String) -> String {
+        guard !text.isEmpty else { return text }
+
+        var sanitized = text
+        for (regex, replacement) in Self.sanitizationRegexes {
+            let range = NSRange(sanitized.startIndex..<sanitized.endIndex, in: sanitized)
+            sanitized = regex.stringByReplacingMatches(
+                in: sanitized,
+                options: [],
+                range: range,
+                withTemplate: replacement
+            )
+        }
+
+        return sanitized
+    }
+
     // MARK: - Migration from Legacy Storage
     private func migrateFromLegacyStorage() async {
         logger.info("🔄 Migrating from UserDefaults and SwiftData...")

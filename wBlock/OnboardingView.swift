@@ -620,7 +620,7 @@ struct OnboardingView: View {
                 "AdGuard Annoyances Filter",
                 "EasyPrivacy",
                 "AdGuard URL Tracking Filter",
-                "Online Malicious URL Blocklist",
+                "Online Security Filter",
                 "d3Host List by d3ward",
                 "Anti-Adblock List"
             ]

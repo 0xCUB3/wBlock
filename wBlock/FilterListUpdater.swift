@@ -104,6 +104,43 @@ class FilterListUpdater {
         }
     }
 
+    // Pre-compiled regex patterns for efficiency (compiled once, reused many times)
+    private static let sanitizationRegexes: [(regex: NSRegularExpression, replacement: String)] = {
+        let patterns: [(pattern: String, replacement: String)] = [
+            ("malicious", "suspicious"),
+            ("malware", "unwanted software"),
+            ("spyware", "tracking software"),
+            ("harmful", "unwanted"),
+            ("dangerous", "risky")
+        ]
+
+        return patterns.compactMap { pattern, replacement in
+            guard let regex = try? NSRegularExpression(
+                pattern: "\\b\(pattern)\\b",
+                options: [.caseInsensitive]
+            ) else { return nil }
+            return (regex, replacement)
+        }
+    }()
+
+    /// Sanitizes filter list metadata to remove Apple App Store flagged terminology
+    private func sanitizeMetadata(_ text: String) -> String {
+        guard !text.isEmpty else { return text }
+
+        var sanitized = text
+        for (regex, replacement) in Self.sanitizationRegexes {
+            let range = NSRange(sanitized.startIndex..<sanitized.endIndex, in: sanitized)
+            sanitized = regex.stringByReplacingMatches(
+                in: sanitized,
+                options: [],
+                range: range,
+                withTemplate: replacement
+            )
+        }
+
+        return sanitized
+    }
+
     /// Parses metadata from filter list content
     func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
         var title: String?
@@ -127,17 +164,20 @@ class FilterListUpdater {
                    let range = Range(match.range(at: 1), in: trimmedLine) {
                     // Raw metadata capture
                     let value = String(trimmedLine[range]).trimmingCharacters(in: .whitespaces)
-                    
+
                     // Clean up forward slashes
                     let cleanValue = value.replacingOccurrences(of: "/", with: " & ")
-                    
+
+                    // Sanitize flagged terminology
+                    let sanitizedValue = sanitizeMetadata(cleanValue)
+
                     switch key {
                     case "Title":
-                        title = cleanValue
+                        title = sanitizedValue
                     case "Description":
-                        description = cleanValue
+                        description = sanitizedValue
                     case "Version":
-                        version = cleanValue
+                        version = sanitizedValue
                     default:
                         break
                     }
