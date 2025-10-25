@@ -135,7 +135,8 @@ extension AppDelegate: NSApplicationDelegate {
             let (_, remaining, _, _, isRunning, isOverdue) = status
 
             // If overdue or due within 5 minutes, force update
-            if isOverdue || (remaining != nil && remaining! < 300 && !isRunning) {
+            if isOverdue || ( ( ( (if let remaining = remaining { remaining < 300 } else { false } ) ) && !isRunning ) ) {
+            if isOverdue || isDueSoon {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive", force: true)
             } else {
