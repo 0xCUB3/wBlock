@@ -285,7 +285,7 @@ extension AppDelegate: UIApplicationDelegate {
             let (_, remaining, _, _, isRunning, isOverdue) = status
 
             // If overdue or due within 5 minutes, force update
-            if isOverdue || (remaining != nil && remaining! < 300 && !isRunning) {
+            if isOverdue || ((remaining ?? Double.infinity) < 300 && !isRunning) {
                 os_log("App entering foreground with overdue/due update - forcing update", type: .info)
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground", force: true)
