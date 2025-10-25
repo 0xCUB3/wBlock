@@ -31,7 +31,16 @@ public actor SharedAutoUpdateManager {
     public static let shared = SharedAutoUpdateManager()
 
     // MARK: - Cached Status for Performance
-    private var cachedStatus: (Date?, TimeInterval?, Double, Date?, Bool, Bool)?
+    /// Struct to hold auto-update status with named properties for clarity and safety.
+    private struct AutoUpdateStatus {
+        var scheduledAt: Date?
+        var remaining: TimeInterval?
+        var intervalHours: Double
+        var lastSuccessful: Date?
+        var isRunning: Bool
+        var isOverdue: Bool
+    }
+    private var cachedStatus: AutoUpdateStatus?
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
 
