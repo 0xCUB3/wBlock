@@ -396,7 +396,7 @@ extension AppDelegate: UIApplicationDelegate {
         var taskCompleted = false
 
         task.expirationHandler = {
-            os_log("Background filter update task expired", type: .warning)
+            os_log("Background filter update task expired", type: .default)
             if !taskCompleted {
                 taskCompleted = true
                 task.setTaskCompleted(success: false)
@@ -428,7 +428,7 @@ extension AppDelegate: UIApplicationDelegate {
         var taskCompleted = false
 
         task.expirationHandler = {
-            os_log("Background processing update task expired", type: .warning)
+            os_log("Background processing update task expired", type: .default)
             if !taskCompleted {
                 taskCompleted = true
                 task.setTaskCompleted(success: false)
