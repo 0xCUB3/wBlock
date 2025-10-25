@@ -381,20 +381,19 @@ private extension SettingsView {
         }
 
         let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-        let (scheduledAt, remaining, _, lastSuccessful, isRunning, overdueFlag) = status
 
-        let scheduleDescription = formatSchedule(scheduledAt: scheduledAt, remaining: remaining, isOverdue: overdueFlag)
-        let lastDescription = formatLastUpdate(date: lastSuccessful)
+        let scheduleDescription = formatSchedule(scheduledAt: status.scheduledAt, remaining: status.remaining, isOverdue: status.isOverdue)
+        let lastDescription = formatLastUpdate(date: status.lastSuccessful)
 
         await MainActor.run {
             nextScheduleLine = scheduleDescription
             lastUpdateLine = lastDescription
-            isUpdating = isRunning
-            isOverdue = overdueFlag
+            isUpdating = status.isRunning
+            isOverdue = status.isOverdue
         }
 
         // Trigger overdue updates ONLY on first call (not recursive)
-        if shouldTriggerOverdue && overdueFlag && !isRunning {
+        if shouldTriggerOverdue && status.isOverdue && !status.isRunning {
             await SharedAutoUpdateManager.shared.forceNextUpdate()
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "SettingsOverdueDetection", force: true)
             // Refresh display WITHOUT retriggering overdue check

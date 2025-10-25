@@ -27,8 +27,7 @@ public enum WebExtensionRequestHandler {
         // Fire-and-forget auto-update - force if overdue
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let (_, _, _, _, isRunning, isOverdue) = status
-            if isOverdue && !isRunning {
+            if status.isOverdue && !status.isRunning {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "ScriptsWebExtensionRequest", force: true)
             } else {

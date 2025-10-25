@@ -25,19 +25,43 @@ extension Notification.Name {
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
     var hasPendingApplyNotification = false
-    
+
+    // MARK: - Background Update Constants
+
+    /// Time threshold (in seconds) for considering an update "due soon"
+    private let dueSoonThresholdSeconds: TimeInterval = 300 // 5 minutes
+
+    #if os(macOS)
+    /// Percentage of interval used for scheduler tolerance (0.0-1.0)
+    private let schedulerTolerancePercentage: Double = 0.2 // 20%
+    /// Maximum tolerance in hours regardless of interval
+    private let maxSchedulerToleranceHours: Double = 1.0
+    /// Interval for periodic timer checks (in seconds)
+    private let periodicTimerInterval: TimeInterval = 30 * 60 // 30 minutes
+    /// macOS-only scheduler holder
+    private var backgroundScheduler: NSBackgroundActivityScheduler?
+    #endif
+
     #if os(iOS)
     private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
     private let backgroundProcessingIdentifier = "com.alexanderskula.wblock.filter-processing"
-    #else
-    // macOS-only scheduler holder
-    private var backgroundScheduler: NSBackgroundActivityScheduler?
+
+    /// Factor to multiply interval by for app refresh scheduling (accounts for iOS discretion)
+    private let appRefreshScheduleDelayFactor: Double = 0.75
+    /// Minimum schedule delay for app refresh (in hours)
+    private let minAppRefreshDelayHours: Double = 1.0
+    /// Maximum schedule delay for app refresh (in hours)
+    private let maxAppRefreshDelayHours: Double = 12.0
+
+    /// Minimum schedule delay for background processing (in hours)
+    private let minProcessingDelayHours: Double = 2.0
+    /// Maximum schedule delay for background processing (in hours)
+    private let maxProcessingDelayHours: Double = 24.0
     #endif
 }
 
 // MARK: - Shared helper for schedule log formatting (platform-agnostic)
-fileprivate func scheduleMessage(from status: (Date?, TimeInterval?, Double, Date?, Bool, Bool)) -> String {
-    let (scheduledAt, remaining, interval, lastSuccessful, isRunning, isOverdue) = status
+fileprivate func scheduleMessage(from status: SharedAutoUpdateManager.AutoUpdateStatus) -> String {
     let formatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -45,10 +69,10 @@ fileprivate func scheduleMessage(from status: (Date?, TimeInterval?, Double, Dat
     }()
 
     var message = ""
-    if let scheduledAt, let remaining {
-        if isRunning {
+    if let scheduledAt = status.scheduledAt, let remaining = status.remaining {
+        if status.isRunning {
             message = "🔄 Auto-update: currently running"
-        } else if isOverdue {
+        } else if status.isOverdue {
             message = "⚠️ Auto-update: overdue (will run on next trigger)"
         } else if remaining == 0 {
             message = "🕒 Auto-update: due now (will run on next trigger)"
@@ -60,10 +84,10 @@ fileprivate func scheduleMessage(from status: (Date?, TimeInterval?, Double, Dat
         }
         message += " · Scheduled: \(formatter.string(from: scheduledAt))"
     } else {
-        message = "🕒 Auto-update: no prior run yet (interval=\(interval)h)"
+        message = "🕒 Auto-update: no prior run yet (interval=\(status.intervalHours)h)"
     }
 
-    if let lastSuccessful {
+    if let lastSuccessful = status.lastSuccessful {
         message += " · Last success: \(formatter.string(from: lastSuccessful))"
     }
 
@@ -132,11 +156,10 @@ extension AppDelegate: NSApplicationDelegate {
         // Check if update is overdue when app becomes active
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let (_, remaining, _, _, isRunning, isOverdue) = status
+            let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
 
-            // If overdue or due within 5 minutes, force update
-            if isOverdue || ( ( ( (if let remaining = remaining { remaining < 300 } else { false } ) ) && !isRunning ) ) {
-            if isOverdue || isDueSoon {
+            // If overdue or due soon, force update
+            if status.isOverdue || (isDueSoon && !status.isRunning) {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive", force: true)
             } else {
@@ -148,8 +171,8 @@ extension AppDelegate: NSApplicationDelegate {
     // MARK: - macOS Auto-Update System
     
     private func setupMacOSAutoUpdate() {
-        // More aggressive periodic trigger while app is running (check every 30 minutes)
-        Timer.scheduledTimer(withTimeInterval: 30 * 60, repeats: true) { [weak self] _ in
+        // More aggressive periodic trigger while app is running
+        Timer.scheduledTimer(withTimeInterval: periodicTimerInterval, repeats: true) { [weak self] _ in
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
@@ -159,7 +182,7 @@ extension AppDelegate: NSApplicationDelegate {
         let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
         scheduler.repeats = true
         scheduler.interval = intervalHours * 60 * 60 // Use configured interval
-        scheduler.tolerance = min(intervalHours * 0.2, 1.0) * 60 * 60 // 20% tolerance, max 1 hour
+        scheduler.tolerance = min(intervalHours * schedulerTolerancePercentage, maxSchedulerToleranceHours) * 60 * 60
         scheduler.qualityOfService = .utility
         scheduler.schedule { [weak self] completion in
             Task {
@@ -173,7 +196,6 @@ extension AppDelegate: NSApplicationDelegate {
     private func runMacOSBackgroundUpdate(trigger: String) async {
         // Check if update is overdue
         let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-        let (_, _, _, _, isRunning, isOverdue) = status
 
         // If an XPC service exists in future builds, prefer it; else fallback in-process
         #if os(macOS)
@@ -182,7 +204,7 @@ extension AppDelegate: NSApplicationDelegate {
         #endif
 
         // Force update if overdue
-        if isOverdue && !isRunning {
+        if status.isOverdue && !status.isRunning {
             await SharedAutoUpdateManager.shared.forceNextUpdate()
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
         } else {
@@ -282,10 +304,10 @@ extension AppDelegate: UIApplicationDelegate {
         // Check if update is overdue when returning to foreground
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let (_, remaining, _, _, isRunning, isOverdue) = status
+            let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
 
-            // If overdue or due within 5 minutes, force update
-            if isOverdue || ((remaining ?? Double.infinity) < 300 && !isRunning) {
+            // If overdue or due soon, force update
+            if status.isOverdue || (isDueSoon && !status.isRunning) {
                 os_log("App entering foreground with overdue/due update - forcing update", type: .info)
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground", force: true)
@@ -318,7 +340,7 @@ extension AppDelegate: UIApplicationDelegate {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
         let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
         // Schedule for 75% of interval to account for iOS's discretionary nature
-        let delaySeconds = min(max(intervalHours * 0.75, 1.0), 12.0) * 60 * 60 // Between 1-12 hours
+        let delaySeconds = min(max(intervalHours * appRefreshScheduleDelayFactor, minAppRefreshDelayHours), maxAppRefreshDelayHours) * 60 * 60
         request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
 
         do {
@@ -347,7 +369,7 @@ extension AppDelegate: UIApplicationDelegate {
         // Schedule processing task for full interval (less critical than app refresh)
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
         let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
-        let delaySeconds = min(max(intervalHours, 2.0), 24.0) * 60 * 60 // Between 2-24 hours
+        let delaySeconds = min(max(intervalHours, minProcessingDelayHours), maxProcessingDelayHours) * 60 * 60
         request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
         do {
             // Cancel and resubmit atomically

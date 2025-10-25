@@ -31,14 +31,23 @@ public actor SharedAutoUpdateManager {
     public static let shared = SharedAutoUpdateManager()
 
     // MARK: - Cached Status for Performance
-    /// Struct to hold auto-update status with named properties for clarity and safety.
-    private struct AutoUpdateStatus {
-        var scheduledAt: Date?
-        var remaining: TimeInterval?
-        var intervalHours: Double
-        var lastSuccessful: Date?
-        var isRunning: Bool
-        var isOverdue: Bool
+    /// Public struct to hold auto-update status with named properties for clarity and safety.
+    public struct AutoUpdateStatus {
+        public let scheduledAt: Date?
+        public let remaining: TimeInterval?
+        public let intervalHours: Double
+        public let lastSuccessful: Date?
+        public let isRunning: Bool
+        public let isOverdue: Bool
+
+        public init(scheduledAt: Date?, remaining: TimeInterval?, intervalHours: Double, lastSuccessful: Date?, isRunning: Bool, isOverdue: Bool) {
+            self.scheduledAt = scheduledAt
+            self.remaining = remaining
+            self.intervalHours = intervalHours
+            self.lastSuccessful = lastSuccessful
+            self.isRunning = isRunning
+            self.isOverdue = isOverdue
+        }
     }
     private var cachedStatus: AutoUpdateStatus?
     private var lastStatusCheck: Date?
@@ -84,9 +93,9 @@ public actor SharedAutoUpdateManager {
     }
 
     /// Returns status about the next eligible auto-update time for UI/logging.
-    /// - Returns: (scheduledAt, secondsRemaining, intervalHours, lastSuccessfulUpdate, isRunning, isOverdue). If no schedule yet, scheduledAt is nil.
+    /// - Returns: AutoUpdateStatus struct containing all scheduling information
     /// Uses 5-second cache to reduce UserDefaults reads in hot paths (extension triggers)
-    public func nextScheduleStatus() async -> (Date?, TimeInterval?, Double, Date?, Bool, Bool) {
+    public func nextScheduleStatus() async -> AutoUpdateStatus {
         let now = Date()
 
         // Check cache validity
@@ -110,24 +119,52 @@ public actor SharedAutoUpdateManager {
             return nil
         }()
 
-        let result: (Date?, TimeInterval?, Double, Date?, Bool, Bool)
+        let result: AutoUpdateStatus
 
         if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double {
             let remaining = max(0, nextEligible - nowTimestamp)
             let isOverdue = remaining == 0 && !isRunning
-            result = (Date(timeIntervalSince1970: nextEligible), remaining, interval, lastSuccessful, isRunning, isOverdue)
+            result = AutoUpdateStatus(
+                scheduledAt: Date(timeIntervalSince1970: nextEligible),
+                remaining: remaining,
+                intervalHours: interval,
+                lastSuccessful: lastSuccessful,
+                isRunning: isRunning,
+                isOverdue: isOverdue
+            )
         } else if let lastCheck = defaults.object(forKey: lastCheckKey) as? Double {
             // Fallback: derive from lastCheck if present, but no jitter window yet
             let theoretical = lastCheck + interval * 3600
             if theoretical <= nowTimestamp { // already due, but no trigger yet
                 let isOverdue = !isRunning
-                result = (Date(timeIntervalSince1970: nowTimestamp), 0, interval, lastSuccessful, isRunning, isOverdue)
+                result = AutoUpdateStatus(
+                    scheduledAt: Date(timeIntervalSince1970: nowTimestamp),
+                    remaining: 0,
+                    intervalHours: interval,
+                    lastSuccessful: lastSuccessful,
+                    isRunning: isRunning,
+                    isOverdue: isOverdue
+                )
             } else {
-                result = (Date(timeIntervalSince1970: theoretical), theoretical - nowTimestamp, interval, lastSuccessful, isRunning, false)
+                result = AutoUpdateStatus(
+                    scheduledAt: Date(timeIntervalSince1970: theoretical),
+                    remaining: theoretical - nowTimestamp,
+                    intervalHours: interval,
+                    lastSuccessful: lastSuccessful,
+                    isRunning: isRunning,
+                    isOverdue: false
+                )
             }
         } else {
             // No prior run – return nil schedule
-            result = (nil, nil, interval, lastSuccessful, isRunning, false)
+            result = AutoUpdateStatus(
+                scheduledAt: nil,
+                remaining: nil,
+                intervalHours: interval,
+                lastSuccessful: lastSuccessful,
+                isRunning: isRunning,
+                isOverdue: false
+            )
         }
 
         // Update cache

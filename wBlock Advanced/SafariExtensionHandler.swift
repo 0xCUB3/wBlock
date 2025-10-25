@@ -46,8 +46,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         // Opportunistic background filter auto-update - force if overdue
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let (_, _, _, _, isRunning, isOverdue) = status
-            if isOverdue && !isRunning {
+            if status.isOverdue && !status.isRunning {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AdvancedExtensionMessage", force: true)
             } else {
@@ -317,8 +316,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         // Secondary trigger path - check if overdue
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let (_, _, _, _, isRunning, isOverdue) = status
-            if isOverdue && !isRunning {
+            if status.isOverdue && !status.isRunning {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BlockedResourceEvent", force: true)
             } else {
@@ -348,8 +346,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         // Navigation trigger - check if overdue
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let (_, _, _, _, isRunning, isOverdue) = status
-            if isOverdue && !isRunning {
+            if status.isOverdue && !status.isRunning {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "Navigation", force: true)
             } else {
