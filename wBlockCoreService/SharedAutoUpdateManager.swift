@@ -30,11 +30,37 @@ import UIKit
 public actor SharedAutoUpdateManager {
     public static let shared = SharedAutoUpdateManager()
 
+    // MARK: - Cached Status for Performance
+    /// Public struct to hold auto-update status with named properties for clarity and safety.
+    public struct AutoUpdateStatus {
+        public let scheduledAt: Date?
+        public let remaining: TimeInterval?
+        public let intervalHours: Double
+        public let lastSuccessful: Date?
+        public let isRunning: Bool
+        public let isOverdue: Bool
+
+        public init(scheduledAt: Date?, remaining: TimeInterval?, intervalHours: Double, lastSuccessful: Date?, isRunning: Bool, isOverdue: Bool) {
+            self.scheduledAt = scheduledAt
+            self.remaining = remaining
+            self.intervalHours = intervalHours
+            self.lastSuccessful = lastSuccessful
+            self.isRunning = isRunning
+            self.isOverdue = isOverdue
+        }
+    }
+    private var cachedStatus: AutoUpdateStatus?
+    private var lastStatusCheck: Date?
+    private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
+
     // MARK: Configuration Keys
     private let lastCheckKey = "autoUpdateLastCheck" // Double (timeIntervalSince1970)
+    private let lastSuccessfulUpdateKey = "autoUpdateLastSuccessful" // Double (timeIntervalSince1970)
     private let nextEligibleKey = "autoUpdateNextEligibleTime" // Double (abs timestamp with jitter)
     private let intervalHoursKey = "autoUpdateIntervalHours" // Double
     private let enabledKey = "autoUpdateEnabled" // Bool
+    private let forceNextUpdateKey = "autoUpdateForceNext" // Bool - force update on next trigger
+    private let isCurrentlyRunningKey = "autoUpdateIsRunning" // Bool - prevent overlapping runs
     private let etagStoreKeyPrefix = "filterEtag_" // + filter UUID
     private let lastModifiedStoreKeyPrefix = "filterLastModified_" // + filter UUID
     private let advancedRulesFilenamePrefix = "advanced_" // + bundleIdentifier + .txt
@@ -67,32 +93,107 @@ public actor SharedAutoUpdateManager {
     }
 
     /// Returns status about the next eligible auto-update time for UI/logging.
-    /// - Returns: (scheduledAt, secondsRemaining, intervalHours). If no schedule yet, scheduledAt is nil.
-    public func nextScheduleStatus() async -> (Date?, TimeInterval?, Double) {
+    /// - Returns: AutoUpdateStatus struct containing all scheduling information
+    /// Uses 5-second cache to reduce UserDefaults reads in hot paths (extension triggers)
+    public func nextScheduleStatus() async -> AutoUpdateStatus {
+        let now = Date()
+
+        // Check cache validity
+        if let lastCheck = lastStatusCheck,
+           now.timeIntervalSince(lastCheck) < statusCacheTTL,
+           let cached = cachedStatus {
+            return cached
+        }
+
+        // Cache miss - recompute
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
-        let now = Date().timeIntervalSince1970
-        if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double {
-            let remaining = max(0, nextEligible - now)
-            return (Date(timeIntervalSince1970: nextEligible), remaining, interval)
-        }
-        // Fallback: derive from lastCheck if present, but no jitter window yet
-        if let lastCheck = defaults.object(forKey: lastCheckKey) as? Double {
-            let theoretical = lastCheck + interval * 3600
-            if theoretical <= now { // already due, but no trigger yet
-                return (Date(timeIntervalSince1970: now), 0, interval)
-            } else {
-                return (Date(timeIntervalSince1970: theoretical), theoretical - now, interval)
+        let nowTimestamp = now.timeIntervalSince1970
+        let isRunning = defaults.bool(forKey: isCurrentlyRunningKey)
+
+        // Get last successful update timestamp
+        let lastSuccessful: Date? = {
+            if let timestamp = defaults.object(forKey: lastSuccessfulUpdateKey) as? Double {
+                return Date(timeIntervalSince1970: timestamp)
             }
+            return nil
+        }()
+
+        let result: AutoUpdateStatus
+
+        if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double {
+            let remaining = max(0, nextEligible - nowTimestamp)
+            let isOverdue = remaining == 0 && !isRunning
+            result = AutoUpdateStatus(
+                scheduledAt: Date(timeIntervalSince1970: nextEligible),
+                remaining: remaining,
+                intervalHours: interval,
+                lastSuccessful: lastSuccessful,
+                isRunning: isRunning,
+                isOverdue: isOverdue
+            )
+        } else if let lastCheck = defaults.object(forKey: lastCheckKey) as? Double {
+            // Fallback: derive from lastCheck if present, but no jitter window yet
+            let theoretical = lastCheck + interval * 3600
+            if theoretical <= nowTimestamp { // already due, but no trigger yet
+                let isOverdue = !isRunning
+                result = AutoUpdateStatus(
+                    scheduledAt: Date(timeIntervalSince1970: nowTimestamp),
+                    remaining: 0,
+                    intervalHours: interval,
+                    lastSuccessful: lastSuccessful,
+                    isRunning: isRunning,
+                    isOverdue: isOverdue
+                )
+            } else {
+                result = AutoUpdateStatus(
+                    scheduledAt: Date(timeIntervalSince1970: theoretical),
+                    remaining: theoretical - nowTimestamp,
+                    intervalHours: interval,
+                    lastSuccessful: lastSuccessful,
+                    isRunning: isRunning,
+                    isOverdue: false
+                )
+            }
+        } else {
+            // No prior run – return nil schedule
+            result = AutoUpdateStatus(
+                scheduledAt: nil,
+                remaining: nil,
+                intervalHours: interval,
+                lastSuccessful: lastSuccessful,
+                isRunning: isRunning,
+                isOverdue: false
+            )
         }
-        // No prior run – return nil schedule
-        return (nil, nil, interval)
+
+        // Update cache
+        cachedStatus = result
+        lastStatusCheck = now
+
+        return result
+    }
+
+    /// Invalidates the status cache (call after state changes)
+    private func invalidateStatusCache() {
+        cachedStatus = nil
+        lastStatusCheck = nil
+    }
+
+    /// Forces the next update to run immediately regardless of throttling
+    /// Must be called from within actor context to safely invalidate cache
+    public func forceNextUpdate() async {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        defaults.set(true, forKey: forceNextUpdateKey)
+        defaults.synchronize()
+        invalidateStatusCache()
     }
 
     /// Clears the cached auto-update window so future runs re-evaluate scheduling.
-    public func resetScheduleAfterConfigurationChange() {
+    public func resetScheduleAfterConfigurationChange() async {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         defaults.removeObject(forKey: nextEligibleKey)
+        invalidateStatusCache()
     }
 
     // MARK: - Core Logic
@@ -105,10 +206,20 @@ public actor SharedAutoUpdateManager {
             return
         }
 
+        // Prevent overlapping runs
+        if defaults.bool(forKey: isCurrentlyRunningKey) {
+            os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
+            return
+        }
+
         let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
 
-        // Skip throttling if force is true
-        if !force {
+        // Check if force flag was set externally
+        let forceFlag = defaults.bool(forKey: forceNextUpdateKey)
+        let shouldForce = force || forceFlag
+
+        // Skip throttling if force is true or forceNextUpdateKey is set
+        if !shouldForce {
             // New jitter-aware scheduling: prefer nextEligibleTime if present
             if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double, now < nextEligible {
                 return // Still inside jittered window
@@ -120,12 +231,29 @@ public actor SharedAutoUpdateManager {
             }
         }
 
+        // Clear force flag if it was set
+        if forceFlag {
+            defaults.removeObject(forKey: forceNextUpdateKey)
+        }
+
+        // Mark as running and invalidate cache
+        defaults.set(true, forKey: isCurrentlyRunningKey)
+        defaults.synchronize()
+        invalidateStatusCache()
+
+        // Ensure flag is ALWAYS cleared on exit (success, failure, or early return)
+        defer {
+            defaults.set(false, forKey: isCurrentlyRunningKey)
+            defaults.synchronize()
+            invalidateStatusCache()
+        }
+
         // Compute jittered next eligible time and store it up-front to avoid stampede
         let jitterFactor = Double.random(in: jitterMin...jitterMax)
         let nextEligibleTime = now + interval * 3600 * jitterFactor
-    defaults.set(nextEligibleTime, forKey: nextEligibleKey)
-    defaults.set(now, forKey: lastCheckKey) // Keep legacy key updated too
-    appendSharedLog("Auto-update started")
+        defaults.set(nextEligibleTime, forKey: nextEligibleKey)
+        defaults.set(now, forKey: lastCheckKey) // Keep legacy key updated too
+        appendSharedLog("Auto-update started (trigger: \(trigger), forced: \(shouldForce))")
 
         do {
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
@@ -161,11 +289,19 @@ public actor SharedAutoUpdateManager {
 
             // Re-convert & reload only impacted targets; rebuild engine from per-target stored advanced rules
             try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected }, updatedCategories: updatedCategorySet)
+
+            // Record successful update
+            let successTime = Date().timeIntervalSince1970
+            defaults.set(successTime, forKey: lastSuccessfulUpdateKey)
+            defaults.synchronize()
+            invalidateStatusCache()
+
             appendSharedLog("Auto-update complete")
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("Auto-update failed: \(error.localizedDescription)")
         }
+        // Note: defer block above will clear running flag
     }
 
     // MARK: - Loading / Saving
