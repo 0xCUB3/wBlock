@@ -152,15 +152,6 @@ public actor SharedAutoUpdateManager {
         invalidateStatusCache()
     }
 
-    /// Gets the last successful update time
-    public func getLastSuccessfulUpdate() -> Date? {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        if let timestamp = defaults.object(forKey: lastSuccessfulUpdateKey) as? Double {
-            return Date(timeIntervalSince1970: timestamp)
-        }
-        return nil
-    }
-
     /// Clears the cached auto-update window so future runs re-evaluate scheduling.
     public func resetScheduleAfterConfigurationChange() async {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
