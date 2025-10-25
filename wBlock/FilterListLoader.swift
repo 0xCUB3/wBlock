@@ -145,7 +145,7 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: FilterListCategory.multipurpose, isSelected: true,
                        description: "Comprehensive block list for ads and trackers."),
             FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Bypasses Anti-Adblock scripts used on some websites."),
-            FilterList(id: UUID(), name: "Bypass Paywalls Clean Filter", url: URL(string: "https://raw.githubusercontent.com/0xCUB3/Website/refs/heads/main/content/bpc-paywall-filter.txt")!, category: FilterListCategory.multipurpose, description: "Blocks paywall-related elements. Enable the corresponding userscript for best results."),
+            FilterList(id: UUID(), name: "Bypass Paywalls Clean Filter", url: URL(string: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt")!, category: FilterListCategory.multipurpose, description: "Blocks paywall-related elements. Enable the corresponding userscript for best results."),
             FilterList(id: UUID(), name: "AdGuard Experimental Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: FilterListCategory.experimental, description: "Contains new rules and fixes not yet included in other filters.")
         ]
 
