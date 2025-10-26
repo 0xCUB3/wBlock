@@ -55,7 +55,53 @@ public class ProtobufDataManager: ObservableObject {
     public var hasCompletedOnboarding: Bool {
         appData.settings.hasCompletedOnboarding_p
     }
-    
+
+    // MARK: - Critical Setup State
+
+    /// Indicates if all content blocker extensions have been enabled
+    public var hasEnabledContentBlockers: Bool {
+        appData.settings.hasEnabledContentBlockers_p
+    }
+
+    /// Indicates if wBlock Advanced (macOS) or wBlock Scripts (iOS) has been enabled
+    public var hasEnabledPlatformExtension: Bool {
+        appData.settings.hasEnabledPlatformExtension_p
+    }
+
+    /// Indicates if all extensions have been set to "Allow on All Websites"
+    public var hasSetAllWebsitesPermission: Bool {
+        appData.settings.hasSetAllWebsitesPermission_p
+    }
+
+    /// Indicates if the critical setup checklist has been completed
+    public var hasCompletedCriticalSetup: Bool {
+        hasEnabledContentBlockers && hasEnabledPlatformExtension && hasSetAllWebsitesPermission
+    }
+
+    @MainActor
+    public func setHasEnabledContentBlockers(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.settings.hasEnabledContentBlockers_p = value
+        appData = updatedData
+        await saveData()
+    }
+
+    @MainActor
+    public func setHasEnabledPlatformExtension(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.settings.hasEnabledPlatformExtension_p = value
+        appData = updatedData
+        await saveData()
+    }
+
+    @MainActor
+    public func setHasSetAllWebsitesPermission(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.settings.hasSetAllWebsitesPermission_p = value
+        appData = updatedData
+        await saveData()
+    }
+
     // MARK: - Singleton
     public static let shared = ProtobufDataManager()
     

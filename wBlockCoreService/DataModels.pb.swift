@@ -207,6 +207,13 @@ struct Wblock_Data_AppSettings: Sendable {
 
   var lastTerminologySanitizationVersion: Int32 = 0
 
+  /// Critical setup checklist state
+  var hasEnabledContentBlockers_p: Bool = false
+
+  var hasEnabledPlatformExtension_p: Bool = false
+
+  var hasSetAllWebsitesPermission_p: Bool = false
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -619,6 +626,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     4: .standard(proto: "show_advanced_features"),
     5: .standard(proto: "app_version"),
     6: .standard(proto: "last_terminology_sanitization_version"),
+    7: .standard(proto: "has_enabled_content_blockers"),
+    8: .standard(proto: "has_enabled_platform_extension"),
+    9: .standard(proto: "has_set_all_websites_permission"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -633,6 +643,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
       case 4: try { try decoder.decodeSingularBoolField(value: &self.showAdvancedFeatures) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self.appVersion) }()
       case 6: try { try decoder.decodeSingularInt32Field(value: &self.lastTerminologySanitizationVersion) }()
+      case 7: try { try decoder.decodeSingularBoolField(value: &self.hasEnabledContentBlockers_p) }()
+      case 8: try { try decoder.decodeSingularBoolField(value: &self.hasEnabledPlatformExtension_p) }()
+      case 9: try { try decoder.decodeSingularBoolField(value: &self.hasSetAllWebsitesPermission_p) }()
       default: break
       }
     }
@@ -657,6 +670,15 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if self.lastTerminologySanitizationVersion != 0 {
       try visitor.visitSingularInt32Field(value: self.lastTerminologySanitizationVersion, fieldNumber: 6)
     }
+    if self.hasEnabledContentBlockers_p != false {
+      try visitor.visitSingularBoolField(value: self.hasEnabledContentBlockers_p, fieldNumber: 7)
+    }
+    if self.hasEnabledPlatformExtension_p != false {
+      try visitor.visitSingularBoolField(value: self.hasEnabledPlatformExtension_p, fieldNumber: 8)
+    }
+    if self.hasSetAllWebsitesPermission_p != false {
+      try visitor.visitSingularBoolField(value: self.hasSetAllWebsitesPermission_p, fieldNumber: 9)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -667,6 +689,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if lhs.showAdvancedFeatures != rhs.showAdvancedFeatures {return false}
     if lhs.appVersion != rhs.appVersion {return false}
     if lhs.lastTerminologySanitizationVersion != rhs.lastTerminologySanitizationVersion {return false}
+    if lhs.hasEnabledContentBlockers_p != rhs.hasEnabledContentBlockers_p {return false}
+    if lhs.hasEnabledPlatformExtension_p != rhs.hasEnabledPlatformExtension_p {return false}
+    if lhs.hasSetAllWebsitesPermission_p != rhs.hasSetAllWebsitesPermission_p {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

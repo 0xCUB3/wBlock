@@ -419,7 +419,7 @@ struct ContentView: View {
 struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var userScriptManager: UserScriptManager
-    let dataManager: ProtobufDataManager
+    @ObservedObject var dataManager: ProtobufDataManager
     @Binding var showingAddFilterSheet: Bool
     let scenePhase: ScenePhase
 
@@ -515,6 +515,22 @@ struct ContentModifiers: ViewModifier {
                 set: { _ in }
             )) {
                 OnboardingView(filterManager: filterManager)
+            }
+            #endif
+            // Critical Setup Checklist - appears after onboarding
+            #if os(iOS)
+            .fullScreenCover(isPresented: Binding(
+                get: { !dataManager.isLoading && dataManager.hasCompletedOnboarding && !dataManager.hasCompletedCriticalSetup },
+                set: { _ in }
+            )) {
+                SetupChecklistView()
+            }
+            #elseif os(macOS)
+            .sheet(isPresented: Binding(
+                get: { !dataManager.isLoading && dataManager.hasCompletedOnboarding && !dataManager.hasCompletedCriticalSetup },
+                set: { _ in }
+            )) {
+                SetupChecklistView()
             }
             #endif
     }

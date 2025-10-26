@@ -554,33 +554,6 @@ struct OnboardingView: View {
             Text("Country: \(selectedCountryDescription)")
             Text("Regional filters: \(selectedRegionalFilterNames.isEmpty ? "None" : selectedRegionalFilterNames.joined(separator: ", "))")
             Text("Userscripts: \(selectedUserscripts.isEmpty ? "None" : selectedUserscripts.compactMap { id in defaultUserScripts.first(where: { $0.id == id })?.name }.joined(separator: ", "))")
-            Divider()
-
-            // Safari extension enablement reminder
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.shield.fill")
-                        .foregroundStyle(.yellow)
-                        .font(.title3)
-                        .symbolRenderingMode(.multicolor)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("After filters are applied, you must enable all wBlock extensions in Safari's extension settings.")
-                            .font(.headline)
-                        Text("You can enable them in Safari > Settings > Extensions (on Mac) or Settings > Safari > Extensions (on iPhone/iPad).")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                // Apple support links
-                HStack(spacing: 16) {
-                    Link("How to enable on iPhone/iPad", destination: URL(string: "https://support.apple.com/guide/iphone/get-extensions-iphab0432bf6/ios")!)
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                    Link("How to enable on Mac", destination: URL(string: "https://support.apple.com/en-us/102343")!)
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-            }
 
 #if os(iOS)
             reminderCard

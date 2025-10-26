@@ -20,6 +20,11 @@ message AppSettings {
   bool show_advanced_features = 4;
   string app_version = 5;
   int32 last_terminology_sanitization_version = 6;
+
+  // Critical setup checklist state
+  bool has_enabled_content_blockers = 7;
+  bool has_enabled_platform_extension = 8;
+  bool has_set_all_websites_permission = 9;
 }
 
 // Filter list data structure
