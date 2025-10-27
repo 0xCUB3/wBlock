@@ -4,21 +4,15 @@
 
 # wBlock
 
-<table width="100%" border="0">
-<tr>
-<td width="70%" align="left" valign="middle">
-
 **The end of Safari ad-blocking B.S.**
 
-</td>
-<td width="30%" align="right" valign="middle">
+<br>
 
-[![Download on the App Store](https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg)](https://apps.apple.com/app/wblock/id6746388723)
+<a href="https://apps.apple.com/app/wblock/id6746388723">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on the App Store" width="240"/>
+</a>
 
-</td>
-</tr>
-</table>
-
+<br>
 <br>
 
 [![Join Discord](https://img.shields.io/badge/Join-Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
