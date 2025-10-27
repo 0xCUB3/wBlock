@@ -4,11 +4,23 @@
 
 # wBlock
 
+<table width="100%" border="0">
+<tr>
+<td width="70%" align="left" valign="middle">
+
 **The end of Safari ad-blocking B.S.**
+
+</td>
+<td width="30%" align="right" valign="middle">
+
+[![Download on the App Store](https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg)](https://apps.apple.com/app/wblock/id6746388723)
+
+</td>
+</tr>
+</table>
 
 <br>
 
-[![Download on App Store](https://img.shields.io/badge/Download_on-App_Store-black?style=flat&logo=apple&logoColor=white)](https://apps.apple.com/app/wblock/id6746388723)
 [![Join Discord](https://img.shields.io/badge/Join-Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
 
 ![Version](https://img.shields.io/badge/v1.0.1-gray?style=flat&label=version)
@@ -117,30 +129,6 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 </td>
 </tr>
 </table>
-
-</div>
-
-<br>
-
----
-
-<br>
-
-<div align="center">
-
-## Download
-
-<br>
-
-### iOS
-
-[![App Store](https://img.shields.io/badge/Download-App_Store-black?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/app/wblock/id6746388723)
-
-<br>
-
-### macOS
-
-> **Note:** App Store release currently blocked by Apple. Public TestFlight build is unavailable. No reliable distribution method available until app review completes.
 
 </div>
 
