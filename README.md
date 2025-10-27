@@ -100,10 +100,10 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 <table>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Filter Management" width="700"/>
+<img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Userscript Management" width="700"/>
 <br><br>
-<strong>Filter Management</strong><br>
-<em>Organize by category with individual list toggling</em>
+<strong>Userscript Management</strong><br>
+<em>Manage paywalls, YouTube Dislikes, and more</em>
 </td>
 </tr>
 <tr>
