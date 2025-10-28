@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 struct LogsView: View {
     @State private var entries: [LogEntry] = []
@@ -19,9 +22,9 @@ struct LogsView: View {
     var filteredEntries: [LogEntry] {
         var result = entries
 
-        // Filter by level
-        if let minLevel = selectedLevel {
-            result = result.filter { $0.level >= minLevel }
+        // Filter by level (exact match)
+        if let level = selectedLevel {
+            result = result.filter { $0.level == level }
         }
 
         // Filter by category
@@ -90,6 +93,29 @@ struct LogsView: View {
                             }
                         } label: {
                             Image(systemName: "trash")
+                        }
+                        .disabled(entries.isEmpty)
+                    }
+                }
+            }
+            #else
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    HStack {
+                        Button {
+                            exportLogsToFile()
+                        } label: {
+                            Label("Export", systemImage: "square.and.arrow.up")
+                        }
+                        .disabled(entries.isEmpty)
+
+                        Button {
+                            Task {
+                                await ConcurrentLogManager.shared.clearLogs()
+                                await loadLogs()
+                            }
+                        } label: {
+                            Label("Clear", systemImage: "trash")
                         }
                         .disabled(entries.isEmpty)
                     }
@@ -225,6 +251,28 @@ struct LogsView: View {
         // Fallback synchronous version
         return entries.map { $0.exportFormat }.joined(separator: "\n\n")
     }
+
+    #if os(macOS)
+    private func exportLogsToFile() {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.plainText]
+        savePanel.nameFieldStringValue = "wBlock_logs_\(Date().formatted(date: .numeric, time: .omitted).replacingOccurrences(of: "/", with: "-")).txt"
+        savePanel.canCreateDirectories = true
+
+        savePanel.begin { response in
+            guard response == .OK, let url = savePanel.url else { return }
+
+            Task {
+                let logsText = await ConcurrentLogManager.shared.exportAsText()
+                do {
+                    try logsText.write(to: url, atomically: true, encoding: .utf8)
+                } catch {
+                    await ConcurrentLogManager.shared.error(.system, "Failed to export logs", metadata: ["error": "\(error)"])
+                }
+            }
+        }
+    }
+    #endif
 }
 
 struct LogEntryRow: View {
