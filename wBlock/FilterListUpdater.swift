@@ -298,7 +298,9 @@ class FilterListUpdater {
         for line in lines.prefix(100) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if trimmed.hasPrefix("!") || trimmed.hasPrefix("#") {
+            // Only lines starting with "!" are comments in AdGuard filter syntax
+            // Lines starting with "#", "##", "###" etc. are valid CSS selector rules
+            if trimmed.hasPrefix("!") {
                 hasComments = true
                 continue
             }
