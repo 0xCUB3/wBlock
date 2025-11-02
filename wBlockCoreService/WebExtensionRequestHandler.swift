@@ -84,9 +84,12 @@ public enum WebExtensionRequestHandler {
             message?["trace"] = trace  // Reassign the modified dictionary back
         }
 
-        // Enable verbose logging in the content script.
-        // In the real app `verbose` flag should only be true for debugging purposes.
+        // Enable verbose logging in the content script only in debug builds
+        #if DEBUG
         message?["verbose"] = true
+        #else
+        message?["verbose"] = false
+        #endif
 
         if let safeMessage = message {
             let response = createResponse(with: safeMessage)
