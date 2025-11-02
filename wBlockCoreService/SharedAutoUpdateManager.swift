@@ -611,7 +611,13 @@ public actor SharedAutoUpdateManager {
                     switch key {
                     case "Title": title = clean
                     case "Description": description = clean
-                    case "Version": version = clean
+                    case "Version":
+                        // Filter out placeholder values like %timestamp% or similar build-time variables
+                        if clean.contains("%") && (clean.lowercased().contains("timestamp") || clean.lowercased().contains("date")) {
+                            version = nil
+                        } else {
+                            version = clean
+                        }
                     default: break
                     }
                 }

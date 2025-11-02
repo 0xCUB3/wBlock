@@ -472,6 +472,47 @@ extension ProtobufDataManager {
         }
         await saveData()
     }
+
+    // MARK: - Excluded Default UserScript URLs
+
+    public func getExcludedDefaultUserScriptURLs() -> [String] {
+        return appData.settings.excludedDefaultUserscriptUrls
+    }
+
+    public func addExcludedDefaultUserScriptURL(_ url: String) {
+        Task { @MainActor in
+            var updatedData = appData
+            if !updatedData.settings.excludedDefaultUserscriptUrls.contains(url) {
+                updatedData.settings.excludedDefaultUserscriptUrls.append(url)
+                appData = updatedData
+                await saveData()
+            }
+        }
+    }
+
+    public func removeExcludedDefaultUserScriptURL(_ url: String) {
+        Task { @MainActor in
+            var updatedData = appData
+            updatedData.settings.excludedDefaultUserscriptUrls.removeAll { $0 == url }
+            appData = updatedData
+            await saveData()
+        }
+    }
+
+    // MARK: - UserScript UI State
+
+    public func getUserScriptShowEnabledOnly() -> Bool {
+        return appData.settings.userscriptShowEnabledOnly
+    }
+
+    public func setUserScriptShowEnabledOnly(_ value: Bool) {
+        Task { @MainActor in
+            var updatedData = appData
+            updatedData.settings.userscriptShowEnabledOnly = value
+            appData = updatedData
+            await saveData()
+        }
+    }
 }
 
 // MARK: - UserScript Extension Helper

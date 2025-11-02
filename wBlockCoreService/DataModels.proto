@@ -25,6 +25,12 @@ message AppSettings {
   bool has_enabled_content_blockers = 7;
   bool has_enabled_platform_extension = 8;
   bool has_set_all_websites_permission = 9;
+
+  // UserScript UI state
+  bool userscript_show_enabled_only = 10;
+
+  // Track user-deleted default userscripts to prevent re-adding
+  repeated string excluded_default_userscript_urls = 11;
 }
 
 // Filter list data structure

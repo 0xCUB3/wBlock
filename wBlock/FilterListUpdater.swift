@@ -177,7 +177,12 @@ class FilterListUpdater {
                     case "Description":
                         description = sanitizedValue
                     case "Version":
-                        version = sanitizedValue
+                        // Filter out placeholder values like %timestamp% or similar build-time variables
+                        if sanitizedValue.contains("%") && (sanitizedValue.contains("timestamp") || sanitizedValue.contains("date")) {
+                            version = nil
+                        } else {
+                            version = sanitizedValue
+                        }
                     default:
                         break
                     }

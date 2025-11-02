@@ -77,6 +77,7 @@ struct UserScriptManagerView: View {
                     }
                     Button {
                         showOnlyEnabled.toggle()
+                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
                     } label: {
                         Image(systemName: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                     }
@@ -103,6 +104,7 @@ struct UserScriptManagerView: View {
 
                 Button {
                     showOnlyEnabled.toggle()
+                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
                 } label: {
                     Label("Show Enabled Only", systemImage: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                 }
@@ -121,6 +123,7 @@ struct UserScriptManagerView: View {
         }
         .onAppear {
             refreshScripts()
+            showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
         }
         .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
             Button("Remove Older Versions", role: .destructive) {

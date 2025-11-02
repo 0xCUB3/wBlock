@@ -468,17 +468,26 @@ public class UserScriptManager: ObservableObject {
     private func checkAndAddMissingDefaultScripts() {
         logger.info("🔍 Checking for missing default userscripts...")
         logger.info("🔍 Current userscripts count: \(self.userScripts.count)")
-        
+
+        // Get excluded defaults from settings
+        let excludedURLs = Set(ProtobufDataManager.shared.getExcludedDefaultUserScriptURLs())
+
         var hasAddedNew = false
-        
+
         for defaultScript in defaultUserScripts {
             logger.info("🔍 Checking default script: '\(defaultScript.name)'")
-            
+
+            // Check if user explicitly excluded this default
+            if excludedURLs.contains(defaultScript.url) {
+                logger.info("⏭️ Skipping excluded default script: \(defaultScript.name)")
+                continue
+            }
+
             // Simple check - does this URL already exist?
             let existsByURL = userScripts.contains { script in
                 script.url?.absoluteString == defaultScript.url
             }
-            
+
             if !existsByURL {
                 logger.info("➕ Adding missing default script: \(defaultScript.name)")
                 guard let url = URL(string: defaultScript.url) else { 
@@ -828,14 +837,21 @@ public class UserScriptManager: ObservableObject {
     
     public func removeUserScript(_ userScript: UserScript) {
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
+            // If this is a default script, mark it as excluded to prevent re-adding
+            if let scriptURL = userScript.url?.absoluteString,
+               defaultUserScripts.contains(where: { $0.url == scriptURL }) {
+                ProtobufDataManager.shared.addExcludedDefaultUserScriptURL(scriptURL)
+                logger.info("🚫 Marked default script as excluded: '\(userScript.name)'")
+            }
+
             // Remove file
             removeUserScriptFile(userScript)
-            
+
             // Remove from memory
             userScripts.remove(at: index)
             saveUserScripts()
             statusDescription = "Removed \(userScript.name)"
-            
+
             logger.info("🗑️ Removed userscript: '\(userScript.name)'")
         }
     }
