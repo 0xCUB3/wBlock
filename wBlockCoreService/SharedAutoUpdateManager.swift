@@ -61,10 +61,14 @@ public actor SharedAutoUpdateManager {
     private let enabledKey = "autoUpdateEnabled" // Bool
     private let forceNextUpdateKey = "autoUpdateForceNext" // Bool - force update on next trigger
     private let isCurrentlyRunningKey = "autoUpdateIsRunning" // Bool - prevent overlapping runs
+    private let runningStateTimestampKey = "autoUpdateIsRunningTimestamp" // Double - timestamp when running flag was set
     private let etagStoreKeyPrefix = "filterEtag_" // + filter UUID
     private let lastModifiedStoreKeyPrefix = "filterLastModified_" // + filter UUID
     private let advancedRulesFilenamePrefix = "advanced_" // + bundleIdentifier + .txt
     private let sharedAutoUpdateLogFilename = "auto_update.log"
+
+    // Staleness threshold: if running flag is set for longer than this, it's considered stuck
+    private let runningFlagStalenessThreshold: TimeInterval = 600 // 10 minutes
 
     // Jitter factors (±10%) to de-synchronize update waves across users
     private let jitterMin: Double = 0.9
@@ -107,6 +111,10 @@ public actor SharedAutoUpdateManager {
 
         // Cache miss - recompute
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+
+        // Check for and clear stale running flags
+        _ = checkAndClearStaleRunningFlag(defaults: defaults)
+
         let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
         let nowTimestamp = now.timeIntervalSince1970
         let isRunning = defaults.bool(forKey: isCurrentlyRunningKey)
@@ -196,6 +204,43 @@ public actor SharedAutoUpdateManager {
         invalidateStatusCache()
     }
 
+    // MARK: - State Management Helpers
+
+    /// Checks if the running flag is stale (stuck) and clears it if necessary.
+    /// Returns true if the flag was cleared due to staleness.
+    private func checkAndClearStaleRunningFlag(defaults: UserDefaults) -> Bool {
+        guard defaults.bool(forKey: isCurrentlyRunningKey) else {
+            return false // Not running, nothing to do
+        }
+
+        // Check if we have a timestamp for when the flag was set
+        guard let timestamp = defaults.object(forKey: runningStateTimestampKey) as? Double else {
+            // No timestamp but flag is set - likely from old version or corruption
+            // Clear it to be safe
+            os_log("Running flag set without timestamp - clearing potentially stuck state", log: log, type: .info)
+            defaults.set(false, forKey: isCurrentlyRunningKey)
+            defaults.removeObject(forKey: runningStateTimestampKey)
+            defaults.synchronize()
+            appendSharedLog("Cleared stuck running flag (no timestamp)")
+            return true
+        }
+
+        let now = Date().timeIntervalSince1970
+        let age = now - timestamp
+
+        if age > runningFlagStalenessThreshold {
+            // Flag has been set for too long - clear it
+            os_log("Running flag stale (%.1f seconds old, threshold %.1f) - clearing stuck state", log: log, type: .info, age, runningFlagStalenessThreshold)
+            defaults.set(false, forKey: isCurrentlyRunningKey)
+            defaults.removeObject(forKey: runningStateTimestampKey)
+            defaults.synchronize()
+            appendSharedLog("Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)")
+            return true
+        }
+
+        return false
+    }
+
     // MARK: - Core Logic
     private func runIfNeeded(trigger: String, force: Bool = false) async {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
@@ -206,7 +251,13 @@ public actor SharedAutoUpdateManager {
             return
         }
 
-        // Prevent overlapping runs
+        // Check for and clear stale running flags
+        let wasStale = checkAndClearStaleRunningFlag(defaults: defaults)
+        if wasStale {
+            invalidateStatusCache()
+        }
+
+        // Prevent overlapping runs (after staleness check)
         if defaults.bool(forKey: isCurrentlyRunningKey) {
             os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
             return
@@ -236,16 +287,23 @@ public actor SharedAutoUpdateManager {
             defaults.removeObject(forKey: forceNextUpdateKey)
         }
 
-        // Mark as running and invalidate cache
+        // Mark as running with timestamp and invalidate cache
+        let startTimestamp = Date().timeIntervalSince1970
         defaults.set(true, forKey: isCurrentlyRunningKey)
+        defaults.set(startTimestamp, forKey: runningStateTimestampKey)
         defaults.synchronize()
         invalidateStatusCache()
+        os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
         // Ensure flag is ALWAYS cleared on exit (success, failure, or early return)
         defer {
+            let endTimestamp = Date().timeIntervalSince1970
+            let duration = endTimestamp - startTimestamp
             defaults.set(false, forKey: isCurrentlyRunningKey)
+            defaults.removeObject(forKey: runningStateTimestampKey)
             defaults.synchronize()
             invalidateStatusCache()
+            os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
         }
 
         // Compute jittered next eligible time and store it up-front to avoid stampede

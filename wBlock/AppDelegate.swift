@@ -253,13 +253,15 @@ extension AppDelegate: UIApplicationDelegate {
         // Schedule initial background refresh + processing tasks
         scheduleBackgroundFilterUpdate()
         scheduleBackgroundProcessingUpdate()
-        
+
         // Opportunistic update on app launch
+        // Note: maybeRunAutoUpdate includes staleness check to clear stuck flags
         Task {
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
         }
 
         // Log next auto-update schedule status
+        // Note: nextScheduleStatus checks and clears stale running flags on app launch
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
             await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
@@ -302,6 +304,7 @@ extension AppDelegate: UIApplicationDelegate {
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Check if update is overdue when returning to foreground
+        // Note: nextScheduleStatus checks and clears stale running flags automatically
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
             let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
@@ -396,7 +399,15 @@ extension AppDelegate: UIApplicationDelegate {
         var taskCompleted = false
 
         task.expirationHandler = {
-            os_log("Background filter update task expired", type: .default)
+            os_log("Background filter update task expired - clearing running flag", type: .default)
+
+            // CRITICAL: Clear the running flag to prevent stuck state
+            // This runs even if the async Task is still executing
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+            defaults?.set(false, forKey: "autoUpdateIsRunning")
+            defaults?.removeObject(forKey: "autoUpdateIsRunningTimestamp")
+            defaults?.synchronize()
+
             if !taskCompleted {
                 taskCompleted = true
                 task.setTaskCompleted(success: false)
@@ -410,6 +421,8 @@ extension AppDelegate: UIApplicationDelegate {
             await SharedAutoUpdateManager.shared.forceNextUpdate()
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGAppRefreshTask", force: true)
 
+            // Double-check expiration didn't occur while we were running
+            // The flag might have been cleared by expirationHandler, which is fine
             if !taskCompleted {
                 taskCompleted = true
                 os_log("Background filter update completed successfully", type: .info)
@@ -428,7 +441,15 @@ extension AppDelegate: UIApplicationDelegate {
         var taskCompleted = false
 
         task.expirationHandler = {
-            os_log("Background processing update task expired", type: .default)
+            os_log("Background processing update task expired - clearing running flag", type: .default)
+
+            // CRITICAL: Clear the running flag to prevent stuck state
+            // This runs even if the async Task is still executing
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+            defaults?.set(false, forKey: "autoUpdateIsRunning")
+            defaults?.removeObject(forKey: "autoUpdateIsRunningTimestamp")
+            defaults?.synchronize()
+
             if !taskCompleted {
                 taskCompleted = true
                 task.setTaskCompleted(success: false)
@@ -442,6 +463,8 @@ extension AppDelegate: UIApplicationDelegate {
             await SharedAutoUpdateManager.shared.forceNextUpdate()
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGProcessingTask", force: true)
 
+            // Double-check expiration didn't occur while we were running
+            // The flag might have been cleared by expirationHandler, which is fine
             if !taskCompleted {
                 taskCompleted = true
                 os_log("Background processing update task finished successfully", type: .info)
