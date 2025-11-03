@@ -39,6 +39,11 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 
 <br>
 
+> [!NOTE]
+> **Looking for a detailed comparison?** Check out our [Ad Blocker Comparison Guide](adblock_comparison.md) to see how wBlock stacks up against other Safari content blockers.
+
+<br>
+
 <div align="center">
 
 ## Features
