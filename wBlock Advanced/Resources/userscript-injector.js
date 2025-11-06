@@ -365,6 +365,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return resourceName;
         },
 
+        addStyle: function(css) {
+            try {
+                const style = document.createElement('style');
+                style.textContent = css;
+                (document.head || document.documentElement).appendChild(style);
+                return style;
+            } catch (e) {
+                wBlockError('[wBlock] GM.addStyle failed:', e);
+                return null;
+            }
+        },
+
         openInTab: function(url, options) {
             const openInBackground = options && options.active === false;
             const newWindow = window.open(url, '_blank');
@@ -469,6 +481,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_deleteValue = GM.deleteValue;
     window.GM_listValues = GM.listValues;
     window.GM_getResourceURL = GM.getResourceURL;
+    window.GM_addStyle = GM.addStyle;
     window.GM_openInTab = GM.openInTab;
     window.GM_notification = GM.notification;
     window.GM_xmlhttpRequest = GM.xmlhttpRequest;
