@@ -102,6 +102,21 @@ public class ProtobufDataManager: ObservableObject {
         await saveData()
     }
 
+    // MARK: - Filter UI State
+
+    /// Indicates if the foreign filters section is expanded
+    public var isForeignFiltersExpanded: Bool {
+        appData.settings.isForeignFiltersExpanded
+    }
+
+    @MainActor
+    public func setIsForeignFiltersExpanded(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.settings.isForeignFiltersExpanded = value
+        appData = updatedData
+        await saveData()
+    }
+
     // MARK: - Singleton
     public static let shared = ProtobufDataManager()
     

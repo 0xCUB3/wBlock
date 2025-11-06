@@ -31,6 +31,9 @@ message AppSettings {
 
   // Track user-deleted default userscripts to prevent re-adding
   repeated string excluded_default_userscript_urls = 11;
+
+  // UI state for filter page
+  bool is_foreign_filters_expanded = 12;
 }
 
 // Filter list data structure

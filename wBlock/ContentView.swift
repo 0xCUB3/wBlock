@@ -132,7 +132,11 @@ struct ContentView: View {
                         ForEach(displayableCategories) { category in
                             let listsForCategory = self.listsForCategory(category)
                             if !listsForCategory.isEmpty {
-                                filterSectionView(category: category, filters: listsForCategory)
+                                if category == .foreign {
+                                    foreignFiltersDisclosureView(filters: listsForCategory)
+                                } else {
+                                    filterSectionView(category: category, filters: listsForCategory)
+                                }
                             }
                         }
 
@@ -293,6 +297,51 @@ struct ContentView: View {
                 }
             }
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+    }
+
+    private func foreignFiltersDisclosureView(filters: [FilterList]) -> some View {
+        let isExpanded = Binding(
+            get: { dataManager.isForeignFiltersExpanded },
+            set: { newValue in
+                Task {
+                    await dataManager.setIsForeignFiltersExpanded(newValue)
+                }
+            }
+        )
+
+        return DisclosureGroup(isExpanded: isExpanded.animation(.easeInOut(duration: 0.2))) {
+            VStack(spacing: 0) {
+                ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
+                    filterRowView(filter: filter)
+
+                    if index < filters.count - 1 {
+                        Divider()
+                            .padding(.leading, 16)
+                    }
+                }
+            }
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        } label: {
+            HStack {
+                Text(FilterListCategory.foreign.rawValue)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                if filterManager.isCategoryApproachingLimit(.foreign) {
+                    Button {
+                        filterManager.showCategoryWarning(for: .foreign)
+                    } label: {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.orange)
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 4)
         }
     }
 
