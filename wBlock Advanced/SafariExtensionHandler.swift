@@ -117,8 +117,10 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                                 return [
                                     "name": script.name,
                                     "content": script.content,
-                                    "runAt": script.runAt
-                                ]
+                                    "runAt": script.runAt,
+                                    "noframes": script.noframes,
+                                    "resources": script.resourceContents
+                                ] as [String: Any]
                             }
                             
                             payload["userScripts"] = userScriptPayload
@@ -194,8 +196,10 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                     return [
                         "name": script.name,
                         "content": script.content,
-                        "runAt": script.runAt
-                    ]
+                        "runAt": script.runAt,
+                        "noframes": script.noframes,
+                        "resources": script.resourceContents
+                    ] as [String: Any]
                 }
                 
                 let responseUserInfo: [String: Any] = [

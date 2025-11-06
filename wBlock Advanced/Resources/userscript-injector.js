@@ -200,6 +200,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         injectSingleScript(script) {
             try {
+                // Check @noframes directive - skip if in iframe
+                if (script.noframes && window !== window.top) {
+                    wBlockLog(`[wBlock] Skipping ${script.name} in iframe due to @noframes directive`);
+                    return;
+                }
+
                 if (!this.shouldRunScript(script)) {
                     // Add to pending scripts if it's not ready to run
                     if (!this.pendingScripts.some(s => s.name === script.name)) {
@@ -258,7 +264,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         wrapUserScript(script) {
-            // wBlockLog(`[wBlock] Wrapping script content for ${script.name}`);
+            // Serialize resources as a JSON string for injection
+            const resourcesJSON = script.resources ? JSON.stringify(script.resources) : '{}';
+
             return `
 // wBlock Userscript Wrapper for: ${script.name}
 (function() {
@@ -284,6 +292,32 @@ if (window.wBlockUserscriptInjectorHasRun) {
     };
 
     wBlockLog('[wBlock UserScript] Executing: ${script.name}');
+
+    // Store resources for this script
+    const scriptResources = ${resourcesJSON};
+
+    // Storage change listeners registry
+    const storageListeners = new Map(); // key -> Set of callbacks
+    let listenerIdCounter = 0;
+
+    // Listen for storage events from other tabs/windows
+    window.addEventListener('storage', (e) => {
+        if (e.key && e.key.startsWith('wblock_gm_')) {
+            const actualKey = e.key.substring('wblock_gm_'.length);
+            if (storageListeners.has(actualKey)) {
+                const callbacks = storageListeners.get(actualKey);
+                const oldValue = e.oldValue ? JSON.parse(e.oldValue) : undefined;
+                const newValue = e.newValue ? JSON.parse(e.newValue) : undefined;
+                callbacks.forEach(cb => {
+                    try {
+                        cb(actualKey, oldValue, newValue, false);
+                    } catch (err) {
+                        wBlockError('[wBlock] Storage listener error:', err);
+                    }
+                });
+            }
+        }
+    });
 
     // Get reference to the actual page window (not the isolated extension context)
     // This is the real unsafeWindow that can access page variables
@@ -363,6 +397,82 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // In a full implementation, this would resolve @resource directives
             wBlockWarn('[wBlock] GM_getResourceURL called with:', resourceName);
             return resourceName;
+        },
+
+        getResourceText: function(resourceName) {
+            wBlockLog('[wBlock] GM_getResourceText called with:', resourceName);
+            if (scriptResources && scriptResources[resourceName]) {
+                return scriptResources[resourceName];
+            }
+            wBlockWarn('[wBlock] Resource not found:', resourceName);
+            return undefined;
+        },
+
+        addElement: function(tagName, attributes) {
+            try {
+                wBlockLog('[wBlock] GM_addElement called:', tagName, attributes);
+                const element = document.createElement(tagName);
+
+                if (attributes) {
+                    for (const [key, value] of Object.entries(attributes)) {
+                        if (key === 'textContent') {
+                            element.textContent = value;
+                        } else if (key === 'innerHTML') {
+                            element.innerHTML = value;
+                        } else {
+                            element.setAttribute(key, value);
+                        }
+                    }
+                }
+
+                const parent = attributes && attributes.parentNode ? attributes.parentNode : (document.head || document.documentElement);
+                if (parent) {
+                    parent.appendChild(element);
+                }
+
+                return element;
+            } catch (e) {
+                wBlockError('[wBlock] GM_addElement failed:', e);
+                return null;
+            }
+        },
+
+        addValueChangeListener: function(key, callback) {
+            const listenerId = ++listenerIdCounter;
+            wBlockLog('[wBlock] GM.addValueChangeListener:', key, listenerId);
+
+            if (!storageListeners.has(key)) {
+                storageListeners.set(key, new Map());
+            }
+            storageListeners.get(key).set(listenerId, callback);
+
+            return listenerId;
+        },
+
+        removeValueChangeListener: function(listenerId) {
+            wBlockLog('[wBlock] GM.removeValueChangeListener:', listenerId);
+
+            for (const [key, listeners] of storageListeners.entries()) {
+                if (listeners.has(listenerId)) {
+                    listeners.delete(listenerId);
+                    if (listeners.size === 0) {
+                        storageListeners.delete(key);
+                    }
+                    return;
+                }
+            }
+        },
+
+        registerMenuCommand: function(caption, callback, accessKey) {
+            wBlockLog('[wBlock] GM.registerMenuCommand called:', caption);
+            // Menu commands are not supported in Safari extensions
+            // Return a mock ID for compatibility
+            return 'menu-' + (++listenerIdCounter);
+        },
+
+        unregisterMenuCommand: function(menuCommandId) {
+            wBlockLog('[wBlock] GM.unregisterMenuCommand called:', menuCommandId);
+            // No-op for compatibility
         },
 
         addStyle: function(css) {
@@ -481,10 +591,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_deleteValue = GM.deleteValue;
     window.GM_listValues = GM.listValues;
     window.GM_getResourceURL = GM.getResourceURL;
+    window.GM_getResourceText = GM.getResourceText;
+    window.GM_addElement = GM.addElement;
     window.GM_addStyle = GM.addStyle;
     window.GM_openInTab = GM.openInTab;
     window.GM_notification = GM.notification;
     window.GM_xmlhttpRequest = GM.xmlhttpRequest;
+    window.GM_registerMenuCommand = GM.registerMenuCommand;
+    window.GM_unregisterMenuCommand = GM.unregisterMenuCommand;
 
     try {
         ${script.content}

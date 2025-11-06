@@ -638,6 +638,43 @@ public class UserScriptManager: ObservableObject {
         return combinedContent
     }
 
+    /// Downloads and caches @resource dependencies for a userscript
+    private func processResourceDirectives(_ userScript: UserScript) async -> [String: String] {
+        guard !userScript.resource.isEmpty else {
+            return [:]
+        }
+
+        logger.info("📦 Processing \(userScript.resource.count) @resource directive(s) for \(userScript.name)")
+
+        var resources: [String: String] = [:]
+
+        // Download and cache each resource
+        for resource in userScript.resource {
+            let resourceName = resource.name
+            let resourceURL = resource.url
+            guard let url = URL(string: resourceURL) else {
+                logger.error("❌ Invalid @resource URL: \(resourceURL)")
+                continue
+            }
+
+            do {
+                logger.info("📥 Downloading resource: \(resourceName) from \(resourceURL)")
+                let (data, _) = try await urlSession.data(from: url)
+                if let resourceContent = String(data: data, encoding: .utf8) {
+                    resources[resourceName] = resourceContent
+                    logger.info("✅ Downloaded resource '\(resourceName)' (\(resourceContent.count) chars)")
+                } else {
+                    logger.error("❌ Failed to decode resource from: \(resourceURL)")
+                }
+            } catch {
+                logger.error("❌ Failed to download @resource '\(resourceName)' from \(resourceURL): \(error)")
+            }
+        }
+
+        logger.info("✅ Downloaded \(resources.count)/\(userScript.resource.count) resources for \(userScript.name)")
+        return resources
+    }
+
     private func downloadUserScriptInBackground(at index: Int, from url: URL) async {
         logger.info("📥 Downloading userscript from: \(url)")
 
@@ -665,10 +702,12 @@ public class UserScriptManager: ObservableObject {
             // Process @require directives after metadata is parsed
             if index < userScripts.count {
                 let processedContent = await processRequireDirectives(userScripts[index])
+                let resourceContents = await processResourceDirectives(userScripts[index])
 
                 await MainActor.run {
                     if index < userScripts.count {
                         userScripts[index].content = processedContent
+                        userScripts[index].resourceContents = resourceContents
                         _ = writeUserScriptContent(userScripts[index])
                         saveUserScripts()
                         logger.info("✅ Downloaded and saved: \(self.userScripts[index].name)")
@@ -760,9 +799,11 @@ public class UserScriptManager: ObservableObject {
             newUserScript.isEnabled = true
             newUserScript.lastUpdated = Date()
 
-            // Process @require directives
+            // Process @require directives and @resource directives
             let processedContent = await processRequireDirectives(newUserScript)
+            let resourceContents = await processResourceDirectives(newUserScript)
             newUserScript.content = processedContent
+            newUserScript.resourceContents = resourceContents
 
             await MainActor.run {
                 // Check if script already exists
@@ -871,12 +912,14 @@ public class UserScriptManager: ObservableObject {
             var tempUserScript = UserScript(name: userScript.name, content: content)
             tempUserScript.parseMetadata()
 
-            // Process @require directives
+            // Process @require directives and @resource directives
             let processedContent = await processRequireDirectives(tempUserScript)
+            let resourceContents = await processResourceDirectives(tempUserScript)
 
             await MainActor.run {
                 if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
                     userScripts[index].content = processedContent
+                    userScripts[index].resourceContents = resourceContents
                     userScripts[index].description = tempUserScript.description
                     userScripts[index].version = tempUserScript.version
                     userScripts[index].matches = tempUserScript.matches
@@ -930,12 +973,14 @@ public class UserScriptManager: ObservableObject {
                 }
             }
 
-            // Process @require directives after metadata is parsed
+            // Process @require directives and @resource directives after metadata is parsed
             if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
                 let processedContent = await processRequireDirectives(userScripts[index])
+                let resourceContents = await processResourceDirectives(userScripts[index])
 
                 await MainActor.run {
                     userScripts[index].content = processedContent
+                    userScripts[index].resourceContents = resourceContents
                     userScripts[index].isEnabled = true
                     userScripts[index].isLocal = false
                     userScripts[index].lastUpdated = Date()

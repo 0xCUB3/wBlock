@@ -7,6 +7,16 @@
 
 import Foundation
 
+public struct UserScriptResource: Codable, Hashable {
+    public let name: String
+    public let url: String
+
+    public init(name: String, url: String) {
+        self.name = name
+        self.url = url
+    }
+}
+
 public struct UserScript: Identifiable, Codable, Hashable {
     public let id: UUID
     public var name: String
@@ -22,6 +32,9 @@ public struct UserScript: Identifiable, Codable, Hashable {
     public var injectInto: String = "auto"
     public var grant: [String] = []
     public var require: [String] = []
+    public var resource: [UserScriptResource] = []
+    public var resourceContents: [String: String] = [:] // Cached resource content
+    public var noframes: Bool = false
     public var isLocal: Bool = true
     public var updateURL: String?
     public var downloadURL: String?
@@ -99,6 +112,16 @@ public struct UserScript: Identifiable, Codable, Hashable {
                     if !self.require.contains(value) {
                         self.require.append(value)
                     }
+                case "@resource":
+                    // Format: @resource name URL
+                    let resourceComponents = value.components(separatedBy: " ")
+                    if resourceComponents.count >= 2 {
+                        let resourceName = resourceComponents[0]
+                        let resourceURL = resourceComponents.dropFirst().joined(separator: " ")
+                        self.resource.append(UserScriptResource(name: resourceName, url: resourceURL))
+                    }
+                case "@noframes":
+                    self.noframes = true
                 case "@updateURL":
                     self.updateURL = value
                 case "@downloadURL":

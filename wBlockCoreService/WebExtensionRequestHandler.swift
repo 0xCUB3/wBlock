@@ -204,8 +204,10 @@ public enum WebExtensionRequestHandler {
                 [
                     "name": script.name,
                     "content": script.content,
-                    "runAt": script.runAt
-                ]
+                    "runAt": script.runAt,
+                    "noframes": script.noframes,
+                    "resources": script.resourceContents
+                ] as [String: Any]
             }
             
             let response = createResponse(with: ["userScripts": userScriptPayload])
