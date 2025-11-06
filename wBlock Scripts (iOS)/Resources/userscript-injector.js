@@ -270,6 +270,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
 // wBlock Userscript Wrapper for: ${script.name}
 (function() {
     'use strict';
+
+    // Debug logging helpers - defined in wrapper scope to be available in injected context
+    const WBLOCK_DEBUG_LOGGING = ${WBLOCK_DEBUG_LOGGING};
+
+    const wBlockLog = (...args) => {
+        if (WBLOCK_DEBUG_LOGGING) {
+            console.log(...args);
+        }
+    };
+
+    const wBlockWarn = (...args) => {
+        if (WBLOCK_DEBUG_LOGGING) {
+            console.warn(...args);
+        }
+    };
+
+    const wBlockError = (...args) => {
+        console.error(...args);
+    };
+
     wBlockLog('[wBlock UserScript] Executing: ${script.name}');
 
     // Get reference to the actual page window (not the isolated extension context)
