@@ -783,8 +783,8 @@ class AppFilterManager: ObservableObject {
                 let resetResult = await Task.detached {
                     let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
                     var resetRulesString = ""
-                    
-                    // FIX: Get the updated filter list after reset instead of using the old allSelectedFilters
+
+                    // Get the updated filter list after reset
                     let updatedSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
                     
                     for filter in updatedSelectedFilters {

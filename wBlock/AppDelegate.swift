@@ -40,6 +40,8 @@ class AppDelegate: NSObject {
     private let periodicTimerInterval: TimeInterval = 30 * 60 // 30 minutes
     /// macOS-only scheduler holder
     private var backgroundScheduler: NSBackgroundActivityScheduler?
+    /// Periodic timer for regular update checks
+    private var periodicUpdateTimer: Timer?
     #endif
 
     #if os(iOS)
@@ -132,6 +134,16 @@ extension AppDelegate: NSApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        // Clean up periodic timer
+        periodicUpdateTimer?.invalidate()
+        periodicUpdateTimer = nil
+
+        // Flush any pending protobuf saves
+        // Note: saveData() debounces, but will execute immediately if app is terminating
+        ProtobufDataManager.shared.saveData()
+    }
+
     /// Register for remote notifications upon launch
     func applicationDidFinishLaunching(_ notification: Notification) {
         os_log("macOS app finished launching; registering for remote notifications", type: .info)
@@ -184,7 +196,7 @@ extension AppDelegate: NSApplicationDelegate {
     
     private func setupMacOSAutoUpdate() {
         // More aggressive periodic trigger while app is running
-        Timer.scheduledTimer(withTimeInterval: periodicTimerInterval, repeats: true) { [weak self] _ in
+        periodicUpdateTimer = Timer.scheduledTimer(withTimeInterval: periodicTimerInterval, repeats: true) { [weak self] _ in
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
@@ -347,6 +359,15 @@ extension AppDelegate: UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Schedule next background task when entering background
         scheduleBackgroundFilterUpdate()
+
+        // Flush any pending protobuf saves when entering background
+        ProtobufDataManager.shared.saveData()
+    }
+
+    func applicationWillTerminate(_ application: UIApplication) {
+        // Flush any pending protobuf saves before termination
+        // Note: iOS may not always call this, so we also save in applicationDidEnterBackground
+        ProtobufDataManager.shared.saveData()
     }
     
     // MARK: - Background Task Management

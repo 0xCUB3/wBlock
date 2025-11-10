@@ -506,7 +506,9 @@ struct UpdateFrequencyPickerView: View {
             }
         }
         .navigationTitle("Update Frequency")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .onChange(of: selectedInterval) { _ in
             Task {
                 await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
