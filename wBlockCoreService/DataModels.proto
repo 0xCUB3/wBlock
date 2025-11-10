@@ -10,6 +10,8 @@ message AppData {
   WhitelistData whitelist = 4;
   RuleCountData rule_counts = 5;
   PerformanceData performance = 6;
+  AutoUpdateMetadata auto_update = 7;
+  ExtensionData extension_data = 8;
 }
 
 // App-wide settings
@@ -34,6 +36,9 @@ message AppSettings {
 
   // UI state for filter page
   bool is_foreign_filters_expanded = 12;
+
+  // Badge counter setting
+  bool is_badge_counter_enabled = 13;
 }
 
 // Filter list data structure
@@ -136,4 +141,19 @@ message TabData {
   bool is_disabled = 2;
   string host = 3;
   int64 last_updated = 4;
+}
+
+// Auto-update metadata and scheduling
+message AutoUpdateMetadata {
+  bool enabled = 1;
+  double interval_hours = 2;
+  int64 last_check_time = 3;
+  int64 last_successful_time = 4;
+  int64 next_eligible_time = 5;
+  bool force_next = 6;
+  bool is_running = 7;
+  int64 running_since_timestamp = 8;
+  map<string, string> filter_etags = 9;  // UUID -> ETag header value
+  map<string, string> filter_last_modified = 10;  // UUID -> Last-Modified header value
+  bool userscripts_initial_setup_completed = 11;
 }

@@ -182,6 +182,24 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   /// Clears the value of `performance`. Subsequent reads from it will return its default value.
   mutating func clearPerformance() {_uniqueStorage()._performance = nil}
 
+  var autoUpdate: Wblock_Data_AutoUpdateMetadata {
+    get {return _storage._autoUpdate ?? Wblock_Data_AutoUpdateMetadata()}
+    set {_uniqueStorage()._autoUpdate = newValue}
+  }
+  /// Returns true if `autoUpdate` has been explicitly set.
+  var hasAutoUpdate: Bool {return _storage._autoUpdate != nil}
+  /// Clears the value of `autoUpdate`. Subsequent reads from it will return its default value.
+  mutating func clearAutoUpdate() {_uniqueStorage()._autoUpdate = nil}
+
+  var extensionData: Wblock_Data_ExtensionData {
+    get {return _storage._extensionData ?? Wblock_Data_ExtensionData()}
+    set {_uniqueStorage()._extensionData = newValue}
+  }
+  /// Returns true if `extensionData` has been explicitly set.
+  var hasExtensionData: Bool {return _storage._extensionData != nil}
+  /// Clears the value of `extensionData`. Subsequent reads from it will return its default value.
+  mutating func clearExtensionData() {_uniqueStorage()._extensionData = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -222,6 +240,9 @@ struct Wblock_Data_AppSettings: Sendable {
 
   /// UI state for filter page
   var isForeignFiltersExpanded: Bool = false
+
+  /// Badge counter setting
+  var isBadgeCounterEnabled: Bool = false
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -486,6 +507,41 @@ struct Wblock_Data_TabData: Sendable {
   init() {}
 }
 
+/// Auto-update metadata and scheduling
+struct Wblock_Data_AutoUpdateMetadata: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var enabled: Bool = false
+
+  var intervalHours: Double = 0
+
+  var lastCheckTime: Int64 = 0
+
+  var lastSuccessfulTime: Int64 = 0
+
+  var nextEligibleTime: Int64 = 0
+
+  var forceNext: Bool = false
+
+  var isRunning: Bool = false
+
+  var runningSinceTimestamp: Int64 = 0
+
+  /// UUID -> ETag header value
+  var filterEtags: Dictionary<String,String> = [:]
+
+  /// UUID -> Last-Modified header value
+  var filterLastModified: Dictionary<String,String> = [:]
+
+  var userscriptsInitialSetupCompleted: Bool = false
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "wblock.data"
@@ -523,6 +579,8 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     4: .same(proto: "whitelist"),
     5: .standard(proto: "rule_counts"),
     6: .same(proto: "performance"),
+    7: .standard(proto: "auto_update"),
+    8: .standard(proto: "extension_data"),
   ]
 
   fileprivate class _StorageClass {
@@ -532,6 +590,8 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     var _whitelist: Wblock_Data_WhitelistData? = nil
     var _ruleCounts: Wblock_Data_RuleCountData? = nil
     var _performance: Wblock_Data_PerformanceData? = nil
+    var _autoUpdate: Wblock_Data_AutoUpdateMetadata? = nil
+    var _extensionData: Wblock_Data_ExtensionData? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -548,6 +608,8 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
       _whitelist = source._whitelist
       _ruleCounts = source._ruleCounts
       _performance = source._performance
+      _autoUpdate = source._autoUpdate
+      _extensionData = source._extensionData
     }
   }
 
@@ -572,6 +634,8 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
         case 4: try { try decoder.decodeSingularMessageField(value: &_storage._whitelist) }()
         case 5: try { try decoder.decodeSingularMessageField(value: &_storage._ruleCounts) }()
         case 6: try { try decoder.decodeSingularMessageField(value: &_storage._performance) }()
+        case 7: try { try decoder.decodeSingularMessageField(value: &_storage._autoUpdate) }()
+        case 8: try { try decoder.decodeSingularMessageField(value: &_storage._extensionData) }()
         default: break
         }
       }
@@ -602,6 +666,12 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
       try { if let v = _storage._performance {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
       } }()
+      try { if let v = _storage._autoUpdate {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+      } }()
+      try { if let v = _storage._extensionData {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -617,6 +687,8 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
         if _storage._whitelist != rhs_storage._whitelist {return false}
         if _storage._ruleCounts != rhs_storage._ruleCounts {return false}
         if _storage._performance != rhs_storage._performance {return false}
+        if _storage._autoUpdate != rhs_storage._autoUpdate {return false}
+        if _storage._extensionData != rhs_storage._extensionData {return false}
         return true
       }
       if !storagesAreEqual {return false}
@@ -641,6 +713,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     10: .standard(proto: "userscript_show_enabled_only"),
     11: .standard(proto: "excluded_default_userscript_urls"),
     12: .standard(proto: "is_foreign_filters_expanded"),
+    13: .standard(proto: "is_badge_counter_enabled"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -661,6 +734,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
       case 10: try { try decoder.decodeSingularBoolField(value: &self.userscriptShowEnabledOnly) }()
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.excludedDefaultUserscriptUrls) }()
       case 12: try { try decoder.decodeSingularBoolField(value: &self.isForeignFiltersExpanded) }()
+      case 13: try { try decoder.decodeSingularBoolField(value: &self.isBadgeCounterEnabled) }()
       default: break
       }
     }
@@ -703,6 +777,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if self.isForeignFiltersExpanded != false {
       try visitor.visitSingularBoolField(value: self.isForeignFiltersExpanded, fieldNumber: 12)
     }
+    if self.isBadgeCounterEnabled != false {
+      try visitor.visitSingularBoolField(value: self.isBadgeCounterEnabled, fieldNumber: 13)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -719,6 +796,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if lhs.userscriptShowEnabledOnly != rhs.userscriptShowEnabledOnly {return false}
     if lhs.excludedDefaultUserscriptUrls != rhs.excludedDefaultUserscriptUrls {return false}
     if lhs.isForeignFiltersExpanded != rhs.isForeignFiltersExpanded {return false}
+    if lhs.isBadgeCounterEnabled != rhs.isBadgeCounterEnabled {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1291,6 +1369,98 @@ extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     if lhs.isDisabled != rhs.isDisabled {return false}
     if lhs.host != rhs.host {return false}
     if lhs.lastUpdated != rhs.lastUpdated {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "enabled"),
+    2: .standard(proto: "interval_hours"),
+    3: .standard(proto: "last_check_time"),
+    4: .standard(proto: "last_successful_time"),
+    5: .standard(proto: "next_eligible_time"),
+    6: .standard(proto: "force_next"),
+    7: .standard(proto: "is_running"),
+    8: .standard(proto: "running_since_timestamp"),
+    9: .standard(proto: "filter_etags"),
+    10: .standard(proto: "filter_last_modified"),
+    11: .standard(proto: "userscripts_initial_setup_completed"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.enabled) }()
+      case 2: try { try decoder.decodeSingularDoubleField(value: &self.intervalHours) }()
+      case 3: try { try decoder.decodeSingularInt64Field(value: &self.lastCheckTime) }()
+      case 4: try { try decoder.decodeSingularInt64Field(value: &self.lastSuccessfulTime) }()
+      case 5: try { try decoder.decodeSingularInt64Field(value: &self.nextEligibleTime) }()
+      case 6: try { try decoder.decodeSingularBoolField(value: &self.forceNext) }()
+      case 7: try { try decoder.decodeSingularBoolField(value: &self.isRunning) }()
+      case 8: try { try decoder.decodeSingularInt64Field(value: &self.runningSinceTimestamp) }()
+      case 9: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.filterEtags) }()
+      case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.filterLastModified) }()
+      case 11: try { try decoder.decodeSingularBoolField(value: &self.userscriptsInitialSetupCompleted) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.enabled != false {
+      try visitor.visitSingularBoolField(value: self.enabled, fieldNumber: 1)
+    }
+    if self.intervalHours.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.intervalHours, fieldNumber: 2)
+    }
+    if self.lastCheckTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastCheckTime, fieldNumber: 3)
+    }
+    if self.lastSuccessfulTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastSuccessfulTime, fieldNumber: 4)
+    }
+    if self.nextEligibleTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.nextEligibleTime, fieldNumber: 5)
+    }
+    if self.forceNext != false {
+      try visitor.visitSingularBoolField(value: self.forceNext, fieldNumber: 6)
+    }
+    if self.isRunning != false {
+      try visitor.visitSingularBoolField(value: self.isRunning, fieldNumber: 7)
+    }
+    if self.runningSinceTimestamp != 0 {
+      try visitor.visitSingularInt64Field(value: self.runningSinceTimestamp, fieldNumber: 8)
+    }
+    if !self.filterEtags.isEmpty {
+      try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: self.filterEtags, fieldNumber: 9)
+    }
+    if !self.filterLastModified.isEmpty {
+      try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: self.filterLastModified, fieldNumber: 10)
+    }
+    if self.userscriptsInitialSetupCompleted != false {
+      try visitor.visitSingularBoolField(value: self.userscriptsInitialSetupCompleted, fieldNumber: 11)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Wblock_Data_AutoUpdateMetadata, rhs: Wblock_Data_AutoUpdateMetadata) -> Bool {
+    if lhs.enabled != rhs.enabled {return false}
+    if lhs.intervalHours != rhs.intervalHours {return false}
+    if lhs.lastCheckTime != rhs.lastCheckTime {return false}
+    if lhs.lastSuccessfulTime != rhs.lastSuccessfulTime {return false}
+    if lhs.nextEligibleTime != rhs.nextEligibleTime {return false}
+    if lhs.forceNext != rhs.forceNext {return false}
+    if lhs.isRunning != rhs.isRunning {return false}
+    if lhs.runningSinceTimestamp != rhs.runningSinceTimestamp {return false}
+    if lhs.filterEtags != rhs.filterEtags {return false}
+    if lhs.filterLastModified != rhs.filterLastModified {return false}
+    if lhs.userscriptsInitialSetupCompleted != rhs.userscriptsInitialSetupCompleted {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

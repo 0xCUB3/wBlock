@@ -3,12 +3,7 @@ import wBlockCoreService
 
 struct SettingsView: View {
     let filterManager: AppFilterManager
-    @AppStorage("isBadgeCounterEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
-    private var isBadgeCounterEnabled = true
-    @AppStorage("autoUpdateEnabled", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
-    private var autoUpdateEnabled = true
-    @AppStorage("autoUpdateIntervalHours", store: UserDefaults(suiteName: GroupIdentifier.shared.value))
-    private var autoUpdateIntervalHours = 6.0
+    @ObservedObject private var dataManager = ProtobufDataManager.shared
     private let minimumAutoUpdateIntervalHours: Double = 1
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
     @State private var nextScheduleLine = "Next: Loading…"
@@ -18,6 +13,19 @@ struct SettingsView: View {
     @State private var timer: Timer?
     @State private var showingRestartConfirmation = false
     @State private var isRestarting = false
+
+    // Computed properties backed by protobuf
+    private var isBadgeCounterEnabled: Bool {
+        dataManager.isBadgeCounterEnabled
+    }
+
+    private var autoUpdateEnabled: Bool {
+        dataManager.autoUpdateEnabled
+    }
+
+    private var autoUpdateIntervalHours: Double {
+        dataManager.autoUpdateIntervalHours
+    }
 
     var body: some View {
         NavigationStack {
@@ -30,7 +38,14 @@ struct SettingsView: View {
                                 Text("Show blocked item count in toolbar")
                                     .font(.body)
                                 Spacer()
-                                Toggle("", isOn: $isBadgeCounterEnabled)
+                                Toggle("", isOn: Binding(
+                                    get: { isBadgeCounterEnabled },
+                                    set: { newValue in
+                                        Task {
+                                            await dataManager.setIsBadgeCounterEnabled(newValue)
+                                        }
+                                    }
+                                ))
                                     .labelsHidden()
                                     .toggleStyle(.switch)
                             }
@@ -86,7 +101,23 @@ struct SettingsView: View {
                                     Text("Enable Auto-Updates")
                                         .font(.body)
                                     Spacer()
-                                    Toggle("", isOn: $autoUpdateEnabled)
+                                    Toggle("", isOn: Binding(
+                                        get: { autoUpdateEnabled },
+                                        set: { newValue in
+                                            Task {
+                                                await dataManager.setAutoUpdateEnabled(newValue)
+                                                await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+                                                await updateScheduleLine()
+                                                await MainActor.run {
+                                                    if newValue {
+                                                        startTimer()
+                                                    } else {
+                                                        stopTimer()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ))
                                         .labelsHidden()
                                         .toggleStyle(.switch)
                                 }
@@ -98,7 +129,16 @@ struct SettingsView: View {
 
                                     // Update Frequency row
                                     NavigationLink {
-                                        UpdateFrequencyPickerView(selectedInterval: $autoUpdateIntervalHours)
+                                        UpdateFrequencyPickerView(selectedInterval: Binding(
+                                            get: { autoUpdateIntervalHours },
+                                            set: { newValue in
+                                                Task {
+                                                    await dataManager.setAutoUpdateIntervalHours(newValue)
+                                                    await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+                                                    await updateScheduleLine()
+                                                }
+                                            }
+                                        ))
                                     } label: {
                                         HStack {
                                             Text("Update Frequency")
@@ -215,19 +255,6 @@ struct SettingsView: View {
         } message: {
             Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
         }
-        .onChange(of: autoUpdateEnabled) { isEnabled in
-            Task {
-                await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-                await updateScheduleLine()
-                await MainActor.run {
-                    if isEnabled {
-                        startTimer()
-                    } else {
-                        stopTimer()
-                    }
-                }
-            }
-        }
     }
 
     private func settingsSectionView<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -245,28 +272,6 @@ struct SettingsView: View {
     }
 }
 private extension SettingsView {
-    private var autoUpdateIntervalBinding: Binding<Double> {
-        Binding(
-            get: { autoUpdateIntervalHours },
-            set: { newValue in
-                let clamped: Double
-                if newValue <= 24 {
-                    clamped = max(min(round(newValue), 24), minimumAutoUpdateIntervalHours)
-                } else {
-                    let days = max(1, round(newValue / 24))
-                    clamped = min(days * 24, maximumAutoUpdateIntervalHours)
-                }
-
-                guard abs(autoUpdateIntervalHours - clamped) > .ulpOfOne else { return }
-                autoUpdateIntervalHours = clamped
-                Task {
-                    await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-                    await updateScheduleLine()
-                }
-            }
-        )
-    }
-
     private func resetUserDefaults() {
         if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
             suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
@@ -295,9 +300,6 @@ private extension SettingsView {
             UserScriptManager.shared.simulateFreshInstall()
             await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
             await MainActor.run {
-                isBadgeCounterEnabled = true
-                autoUpdateEnabled = true
-                autoUpdateIntervalHours = 6.0
                 nextScheduleLine = "Next: Loading…"
             }
             await updateScheduleLine()

@@ -77,7 +77,7 @@ public actor SharedAutoUpdateManager {
     private let defaultIntervalHours: Double = 6
 
     private let log = OSLog(subsystem: "wBlockCoreService", category: "SharedAutoUpdate")
-    
+
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
         let config = URLSessionConfiguration.default
@@ -90,6 +90,62 @@ public actor SharedAutoUpdateManager {
 
     private init() {}
 
+    // MARK: - Protobuf Data Access Helpers
+
+    private func getDataManager() async -> ProtobufDataManager {
+        await MainActor.run { ProtobufDataManager.shared }
+    }
+
+    private func getAutoUpdateEnabled() async -> Bool {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateEnabled }
+    }
+
+    private func getAutoUpdateIntervalHours() async -> Double {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateIntervalHours }
+    }
+
+    private func getAutoUpdateLastCheckTime() async -> Int64 {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateLastCheckTime }
+    }
+
+    private func getAutoUpdateLastSuccessfulTime() async -> Int64 {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateLastSuccessfulTime }
+    }
+
+    private func getAutoUpdateNextEligibleTime() async -> Int64 {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateNextEligibleTime }
+    }
+
+    private func getAutoUpdateForceNext() async -> Bool {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateForceNext }
+    }
+
+    private func getAutoUpdateIsRunning() async -> Bool {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateIsRunning }
+    }
+
+    private func getAutoUpdateRunningSinceTimestamp() async -> Int64 {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateRunningSinceTimestamp }
+    }
+
+    private func getFilterEtag(_ uuid: String) async -> String? {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.getFilterEtag(uuid) }
+    }
+
+    private func getFilterLastModified(_ uuid: String) async -> String? {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.getFilterLastModified(uuid) }
+    }
+
     // Public entry point invoked by extensions.
     public func maybeRunAutoUpdate(trigger: String, force: Bool = false) async {
         await runIfNeeded(trigger: trigger, force: force)
@@ -97,7 +153,7 @@ public actor SharedAutoUpdateManager {
 
     /// Returns status about the next eligible auto-update time for UI/logging.
     /// - Returns: AutoUpdateStatus struct containing all scheduling information
-    /// Uses 5-second cache to reduce UserDefaults reads in hot paths (extension triggers)
+    /// Uses 5-second cache to reduce protobuf reads in hot paths (extension triggers)
     public func nextScheduleStatus() async -> AutoUpdateStatus {
         let now = Date()
 
@@ -108,39 +164,27 @@ public actor SharedAutoUpdateManager {
             return cached
         }
 
-        // Cache miss - recompute
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        // Cache miss - recompute from protobuf
+        // Check for and clear stale running flags
+        await checkAndClearStaleRunningFlag()
 
-        // Check for and clear stale running flags (already in cache-miss path, so no need to invalidate)
-        _ = checkAndClearStaleRunningFlag(defaults: defaults)
-
-        let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
+        let interval = await getAutoUpdateIntervalHours()
         let nowTimestamp = now.timeIntervalSince1970
-        let isRunning = defaults.bool(forKey: isCurrentlyRunningKey)
+        let isRunning = await getAutoUpdateIsRunning()
 
         // Get last check time timestamp (when we last attempted an update check)
-        let lastCheckTime: Date? = {
-            if let timestamp = defaults.object(forKey: lastCheckTimeKey) as? Double {
-                return Date(timeIntervalSince1970: timestamp)
-            }
-            // Fallback to legacy key for backward compatibility
-            if let timestamp = defaults.object(forKey: lastCheckKey) as? Double {
-                return Date(timeIntervalSince1970: timestamp)
-            }
-            return nil
-        }()
+        let lastCheckTimeInt64 = await getAutoUpdateLastCheckTime()
+        let lastCheckTime: Date? = lastCheckTimeInt64 > 0 ? Date(timeIntervalSince1970: TimeInterval(lastCheckTimeInt64)) : nil
 
         // Get last successful update timestamp (when filters actually changed)
-        let lastSuccessful: Date? = {
-            if let timestamp = defaults.object(forKey: lastSuccessfulUpdateKey) as? Double {
-                return Date(timeIntervalSince1970: timestamp)
-            }
-            return nil
-        }()
+        let lastSuccessfulInt64 = await getAutoUpdateLastSuccessfulTime()
+        let lastSuccessful: Date? = lastSuccessfulInt64 > 0 ? Date(timeIntervalSince1970: TimeInterval(lastSuccessfulInt64)) : nil
 
         let result: AutoUpdateStatus
 
-        if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double {
+        let nextEligibleInt64 = await getAutoUpdateNextEligibleTime()
+        if nextEligibleInt64 > 0 {
+            let nextEligible = TimeInterval(nextEligibleInt64)
             let remaining = max(0, nextEligible - nowTimestamp)
             let isOverdue = remaining == 0 && !isRunning
             result = AutoUpdateStatus(
@@ -152,8 +196,9 @@ public actor SharedAutoUpdateManager {
                 isRunning: isRunning,
                 isOverdue: isOverdue
             )
-        } else if let lastCheck = defaults.object(forKey: lastCheckKey) as? Double {
-            // Fallback: derive from lastCheck if present, but no jitter window yet
+        } else if let lastCheckTime = lastCheckTime {
+            // Fallback: derive from lastCheck if present, but no scheduled time yet
+            let lastCheck = lastCheckTime.timeIntervalSince1970
             let theoretical = lastCheck + interval * 3600
             if theoretical <= nowTimestamp { // already due, but no trigger yet
                 let isOverdue = !isRunning
@@ -206,16 +251,21 @@ public actor SharedAutoUpdateManager {
     /// Forces the next update to run immediately regardless of throttling
     /// Must be called from within actor context to safely invalidate cache
     public func forceNextUpdate() async {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(true, forKey: forceNextUpdateKey)
-        defaults.synchronize()
+        await MainActor.run {
+            Task {
+                await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+            }
+        }
         invalidateStatusCache()
     }
 
     /// Clears the cached auto-update window so future runs re-evaluate scheduling.
     public func resetScheduleAfterConfigurationChange() async {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.removeObject(forKey: nextEligibleKey)
+        await MainActor.run {
+            Task {
+                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(0)
+            }
+        }
         invalidateStatusCache()
     }
 
@@ -224,32 +274,38 @@ public actor SharedAutoUpdateManager {
     /// Checks if the running flag is stale (stuck) and clears it if necessary.
     /// Returns true if the flag was cleared due to staleness.
     /// Note: Caller should invalidate status cache if this returns true
-    private func checkAndClearStaleRunningFlag(defaults: UserDefaults) -> Bool {
-        guard defaults.bool(forKey: isCurrentlyRunningKey) else {
+    private func checkAndClearStaleRunningFlag() async -> Bool {
+        let isRunning = await getAutoUpdateIsRunning()
+        guard isRunning else {
             return false // Not running, nothing to do
         }
 
         // Check if we have a timestamp for when the flag was set
-        guard let timestamp = defaults.object(forKey: runningStateTimestampKey) as? Double else {
+        let timestamp = await getAutoUpdateRunningSinceTimestamp()
+        guard timestamp > 0 else {
             // No timestamp but flag is set - likely from old version or corruption
             // Clear it to be safe
             os_log("Running flag set without timestamp - clearing potentially stuck state", log: log, type: .info)
-            defaults.set(false, forKey: isCurrentlyRunningKey)
-            defaults.removeObject(forKey: runningStateTimestampKey)
-            defaults.synchronize()
+            await MainActor.run {
+                Task {
+                    await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                }
+            }
             appendSharedLog("Cleared stuck running flag (no timestamp)")
             return true
         }
 
         let now = Date().timeIntervalSince1970
-        let age = now - timestamp
+        let age = now - TimeInterval(timestamp)
 
         if age > runningFlagStalenessThreshold {
             // Flag has been set for too long - clear it
             os_log("Running flag stale (%.1f seconds old, threshold %.1f) - clearing stuck state", log: log, type: .info, age, runningFlagStalenessThreshold)
-            defaults.set(false, forKey: isCurrentlyRunningKey)
-            defaults.removeObject(forKey: runningStateTimestampKey)
-            defaults.synchronize()
+            await MainActor.run {
+                Task {
+                    await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                }
+            }
             appendSharedLog("Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)")
             return true
         }
@@ -259,55 +315,70 @@ public actor SharedAutoUpdateManager {
 
     // MARK: - Core Logic
     private func runIfNeeded(trigger: String, force: Bool = false) async {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         let now = Date().timeIntervalSince1970
 
         // Respect enable flag
-        if defaults.object(forKey: enabledKey) as? Bool == false {
+        let enabled = await getAutoUpdateEnabled()
+        if !enabled {
             return
         }
 
         // Check for and clear stale running flags
-        let wasStale = checkAndClearStaleRunningFlag(defaults: defaults)
+        let wasStale = await checkAndClearStaleRunningFlag()
         if wasStale {
             invalidateStatusCache()
         }
 
         // Prevent overlapping runs (after staleness check)
-        if defaults.bool(forKey: isCurrentlyRunningKey) {
+        let isRunning = await getAutoUpdateIsRunning()
+        if isRunning {
             os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
             return
         }
 
-        let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
+        let interval = await getAutoUpdateIntervalHours()
 
         // Check if force flag was set externally
-        let forceFlag = defaults.bool(forKey: forceNextUpdateKey)
+        let forceFlag = await getAutoUpdateForceNext()
         let shouldForce = force || forceFlag
 
         // Skip throttling if force is true or forceNextUpdateKey is set
         if !shouldForce {
             // New jitter-aware scheduling: prefer nextEligibleTime if present
-            if let nextEligible = defaults.object(forKey: nextEligibleKey) as? Double, now < nextEligible {
-                return // Still inside jittered window
-            }
-
-            // Backward compatibility: if nextEligible not set, fall back to lastCheck logic once
-            if defaults.object(forKey: nextEligibleKey) == nil, let lastCheck = defaults.object(forKey: lastCheckKey) as? Double, now - lastCheck < interval * 3600 {
-                return
+            let nextEligibleInt64 = await getAutoUpdateNextEligibleTime()
+            if nextEligibleInt64 > 0 {
+                let nextEligible = TimeInterval(nextEligibleInt64)
+                if now < nextEligible {
+                    return // Still inside jittered window
+                }
+            } else {
+                // Backward compatibility: if nextEligible not set, fall back to lastCheck logic once
+                let lastCheckInt64 = await getAutoUpdateLastCheckTime()
+                if lastCheckInt64 > 0 {
+                    let lastCheck = TimeInterval(lastCheckInt64)
+                    if now - lastCheck < interval * 3600 {
+                        return
+                    }
+                }
             }
         }
 
         // Clear force flag if it was set
         if forceFlag {
-            defaults.removeObject(forKey: forceNextUpdateKey)
+            await MainActor.run {
+                Task {
+                    await ProtobufDataManager.shared.setAutoUpdateForceNext(false)
+                }
+            }
         }
 
         // Mark as running with timestamp and invalidate cache
         let startTimestamp = Date().timeIntervalSince1970
-        defaults.set(true, forKey: isCurrentlyRunningKey)
-        defaults.set(startTimestamp, forKey: runningStateTimestampKey)
-        defaults.synchronize()
+        await MainActor.run {
+            Task {
+                await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
+            }
+        }
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
@@ -315,33 +386,38 @@ public actor SharedAutoUpdateManager {
         defer {
             let endTimestamp = Date().timeIntervalSince1970
             let duration = endTimestamp - startTimestamp
-            defaults.set(false, forKey: isCurrentlyRunningKey)
-            defaults.removeObject(forKey: runningStateTimestampKey)
-            defaults.synchronize()
+            Task {
+                await MainActor.run {
+                    Task {
+                        await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                    }
+                }
+            }
             invalidateStatusCache()
             os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
         }
 
         // Compute next eligible time (exactly interval hours from now)
         let nextEligibleTime = now + interval * 3600
-        defaults.set(nextEligibleTime, forKey: nextEligibleKey)
-        defaults.set(now, forKey: lastCheckKey) // Keep legacy key updated too
-        defaults.set(now, forKey: lastCheckTimeKey) // Record when we started checking
+        await MainActor.run {
+            Task {
+                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
+                await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
+            }
+        }
         appendSharedLog("Auto-update started (trigger: \(trigger), forced: \(shouldForce))")
 
         do {
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             guard !selectedFilters.isEmpty else {
                 // Still record check time even though no filters selected
-                defaults.synchronize()
                 invalidateStatusCache()
                 return
             }
 
-            let updates = try await checkForUpdates(filters: selectedFilters, defaults: defaults)
+            let updates = try await checkForUpdates(filters: selectedFilters)
             guard !updates.isEmpty else {
                 // No updates found - still update check time to show we checked successfully
-                defaults.synchronize()
                 invalidateStatusCache()
                 appendSharedLog("No updates found - filters are up to date")
                 return
@@ -352,7 +428,7 @@ public actor SharedAutoUpdateManager {
             appendSharedLog("Updates found: \(updates.map { $0.name }.joined(separator: ", "))")
 
             // Fetch & store updated content
-            let updatedFilterSet = try await fetchAndStoreFilters(updates, defaults: defaults)
+            let updatedFilterSet = try await fetchAndStoreFilters(updates)
 
             // Merge updated filters back into full list model
             var merged = allFilters
@@ -373,8 +449,11 @@ public actor SharedAutoUpdateManager {
 
             // Record successful update
             let successTime = Date().timeIntervalSince1970
-            defaults.set(successTime, forKey: lastSuccessfulUpdateKey)
-            defaults.synchronize()
+            await MainActor.run {
+                Task {
+                    await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
+                }
+            }
             invalidateStatusCache()
 
             appendSharedLog("Auto-update complete")
@@ -432,24 +511,25 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Update Detection
-    private func checkForUpdates(filters: [FilterList], defaults: UserDefaults) async throws -> [FilterList] {
+    private func checkForUpdates(filters: [FilterList]) async throws -> [FilterList] {
         var result: [FilterList] = []
         await withTaskGroup(of: (FilterList, Bool).self) { group in
-            for f in filters { group.addTask { (f, await self.hasUpdate(for: f, defaults: defaults)) } }
+            for f in filters { group.addTask { (f, await self.hasUpdate(for: f)) } }
             for await (f, needs) in group where needs { result.append(f) }
         }
         return result
     }
 
-    private func hasUpdate(for filter: FilterList, defaults: UserDefaults) async -> Bool {
+    private func hasUpdate(for filter: FilterList) async -> Bool {
         // Compare remote signature (ETag/Last-Modified) – fall back to full body diff
         var request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
 
-        let etagKey = etagStoreKeyPrefix + filter.id.uuidString
-        let lmKey = lastModifiedStoreKeyPrefix + filter.id.uuidString
+        let uuid = filter.id.uuidString
+        let etag = await getFilterEtag(uuid)
+        let lastModified = await getFilterLastModified(uuid)
 
-        if let etag = defaults.string(forKey: etagKey) { request.addValue(etag, forHTTPHeaderField: "If-None-Match") }
-        if let lm = defaults.string(forKey: lmKey) { request.addValue(lm, forHTTPHeaderField: "If-Modified-Since") }
+        if let etag = etag { request.addValue(etag, forHTTPHeaderField: "If-None-Match") }
+        if let lm = lastModified { request.addValue(lm, forHTTPHeaderField: "If-Modified-Since") }
 
         do {
             let (data, response) = try await urlSession.data(for: request)
@@ -457,8 +537,20 @@ public actor SharedAutoUpdateManager {
             if http.statusCode == 304 { return false } // Not modified via conditional request
 
             // Update stored validators for later
-            if let newEtag = http.value(forHTTPHeaderField: "ETag") { defaults.set(newEtag, forKey: etagKey) }
-            if let newLM = http.value(forHTTPHeaderField: "Last-Modified") { defaults.set(newLM, forKey: lmKey) }
+            if let newEtag = http.value(forHTTPHeaderField: "ETag") {
+                await MainActor.run {
+                    Task {
+                        await ProtobufDataManager.shared.setFilterEtag(uuid, etag: newEtag)
+                    }
+                }
+            }
+            if let newLM = http.value(forHTTPHeaderField: "Last-Modified") {
+                await MainActor.run {
+                    Task {
+                        await ProtobufDataManager.shared.setFilterLastModified(uuid, lastModified: newLM)
+                    }
+                }
+            }
 
             // Compare body with local file if exists
             if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
@@ -476,7 +568,7 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Fetch & Store
-    private func fetchAndStoreFilters(_ filters: [FilterList], defaults: UserDefaults) async throws -> [FilterList] {
+    private func fetchAndStoreFilters(_ filters: [FilterList]) async throws -> [FilterList] {
         var updated: [FilterList] = []
         await withTaskGroup(of: FilterList?.self) { group in
             for filter in filters {
