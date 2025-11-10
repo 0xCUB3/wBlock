@@ -251,21 +251,13 @@ public actor SharedAutoUpdateManager {
     /// Forces the next update to run immediately regardless of throttling
     /// Must be called from within actor context to safely invalidate cache
     public func forceNextUpdate() async {
-        await MainActor.run {
-            Task {
-                await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
-            }
-        }
+        await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
         invalidateStatusCache()
     }
 
     /// Clears the cached auto-update window so future runs re-evaluate scheduling.
     public func resetScheduleAfterConfigurationChange() async {
-        await MainActor.run {
-            Task {
-                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(0)
-            }
-        }
+        await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(0)
         invalidateStatusCache()
     }
 
@@ -286,11 +278,7 @@ public actor SharedAutoUpdateManager {
             // No timestamp but flag is set - likely from old version or corruption
             // Clear it to be safe
             os_log("Running flag set without timestamp - clearing potentially stuck state", log: log, type: .info)
-            await MainActor.run {
-                Task {
-                    await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                }
-            }
+            await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
             appendSharedLog("Cleared stuck running flag (no timestamp)")
             return true
         }
@@ -301,11 +289,7 @@ public actor SharedAutoUpdateManager {
         if age > runningFlagStalenessThreshold {
             // Flag has been set for too long - clear it
             os_log("Running flag stale (%.1f seconds old, threshold %.1f) - clearing stuck state", log: log, type: .info, age, runningFlagStalenessThreshold)
-            await MainActor.run {
-                Task {
-                    await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                }
-            }
+            await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
             appendSharedLog("Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)")
             return true
         }
@@ -365,53 +349,33 @@ public actor SharedAutoUpdateManager {
 
         // Clear force flag if it was set
         if forceFlag {
-            await MainActor.run {
-                Task {
-                    await ProtobufDataManager.shared.setAutoUpdateForceNext(false)
-                }
-            }
+            await ProtobufDataManager.shared.setAutoUpdateForceNext(false)
         }
 
         // Mark as running with timestamp and invalidate cache
         let startTimestamp = Date().timeIntervalSince1970
-        await MainActor.run {
-            Task {
-                await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
-            }
-        }
+        await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
-        // Ensure flag is ALWAYS cleared on exit (success, failure, or early return)
-        defer {
-            let endTimestamp = Date().timeIntervalSince1970
-            let duration = endTimestamp - startTimestamp
-            Task {
-                await MainActor.run {
-                    Task {
-                        await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                    }
-                }
-            }
-            invalidateStatusCache()
-            os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
-        }
-
         // Compute next eligible time (exactly interval hours from now)
         let nextEligibleTime = now + interval * 3600
-        await MainActor.run {
-            Task {
-                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
-                await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
-            }
-        }
+        await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
+        await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
         appendSharedLog("Auto-update started (trigger: \(trigger), forced: \(shouldForce))")
 
+        // Use do-catch to ensure cleanup always runs
         do {
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             guard !selectedFilters.isEmpty else {
                 // Still record check time even though no filters selected
                 invalidateStatusCache()
+                // Clear running flag before return
+                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                invalidateStatusCache()
+                let endTimestamp = Date().timeIntervalSince1970
+                let duration = endTimestamp - startTimestamp
+                os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
                 return
             }
 
@@ -420,6 +384,12 @@ public actor SharedAutoUpdateManager {
                 // No updates found - still update check time to show we checked successfully
                 invalidateStatusCache()
                 appendSharedLog("No updates found - filters are up to date")
+                // Clear running flag before return
+                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                invalidateStatusCache()
+                let endTimestamp = Date().timeIntervalSince1970
+                let duration = endTimestamp - startTimestamp
+                os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
                 return
             }
 
@@ -449,11 +419,7 @@ public actor SharedAutoUpdateManager {
 
             // Record successful update
             let successTime = Date().timeIntervalSince1970
-            await MainActor.run {
-                Task {
-                    await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
-                }
-            }
+            await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
             invalidateStatusCache()
 
             appendSharedLog("Auto-update complete")
@@ -461,7 +427,13 @@ public actor SharedAutoUpdateManager {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("Auto-update failed: \(error.localizedDescription)")
         }
-        // Note: defer block above will clear running flag
+
+        // ALWAYS clear running flag after completion (success or failure)
+        await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+        invalidateStatusCache()
+        let endTimestamp = Date().timeIntervalSince1970
+        let duration = endTimestamp - startTimestamp
+        os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
     }
 
     // MARK: - Loading / Saving
@@ -538,18 +510,10 @@ public actor SharedAutoUpdateManager {
 
             // Update stored validators for later
             if let newEtag = http.value(forHTTPHeaderField: "ETag") {
-                await MainActor.run {
-                    Task {
-                        await ProtobufDataManager.shared.setFilterEtag(uuid, etag: newEtag)
-                    }
-                }
+                await ProtobufDataManager.shared.setFilterEtag(uuid, etag: newEtag)
             }
             if let newLM = http.value(forHTTPHeaderField: "Last-Modified") {
-                await MainActor.run {
-                    Task {
-                        await ProtobufDataManager.shared.setFilterLastModified(uuid, lastModified: newLM)
-                    }
-                }
+                await ProtobufDataManager.shared.setFilterLastModified(uuid, lastModified: newLM)
             }
 
             // Compare body with local file if exists

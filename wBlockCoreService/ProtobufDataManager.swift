@@ -39,18 +39,12 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setHasCompletedOnboarding(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.settings.hasCompletedOnboarding_p = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.hasCompletedOnboarding_p = value }
     }
 
     @MainActor
     public func setSelectedBlockingLevel(_ value: String) async {
-        var updatedData = appData
-        updatedData.settings.selectedBlockingLevel = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.selectedBlockingLevel = value }
     }
     public var hasCompletedOnboarding: Bool {
         appData.settings.hasCompletedOnboarding_p
@@ -80,26 +74,17 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setHasEnabledContentBlockers(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.settings.hasEnabledContentBlockers_p = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.hasEnabledContentBlockers_p = value }
     }
 
     @MainActor
     public func setHasEnabledPlatformExtension(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.settings.hasEnabledPlatformExtension_p = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.hasEnabledPlatformExtension_p = value }
     }
 
     @MainActor
     public func setHasSetAllWebsitesPermission(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.settings.hasSetAllWebsitesPermission_p = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.hasSetAllWebsitesPermission_p = value }
     }
 
     // MARK: - Filter UI State
@@ -111,10 +96,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setIsForeignFiltersExpanded(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.settings.isForeignFiltersExpanded = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.isForeignFiltersExpanded = value }
     }
 
     // MARK: - Badge Counter Setting
@@ -126,10 +108,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setIsBadgeCounterEnabled(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.settings.isBadgeCounterEnabled = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.settings.isBadgeCounterEnabled = value }
     }
 
     // MARK: - Auto-Update Settings
@@ -141,10 +120,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateEnabled(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.autoUpdate.enabled = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.enabled = value }
     }
 
     /// Auto-update interval in hours
@@ -154,10 +130,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateIntervalHours(_ value: Double) async {
-        var updatedData = appData
-        updatedData.autoUpdate.intervalHours = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.intervalHours = value }
     }
 
     /// Last auto-update check time (Unix timestamp)
@@ -167,10 +140,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateLastCheckTime(_ value: Int64) async {
-        var updatedData = appData
-        updatedData.autoUpdate.lastCheckTime = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.lastCheckTime = value }
     }
 
     /// Last successful auto-update time (Unix timestamp)
@@ -180,10 +150,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateLastSuccessfulTime(_ value: Int64) async {
-        var updatedData = appData
-        updatedData.autoUpdate.lastSuccessfulTime = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.lastSuccessfulTime = value }
     }
 
     /// Next eligible auto-update time (Unix timestamp)
@@ -193,10 +160,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateNextEligibleTime(_ value: Int64) async {
-        var updatedData = appData
-        updatedData.autoUpdate.nextEligibleTime = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.nextEligibleTime = value }
     }
 
     /// Force next auto-update
@@ -206,10 +170,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateForceNext(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.autoUpdate.forceNext = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.forceNext = value }
     }
 
     /// Indicates if auto-update is currently running
@@ -272,10 +233,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setUserscriptsInitialSetupCompleted(_ value: Bool) async {
-        var updatedData = appData
-        updatedData.autoUpdate.userscriptsInitialSetupCompleted = value
-        appData = updatedData
-        await saveData()
+        await updateData { $0.autoUpdate.userscriptsInitialSetupCompleted = value }
     }
 
     // MARK: - Extension Data (Tab Tracking)
@@ -386,6 +344,18 @@ public class ProtobufDataManager: ObservableObject {
         Task {
             await loadData()
         }
+    }
+
+    // MARK: - Helper Methods
+
+    /// Generic helper method to reduce boilerplate in setter methods
+    /// Updates appData using a closure and saves the changes
+    @MainActor
+    private func updateData(with block: (inout Wblock_Data_AppData) -> Void) async {
+        var updatedData = appData
+        block(&updatedData)
+        appData = updatedData
+        await saveData()
     }
     
     // MARK: - Data Directory Setup
