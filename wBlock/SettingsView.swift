@@ -106,8 +106,7 @@ struct SettingsView: View {
                                         set: { newValue in
                                             Task {
                                                 await dataManager.setAutoUpdateEnabled(newValue)
-                                                await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-                                                await updateScheduleLine()
+                                                await handleAutoUpdateConfigChange()
                                                 await MainActor.run {
                                                     if newValue {
                                                         startTimer()
@@ -134,8 +133,7 @@ struct SettingsView: View {
                                             set: { newValue in
                                                 Task {
                                                     await dataManager.setAutoUpdateIntervalHours(newValue)
-                                                    await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-                                                    await updateScheduleLine()
+                                                    await handleAutoUpdateConfigChange()
                                                 }
                                             }
                                         ))
@@ -269,6 +267,11 @@ struct SettingsView: View {
             }
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
+    }
+
+    private func handleAutoUpdateConfigChange() async {
+        await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+        await updateScheduleLine()
     }
 }
 private extension SettingsView {
