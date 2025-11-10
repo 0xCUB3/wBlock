@@ -117,6 +117,235 @@ public class ProtobufDataManager: ObservableObject {
         await saveData()
     }
 
+    // MARK: - Badge Counter Setting
+
+    /// Indicates if badge counter is enabled
+    public var isBadgeCounterEnabled: Bool {
+        appData.settings.isBadgeCounterEnabled
+    }
+
+    @MainActor
+    public func setIsBadgeCounterEnabled(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.settings.isBadgeCounterEnabled = value
+        appData = updatedData
+        await saveData()
+    }
+
+    // MARK: - Auto-Update Settings
+
+    /// Indicates if auto-update is enabled
+    public var autoUpdateEnabled: Bool {
+        appData.autoUpdate.enabled
+    }
+
+    @MainActor
+    public func setAutoUpdateEnabled(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.autoUpdate.enabled = value
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Auto-update interval in hours
+    public var autoUpdateIntervalHours: Double {
+        appData.autoUpdate.intervalHours
+    }
+
+    @MainActor
+    public func setAutoUpdateIntervalHours(_ value: Double) async {
+        var updatedData = appData
+        updatedData.autoUpdate.intervalHours = value
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Last auto-update check time (Unix timestamp)
+    public var autoUpdateLastCheckTime: Int64 {
+        appData.autoUpdate.lastCheckTime
+    }
+
+    @MainActor
+    public func setAutoUpdateLastCheckTime(_ value: Int64) async {
+        var updatedData = appData
+        updatedData.autoUpdate.lastCheckTime = value
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Last successful auto-update time (Unix timestamp)
+    public var autoUpdateLastSuccessfulTime: Int64 {
+        appData.autoUpdate.lastSuccessfulTime
+    }
+
+    @MainActor
+    public func setAutoUpdateLastSuccessfulTime(_ value: Int64) async {
+        var updatedData = appData
+        updatedData.autoUpdate.lastSuccessfulTime = value
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Next eligible auto-update time (Unix timestamp)
+    public var autoUpdateNextEligibleTime: Int64 {
+        appData.autoUpdate.nextEligibleTime
+    }
+
+    @MainActor
+    public func setAutoUpdateNextEligibleTime(_ value: Int64) async {
+        var updatedData = appData
+        updatedData.autoUpdate.nextEligibleTime = value
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Force next auto-update
+    public var autoUpdateForceNext: Bool {
+        appData.autoUpdate.forceNext
+    }
+
+    @MainActor
+    public func setAutoUpdateForceNext(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.autoUpdate.forceNext = value
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Indicates if auto-update is currently running
+    public var autoUpdateIsRunning: Bool {
+        appData.autoUpdate.isRunning
+    }
+
+    @MainActor
+    public func setAutoUpdateIsRunning(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.autoUpdate.isRunning = value
+        updatedData.autoUpdate.runningSinceTimestamp = value ? Int64(Date().timeIntervalSince1970) : 0
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Timestamp when auto-update started running
+    public var autoUpdateRunningSinceTimestamp: Int64 {
+        appData.autoUpdate.runningSinceTimestamp
+    }
+
+    /// Get ETag for a specific filter UUID
+    public func getFilterEtag(_ uuid: String) -> String? {
+        appData.autoUpdate.filterEtags[uuid]
+    }
+
+    @MainActor
+    public func setFilterEtag(_ uuid: String, etag: String?) async {
+        var updatedData = appData
+        if let etag = etag {
+            updatedData.autoUpdate.filterEtags[uuid] = etag
+        } else {
+            updatedData.autoUpdate.filterEtags.removeValue(forKey: uuid)
+        }
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Get Last-Modified header for a specific filter UUID
+    public func getFilterLastModified(_ uuid: String) -> String? {
+        appData.autoUpdate.filterLastModified[uuid]
+    }
+
+    @MainActor
+    public func setFilterLastModified(_ uuid: String, lastModified: String?) async {
+        var updatedData = appData
+        if let lastModified = lastModified {
+            updatedData.autoUpdate.filterLastModified[uuid] = lastModified
+        } else {
+            updatedData.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+        }
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Indicates if userscripts initial setup has been completed
+    public var userscriptsInitialSetupCompleted: Bool {
+        appData.autoUpdate.userscriptsInitialSetupCompleted
+    }
+
+    @MainActor
+    public func setUserscriptsInitialSetupCompleted(_ value: Bool) async {
+        var updatedData = appData
+        updatedData.autoUpdate.userscriptsInitialSetupCompleted = value
+        appData = updatedData
+        await saveData()
+    }
+
+    // MARK: - Extension Data (Tab Tracking)
+
+    /// Get blocked count for a specific tab ID
+    public func getTabBlockedCount(_ tabId: String) -> Int {
+        Int(appData.extensionData.tabBlockedRequests[tabId]?.blockedCount ?? 0)
+    }
+
+    /// Get host for a specific tab ID
+    public func getTabHost(_ tabId: String) -> String {
+        appData.extensionData.tabBlockedRequests[tabId]?.host ?? ""
+    }
+
+    /// Check if a tab is disabled
+    public func isTabDisabled(_ tabId: String) -> Bool {
+        appData.extensionData.tabBlockedRequests[tabId]?.isDisabled ?? false
+    }
+
+    @MainActor
+    public func setTabDisabled(_ tabId: String, isDisabled: Bool) async {
+        var updatedData = appData
+        var tabData = updatedData.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
+        tabData.isDisabled = isDisabled
+        tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        updatedData.extensionData.tabBlockedRequests[tabId] = tabData
+        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        appData = updatedData
+        await saveData()
+    }
+
+    @MainActor
+    public func removeTabData(_ tabId: String) async {
+        var updatedData = appData
+        updatedData.extensionData.tabBlockedRequests.removeValue(forKey: tabId)
+        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        appData = updatedData
+        await saveData()
+    }
+
+    @MainActor
+    public func updateTabBlockedCount(_ tabId: String, host: String, increment: Int = 1) async {
+        var updatedData = appData
+        var tabData = updatedData.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
+        tabData.blockedCount += Int32(increment)
+        tabData.host = host
+        tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        updatedData.extensionData.tabBlockedRequests[tabId] = tabData
+        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        appData = updatedData
+        await saveData()
+    }
+
+    @MainActor
+    public func clearOldTabData(olderThan: TimeInterval) async {
+        var updatedData = appData
+        let cutoffTime = Int64(Date().timeIntervalSince1970 - olderThan)
+        updatedData.extensionData.tabBlockedRequests = updatedData.extensionData.tabBlockedRequests.filter { _, tabData in
+            tabData.lastUpdated >= cutoffTime
+        }
+        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        appData = updatedData
+        await saveData()
+    }
+
+    /// Get all tab IDs that have data
+    public var allTabIds: [String] {
+        Array(appData.extensionData.tabBlockedRequests.keys)
+    }
+
     // MARK: - Singleton
     public static let shared = ProtobufDataManager()
     
@@ -279,29 +508,41 @@ public class ProtobufDataManager: ObservableObject {
 
     private func createDefaultData() async {
         var defaultData = Wblock_Data_AppData()
-        
+
         // Initialize default settings
         defaultData.settings.hasCompletedOnboarding_p = false
         defaultData.settings.selectedBlockingLevel = "recommended"
         defaultData.settings.lastUpdateCheck = Int64(Date().timeIntervalSince1970)
         defaultData.settings.showAdvancedFeatures = false
         defaultData.settings.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        
+        defaultData.settings.isBadgeCounterEnabled = true
+
+        // Initialize default auto-update settings
+        defaultData.autoUpdate.enabled = true
+        defaultData.autoUpdate.intervalHours = 6.0
+        defaultData.autoUpdate.lastCheckTime = 0
+        defaultData.autoUpdate.lastSuccessfulTime = 0
+        defaultData.autoUpdate.nextEligibleTime = 0
+        defaultData.autoUpdate.forceNext = false
+        defaultData.autoUpdate.isRunning = false
+        defaultData.autoUpdate.runningSinceTimestamp = 0
+        defaultData.autoUpdate.userscriptsInitialSetupCompleted = false
+
         // Initialize default performance data
         #if os(macOS)
         defaultData.performance.currentPlatform = .macos
         #else
         defaultData.performance.currentPlatform = .ios
         #endif
-        
+
         defaultData.performance.lastConversionTime = "N/A"
         defaultData.performance.lastReloadTime = "N/A"
         defaultData.performance.lastFastUpdateTime = "N/A"
-        
+
         await MainActor.run {
             self.appData = defaultData
         }
-        
+
         await saveData()
         logger.info("✅ Created default data")
     }
@@ -449,43 +690,98 @@ public class ProtobufDataManager: ObservableObject {
     // MARK: - Migration from Legacy Storage
     private func migrateFromLegacyStorage() async {
         logger.info("🔄 Migrating from UserDefaults and SwiftData...")
-        
+
         let groupDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
         var migratedData = Wblock_Data_AppData()
-        
+
         // Migrate app settings
         migratedData.settings.hasCompletedOnboarding_p = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         migratedData.settings.selectedBlockingLevel = UserDefaults.standard.string(forKey: "selectedBlockingLevel") ?? "recommended"
-        
+
+        // Migrate badge counter setting (from App Group UserDefaults)
+        if groupDefaults.object(forKey: "isBadgeCounterEnabled") != nil {
+            migratedData.settings.isBadgeCounterEnabled = groupDefaults.bool(forKey: "isBadgeCounterEnabled")
+        } else {
+            migratedData.settings.isBadgeCounterEnabled = true  // Default to enabled
+        }
+
+        // Migrate auto-update settings (from App Group UserDefaults)
+        if groupDefaults.object(forKey: "autoUpdateEnabled") != nil {
+            migratedData.autoUpdate.enabled = groupDefaults.bool(forKey: "autoUpdateEnabled")
+        } else {
+            migratedData.autoUpdate.enabled = true  // Default to enabled
+        }
+
+        migratedData.autoUpdate.intervalHours = groupDefaults.object(forKey: "autoUpdateIntervalHours") as? Double ?? 6.0
+        migratedData.autoUpdate.lastCheckTime = Int64(groupDefaults.double(forKey: "autoUpdateLastCheckTime"))
+        migratedData.autoUpdate.lastSuccessfulTime = Int64(groupDefaults.double(forKey: "autoUpdateLastSuccessful"))
+        migratedData.autoUpdate.nextEligibleTime = Int64(groupDefaults.double(forKey: "autoUpdateNextEligibleTime"))
+        migratedData.autoUpdate.forceNext = groupDefaults.bool(forKey: "autoUpdateForceNext")
+        migratedData.autoUpdate.isRunning = groupDefaults.bool(forKey: "autoUpdateIsRunning")
+        migratedData.autoUpdate.runningSinceTimestamp = Int64(groupDefaults.double(forKey: "autoUpdateIsRunningTimestamp"))
+
+        // Migrate userscripts initial setup flag (from standard UserDefaults)
+        migratedData.autoUpdate.userscriptsInitialSetupCompleted = UserDefaults.standard.bool(forKey: "userScriptsInitialSetupCompleted")
+
+        // Migrate filter ETags and Last-Modified headers
+        // Scan through all keys looking for filterEtag_ and filterLastModified_ prefixes
+        for key in groupDefaults.dictionaryRepresentation().keys {
+            if key.hasPrefix("filterEtag_") {
+                let uuid = String(key.dropFirst("filterEtag_".count))
+                if let etag = groupDefaults.string(forKey: key) {
+                    migratedData.autoUpdate.filterEtags[uuid] = etag
+                }
+            } else if key.hasPrefix("filterLastModified_") {
+                let uuid = String(key.dropFirst("filterLastModified_".count))
+                if let lastModified = groupDefaults.string(forKey: key) {
+                    migratedData.autoUpdate.filterLastModified[uuid] = lastModified
+                }
+            }
+        }
+
+        // Migrate tab blocked requests (from App Group UserDefaults)
+        if let tabDataJSON = groupDefaults.data(forKey: "tabBlockedRequests"),
+           let tabDataDict = try? JSONDecoder().decode([String: LegacyTabData].self, from: tabDataJSON) {
+            for (tabId, legacyTab) in tabDataDict {
+                var tabData = Wblock_Data_TabData()
+                tabData.blockedCount = Int32(legacyTab.blockedCount)
+                tabData.isDisabled = legacyTab.isDisabled
+                tabData.host = legacyTab.host
+                tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
+                migratedData.extensionData.tabBlockedRequests[tabId] = tabData
+            }
+            migratedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+
         // Migrate filter lists
         await migrateFilterLists(from: groupDefaults, to: &migratedData)
-        
+
         // Migrate userscripts
         await migrateUserScripts(from: groupDefaults, to: &migratedData)
-        
+
         // Migrate whitelist data
         migratedData.whitelist.disabledSites = groupDefaults.stringArray(forKey: "disabledSites") ?? []
         migratedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
-        
+
         // Migrate rule counts
         migratedData.ruleCounts.lastRuleCount = Int32(groupDefaults.integer(forKey: "lastRuleCount"))
-        
+
         if let ruleCountsData = groupDefaults.data(forKey: "ruleCountsByCategory"),
            let ruleCounts = try? JSONDecoder().decode([String: Int].self, from: ruleCountsData) {
             for (category, count) in ruleCounts {
                 migratedData.ruleCounts.ruleCountsByCategory[category] = Int32(count)
             }
         }
-        
+
         if let categoriesData = groupDefaults.data(forKey: "categoriesApproachingLimit"),
            let categories = try? JSONDecoder().decode([String].self, from: categoriesData) {
             migratedData.ruleCounts.categoriesApproachingLimit = categories
         }
-        
+
         await MainActor.run {
             self.appData = migratedData
         }
-        
+
         await saveData()
         logger.info("✅ Migration completed successfully")
     }
@@ -627,4 +923,10 @@ private struct LegacyUserScript: Codable {
     var updateURL: String?
     var downloadURL: String?
     var content: String
+}
+
+private struct LegacyTabData: Codable {
+    var blockedCount: Int
+    var isDisabled: Bool
+    var host: String
 }
