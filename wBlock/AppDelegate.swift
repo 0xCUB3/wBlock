@@ -139,15 +139,27 @@ extension AppDelegate: NSApplicationDelegate {
         
         // Setup periodic auto-update system for macOS
         setupMacOSAutoUpdate()
-        
+
         // Opportunistic update on app launch
         Task {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
-        }
-
-        // Log next auto-update schedule status
-        Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+
+            // Force update if significantly overdue (>1 hour past scheduled time)
+            let oneHourInSeconds: TimeInterval = 3600
+            let isSignificantlyOverdue = if let remaining = status.remaining {
+                remaining == 0 && status.scheduledAt != nil && Date().timeIntervalSince(status.scheduledAt!) > oneHourInSeconds
+            } else {
+                false
+            }
+
+            if isSignificantlyOverdue && !status.isRunning {
+                os_log("App launch: update significantly overdue (>1h) - forcing update", type: .info)
+                await SharedAutoUpdateManager.shared.forceNextUpdate()
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch", force: true)
+            } else {
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
+            }
+
             await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
         }
     }
@@ -257,13 +269,24 @@ extension AppDelegate: UIApplicationDelegate {
         // Opportunistic update on app launch
         // Note: maybeRunAutoUpdate includes staleness check to clear stuck flags
         Task {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
-        }
-
-        // Log next auto-update schedule status
-        // Note: nextScheduleStatus checks and clears stale running flags on app launch
-        Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+
+            // Force update if significantly overdue (>1 hour past scheduled time)
+            let oneHourInSeconds: TimeInterval = 3600
+            let isSignificantlyOverdue = if let remaining = status.remaining {
+                remaining == 0 && status.scheduledAt != nil && Date().timeIntervalSince(status.scheduledAt!) > oneHourInSeconds
+            } else {
+                false
+            }
+
+            if isSignificantlyOverdue && !status.isRunning {
+                os_log("App launch: update significantly overdue (>1h) - forcing update", type: .info)
+                await SharedAutoUpdateManager.shared.forceNextUpdate()
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch", force: true)
+            } else {
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
+            }
+
             await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
         }
         return true

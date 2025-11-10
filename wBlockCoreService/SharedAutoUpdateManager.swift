@@ -36,14 +36,16 @@ public actor SharedAutoUpdateManager {
         public let scheduledAt: Date?
         public let remaining: TimeInterval?
         public let intervalHours: Double
+        public let lastCheckTime: Date?
         public let lastSuccessful: Date?
         public let isRunning: Bool
         public let isOverdue: Bool
 
-        public init(scheduledAt: Date?, remaining: TimeInterval?, intervalHours: Double, lastSuccessful: Date?, isRunning: Bool, isOverdue: Bool) {
+        public init(scheduledAt: Date?, remaining: TimeInterval?, intervalHours: Double, lastCheckTime: Date?, lastSuccessful: Date?, isRunning: Bool, isOverdue: Bool) {
             self.scheduledAt = scheduledAt
             self.remaining = remaining
             self.intervalHours = intervalHours
+            self.lastCheckTime = lastCheckTime
             self.lastSuccessful = lastSuccessful
             self.isRunning = isRunning
             self.isOverdue = isOverdue
@@ -54,9 +56,10 @@ public actor SharedAutoUpdateManager {
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
 
     // MARK: Configuration Keys
-    private let lastCheckKey = "autoUpdateLastCheck" // Double (timeIntervalSince1970)
-    private let lastSuccessfulUpdateKey = "autoUpdateLastSuccessful" // Double (timeIntervalSince1970)
-    private let nextEligibleKey = "autoUpdateNextEligibleTime" // Double (abs timestamp with jitter)
+    private let lastCheckKey = "autoUpdateLastCheck" // Double (timeIntervalSince1970) - renamed to lastCheckTime
+    private let lastCheckTimeKey = "autoUpdateLastCheckTime" // Double (timeIntervalSince1970) - last time we checked for updates
+    private let lastSuccessfulUpdateKey = "autoUpdateLastSuccessful" // Double (timeIntervalSince1970) - last time filters actually changed
+    private let nextEligibleKey = "autoUpdateNextEligibleTime" // Double (abs timestamp for next scheduled update)
     private let intervalHoursKey = "autoUpdateIntervalHours" // Double
     private let enabledKey = "autoUpdateEnabled" // Bool
     private let forceNextUpdateKey = "autoUpdateForceNext" // Bool - force update on next trigger
@@ -68,11 +71,7 @@ public actor SharedAutoUpdateManager {
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
     // Staleness threshold: if running flag is set for longer than this, it's considered stuck
-    private let runningFlagStalenessThreshold: TimeInterval = 600 // 10 minutes
-
-    // Jitter factors (±10%) to de-synchronize update waves across users
-    private let jitterMin: Double = 0.9
-    private let jitterMax: Double = 1.1
+    private let runningFlagStalenessThreshold: TimeInterval = 180 // 3 minutes (reduced from 10)
 
     // Default interval (6 hours) — conservative to limit energy usage
     private let defaultIntervalHours: Double = 6
@@ -112,14 +111,26 @@ public actor SharedAutoUpdateManager {
         // Cache miss - recompute
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
 
-        // Check for and clear stale running flags
+        // Check for and clear stale running flags (already in cache-miss path, so no need to invalidate)
         _ = checkAndClearStaleRunningFlag(defaults: defaults)
 
         let interval = defaults.object(forKey: intervalHoursKey) as? Double ?? defaultIntervalHours
         let nowTimestamp = now.timeIntervalSince1970
         let isRunning = defaults.bool(forKey: isCurrentlyRunningKey)
 
-        // Get last successful update timestamp
+        // Get last check time timestamp (when we last attempted an update check)
+        let lastCheckTime: Date? = {
+            if let timestamp = defaults.object(forKey: lastCheckTimeKey) as? Double {
+                return Date(timeIntervalSince1970: timestamp)
+            }
+            // Fallback to legacy key for backward compatibility
+            if let timestamp = defaults.object(forKey: lastCheckKey) as? Double {
+                return Date(timeIntervalSince1970: timestamp)
+            }
+            return nil
+        }()
+
+        // Get last successful update timestamp (when filters actually changed)
         let lastSuccessful: Date? = {
             if let timestamp = defaults.object(forKey: lastSuccessfulUpdateKey) as? Double {
                 return Date(timeIntervalSince1970: timestamp)
@@ -136,6 +147,7 @@ public actor SharedAutoUpdateManager {
                 scheduledAt: Date(timeIntervalSince1970: nextEligible),
                 remaining: remaining,
                 intervalHours: interval,
+                lastCheckTime: lastCheckTime,
                 lastSuccessful: lastSuccessful,
                 isRunning: isRunning,
                 isOverdue: isOverdue
@@ -149,6 +161,7 @@ public actor SharedAutoUpdateManager {
                     scheduledAt: Date(timeIntervalSince1970: nowTimestamp),
                     remaining: 0,
                     intervalHours: interval,
+                    lastCheckTime: lastCheckTime,
                     lastSuccessful: lastSuccessful,
                     isRunning: isRunning,
                     isOverdue: isOverdue
@@ -158,6 +171,7 @@ public actor SharedAutoUpdateManager {
                     scheduledAt: Date(timeIntervalSince1970: theoretical),
                     remaining: theoretical - nowTimestamp,
                     intervalHours: interval,
+                    lastCheckTime: lastCheckTime,
                     lastSuccessful: lastSuccessful,
                     isRunning: isRunning,
                     isOverdue: false
@@ -169,6 +183,7 @@ public actor SharedAutoUpdateManager {
                 scheduledAt: nil,
                 remaining: nil,
                 intervalHours: interval,
+                lastCheckTime: lastCheckTime,
                 lastSuccessful: lastSuccessful,
                 isRunning: isRunning,
                 isOverdue: false
@@ -208,6 +223,7 @@ public actor SharedAutoUpdateManager {
 
     /// Checks if the running flag is stale (stuck) and clears it if necessary.
     /// Returns true if the flag was cleared due to staleness.
+    /// Note: Caller should invalidate status cache if this returns true
     private func checkAndClearStaleRunningFlag(defaults: UserDefaults) -> Bool {
         guard defaults.bool(forKey: isCurrentlyRunningKey) else {
             return false // Not running, nothing to do
@@ -306,22 +322,29 @@ public actor SharedAutoUpdateManager {
             os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
         }
 
-        // Compute jittered next eligible time and store it up-front to avoid stampede
-        let jitterFactor = Double.random(in: jitterMin...jitterMax)
-        let nextEligibleTime = now + interval * 3600 * jitterFactor
+        // Compute next eligible time (exactly interval hours from now)
+        let nextEligibleTime = now + interval * 3600
         defaults.set(nextEligibleTime, forKey: nextEligibleKey)
         defaults.set(now, forKey: lastCheckKey) // Keep legacy key updated too
+        defaults.set(now, forKey: lastCheckTimeKey) // Record when we started checking
         appendSharedLog("Auto-update started (trigger: \(trigger), forced: \(shouldForce))")
 
         do {
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             guard !selectedFilters.isEmpty else {
+                // Still record check time even though no filters selected
+                defaults.synchronize()
+                invalidateStatusCache()
                 return
             }
 
             let updates = try await checkForUpdates(filters: selectedFilters, defaults: defaults)
             guard !updates.isEmpty else {
-                return // No updates found, silently exit
+                // No updates found - still update check time to show we checked successfully
+                defaults.synchronize()
+                invalidateStatusCache()
+                appendSharedLog("No updates found - filters are up to date")
+                return
             }
 
             // Only log when updates are actually found

@@ -81,6 +81,7 @@ struct SettingsView: View {
 
                         settingsSectionView(title: "Filter Auto-Update") {
                             VStack(spacing: 0) {
+                                // Enable/Disable toggle
                                 HStack {
                                     Text("Enable Auto-Updates")
                                         .font(.body)
@@ -91,66 +92,74 @@ struct SettingsView: View {
                                 }
                                 .padding(16)
 
-                                Divider()
-                                    .padding(.leading, 16)
+                                if autoUpdateEnabled {
+                                    Divider()
+                                        .padding(.leading, 16)
 
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Update Frequency")
-                                        .font(.body)
-                                        .fontWeight(.medium)
-
-                                    Slider(
-                                        value: autoUpdateIntervalBinding,
-                                        in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
-                                        step: 1
-                                    ) {
-                                        Text("Frequency")
-                                    } minimumValueLabel: {
-                                        Text("1h")
-                                            .font(.caption2)
-                                    } maximumValueLabel: {
-                                        Text("7d")
-                                            .font(.caption2)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    // Update Frequency row
+                                    NavigationLink {
+                                        UpdateFrequencyPickerView(selectedInterval: $autoUpdateIntervalHours)
+                                    } label: {
                                         HStack {
-                                            Text(intervalDescription(hours: autoUpdateIntervalHours))
+                                            Text("Update Frequency")
+                                                .font(.body)
                                             Spacer()
+                                            Text(intervalDescription(hours: autoUpdateIntervalHours))
+                                                .foregroundColor(.secondary)
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(16)
+
+                                    Divider()
+                                        .padding(.leading, 16)
+
+                                    // Status row
+                                    HStack(alignment: .center, spacing: 8) {
+                                        VStack(alignment: .leading, spacing: 4) {
                                             if isUpdating {
-                                                ProgressView()
-                                                    .scaleEffect(0.8)
-                                                    .padding(.trailing, 4)
-                                                Text("Updating...")
-                                                    .foregroundColor(.blue)
+                                                HStack(spacing: 6) {
+                                                    ProgressView()
+                                                        .scaleEffect(0.8)
+                                                    Text("Updating...")
+                                                        .foregroundColor(.blue)
+                                                        .font(.subheadline)
+                                                }
                                             } else {
                                                 Text(nextScheduleLine)
-                                                    .foregroundColor(isOverdue ? .orange : .secondary)
+                                                    .font(.subheadline)
+                                                    .foregroundColor(isOverdue ? .orange : .primary)
                                             }
+                                            Text(lastUpdateLine)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
                                         }
-                                        .font(.caption)
-                                        .lineLimit(1)
-
-                                        Text(lastUpdateLine)
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
+                                        Spacer()
                                     }
+                                    .padding(16)
 
+                                    Divider()
+                                        .padding(.leading, 16)
+
+                                    // Update Now button
                                     Button {
                                         Task { await performManualUpdate() }
                                     } label: {
                                         HStack {
+                                            Spacer()
                                             Image(systemName: "arrow.triangle.2.circlepath")
                                             Text("Update Now")
+                                            Spacer()
                                         }
-                                        .frame(maxWidth: .infinity)
                                     }
-                                    .buttonStyle(.bordered)
-                                    .disabled(isUpdating || !autoUpdateEnabled)
-                                    .padding(.top, 4)
+                                    .buttonStyle(.plain)
+                                    .disabled(isUpdating)
+                                    .foregroundColor(isUpdating ? .secondary : .blue)
+                                    .padding(16)
                                 }
-                                .disabled(!autoUpdateEnabled)
-                                .padding(16)
                             }
                         }
 
@@ -383,7 +392,7 @@ private extension SettingsView {
         let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
 
         let scheduleDescription = formatSchedule(scheduledAt: status.scheduledAt, remaining: status.remaining, isOverdue: status.isOverdue)
-        let lastDescription = formatLastUpdate(date: status.lastSuccessful)
+        let lastDescription = formatLastUpdate(date: status.lastCheckTime)
 
         await MainActor.run {
             nextScheduleLine = scheduleDescription
@@ -412,7 +421,7 @@ private extension SettingsView {
     private func startTimer() {
         stopTimer()
         guard autoUpdateEnabled else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
             Task { await updateScheduleLine() }
         }
     }
@@ -421,5 +430,105 @@ private extension SettingsView {
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
+    }
+}
+
+// MARK: - Update Frequency Picker View
+struct UpdateFrequencyPickerView: View {
+    @Binding var selectedInterval: Double
+    @Environment(\.dismiss) private var dismiss
+
+    private let minimumAutoUpdateIntervalHours: Double = 1
+    private let maximumAutoUpdateIntervalHours: Double = 24 * 7
+
+    // Predefined common intervals
+    private let commonIntervals: [(hours: Double, label: String)] = [
+        (1, "Every hour"),
+        (2, "Every 2 hours"),
+        (3, "Every 3 hours"),
+        (6, "Every 6 hours"),
+        (12, "Every 12 hours"),
+        (24, "Every day"),
+        (48, "Every 2 days"),
+        (72, "Every 3 days"),
+        (24 * 7, "Every week")
+    ]
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(commonIntervals, id: \.hours) { interval in
+                    Button {
+                        selectedInterval = interval.hours
+                        Task {
+                            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+                        }
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(interval.label)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if abs(selectedInterval - interval.hours) < 0.01 {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Custom Interval")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Text("1h")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Slider(
+                            value: $selectedInterval,
+                            in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
+                            step: 1
+                        )
+                        Text("7d")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text(formatCustomInterval(hours: selectedInterval))
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                }
+                .padding(.vertical, 8)
+            }
+        }
+        .navigationTitle("Update Frequency")
+        .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: selectedInterval) { _ in
+            Task {
+                await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            }
+        }
+    }
+
+    private func formatCustomInterval(hours: Double) -> String {
+        if hours.truncatingRemainder(dividingBy: 24) == 0 {
+            let days = Int(hours / 24)
+            return days == 1 ? "Every 1 day" : "Every \(days) days"
+        }
+
+        if hours >= 24 {
+            let days = Int(hours / 24)
+            let remainingHours = Int(hours) % 24
+            if remainingHours == 0 {
+                return days == 1 ? "Every 1 day" : "Every \(days) days"
+            }
+            return "Every \(days)d \(remainingHours)h"
+        }
+
+        return Int(hours) == 1 ? "Every 1 hour" : "Every \(Int(hours)) hours"
     }
 }
