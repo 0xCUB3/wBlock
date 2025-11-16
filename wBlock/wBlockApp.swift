@@ -35,7 +35,7 @@ struct wBlockApp: App {
                         }
                         handleLaunchArguments()
 
-                        // Run one-time migration from multipurpose to annoyances
+                        // Run migration from multipurpose to annoyances (idempotent - only saves if needed)
                         Task {
                             await dataManager.migrateMultipurposeToAnnoyances()
                         }
