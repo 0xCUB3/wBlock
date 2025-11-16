@@ -47,14 +47,14 @@ public class ContentBlockerTargetManager {
             // macOS Targets (5 content blockers)
             ContentBlockerTargetInfo(primaryCategory: .ads, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Ads", rulesFilename: "rules_ads_macos.json"),
             ContentBlockerTargetInfo(primaryCategory: .privacy, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Privacy", rulesFilename: "rules_privacy_macos.json"),
-            ContentBlockerTargetInfo(primaryCategory: .security, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Security", rulesFilename: "rules_security_multipurpose_annoyances_macos.json", secondaryCategory: .annoyances),
+            ContentBlockerTargetInfo(primaryCategory: .security, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Security", rulesFilename: "rules_security_annoyances_macos.json", secondaryCategory: .annoyances),
             ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign", rulesFilename: "rules_foreign_experimental_macos.json", secondaryCategory: .experimental),
             ContentBlockerTargetInfo(primaryCategory: .custom, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Custom", rulesFilename: "rules_custom_macos.json"),
 
             // iOS Targets (same 5 categories as macOS)
             ContentBlockerTargetInfo(primaryCategory: .ads, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Ads-iOS", rulesFilename: "rules_ads_ios.json"),
             ContentBlockerTargetInfo(primaryCategory: .privacy, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Privacy-iOS", rulesFilename: "rules_privacy_ios.json"),
-            ContentBlockerTargetInfo(primaryCategory: .security, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Security-iOS", rulesFilename: "rules_security_multipurpose_annoyances_ios.json", secondaryCategory: .annoyances),
+            ContentBlockerTargetInfo(primaryCategory: .security, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Security-iOS", rulesFilename: "rules_security_annoyances_ios.json", secondaryCategory: .annoyances),
             ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign-iOS", rulesFilename: "rules_foreign_experimental_ios.json", secondaryCategory: .experimental),
             ContentBlockerTargetInfo(primaryCategory: .custom, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Custom-iOS", rulesFilename: "rules_custom_ios.json")
         ]

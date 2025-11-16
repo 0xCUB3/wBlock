@@ -2825,7 +2825,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2857,7 +2857,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2889,7 +2889,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign & Experimental";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2921,7 +2921,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign & Experimental";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -3139,7 +3139,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3170,7 +3170,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
