@@ -1,5 +1,6 @@
 import SwiftUI
 import wBlockCoreService
+import SafariServices
 
 struct SettingsView: View {
     let filterManager: AppFilterManager
@@ -43,6 +44,8 @@ struct SettingsView: View {
                                     set: { newValue in
                                         Task {
                                             await dataManager.setIsBadgeCounterEnabled(newValue)
+                                            // Force Safari to refresh the toolbar badge
+                                            SFSafariApplication.setToolbarItemsNeedUpdate()
                                         }
                                     }
                                 ))

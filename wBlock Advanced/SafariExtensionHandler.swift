@@ -374,16 +374,12 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         validationHandler: @escaping ((Bool, String) -> Void)
     ) {
         Task {
-            // Check if badge counter is enabled (matches SettingsView.swift key)
-            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-            let storedValue = defaults?.object(forKey: "isBadgeCounterEnabled") as? Bool
-            let isBadgeCounterEnabled = storedValue ?? true
+            // Reload data from disk to get latest settings (hot reload)
+            await ProtobufDataManager.shared.loadData()
 
-            // Persist default so extension and host app share the same initial state
-            if storedValue == nil {
-                defaults?.set(true, forKey: "isBadgeCounterEnabled")
-            }
-            
+            // Check if badge counter is enabled (read from Protobuf)
+            let isBadgeCounterEnabled = await ProtobufDataManager.shared.isBadgeCounterEnabled
+
             if !isBadgeCounterEnabled {
                 // Badge is disabled, show empty string
                 validationHandler(true, "")
