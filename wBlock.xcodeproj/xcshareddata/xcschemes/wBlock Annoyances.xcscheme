@@ -17,8 +17,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C1F16C022DE354E40031E7EF"
-               BuildableName = "wBlock Annoyances.appex"
-               BlueprintName = "wBlock Annoyances"
+               BuildableName = "wBlock Privacy.appex"
+               BlueprintName = "wBlock Privacy"
                ReferencedContainer = "container:wBlock.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

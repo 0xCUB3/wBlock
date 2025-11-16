@@ -17,8 +17,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C1F16C162DE354FB0031E7EF"
-               BuildableName = "wBlock Foreign &amp; Experimental.appex"
-               BlueprintName = "wBlock Foreign &amp; Experimental"
+               BuildableName = "wBlock Foreign.appex"
+               BlueprintName = "wBlock Foreign"
                ReferencedContainer = "container:wBlock.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

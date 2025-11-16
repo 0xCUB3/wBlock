@@ -1125,7 +1125,7 @@
 			fileSystemSynchronizedGroups = (
 				C1F16C052DE354E40031E7EF /* wBlock Ads */,
 			);
-			name = "wBlock Annoyances";
+			name = "wBlock Privacy";
 			packageProductDependencies = (
 			);
 			productName = "wBlock Annoyances";
@@ -1147,7 +1147,7 @@
 			fileSystemSynchronizedGroups = (
 				C1F16C192DE354FB0031E7EF /* wBlock Foreign */,
 			);
-			name = "wBlock Foreign & Experimental";
+			name = "wBlock Foreign";
 			packageProductDependencies = (
 			);
 			productName = "wBlock Foreign & Experimental";

@@ -52,13 +52,6 @@ extension ProtobufDataManager {
             }
             await saveData()
         }
-
-        // Check if we have zero enabled filter lists after migration
-        let enabledCount = appData.filterLists.filter { $0.isSelected }.count
-        if enabledCount == 0 {
-            // Reset to empty - user will need to re-enable filters or app will load defaults
-            await updateFilterLists([])
-        }
     }
 
     // MARK: - Filter Lists
