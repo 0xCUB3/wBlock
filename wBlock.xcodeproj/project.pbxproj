@@ -12,13 +12,13 @@
 		750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D4C2E82D75100FC2F60 /* wBlock Annoyances.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C032DE354E40031E7EF /* wBlock Annoyances.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D4E2E82D75100FC2F60 /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D4E2E82D75100FC2F60 /* wBlock Ads.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D502E82D75100FC2F60 /* wBlock Ads & Privacy iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D502E82D75100FC2F60 /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D512E82D75100FC2F60 /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D522E82D75100FC2F60 /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D522E82D75100FC2F60 /* wBlock Security.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D532E82D75100FC2F60 /* wBlock Custom.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D542E82D75100FC2F60 /* wBlock Security & Multipurpose iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C512DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D542E82D75100FC2F60 /* wBlock Security iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C512DE3557D0031E7EF /* wBlock Security iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D552E82D75100FC2F60 /* wBlock Custom iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D562E82D75100FC2F60 /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C172DE354FB0031E7EF /* wBlock Foreign & Experimental.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D582E82D75100FC2F60 /* FilterUpdateService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -29,20 +29,20 @@
 		C1A41C552DE08A040056F63D /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A41C542DE08A040056F63D /* ContentBlockerConverter */; };
 		C1A41C582DE08A0E0056F63D /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = C1A41C572DE08A0E0056F63D /* ZIPFoundation */; };
 		C1A41C6C2DE08AD30056F63D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
-		C1A41C762DE08AD30056F63D /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1A41C892DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1A41C892DE08BDA0056F63D /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1E44F382E4CBA9300F58897 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = C1E44F372E4CBA9300F58897 /* SwiftProtobuf */; };
 		C1F16BF02DE354C30031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
-		C1F16BFA2DE354C30031E7EF /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1F16BFA2DE354C30031E7EF /* wBlock Security.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C042DE354E40031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1F16C0E2DE354E40031E7EF /* wBlock Annoyances.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C032DE354E40031E7EF /* wBlock Annoyances.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C182DE354FB0031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1F16C222DE354FB0031E7EF /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C172DE354FB0031E7EF /* wBlock Foreign & Experimental.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C2C2DE355150031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1F16C362DE355150031E7EF /* wBlock Custom.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1F16C5A2DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C512DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1F16C5A2DE3557D0031E7EF /* wBlock Security iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C512DE3557D0031E7EF /* wBlock Security iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C6C2DE3558A0031E7EF /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16C902DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1F16CB42DE355DE0031E7EF /* wBlock Custom iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -76,14 +76,14 @@
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1A41C682DE08AD30056F63D;
-			remoteInfo = "wBlock Filters";
+			remoteInfo = "wBlock Ads";
 		};
 		750C5D292E82D75100FC2F60 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1A41C7F2DE08BDA0056F63D;
-			remoteInfo = "wBlock Filters (iOS)";
+			remoteInfo = "wBlock Ads (iOS)";
 		};
 		750C5D2B2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -104,7 +104,7 @@
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1F16BEE2DE354C30031E7EF;
-			remoteInfo = "wBlock Security & Multipurpose";
+			remoteInfo = "wBlock Security";
 		};
 		750C5D312E82D75100FC2F60 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -209,14 +209,14 @@
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1A41C682DE08AD30056F63D;
-			remoteInfo = "wBlock Filters";
+			remoteInfo = "wBlock Ads";
 		};
 		C1A41C872DE08BDA0056F63D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1A41C7F2DE08BDA0056F63D;
-			remoteInfo = "wBlock Filters (iOS)";
+			remoteInfo = "wBlock Ads (iOS)";
 		};
 		C1A41CCC2DE08CAB0056F63D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -237,7 +237,7 @@
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1F16BEE2DE354C30031E7EF;
-			remoteInfo = "wBlock Security & Multipurpose";
+			remoteInfo = "wBlock Security";
 		};
 		C1F16C0C2DE354E40031E7EF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -318,13 +318,13 @@
 				750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */,
 				750C5D4C2E82D75100FC2F60 /* wBlock Annoyances.appex in Embed Foundation Extensions */,
 				750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
-				750C5D4E2E82D75100FC2F60 /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */,
+				750C5D4E2E82D75100FC2F60 /* wBlock Ads.appex in Embed Foundation Extensions */,
 				750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */,
-				750C5D502E82D75100FC2F60 /* wBlock Ads & Privacy iOS.appex in Embed Foundation Extensions */,
+				750C5D502E82D75100FC2F60 /* wBlock Ads iOS.appex in Embed Foundation Extensions */,
 				750C5D512E82D75100FC2F60 /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */,
-				750C5D522E82D75100FC2F60 /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */,
+				750C5D522E82D75100FC2F60 /* wBlock Security.appex in Embed Foundation Extensions */,
 				750C5D532E82D75100FC2F60 /* wBlock Custom.appex in Embed Foundation Extensions */,
-				750C5D542E82D75100FC2F60 /* wBlock Security & Multipurpose iOS.appex in Embed Foundation Extensions */,
+				750C5D542E82D75100FC2F60 /* wBlock Security iOS.appex in Embed Foundation Extensions */,
 				750C5D552E82D75100FC2F60 /* wBlock Custom iOS.appex in Embed Foundation Extensions */,
 				750C5D562E82D75100FC2F60 /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */,
 			);
@@ -373,13 +373,13 @@
 				C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */,
 				C1F16C0E2DE354E40031E7EF /* wBlock Annoyances.appex in Embed Foundation Extensions */,
 				C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
-				C1A41C762DE08AD30056F63D /* wBlock Ads & Privacy.appex in Embed Foundation Extensions */,
+				C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */,
 				C1F16C902DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */,
-				C1A41C892DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex in Embed Foundation Extensions */,
+				C1A41C892DE08BDA0056F63D /* wBlock Ads iOS.appex in Embed Foundation Extensions */,
 				C1F16C6C2DE3558A0031E7EF /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */,
-				C1F16BFA2DE354C30031E7EF /* wBlock Security & Multipurpose.appex in Embed Foundation Extensions */,
+				C1F16BFA2DE354C30031E7EF /* wBlock Security.appex in Embed Foundation Extensions */,
 				C1F16C362DE355150031E7EF /* wBlock Custom.appex in Embed Foundation Extensions */,
-				C1F16C5A2DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex in Embed Foundation Extensions */,
+				C1F16C5A2DE3557D0031E7EF /* wBlock Security iOS.appex in Embed Foundation Extensions */,
 				C1F16CB42DE355DE0031E7EF /* wBlock Custom iOS.appex in Embed Foundation Extensions */,
 				C1F16C222DE354FB0031E7EF /* wBlock Foreign & Experimental.appex in Embed Foundation Extensions */,
 			);
@@ -394,16 +394,16 @@
 		C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = FilterUpdateService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C2D2DE0897C0056F63D /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C452DE089C50056F63D /* wBlockCoreService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = wBlockCoreService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Ads & Privacy.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1A41C692DE08AD30056F63D /* wBlock Ads.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Ads.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C6B2DE08AD30056F63D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
-		C1A41C802DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Ads & Privacy iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Ads iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Scripts iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Advanced.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Security & Multipurpose.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Security.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C032DE354E40031E7EF /* wBlock Annoyances.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Annoyances.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C172DE354FB0031E7EF /* wBlock Foreign & Experimental.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Foreign & Experimental.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Custom.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1F16C512DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Security & Multipurpose iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1F16C512DE3557D0031E7EF /* wBlock Security iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Security iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Annoyances iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Foreign & Experimental iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Custom iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -453,20 +453,6 @@
 			);
 			target = C1A41C2C2DE0897C0056F63D /* wBlock */;
 		};
-		C1A41C7A2DE08AD30056F63D /* Exceptions for "wBlock Filters" folder in "wBlock Ads & Privacy" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */;
-		};
-		C1A41C8D2DE08BDA0056F63D /* Exceptions for "wBlock Filters (iOS)" folder in "wBlock Ads & Privacy iOS" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads & Privacy iOS */;
-		};
 		C1A41CD22DE08CAB0056F63D /* Exceptions for "wBlock Scripts (iOS)" folder in "wBlock Scripts iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -481,27 +467,6 @@
 			);
 			target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
 		};
-		C1F16BFE2DE354C30031E7EF /* Exceptions for "wBlock Security & Multipurpose" folder in "wBlock Security & Multipurpose" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */;
-		};
-		C1F16C122DE354E40031E7EF /* Exceptions for "wBlock Annoyances" folder in "wBlock Annoyances" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1F16C022DE354E40031E7EF /* wBlock Annoyances */;
-		};
-		C1F16C262DE354FB0031E7EF /* Exceptions for "wBlock Foreign & Experimental" folder in "wBlock Foreign & Experimental" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1F16C162DE354FB0031E7EF /* wBlock Foreign & Experimental */;
-		};
 		C1F16C3A2DE355150031E7EF /* Exceptions for "wBlock Custom" folder in "wBlock Custom" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -509,19 +474,12 @@
 			);
 			target = C1F16C2A2DE355150031E7EF /* wBlock Custom */;
 		};
-		C1F16C5E2DE3557D0031E7EF /* Exceptions for "wBlock Security (iOS)" folder in "wBlock Security & Multipurpose iOS" target */ = {
+		C1F16C5E2DE3557D0031E7EF /* Exceptions for "wBlock Security (iOS)" folder in "wBlock Security iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = C1F16C502DE3557D0031E7EF /* wBlock Security & Multipurpose iOS */;
-		};
-		C1F16C702DE3558A0031E7EF /* Exceptions for "wBlock Annoyances (iOS)" folder in "wBlock Annoyances iOS" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */;
+			target = C1F16C502DE3557D0031E7EF /* wBlock Security iOS */;
 		};
 		C1F16C942DE355BC0031E7EF /* Exceptions for "wBlock Foreign (iOS)" folder in "wBlock Foreign & Experimental iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -536,6 +494,20 @@
 				Info.plist,
 			);
 			target = C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */;
+		};
+		F1ABDF90649E4085BF7180FA /* Exceptions for "wBlock Ads (iOS)" folder in "wBlock Ads iOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */;
+		};
+		0D053E2A727843AC84B17341 /* Exceptions for "wBlock Privacy (iOS)" folder in "wBlock Annoyances iOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -562,20 +534,17 @@
 			path = wBlockCoreService;
 			sourceTree = "<group>";
 		};
-		C1A41C6D2DE08AD30056F63D /* wBlock Filters */ = {
+		C1A41C6D2DE08AD30056F63D /* wBlock Ads */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1A41C7A2DE08AD30056F63D /* Exceptions for "wBlock Filters" folder in "wBlock Ads & Privacy" target */,
-			);
-			path = "wBlock Filters";
+			path = "wBlock Ads";
 			sourceTree = "<group>";
 		};
-		C1A41C812DE08BDA0056F63D /* wBlock Filters (iOS) */ = {
+		C1A41C812DE08BDA0056F63D /* wBlock Ads (iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C1A41C8D2DE08BDA0056F63D /* Exceptions for "wBlock Filters (iOS)" folder in "wBlock Ads & Privacy iOS" target */,
+				F1ABDF90649E4085BF7180FA /* Exceptions for "wBlock Ads (iOS)" folder in "wBlock Ads iOS" target */,
 			);
-			path = "wBlock Filters (iOS)";
+			path = "wBlock Ads (iOS)";
 			sourceTree = "<group>";
 		};
 		C1A41CB72DE08CAB0056F63D /* wBlock Scripts (iOS) */ = {
@@ -599,28 +568,19 @@
 			path = "wBlock Advanced";
 			sourceTree = "<group>";
 		};
-		C1F16BF12DE354C30031E7EF /* wBlock Security & Multipurpose */ = {
+		C1F16BF12DE354C30031E7EF /* wBlock Security */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1F16BFE2DE354C30031E7EF /* Exceptions for "wBlock Security & Multipurpose" folder in "wBlock Security & Multipurpose" target */,
-			);
-			path = "wBlock Security & Multipurpose";
+			path = "wBlock Security";
 			sourceTree = "<group>";
 		};
-		C1F16C052DE354E40031E7EF /* wBlock Annoyances */ = {
+		C1F16C052DE354E40031E7EF /* wBlock Ads */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1F16C122DE354E40031E7EF /* Exceptions for "wBlock Annoyances" folder in "wBlock Annoyances" target */,
-			);
-			path = "wBlock Annoyances";
+			path = "wBlock Ads";
 			sourceTree = "<group>";
 		};
-		C1F16C192DE354FB0031E7EF /* wBlock Foreign & Experimental */ = {
+		C1F16C192DE354FB0031E7EF /* wBlock Foreign */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1F16C262DE354FB0031E7EF /* Exceptions for "wBlock Foreign & Experimental" folder in "wBlock Foreign & Experimental" target */,
-			);
-			path = "wBlock Foreign & Experimental";
+			path = "wBlock Foreign";
 			sourceTree = "<group>";
 		};
 		C1F16C2D2DE355150031E7EF /* wBlock Custom */ = {
@@ -633,23 +593,23 @@
 		};
 		C1F16C402DE355670031E7EF /* wBlock Privacy (iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0D053E2A727843AC84B17341 /* Exceptions for "wBlock Privacy (iOS)" folder in "wBlock Annoyances iOS" target */,
+			);
 			path = "wBlock Privacy (iOS)";
 			sourceTree = "<group>";
 		};
 		C1F16C522DE3557D0031E7EF /* wBlock Security (iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C1F16C5E2DE3557D0031E7EF /* Exceptions for "wBlock Security (iOS)" folder in "wBlock Security & Multipurpose iOS" target */,
+				C1F16C5E2DE3557D0031E7EF /* Exceptions for "wBlock Security (iOS)" folder in "wBlock Security iOS" target */,
 			);
 			path = "wBlock Security (iOS)";
 			sourceTree = "<group>";
 		};
-		C1F16C642DE3558A0031E7EF /* wBlock Annoyances (iOS) */ = {
+		C1F16C642DE3558A0031E7EF /* wBlock Ads (iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1F16C702DE3558A0031E7EF /* Exceptions for "wBlock Annoyances (iOS)" folder in "wBlock Annoyances iOS" target */,
-			);
-			path = "wBlock Annoyances (iOS)";
+			path = "wBlock Ads (iOS)";
 			sourceTree = "<group>";
 		};
 		C1F16C762DE355A80031E7EF /* wBlock Multipurpose (iOS) */ = {
@@ -848,16 +808,16 @@
 			children = (
 				C1A41C2F2DE0897C0056F63D /* wBlock */,
 				C1A41C462DE089C50056F63D /* wBlockCoreService */,
-				C1A41C6D2DE08AD30056F63D /* wBlock Filters */,
-				C1A41C812DE08BDA0056F63D /* wBlock Filters (iOS) */,
+				C1A41C6D2DE08AD30056F63D /* wBlock Ads */,
+				C1A41C812DE08BDA0056F63D /* wBlock Ads (iOS) */,
 				C1A41CB72DE08CAB0056F63D /* wBlock Scripts (iOS) */,
 				C1A41CD82DE08CC90056F63D /* wBlock Advanced */,
-				C1F16BF12DE354C30031E7EF /* wBlock Security & Multipurpose */,
-				C1F16C052DE354E40031E7EF /* wBlock Annoyances */,
-				C1F16C192DE354FB0031E7EF /* wBlock Foreign & Experimental */,
+				C1F16BF12DE354C30031E7EF /* wBlock Security */,
+				C1F16C052DE354E40031E7EF /* wBlock Ads */,
+				C1F16C192DE354FB0031E7EF /* wBlock Foreign */,
 				C1F16C2D2DE355150031E7EF /* wBlock Custom */,
 				C1F16C522DE3557D0031E7EF /* wBlock Security (iOS) */,
-				C1F16C642DE3558A0031E7EF /* wBlock Annoyances (iOS) */,
+				C1F16C642DE3558A0031E7EF /* wBlock Ads (iOS) */,
 				C1F16C882DE355BC0031E7EF /* wBlock Foreign (iOS) */,
 				C1F16CAC2DE355DE0031E7EF /* wBlock Custom (iOS) */,
 				C1A2873E2E73617D00F5B43D /* FilterUpdateService */,
@@ -872,15 +832,15 @@
 			children = (
 				C1A41C2D2DE0897C0056F63D /* wBlock.app */,
 				C1A41C452DE089C50056F63D /* wBlockCoreService.framework */,
-				C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */,
-				C1A41C802DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex */,
+				C1A41C692DE08AD30056F63D /* wBlock Ads.appex */,
+				C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */,
 				C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */,
 				C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */,
-				C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */,
+				C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */,
 				C1F16C032DE354E40031E7EF /* wBlock Annoyances.appex */,
 				C1F16C172DE354FB0031E7EF /* wBlock Foreign & Experimental.appex */,
 				C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */,
-				C1F16C512DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex */,
+				C1F16C512DE3557D0031E7EF /* wBlock Security iOS.appex */,
 				C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */,
 				C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */,
 				C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */,
@@ -1041,9 +1001,9 @@
 			productReference = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */ = {
+		C1A41C682DE08AD30056F63D /* wBlock Ads */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C1A41C772DE08AD30056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads & Privacy" */;
+			buildConfigurationList = C1A41C772DE08AD30056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads" */;
 			buildPhases = (
 				C1A41C652DE08AD30056F63D /* Sources */,
 				C1A41C662DE08AD30056F63D /* Frameworks */,
@@ -1055,18 +1015,18 @@
 				C1F16D682DE36D980031E7EF /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				C1A41C6D2DE08AD30056F63D /* wBlock Filters */,
+				C1A41C6D2DE08AD30056F63D /* wBlock Ads */,
 			);
-			name = "wBlock Ads & Privacy";
+			name = "wBlock Ads";
 			packageProductDependencies = (
 			);
-			productName = "wBlock Filters";
-			productReference = C1A41C692DE08AD30056F63D /* wBlock Ads & Privacy.appex */;
+			productName = "wBlock Ads";
+			productReference = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		C1A41C7F2DE08BDA0056F63D /* wBlock Ads & Privacy iOS */ = {
+		C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C1A41C8A2DE08BDA0056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads & Privacy iOS" */;
+			buildConfigurationList = C1A41C8A2DE08BDA0056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads iOS" */;
 			buildPhases = (
 				C1A41C7C2DE08BDA0056F63D /* Sources */,
 				C1A41C7D2DE08BDA0056F63D /* Frameworks */,
@@ -1077,13 +1037,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C1A41C812DE08BDA0056F63D /* wBlock Filters (iOS) */,
+				C1A41C812DE08BDA0056F63D /* wBlock Ads (iOS) */,
 			);
-			name = "wBlock Ads & Privacy iOS";
+			name = "wBlock Ads iOS";
 			packageProductDependencies = (
 			);
-			productName = "wBlock Filters (iOS)";
-			productReference = C1A41C802DE08BDA0056F63D /* wBlock Ads & Privacy iOS.appex */;
+			productName = "wBlock Ads (iOS)";
+			productReference = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */ = {
@@ -1130,9 +1090,9 @@
 			productReference = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */ = {
+		C1F16BEE2DE354C30031E7EF /* wBlock Security */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C1F16BFB2DE354C30031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security & Multipurpose" */;
+			buildConfigurationList = C1F16BFB2DE354C30031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security" */;
 			buildPhases = (
 				C1F16BEB2DE354C30031E7EF /* Sources */,
 				C1F16BEC2DE354C30031E7EF /* Frameworks */,
@@ -1143,13 +1103,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C1F16BF12DE354C30031E7EF /* wBlock Security & Multipurpose */,
+				C1F16BF12DE354C30031E7EF /* wBlock Security */,
 			);
-			name = "wBlock Security & Multipurpose";
+			name = "wBlock Security";
 			packageProductDependencies = (
 			);
-			productName = "wBlock Security & Multipurpose";
-			productReference = C1F16BEF2DE354C30031E7EF /* wBlock Security & Multipurpose.appex */;
+			productName = "wBlock Security";
+			productReference = C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		C1F16C022DE354E40031E7EF /* wBlock Annoyances */ = {
@@ -1165,7 +1125,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C1F16C052DE354E40031E7EF /* wBlock Annoyances */,
+				C1F16C052DE354E40031E7EF /* wBlock Ads */,
 			);
 			name = "wBlock Annoyances";
 			packageProductDependencies = (
@@ -1187,7 +1147,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C1F16C192DE354FB0031E7EF /* wBlock Foreign & Experimental */,
+				C1F16C192DE354FB0031E7EF /* wBlock Foreign */,
 			);
 			name = "wBlock Foreign & Experimental";
 			packageProductDependencies = (
@@ -1239,9 +1199,9 @@
 			productName = "wBlock Privacy (iOS)";
 			productType = "com.apple.product-type.app-extension";
 		};
-		C1F16C502DE3557D0031E7EF /* wBlock Security & Multipurpose iOS */ = {
+		C1F16C502DE3557D0031E7EF /* wBlock Security iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C1F16C5B2DE3557D0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security & Multipurpose iOS" */;
+			buildConfigurationList = C1F16C5B2DE3557D0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security iOS" */;
 			buildPhases = (
 				C1F16C4D2DE3557D0031E7EF /* Sources */,
 				C1F16C4E2DE3557D0031E7EF /* Frameworks */,
@@ -1254,11 +1214,11 @@
 			fileSystemSynchronizedGroups = (
 				C1F16C522DE3557D0031E7EF /* wBlock Security (iOS) */,
 			);
-			name = "wBlock Security & Multipurpose iOS";
+			name = "wBlock Security iOS";
 			packageProductDependencies = (
 			);
 			productName = "wBlock Security (iOS)";
-			productReference = C1F16C512DE3557D0031E7EF /* wBlock Security & Multipurpose iOS.appex */;
+			productReference = C1F16C512DE3557D0031E7EF /* wBlock Security iOS.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */ = {
@@ -1274,7 +1234,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C1F16C642DE3558A0031E7EF /* wBlock Annoyances (iOS) */,
+				C1F16C402DE355670031E7EF /* wBlock Privacy (iOS) */,
 			);
 			name = "wBlock Annoyances iOS";
 			packageProductDependencies = (
@@ -1448,13 +1408,13 @@
 				C1A41C2C2DE0897C0056F63D /* wBlock */,
 				750C5D232E82D75100FC2F60 /* wBlock beta */,
 				C1A41C442DE089C50056F63D /* wBlockCoreService */,
-				C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */,
-				C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */,
+				C1A41C682DE08AD30056F63D /* wBlock Ads */,
+				C1F16BEE2DE354C30031E7EF /* wBlock Security */,
 				C1F16C022DE354E40031E7EF /* wBlock Annoyances */,
 				C1F16C162DE354FB0031E7EF /* wBlock Foreign & Experimental */,
 				C1F16C2A2DE355150031E7EF /* wBlock Custom */,
-				C1A41C7F2DE08BDA0056F63D /* wBlock Ads & Privacy iOS */,
-				C1F16C502DE3557D0031E7EF /* wBlock Security & Multipurpose iOS */,
+				C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */,
+				C1F16C502DE3557D0031E7EF /* wBlock Security iOS */,
 				C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */,
 				C1F16C862DE355BC0031E7EF /* wBlock Foreign & Experimental iOS */,
 				C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */,
@@ -1748,7 +1708,7 @@
 			platformFilters = (
 				macos,
 			);
-			target = C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */;
+			target = C1A41C682DE08AD30056F63D /* wBlock Ads */;
 			targetProxy = 750C5D272E82D75100FC2F60 /* PBXContainerItemProxy */;
 		};
 		750C5D282E82D75100FC2F60 /* PBXTargetDependency */ = {
@@ -1757,7 +1717,7 @@
 				ios,
 				xros,
 			);
-			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads & Privacy iOS */;
+			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */;
 			targetProxy = 750C5D292E82D75100FC2F60 /* PBXContainerItemProxy */;
 		};
 		750C5D2A2E82D75100FC2F60 /* PBXTargetDependency */ = {
@@ -1782,7 +1742,7 @@
 			platformFilters = (
 				macos,
 			);
-			target = C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */;
+			target = C1F16BEE2DE354C30031E7EF /* wBlock Security */;
 			targetProxy = 750C5D2F2E82D75100FC2F60 /* PBXContainerItemProxy */;
 		};
 		750C5D302E82D75100FC2F60 /* PBXTargetDependency */ = {
@@ -1824,7 +1784,7 @@
 				ios,
 				xros,
 			);
-			target = C1F16C502DE3557D0031E7EF /* wBlock Security & Multipurpose iOS */;
+			target = C1F16C502DE3557D0031E7EF /* wBlock Security iOS */;
 			targetProxy = 750C5D392E82D75100FC2F60 /* PBXContainerItemProxy */;
 		};
 		750C5D3A2E82D75100FC2F60 /* PBXTargetDependency */ = {
@@ -1882,7 +1842,7 @@
 			platformFilters = (
 				macos,
 			);
-			target = C1A41C682DE08AD30056F63D /* wBlock Ads & Privacy */;
+			target = C1A41C682DE08AD30056F63D /* wBlock Ads */;
 			targetProxy = C1A41C742DE08AD30056F63D /* PBXContainerItemProxy */;
 		};
 		C1A41C882DE08BDA0056F63D /* PBXTargetDependency */ = {
@@ -1891,7 +1851,7 @@
 				ios,
 				xros,
 			);
-			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads & Privacy iOS */;
+			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */;
 			targetProxy = C1A41C872DE08BDA0056F63D /* PBXContainerItemProxy */;
 		};
 		C1A41CCD2DE08CAB0056F63D /* PBXTargetDependency */ = {
@@ -1916,7 +1876,7 @@
 			platformFilters = (
 				macos,
 			);
-			target = C1F16BEE2DE354C30031E7EF /* wBlock Security & Multipurpose */;
+			target = C1F16BEE2DE354C30031E7EF /* wBlock Security */;
 			targetProxy = C1F16BF82DE354C30031E7EF /* PBXContainerItemProxy */;
 		};
 		C1F16C0D2DE354E40031E7EF /* PBXTargetDependency */ = {
@@ -1958,7 +1918,7 @@
 				ios,
 				xros,
 			);
-			target = C1F16C502DE3557D0031E7EF /* wBlock Security & Multipurpose iOS */;
+			target = C1F16C502DE3557D0031E7EF /* wBlock Security iOS */;
 			targetProxy = C1F16C582DE3557D0031E7EF /* PBXContainerItemProxy */;
 		};
 		C1F16C6B2DE3558A0031E7EF /* PBXTargetDependency */ = {
@@ -2507,15 +2467,15 @@
 		C1A41C782DE08AD30056F63D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Filters/wBlock_Filters.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Filters/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads & Privacy";
+				INFOPLIST_FILE = "wBlock Ads/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2524,7 +2484,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads-Privacy";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2537,15 +2497,15 @@
 		C1A41C792DE08AD30056F63D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Filters/wBlock_Filters.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Filters/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads & Privacy";
+				INFOPLIST_FILE = "wBlock Ads/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2554,7 +2514,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads-Privacy";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2567,12 +2527,12 @@
 		C1A41C8B2DE08BDA0056F63D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Filters (iOS)/wBlock Filters (iOS).entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads (iOS)/wBlock_Ads_iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Filters (iOS)/Info.plist";
+				INFOPLIST_FILE = "wBlock Ads (iOS)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2598,12 +2558,12 @@
 		C1A41C8C2DE08BDA0056F63D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Filters (iOS)/wBlock Filters (iOS).entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads (iOS)/wBlock_Ads_iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Filters (iOS)/Info.plist";
+				INFOPLIST_FILE = "wBlock Ads (iOS)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2793,7 +2753,7 @@
 		C1F16BFC2DE354C30031E7EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Security & Multipurpose/wBlock_Security___Multipurpose.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Security/wBlock_Security.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2802,8 +2762,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Security & Multipurpose/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security & Multipurpose";
+				INFOPLIST_FILE = "wBlock Security/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2812,7 +2772,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security-Multipurpose";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2825,7 +2785,7 @@
 		C1F16BFD2DE354C30031E7EF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Security & Multipurpose/wBlock_Security___Multipurpose.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Security/wBlock_Security.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2834,8 +2794,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Security & Multipurpose/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security & Multipurpose";
+				INFOPLIST_FILE = "wBlock Security/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2844,7 +2804,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security-Multipurpose";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2857,7 +2817,7 @@
 		C1F16C102DE354E40031E7EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances/wBlock_Annoyances.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2866,7 +2826,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Annoyances/Info.plist";
+				INFOPLIST_FILE = "wBlock Ads/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2876,7 +2836,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Annoyances";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2889,7 +2849,7 @@
 		C1F16C112DE354E40031E7EF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances/wBlock_Annoyances.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2898,7 +2858,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Annoyances/Info.plist";
+				INFOPLIST_FILE = "wBlock Ads/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2908,7 +2868,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Annoyances";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2921,7 +2881,7 @@
 		C1F16C242DE354FB0031E7EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign & Experimental/wBlock_Foreign___Experimental.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign/wBlock_Foreign.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2930,7 +2890,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Foreign & Experimental/Info.plist";
+				INFOPLIST_FILE = "wBlock Foreign/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign & Experimental";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2940,7 +2900,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign-Experimental";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -2953,7 +2913,7 @@
 		C1F16C252DE354FB0031E7EF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign & Experimental/wBlock_Foreign___Experimental.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign/wBlock_Foreign.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2962,7 +2922,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Foreign & Experimental/Info.plist";
+				INFOPLIST_FILE = "wBlock Foreign/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign & Experimental";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2972,7 +2932,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign-Experimental";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -3175,12 +3135,12 @@
 		C1F16C6E2DE3558A0031E7EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances (iOS)/wBlock Annoyances (iOS).entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Annoyances (iOS)/Info.plist";
+				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -3190,7 +3150,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Annoyances-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -3206,12 +3166,12 @@
 		C1F16C6F2DE3558A0031E7EF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Annoyances (iOS)/wBlock Annoyances (iOS).entitlements";
+				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Annoyances (iOS)/Info.plist";
+				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Annoyances";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -3221,7 +3181,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Annoyances-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -3535,7 +3495,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C1A41C772DE08AD30056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads & Privacy" */ = {
+		C1A41C772DE08AD30056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C1A41C782DE08AD30056F63D /* Debug */,
@@ -3544,7 +3504,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C1A41C8A2DE08BDA0056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads & Privacy iOS" */ = {
+		C1A41C8A2DE08BDA0056F63D /* Build configuration list for PBXNativeTarget "wBlock Ads iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C1A41C8B2DE08BDA0056F63D /* Debug */,
@@ -3571,7 +3531,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C1F16BFB2DE354C30031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security & Multipurpose" */ = {
+		C1F16BFB2DE354C30031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C1F16BFC2DE354C30031E7EF /* Debug */,
@@ -3616,7 +3576,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C1F16C5B2DE3557D0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security & Multipurpose iOS" */ = {
+		C1F16C5B2DE3557D0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C1F16C5C2DE3557D0031E7EF /* Debug */,

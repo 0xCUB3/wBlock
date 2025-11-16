@@ -1,11 +1,12 @@
 //
 //  ContentBlockerRequestHandler.swift
-//  wBlock Filters
+//  wBlock Ads (iOS)
 //
 //  Created by Alexander Skula on 5/23/25.
 //
 
 import Foundation
+import UniformTypeIdentifiers
 import wBlockCoreService
 import os.log
 
@@ -13,8 +14,8 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
 
     // --- CONFIGURE THESE FOR EACH EXTENSION ---
     private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .ads
-    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = .privacy
-    private let myPlatform = Platform.macOS
+    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = nil
+    private let myPlatform = Platform.iOS
     // --- END CONFIGURATION ---
 
     public func beginRequest(with context: NSExtensionContext) {
@@ -33,7 +34,7 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
                    String(describing: myPlatform),
                    Bundle.main.bundleIdentifier ?? "Unknown")
             // Fallback to sending empty rules
-            let emptyRules = "[]"; let item = NSExtensionItem(); item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: kUTTypeJSON as String)]; context.completeRequest(returningItems: [item]);
+            let emptyRules = "[]"; let item = NSExtensionItem(); item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]; context.completeRequest(returningItems: [item]);
             return
         }
 

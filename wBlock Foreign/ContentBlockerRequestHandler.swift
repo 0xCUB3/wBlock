@@ -1,6 +1,6 @@
 //
 //  ContentBlockerRequestHandler.swift
-//  wBlock Security & Multipurpose
+//  wBlock Foreign
 //
 //  Created by Alexander Skula on 5/25/25.
 //
@@ -12,8 +12,8 @@ import os.log
 public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
 
     // --- CONFIGURE THESE FOR EACH EXTENSION ---
-    private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .security
-    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = .multipurpose
+    private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .foreign
+    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = .experimental
     private let myPlatform = Platform.macOS
     // --- END CONFIGURATION ---
 

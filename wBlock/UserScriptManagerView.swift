@@ -235,8 +235,8 @@ struct UserScriptManagerView: View {
     private var scriptsListView: some View {
         LazyVStack(spacing: 16) {
             VStack(spacing: 0) {
-                ForEach(Array(displayedScripts.enumerated()), id: \.element.id) { index, script in
-                    scriptRowView(script: script)
+                ForEach(displayedScripts.indices, id: \.self) { index in
+                    scriptRowView(script: displayedScripts[index])
 
                     if index < displayedScripts.count - 1 {
                         Divider()
@@ -502,8 +502,8 @@ private struct ScriptMatchPatternsView: View {
             if isPatternsExpanded {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(script.matches.enumerated()), id: \.offset) { indexInForEach, patternInForEach in
-                            ScriptMatchPatternRowView(index: indexInForEach, pattern: patternInForEach)
+                        ForEach(script.matches.indices, id: \.self) { indexInForEach in
+                            ScriptMatchPatternRowView(index: indexInForEach, pattern: script.matches[indexInForEach])
                         }
                     }
                     .padding(.horizontal, 4)

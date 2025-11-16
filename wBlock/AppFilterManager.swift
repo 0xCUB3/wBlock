@@ -195,7 +195,8 @@ class AppFilterManager: ObservableObject {
         
         // Use a timer to periodically check for changes in disabled sites
         // This is more reliable than protobuf data notifications across app groups
-        disabledSitesCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        // Poll every 5 seconds to reduce main thread load during scrolling
+        disabledSitesCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.checkForDisabledSitesChanges()
             }
@@ -330,7 +331,7 @@ class AppFilterManager: ObservableObject {
     func updateVersionsAndCounts() async {
         let initiallyLoadedLists = self.filterLists
         let updatedListsFromServer = await filterUpdater.updateMissingVersionsAndCounts(filterLists: initiallyLoadedLists)
-        
+
         var newFilterLists = self.filterLists
         for updatedListFromServer in updatedListsFromServer {
             if let index = newFilterLists.firstIndex(where: { $0.id == updatedListFromServer.id }) {
@@ -339,6 +340,23 @@ class AppFilterManager: ObservableObject {
                 newFilterLists[index].isSelected = currentSelectionState
             }
         }
+        self.filterLists = newFilterLists
+        saveFilterListsSync()
+    }
+
+    /// Updates version and count for a single filter instead of all filters
+    func updateSingleFilterVersionAndCount(_ filter: FilterList) async {
+        let updatedFilters = await filterUpdater.updateMissingVersionsAndCounts(filterLists: [filter])
+
+        guard let updatedFilter = updatedFilters.first,
+              let index = self.filterLists.firstIndex(where: { $0.id == filter.id }) else {
+            return
+        }
+
+        var newFilterLists = self.filterLists
+        let currentSelectionState = newFilterLists[index].isSelected
+        newFilterLists[index] = updatedFilter
+        newFilterLists[index].isSelected = currentSelectionState
         self.filterLists = newFilterLists
         saveFilterListsSync()
     }
