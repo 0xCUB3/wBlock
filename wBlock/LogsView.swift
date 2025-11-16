@@ -19,7 +19,14 @@ struct LogsView: View {
     @State private var showingShareSheet = false
     @Environment(\.dismiss) private var dismiss
 
-    var filteredEntries: [LogEntry] {
+    // Cached filtered entries to avoid repeated filtering on scroll
+    @State private var cachedFilteredEntries: [LogEntry] = []
+
+    private var filteredEntries: [LogEntry] {
+        cachedFilteredEntries
+    }
+
+    private func updateFilteredEntries() {
         var result = entries
 
         // Filter by level (exact match)
@@ -41,7 +48,7 @@ struct LogsView: View {
             }
         }
 
-        return result.reversed() // Show newest first
+        cachedFilteredEntries = result.reversed() // Show newest first
     }
 
     var body: some View {
@@ -126,6 +133,19 @@ struct LogsView: View {
         .searchable(text: $searchText, prompt: "Search logs")
         .task {
             await loadLogs()
+            updateFilteredEntries()
+        }
+        .onChange(of: entries) { _, _ in
+            updateFilteredEntries()
+        }
+        .onChange(of: selectedLevel) { _, _ in
+            updateFilteredEntries()
+        }
+        .onChange(of: selectedCategory) { _, _ in
+            updateFilteredEntries()
+        }
+        .onChange(of: searchText) { _, _ in
+            updateFilteredEntries()
         }
         #if os(iOS)
         .sheet(isPresented: $showingShareSheet) {
@@ -331,8 +351,9 @@ struct LogEntryRow: View {
 
                     // Metadata (if expanded)
                     if isExpanded, let metadata = entry.metadata, !metadata.isEmpty {
+                        let sortedKeys = metadata.keys.sorted()
                         VStack(alignment: .leading, spacing: 2) {
-                            ForEach(Array(metadata.keys.sorted()), id: \.self) { key in
+                            ForEach(sortedKeys, id: \.self) { key in
                                 HStack(spacing: 6) {
                                     Text(key)
                                         .font(.caption2)

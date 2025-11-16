@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Combines security protection and multi-purpose filtering for comprehensive blocking.</string>
+	<string>Protects against malware, phishing, and other security threats. Also blocks multipurpose filters and annoying web elements like cookie notices and popups.</string>
 </dict>
 </plist>

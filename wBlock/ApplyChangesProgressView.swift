@@ -105,8 +105,8 @@ struct ApplyChangesProgressView: View {
 
     private var phaseList: some View {
         VStack(spacing: 0) {
-            ForEach(Array(viewModel.state.phases.enumerated()), id: \.element.phase) { index, item in
-                PhaseRow(step: item, detail: detail(for: item))
+            ForEach(viewModel.state.phases.indices, id: \.self) { index in
+                PhaseRow(step: viewModel.state.phases[index], detail: detail(for: viewModel.state.phases[index]))
 
                 if index < viewModel.state.phases.count - 1 {
                     Divider()

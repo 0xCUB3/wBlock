@@ -32,15 +32,38 @@ extension ProtobufDataManager {
         }
         await saveData()
     }
-    
+
+    // MARK: - Data Migration
+    public func migrateMultipurposeToAnnoyances() async {
+        var updatedData = appData
+        var needsSave = false
+
+        // Migrate filter lists
+        for i in 0..<updatedData.filterLists.count {
+            if updatedData.filterLists[i].category == .multipurpose {
+                updatedData.filterLists[i].category = .annoyances
+                needsSave = true
+            }
+        }
+
+        if needsSave {
+            await MainActor.run {
+                appData = updatedData
+            }
+            await saveData()
+        }
+    }
+
     // MARK: - Filter Lists
     public func getFilterLists() -> [FilterList] {
         return appData.filterLists.map { protoData in
-            FilterList(
+            let category = mapProtoToFilterListCategory(protoData.category)
+
+            return FilterList(
                 id: UUID(uuidString: protoData.id) ?? UUID(),
                 name: protoData.name,
                 url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
-                category: mapProtoToFilterListCategory(protoData.category),
+                category: category,
                 isSelected: protoData.isSelected,
                 description: protoData.description_p,
                 version: protoData.version,
@@ -395,11 +418,13 @@ extension ProtobufDataManager {
     
     public func getCustomFilterLists() -> [FilterList] {
         return appData.filterLists.filter { $0.isCustom }.map { protoData in
-            FilterList(
+            let category = mapProtoToFilterListCategory(protoData.category)
+
+            return FilterList(
                 id: UUID(uuidString: protoData.id) ?? UUID(),
                 name: protoData.name,
                 url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
-                category: mapProtoToFilterListCategory(protoData.category),
+                category: category,
                 isSelected: protoData.isSelected,
                 description: protoData.description_p,
                 version: protoData.version,

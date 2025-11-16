@@ -429,7 +429,8 @@ private extension SettingsView {
     private func startTimer() {
         stopTimer()
         guard autoUpdateEnabled else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
+        // Update every 30 seconds to reduce main thread load
+        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
             Task { await updateScheduleLine() }
         }
     }

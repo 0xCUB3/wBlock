@@ -141,11 +141,11 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "Fanboy's Annoyances Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: FilterListCategory.annoyances, description: "Hides in-page pop-ups, banners, and other unwanted page elements."),
             FilterList(id: UUID(), name: "Fanboy's Social Blocking List", url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!, category: FilterListCategory.annoyances, description: "Blocks social media content on webpages."),
             FilterList(id: UUID(), name: "Online Security Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt")!, category: FilterListCategory.security, isSelected: true, description: "Protects against suspicious URLs, phishing sites, and unwanted software."),
-            FilterList(id: UUID(), name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Blocks ads and tracking servers to enhance privacy."),
-            FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: FilterListCategory.multipurpose, isSelected: true,
+            FilterList(id: UUID(), name: "Peter Lowe's Blocklist", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt")!, category: FilterListCategory.annoyances, isSelected: true, description: "Blocks ads and tracking servers to enhance privacy."),
+            FilterList(id: UUID(), name: "d3Host List by d3ward", url: URL(string: "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!, category: FilterListCategory.annoyances, isSelected: true,
                        description: "Comprehensive block list for ads and trackers."),
-            FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Bypasses Anti-Adblock scripts used on some websites."),
-            FilterList(id: UUID(), name: "Bypass Paywalls Clean Filter", url: URL(string: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt")!, category: FilterListCategory.multipurpose, description: "Blocks paywall-related elements. Enable the corresponding userscript for best results."),
+            FilterList(id: UUID(), name: "Anti-Adblock List", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt")!, category: FilterListCategory.annoyances, isSelected: true, description: "Bypasses Anti-Adblock scripts used on some websites."),
+            FilterList(id: UUID(), name: "Bypass Paywalls Clean Filter", url: URL(string: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt")!, category: FilterListCategory.annoyances, description: "Blocks paywall-related elements. Enable the corresponding userscript for best results."),
             FilterList(id: UUID(), name: "AdGuard Experimental Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt")!, category: FilterListCategory.experimental, description: "Contains new rules and fixes not yet included in other filters.")
         ]
 
@@ -209,13 +209,13 @@ class FilterListLoader {
         filterLists.append(FilterList(id: UUID(), name: "AdGuard URL Tracking Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt")!, category: FilterListCategory.privacy, isSelected: false, description: "Removes tracking parameters from URLs (utm_source, fbclid, gclid, etc.) to enhance privacy."))
 
         #if os(iOS)
-        filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
+        filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.ads, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile App Banners", url: URL(string: "https://filters.adtidy.org/ios/filters/20_optimized.txt")!, category: FilterListCategory.annoyances, isSelected: false, description: "Blocks irritating banners that promote mobile apps of websites."))
         #endif
 
         #if os(macOS)
         // macOS-only filters too large for iOS
-        filterLists.append(FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.multipurpose, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content."))
+        filterLists.append(FilterList(id: UUID(), name: "Hagezi Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!, category: FilterListCategory.annoyances, isSelected: true, description: "Extensive blocklist targeting ads, trackers, and other unwanted content."))
         #endif
 
         // Set default selections for recommended filters

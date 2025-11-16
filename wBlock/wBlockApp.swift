@@ -34,6 +34,11 @@ struct wBlockApp: App {
                             NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
                         }
                         handleLaunchArguments()
+
+                        // Run migration from multipurpose to annoyances (idempotent - only saves if needed)
+                        Task {
+                            await dataManager.migrateMultipurposeToAnnoyances()
+                        }
                     }
         }
         #if os(macOS)

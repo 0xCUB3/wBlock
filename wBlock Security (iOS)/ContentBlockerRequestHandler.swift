@@ -14,7 +14,7 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
 
     // --- CONFIGURE THESE FOR EACH EXTENSION ---
     private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .security
-    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = nil
+    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = .annoyances
     private let myPlatform = Platform.iOS
     // --- END CONFIGURATION ---
 

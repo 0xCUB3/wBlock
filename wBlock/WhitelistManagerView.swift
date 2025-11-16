@@ -91,8 +91,8 @@ struct WhitelistManagerView: View {
                 .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(Array(whitelistedDomains.enumerated()), id: \.element) { index, domain in
-                    domainRowView(domain: domain)
+                ForEach(whitelistedDomains.indices, id: \.self) { index in
+                    domainRowView(domain: whitelistedDomains[index])
 
                     if index < whitelistedDomains.count - 1 {
                         Divider()

@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Removes cookie notices, newsletter popups, and other intrusive page elements.</string>
+	<string>Blocks content using international and region-specific filter lists, plus experimental filters for testing new blocking rules.</string>
 </dict>
 </plist>
