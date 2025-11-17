@@ -125,7 +125,7 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 ## Superscript Glossary & Explanations
 
 <sup>1</sup> **wBlock:** Focuses on Safari, open-source, optimized for latest Safari API features.  
-<sup>2</sup> **uBlock Origin Lite:** Chromium-only Manifest V3 extension. Not available for Safari.  
+<sup>2</sup> **uBlock Origin Lite:** Chromium Manifest V3 extension translated to Safari.
 <sup>3</sup> **Wipr 2:** Closed-source, paid, lightweight, Safari-only ad blocker.  
 <sup>4</sup> **AdGuard for Safari:** Safari extension by AdGuard (with separate paid Mac/iOS apps).
 
