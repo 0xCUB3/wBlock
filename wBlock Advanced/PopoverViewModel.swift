@@ -32,7 +32,9 @@ public class PopoverViewModel: ObservableObject {
             }
             
             self.host = host
-            let list = self.defaults?.stringArray(forKey: "disabledSites") ?? []
+            // Reload data to ensure we have the latest
+            await ProtobufDataManager.shared.loadData()
+            let list = ProtobufDataManager.shared.disabledSites
             self.isDisabled = list.contains(host)
             
             // Load zapper rules after host is set
@@ -45,17 +47,24 @@ public class PopoverViewModel: ObservableObject {
     /// Save toggled disabled state for current host
     public func saveDisabledState() {
         guard !host.isEmpty else { return }
-        var list = defaults?.stringArray(forKey: "disabledSites") ?? []
-        if isDisabled {
-            if !list.contains(host) { list.append(host) }
-        } else {
-            list.removeAll { $0 == host }
-        }
-        defaults?.setValue(list, forKey: "disabledSites")
         
-        // The main app will automatically detect this change via UserDefaults observer
-        // and rebuild/reload all content blockers with the updated allowlist rules
-        os_log(.info, "PopoverViewModel: Updated disabled sites list for host: %@, isDisabled: %{BOOL}d, final list: %@", host, isDisabled, list.joined(separator: ", "))
+        Task {
+            // Ensure we have the latest data before modifying
+            await ProtobufDataManager.shared.loadData()
+            var list = ProtobufDataManager.shared.disabledSites
+            
+            if isDisabled {
+                if !list.contains(host) { list.append(host) }
+            } else {
+                list.removeAll { $0 == host }
+            }
+            
+            await ProtobufDataManager.shared.setWhitelistedDomains(list)
+            
+            // The main app will automatically detect this change via ProtobufDataManager observer
+            // and rebuild/reload all content blockers with the updated allowlist rules
+            os_log(.info, "PopoverViewModel: Updated disabled sites list for host: %@, isDisabled: %{BOOL}d, final list: %@", host, isDisabled, list.joined(separator: ", "))
+        }
     }
     
     /// Activate the element zapper on the current page

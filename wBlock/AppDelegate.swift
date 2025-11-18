@@ -194,15 +194,18 @@ extension AppDelegate: NSApplicationDelegate {
     
     // MARK: - macOS Auto-Update System
     
-    private func setupMacOSAutoUpdate() {
+    @MainActor private func setupMacOSAutoUpdate() {
         // More aggressive periodic trigger while app is running
         periodicUpdateTimer = Timer.scheduledTimer(withTimeInterval: periodicTimerInterval, repeats: true) { [weak self] _ in
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
         // System-optimized background scheduling (macOS 10.10+) — works when app is running
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-        let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
+        // Use ProtobufDataManager, defaulting to 6.0 if 0 (not loaded yet) or invalid
+        // Ensure interval is at least 1.0 to prevent NSBackgroundActivityScheduler crash
+        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
+        let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
+        
         let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
         scheduler.repeats = true
         scheduler.interval = intervalHours * 60 * 60 // Use configured interval

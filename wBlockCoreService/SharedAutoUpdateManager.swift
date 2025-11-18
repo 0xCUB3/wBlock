@@ -146,6 +146,11 @@ public actor SharedAutoUpdateManager {
         return await MainActor.run { manager.getFilterLastModified(uuid) }
     }
 
+    private func getDisabledSites() async -> [String] {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.disabledSites }
+    }
+
     // Public entry point invoked by extensions.
     public func maybeRunAutoUpdate(trigger: String, force: Bool = false) async {
         await runIfNeeded(trigger: trigger, force: force)
@@ -582,6 +587,9 @@ public actor SharedAutoUpdateManager {
         #endif
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
         var advancedRulesSnippets: [String] = []
+        
+        // Get disabled sites for injection
+        let disabledSites = await getDisabledSites()
 
         for target in targets {
             let targetCategories: [FilterListCategory] = {
@@ -606,7 +614,7 @@ public actor SharedAutoUpdateManager {
                         }
                     }
                 }
-                let conversion = ContentBlockerService.convertFilter(rules: combined.isEmpty ? "" : combined, groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename)
+                let conversion = ContentBlockerService.convertFilter(rules: combined.isEmpty ? "" : combined, groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename, disabledSites: disabledSites)
                 if let adv = conversion.advancedRulesText, !adv.isEmpty {
                     storeAdvancedRules(adv, for: target)
                     advancedRulesSnippets.append(adv)

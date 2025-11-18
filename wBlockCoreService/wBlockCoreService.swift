@@ -158,11 +158,12 @@ public enum ContentBlockerService {
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
     ///   - targetRulesFilename: Target filename for the rules file.
+    ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
     /// - Returns: A tuple containing the number of Safari content blocker rules generated 
     ///           and the advanced rules text (if any).
-    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String) -> (safariRulesCount: Int, advancedRulesText: String?) {
+    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
         // Check if we can use fast path for disabled sites only changes
-        let disabledSites = getDisabledSites(groupIdentifier: groupIdentifier)
+        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
         
         // Try to use cached conversion result if rules haven't changed
         let cacheKey = getCacheKey(for: rules)
@@ -183,7 +184,7 @@ public enum ContentBlockerService {
         }
         
         // Always inject ignore rules for current disabled sites
-        let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: disabledSites)
+        let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
 
         measure(label: "Saving content blocking rules file \(targetRulesFilename)") {
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
@@ -202,9 +203,10 @@ public enum ContentBlockerService {
     /// - Parameters:
     ///   - groupIdentifier: Group ID to use for the shared container
     ///   - targetRulesFilename: Target filename for the rules file
+    ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
     /// - Returns: A tuple containing the number of Safari content blocker rules and advanced rules text
-    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let disabledSites = getDisabledSites(groupIdentifier: groupIdentifier)
+    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
         
         // Try to read existing file
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -219,7 +221,7 @@ public enum ContentBlockerService {
             os_log(.info, "No existing file found for fast update, will use empty rules")
             // Create minimal rules with just ignore rules
             let emptyJSON = "[]"
-            let finalJSON = injectIgnoreRulesForDisabledSites(json: emptyJSON, disabledSites: disabledSites)
+            let finalJSON = injectIgnoreRulesForDisabledSites(json: emptyJSON, disabledSites: sitesToUse)
             
             measure(label: "Fast saving content blocking rules file \(targetRulesFilename)") {
                 saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
@@ -230,14 +232,14 @@ public enum ContentBlockerService {
         
         // Remove existing ignore rules and inject new ones
         let baseJSON = removeIgnoreRulesForDisabledSites(json: existingJSON)
-        let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: disabledSites)
+        let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
         
         measure(label: "Fast updating content blocking rules file \(targetRulesFilename)") {
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
         }
         
         let finalRuleCount = countRulesInJSON(finalJSON)
-        os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, disabledSites.count)
+        os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
         
         return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
     }

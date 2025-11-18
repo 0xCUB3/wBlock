@@ -65,97 +65,99 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
 
             os_log(.info, "SafariExtensionHandler: Processing requestRules for URL: %@", urlString)
 
-            // Convert the string into a URL. If valid, attempt to look up its
-            // configuration or honor per-site disable.
-            if let url = URL(string: urlString), let host = url.host {
-                // Check disabled sites list with subdomain support
-                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-                let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
+            Task {
+                // Reload data to ensure we have the latest
+                await ProtobufDataManager.shared.loadData()
+                let disabled = await ProtobufDataManager.shared.disabledSites
                 
-                // Check if this host or any parent domain is disabled
-                let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
-                
-                os_log(.info, "SafariExtensionHandler: Host '%@' disabled check: %{BOOL}d (disabled sites: %@)", host, isDisabled, disabled.joined(separator: ", "))
-                
-                if isDisabled {
-                    // Send empty rules so content blocker does nothing
-                    let emptyPayload: [String: Any] = [
-                        "requestId": requestId,
-                        "payload": ["css": [], "extendedCss": [], "js": [], "scriptlets": [], "userScripts": []],
-                        "requestedAt": requestedAt,
-                        "verbose": false
-                    ]
-                    os_log(.info, "SafariExtensionHandler: Sending empty payload for disabled host: %@", host)
-                    page.dispatchMessageToScript(withName: "requestRules", userInfo: emptyPayload)
-                    return
-                }
-                // Otherwise proceed normally
-                do {
-                    let webExtension = try WebExtension.shared(
-                        groupID: GroupIdentifier.shared.value
-                    )
-
-                    var topUrl: URL?
-                    if let topUrlString = topUrlString {
-                        topUrl = URL(string: topUrlString)
+                // Convert the string into a URL. If valid, attempt to look up its
+                // configuration or honor per-site disable.
+                if let url = URL(string: urlString), let host = url.host {
+                    // Check if this host or any parent domain is disabled
+                    let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+                    
+                    os_log(.info, "SafariExtensionHandler: Host '%@' disabled check: %{BOOL}d (disabled sites: %@)", host, isDisabled, disabled.joined(separator: ", "))
+                    
+                    if isDisabled {
+                        // Send empty rules so content blocker does nothing
+                        let emptyPayload: [String: Any] = [
+                            "requestId": requestId,
+                            "payload": ["css": [], "extendedCss": [], "js": [], "scriptlets": [], "userScripts": []],
+                            "requestedAt": requestedAt,
+                            "verbose": false
+                        ]
+                        os_log(.info, "SafariExtensionHandler: Sending empty payload for disabled host: %@", host)
+                        page.dispatchMessageToScript(withName: "requestRules", userInfo: emptyPayload)
+                        return
                     }
+                    // Otherwise proceed normally
+                    do {
+                        let webExtension = try WebExtension.shared(
+                            groupID: GroupIdentifier.shared.value
+                        )
 
-                    if let conf = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
-                        // Convert the configuration into a payload (dictionary
-                        // format) consumable by the content script.
-                        var payload = convertToPayload(conf)
-                        
-                        // Add userscripts to the payload
-                        Task { @MainActor in
-                            let manager = userScriptManager
-                            os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
-                            let userScripts = manager.getEnabledUserScriptsForURL(urlString)
-                            os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
-                            
-                            let userScriptPayload = userScripts.map { script in
-                                os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
-                                return [
-                                    "name": script.name,
-                                    "content": script.content,
-                                    "runAt": script.runAt,
-                                    "noframes": script.noframes,
-                                    "resources": script.resourceContents
-                                ] as [String: Any]
-                            }
-                            
-                            payload["userScripts"] = userScriptPayload
-                            os_log(.info, "SafariExtensionHandler: Final payload includes %d userscripts", userScriptPayload.count)
-                            
-                            // Dispatch the payload back to the web page under the same
-                            // message name.
-                            let responseUserInfo: [String: Any] = [
-                                "requestId": requestId,
-                                "payload": payload,
-                                "requestedAt": requestedAt,
-                                // Enable verbose logging in the content script.
-                                // In the real app `verbose` flag should only be true
-                                // for debugging purposes.
-                                "verbose": true,
-                            ]
-
-                            os_log(.info, "SafariExtensionHandler: Dispatching response for requestRules with payload")
-                            page.dispatchMessageToScript(
-                                withName: "requestRules",
-                                userInfo: responseUserInfo
-                            )
+                        var topUrl: URL?
+                        if let topUrlString = topUrlString {
+                            topUrl = URL(string: topUrlString)
                         }
-                    } else {
-                        os_log(.info, "SafariExtensionHandler: No configuration found for URL: %@", urlString)
+
+                        if let conf = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
+                            // Convert the configuration into a payload (dictionary
+                            // format) consumable by the content script.
+                            var payload = convertToPayload(conf)
+                            
+                            // Add userscripts to the payload
+                            await MainActor.run {
+                                let manager = userScriptManager
+                                os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
+                                let userScripts = manager.getEnabledUserScriptsForURL(urlString)
+                                os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
+                                
+                                let userScriptPayload = userScripts.map { script in
+                                    os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
+                                    return [
+                                        "name": script.name,
+                                        "content": script.content,
+                                        "runAt": script.runAt,
+                                        "noframes": script.noframes,
+                                        "resources": script.resourceContents
+                                    ] as [String: Any]
+                                }
+                                
+                                payload["userScripts"] = userScriptPayload
+                                os_log(.info, "SafariExtensionHandler: Final payload includes %d userscripts", userScriptPayload.count)
+                                
+                                // Dispatch the payload back to the web page under the same
+                                // message name.
+                                let responseUserInfo: [String: Any] = [
+                                    "requestId": requestId,
+                                    "payload": payload,
+                                    "requestedAt": requestedAt,
+                                    // Enable verbose logging in the content script.
+                                    // In the real app `verbose` flag should only be true
+                                    // for debugging purposes.
+                                    "verbose": true,
+                                ]
+
+                                os_log(.info, "SafariExtensionHandler: Dispatching response for requestRules with payload")
+                                page.dispatchMessageToScript(
+                                    withName: "requestRules",
+                                    userInfo: responseUserInfo
+                                )
+                            }
+                        } else {
+                            os_log(.info, "SafariExtensionHandler: No configuration found for URL: %@", urlString)
+                        }
+                    } catch {
+                        os_log(
+                            .error,
+                            "Failed to get WebExtension instance: %@",
+                            error.localizedDescription
+                        )
                     }
-                } catch {
-                    os_log(
-                        .error,
-                        "Failed to get WebExtension instance: %@",
-                        error.localizedDescription
-                    )
+                } else {
+                    os_log(.error, "SafariExtensionHandler: Invalid URL string: %@", urlString)
                 }
-            } else {
-                os_log(.error, "SafariExtensionHandler: Invalid URL string: %@", urlString)
             }
         case "requestUserScripts":
             // Handle standalone userscript requests
@@ -164,54 +166,58 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             
             os_log(.info, "SafariExtensionHandler: Processing requestUserScripts for URL: %@", urlString)
             
-            // Check if site is disabled before processing userscripts
-            if let url = URL(string: urlString), let host = url.host {
-                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-                let disabled = defaults?.stringArray(forKey: "disabledSites") ?? []
-                let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+            Task {
+                // Reload data to ensure we have the latest
+                await ProtobufDataManager.shared.loadData()
+                let disabled = await ProtobufDataManager.shared.disabledSites
                 
-                os_log(.info, "SafariExtensionHandler: UserScripts - Host '%@' disabled check: %{BOOL}d", host, isDisabled)
+                // Check if site is disabled before processing userscripts
+                if let url = URL(string: urlString), let host = url.host {
+                    let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+                    
+                    os_log(.info, "SafariExtensionHandler: UserScripts - Host '%@' disabled check: %{BOOL}d", host, isDisabled)
+                    
+                    if isDisabled {
+                        // Send empty userscripts array for disabled sites
+                        let emptyResponse: [String: Any] = [
+                            "requestId": requestId,
+                            "userScripts": [],
+                            "verbose": false
+                        ]
+                        os_log(.info, "SafariExtensionHandler: Sending empty userscripts for disabled host: %@", host)
+                        page.dispatchMessageToScript(withName: "requestUserScripts", userInfo: emptyResponse)
+                        return
+                    }
+                }
                 
-                if isDisabled {
-                    // Send empty userscripts array for disabled sites
-                    let emptyResponse: [String: Any] = [
+                await MainActor.run {
+                    let manager = userScriptManager
+                    os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
+                    let userScripts = manager.getEnabledUserScriptsForURL(urlString)
+                    os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
+                    
+                    let userScriptPayload = userScripts.map { script in
+                        os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
+                        return [
+                            "name": script.name,
+                            "content": script.content,
+                            "runAt": script.runAt,
+                            "noframes": script.noframes,
+                            "resources": script.resourceContents
+                        ] as [String: Any]
+                    }
+                    
+                    let responseUserInfo: [String: Any] = [
                         "requestId": requestId,
-                        "userScripts": [],
-                        "verbose": false
+                        "userScripts": userScriptPayload
                     ]
-                    os_log(.info, "SafariExtensionHandler: Sending empty userscripts for disabled host: %@", host)
-                    page.dispatchMessageToScript(withName: "requestUserScripts", userInfo: emptyResponse)
-                    return
+                    
+                    os_log(.info, "SafariExtensionHandler: Dispatching response for requestUserScripts with %d scripts", userScriptPayload.count)
+                    page.dispatchMessageToScript(
+                        withName: "requestUserScripts",
+                        userInfo: responseUserInfo
+                    )
                 }
-            }
-            
-            Task { @MainActor in
-                let manager = userScriptManager
-                os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
-                let userScripts = manager.getEnabledUserScriptsForURL(urlString)
-                os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
-                
-                let userScriptPayload = userScripts.map { script in
-                    os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
-                    return [
-                        "name": script.name,
-                        "content": script.content,
-                        "runAt": script.runAt,
-                        "noframes": script.noframes,
-                        "resources": script.resourceContents
-                    ] as [String: Any]
-                }
-                
-                let responseUserInfo: [String: Any] = [
-                    "requestId": requestId,
-                    "userScripts": userScriptPayload
-                ]
-                
-                os_log(.info, "SafariExtensionHandler: Dispatching response for requestUserScripts with %d scripts", userScriptPayload.count)
-                page.dispatchMessageToScript(
-                    withName: "requestUserScripts",
-                    userInfo: responseUserInfo
-                )
             }
         case "zapperController":
             // Handle element zapper messages

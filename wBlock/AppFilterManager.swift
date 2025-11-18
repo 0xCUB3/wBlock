@@ -206,7 +206,10 @@ class AppFilterManager: ObservableObject {
     /// Checks for changes in disabled sites and triggers fast rebuild if needed
     @MainActor
     private func checkForDisabledSitesChanges() async {
-    let currentDisabledSites = dataManager.disabledSites
+        // Reload data to get latest changes from extension
+        await dataManager.loadData()
+        
+        let currentDisabledSites = dataManager.disabledSites
         
         if currentDisabledSites != lastKnownDisabledSites {
             await ConcurrentLogManager.shared.info(.whitelist, "Disabled sites changed, fast rebuilding content blockers", metadata: ["previousCount": "\(lastKnownDisabledSites.count)", "newCount": "\(currentDisabledSites.count)"])
@@ -246,12 +249,16 @@ class AppFilterManager: ObservableObject {
             self.conversionStageDescription = "Fast updating ignore rules..."
         }
         
+        // Capture disabled sites on MainActor
+        let disabledSites = dataManager.disabledSites
+        
         await Task.detached {
             for targetInfo in platformTargets {
                 // Use fast update method that only modifies ignore rules
                 _ = ContentBlockerService.fastUpdateDisabledSites(
                     groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: targetInfo.rulesFilename
+                    targetRulesFilename: targetInfo.rulesFilename,
+                    disabledSites: disabledSites
                 )
             }
         }.value
@@ -651,6 +658,8 @@ class AppFilterManager: ObservableObject {
             
             // Perform heavy operations on background thread
             let currentPlatform = self.currentPlatform
+            let disabledSites = self.dataManager.disabledSites
+            
             await Task.detached {
                 // Clear the filter engine when no filters are selected
                 ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
@@ -658,7 +667,7 @@ class AppFilterManager: ObservableObject {
                 // Clear rules for all relevant extensions
                 let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
                 for targetInfo in platformTargets {
-                    _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount
+                    _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename, disabledSites: disabledSites).safariRulesCount
                     await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 }
             }.value
@@ -736,9 +745,12 @@ class AppFilterManager: ObservableObject {
             // Yield to prevent main thread starvation on iOS
             await Task.yield()
 
+            // Capture disabled sites
+            let disabledSites = self.dataManager.disabledSites
+
             // Efficiently combine rules from multiple files without loading all into memory at once
             let conversionResult = await Task.detached {
-                return await self.convertFiltersMemoryEfficient(filters: filters, targetInfo: targetInfo)
+                return await self.convertFiltersMemoryEfficient(filters: filters, targetInfo: targetInfo, disabledSites: disabledSites)
             }.value
             
             await MainActor.run {
@@ -798,6 +810,7 @@ class AppFilterManager: ObservableObject {
                 await ConcurrentLogManager.shared.info(.filterApply, "Auto-reset category due to rule limit exceeded", metadata: ["category": targetInfo.primaryCategory.rawValue])
                 
                 // Re-process this target with the reset filters - on background thread
+                let disabledSites = self.dataManager.disabledSites
                 let resetResult = await Task.detached {
                     let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
                     var resetRulesString = ""
@@ -823,7 +836,8 @@ class AppFilterManager: ObservableObject {
                     return ContentBlockerService.convertFilter(
                         rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
                         groupIdentifier: GroupIdentifier.shared.value,
-                        targetRulesFilename: targetInfo.rulesFilename
+                        targetRulesFilename: targetInfo.rulesFilename,
+                        disabledSites: disabledSites
                     )
                 }.value
                 
@@ -914,6 +928,7 @@ class AppFilterManager: ObservableObject {
         
         // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
         let currentPlatform = self.currentPlatform
+        let disabledSites = self.dataManager.disabledSites
         
         let allPlatformTargets = await Task.detached {
             ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
@@ -925,7 +940,7 @@ class AppFilterManager: ObservableObject {
             if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
                  // Run conversion and reload on background thread
                  await Task.detached {
-                     _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename).safariRulesCount // Ensure it has an empty list
+                     _ = ContentBlockerService.convertFilter(rules: "", groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: targetInfo.rulesFilename, disabledSites: disabledSites).safariRulesCount // Ensure it has an empty list
                  }.value
                  
                  let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
@@ -1444,7 +1459,7 @@ class AppFilterManager: ObservableObject {
     }
     
     /// Memory-efficient conversion that combines filter files using streaming I/O
-    private func convertFiltersMemoryEfficient(filters: [FilterList], targetInfo: ContentBlockerTargetInfo) -> (safariRulesCount: Int, advancedRulesText: String?) {
+    private func convertFiltersMemoryEfficient(filters: [FilterList], targetInfo: ContentBlockerTargetInfo, disabledSites: [String]) -> (safariRulesCount: Int, advancedRulesText: String?) {
         guard let containerURL = loader.getSharedContainerURL() else {
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
@@ -1494,7 +1509,8 @@ class AppFilterManager: ObservableObject {
             return ContentBlockerService.convertFilter(
                 rules: combinedRules.isEmpty ? "" : combinedRules,
                 groupIdentifier: GroupIdentifier.shared.value,
-                targetRulesFilename: targetInfo.rulesFilename
+                targetRulesFilename: targetInfo.rulesFilename,
+                disabledSites: disabledSites
             )
             
         } catch {
