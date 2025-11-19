@@ -21,7 +21,7 @@ The main settings screen shows your enabled filter lists with toggle switches. E
 
 What sets wBlock apart is the advanced features. The element zapper works as expected (though it is still a work in progress): point, click, BAM! Gone. The userscript support is a nice touch, letting you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, you have Return YouTube Dislike and Bypass Paywalls Clean, but you can add almost any script you want!
 
-The app is developed just by [me](https://github.com/0xCUB3), though a few people have contributed changes. The downside is that it's TestFlight only, so you can't get it from the App Store (yet). But if you want power-user features in a native interface, wBlock is a breath of fresh air.
+The app is developed just by [me](https://github.com/0xCUB3), though a few people have contributed changes. If you want power-user features in a native interface, wBlock is a breath of fresh air.
 
 Sources: [wBlock GitHub](https://github.com/0xCUB3/wBlock), [wBlock Wiki](https://github.com/0xCUB3/wBlock/wiki)
 
@@ -87,8 +87,8 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 
 | Feature                 | wBlock<sup>1</sup>                | uBlock Origin Lite<sup>2</sup> | Wipr 2<sup>3</sup>                 | AdGuard for Safari<sup>4</sup>     |
 |-------------------------|-----------------------------------|----------------------|-----------------------|-----------------------|
-| macOS Support           | ✅ TestFlight only<sup>5</sup>     | ✅          | ✅               | ✅               |
-| iOS Support             | ✅ TestFlight only<sup>5</sup>     | ✅          | ✅               | ✅               |
+| macOS Support           | ✅      | ✅          | ✅               | ✅               |
+| iOS Support             | ✅      | ✅          | ✅               | ✅               |
 | RAM Usage (MB)          | 40MB<sup>6</sup>                  | 120MB<sup>6</sup>   | 50MB<sup>6</sup>     | 600MB<sup>6</sup>     |
 | Total Rule Capacity     | 750,000 <sup>7</sup> | N/A                 | 900,000 macOS / 300,000 iOS | 1,050,000 macOS / 350,000 iOS |
 | GitHub Stars            | 1,400                              | 2,600                | N/A                   | 1,100                |
@@ -129,7 +129,7 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 <sup>3</sup> **Wipr 2:** Closed-source, paid, lightweight, Safari-only ad blocker.  
 <sup>4</sup> **AdGuard for Safari:** Safari extension by AdGuard (with separate paid Mac/iOS apps).
 
-<sup>5</sup> **TestFlight only**: wBlock is distributed on iOS and sometimes macOS via TestFlight, Apple's developer beta platform, not through the public App Store.
+<sup>5</sup> ~~**TestFlight only**~~: Not anymore! It's on the App Store now: https://apps.apple.com/app/wblock/id6746388723
 
 <sup>6</sup> **RAM Usage Measurement**:  
 Numbers were measured on a 2023 M2 Pro MacBook Pro 14" with 16GB RAM, 5 tabs open, only one ad blocker active. Actual memory usage can **vary widely** based on hardware, browser version, tab contents, number of active extensions, and enabled filter lists. Lower-spec Macs and iOS devices will observe different numbers.
