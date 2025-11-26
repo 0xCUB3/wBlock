@@ -200,9 +200,6 @@ extension AppDelegate: NSApplicationDelegate {
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
-        // System-optimized background scheduling (macOS 10.10+) — works when app is running
-        // Use ProtobufDataManager, defaulting to 6.0 if 0 (not loaded yet) or invalid
-        // Ensure interval is at least 1.0 to prevent NSBackgroundActivityScheduler crash
         let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
         let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
         
