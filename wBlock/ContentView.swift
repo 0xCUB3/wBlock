@@ -5,15 +5,16 @@
 //  Created by Alexander Skula on 5/23/25.
 //
 
-import SwiftUI
-import wBlockCoreService
-import UserNotifications
 import Combine
 import SafariServices
+import SwiftUI
+import UserNotifications
+import wBlockCoreService
+
 #if os(iOS)
-import UIKit
+    import UIKit
 #elseif os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 struct ContentView: View {
@@ -40,7 +41,7 @@ struct ContentView: View {
     }
 
     private var displayedRuleCount: Int {
-        if (filterManager.lastRuleCount > 0) {
+        if filterManager.lastRuleCount > 0 {
             return filterManager.lastRuleCount
         } else {
             return sourceRulesCount
@@ -51,29 +52,80 @@ struct ContentView: View {
         FilterListCategory.allCases.filter { $0 != .all && $0 != .custom }
     }
 
+    /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
+    private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
+        let allFilters = filterManager.filterLists
+        var result: [(category: FilterListCategory, filters: [FilterList])] = []
+
+        for category in displayableCategories {
+            let filters = allFilters.filter {
+                $0.category == category && (!showOnlyEnabledLists || $0.isSelected)
+            }
+            if !filters.isEmpty {
+                result.append((category: category, filters: filters))
+            }
+        }
+
+        // Add custom lists at the end
+        let customFilters = allFilters.filter {
+            $0.category == .custom && (!showOnlyEnabledLists || $0.isSelected)
+        }
+        if !customFilters.isEmpty {
+            result.append((category: .custom, filters: customFilters))
+        }
+
+        return result
+    }
+
     var body: some View {
         #if os(iOS)
-        if #available(iOS 18.0, *) {
-            TabView {
-                Tab("Filters", systemImage: "list.bullet.rectangle") {
+            if #available(iOS 18.0, *) {
+                TabView {
+                    Tab("Filters", systemImage: "list.bullet.rectangle") {
+                        filtersView
+                    }
+                    Tab("Userscripts", systemImage: "doc.text.fill") {
+                        userscriptsView
+                    }
+                    Tab("Settings", systemImage: "gear") {
+                        settingsView
+                    }
+                }
+                .modifier(
+                    ContentModifiers(
+                        filterManager: filterManager,
+                        userScriptManager: userScriptManager,
+                        dataManager: dataManager,
+                        showingAddFilterSheet: $showingAddFilterSheet,
+                        scenePhase: scenePhase
+                    ))
+            } else {
+                // iOS 17 fallback
+                TabView {
                     filtersView
-                }
-                Tab("Userscripts", systemImage: "doc.text.fill") {
+                        .tabItem {
+                            Label("Filters", systemImage: "list.bullet.rectangle")
+                        }
                     userscriptsView
-                }
-                Tab("Settings", systemImage: "gear") {
+                        .tabItem {
+                            Label("Userscripts", systemImage: "doc.text.fill")
+                        }
                     settingsView
+                        .tabItem {
+                            Label("Settings", systemImage: "gear")
+                        }
                 }
+                .modifier(
+                    ContentModifiers(
+                        filterManager: filterManager,
+                        userScriptManager: userScriptManager,
+                        dataManager: dataManager,
+                        showingAddFilterSheet: $showingAddFilterSheet,
+                        scenePhase: scenePhase
+                    ))
             }
-            .modifier(ContentModifiers(
-                filterManager: filterManager,
-                userScriptManager: userScriptManager,
-                dataManager: dataManager,
-                showingAddFilterSheet: $showingAddFilterSheet,
-                scenePhase: scenePhase
-            ))
-        } else {
-            // iOS 17 fallback
+        #elseif os(macOS)
+            // Use same liquid glass bottom tab bar as iOS
             TabView {
                 filtersView
                     .tabItem {
@@ -83,42 +135,19 @@ struct ContentView: View {
                     .tabItem {
                         Label("Userscripts", systemImage: "doc.text.fill")
                     }
-                settingsView
+                SettingsView(filterManager: filterManager)
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
             }
-            .modifier(ContentModifiers(
-                filterManager: filterManager,
-                userScriptManager: userScriptManager,
-                dataManager: dataManager,
-                showingAddFilterSheet: $showingAddFilterSheet,
-                scenePhase: scenePhase
-            ))
-        }
-        #elseif os(macOS)
-        // Use same liquid glass bottom tab bar as iOS
-        TabView {
-            filtersView
-                .tabItem {
-                    Label("Filters", systemImage: "list.bullet.rectangle")
-                }
-            userscriptsView
-                .tabItem {
-                    Label("Userscripts", systemImage: "doc.text.fill")
-                }
-            SettingsView(filterManager: filterManager)
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
-        }
-        .modifier(ContentModifiers(
-            filterManager: filterManager,
-            userScriptManager: userScriptManager,
-            dataManager: dataManager,
-            showingAddFilterSheet: $showingAddFilterSheet,
-            scenePhase: scenePhase
-        ))
+            .modifier(
+                ContentModifiers(
+                    filterManager: filterManager,
+                    userScriptManager: userScriptManager,
+                    dataManager: dataManager,
+                    showingAddFilterSheet: $showingAddFilterSheet,
+                    scenePhase: scenePhase
+                ))
         #endif
     }
 
@@ -128,21 +157,13 @@ struct ContentView: View {
                 VStack(spacing: 20) {
                     statsCardsView
 
-                    LazyVStack(spacing: 16) {
-                        ForEach(displayableCategories) { category in
-                            let listsForCategory = self.listsForCategory(category)
-                            if !listsForCategory.isEmpty {
-                                if category == .foreign {
-                                    foreignFiltersDisclosureView(filters: listsForCategory)
-                                } else {
-                                    filterSectionView(category: category, filters: listsForCategory)
-                                }
+                    VStack(spacing: 16) {
+                        ForEach(categorizedFilters, id: \.category) { item in
+                            if item.category == .foreign {
+                                foreignFiltersDisclosureView(filters: item.filters)
+                            } else {
+                                filterSectionView(category: item.category, filters: item.filters)
                             }
-                        }
-
-                        let customLists = self.customLists
-                        if !customLists.isEmpty {
-                            filterSectionView(category: .custom, filters: customLists)
                         }
                     }
                     .padding(.horizontal)
@@ -152,69 +173,7 @@ struct ContentView: View {
                 .padding(.vertical)
             }
             #if os(iOS)
-            .padding(.horizontal, 16)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        Task {
-                            await filterManager.checkAndEnableFilters(forceReload: true)
-                        }
-                    } label: {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                    }
-                    .disabled(filterManager.isLoading || enabledListsCount == 0)
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    HStack {
-                        Button {
-                            showingAddFilterSheet = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        Button {
-                            showOnlyEnabledLists.toggle()
-                        } label: {
-                            Image(systemName: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        }
-                    }
-                }
-            }
-            #endif
-        }
-        #if os(macOS)
-        .frame(minWidth: 520, idealWidth: 600, maxWidth: .infinity,
-               minHeight: 500, idealHeight: 650, maxHeight: .infinity)
-        .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                Button {
-                    Task {
-                        await filterManager.checkAndEnableFilters(forceReload: true)
-                    }
-                } label: {
-                    Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .disabled(filterManager.isLoading || enabledListsCount == 0)
-
-                Button {
-                    showingAddFilterSheet = true
-                } label: {
-                    Label("Add Filter", systemImage: "plus")
-                }
-                Button {
-                    showOnlyEnabledLists.toggle()
-                } label: {
-                    Label("Show Enabled Only", systemImage: showOnlyEnabledLists ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                }
-            }
-        }
-        #endif
-    }
-
-    private var userscriptsView: some View {
-        NavigationStack {
-            UserScriptManagerView(userScriptManager: userScriptManager)
-                #if os(iOS)
+                .padding(.horizontal, 16)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
@@ -227,7 +186,78 @@ struct ContentView: View {
                         }
                         .disabled(filterManager.isLoading || enabledListsCount == 0)
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        HStack {
+                            Button {
+                                showingAddFilterSheet = true
+                            } label: {
+                                Image(systemName: "plus")
+                            }
+                            Button {
+                                showOnlyEnabledLists.toggle()
+                            } label: {
+                                Image(
+                                    systemName: showOnlyEnabledLists
+                                        ? "line.3.horizontal.decrease.circle.fill"
+                                        : "line.3.horizontal.decrease.circle")
+                            }
+                        }
+                    }
                 }
+            #endif
+        }
+        #if os(macOS)
+            .frame(
+                minWidth: 520, idealWidth: 600, maxWidth: .infinity,
+                minHeight: 500, idealHeight: 650, maxHeight: .infinity
+            )
+            .toolbar {
+                ToolbarItemGroup(placement: .automatic) {
+                    Button {
+                        Task {
+                            await filterManager.checkAndEnableFilters(forceReload: true)
+                        }
+                    } label: {
+                        Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .disabled(filterManager.isLoading || enabledListsCount == 0)
+
+                    Button {
+                        showingAddFilterSheet = true
+                    } label: {
+                        Label("Add Filter", systemImage: "plus")
+                    }
+                    Button {
+                        showOnlyEnabledLists.toggle()
+                    } label: {
+                        Label(
+                            "Show Enabled Only",
+                            systemImage: showOnlyEnabledLists
+                                ? "line.3.horizontal.decrease.circle.fill"
+                                : "line.3.horizontal.decrease.circle")
+                    }
+                }
+            }
+        #endif
+    }
+
+    private var userscriptsView: some View {
+        NavigationStack {
+            UserScriptManagerView(userScriptManager: userScriptManager)
+                #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                Task {
+                                    await filterManager.checkAndEnableFilters(forceReload: true)
+                                }
+                            } label: {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                            }
+                            .disabled(filterManager.isLoading || enabledListsCount == 0)
+                        }
+                    }
                 #endif
         }
     }
@@ -256,15 +286,8 @@ struct ContentView: View {
         .padding(.horizontal)
     }
 
-    private func listsForCategory(_ category: FilterListCategory) -> [FilterList] {
-        filterManager.filterLists.filter { $0.category == category && (!showOnlyEnabledLists || $0.isSelected) }
-    }
-
-    private var customLists: [FilterList] {
-        filterManager.filterLists.filter { $0.category == .custom && (!showOnlyEnabledLists || $0.isSelected) }
-    }
-
-    private func filterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
+    private func filterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View
+    {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(category.rawValue)
@@ -287,10 +310,10 @@ struct ContentView: View {
             .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
+                ForEach(filters) { filter in
                     filterRowView(filter: filter)
 
-                    if index < filters.count - 1 {
+                    if filter.id != filters.last?.id {
                         Divider()
                             .padding(.leading, 16)
                     }
@@ -301,47 +324,56 @@ struct ContentView: View {
     }
 
     private func foreignFiltersDisclosureView(filters: [FilterList]) -> some View {
-        let isExpanded = Binding(
-            get: { dataManager.isForeignFiltersExpanded },
-            set: { newValue in
+        VStack(alignment: .leading, spacing: 12) {
+            // Manual expand/collapse button instead of DisclosureGroup (avoids LazyVStack bug)
+            Button {
                 Task {
-                    await dataManager.setIsForeignFiltersExpanded(newValue)
+                    await dataManager.setIsForeignFiltersExpanded(
+                        !dataManager.isForeignFiltersExpanded)
                 }
+            } label: {
+                HStack {
+                    Text(FilterListCategory.foreign.rawValue)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+
+                    if filterManager.isCategoryApproachingLimit(.foreign) {
+                        Button {
+                            filterManager.showCategoryWarning(for: .foreign)
+                        } label: {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Spacer()
+
+                    Image(
+                        systemName: dataManager.isForeignFiltersExpanded
+                            ? "chevron.down" : "chevron.right"
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 4)
             }
-        )
+            .buttonStyle(.plain)
 
-        return DisclosureGroup(isExpanded: isExpanded.animation(.easeInOut(duration: 0.2))) {
-            VStack(spacing: 0) {
-                ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
-                    filterRowView(filter: filter)
+            if dataManager.isForeignFiltersExpanded {
+                VStack(spacing: 0) {
+                    ForEach(filters) { filter in
+                        filterRowView(filter: filter)
 
-                    if index < filters.count - 1 {
-                        Divider()
-                            .padding(.leading, 16)
+                        if filter.id != filters.last?.id {
+                            Divider()
+                                .padding(.leading, 16)
+                        }
                     }
                 }
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        } label: {
-            HStack {
-                Text(FilterListCategory.foreign.rawValue)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-
-                if filterManager.isCategoryApproachingLimit(.foreign) {
-                    Button {
-                        filterManager.showCategoryWarning(for: .foreign)
-                    } label: {
-                        Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.orange)
-                            .font(.caption)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Spacer()
-            }
-            .padding(.horizontal, 4)
         }
     }
 
@@ -352,16 +384,11 @@ struct ContentView: View {
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
 
                 if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
                     Text("(\(sourceCount.formatted()) rules)")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                } else if filter.sourceRuleCount == nil && filter.isSelected && !filterManager.doesFilterFileExist(filter) {
-                    Text("(Counting...)")
-                        .font(.caption)
-                        .foregroundColor(.orange)
                 } else if filter.sourceRuleCount == nil {
                     Text("(N/A rules)")
                         .font(.caption)
@@ -373,7 +400,6 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let limitReason = filter.limitExceededReason {
@@ -383,7 +409,6 @@ struct ContentView: View {
                         Text(limitReason)
                             .font(.caption2)
                             .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .foregroundColor(.orange)
                     .padding(.vertical, 4)
@@ -414,16 +439,22 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             Spacer()
-            Toggle("", isOn: Binding(
-                get: { filter.isSelected },
-                set: { newValue in
-                    if newValue && filter.limitExceededReason != nil {
-                        filterManager.showCategoryWarning(for: filter.category)
-                    } else {
-                        filterManager.toggleFilterListSelection(id: filter.id)
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { filter.isSelected },
+                    set: { newValue in
+                        // Defer state change to next run loop to avoid layout invalidation during scroll
+                        DispatchQueue.main.async {
+                            if newValue && filter.limitExceededReason != nil {
+                                filterManager.showCategoryWarning(for: filter.category)
+                            } else {
+                                filterManager.toggleFilterListSelection(id: filter.id)
+                            }
+                        }
                     }
-                }
-            ))
+                )
+            )
             .labelsHidden()
             .toggleStyle(.switch)
             .frame(alignment: .center)
@@ -432,7 +463,7 @@ struct ContentView: View {
         .padding(16)
         .id(filter.id)
         #if os(iOS)
-        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
         #endif
         .contentShape(.interaction, Rectangle())
         .contextMenu {
@@ -445,25 +476,18 @@ struct ContentView: View {
             }
             Button {
                 #if os(macOS)
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(filter.url.absoluteString, forType: .string)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(filter.url.absoluteString, forType: .string)
                 #else
-                UIPasteboard.general.string = filter.url.absoluteString
+                    UIPasteboard.general.string = filter.url.absoluteString
                 #endif
             } label: {
                 Label("Copy URL", systemImage: "doc.on.doc")
             }
         }
-        .task(id: filter.id) {
-            if filter.sourceRuleCount == nil && filterManager.doesFilterFileExist(filter) {
-                await filterManager.updateVersionsAndCounts()
-            }
-        }
     }
 
-
 }
-    
 
 struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
@@ -478,7 +502,9 @@ struct ContentModifiers: ViewModifier {
                 AddFilterListView(filterManager: filterManager)
             }
             .sheet(isPresented: $filterManager.showingUpdatePopup) {
-                UpdatePopupView(filterManager: filterManager, userScriptManager: userScriptManager, isPresented: $filterManager.showingUpdatePopup)
+                UpdatePopupView(
+                    filterManager: filterManager, userScriptManager: userScriptManager,
+                    isPresented: $filterManager.showingUpdatePopup)
             }
             .sheet(isPresented: $filterManager.showMissingItemsSheet) {
                 MissingItemsView(filterManager: filterManager)
@@ -492,7 +518,10 @@ struct ContentModifiers: ViewModifier {
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
                 Button("OK", role: .cancel) {}
             }
-            .alert("Category Rule Limit Warning", isPresented: $filterManager.showingCategoryWarningAlert) {
+            .alert(
+                "Category Rule Limit Warning",
+                isPresented: $filterManager.showingCategoryWarningAlert
+            ) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(filterManager.categoryWarningMessage)
@@ -501,12 +530,19 @@ struct ContentModifiers: ViewModifier {
                 Button("OK", role: .cancel) {}
             } message: {
                 if filterManager.autoDisabledFilters.isEmpty {
-                    Text("Some filters were automatically disabled because their category exceeded Safari's 150,000 rule limit.")
+                    Text(
+                        "Some filters were automatically disabled because their category exceeded Safari's 150,000 rule limit."
+                    )
                 } else {
-                    Text("The following filters were automatically disabled:\n\n\(filterManager.autoDisabledFilters.map { $0.name }.joined(separator: "\n"))\n\nTo re-enable these filters, disable other filters in the same category first.")
+                    Text(
+                        "The following filters were automatically disabled:\n\n\(filterManager.autoDisabledFilters.map { $0.name }.joined(separator: "\n"))\n\nTo re-enable these filters, disable other filters in the same category first."
+                    )
                 }
             }
-            .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
+            .alert(
+                "Duplicate Userscripts Found",
+                isPresented: $userScriptManager.showingDuplicatesAlert
+            ) {
                 Button("Remove Older Versions", role: .destructive) {
                     userScriptManager.confirmDuplicateRemoval()
                 }
@@ -517,7 +553,9 @@ struct ContentModifiers: ViewModifier {
                 Text(userScriptManager.duplicatesMessage)
             }
             .overlay {
-                if filterManager.isLoading && !filterManager.showingApplyProgressSheet && !filterManager.showMissingItemsSheet && !filterManager.showingUpdatePopup {
+                if filterManager.isLoading && !filterManager.showingApplyProgressSheet
+                    && !filterManager.showMissingItemsSheet && !filterManager.showingUpdatePopup
+                {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
                         VStack {
@@ -535,77 +573,96 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             .onAppear {
-                Task { await ConcurrentLogManager.shared.info(.startup, "wBlock application appeared", metadata: [:]) }
+                Task {
+                    await ConcurrentLogManager.shared.info(
+                        .startup, "wBlock application appeared", metadata: [:])
+                }
                 filterManager.setUserScriptManager(userScriptManager)
             }
             #if os(iOS)
-            .onChange(of: scenePhase) { oldPhase, newPhase in
-                if newPhase == .background && filterManager.hasUnappliedChanges {
-                    scheduleNotification(delay: 1)
+                .onChange(of: scenePhase) { oldPhase, newPhase in
+                    if newPhase == .background && filterManager.hasUnappliedChanges {
+                        scheduleNotification(delay: 1)
+                    }
                 }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)) { _ in
-                print("Received applyWBlockChangesNotification in ContentView.")
-                print("Triggering applyChanges from notification observer.")
-                filterManager.showingApplyProgressSheet = true
-                Task {
-                    await filterManager.checkAndEnableFilters(forceReload: true)
+                .onReceive(
+                    NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)
+                ) { _ in
+                    print("Received applyWBlockChangesNotification in ContentView.")
+                    print("Triggering applyChanges from notification observer.")
+                    filterManager.showingApplyProgressSheet = true
+                    Task {
+                        await filterManager.checkAndEnableFilters(forceReload: true)
+                    }
                 }
-            }
-            .fullScreenCover(isPresented: Binding(
-                get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
-                set: { _ in }
-            )) {
-                OnboardingView(filterManager: filterManager)
-            }
+                .fullScreenCover(
+                    isPresented: Binding(
+                        get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
+                        set: { _ in }
+                    )
+                ) {
+                    OnboardingView(filterManager: filterManager)
+                }
             #elseif os(macOS)
-            .sheet(isPresented: Binding(
-                get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
-                set: { _ in }
-            )) {
-                OnboardingView(filterManager: filterManager)
-            }
+                .sheet(
+                    isPresented: Binding(
+                        get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
+                        set: { _ in }
+                    )
+                ) {
+                    OnboardingView(filterManager: filterManager)
+                }
             #endif
             // Critical Setup Checklist - appears after onboarding
             #if os(iOS)
-            .fullScreenCover(isPresented: Binding(
-                get: { !dataManager.isLoading && dataManager.hasCompletedOnboarding && !dataManager.hasCompletedCriticalSetup },
-                set: { _ in }
-            )) {
-                SetupChecklistView()
-            }
+                .fullScreenCover(
+                    isPresented: Binding(
+                        get: {
+                            !dataManager.isLoading && dataManager.hasCompletedOnboarding
+                                && !dataManager.hasCompletedCriticalSetup
+                        },
+                        set: { _ in }
+                    )
+                ) {
+                    SetupChecklistView()
+                }
             #elseif os(macOS)
-            .sheet(isPresented: Binding(
-                get: { !dataManager.isLoading && dataManager.hasCompletedOnboarding && !dataManager.hasCompletedCriticalSetup },
-                set: { _ in }
-            )) {
-                SetupChecklistView()
-            }
+                .sheet(
+                    isPresented: Binding(
+                        get: {
+                            !dataManager.isLoading && dataManager.hasCompletedOnboarding
+                                && !dataManager.hasCompletedCriticalSetup
+                        },
+                        set: { _ in }
+                    )
+                ) {
+                    SetupChecklistView()
+                }
             #endif
     }
-    
+
     #if os(iOS)
-    private func scheduleNotification(delay: TimeInterval = 1.0) {
-        let content = UNMutableNotificationContent()
-        content.title = "Psst! You forgot something!"
-        content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
-        content.sound = .default
-        content.userInfo = ["action_type": "apply_wblock_changes"]
+        private func scheduleNotification(delay: TimeInterval = 1.0) {
+            let content = UNMutableNotificationContent()
+            content.title = "Psst! You forgot something!"
+            content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
+            content.sound = .default
+            content.userInfo = ["action_type": "apply_wblock_changes"]
 
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString, content: content, trigger: trigger)
 
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            } else {
-                print("Notification scheduled successfully.")
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Error scheduling notification: \(error.localizedDescription)")
+                } else {
+                    print("Notification scheduled successfully.")
+                }
             }
         }
-    }
     #endif
 }
-    
 
 struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager
@@ -657,9 +714,11 @@ struct AddFilterListView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Filter details")
                     .font(.headline)
-                Text("Paste the URL to a supported filter list. You can optionally provide a custom name.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Paste the URL to a supported filter list. You can optionally provide a custom name."
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
 
             VStack(spacing: 14) {
@@ -671,7 +730,7 @@ struct AddFilterListView: View {
                     TextField("e.g. My Essential Filters", text: $nameInput)
                         .textFieldStyle(.roundedBorder)
                         #if os(iOS)
-                        .textInputAutocapitalization(.words)
+                            .textInputAutocapitalization(.words)
                         #endif
                         .autocorrectionDisabled()
                         .focused($focusedField, equals: .name)
@@ -686,8 +745,8 @@ struct AddFilterListView: View {
                         .textFieldStyle(.roundedBorder)
                         .autocorrectionDisabled()
                         #if os(iOS)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
                         #endif
                         .focused($focusedField, equals: .url)
 
@@ -726,9 +785,13 @@ struct AddFilterListView: View {
         DisclosureGroup(isExpanded: $showRequirements.animation(.easeInOut(duration: 0.2))) {
             VStack(alignment: .leading, spacing: 8) {
                 requirementRow(icon: "link", description: "Starts with https://")
-                requirementRow(icon: "doc.text", description: "Points to a filter file (.txt, .list, .json)")
-                requirementRow(icon: "checkmark.shield", description: "Hosted by a trusted provider")
-                requirementRow(icon: "arrow.triangle.2.circlepath", description: "Accessible without authentication")
+                requirementRow(
+                    icon: "doc.text", description: "Points to a filter file (.txt, .list, .json)")
+                requirementRow(
+                    icon: "checkmark.shield", description: "Hosted by a trusted provider")
+                requirementRow(
+                    icon: "arrow.triangle.2.circlepath",
+                    description: "Accessible without authentication")
             }
             .padding(.top, 8)
         } label: {
@@ -778,9 +841,11 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             case .invalid:
-                Text("Provide a valid https:// link to a filter file ending in .txt, .list, or .json.")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                Text(
+                    "Provide a valid https:// link to a filter file ending in .txt, .list, or .json."
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
             case .duplicate:
                 Text("A filter list with this URL already exists in wBlock.")
                     .font(.caption)
@@ -861,16 +926,19 @@ struct AddFilterListView: View {
         }
 
         guard let components = URLComponents(string: trimmed),
-              let scheme = components.scheme?.lowercased(),
-              scheme == "https" || scheme == "http",
-              let host = components.host,
-              !host.isEmpty,
-              let url = components.url else {
+            let scheme = components.scheme?.lowercased(),
+            scheme == "https" || scheme == "http",
+            let host = components.host,
+            !host.isEmpty,
+            let url = components.url
+        else {
             validationState = .invalid
             return
         }
 
-        if filterManager.filterLists.contains(where: { $0.url.absoluteString.lowercased() == url.absoluteString.lowercased() }) {
+        if filterManager.filterLists.contains(where: {
+            $0.url.absoluteString.lowercased() == url.absoluteString.lowercased()
+        }) {
             validationState = .duplicate
             return
         }
@@ -883,19 +951,21 @@ struct AddFilterListView: View {
         if lastComponent.isEmpty {
             return url.host ?? "Custom Filter"
         }
-        return lastComponent.replacingOccurrences(of: "-", with: " ").replacingOccurrences(of: "_", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return lastComponent.replacingOccurrences(of: "-", with: " ").replacingOccurrences(
+            of: "_", with: " "
+        )
+        .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func pasteFromClipboard() {
         #if os(iOS)
-        if let string = UIPasteboard.general.string {
-            urlInput = string
-        }
+            if let string = UIPasteboard.general.string {
+                urlInput = string
+            }
         #elseif os(macOS)
-        if let string = NSPasteboard.general.string(forType: .string) {
-            urlInput = string
-        }
+            if let string = NSPasteboard.general.string(forType: .string) {
+                urlInput = string
+            }
         #endif
     }
 
@@ -911,4 +981,3 @@ struct AddFilterListView: View {
         case url
     }
 }
-
