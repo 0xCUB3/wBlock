@@ -1,6 +1,6 @@
+import SafariServices
 import SwiftUI
 import wBlockCoreService
-import SafariServices
 
 struct SettingsView: View {
     let filterManager: AppFilterManager
@@ -10,7 +10,6 @@ struct SettingsView: View {
     @State private var nextScheduleLine = "Next: Loading…"
     @State private var lastUpdateLine = "Last: Never"
     @State private var isOverdue = false
-    @State private var isUpdating = false
     @State private var timer: Timer?
     @State private var showingRestartConfirmation = false
     @State private var isRestarting = false
@@ -28,32 +27,43 @@ struct SettingsView: View {
         dataManager.autoUpdateIntervalHours
     }
 
+    private var compactStatusLine: String {
+        if isOverdue {
+            return "Overdue"
+        }
+        return nextScheduleLine
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     LazyVStack(spacing: 16) {
                         #if os(macOS)
-                        settingsSectionView(title: "Display") {
-                            HStack {
-                                Text("Show blocked item count in toolbar")
-                                    .font(.body)
-                                Spacer()
-                                Toggle("", isOn: Binding(
-                                    get: { isBadgeCounterEnabled },
-                                    set: { newValue in
-                                        Task {
-                                            await dataManager.setIsBadgeCounterEnabled(newValue)
-                                            // Force Safari to refresh the toolbar badge
-                                            SFSafariApplication.setToolbarItemsNeedUpdate()
-                                        }
-                                    }
-                                ))
+                            settingsSectionView(title: "Display") {
+                                HStack {
+                                    Text("Show blocked item count in toolbar")
+                                        .font(.body)
+                                    Spacer()
+                                    Toggle(
+                                        "",
+                                        isOn: Binding(
+                                            get: { isBadgeCounterEnabled },
+                                            set: { newValue in
+                                                Task {
+                                                    await dataManager.setIsBadgeCounterEnabled(
+                                                        newValue)
+                                                    // Force Safari to refresh the toolbar badge
+                                                    SFSafariApplication.setToolbarItemsNeedUpdate()
+                                                }
+                                            }
+                                        )
+                                    )
                                     .labelsHidden()
                                     .toggleStyle(.switch)
+                                }
+                                .padding(16)
                             }
-                            .padding(16)
-                        }
                         #endif
 
                         settingsSectionView(title: "Actions") {
@@ -75,53 +85,56 @@ struct SettingsView: View {
                             .padding(16)
 
                             #if os(macOS)
-                            Divider()
-                                .padding(.leading, 16)
+                                Divider()
+                                    .padding(.leading, 16)
 
-                            NavigationLink {
-                                WhitelistManagerView(filterManager: filterManager)
-                            } label: {
-                                HStack {
-                                    Text("Manage Whitelist")
-                                        .font(.body)
-                                    Spacer()
-                                    Image(systemName: "list.bullet.indent")
-                                        .foregroundColor(.secondary)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                NavigationLink {
+                                    WhitelistManagerView(filterManager: filterManager)
+                                } label: {
+                                    HStack {
+                                        Text("Manage Whitelist")
+                                            .font(.body)
+                                        Spacer()
+                                        Image(systemName: "list.bullet.indent")
+                                            .foregroundColor(.secondary)
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
-                            }
-                            .buttonStyle(.plain)
-                            .padding(16)
+                                .buttonStyle(.plain)
+                                .padding(16)
                             #endif
                         }
 
                         settingsSectionView(title: "Filter Auto-Update") {
                             VStack(spacing: 0) {
-                                // Enable/Disable toggle
+                                // Toggle row
                                 HStack {
-                                    Text("Enable Auto-Updates")
+                                    Text("Auto-Update Filters")
                                         .font(.body)
                                     Spacer()
-                                    Toggle("", isOn: Binding(
-                                        get: { autoUpdateEnabled },
-                                        set: { newValue in
-                                            Task {
-                                                await dataManager.setAutoUpdateEnabled(newValue)
-                                                await handleAutoUpdateConfigChange()
-                                                await MainActor.run {
-                                                    if newValue {
-                                                        startTimer()
-                                                    } else {
-                                                        stopTimer()
+                                    Toggle(
+                                        "",
+                                        isOn: Binding(
+                                            get: { autoUpdateEnabled },
+                                            set: { newValue in
+                                                Task {
+                                                    await dataManager.setAutoUpdateEnabled(newValue)
+                                                    await handleAutoUpdateConfigChange()
+                                                    await MainActor.run {
+                                                        if newValue {
+                                                            startTimer()
+                                                        } else {
+                                                            stopTimer()
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
-                                    ))
-                                        .labelsHidden()
-                                        .toggleStyle(.switch)
+                                        )
+                                    )
+                                    .labelsHidden()
+                                    .toggleStyle(.switch)
                                 }
                                 .padding(16)
 
@@ -129,76 +142,49 @@ struct SettingsView: View {
                                     Divider()
                                         .padding(.leading, 16)
 
-                                    // Update Frequency row
-                                    NavigationLink {
-                                        UpdateFrequencyPickerView(selectedInterval: Binding(
-                                            get: { autoUpdateIntervalHours },
-                                            set: { newValue in
-                                                Task {
-                                                    await dataManager.setAutoUpdateIntervalHours(newValue)
-                                                    await handleAutoUpdateConfigChange()
-                                                }
-                                            }
-                                        ))
-                                    } label: {
-                                        HStack {
-                                            Text("Update Frequency")
-                                                .font(.body)
-                                            Spacer()
-                                            Text(intervalDescription(hours: autoUpdateIntervalHours))
-                                                .foregroundColor(.secondary)
-                                            Image(systemName: "chevron.right")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
+                                    // Frequency slider
+                                    VStack(spacing: 10) {
+                                        HStack(spacing: 8) {
+                                            Text("1h")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                            Slider(
+                                                value: Binding(
+                                                    get: { autoUpdateIntervalHours },
+                                                    set: { newValue in
+                                                        Task {
+                                                            await dataManager
+                                                                .setAutoUpdateIntervalHours(
+                                                                    newValue)
+                                                            await handleAutoUpdateConfigChange()
+                                                        }
+                                                    }
+                                                ),
+                                                in:
+                                                    minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
+                                                step: 1
+                                            )
+                                            Text("7d")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                            Text(
+                                                intervalDescription(hours: autoUpdateIntervalHours)
+                                            )
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                            .frame(minWidth: 90, alignment: .trailing)
+                                            .contentTransition(.numericText())
                                         }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .padding(16)
-
-                                    Divider()
-                                        .padding(.leading, 16)
-
-                                    // Status row
-                                    HStack(alignment: .center, spacing: 8) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            if isUpdating {
-                                                HStack(spacing: 6) {
-                                                    ProgressView()
-                                                        .scaleEffect(0.8)
-                                                    Text("Updating...")
-                                                        .foregroundColor(.blue)
-                                                        .font(.subheadline)
-                                                }
-                                            } else {
-                                                Text(nextScheduleLine)
-                                                    .font(.subheadline)
-                                                    .foregroundColor(isOverdue ? .orange : .primary)
-                                            }
+                                        HStack {
+                                            Text("Next: \(compactStatusLine)")
+                                                .font(.caption)
+                                                .foregroundStyle(isOverdue ? .orange : .secondary)
+                                            Spacer()
                                             Text(lastUpdateLine)
                                                 .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        Spacer()
-                                    }
-                                    .padding(16)
-
-                                    Divider()
-                                        .padding(.leading, 16)
-
-                                    // Update Now button
-                                    Button {
-                                        Task { await performManualUpdate() }
-                                    } label: {
-                                        HStack {
-                                            Spacer()
-                                            Image(systemName: "arrow.triangle.2.circlepath")
-                                            Text("Update Now")
-                                            Spacer()
+                                                .foregroundStyle(.secondary)
                                         }
                                     }
-                                    .buttonStyle(.plain)
-                                    .disabled(isUpdating)
-                                    .foregroundColor(isUpdating ? .secondary : .blue)
                                     .padding(16)
                                 }
                             }
@@ -209,8 +195,11 @@ struct SettingsView: View {
                                 Text("wBlock Version")
                                     .font(.body)
                                 Spacer()
-                                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")
-                                    .foregroundColor(.secondary)
+                                Text(
+                                    Bundle.main.infoDictionary?["CFBundleShortVersionString"]
+                                        as? String ?? "Unknown"
+                                )
+                                .foregroundColor(.secondary)
                             }
                             .padding(16)
                         }
@@ -241,8 +230,8 @@ struct SettingsView: View {
                 .padding(.vertical)
             }
             #if os(iOS)
-            .padding(.horizontal, 16)
-            .navigationBarTitleDisplayMode(.inline)
+                .padding(.horizontal, 16)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
         }
         .task {
@@ -254,11 +243,15 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
             Button("Restart", role: .destructive) { restartOnboarding() }
         } message: {
-            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+            Text(
+                "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow."
+            )
         }
     }
 
-    private func settingsSectionView<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func settingsSectionView<Content: View>(
+        title: String, @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.headline)
@@ -277,7 +270,7 @@ struct SettingsView: View {
         await updateScheduleLine()
     }
 }
-private extension SettingsView {
+extension SettingsView {
     private func resetUserDefaults() {
         if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
             suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
@@ -330,17 +323,19 @@ private extension SettingsView {
         return Int(hours) == 1 ? "Every 1 hour" : "Every \(Int(hours)) hours"
     }
 
-    private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool) -> String {
+    private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool)
+        -> String
+    {
         guard let scheduledAt, let remaining else {
-            return "Next: Waiting"
+            return "Waiting"
         }
 
         if isOverdue {
-            return "Next: Overdue"
+            return "Overdue"
         }
 
         if remaining <= 0 {
-            return "Next: Checking..."
+            return "Checking..."
         }
 
         let componentsFormatter = DateComponentsFormatter()
@@ -350,27 +345,23 @@ private extension SettingsView {
         let relative = componentsFormatter.string(from: remaining) ?? "soon"
 
         let timeFormatter = DateFormatter()
-        timeFormatter.dateStyle = Calendar.current.isDate(scheduledAt, inSameDayAs: Date()) ? .none : .short
+        timeFormatter.dateStyle = .none
         timeFormatter.timeStyle = .short
         let timeString = timeFormatter.string(from: scheduledAt)
 
-        if timeString.isEmpty {
-            return "Next: in \(relative)"
-        }
-
-        return "Next: in \(relative) · \(timeString)"
+        return "in \(relative) (\(timeString))"
     }
 
     private func formatLastUpdate(date: Date?) -> String {
         guard let date else {
-            return "Last: Never"
+            return "Never checked"
         }
 
         let now = Date()
         let interval = now.timeIntervalSince(date)
 
         if interval < 60 {
-            return "Last: Just now"
+            return "Checked just now"
         }
 
         let componentsFormatter = DateComponentsFormatter()
@@ -378,20 +369,20 @@ private extension SettingsView {
         componentsFormatter.unitsStyle = .short
         componentsFormatter.maximumUnitCount = 1
         if let relative = componentsFormatter.string(from: interval) {
-            return "Last: \(relative) ago"
+            return "Checked \(relative) ago"
         }
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
         dateFormatter.timeStyle = .short
-        return "Last: \(dateFormatter.string(from: date))"
+        return "Checked \(dateFormatter.string(from: date))"
     }
 
     private func updateScheduleLine(shouldTriggerOverdue: Bool = true) async {
         guard autoUpdateEnabled else {
             await MainActor.run {
-                nextScheduleLine = "Next: Disabled"
-                lastUpdateLine = "Last: N/A"
+                nextScheduleLine = "Disabled"
+                lastUpdateLine = "N/A"
                 isOverdue = false
             }
             return
@@ -399,30 +390,25 @@ private extension SettingsView {
 
         let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
 
-        let scheduleDescription = formatSchedule(scheduledAt: status.scheduledAt, remaining: status.remaining, isOverdue: status.isOverdue)
+        let scheduleDescription = formatSchedule(
+            scheduledAt: status.scheduledAt, remaining: status.remaining,
+            isOverdue: status.isOverdue)
         let lastDescription = formatLastUpdate(date: status.lastCheckTime)
 
         await MainActor.run {
             nextScheduleLine = scheduleDescription
             lastUpdateLine = lastDescription
-            isUpdating = status.isRunning
             isOverdue = status.isOverdue
         }
 
         // Trigger overdue updates ONLY on first call (not recursive)
         if shouldTriggerOverdue && status.isOverdue && !status.isRunning {
             await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "SettingsOverdueDetection", force: true)
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+                trigger: "SettingsOverdueDetection", force: true)
             // Refresh display WITHOUT retriggering overdue check
             await updateScheduleLine(shouldTriggerOverdue: false)
         }
-    }
-
-    private func performManualUpdate() async {
-        await MainActor.run { isUpdating = true }
-        await SharedAutoUpdateManager.shared.forceNextUpdate()
-        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "ManualUpdateButton", force: true)
-        await updateScheduleLine()
     }
 
     @MainActor
@@ -439,107 +425,5 @@ private extension SettingsView {
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
-    }
-}
-
-// MARK: - Update Frequency Picker View
-struct UpdateFrequencyPickerView: View {
-    @Binding var selectedInterval: Double
-    @Environment(\.dismiss) private var dismiss
-
-    private let minimumAutoUpdateIntervalHours: Double = 1
-    private let maximumAutoUpdateIntervalHours: Double = 24 * 7
-
-    // Predefined common intervals
-    private let commonIntervals: [(hours: Double, label: String)] = [
-        (1, "Every hour"),
-        (2, "Every 2 hours"),
-        (3, "Every 3 hours"),
-        (6, "Every 6 hours"),
-        (12, "Every 12 hours"),
-        (24, "Every day"),
-        (48, "Every 2 days"),
-        (72, "Every 3 days"),
-        (24 * 7, "Every week")
-    ]
-
-    var body: some View {
-        List {
-            Section {
-                ForEach(commonIntervals, id: \.hours) { interval in
-                    Button {
-                        selectedInterval = interval.hours
-                        Task {
-                            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-                        }
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Text(interval.label)
-                                .foregroundColor(.primary)
-                            Spacer()
-                            if abs(selectedInterval - interval.hours) < 0.01 {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Section {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Custom Interval")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    HStack {
-                        Text("1h")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Slider(
-                            value: $selectedInterval,
-                            in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
-                            step: 1
-                        )
-                        Text("7d")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Text(formatCustomInterval(hours: selectedInterval))
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-                .padding(.vertical, 8)
-            }
-        }
-        .navigationTitle("Update Frequency")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .onChange(of: selectedInterval) { _ in
-            Task {
-                await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-            }
-        }
-    }
-
-    private func formatCustomInterval(hours: Double) -> String {
-        if hours.truncatingRemainder(dividingBy: 24) == 0 {
-            let days = Int(hours / 24)
-            return days == 1 ? "Every 1 day" : "Every \(days) days"
-        }
-
-        if hours >= 24 {
-            let days = Int(hours / 24)
-            let remainingHours = Int(hours) % 24
-            if remainingHours == 0 {
-                return days == 1 ? "Every 1 day" : "Every \(days) days"
-            }
-            return "Every \(days)d \(remainingHours)h"
-        }
-
-        return Int(hours) == 1 ? "Every 1 hour" : "Every \(Int(hours)) hours"
     }
 }
