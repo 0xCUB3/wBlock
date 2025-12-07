@@ -167,8 +167,22 @@ class AppFilterManager: ObservableObject {
         filterUpdater.filterListManager = self
         
         // Load filter lists from protobuf data manager
-        filterLists = dataManager.getFilterLists()
+        let storedFilterLists = dataManager.getFilterLists()
+        let migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
+        filterLists = migratedFilterLists
         customFilterLists = dataManager.getCustomFilterLists()
+        
+        // Persist migrated filter URLs to the data store when needed
+        if storedFilterLists != migratedFilterLists {
+            Task {
+                for migrated in migratedFilterLists {
+                    if let original = storedFilterLists.first(where: { $0.id == migrated.id }),
+                       original.url != migrated.url {
+                        await self.dataManager.updateFilterList(migrated)
+                    }
+                }
+            }
+        }
         
         // Only load defaults if truly no data exists (not just during async loading)
         if filterLists.isEmpty && !dataManager.isLoading {

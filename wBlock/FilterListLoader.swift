@@ -12,6 +12,10 @@ class FilterListLoader {
     private let logManager: ConcurrentLogManager
     private let customFilterListsKey = "customFilterLists"
     private let sharedContainerIdentifier = "group.skula.wBlock"
+    private let filterURLMigrations: [String: URL] = [
+        "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt": URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+        "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!
+    ]
 
     // Cache the defaults instance
     private let defaults: UserDefaults
@@ -52,11 +56,14 @@ class FilterListLoader {
         if let data = defaults.data(forKey: "filterLists"),
            let savedFilterLists = try? JSONDecoder().decode([FilterList].self, from: data) {
             
+            // Migrate any legacy URLs to their new locations
+            let migratedSavedFilters = migrateFilterURLs(in: savedFilterLists)
+
             // Create a map of default filters by URL for quick lookup
             let defaultFiltersByURL = Dictionary(uniqueKeysWithValues: defaultFilterLists.map { ($0.url, $0) })
             
             // Update saved filters with default properties, preserving user settings
-            for savedFilter in savedFilterLists {
+            for savedFilter in migratedSavedFilters {
                 if let defaultFilter = defaultFiltersByURL[savedFilter.url] {
                     // Create updated filter with default properties but preserve user choices
                     let updatedFilter = FilterList(
@@ -82,7 +89,7 @@ class FilterListLoader {
             }
             
             // Add any new default filters that weren't in saved data
-            let existingURLs = Set(savedFilterLists.map { $0.url })
+            let existingURLs = Set(migratedSavedFilters.map { $0.url })
             for defaultFilter in defaultFilterLists {
                 if !existingURLs.contains(defaultFilter.url) {
                     filterLists.append(defaultFilter)
@@ -128,6 +135,21 @@ class FilterListLoader {
         }
 
         return filterLists
+    }
+
+    /// Updates any known legacy filter URLs to their current endpoints.
+    func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
+        filters.map { filter in
+            guard let newURL = filterURLMigrations[filter.url.absoluteString] else {
+                return filter
+            }
+            
+            var migratedFilter = filter
+            migratedFilter.url = newURL
+            migratedFilter.etag = nil
+            migratedFilter.serverLastModified = nil
+            return migratedFilter
+        }
     }
 
     /// Creates the default set of filter lists
