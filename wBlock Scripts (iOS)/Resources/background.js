@@ -23303,7 +23303,7 @@ function _toPrimitive(t, r) {
      */
     // Initialize the logger to be used by the `@adguard/safari-extension`.
     // Change logging level to Debug if you need to see more details.
-    const log = new ConsoleLogger("[wBlock Scripts]", LoggingLevel.Info);
+    const log = new ConsoleLogger("[wBlock Scripts]", LoggingLevel.Error);
     setLogger(log);
     /**
      * Global variable to track the engine timestamp.
