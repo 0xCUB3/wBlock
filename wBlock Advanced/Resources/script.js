@@ -22604,7 +22604,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   // Initialize the logger to be used by the `@adguard/safari-extension`.
   // Change logging level to Debug if you need to see more details.
-  const log = new ConsoleLogger('[AdGuard Sample App Extension]', LoggingLevel.Info);
+  const log = new ConsoleLogger('[wBlock Advanced]', LoggingLevel.Error);
   setLogger(log);
   log.debug('Content script is starting...');
   // Initialize the delayed event dispatcher. This may intercept DOMContentLoaded
