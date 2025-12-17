@@ -912,23 +912,23 @@ public class UserScriptManager: ObservableObject {
                 throw UserScriptImportError.missingMetadata
             }
 
-            let defaultName = baseName(for: fileURL).trimmingCharacters(in: .whitespacesAndNewlines)
-            let normalizedName = defaultName.isEmpty ? filename : defaultName
+            // Determine canonical name using metadata when available; fall back to filename.
+            var tempScript = UserScript(name: "", content: content)
+            tempScript.parseMetadata()
+            let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let filenameBasedName = baseName(for: fileURL).trimmingCharacters(in: .whitespacesAndNewlines)
+            let canonicalName = !metadataName.isEmpty ? metadataName : (filenameBasedName.isEmpty ? filename : filenameBasedName)
 
             let existingIndex = userScripts.firstIndex { script in
-                script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedName.lowercased()
+                script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == canonicalName.lowercased()
             }
 
             let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
-            var newUserScript = UserScript(id: scriptID, name: normalizedName, url: nil, content: content)
+            var newUserScript = UserScript(id: scriptID, name: canonicalName, url: nil, content: content)
             newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
             newUserScript.isLocal = true
             newUserScript.lastUpdated = Date()
             newUserScript.parseMetadata()
-
-            if newUserScript.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                newUserScript.name = normalizedName
-            }
 
             // Process @require and @resource directives (networked content is allowed even for local imports)
             let processedContent = await processRequireDirectives(newUserScript)
