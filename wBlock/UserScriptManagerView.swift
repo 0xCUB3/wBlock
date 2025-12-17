@@ -28,6 +28,7 @@ struct UserScriptManagerView: View {
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
     @State private var isDropTarget = false
+    @State private var dropErrorMessage: String?
 
     private var totalScriptsCount: Int {
         scripts.count
@@ -61,6 +62,18 @@ struct UserScriptManagerView: View {
         }
         #if os(macOS)
         .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
+        .overlay {
+            if isDropTarget {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6]))
+                    .padding(8)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.accentColor.opacity(0.05))
+                            .padding(8)
+                    }
+            }
+        }
         #endif
         #if os(iOS)
         .padding(.horizontal, 16)
@@ -140,6 +153,14 @@ struct UserScriptManagerView: View {
             }
         } message: {
             Text(userScriptManager.duplicatesMessage)
+        }
+        .alert("Import Failed", isPresented: Binding(
+            get: { dropErrorMessage != nil },
+            set: { newValue in if !newValue { dropErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { dropErrorMessage = nil }
+        } message: {
+            Text(dropErrorMessage ?? "")
         }
         .overlay {
             if showingRefreshProgress {
@@ -240,6 +261,9 @@ struct UserScriptManagerView: View {
                     }
                 } catch {
                     await ConcurrentLogManager.shared.error(.userScript, "Failed to import dropped userscript", metadata: ["error": error.localizedDescription])
+                    await MainActor.run {
+                        dropErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    }
                 }
             }
         }
@@ -841,7 +865,7 @@ struct AddUserScriptView: View {
             case .success(let url):
                 importFile(at: url)
             case .failure(let error):
-                if (error as NSError).code != NSUserCancelledError {
+                if (error as? CocoaError)?.code != .userCancelled {
                     fileImportError = error.localizedDescription
                 }
             }
@@ -1047,14 +1071,10 @@ struct AddUserScriptView: View {
     }
 
     private var allowedImportTypes: [UTType] {
-        var types: [UTType] = [.plainText]
-        if let js = UTType(filenameExtension: "js") {
-            types.append(js)
-        }
-        if let userJS = UTType(filenameExtension: "user.js") {
-            types.append(userJS)
-        }
-        return types
+        [
+            UTType(filenameExtension: "js"),
+            UTType(filenameExtension: "user.js")
+        ].compactMap { $0 }
     }
 
     private func importFile(at url: URL) {
