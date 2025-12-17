@@ -12,6 +12,10 @@ class FilterListLoader {
     private let logManager: ConcurrentLogManager
     private let customFilterListsKey = "customFilterLists"
     private let sharedContainerIdentifier = "group.skula.wBlock"
+    private let filterURLMigrations: [String: URL] = [
+        "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt": URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+        "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!
+    ]
 
     // Cache the defaults instance
     private let defaults: UserDefaults
@@ -52,11 +56,14 @@ class FilterListLoader {
         if let data = defaults.data(forKey: "filterLists"),
            let savedFilterLists = try? JSONDecoder().decode([FilterList].self, from: data) {
             
+            // Migrate any legacy URLs to their new locations
+            let migratedSavedFilters = migrateFilterURLs(in: savedFilterLists)
+
             // Create a map of default filters by URL for quick lookup
             let defaultFiltersByURL = Dictionary(uniqueKeysWithValues: defaultFilterLists.map { ($0.url, $0) })
             
             // Update saved filters with default properties, preserving user settings
-            for savedFilter in savedFilterLists {
+            for savedFilter in migratedSavedFilters {
                 if let defaultFilter = defaultFiltersByURL[savedFilter.url] {
                     // Create updated filter with default properties but preserve user choices
                     let updatedFilter = FilterList(
@@ -82,7 +89,7 @@ class FilterListLoader {
             }
             
             // Add any new default filters that weren't in saved data
-            let existingURLs = Set(savedFilterLists.map { $0.url })
+            let existingURLs = Set(migratedSavedFilters.map { $0.url })
             for defaultFilter in defaultFilterLists {
                 if !existingURLs.contains(defaultFilter.url) {
                     filterLists.append(defaultFilter)
@@ -128,6 +135,21 @@ class FilterListLoader {
         }
 
         return filterLists
+    }
+
+    /// Updates any known legacy filter URLs to their current endpoints.
+    func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
+        filters.map { filter in
+            guard let newURL = filterURLMigrations[filter.url.absoluteString] else {
+                return filter
+            }
+            
+            var migratedFilter = filter
+            migratedFilter.url = newURL
+            migratedFilter.etag = nil
+            migratedFilter.serverLastModified = nil
+            return migratedFilter
+        }
     }
 
     /// Creates the default set of filter lists
@@ -186,7 +208,7 @@ class FilterListLoader {
             FilterList(id: UUID(), name: "IndianList", url: URL(string: "https://easylist-downloads.adblockplus.org/indianlist.txt")!, category: .foreign, description: "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages.", languages: ["hi"], trustLevel: "low"),
             FilterList(id: UUID(), name: "KAD - Anti-Scam", url: URL(string: "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt")!, category: .foreign, description: "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.", languages: ["pl"], trustLevel: "low"),
             FilterList(id: UUID(), name: "Latvian List", url: URL(string: "https://raw.githubusercontent.com/Latvian-List/adblock-latvian/master/lists/latvian-list.txt")!, category: .foreign, description: "Additional filter list for websites in Latvian.", languages: ["lv"], trustLevel: "high"),
-            FilterList(id: UUID(), name: "List-KR", url: URL(string: "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt")!, category: .foreign, description: "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter.", languages: ["ko"], trustLevel: "high"),
+            FilterList(id: UUID(), name: "List-KR", url: URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!, category: .foreign, description: "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter.", languages: ["ko"], trustLevel: "high"),
             FilterList(id: UUID(), name: "Liste AR", url: URL(string: "https://easylist-downloads.adblockplus.org/Liste_AR.txt")!, category: .foreign, description: "Additional filter list for websites in Arabic.", languages: ["ar"], trustLevel: "high"),
             FilterList(id: UUID(), name: "Liste FR", url: URL(string: "https://easylist-downloads.adblockplus.org/liste_fr.txt")!, category: .foreign, description: "Additional filter list for websites in French. Already included in AdGuard French filter.", languages: ["fr"], trustLevel: "low"),
             FilterList(id: UUID(), name: "Macedonian adBlock Filters", url: URL(string: "https://raw.githubusercontent.com/RandomAdversary/Macedonian-adBlock-Filters/master/Filters")!, category: .foreign, description: "Blocks ads and trackers on various Macedonian websites.", languages: ["mk"], trustLevel: "low"),
