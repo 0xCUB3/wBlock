@@ -1047,7 +1047,10 @@ struct AddUserScriptView: View {
     }
 
     private var allowedImportTypes: [UTType] {
-        var types: [UTType] = [.javascript, .plainText]
+        var types: [UTType] = [.plainText]
+        if let js = UTType(filenameExtension: "js") {
+            types.append(js)
+        }
         if let userJS = UTType(filenameExtension: "user.js") {
             types.append(userJS)
         }
