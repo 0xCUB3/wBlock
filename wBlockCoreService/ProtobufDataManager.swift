@@ -323,6 +323,20 @@ public class ProtobufDataManager: ObservableObject {
     private let backupFileName = "wblock_data_backup.pb"
     private let migrationFileName = "migration_completed.flag"
     private let terminologySanitizationVersion = 1 // Increment this to re-run sanitization
+
+    /// Returns the most recent app data snapshot from disk if available; otherwise, returns the in-memory value.
+    /// This helps avoid clobbering concurrent writes from other processes that share the app group file.
+    func latestAppDataSnapshot() async -> Wblock_Data_AppData {
+        // Try to read the persisted file first to incorporate recent writes from extensions or helper processes.
+        if fileManager.fileExists(atPath: dataFileURL.path),
+           let data = try? Data(contentsOf: dataFileURL),
+           let loaded = try? Wblock_Data_AppData(serializedData: data) {
+            return loaded
+        }
+
+        // Fallback to current in-memory state if file is missing or unreadable.
+        return await MainActor.run { appData }
+    }
     
     // File URLs
     private lazy var dataFileURL: URL = {

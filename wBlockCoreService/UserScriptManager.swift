@@ -511,7 +511,9 @@ public class UserScriptManager: ObservableObject {
         
         if hasAddedNew {
             logger.info("💾 Saving \(self.userScripts.count) userscripts after adding defaults")
-            saveUserScripts()
+            Task { @MainActor in
+                await persistUserScriptsNow()
+            }
             
             // Start downloading missing scripts in the background
             Task {
@@ -570,8 +572,10 @@ public class UserScriptManager: ObservableObject {
         
         if !userScripts.isEmpty {
             logger.info("💾 About to save \(self.userScripts.count) default userscript placeholders")
-            saveUserScripts()
-            logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
+            Task { @MainActor in
+                await persistUserScriptsNow()
+                logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
+            }
             
             // Start downloading default scripts in the background
             Task {
@@ -682,20 +686,18 @@ public class UserScriptManager: ObservableObject {
             let (data, _) = try await urlSession.data(from: url)
             let content = String(data: data, encoding: .utf8) ?? ""
 
-            await MainActor.run {
-                if index < userScripts.count {
-                    userScripts[index].content = content
-                    userScripts[index].parseMetadata()
-                    userScripts[index].lastUpdated = Date()
+            if index < userScripts.count {
+                userScripts[index].content = content
+                userScripts[index].parseMetadata()
+                userScripts[index].lastUpdated = Date()
 
-                    // Update description and version from metadata, but keep disabled
-                    if userScripts[index].description.isEmpty || userScripts[index].description == "Default userscript - downloading..." {
-                        userScripts[index].description = userScripts[index].description.isEmpty ? "Ready to enable" : userScripts[index].description
-                    }
+                // Update description and version from metadata, but keep disabled
+                if userScripts[index].description.isEmpty || userScripts[index].description == "Default userscript - downloading..." {
+                    userScripts[index].description = userScripts[index].description.isEmpty ? "Ready to enable" : userScripts[index].description
+                }
 
-                    if userScripts[index].version == "Downloading..." {
-                        userScripts[index].version = userScripts[index].version.isEmpty ? "Downloaded" : userScripts[index].version
-                    }
+                if userScripts[index].version == "Downloading..." {
+                    userScripts[index].version = userScripts[index].version.isEmpty ? "Downloaded" : userScripts[index].version
                 }
             }
 
@@ -704,34 +706,37 @@ public class UserScriptManager: ObservableObject {
                 let processedContent = await processRequireDirectives(userScripts[index])
                 let resourceContents = await processResourceDirectives(userScripts[index])
 
-                await MainActor.run {
-                    if index < userScripts.count {
-                        userScripts[index].content = processedContent
-                        userScripts[index].resourceContents = resourceContents
-                        _ = writeUserScriptContent(userScripts[index])
-                        saveUserScripts()
-                        logger.info("✅ Downloaded and saved: \(self.userScripts[index].name)")
-                    }
+                if index < userScripts.count {
+                    userScripts[index].content = processedContent
+                    userScripts[index].resourceContents = resourceContents
+                    _ = writeUserScriptContent(userScripts[index])
+                    await persistUserScriptsNow()
+                    logger.info("✅ Downloaded and saved: \(self.userScripts[index].name)")
                 }
             }
         } catch {
-            await MainActor.run {
-                if index < userScripts.count {
-                    userScripts[index].description = "Download failed - tap to retry"
-                    userScripts[index].version = "Error"
-                    saveUserScripts()
-                }
-                logger.error("❌ Failed to download \(self.userScripts[index].name): \(error)")
+            if index < userScripts.count {
+                userScripts[index].description = "Download failed - tap to retry"
+                userScripts[index].version = "Error"
+                await persistUserScriptsNow()
             }
+            logger.error("❌ Failed to download \(self.userScripts[index].name): \(error)")
         }
     }
     
     private func saveUserScripts() {
         Task { @MainActor in
-            logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
-            await dataManager.updateUserScripts(userScripts)
-            logger.info("💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
+            await persistUserScriptsNow()
         }
+    }
+
+    /// Persists the current in-memory userscripts and waits for completion. Use this in async flows
+    /// where the caller needs stronger ordering guarantees.
+    @MainActor
+    private func persistUserScriptsNow() async {
+        logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
+        await dataManager.updateUserScripts(userScripts)
+        logger.info("💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
     }
     
     private func readUserScriptContent(_ userScript: UserScript) -> String? {
@@ -784,11 +789,9 @@ public class UserScriptManager: ObservableObject {
     // MARK: - Public Methods
     
     public func addUserScript(from url: URL) async {
-        await MainActor.run {
-            isLoading = true
-            statusDescription = "Downloading userscript..."
-            hasError = false
-        }
+        isLoading = true
+        statusDescription = "Downloading userscript..."
+        hasError = false
 
         do {
             let (data, _) = try await urlSession.data(from: url)
@@ -805,31 +808,27 @@ public class UserScriptManager: ObservableObject {
             newUserScript.content = processedContent
             newUserScript.resourceContents = resourceContents
 
-            await MainActor.run {
-                // Check if script already exists
-                if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
-                    userScripts[existingIndex] = newUserScript
-                    statusDescription = "Updated userscript: \(newUserScript.name)"
-                } else {
-                    userScripts.append(newUserScript)
-                    statusDescription = "Added userscript: \(newUserScript.name)"
-                }
-
-                _ = writeUserScriptContent(newUserScript)
-
-                // Check for duplicates after adding a script
-                checkForDuplicatesAndAskForConfirmation()
-
-                saveUserScripts()
-                isLoading = false
+            // Check if script already exists
+            if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
+                userScripts[existingIndex] = newUserScript
+                statusDescription = "Updated userscript: \(newUserScript.name)"
+            } else {
+                userScripts.append(newUserScript)
+                statusDescription = "Added userscript: \(newUserScript.name)"
             }
+
+            _ = writeUserScriptContent(newUserScript)
+
+            // Check for duplicates after adding a script
+            checkForDuplicatesAndAskForConfirmation()
+
+            await persistUserScriptsNow()
+            isLoading = false
         } catch {
-            await MainActor.run {
-                hasError = true
-                errorMessage = "Failed to download userscript: \(error.localizedDescription)"
-                statusDescription = "Download failed"
-                isLoading = false
-            }
+            hasError = true
+            errorMessage = "Failed to download userscript: \(error.localizedDescription)"
+            statusDescription = "Download failed"
+            isLoading = false
         }
     }
     
@@ -916,32 +915,30 @@ public class UserScriptManager: ObservableObject {
             let processedContent = await processRequireDirectives(tempUserScript)
             let resourceContents = await processResourceDirectives(tempUserScript)
 
-            await MainActor.run {
-                if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                    userScripts[index].content = processedContent
-                    userScripts[index].resourceContents = resourceContents
-                    userScripts[index].description = tempUserScript.description
-                    userScripts[index].version = tempUserScript.version
-                    userScripts[index].matches = tempUserScript.matches
-                    userScripts[index].excludeMatches = tempUserScript.excludeMatches
-                    userScripts[index].includes = tempUserScript.includes
-                    userScripts[index].excludes = tempUserScript.excludes
-                    userScripts[index].runAt = tempUserScript.runAt
-                    userScripts[index].injectInto = tempUserScript.injectInto
-                    userScripts[index].grant = tempUserScript.grant
-                    userScripts[index].require = tempUserScript.require
-                    userScripts[index].updateURL = tempUserScript.updateURL
-                    userScripts[index].downloadURL = tempUserScript.downloadURL
-                    userScripts[index].lastUpdated = Date()
+            if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
+                userScripts[index].content = processedContent
+                userScripts[index].resourceContents = resourceContents
+                userScripts[index].description = tempUserScript.description
+                userScripts[index].version = tempUserScript.version
+                userScripts[index].matches = tempUserScript.matches
+                userScripts[index].excludeMatches = tempUserScript.excludeMatches
+                userScripts[index].includes = tempUserScript.includes
+                userScripts[index].excludes = tempUserScript.excludes
+                userScripts[index].runAt = tempUserScript.runAt
+                userScripts[index].injectInto = tempUserScript.injectInto
+                userScripts[index].grant = tempUserScript.grant
+                userScripts[index].require = tempUserScript.require
+                userScripts[index].updateURL = tempUserScript.updateURL
+                userScripts[index].downloadURL = tempUserScript.downloadURL
+                userScripts[index].lastUpdated = Date()
 
-                    _ = writeUserScriptContent(userScripts[index])
-                    saveUserScripts()
-                    statusDescription = "Updated \(userScript.name)"
-                    updateAlertMessage = "\(userScript.name) has been successfully updated."
-                    showingUpdateSuccessAlert = true
-                }
-                isLoading = false
+                _ = writeUserScriptContent(userScripts[index])
+                await persistUserScriptsNow()
+                statusDescription = "Updated \(userScript.name)"
+                updateAlertMessage = "\(userScript.name) has been successfully updated."
+                showingUpdateSuccessAlert = true
             }
+            isLoading = false
         } catch {
             await MainActor.run {
                 hasError = true
@@ -966,11 +963,9 @@ public class UserScriptManager: ObservableObject {
             let (data, _) = try await urlSession.data(from: url)
             let content = String(data: data, encoding: .utf8) ?? ""
 
-            await MainActor.run {
-                if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                    userScripts[index].content = content
-                    userScripts[index].parseMetadata()
-                }
+            if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
+                userScripts[index].content = content
+                userScripts[index].parseMetadata()
             }
 
             // Process @require directives and @resource directives after metadata is parsed
@@ -978,18 +973,16 @@ public class UserScriptManager: ObservableObject {
                 let processedContent = await processRequireDirectives(userScripts[index])
                 let resourceContents = await processResourceDirectives(userScripts[index])
 
-                await MainActor.run {
-                    userScripts[index].content = processedContent
-                    userScripts[index].resourceContents = resourceContents
-                    userScripts[index].isEnabled = true
-                    userScripts[index].isLocal = false
-                    userScripts[index].lastUpdated = Date()
+                userScripts[index].content = processedContent
+                userScripts[index].resourceContents = resourceContents
+                userScripts[index].isEnabled = true
+                userScripts[index].isLocal = false
+                userScripts[index].lastUpdated = Date()
 
-                    _ = writeUserScriptContent(userScripts[index])
-                    saveUserScripts()
-                    statusDescription = "Downloaded and enabled \(userScript.name)"
-                    isLoading = false
-                }
+                _ = writeUserScriptContent(userScripts[index])
+                await persistUserScriptsNow()
+                statusDescription = "Downloaded and enabled \(userScript.name)"
+                isLoading = false
             }
         } catch {
             await MainActor.run {

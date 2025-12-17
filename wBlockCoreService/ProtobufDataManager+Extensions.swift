@@ -11,7 +11,7 @@ internal import SwiftProtobuf
 // MARK: - Filter List Management
 extension ProtobufDataManager {
     public func updateFilterLists(_ filterLists: [FilterList]) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         updatedData.filterLists = filterLists.map { filter in
             var protoFilterList = Wblock_Data_FilterListData()
             protoFilterList.id = filter.id.uuidString
@@ -73,7 +73,7 @@ extension ProtobufDataManager {
     }
     
     public func updateFilterList(_ filterList: FilterList) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         
         if let index = updatedData.filterLists.firstIndex(where: { $0.id == filterList.id.uuidString }) {
             var protoFilterList = updatedData.filterLists[index]
@@ -115,7 +115,7 @@ extension ProtobufDataManager {
     }
     
     public func removeFilterList(withId id: UUID) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         updatedData.filterLists.removeAll { $0.id == id.uuidString }
         
         await MainActor.run {
@@ -125,7 +125,7 @@ extension ProtobufDataManager {
     }
     
     public func updateFilterListSelection(_ filterLists: [FilterList]) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         
         for filterList in filterLists {
             if let index = updatedData.filterLists.firstIndex(where: { $0.id == filterList.id.uuidString }) {
@@ -434,7 +434,7 @@ extension ProtobufDataManager {
     }
     
     public func updateCustomFilterLists(_ customFilterLists: [FilterList]) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         
         // Remove existing custom filter lists
         updatedData.filterLists.removeAll { $0.isCustom }
@@ -465,7 +465,8 @@ extension ProtobufDataManager {
     }
     
     public func updateUserScripts(_ userScripts: [UserScript]) async {
-        var updatedData = appData
+        // Refresh from disk to avoid overwriting changes written by other processes (app/extension).
+        var updatedData = await latestAppDataSnapshot()
         updatedData.userScripts.removeAll()
         
         for userScript in userScripts {

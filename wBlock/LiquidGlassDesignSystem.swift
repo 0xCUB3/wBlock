@@ -126,7 +126,7 @@ struct LiquidGlassButtonStyle: ButtonStyle {
 
 // MARK: - Fallback for Earlier OS Versions
 
-// For iOS 25 and earlier, provide graceful fallback using materials
+// For iOS 18 and earlier, provide graceful fallback using materials
 extension View {
     @ViewBuilder
     func liquidGlassCompat(
