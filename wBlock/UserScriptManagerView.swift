@@ -7,6 +7,7 @@
 
 import SwiftUI
 import wBlockCoreService
+import UniformTypeIdentifiers
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -26,6 +27,7 @@ struct UserScriptManagerView: View {
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
+    @State private var isDropTarget = false
 
     private var totalScriptsCount: Int {
         scripts.count
@@ -57,6 +59,9 @@ struct UserScriptManagerView: View {
             }
             .padding(.vertical)
         }
+        #if os(macOS)
+        .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
+        #endif
         #if os(iOS)
         .padding(.horizontal, 16)
         .toolbar {
@@ -211,6 +216,38 @@ struct UserScriptManagerView: View {
         }
     }
 
+    #if os(macOS)
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) else {
+            return false
+        }
+
+        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+            var url: URL?
+            if let data = item as? Data {
+                url = URL(dataRepresentation: data, relativeTo: nil)
+            } else if let droppedURL = item as? URL {
+                url = droppedURL
+            }
+
+            guard let resolvedURL = url else { return }
+
+            Task {
+                do {
+                    try await userScriptManager.addUserScript(fromLocalFile: resolvedURL)
+                    await MainActor.run {
+                        refreshScripts()
+                    }
+                } catch {
+                    await ConcurrentLogManager.shared.error(.userScript, "Failed to import dropped userscript", metadata: ["error": error.localizedDescription])
+                }
+            }
+        }
+
+        return true
+    }
+    #endif
+
     private var statsCardsView: some View {
         HStack(spacing: 12) {
             StatCard(
@@ -286,6 +323,17 @@ struct UserScriptManagerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                if script.isLocal {
+                    Text("Local Import")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.12))
+                        .foregroundColor(.blue)
+                        .cornerRadius(4)
+                }
 
                 if !script.isDownloaded {
                     Text("Not Downloaded")
@@ -754,6 +802,8 @@ struct AddUserScriptView: View {
     @State private var urlInput: String = ""
     @State private var validationState: ValidationState = .idle
     @State private var isAdding: Bool = false
+    @State private var fileImportError: String?
+    @State private var showingFileImporter = false
     @State private var showHints: Bool = false
     @FocusState private var urlFieldFocused: Bool
 
@@ -785,6 +835,16 @@ struct AddUserScriptView: View {
         }
         .onChange(of: urlInput) { _, newValue in
             validateInput(newValue)
+        }
+        .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
+            switch result {
+            case .success(let url):
+                importFile(at: url)
+            case .failure(let error):
+                if (error as NSError).code != NSUserCancelledError {
+                    fileImportError = error.localizedDescription
+                }
+            }
         }
     }
 
@@ -831,6 +891,27 @@ struct AddUserScriptView: View {
                     Spacer()
 
                     validationBadge
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    showingFileImporter = true
+                    fileImportError = nil
+                } label: {
+                    Label("Import from File", systemImage: "tray.and.arrow.down")
+                }
+                .buttonStyle(.bordered)
+                .disabled(isAdding)
+
+                Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let fileImportError {
+                    Text(fileImportError)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 }
             }
 
@@ -961,6 +1042,38 @@ struct AddUserScriptView: View {
                 isAdding = false
                 onScriptAdded()
                 dismiss()
+            }
+        }
+    }
+
+    private var allowedImportTypes: [UTType] {
+        var types: [UTType] = [.javascript, .plainText]
+        if let userJS = UTType(filenameExtension: "user.js") {
+            types.append(userJS)
+        }
+        return types
+    }
+
+    private func importFile(at url: URL) {
+        isAdding = true
+        fileImportError = nil
+
+        Task(priority: .userInitiated) {
+            do {
+                try await userScriptManager.addUserScript(fromLocalFile: url)
+
+                await ConcurrentLogManager.shared.info(.userScript, "Imported userscript from file", metadata: ["file": url.lastPathComponent])
+
+                await MainActor.run {
+                    isAdding = false
+                    onScriptAdded()
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    isAdding = false
+                }
             }
         }
     }
