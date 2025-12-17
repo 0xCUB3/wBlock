@@ -9,6 +9,26 @@ import Foundation
 import Combine
 import os.log
 
+public enum UserScriptImportError: LocalizedError {
+    case unsupportedType
+    case unreadableFile
+    case emptyContent
+    case missingMetadata
+
+    public var errorDescription: String? {
+        switch self {
+        case .unsupportedType:
+            return "Choose a .user.js or .js userscript file."
+        case .unreadableFile:
+            return "Couldn't read the selected file."
+        case .emptyContent:
+            return "The file is empty."
+        case .missingMetadata:
+            return "Not a userscript: missing metadata block."
+        }
+    }
+}
+
 @MainActor
 public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = []
@@ -785,6 +805,25 @@ public class UserScriptManager: ObservableObject {
             return FileManager.default.fileExists(atPath: filePath)
         }
     }
+
+    private func hasMetadataBlock(in content: String) -> Bool {
+        content.contains("// ==UserScript==") && content.contains("// ==/UserScript==")
+    }
+
+    private func baseName(for fileURL: URL) -> String {
+        let filename = fileURL.lastPathComponent
+        let lowercased = filename.lowercased()
+
+        if lowercased.hasSuffix(".user.js") {
+            return String(filename.dropLast(".user.js".count))
+        }
+
+        if lowercased.hasSuffix(".js") {
+            return String(filename.dropLast(3))
+        }
+
+        return fileURL.deletingPathExtension().lastPathComponent
+    }
     
     // MARK: - Public Methods
     
@@ -800,6 +839,7 @@ public class UserScriptManager: ObservableObject {
             var newUserScript = UserScript(name: url.lastPathComponent.replacingOccurrences(of: ".user.js", with: ""), url: url, content: content)
             newUserScript.parseMetadata()
             newUserScript.isEnabled = true
+            newUserScript.isLocal = false
             newUserScript.lastUpdated = Date()
 
             // Process @require directives and @resource directives
@@ -829,6 +869,97 @@ public class UserScriptManager: ObservableObject {
             errorMessage = "Failed to download userscript: \(error.localizedDescription)"
             statusDescription = "Download failed"
             isLoading = false
+        }
+    }
+
+    public func addUserScript(fromLocalFile fileURL: URL) async throws {
+        await MainActor.run {
+            isLoading = true
+            statusDescription = "Importing userscript..."
+            hasError = false
+        }
+
+        let accessed = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if accessed {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        do {
+            let filename = fileURL.lastPathComponent
+            let lowercased = filename.lowercased()
+            let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+
+            guard isSupportedType else { throw UserScriptImportError.unsupportedType }
+
+            let data: Data
+            do {
+                data = try Data(contentsOf: fileURL)
+            } catch {
+                throw UserScriptImportError.unreadableFile
+            }
+
+            guard let content = String(data: data, encoding: .utf8) else {
+                throw UserScriptImportError.unreadableFile
+            }
+
+            guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw UserScriptImportError.emptyContent
+            }
+
+            guard hasMetadataBlock(in: content) else {
+                throw UserScriptImportError.missingMetadata
+            }
+
+            let defaultName = baseName(for: fileURL).trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedName = defaultName.isEmpty ? filename : defaultName
+
+            let existingIndex = userScripts.firstIndex { script in
+                script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedName.lowercased()
+            }
+
+            let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
+            var newUserScript = UserScript(id: scriptID, name: normalizedName, url: nil, content: content)
+            newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
+            newUserScript.isLocal = true
+            newUserScript.lastUpdated = Date()
+            newUserScript.parseMetadata()
+
+            if newUserScript.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                newUserScript.name = normalizedName
+            }
+
+            // Process @require and @resource directives (networked content is allowed even for local imports)
+            let processedContent = await processRequireDirectives(newUserScript)
+            let resourceContents = await processResourceDirectives(newUserScript)
+            newUserScript.content = processedContent
+            newUserScript.resourceContents = resourceContents
+
+            if let existingIndex {
+                userScripts[existingIndex] = newUserScript
+                statusDescription = "Replaced userscript: \(newUserScript.name)"
+            } else {
+                userScripts.append(newUserScript)
+                statusDescription = "Imported userscript: \(newUserScript.name)"
+            }
+
+            _ = writeUserScriptContent(newUserScript)
+
+            checkForDuplicatesAndAskForConfirmation()
+
+            await persistUserScriptsNow()
+            await MainActor.run {
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                hasError = true
+                errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                statusDescription = "Import failed"
+                isLoading = false
+            }
+            throw error
         }
     }
     
