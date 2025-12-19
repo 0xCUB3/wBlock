@@ -206,7 +206,8 @@ public enum WebExtensionRequestHandler {
                     "content": script.content,
                     "runAt": script.runAt,
                     "noframes": script.noframes,
-                    "resources": script.resourceContents
+                    "resources": script.resourceContents,
+                    "injectInto": script.injectInto
                 ] as [String: Any]
             }
             

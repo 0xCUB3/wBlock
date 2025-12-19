@@ -100,7 +100,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     if (browser.runtime.lastError) {
                         wBlockError('[wBlock] Error sending message to native via browser.runtime.sendMessage:', browser.runtime.lastError);
                     } else {
-                        wBlockLog('[wBlock] browser.runtime.sendMessage response (if any):', response);
+                        wBlockLog('[wBlock] browser.runtime.sendMessage response:', response);
+                        // Handle the response directly from the callback
+                        if (response && response.userScripts) {
+                            wBlockLog('[wBlock] Extracted userscripts from callback response:', response.userScripts);
+                            this.injectUserScripts(response.userScripts);
+                        } else {
+                            wBlockLog('[wBlock] No userscripts found in callback response.');
+                        }
                     }
                 }).catch(error => {
                      wBlockError('[wBlock] Failed to send message via browser.runtime.sendMessage:', error);
@@ -215,20 +222,76 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     return;
                 }
 
-                wBlockLog(`[wBlock] Injecting userscript: ${script.name}`);
-                const scriptElement = document.createElement('script');
-                scriptElement.textContent = this.wrapUserScript(script);
-                scriptElement.setAttribute('data-userscript', script.name);
-                scriptElement.setAttribute('type', 'text/javascript'); 
-                
-                (document.head || document.documentElement).appendChild(scriptElement);
-                wBlockLog(`[wBlock] Appended <script> tag for ${script.name} to the DOM.`);
-                
+                const injectInto = script.injectInto || 'page';
+                wBlockLog(`[wBlock] Injecting userscript: ${script.name} (mode: ${injectInto})`);
+
+                if (injectInto === 'content') {
+                    // Execute directly in content script context (CSP-safe)
+                    this.injectInContentContext(script);
+                } else if (injectInto === 'auto') {
+                    // Try page context first, fall back to content if CSP blocks
+                    if (!this.tryInjectInPageContext(script)) {
+                        wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${script.name}`);
+                        this.injectInContentContext(script);
+                    }
+                } else {
+                    // Default: page context
+                    this.injectInPageContext(script);
+                }
+
                 this.injectedScripts.add(script.name);
                 wBlockLog(`[wBlock] Successfully injected and registered userscript: ${script.name} at ${script.runAt || 'document-end'}`);
-                
+
             } catch (error) {
                 wBlockError(`[wBlock] Failed to inject userscript ${script.name}:`, error);
+            }
+        }
+
+        // Page context injection (default behavior - via <script> tag)
+        injectInPageContext(script) {
+            const scriptElement = document.createElement('script');
+            scriptElement.textContent = this.wrapUserScript(script, 'page');
+            scriptElement.setAttribute('data-userscript', script.name);
+            scriptElement.setAttribute('type', 'text/javascript');
+            (document.head || document.documentElement).appendChild(scriptElement);
+            wBlockLog(`[wBlock] Injected ${script.name} in page context via <script> tag`);
+        }
+
+        // Try page context, return false if CSP blocks
+        tryInjectInPageContext(script) {
+            try {
+                // Test if we can inject a script tag (CSP check)
+                const testElement = document.createElement('script');
+                const testId = `__wblock_csp_test_${Date.now()}`;
+                testElement.textContent = `window.${testId} = true;`;
+                (document.head || document.documentElement).appendChild(testElement);
+
+                // Check if the script actually executed
+                const executed = window[testId] === true;
+                testElement.remove();
+                delete window[testId];
+
+                if (executed) {
+                    this.injectInPageContext(script);
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                wBlockLog(`[wBlock] CSP test failed for ${script.name}: ${e.message}`);
+                return false;
+            }
+        }
+
+        // Content script context injection (CSP-safe, runs in extension context)
+        injectInContentContext(script) {
+            try {
+                const wrappedCode = this.wrapUserScript(script, 'content');
+                // Execute directly in the content script context using Function constructor
+                const executeScript = new Function(wrappedCode);
+                executeScript();
+                wBlockLog(`[wBlock] Injected ${script.name} in content context (CSP-safe)`);
+            } catch (error) {
+                wBlockError(`[wBlock] Content context execution failed for ${script.name}:`, error);
             }
         }
 
@@ -263,12 +326,35 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return shouldRun;
         }
 
-        wrapUserScript(script) {
+        wrapUserScript(script, context = 'page') {
             // Serialize resources as a JSON string for injection
             const resourcesJSON = script.resources ? JSON.stringify(script.resources) : '{}';
+            const isContentContext = context === 'content';
+
+            // In content context, unsafeWindow is just the content script's window (no page JS access)
+            // In page context, we try to access the real page window
+            const unsafeWindowCode = isContentContext
+                ? `// Content context: unsafeWindow is the content script's window (no page JS access)
+    const unsafeWindow = window;
+    wBlockLog('[wBlock] Running in content context - unsafeWindow has no access to page JavaScript');`
+                : `// Get reference to the actual page window (not the isolated extension context)
+    // This is the real unsafeWindow that can access page variables
+    const unsafeWindow = (function() {
+        try {
+            // Try to access the page's window through various methods
+            if (typeof window.wrappedJSObject !== 'undefined') {
+                return window.wrappedJSObject;
+            }
+            // In Safari, the window object we have IS the page context when injected via <script> tag
+            return window;
+        } catch (e) {
+            wBlockWarn('[wBlock] Could not access page context, falling back to regular window');
+            return window;
+        }
+    })();`;
 
             return `
-// wBlock Userscript Wrapper for: ${script.name}
+// wBlock Userscript Wrapper for: ${script.name} (${context} context)
 (function() {
     'use strict';
 
@@ -291,7 +377,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         console.error(...args);
     };
 
-    wBlockLog('[wBlock UserScript] Executing: ${script.name}');
+    wBlockLog('[wBlock UserScript] Executing: ${script.name} in ${context} context');
 
     // Store resources for this script
     const scriptResources = ${resourcesJSON};
@@ -319,21 +405,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
     });
 
-    // Get reference to the actual page window (not the isolated extension context)
-    // This is the real unsafeWindow that can access page variables
-    const unsafeWindow = (function() {
-        try {
-            // Try to access the page's window through various methods
-            if (typeof window.wrappedJSObject !== 'undefined') {
-                return window.wrappedJSObject;
-            }
-            // In Safari, the window object we have IS the page context when injected via <script> tag
-            return window;
-        } catch (e) {
-            wBlockWarn('[wBlock] Could not access page context, falling back to regular window');
-            return window;
-        }
-    })();
+    ${unsafeWindowCode}
 
     const GM = {
         info: {
