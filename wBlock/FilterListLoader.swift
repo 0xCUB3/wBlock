@@ -155,34 +155,19 @@ class FilterListLoader {
         }
     }
 
-    /// Migrates old combined AdGuard Annoyances Filter to the new split filters.
     private func migrateOldAnnoyancesFilter(in filters: [FilterList], defaultFilters: [FilterList]) -> [FilterList] {
         var result = filters
-        let oldFilterURL = "14_optimized.txt"
-
-        // Find the old combined Annoyances filter
-        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains(oldFilterURL) }) else {
-            return result // No migration needed
+        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains("14_optimized.txt") }) else {
+            return result
         }
 
         let wasSelected = result[oldFilterIndex].isSelected
-
-        // Remove the old filter
         result.remove(at: oldFilterIndex)
 
-        // The new split filter URLs
-        let newFilterURLs = [
-            "18_optimized.txt",
-            "19_optimized.txt",
-            "20_optimized.txt",
-            "21_optimized.txt",
-            "22_optimized.txt"
-        ]
-
-        // Add the new filters from defaults if they don't already exist
+        let newFilterURLs = ["18_optimized.txt", "19_optimized.txt", "20_optimized.txt", "21_optimized.txt", "22_optimized.txt"]
         for newURL in newFilterURLs {
-            let alreadyExists = result.contains { $0.url.absoluteString.contains(newURL) }
-            if !alreadyExists, let defaultFilter = defaultFilters.first(where: { $0.url.absoluteString.contains(newURL) }) {
+            if !result.contains(where: { $0.url.absoluteString.contains(newURL) }),
+               let defaultFilter = defaultFilters.first(where: { $0.url.absoluteString.contains(newURL) }) {
                 var newFilter = defaultFilter
                 newFilter.isSelected = wasSelected
                 result.append(newFilter)

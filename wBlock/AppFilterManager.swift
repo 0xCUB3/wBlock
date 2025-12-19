@@ -247,22 +247,15 @@ class AppFilterManager: ObservableObject {
 
     // MARK: - Migration
 
-    /// Migrates old combined AdGuard Annoyances Filter (filter 14) to the new split filters (18-22).
     private func migrateOldAnnoyancesFilter(in filters: [FilterList]) -> [FilterList] {
         var result = filters
-        let oldFilterURL = "14_optimized.txt"
-
-        // Find the old combined Annoyances filter
-        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains(oldFilterURL) }) else {
-            return result // No migration needed
+        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains("14_optimized.txt") }) else {
+            return result
         }
 
         let wasSelected = result[oldFilterIndex].isSelected
-
-        // Remove the old filter
         result.remove(at: oldFilterIndex)
 
-        // Define the new split filters
         let newFilters: [(name: String, url: String, description: String)] = [
             ("AdGuard Cookie Notices", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt", "Blocks cookie consent notices on web pages."),
             ("AdGuard Popups", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
@@ -271,27 +264,18 @@ class AppFilterManager: ObservableObject {
             ("AdGuard Widgets", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
         ]
 
-        // Add the new filters (only if they don't already exist)
-        for filter in newFilters {
-            let alreadyExists = result.contains { $0.url.absoluteString.contains(filter.url) }
-            if !alreadyExists {
-                let newFilter = FilterList(
-                    id: UUID(),
-                    name: filter.name,
-                    url: URL(string: filter.url)!,
-                    category: .annoyances,
-                    isSelected: wasSelected,
-                    description: filter.description
-                )
-                result.append(newFilter)
-            }
+        for filter in newFilters where !result.contains(where: { $0.url.absoluteString.contains(filter.url) }) {
+            result.append(FilterList(
+                id: UUID(),
+                name: filter.name,
+                url: URL(string: filter.url)!,
+                category: .annoyances,
+                isSelected: wasSelected,
+                description: filter.description
+            ))
         }
 
-        // Persist the migration to protobuf
-        Task {
-            await dataManager.updateFilterLists(result)
-        }
-
+        Task { await dataManager.updateFilterLists(result) }
         return result
     }
 
@@ -443,27 +427,19 @@ class AppFilterManager: ObservableObject {
         missingFilters.removeAll()
         missingUserScripts.removeAll()
 
-        // Check for missing filters
-        for filter in filterLists where filter.isSelected {
-            if !loader.filterFileExists(filter) {
-                missingFilters.append(filter)
-            }
+        for filter in filterLists where filter.isSelected && !loader.filterFileExists(filter) {
+            missingFilters.append(filter)
         }
 
-        // Check for missing userscripts
         if let userScriptManager = filterUpdater.userScriptManager {
-            for script in userScriptManager.userScripts where script.isEnabled {
-                if !script.isDownloaded {
-                    missingUserScripts.append(script)
-                }
+            for script in userScriptManager.userScripts where script.isEnabled && !script.isDownloaded {
+                missingUserScripts.append(script)
             }
         }
 
-        // Auto-download missing items and apply changes
         if !missingFilters.isEmpty || !missingUserScripts.isEmpty || forceReload || hasUnappliedChanges {
             showingApplyProgressSheet = true
             Task {
-                // Download missing items first if needed
                 if !missingFilters.isEmpty || !missingUserScripts.isEmpty {
                     await downloadMissingItemsSilently()
                 }
@@ -1163,41 +1139,6 @@ class AppFilterManager: ObservableObject {
         statusDescription = "Ready."
     }
 
-    func updateMissingFilters() async { // This is for when the "Missing Filters" sheet is shown
-        isLoading = true
-        progress = 0
-
-        let totalSteps = Float(missingFilters.count)
-        var completedSteps: Float = 0
-        let tempMissingFilters = self.missingFilters // Work on a temporary copy
-
-        for filter in tempMissingFilters {
-            let success = await filterUpdater.fetchAndProcessFilter(filter) // This now updates sourceRuleCount
-            if success {
-                // If successful, the filterListManager?.filterLists is updated by fetchAndProcessFilter
-                // We should remove it from our local 'missingFilters' tracking state
-                await MainActor.run {
-                    self.missingFilters.removeAll { $0.id == filter.id }
-                }
-            }
-            completedSteps += 1
-            await MainActor.run {
-                self.progress = completedSteps / totalSteps
-            }
-        }
-        
-        saveFilterListsSync() // Save lists as fetchAndProcessFilter might have updated counts/versions
-
-        // Show apply progress sheet for the subsequent apply operation
-        await MainActor.run {
-            showingApplyProgressSheet = true
-        }
-        
-        await applyChanges()
-        isLoading = false
-        progress = 0 // Reset progress after completion
-    }
-
     func checkForUpdates() async {
         isLoading = true
         statusDescription = "Checking for updates..."
@@ -1317,105 +1258,22 @@ class AppFilterManager: ObservableObject {
         await applyChanges()
     }
 
-    /// Downloads missing filters and userscripts silently (without showing separate UI).
-    /// Used when auto-downloading during Apply Changes.
     private func downloadMissingItemsSilently() async {
-        let tempMissingFilters = self.missingFilters
-        let tempMissingScripts = self.missingUserScripts
-
-        // Download missing filters
-        for filter in tempMissingFilters {
-            let success = await filterUpdater.fetchAndProcessFilter(filter)
-            if success {
-                await MainActor.run {
-                    self.missingFilters.removeAll { $0.id == filter.id }
-                }
+        for filter in missingFilters {
+            if await filterUpdater.fetchAndProcessFilter(filter) {
+                await MainActor.run { self.missingFilters.removeAll { $0.id == filter.id } }
             }
         }
 
-        // Download missing userscripts
         if let userScriptManager = filterUpdater.userScriptManager {
-            for script in tempMissingScripts {
-                if let url = script.url {
-                    await userScriptManager.addUserScript(from: url)
-                    await MainActor.run {
-                        self.missingUserScripts.removeAll { $0.id == script.id }
-                    }
-                }
+            for script in missingUserScripts where script.url != nil {
+                await userScriptManager.addUserScript(from: script.url!)
+                await MainActor.run { self.missingUserScripts.removeAll { $0.id == script.id } }
             }
         }
 
         saveFilterListsSync()
     }
-
-    func downloadMissingItems() async {
-        isLoading = true
-        progress = 0
-        statusDescription = "Downloading missing items..."
-
-        let tempMissingFilters = self.missingFilters
-        let tempMissingScripts = self.missingUserScripts
-        let totalSteps = Float(tempMissingFilters.count + tempMissingScripts.count)
-        var completedSteps: Float = 0
-        var downloadedFiltersCount = 0
-        var downloadedScriptsCount = 0
-
-        // Download missing filters
-        for filter in tempMissingFilters {
-            let success = await filterUpdater.fetchAndProcessFilter(filter)
-            if success {
-                await MainActor.run {
-                    self.missingFilters.removeAll { $0.id == filter.id }
-                }
-                downloadedFiltersCount += 1
-            }
-            completedSteps += 1
-            await MainActor.run {
-                self.progress = completedSteps / totalSteps
-            }
-        }
-
-        // Download missing userscripts
-        if let userScriptManager = filterUpdater.userScriptManager {
-            for script in tempMissingScripts {
-                if let url = script.url {
-                    await userScriptManager.addUserScript(from: url)
-                    await MainActor.run {
-                        self.missingUserScripts.removeAll { $0.id == script.id }
-                    }
-                    downloadedScriptsCount += 1
-                }
-                completedSteps += 1
-                await MainActor.run {
-                    self.progress = completedSteps / totalSteps
-                }
-            }
-        }
-
-        saveFilterListsSync()
-
-        isLoading = false
-        progress = 0
-
-        var message = "Downloaded "
-        var parts: [String] = []
-        if downloadedFiltersCount > 0 {
-            parts.append("\(downloadedFiltersCount) filter\(downloadedFiltersCount == 1 ? "" : "s")")
-        }
-        if downloadedScriptsCount > 0 {
-            parts.append("\(downloadedScriptsCount) userscript\(downloadedScriptsCount == 1 ? "" : "s")")
-        }
-        message += parts.joined(separator: " and ")
-        message += ". Would you like to apply them now?"
-
-        await MainActor.run {
-            showingApplyProgressSheet = true
-        }
-
-        // Automatically apply changes after download
-        await applyChanges()
-    }
-    
 
     // MARK: - List Management
     func addFilterList(name: String, urlString: String) {
