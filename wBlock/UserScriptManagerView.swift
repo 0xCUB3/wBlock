@@ -28,6 +28,7 @@ struct UserScriptManagerView: View {
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
     @State private var isDropTarget = false
+    @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
 
     private var totalScriptsCount: Int {
@@ -62,16 +63,31 @@ struct UserScriptManagerView: View {
         }
         #if os(macOS)
         .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
-        .overlay {
-            if isDropTarget {
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6]))
-                    .padding(8)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.accentColor.opacity(0.05))
-                            .padding(8)
+        .overlay(alignment: .topTrailing) {
+            ZStack(alignment: .topTrailing) {
+                if isDropTarget {
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6]))
+                        .padding(8)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.accentColor.opacity(0.05))
+                                .padding(8)
+                        }
+                }
+
+                if isDropProcessing {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Importing…")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
+                    .padding(8)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(12)
+                }
             }
         }
         #endif
@@ -266,6 +282,8 @@ struct UserScriptManagerView: View {
             }
 
             Task {
+                await MainActor.run { isDropProcessing = true }
+
                 let error = await userScriptManager.addUserScript(fromLocalFile: resolvedURL)
                 if let error {
                     await ConcurrentLogManager.shared.error(.userScript, "Failed to import dropped userscript", metadata: ["error": error.localizedDescription])
@@ -277,6 +295,8 @@ struct UserScriptManagerView: View {
                         refreshScripts()
                     }
                 }
+
+                await MainActor.run { isDropProcessing = false }
             }
         }
 
