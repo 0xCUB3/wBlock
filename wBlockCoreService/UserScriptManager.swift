@@ -807,7 +807,20 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func hasMetadataBlock(in content: String) -> Bool {
-        content.contains("// ==UserScript==") && content.contains("// ==/UserScript==")
+        let lines = content.split(whereSeparator: \.
+            isNewline)
+        var sawStart = false
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if !sawStart {
+                if trimmed == "// ==UserScript==" { sawStart = true }
+            } else {
+                if trimmed == "// ==/UserScript==" { return true }
+            }
+        }
+
+        return false
     }
 
     private func baseName(for fileURL: URL) -> String {
