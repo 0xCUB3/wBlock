@@ -266,15 +266,15 @@ struct UserScriptManagerView: View {
             }
 
             Task {
-                do {
-                    try await userScriptManager.addUserScript(fromLocalFile: resolvedURL)
-                    await MainActor.run {
-                        refreshScripts()
-                    }
-                } catch {
+                let error = await userScriptManager.addUserScript(fromLocalFile: resolvedURL)
+                if let error {
                     await ConcurrentLogManager.shared.error(.userScript, "Failed to import dropped userscript", metadata: ["error": error.localizedDescription])
                     await MainActor.run {
                         dropErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    }
+                } else {
+                    await MainActor.run {
+                        refreshScripts()
                     }
                 }
             }
@@ -1094,20 +1094,20 @@ struct AddUserScriptView: View {
         fileImportError = nil
 
         Task(priority: .userInitiated) {
-            do {
-                try await userScriptManager.addUserScript(fromLocalFile: url)
+            let error = await userScriptManager.addUserScript(fromLocalFile: url)
 
+            if let error {
+                await MainActor.run {
+                    fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    isAdding = false
+                }
+            } else {
                 await ConcurrentLogManager.shared.info(.userScript, "Imported userscript from file", metadata: ["file": url.lastPathComponent])
 
                 await MainActor.run {
                     isAdding = false
                     onScriptAdded()
                     dismiss()
-                }
-            } catch {
-                await MainActor.run {
-                    fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                    isAdding = false
                 }
             }
         }

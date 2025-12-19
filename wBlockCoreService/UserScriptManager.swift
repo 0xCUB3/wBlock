@@ -872,7 +872,7 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func addUserScript(fromLocalFile fileURL: URL) async throws {
+    public func addUserScript(fromLocalFile fileURL: URL) async -> Error? {
         await MainActor.run {
             isLoading = true
             statusDescription = "Importing userscript..."
@@ -968,6 +968,7 @@ public class UserScriptManager: ObservableObject {
             await MainActor.run {
                 isLoading = false
             }
+            return nil
         } catch {
             await MainActor.run {
                 hasError = true
@@ -975,7 +976,7 @@ public class UserScriptManager: ObservableObject {
                 statusDescription = "Import failed"
                 isLoading = false
             }
-            throw error
+            return error
         }
     }
     
