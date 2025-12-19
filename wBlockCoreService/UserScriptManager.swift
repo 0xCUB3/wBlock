@@ -9,6 +9,26 @@ import Foundation
 import Combine
 import os.log
 
+public enum UserScriptImportError: LocalizedError {
+    case unsupportedType
+    case unreadableFile
+    case emptyContent
+    case missingMetadata
+
+    public var errorDescription: String? {
+        switch self {
+        case .unsupportedType:
+            return "Choose a .user.js or .js userscript file."
+        case .unreadableFile:
+            return "Couldn't read the selected file."
+        case .emptyContent:
+            return "The file is empty."
+        case .missingMetadata:
+            return "Not a userscript: missing metadata block."
+        }
+    }
+}
+
 @MainActor
 public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = []
@@ -785,6 +805,39 @@ public class UserScriptManager: ObservableObject {
             return FileManager.default.fileExists(atPath: filePath)
         }
     }
+
+    private func hasMetadataBlock(in content: String) -> Bool {
+        let lines = content.split(whereSeparator: \.
+            isNewline)
+        var sawStart = false
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if !sawStart {
+                if trimmed == "// ==UserScript==" { sawStart = true }
+            } else {
+                if trimmed == "// ==/UserScript==" { return true }
+            }
+        }
+
+        return false
+    }
+
+    private func baseName(for fileURL: URL) -> String {
+        let filename = fileURL.lastPathComponent
+        let lowercased = filename.lowercased()
+
+        // Use case-insensitive suffix check but preserve original casing in the returned name
+        if lowercased.hasSuffix(".user.js") {
+            return String(filename.dropLast(".user.js".count))
+        }
+
+        if lowercased.hasSuffix(".js") {
+            return String(filename.dropLast(3))
+        }
+
+        return fileURL.deletingPathExtension().lastPathComponent
+    }
     
     // MARK: - Public Methods
     
@@ -800,6 +853,7 @@ public class UserScriptManager: ObservableObject {
             var newUserScript = UserScript(name: url.lastPathComponent.replacingOccurrences(of: ".user.js", with: ""), url: url, content: content)
             newUserScript.parseMetadata()
             newUserScript.isEnabled = true
+            newUserScript.isLocal = false
             newUserScript.lastUpdated = Date()
 
             // Process @require directives and @resource directives
@@ -829,6 +883,116 @@ public class UserScriptManager: ObservableObject {
             errorMessage = "Failed to download userscript: \(error.localizedDescription)"
             statusDescription = "Download failed"
             isLoading = false
+        }
+    }
+
+    public func addUserScript(fromLocalFile fileURL: URL) async -> Error? {
+        await MainActor.run {
+            isLoading = true
+            statusDescription = "Importing userscript..."
+            hasError = false
+        }
+
+        let accessed = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if accessed {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        do {
+            let filename = fileURL.lastPathComponent
+            let lowercased = filename.lowercased()
+            let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+
+            guard isSupportedType else { throw UserScriptImportError.unsupportedType }
+
+            let data: Data
+            do {
+                data = try Data(contentsOf: fileURL)
+            } catch {
+                throw UserScriptImportError.unreadableFile
+            }
+
+            guard let content = String(data: data, encoding: .utf8) else {
+                throw UserScriptImportError.unreadableFile
+            }
+
+            guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw UserScriptImportError.emptyContent
+            }
+
+            guard hasMetadataBlock(in: content) else {
+                throw UserScriptImportError.missingMetadata
+            }
+
+            // Determine canonical name using metadata when available; fall back to filename.
+            var tempScript = UserScript(name: "", content: content)
+            tempScript.parseMetadata()
+            let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let filenameBasedName = baseName(for: fileURL).trimmingCharacters(in: .whitespacesAndNewlines)
+            let canonicalName = !metadataName.isEmpty ? metadataName : (filenameBasedName.isEmpty ? filename : filenameBasedName)
+
+            // Only replace an existing local script with the same canonical name; any
+            // collision with a remote script is handled by the subsequent duplicate check.
+            let existingIndex = userScripts.firstIndex { script in
+                script.isLocal && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == canonicalName.lowercased()
+            }
+
+            let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
+            var newUserScript = UserScript(id: scriptID, name: canonicalName, url: nil, content: content)
+            newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
+            newUserScript.isLocal = true
+            newUserScript.lastUpdated = Date()
+
+            // Copy parsed metadata from tempScript to avoid a second parse
+            newUserScript.description = tempScript.description
+            newUserScript.version = tempScript.version
+            newUserScript.matches = tempScript.matches
+            newUserScript.excludeMatches = tempScript.excludeMatches
+            newUserScript.includes = tempScript.includes
+            newUserScript.excludes = tempScript.excludes
+            newUserScript.runAt = tempScript.runAt
+            newUserScript.injectInto = tempScript.injectInto
+            newUserScript.grant = tempScript.grant
+            newUserScript.require = tempScript.require
+            newUserScript.resource = tempScript.resource
+            newUserScript.resourceContents = tempScript.resourceContents
+            newUserScript.noframes = tempScript.noframes
+            newUserScript.updateURL = tempScript.updateURL
+            newUserScript.downloadURL = tempScript.downloadURL
+
+            // Process @require and @resource directives (networked content is allowed even for local imports)
+            let processedContent = await processRequireDirectives(newUserScript)
+            let resourceContents = await processResourceDirectives(newUserScript)
+            newUserScript.content = processedContent
+            newUserScript.resourceContents = resourceContents
+
+            if let existingIndex {
+                userScripts[existingIndex] = newUserScript
+                statusDescription = "Replaced userscript: \(newUserScript.name)"
+            } else {
+                userScripts.append(newUserScript)
+                statusDescription = "Imported userscript: \(newUserScript.name)"
+            }
+
+            _ = writeUserScriptContent(newUserScript)
+
+            checkForDuplicatesAndAskForConfirmation()
+
+            await persistUserScriptsNow()
+            await MainActor.run {
+                isLoading = false
+            }
+            return nil
+        } catch {
+            await MainActor.run {
+                hasError = true
+                errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                statusDescription = "Import failed"
+                isLoading = false
+            }
+            return error
         }
     }
     
