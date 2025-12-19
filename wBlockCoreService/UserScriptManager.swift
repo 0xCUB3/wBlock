@@ -827,6 +827,7 @@ public class UserScriptManager: ObservableObject {
         let filename = fileURL.lastPathComponent
         let lowercased = filename.lowercased()
 
+        // Use case-insensitive suffix check but preserve original casing in the returned name
         if lowercased.hasSuffix(".user.js") {
             return String(filename.dropLast(".user.js".count))
         }
@@ -932,6 +933,8 @@ public class UserScriptManager: ObservableObject {
             let filenameBasedName = baseName(for: fileURL).trimmingCharacters(in: .whitespacesAndNewlines)
             let canonicalName = !metadataName.isEmpty ? metadataName : (filenameBasedName.isEmpty ? filename : filenameBasedName)
 
+            // Only replace an existing local script with the same canonical name; any
+            // collision with a remote script is handled by the subsequent duplicate check.
             let existingIndex = userScripts.firstIndex { script in
                 script.isLocal && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == canonicalName.lowercased()
             }
