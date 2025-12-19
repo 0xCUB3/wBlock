@@ -2097,7 +2097,7 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.2.0;
@@ -2140,7 +2140,7 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.2.0;
