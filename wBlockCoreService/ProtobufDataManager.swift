@@ -551,6 +551,14 @@ public class ProtobufDataManager: ObservableObject {
     ioQueue.asyncAfter(deadline: .now() + saveDebounceInterval, execute: work)
     }
 
+    /// Saves data immediately without debounce delay
+    /// Use when changes must be persisted before other cross-process actions
+    @MainActor
+    public func saveDataImmediately() async {
+        pendingSaveWorkItem?.cancel()
+        await performSaveData()
+    }
+
     // Perform serialization and file I/O off the main actor to avoid blocking UI
     private func performSaveData() async {
         // Snapshot appData on main actor, then serialize in background

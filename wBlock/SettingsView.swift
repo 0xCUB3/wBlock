@@ -53,6 +53,8 @@ struct SettingsView: View {
                                                 Task {
                                                     await dataManager.setIsBadgeCounterEnabled(
                                                         newValue)
+                                                    // Wait for save to complete before notifying Safari
+                                                    await dataManager.saveDataImmediately()
                                                     // Force Safari to refresh the toolbar badge
                                                     SFSafariApplication.setToolbarItemsNeedUpdate()
                                                 }

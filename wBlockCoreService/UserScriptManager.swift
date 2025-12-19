@@ -807,8 +807,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func hasMetadataBlock(in content: String) -> Bool {
-        let lines = content.split(whereSeparator: \.
-            isNewline)
+        let lines = content.split(whereSeparator: \.isNewline)
         var sawStart = false
 
         for line in lines {
