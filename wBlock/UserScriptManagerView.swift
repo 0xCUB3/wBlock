@@ -1103,10 +1103,22 @@ struct AddUserScriptView: View {
     }
 
     private var allowedImportTypes: [UTType] {
-        [
-            .javaScript,
-            UTType(filenameExtension: "user.js")
-        ].compactMap { $0 }
+        var types: [UTType] = []
+
+        if let js = UTType.javaScript {
+            types.append(js)
+        } else if let jsExt = UTType(filenameExtension: "js") {
+            types.append(jsExt)
+        }
+
+        let userJsTypes = UTType.types(tag: "user.js", tagClass: .filenameExtension, conformingTo: nil)
+        if !userJsTypes.isEmpty {
+            types.append(contentsOf: userJsTypes)
+        } else if let userJsExt = UTType(filenameExtension: "user.js", conformingTo: .data) {
+            types.append(userJsExt)
+        }
+
+        return types
     }
 
     private func importFile(at url: URL) {
