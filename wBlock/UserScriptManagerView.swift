@@ -243,7 +243,14 @@ struct UserScriptManagerView: View {
             return false
         }
 
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
+            if let error {
+                Task {
+                    await ConcurrentLogManager.shared.error(.userScript, "Failed to load dropped item", metadata: ["error": error.localizedDescription])
+                }
+                return
+            }
+
             var url: URL?
             if let data = item as? Data {
                 url = URL(dataRepresentation: data, relativeTo: nil)
@@ -251,7 +258,12 @@ struct UserScriptManagerView: View {
                 url = droppedURL
             }
 
-            guard let resolvedURL = url else { return }
+            guard let resolvedURL = url else {
+                Task {
+                    await ConcurrentLogManager.shared.error(.userScript, "Could not resolve URL from dropped item.")
+                }
+                return
+            }
 
             Task {
                 do {

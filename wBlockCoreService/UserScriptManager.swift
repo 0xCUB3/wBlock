@@ -920,7 +920,7 @@ public class UserScriptManager: ObservableObject {
             let canonicalName = !metadataName.isEmpty ? metadataName : (filenameBasedName.isEmpty ? filename : filenameBasedName)
 
             let existingIndex = userScripts.firstIndex { script in
-                script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == canonicalName.lowercased()
+                script.isLocal && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == canonicalName.lowercased()
             }
 
             let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
