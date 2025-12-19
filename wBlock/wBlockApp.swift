@@ -20,6 +20,10 @@ struct wBlockApp: App {
 
     @StateObject private var dataManager = ProtobufDataManager.shared
 
+    #if os(macOS)
+    @State private var showingRestartConfirmation = false
+    #endif
+
     private var hasCompletedOnboarding: Bool {
         dataManager.hasCompletedOnboarding
     }
@@ -40,14 +44,28 @@ struct wBlockApp: App {
                             await dataManager.migrateMultipurposeToAnnoyances()
                         }
                     }
+                    #if os(macOS)
+                    .confirmationDialog(
+                        "Restart Onboarding?",
+                        isPresented: $showingRestartConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Restart", role: .destructive) {
+                            Task { @MainActor in
+                                await dataManager.updateAppSettings(hasCompletedOnboarding: false)
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will reset all filters, userscripts, and preferences.")
+                    }
+                    #endif
         }
         #if os(macOS)
         .commands {
-            CommandGroup(replacing: .appInfo) {
+            CommandGroup(after: .appInfo) {
                 Button("Restart Onboarding…") {
-                    Task { @MainActor in
-                        await dataManager.updateAppSettings(hasCompletedOnboarding: false)
-                    }
+                    showingRestartConfirmation = true
                 }
             }
         }
