@@ -928,7 +928,23 @@ public class UserScriptManager: ObservableObject {
             newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
             newUserScript.isLocal = true
             newUserScript.lastUpdated = Date()
-            newUserScript.parseMetadata()
+
+            // Copy parsed metadata from tempScript to avoid a second parse
+            newUserScript.description = tempScript.description
+            newUserScript.version = tempScript.version
+            newUserScript.matches = tempScript.matches
+            newUserScript.excludeMatches = tempScript.excludeMatches
+            newUserScript.includes = tempScript.includes
+            newUserScript.excludes = tempScript.excludes
+            newUserScript.runAt = tempScript.runAt
+            newUserScript.injectInto = tempScript.injectInto
+            newUserScript.grant = tempScript.grant
+            newUserScript.require = tempScript.require
+            newUserScript.resource = tempScript.resource
+            newUserScript.resourceContents = tempScript.resourceContents
+            newUserScript.noframes = tempScript.noframes
+            newUserScript.updateURL = tempScript.updateURL
+            newUserScript.downloadURL = tempScript.downloadURL
 
             // Process @require and @resource directives (networked content is allowed even for local imports)
             let processedContent = await processRequireDirectives(newUserScript)

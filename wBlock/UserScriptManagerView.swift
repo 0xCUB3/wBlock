@@ -1084,7 +1084,7 @@ struct AddUserScriptView: View {
 
     private var allowedImportTypes: [UTType] {
         [
-            UTType(filenameExtension: "js"),
+            .javaScript,
             UTType(filenameExtension: "user.js")
         ].compactMap { $0 }
     }
