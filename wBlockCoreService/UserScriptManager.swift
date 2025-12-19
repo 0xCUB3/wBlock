@@ -98,8 +98,10 @@ public class UserScriptManager: ObservableObject {
             // Initial setup (folders, defaults, downloads)
             self.setup()
 
-            // Observe dataManager for future changes
+            // Observe dataManager for userscript changes only (not all appData changes)
             dataManager.$appData
+                .map { $0.userScripts }
+                .removeDuplicates()
                 .sink { [weak self] _ in
                     Task { @MainActor [weak self] in
                         self?.syncFromDataManager()
