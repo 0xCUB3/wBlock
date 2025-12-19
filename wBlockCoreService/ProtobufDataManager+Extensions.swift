@@ -54,6 +54,52 @@ extension ProtobufDataManager {
         }
     }
 
+    /// Migrates users from the old combined AdGuard Annoyances Filter (filter 14) to the new split filters (18-22).
+    public func migrateAnnoyancesFilterToSplitFilters() async {
+        var updatedData = appData
+        let oldFilterURL = "14_optimized.txt"
+
+        // Find the old combined Annoyances filter
+        guard let oldFilterIndex = updatedData.filterLists.firstIndex(where: { $0.url.contains(oldFilterURL) }) else {
+            return // Old filter not found, no migration needed
+        }
+
+        let wasSelected = updatedData.filterLists[oldFilterIndex].isSelected
+
+        // Remove the old filter
+        updatedData.filterLists.remove(at: oldFilterIndex)
+
+        // Define the new split filters
+        let newFilters: [(name: String, url: String, description: String)] = [
+            ("AdGuard Cookie Notices", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt", "Blocks cookie consent notices on web pages."),
+            ("AdGuard Popups", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
+            ("AdGuard Mobile App Banners", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt", "Blocks banners promoting mobile app downloads."),
+            ("AdGuard Other Annoyances", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt", "Blocks miscellaneous irritating elements not covered by other filters."),
+            ("AdGuard Widgets", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
+        ]
+
+        // Add the new filters (only if they don't already exist)
+        for filter in newFilters {
+            let alreadyExists = updatedData.filterLists.contains { $0.url.contains(filter.url) }
+            if !alreadyExists {
+                var protoFilter = Wblock_Data_FilterListData()
+                protoFilter.id = UUID().uuidString
+                protoFilter.name = filter.name
+                protoFilter.url = filter.url
+                protoFilter.category = .annoyances
+                protoFilter.isSelected = wasSelected
+                protoFilter.description_p = filter.description
+                protoFilter.lastUpdated = Int64(Date().timeIntervalSince1970)
+                updatedData.filterLists.append(protoFilter)
+            }
+        }
+
+        await MainActor.run {
+            appData = updatedData
+        }
+        await saveData()
+    }
+
     // MARK: - Filter Lists
     public func getFilterLists() -> [FilterList] {
         return appData.filterLists.map { protoData in

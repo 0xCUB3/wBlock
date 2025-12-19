@@ -165,13 +165,17 @@ class AppFilterManager: ObservableObject {
 
     private func setup() {
         filterUpdater.filterListManager = self
-        
+
         // Load filter lists from protobuf data manager
-        let storedFilterLists = dataManager.getFilterLists()
+        var storedFilterLists = dataManager.getFilterLists()
+
+        // Migrate old AdGuard Annoyances filter to new split filters
+        storedFilterLists = migrateOldAnnoyancesFilter(in: storedFilterLists)
+
         let migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         filterLists = migratedFilterLists
         customFilterLists = dataManager.getCustomFilterLists()
-        
+
         // Persist migrated filter URLs to the data store when needed
         if storedFilterLists != migratedFilterLists {
             Task {
@@ -183,7 +187,7 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-        
+
         // Only load defaults if truly no data exists (not just during async loading)
         if filterLists.isEmpty && !dataManager.isLoading {
             let defaultLists = loader.loadFilterLists()
@@ -242,7 +246,57 @@ class AppFilterManager: ObservableObject {
     deinit {
         disabledSitesCheckTimer?.invalidate()
     }
-    
+
+    // MARK: - Migration
+
+    /// Migrates old combined AdGuard Annoyances Filter (filter 14) to the new split filters (18-22).
+    private func migrateOldAnnoyancesFilter(in filters: [FilterList]) -> [FilterList] {
+        var result = filters
+        let oldFilterURL = "14_optimized.txt"
+
+        // Find the old combined Annoyances filter
+        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains(oldFilterURL) }) else {
+            return result // No migration needed
+        }
+
+        let wasSelected = result[oldFilterIndex].isSelected
+
+        // Remove the old filter
+        result.remove(at: oldFilterIndex)
+
+        // Define the new split filters
+        let newFilters: [(name: String, url: String, description: String)] = [
+            ("AdGuard Cookie Notices", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt", "Blocks cookie consent notices on web pages."),
+            ("AdGuard Popups", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
+            ("AdGuard Mobile App Banners", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt", "Blocks banners promoting mobile app downloads."),
+            ("AdGuard Other Annoyances", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt", "Blocks miscellaneous irritating elements not covered by other filters."),
+            ("AdGuard Widgets", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
+        ]
+
+        // Add the new filters (only if they don't already exist)
+        for filter in newFilters {
+            let alreadyExists = result.contains { $0.url.absoluteString.contains(filter.url) }
+            if !alreadyExists {
+                let newFilter = FilterList(
+                    id: UUID(),
+                    name: filter.name,
+                    url: URL(string: filter.url)!,
+                    category: .annoyances,
+                    isSelected: wasSelected,
+                    description: filter.description
+                )
+                result.append(newFilter)
+            }
+        }
+
+        // Persist the migration to protobuf
+        Task {
+            await dataManager.updateFilterLists(result)
+        }
+
+        return result
+    }
+
     /// Fast rebuild for disabled sites changes only - skips SafariConverterLib conversion
     private func fastApplyDisabledSitesChanges() async {
         await MainActor.run {

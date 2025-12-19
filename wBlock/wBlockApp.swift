@@ -39,9 +39,10 @@ struct wBlockApp: App {
                         }
                         handleLaunchArguments()
 
-                        // Run migration from multipurpose to annoyances (idempotent - only saves if needed)
+                        // Run migrations (idempotent - only saves if needed)
                         Task {
                             await dataManager.migrateMultipurposeToAnnoyances()
+                            await dataManager.migrateAnnoyancesFilterToSplitFilters()
                         }
                     }
                     #if os(macOS)

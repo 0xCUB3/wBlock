@@ -95,6 +95,9 @@ class FilterListLoader {
                     filterLists.append(defaultFilter)
                 }
             }
+
+            // Migrate old AdGuard Annoyances Filter to new split filters
+            filterLists = migrateOldAnnoyancesFilter(in: filterLists, defaultFilters: defaultFilterLists)
         } else {
             filterLists = defaultFilterLists
         }
@@ -143,7 +146,7 @@ class FilterListLoader {
             guard let newURL = filterURLMigrations[filter.url.absoluteString] else {
                 return filter
             }
-            
+
             var migratedFilter = filter
             migratedFilter.url = newURL
             migratedFilter.etag = nil
@@ -152,13 +155,54 @@ class FilterListLoader {
         }
     }
 
+    /// Migrates old combined AdGuard Annoyances Filter to the new split filters.
+    private func migrateOldAnnoyancesFilter(in filters: [FilterList], defaultFilters: [FilterList]) -> [FilterList] {
+        var result = filters
+        let oldFilterURL = "14_optimized.txt"
+
+        // Find the old combined Annoyances filter
+        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains(oldFilterURL) }) else {
+            return result // No migration needed
+        }
+
+        let wasSelected = result[oldFilterIndex].isSelected
+
+        // Remove the old filter
+        result.remove(at: oldFilterIndex)
+
+        // The new split filter URLs
+        let newFilterURLs = [
+            "18_optimized.txt",
+            "19_optimized.txt",
+            "20_optimized.txt",
+            "21_optimized.txt",
+            "22_optimized.txt"
+        ]
+
+        // Add the new filters from defaults if they don't already exist
+        for newURL in newFilterURLs {
+            let alreadyExists = result.contains { $0.url.absoluteString.contains(newURL) }
+            if !alreadyExists, let defaultFilter = defaultFilters.first(where: { $0.url.absoluteString.contains(newURL) }) {
+                var newFilter = defaultFilter
+                newFilter.isSelected = wasSelected
+                result.append(newFilter)
+            }
+        }
+
+        return result
+    }
+
     /// Creates the default set of filter lists
     private func createDefaultFilterLists() -> [FilterList] {
         var filterLists = [
             FilterList(id: UUID(), name: "AdGuard Base Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!, category: FilterListCategory.ads, isSelected: true,
                        description: "Comprehensive ad-blocking rules by AdGuard."),
             FilterList(id: UUID(), name: "AdGuard Tracking Protection Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt")!, category: FilterListCategory.privacy, isSelected: true, description: "Blocks online tracking and web analytics systems."),
-            FilterList(id: UUID(), name: "AdGuard Annoyances Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/14_optimized.txt")!, category: FilterListCategory.annoyances, description: "Removes cookie notices, in-page pop-ups, and other annoyances."),
+            FilterList(id: UUID(), name: "AdGuard Cookie Notices", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks cookie consent notices on web pages."),
+            FilterList(id: UUID(), name: "AdGuard Popups", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
+            FilterList(id: UUID(), name: "AdGuard Mobile App Banners", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks banners promoting mobile app downloads."),
+            FilterList(id: UUID(), name: "AdGuard Other Annoyances", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks miscellaneous irritating elements not covered by other filters."),
+            FilterList(id: UUID(), name: "AdGuard Widgets", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks third-party widgets, chat assistants, and support widgets."),
             FilterList(id: UUID(), name: "AdGuard Social Media Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")!, category: FilterListCategory.annoyances, description: "Blocks social media widgets and buttons."),
             FilterList(id: UUID(), name: "Fanboy's Annoyances Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt")!, category: FilterListCategory.annoyances, description: "Hides in-page pop-ups, banners, and other unwanted page elements."),
             FilterList(id: UUID(), name: "Fanboy's Social Blocking List", url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!, category: FilterListCategory.annoyances, description: "Blocks social media content on webpages."),
@@ -249,7 +293,11 @@ class FilterListLoader {
             "AdGuard URL Tracking Filter",
             "Online Security Filter",
             "d3Host List by d3ward",
-            "AdGuard Annoyances Filter",
+            "AdGuard Cookie Notices",
+            "AdGuard Popups",
+            "AdGuard Mobile App Banners",
+            "AdGuard Other Annoyances",
+            "AdGuard Widgets",
             "Anti-Adblock List",
         ]
         #else
@@ -260,7 +308,11 @@ class FilterListLoader {
             "AdGuard URL Tracking Filter",
             "Online Security Filter",
             "d3Host List by d3ward",
-            "AdGuard Annoyances Filter",
+            "AdGuard Cookie Notices",
+            "AdGuard Popups",
+            "AdGuard Mobile App Banners",
+            "AdGuard Other Annoyances",
+            "AdGuard Widgets",
             "Anti-Adblock List",
             "AdGuard Mobile Filter", // Added for iOS/iPadOS
         ]
