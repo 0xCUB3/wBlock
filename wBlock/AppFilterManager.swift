@@ -26,14 +26,13 @@ class AppFilterManager: ObservableObject {
     @Published var lastRuleCount: Int = 0
     @Published var hasError: Bool = false
     @Published var progress: Float = 0
-    @Published var missingFilters: [FilterList] = []
-    @Published var missingUserScripts: [UserScript] = []
+    private var missingFilters: [FilterList] = []
+    private var missingUserScripts: [UserScript] = []
     @Published var whitelistViewModel = WhitelistViewModel()
     @Published var availableUpdates: [FilterList] = []
     @Published var showingUpdatePopup = false
     @Published var showingNoUpdatesAlert = false
     @Published var hasUnappliedChanges = false
-    @Published var showMissingItemsSheet = false
     @Published var showingApplyProgressSheet = false
     @Published var autoDisabledFilters: [FilterList] = [] // Filters auto-disabled due to rule limits
     @Published var showingAutoDisabledAlert = false
@@ -115,7 +114,6 @@ class AppFilterManager: ObservableObject {
         showingUpdatePopup = false
         missingFilters = []
         availableUpdates = []
-        showMissingItemsSheet = false
         ruleCountsByCategory = [:]
         categoriesApproachingLimit = []
         showingCategoryWarningAlert = false
@@ -461,12 +459,14 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        if !missingFilters.isEmpty || !missingUserScripts.isEmpty {
-            showMissingItemsSheet = true
-        } else if forceReload || hasUnappliedChanges {
-            // Only apply changes if explicitly requested or if there are unapplied changes
+        // Auto-download missing items and apply changes
+        if !missingFilters.isEmpty || !missingUserScripts.isEmpty || forceReload || hasUnappliedChanges {
             showingApplyProgressSheet = true
             Task {
+                // Download missing items first if needed
+                if !missingFilters.isEmpty || !missingUserScripts.isEmpty {
+                    await downloadMissingItemsSilently()
+                }
                 await applyChanges()
             }
         }
@@ -1316,7 +1316,38 @@ class AppFilterManager: ObservableObject {
         // Automatically apply changes after download
         await applyChanges()
     }
-    
+
+    /// Downloads missing filters and userscripts silently (without showing separate UI).
+    /// Used when auto-downloading during Apply Changes.
+    private func downloadMissingItemsSilently() async {
+        let tempMissingFilters = self.missingFilters
+        let tempMissingScripts = self.missingUserScripts
+
+        // Download missing filters
+        for filter in tempMissingFilters {
+            let success = await filterUpdater.fetchAndProcessFilter(filter)
+            if success {
+                await MainActor.run {
+                    self.missingFilters.removeAll { $0.id == filter.id }
+                }
+            }
+        }
+
+        // Download missing userscripts
+        if let userScriptManager = filterUpdater.userScriptManager {
+            for script in tempMissingScripts {
+                if let url = script.url {
+                    await userScriptManager.addUserScript(from: url)
+                    await MainActor.run {
+                        self.missingUserScripts.removeAll { $0.id == script.id }
+                    }
+                }
+            }
+        }
+
+        saveFilterListsSync()
+    }
+
     func downloadMissingItems() async {
         isLoading = true
         progress = 0
@@ -1378,7 +1409,6 @@ class AppFilterManager: ObservableObject {
         message += ". Would you like to apply them now?"
 
         await MainActor.run {
-            showMissingItemsSheet = false
             showingApplyProgressSheet = true
         }
 

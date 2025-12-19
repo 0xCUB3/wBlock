@@ -506,9 +506,6 @@ struct ContentModifiers: ViewModifier {
                     filterManager: filterManager, userScriptManager: userScriptManager,
                     isPresented: $filterManager.showingUpdatePopup)
             }
-            .sheet(isPresented: $filterManager.showMissingItemsSheet) {
-                MissingItemsView(filterManager: filterManager)
-            }
             .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
                 ApplyChangesProgressView(
                     viewModel: filterManager.applyProgressViewModel,
@@ -554,7 +551,7 @@ struct ContentModifiers: ViewModifier {
             }
             .overlay {
                 if filterManager.isLoading && !filterManager.showingApplyProgressSheet
-                    && !filterManager.showMissingItemsSheet && !filterManager.showingUpdatePopup
+                    && !filterManager.showingUpdatePopup
                 {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
