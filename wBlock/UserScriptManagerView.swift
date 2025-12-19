@@ -1105,9 +1105,10 @@ struct AddUserScriptView: View {
     private var allowedImportTypes: [UTType] {
         var types: [UTType] = []
 
-        if let js = UTType.javaScript {
-            types.append(js)
-        } else if let jsExt = UTType(filenameExtension: "js") {
+        types.append(UTType.javaScript)
+        
+        // Add fallback for .js extension
+        if let jsExt = UTType(filenameExtension: "js") {
             types.append(jsExt)
         }
 
