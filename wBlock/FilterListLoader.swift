@@ -157,21 +157,33 @@ class FilterListLoader {
 
     private func migrateOldAnnoyancesFilter(in filters: [FilterList], defaultFilters: [FilterList]) -> [FilterList] {
         var result = filters
-        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains("14_optimized.txt") }) else {
-            return result
+
+        // Migration 1: Replace old combined AdGuard Annoyances Filter (14) with split filters (18-22)
+        if let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains("14_optimized.txt") }) {
+            let wasSelected = result[oldFilterIndex].isSelected
+            result.remove(at: oldFilterIndex)
+
+            let newFilterURLs = ["18_optimized.txt", "19_optimized.txt", "20_optimized.txt", "21_optimized.txt", "22_optimized.txt"]
+            for newURL in newFilterURLs {
+                if !result.contains(where: { $0.url.absoluteString.contains(newURL) }),
+                   let defaultFilter = defaultFilters.first(where: { $0.url.absoluteString.contains(newURL) }) {
+                    var newFilter = defaultFilter
+                    newFilter.isSelected = wasSelected
+                    result.append(newFilter)
+                }
+            }
         }
 
-        let wasSelected = result[oldFilterIndex].isSelected
-        result.remove(at: oldFilterIndex)
-
-        let newFilterURLs = ["18_optimized.txt", "19_optimized.txt", "20_optimized.txt", "21_optimized.txt", "22_optimized.txt"]
-        for newURL in newFilterURLs {
-            if !result.contains(where: { $0.url.absoluteString.contains(newURL) }),
-               let defaultFilter = defaultFilters.first(where: { $0.url.absoluteString.contains(newURL) }) {
-                var newFilter = defaultFilter
-                newFilter.isSelected = wasSelected
-                result.append(newFilter)
-            }
+        // Migration 2: Remove duplicate iOS-specific "AdGuard Mobile App Banners" filter
+        // (filters.adtidy.org/ios/filters/20_optimized.txt) if the main one exists
+        // (FiltersRegistry/.../20_optimized.txt)
+        let hasMainMobileAppBanners = result.contains(where: {
+            $0.url.absoluteString.contains("FiltersRegistry") && $0.url.absoluteString.contains("20_optimized.txt")
+        })
+        if hasMainMobileAppBanners {
+            result.removeAll(where: {
+                $0.url.absoluteString.contains("filters.adtidy.org/ios/filters/20_optimized.txt")
+            })
         }
 
         return result
@@ -261,7 +273,6 @@ class FilterListLoader {
 
         #if os(iOS)
         filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile Filter", url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")!, category: FilterListCategory.ads, isSelected: true, description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
-        filterLists.append(FilterList(id: UUID(), name: "AdGuard Mobile App Banners", url: URL(string: "https://filters.adtidy.org/ios/filters/20_optimized.txt")!, category: FilterListCategory.annoyances, isSelected: false, description: "Blocks irritating banners that promote mobile apps of websites."))
         #endif
 
         #if os(macOS)

@@ -249,33 +249,51 @@ class AppFilterManager: ObservableObject {
 
     private func migrateOldAnnoyancesFilter(in filters: [FilterList]) -> [FilterList] {
         var result = filters
-        guard let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains("14_optimized.txt") }) else {
-            return result
+        var needsSave = false
+
+        // Migration 1: Replace old combined AdGuard Annoyances Filter (14) with split filters (18-22)
+        if let oldFilterIndex = result.firstIndex(where: { $0.url.absoluteString.contains("14_optimized.txt") }) {
+            let wasSelected = result[oldFilterIndex].isSelected
+            result.remove(at: oldFilterIndex)
+            needsSave = true
+
+            let newFilters: [(name: String, url: String, description: String)] = [
+                ("AdGuard Cookie Notices", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt", "Blocks cookie consent notices on web pages."),
+                ("AdGuard Popups", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
+                ("AdGuard Mobile App Banners", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt", "Blocks banners promoting mobile app downloads."),
+                ("AdGuard Other Annoyances", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt", "Blocks miscellaneous irritating elements not covered by other filters."),
+                ("AdGuard Widgets", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
+            ]
+
+            for filter in newFilters where !result.contains(where: { $0.url.absoluteString.contains(filter.url) }) {
+                result.append(FilterList(
+                    id: UUID(),
+                    name: filter.name,
+                    url: URL(string: filter.url)!,
+                    category: .annoyances,
+                    isSelected: wasSelected,
+                    description: filter.description
+                ))
+            }
         }
 
-        let wasSelected = result[oldFilterIndex].isSelected
-        result.remove(at: oldFilterIndex)
-
-        let newFilters: [(name: String, url: String, description: String)] = [
-            ("AdGuard Cookie Notices", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt", "Blocks cookie consent notices on web pages."),
-            ("AdGuard Popups", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
-            ("AdGuard Mobile App Banners", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt", "Blocks banners promoting mobile app downloads."),
-            ("AdGuard Other Annoyances", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt", "Blocks miscellaneous irritating elements not covered by other filters."),
-            ("AdGuard Widgets", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
-        ]
-
-        for filter in newFilters where !result.contains(where: { $0.url.absoluteString.contains(filter.url) }) {
-            result.append(FilterList(
-                id: UUID(),
-                name: filter.name,
-                url: URL(string: filter.url)!,
-                category: .annoyances,
-                isSelected: wasSelected,
-                description: filter.description
-            ))
+        // Migration 2: Remove duplicate iOS-specific "AdGuard Mobile App Banners" filter
+        let hasMainMobileAppBanners = result.contains(where: {
+            $0.url.absoluteString.contains("FiltersRegistry") && $0.url.absoluteString.contains("20_optimized.txt")
+        })
+        if hasMainMobileAppBanners {
+            let countBefore = result.count
+            result.removeAll(where: {
+                $0.url.absoluteString.contains("filters.adtidy.org/ios/filters/20_optimized.txt")
+            })
+            if result.count != countBefore {
+                needsSave = true
+            }
         }
 
-        Task { await dataManager.updateFilterLists(result) }
+        if needsSave {
+            Task { await dataManager.updateFilterLists(result) }
+        }
         return result
     }
 
