@@ -363,9 +363,6 @@ public actor SharedAutoUpdateManager {
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
-        // Compute next eligible time (exactly interval hours from now)
-        let nextEligibleTime = now + interval * 3600
-        await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
         await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
         appendSharedLog("Auto-update started (trigger: \(trigger), forced: \(shouldForce))")
 
@@ -386,7 +383,10 @@ public actor SharedAutoUpdateManager {
 
             let updates = try await checkForUpdates(filters: selectedFilters)
             guard !updates.isEmpty else {
-                // No updates found - still update check time to show we checked successfully
+                // No updates found - still update schedule since check was successful
+                let completionTime = Date().timeIntervalSince1970
+                let nextEligibleTime = completionTime + interval * 3600
+                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                 invalidateStatusCache()
                 appendSharedLog("No updates found - filters are up to date")
                 // Clear running flag before return
@@ -422,9 +422,11 @@ public actor SharedAutoUpdateManager {
             // Re-convert & reload only impacted targets; rebuild engine from per-target stored advanced rules
             try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected }, updatedCategories: updatedCategorySet)
 
-            // Record successful update
+            // Record successful update and schedule next
             let successTime = Date().timeIntervalSince1970
             await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
+            let nextEligibleTime = successTime + interval * 3600
+            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             invalidateStatusCache()
 
             appendSharedLog("Auto-update complete")
