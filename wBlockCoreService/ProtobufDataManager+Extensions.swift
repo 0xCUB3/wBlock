@@ -41,7 +41,32 @@ extension ProtobufDataManager {
         // Migrate filter lists
         for i in 0..<updatedData.filterLists.count {
             if updatedData.filterLists[i].category == .multipurpose {
-                updatedData.filterLists[i].category = .annoyances
+                // AdGuard Mobile Filter should be in "ads" category, not "annoyances"
+                if updatedData.filterLists[i].url.contains("filter_11_Mobile") {
+                    updatedData.filterLists[i].category = .ads
+                } else {
+                    updatedData.filterLists[i].category = .annoyances
+                }
+                needsSave = true
+            }
+        }
+
+        if needsSave {
+            await MainActor.run {
+                appData = updatedData
+            }
+            await saveData()
+        }
+    }
+
+    /// Migrates AdGuard Mobile Filter to the correct "ads" category if it's in the wrong category
+    public func migrateMobileFilterToAdsCategory() async {
+        var updatedData = appData
+        var needsSave = false
+
+        for i in 0..<updatedData.filterLists.count {
+            if updatedData.filterLists[i].url.contains("filter_11_Mobile") && updatedData.filterLists[i].category != .ads {
+                updatedData.filterLists[i].category = .ads
                 needsSave = true
             }
         }

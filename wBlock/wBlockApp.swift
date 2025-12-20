@@ -43,6 +43,7 @@ struct wBlockApp: App {
                         Task {
                             await dataManager.migrateMultipurposeToAnnoyances()
                             await dataManager.migrateAnnoyancesFilterToSplitFilters()
+                            await dataManager.migrateMobileFilterToAdsCategory()
                         }
                     }
                     #if os(macOS)
