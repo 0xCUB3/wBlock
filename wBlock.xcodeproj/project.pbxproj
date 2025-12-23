@@ -3636,14 +3636,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		C1A41C532DE08A040056F63D /* XCRemoteSwiftPackageReference "SafariConverterLib" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/AdguardTeam/SafariConverterLib";
-			requirement = {
-				branch = master;
-				kind = branch;
+			C1A41C532DE08A040056F63D /* XCRemoteSwiftPackageReference "SafariConverterLib" */ = {
+				isa = XCRemoteSwiftPackageReference;
+				repositoryURL = "https://github.com/AdguardTeam/SafariConverterLib";
+				requirement = {
+					kind = upToNextMajorVersion;
+					minimumVersion = 4.1.0;
+				};
 			};
-		};
 		C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
