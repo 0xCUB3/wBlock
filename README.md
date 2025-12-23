@@ -158,7 +158,7 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 <td width="50%">
 
 **Dependencies & Standards**
-- SafariConverterLib v4.0.4 for AdGuard to Safari rule conversion
+- SafariConverterLib v4.1.0 for AdGuard to Safari rule conversion
 - AdGuard Scriptlets v2.2.9 for advanced blocking techniques
 - Swift 5.9+ with strict concurrency checking enabled
 - WCAG 2.1 AA compliance with full VoiceOver and Dynamic Type support
