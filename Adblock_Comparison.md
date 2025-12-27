@@ -67,35 +67,37 @@ Sources: [App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), [All Ab
 
 ---
 
-## AdGuard for Safari
+## AdGuard Mini (formerly AdGuard for Safari)
 
-AdGuard for Safari brings enterprise-level filtering to Safari, but with more complexity. The Safari Extensions panel shows seven different extensions working together. Each handles different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity. The interface shows version numbers, permissions required, and configuration options for each component, very similar to wBlock's setup. 
+AdGuard Mini represents a major rework of AdGuard for Safari, released in December 2025 with significant improvements. The rebranding clarifies AdGuard's product line: "Mini" denotes browser extension-based blockers, while "AdGuard Ad Blocker" refers to system-wide apps. Note that AdGuard Mini is macOS-only; AdGuard for iOS is a separate product.
 
 <img width="1536" height="1184" alt="image" src="https://github.com/user-attachments/assets/6a768683-5abf-4334-88ac-70b0dd49e722" />
 
-The main AdGuard interface (toolbar icon) is feature-rich but can often lag or cease to work entirely. On the plus side, the interface is replete with statistics, logging, custom filter editing, element blocking tools, and configuration aplenty. Multi-language support is impressive with 20+ language filter lists and official translations.
+The Safari Extensions panel shows seven different extensions working together, each handling different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity—very similar to wBlock's setup. The interface is feature-rich with statistics, logging, custom filter editing, element blocking tools, and configuration aplenty. Multi-language support remains impressive with 20+ language filter lists.
 
-Performance is challenging. The violently fluctuating RAM usage reflects neglect in the codebase. Much of the project hasn't been updated in 5+ years, with the majority of the app-related codebase still in Objective-C. This leads to memory leaks and frequent lag/stuttering, especially on older Macs or limited RAM devices. It is worth noting that [AdGuard for Mac](https://adguard.com/en/adguard-mac/overview.html) does not appear to be plagued with the same qualms, though after a 14-day trial period, it comes with a [fee](https://adguard.com/en/license.html).
+The most significant change is the UI framework migration from Electron to Sciter, which dramatically improves performance. Filter conversion is now up to 5x faster thanks to updated SafariConverterLib (~40s → ~15s for full rule application). The Sciter framework uses 5-7x less RAM than Electron, addressing the memory issues that plagued the old version.
 
-Notwithstanding the interface snafus, for users comfortable with an involved setup and seeking granular control, AdGuard for Safari is formidable. For lighter needs or legacy hardware, it may be overkill.
+New Pro features (requiring an AdGuard license) include AdGuard Extra for fighting tricky ads and anti-adblock measures, real-time filter updates, and a custom rules constructor for building filtering rules without technical knowledge. Core blocking features remain free.
 
-Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.html), [AdGuard for Mac](https://adguard.com/en/adguard-mac/overview.html)
+For users seeking granular control with improved performance, AdGuard Mini is a compelling option—especially now that the major performance issues have been addressed.
+
+Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [AdGuard Mini Announcement](https://adguard.com/en/blog/adguard-mini-for-mac.html), [GitHub](https://github.com/AdguardTeam/AdGuardForSafari)
 
 ---
 
 # Feature Comparison
 
-| Feature                 | wBlock<sup>1</sup>                | uBlock Origin Lite<sup>2</sup> | Wipr 2<sup>3</sup>                 | AdGuard for Safari<sup>4</sup>     |
+| Feature                 | wBlock<sup>1</sup>                | uBlock Origin Lite<sup>2</sup> | Wipr 2<sup>3</sup>                 | AdGuard Mini<sup>4</sup>     |
 |-------------------------|-----------------------------------|----------------------|-----------------------|-----------------------|
 | macOS Support           | ✅      | ✅          | ✅               | ✅               |
-| iOS Support             | ✅      | ✅          | ✅               | ✅               |
-| RAM Usage (MB)          | 40MB<sup>6</sup>                  | 120MB<sup>6</sup>   | 50MB<sup>6</sup>     | 600MB<sup>6</sup>     |
-| Total Rule Capacity     | 750,000 <sup>7</sup> | N/A                 | 900,000 macOS / 300,000 iOS | 1,050,000 macOS / 350,000 iOS |
+| iOS Support             | ✅      | ✅          | ✅               | ❌<sup>20</sup>               |
+| RAM Usage (MB)          | 40MB<sup>6</sup>                  | 120MB<sup>6</sup>   | 50MB<sup>6</sup>     | ~100MB<sup>6</sup>     |
+| Total Rule Capacity     | 750,000 <sup>7</sup> | N/A                 | 900,000 macOS / 300,000 iOS | 1,050,000 macOS |
 | GitHub Stars            | 1,400                              | 2,600                | N/A                   | 1,100                |
 | Open Source             | ✅                                 | ✅                    | ❌                    | ✅                    |
 | License<sup>18</sup>    | GPL-3.0                           | GPL-3.0              | Proprietary           | GPL-3.0              |
-| Primary Language<sup>19</sup>        | Swift                | JavaScript   | Swift          | Obj-C/Swift   |
-| Secondary Language      | Swift                             | CSS                  | N/A (Closed)          | Objective-C/Swift    |
+| Primary Language<sup>19</sup>        | Swift                | JavaScript   | Swift          | TypeScript/Swift   |
+| Secondary Language      | Swift                             | CSS                  | N/A (Closed)          | HTML/CSS    |
 | Extension Architecture<sup>8</sup>   | Content Blocker + App (macOS) / Web (iOS) | Manifest V3 Web Extension | Content Blocker + Web Extension | Content Blocker + Web Extension |
 | Manifest Version<sup>9</sup>         | Safari Native                     | V3                   | Safari Native         | Safari Native        |
 | Filterlist Storage Database<sup>10</sup> | Protobuf                        | IndexedDB + JSON     | Unknown               | SQLite + JSON        |
@@ -104,14 +106,14 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 | Dynamic Filtering<sup>12</sup>       | ✅                                 | ❌ MV3 limited        | ❌                    | ✅                   |
 | YouTube Ad Blocking     | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Script Injection<sup>13</sup>        | ✅                                 | ✅                   | ❌                    | ✅                   |
-| Filter List Updates     | Manual (Auto coming)              | Extension updates only | Automatic (≈2×/week)| Automatic            |
+| Filter List Updates     | Manual (Auto coming)              | Extension updates only | Automatic (≈2×/week)| Automatic (real-time with Pro)            |
 | Userscripts Support<sup>14</sup>     | ✅                                 | ❌                   | ❌                    | ❌ (Mac app only)<sup>15</sup>   |
-| User Interface          | SwiftUI – extensive               | JS – Popup/web panel | SwiftUI – minimal     | Obj-C/Swift – extensive, but buggy |
+| User Interface          | SwiftUI – extensive               | JS – Popup/web panel | SwiftUI – minimal     | Sciter – extensive |
 | Customization Level     | High                              | Medium               | None                  | High                 |
 | Setup Complexity        | Easy                              | Easy                 | Very Easy             | Moderate             |
 | Multi-Device Sync       | ❌                                 | ❌                   | ✅ Universal purchase  | ❌                   |
 | [AdBlock Tester](https://adblock-tester.com) Score<sup>16</sup>    | 100/100                             | 100/100               | 96/100                | 94/100               |
-| Cost                    | Free                              | Free                 | $4.99 one-time        | Free                 |
+| Cost                    | Free                              | Free                 | $4.99 one-time        | Free (Pro available)                 |
 | Subscription Model      | ❌                                 | ❌                   | ❌                    | ❌                   |
 | Active Development      | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Community Size          | Growing (1.4k stars)              | Large (cross-browser)| Small/Independent     | Large (35M users)    |
@@ -127,12 +129,12 @@ Sources: [AdGuard for Safari](https://adguard.com/en/adguard-safari/overview.htm
 <sup>1</sup> **wBlock:** Focuses on Safari, open-source, optimized for latest Safari API features.  
 <sup>2</sup> **uBlock Origin Lite:** Chromium Manifest V3 extension translated to Safari.
 <sup>3</sup> **Wipr 2:** Closed-source, paid, lightweight, Safari-only ad blocker.  
-<sup>4</sup> **AdGuard for Safari:** Safari extension by AdGuard (with separate paid Mac/iOS apps).
+<sup>4</sup> **AdGuard Mini:** Formerly AdGuard for Safari; major Dec 2025 rework with Sciter UI framework, 5x faster filter conversion, and Pro features.
 
 <sup>5</sup> ~~**TestFlight only**~~: Not anymore! It's on the App Store now: https://apps.apple.com/app/wblock/id6746388723
 
-<sup>6</sup> **RAM Usage Measurement**:  
-Numbers were measured on a 2023 M2 Pro MacBook Pro 14" with 16GB RAM, 5 tabs open, only one ad blocker active. Actual memory usage can **vary widely** based on hardware, browser version, tab contents, number of active extensions, and enabled filter lists. Lower-spec Macs and iOS devices will observe different numbers.
+<sup>6</sup> **RAM Usage Measurement**:
+Numbers were measured on a 2023 M2 Pro MacBook Pro 14" with 16GB RAM, 5 tabs open, only one ad blocker active. Actual memory usage can **vary widely** based on hardware, browser version, tab contents, number of active extensions, and enabled filter lists. Lower-spec Macs and iOS devices will observe different numbers. AdGuard Mini's estimate reflects the migration from Electron to Sciter (which uses 5-7x less RAM).
 
 <sup>7</sup> **Rule Capacity**:  
 Safari limits rule sets to about 150,000 per content blocker. Blockers work around this by using multiple bundled extensions (slots)—the numbers listed reflect the combined total when all are enabled.
@@ -156,33 +158,35 @@ Where and how filtering rules/lists are stored:
 <sup>11</sup> **Element Zapper**:  
 Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. Absent in Wipr, which is more designed to be simple and don't-touch. 
 
-<sup>12</sup> **Dynamic Filtering**:  
-Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via [clever workarounds](#How-wBlock-Achieves-Dynamic-Filtering-in-Safari) in wBlock/AdGuard.
+<sup>12</sup> **Dynamic Filtering**:
+Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via [clever workarounds](#How-wBlock-Achieves-Dynamic-Filtering-in-Safari) in wBlock/AdGuard Mini.
 
-<sup>13</sup> **Script Injection**:  
-Lets extension run built-in or custom JavaScript on web pages (for ad removal, circumvention, UI fixes, etc.). Only available in web/app extensions, so only wBlock (and AdGuard for paid Mac app) provide true script injection. Most Chrome extensions do, but only within Manifest V3’s security limits as of 2025.
+<sup>13</sup> **Script Injection**:
+Lets extension run built-in or custom JavaScript on web pages (for ad removal, circumvention, UI fixes, etc.). Only available in web/app extensions, so only wBlock (and AdGuard Mini / AdGuard for Mac) provide true script injection. Most Chrome extensions do, but only within Manifest V3's security limits as of 2025.
 
-<sup>14</sup> **Userscripts Support**:  
-Allows running or installing custom scripts (like Greasemonkey/Tampermonkey)—for automation, customization, or advanced blocking. Only wBlock (and AdGuard paid Mac app) support this natively. Safari App Store policies restrict this in other extensions.
+<sup>14</sup> **Userscripts Support**:
+Allows running or installing custom scripts (like Greasemonkey/Tampermonkey)—for automation, customization, or advanced blocking. Only wBlock (and AdGuard for Mac) support this natively. Safari App Store policies restrict this in other extensions.
 
-<sup>15</sup> AdGuard's userscript support is available only in its paid standalone Mac application, not the Safari browser extension.
+<sup>15</sup> AdGuard's userscript support is available only in its paid standalone AdGuard for Mac application, not in AdGuard Mini (the Safari browser extension).
 
 <sup>16</sup> **AdBlock Tester Score**:  
 AdBlock Tester scores (adblocktester.com, etc.) depend mostly on which filter lists you enable—extension features matter less. Even simple ad blockers can score 100/100 if using up-to-date and comprehensive lists; heavy, feature-rich blockers may score lower if filters are incomplete or outdated.
 
-<sup>17</sup> **Foreign Language Filter Support**:  
-Reflects whether ad blockers have official filter lists for multiple languages/regions. AdGuard supports 20+ languages with official filters; uBlock Origin Lite permits more than 15; wBlock can load manual lists but the app itself is limited to English for now.
+<sup>17</sup> **Foreign Language Filter Support**:
+Reflects whether ad blockers have official filter lists for multiple languages/regions. AdGuard Mini supports 20+ languages with official filters; uBlock Origin Lite permits more than 15; wBlock can load manual lists but the app itself is limited to English for now.
 
 <sup>18</sup> **License**:  
 Describes the legal terms governing code and usage:  
 - GPL-3.0: Open-source license allowing code modification and redistribution as long as further releases are also open source.  
 - Proprietary: Closed source, so users cannot view or modify the code at all. 
 
-<sup>19</sup> **Primary Language**:  
-Refers to the main programming language(s) used.  
-- Swift: Indicates a native Apple/macOS/iOS app/extension, making it fully native and optimized for Apple devices. 
-- JavaScript: Indicates a web-based or cross-browser extension (more universal, usually less efficient).  
-- Objective-C: The predecessor to Swift. Also technically native, but very archaic. In AdGuard's case, there are often memory leaks that lead to ballooning memory usage. 
+<sup>19</sup> **Primary Language**:
+Refers to the main programming language(s) used.
+- Swift: Indicates a native Apple/macOS/iOS app/extension, making it fully native and optimized for Apple devices.
+- JavaScript/TypeScript: Indicates a web-based or cross-browser extension (more universal, usually less efficient).
+- Objective-C: The predecessor to Swift. Also technically native, but archaic.
+
+<sup>20</sup> **AdGuard Mini iOS**: AdGuard Mini is macOS-only. For iOS ad blocking, AdGuard offers a separate [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html) app.
 
 ---
 
