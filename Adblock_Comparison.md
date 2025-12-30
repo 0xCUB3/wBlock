@@ -106,7 +106,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 | Dynamic Filtering<sup>12</sup>       | ✅                                 | ❌ MV3 limited        | ❌                    | ✅                   |
 | YouTube Ad Blocking     | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Script Injection<sup>13</sup>        | ✅                                 | ✅                   | ❌                    | ✅                   |
-| Filter List Updates     | Manual (Auto coming)              | Extension updates only | Automatic (≈2×/week)| Automatic (real-time with Pro)            |
+| Filter List Updates     | Automatic              | Extension updates only | Semi-automatic (≈2×/week)| Automatic (real-time with Pro)            |
 | Userscripts Support<sup>14</sup>     | ✅                                 | ❌                   | ❌                    | ❌ (Mac app only)<sup>15</sup>   |
 | User Interface          | SwiftUI – extensive               | JS – Popup/web panel | SwiftUI – minimal     | Sciter – extensive |
 | Customization Level     | High                              | Medium               | None                  | High                 |
