@@ -33,19 +33,21 @@ struct ContentView: View {
         filterManager.filterLists.filter { $0.isSelected }.count
     }
 
+    /// Total source rules from selected filters (handles nil gracefully)
     private var sourceRulesCount: Int {
         filterManager.filterLists
             .filter { $0.isSelected }
-            .compactMap { $0.sourceRuleCount }
-            .reduce(0, +)
+            .reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
     }
 
-    private var displayedRuleCount: Int {
-        if filterManager.lastRuleCount > 0 {
-            return filterManager.lastRuleCount
-        } else {
-            return sourceRulesCount
-        }
+    /// Safari rules applied to content blockers (the count that matters for limits)
+    private var appliedSafariRulesCount: Int {
+        filterManager.lastRuleCount
+    }
+
+    /// Whether filters have been applied at least once
+    private var hasAppliedFilters: Bool {
+        filterManager.lastRuleCount > 0
     }
 
     private var displayableCategories: [FilterListCategory] {
@@ -276,11 +278,13 @@ struct ContentView: View {
                 valueColor: .primary
             )
             StatCard(
-                title: "Applied Rules",
-                value: displayedRuleCount.formatted(),
+                title: hasAppliedFilters ? "Safari Rules" : "Source Rules",
+                value: hasAppliedFilters
+                    ? appliedSafariRulesCount.formatted()
+                    : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
                 icon: "shield.lefthalf.filled",
                 pillColor: .clear,
-                valueColor: .primary
+                valueColor: hasAppliedFilters ? .primary : .secondary
             )
         }
         .padding(.horizontal)
@@ -386,13 +390,14 @@ struct ContentView: View {
                     .foregroundColor(.primary)
 
                 if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
-                    Text("(\(sourceCount.formatted()) rules)")
+                    Text("(\(sourceCount.formatted()) source rules)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else if filter.sourceRuleCount == nil {
-                    Text("(N/A rules)")
+                    // Filter not yet downloaded or count not calculated
+                    Text("(pending)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.secondary.opacity(0.6))
                 }
 
                 if !filter.description.isEmpty {
