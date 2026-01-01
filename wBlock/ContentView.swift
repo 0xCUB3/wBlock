@@ -501,6 +501,10 @@ struct ContentModifiers: ViewModifier {
     @Binding var showingAddFilterSheet: Bool
     let scenePhase: ScenePhase
 
+    // Use explicit @State for sheet presentation to avoid computed binding issues
+    @State private var showOnboardingSheet = false
+    @State private var showSetupChecklistSheet = false
+
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $showingAddFilterSheet) {
@@ -581,6 +585,20 @@ struct ContentModifiers: ViewModifier {
                 }
                 filterManager.setUserScriptManager(userScriptManager)
             }
+            // Determine which sheet to show based on state - only one at a time
+            .onChange(of: dataManager.isLoading) { _, isLoading in
+                updateSheetPresentation()
+            }
+            .onChange(of: dataManager.hasCompletedOnboarding) { _, _ in
+                updateSheetPresentation()
+            }
+            .onChange(of: dataManager.hasCompletedCriticalSetup) { _, _ in
+                updateSheetPresentation()
+            }
+            .task {
+                // Initial check after view loads
+                updateSheetPresentation()
+            }
             #if os(iOS)
                 .onChange(of: scenePhase) { oldPhase, newPhase in
                     if newPhase == .background && filterManager.hasUnappliedChanges {
@@ -597,50 +615,49 @@ struct ContentModifiers: ViewModifier {
                         await filterManager.checkAndEnableFilters(forceReload: true)
                     }
                 }
-                .fullScreenCover(
-                    isPresented: Binding(
-                        get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
-                        set: { _ in }
-                    )
-                ) {
+                .fullScreenCover(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
                 }
-            #elseif os(macOS)
-                .sheet(
-                    isPresented: Binding(
-                        get: { !dataManager.isLoading && !dataManager.hasCompletedOnboarding },
-                        set: { _ in }
-                    )
-                ) {
-                    OnboardingView(filterManager: filterManager)
-                }
-            #endif
-            // Critical Setup Checklist - appears after onboarding
-            #if os(iOS)
-                .fullScreenCover(
-                    isPresented: Binding(
-                        get: {
-                            !dataManager.isLoading && dataManager.hasCompletedOnboarding
-                                && !dataManager.hasCompletedCriticalSetup
-                        },
-                        set: { _ in }
-                    )
-                ) {
+                .fullScreenCover(isPresented: $showSetupChecklistSheet) {
                     SetupChecklistView()
                 }
             #elseif os(macOS)
-                .sheet(
-                    isPresented: Binding(
-                        get: {
-                            !dataManager.isLoading && dataManager.hasCompletedOnboarding
-                                && !dataManager.hasCompletedCriticalSetup
-                        },
-                        set: { _ in }
-                    )
-                ) {
+                .sheet(isPresented: $showOnboardingSheet) {
+                    OnboardingView(filterManager: filterManager)
+                }
+                .sheet(isPresented: $showSetupChecklistSheet) {
                     SetupChecklistView()
                 }
             #endif
+    }
+
+    /// Determines which sheet (if any) should be shown based on current state.
+    /// Only one sheet is shown at a time to avoid SwiftUI presentation conflicts.
+    private func updateSheetPresentation() {
+        // Don't show anything while data is loading
+        guard !dataManager.isLoading else {
+            showOnboardingSheet = false
+            showSetupChecklistSheet = false
+            return
+        }
+
+        // Priority 1: Show onboarding if not completed
+        if !dataManager.hasCompletedOnboarding {
+            showOnboardingSheet = true
+            showSetupChecklistSheet = false
+            return
+        }
+
+        // Priority 2: Show setup checklist if onboarding is done but critical setup isn't
+        if !dataManager.hasCompletedCriticalSetup {
+            showOnboardingSheet = false
+            showSetupChecklistSheet = true
+            return
+        }
+
+        // All setup complete - hide all sheets
+        showOnboardingSheet = false
+        showSetupChecklistSheet = false
     }
 
     #if os(iOS)
