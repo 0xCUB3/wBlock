@@ -504,6 +504,8 @@ struct ContentModifiers: ViewModifier {
     // Use explicit @State for sheet presentation to avoid computed binding issues
     @State private var showOnboardingSheet = false
     @State private var showSetupChecklistSheet = false
+    // Track if initial presentation check has been done to avoid re-showing after dismiss
+    @State private var hasPerformedInitialCheck = false
 
     func body(content: Content) -> some View {
         content
@@ -585,19 +587,33 @@ struct ContentModifiers: ViewModifier {
                 }
                 filterManager.setUserScriptManager(userScriptManager)
             }
-            // Determine which sheet to show based on state - only one at a time
-            .onChange(of: dataManager.isLoading) { _, isLoading in
-                updateSheetPresentation()
-            }
-            .onChange(of: dataManager.hasCompletedOnboarding) { _, _ in
-                updateSheetPresentation()
-            }
-            .onChange(of: dataManager.hasCompletedCriticalSetup) { _, _ in
-                updateSheetPresentation()
-            }
+            // Show onboarding/setup sheets only on initial load
             .task {
-                // Initial check after view loads
-                updateSheetPresentation()
+                // Wait for initial data load to complete
+                while dataManager.isLoading {
+                    try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms
+                }
+                // Only check once on initial load
+                if !hasPerformedInitialCheck {
+                    hasPerformedInitialCheck = true
+                    updateSheetPresentation()
+                }
+            }
+            // Only react to hasCompletedOnboarding becoming true (sheet was completed)
+            .onChange(of: dataManager.hasCompletedOnboarding) { oldValue, newValue in
+                if newValue && !oldValue {
+                    // Onboarding was just completed, hide onboarding and maybe show setup
+                    showOnboardingSheet = false
+                    if !dataManager.hasCompletedCriticalSetup {
+                        showSetupChecklistSheet = true
+                    }
+                }
+            }
+            // Only react to hasCompletedCriticalSetup becoming true
+            .onChange(of: dataManager.hasCompletedCriticalSetup) { oldValue, newValue in
+                if newValue && !oldValue {
+                    showSetupChecklistSheet = false
+                }
             }
             #if os(iOS)
                 .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -631,33 +647,19 @@ struct ContentModifiers: ViewModifier {
             #endif
     }
 
-    /// Determines which sheet (if any) should be shown based on current state.
-    /// Only one sheet is shown at a time to avoid SwiftUI presentation conflicts.
+    /// Determines which sheet (if any) should be shown on initial app load.
+    /// Called only once after initial data load completes.
     private func updateSheetPresentation() {
-        // Don't show anything while data is loading
-        guard !dataManager.isLoading else {
-            showOnboardingSheet = false
-            showSetupChecklistSheet = false
-            return
-        }
-
         // Priority 1: Show onboarding if not completed
         if !dataManager.hasCompletedOnboarding {
             showOnboardingSheet = true
-            showSetupChecklistSheet = false
             return
         }
 
         // Priority 2: Show setup checklist if onboarding is done but critical setup isn't
         if !dataManager.hasCompletedCriticalSetup {
-            showOnboardingSheet = false
             showSetupChecklistSheet = true
-            return
         }
-
-        // All setup complete - hide all sheets
-        showOnboardingSheet = false
-        showSetupChecklistSheet = false
     }
 
     #if os(iOS)
