@@ -277,15 +277,27 @@ struct ContentView: View {
                 pillColor: .clear,
                 valueColor: .primary
             )
-            StatCard(
-                title: hasAppliedFilters ? "Safari Rules" : "Source Rules",
-                value: hasAppliedFilters
-                    ? appliedSafariRulesCount.formatted()
-                    : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
-                icon: "shield.lefthalf.filled",
-                pillColor: .clear,
-                valueColor: hasAppliedFilters ? .primary : .secondary
-            )
+            #if os(iOS)
+                StatCard(
+                    title: "Rules",
+                    value: hasAppliedFilters
+                        ? appliedSafariRulesCount.formatted()
+                        : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
+                    icon: "shield.lefthalf.filled",
+                    pillColor: .clear,
+                    valueColor: hasAppliedFilters ? .primary : .secondary
+                )
+            #else
+                StatCard(
+                    title: hasAppliedFilters ? "Safari Rules" : "Source Rules",
+                    value: hasAppliedFilters
+                        ? appliedSafariRulesCount.formatted()
+                        : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
+                    icon: "shield.lefthalf.filled",
+                    pillColor: .clear,
+                    valueColor: hasAppliedFilters ? .primary : .secondary
+                )
+            #endif
         }
         .padding(.horizontal)
     }
