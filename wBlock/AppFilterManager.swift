@@ -196,9 +196,25 @@ class AppFilterManager: ObservableObject {
         // Migrate old AdGuard Annoyances filter to new split filters
         storedFilterLists = migrateOldAnnoyancesFilter(in: storedFilterLists)
 
-        let migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
-        filterLists = migratedFilterLists
+        var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         customFilterLists = dataManager.getCustomFilterLists()
+
+        // Merge any new default filters added in app updates
+        if !migratedFilterLists.isEmpty {
+            let defaultLists = loader.getDefaultFilterLists()
+            let existingURLs = Set(migratedFilterLists.map { $0.url })
+
+            for defaultFilter in defaultLists {
+                if !existingURLs.contains(defaultFilter.url) {
+                    // New filter from app update - add unselected
+                    var newFilter = defaultFilter
+                    newFilter.isSelected = false
+                    migratedFilterLists.append(newFilter)
+                }
+            }
+        }
+
+        filterLists = migratedFilterLists
 
         // Persist migrated filter URLs to the data store when needed
         if storedFilterLists != migratedFilterLists {
@@ -209,6 +225,10 @@ class AppFilterManager: ObservableObject {
                     {
                         await self.dataManager.updateFilterList(migrated)
                     }
+                }
+                // Also persist any newly added filters
+                if migratedFilterLists.count > storedFilterLists.count {
+                    await self.saveFilterLists()
                 }
             }
         }

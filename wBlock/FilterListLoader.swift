@@ -213,6 +213,11 @@ class FilterListLoader {
         return result
     }
 
+    /// Returns the default filter lists without any user customizations
+    func getDefaultFilterLists() -> [FilterList] {
+        return createDefaultFilterLists()
+    }
+
     /// Creates the default set of filter lists
     private func createDefaultFilterLists() -> [FilterList] {
         var filterLists = [
