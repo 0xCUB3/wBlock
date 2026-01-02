@@ -870,7 +870,7 @@ struct AddFilterListView: View {
         Group {
             switch validationState {
             case .idle:
-                Text("We’ll download and enable the filter automatically.")
+                Text("wBlock will download and turn on the filter list automatically.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             case .invalid:
