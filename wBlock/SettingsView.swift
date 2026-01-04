@@ -29,7 +29,7 @@ struct SettingsView: View {
 
     private var compactStatusLine: String {
         if isOverdue {
-            return "Overdue"
+            return "Waiting for activity"
         }
         return nextScheduleLine
     }
@@ -180,7 +180,7 @@ struct SettingsView: View {
                                         HStack {
                                             Text("Next: \(compactStatusLine)")
                                                 .font(.caption)
-                                                .foregroundStyle(isOverdue ? .orange : .secondary)
+                                                .foregroundStyle(.secondary)
                                             Spacer()
                                             Text(lastUpdateLine)
                                                 .font(.caption)
@@ -332,12 +332,8 @@ extension SettingsView {
             return "Waiting"
         }
 
-        if isOverdue {
-            return "Overdue"
-        }
-
-        if remaining <= 0 {
-            return "Checking..."
+        if isOverdue || remaining <= 0 {
+            return "Waiting for activity"
         }
 
         let componentsFormatter = DateComponentsFormatter()
