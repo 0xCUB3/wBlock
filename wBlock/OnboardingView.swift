@@ -590,7 +590,11 @@ struct OnboardingView: View {
             let recommendedFilters = [
                 "AdGuard Base Filter",
                 "AdGuard Tracking Protection Filter",
-                "AdGuard Annoyances Filter",
+                "AdGuard Cookie Notices",
+                "AdGuard Popups",
+                "AdGuard Mobile App Banners",
+                "AdGuard Other Annoyances",
+                "AdGuard Widgets",
                 "EasyPrivacy",
                 "AdGuard URL Tracking Filter",
                 "Online Security Filter",
