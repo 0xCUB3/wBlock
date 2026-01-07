@@ -144,8 +144,8 @@ public class UserScriptManager: ObservableObject {
                 .map { $0.userScripts }
                 .removeDuplicates()
                 .sink { [weak self] _ in
-                    Task { @MainActor [weak self] in
-                        self?.syncFromDataManager()
+                    Task { [weak self] in
+                        await self?.syncFromDataManager()
                     }
                 }
                 .store(in: &cancellables)
@@ -153,17 +153,9 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func syncFromDataManager() {
+    private func syncFromDataManager() async {
         let newUserScripts = dataManager.getUserScripts()
         logger.info("🔄 Syncing userscripts from data manager: \(newUserScripts.count) scripts")
-
-        // Update content from stored files
-        var updatedScripts = newUserScripts
-        for i in 0..<updatedScripts.count {
-            if let content = readUserScriptContent(updatedScripts[i]) {
-                updatedScripts[i].content = content
-            }
-        }
 
         // If data manager has no scripts but we have defaults, don't sync from empty data manager
         if newUserScripts.isEmpty && !userScripts.isEmpty {
@@ -173,11 +165,47 @@ public class UserScriptManager: ObservableObject {
             return
         }
 
+        // Update content from stored files (do file I/O off main thread)
+        let scriptsToLoad = newUserScripts
+        let updatedScripts = await Task.detached { [weak self] () -> [UserScript] in
+            guard let self = self else { return scriptsToLoad }
+            var scripts = scriptsToLoad
+            for i in 0..<scripts.count {
+                if let content = await self.readUserScriptContentOffMain(scripts[i]) {
+                    scripts[i].content = content
+                }
+            }
+            return scripts
+        }.value
+
         // Only update if the scripts have actually changed to avoid unnecessary UI updates
         if !areUserScriptsEqual(userScripts, updatedScripts) {
             userScripts = updatedScripts
             logger.info("✅ Updated userscripts from data manager")
         }
+    }
+
+    /// Read userscript content off the main thread
+    nonisolated private func readUserScriptContentOffMain(_ userScript: UserScript) -> String? {
+        // Try fallback directory first
+        if let fallbackURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("wBlock").appendingPathComponent("userscripts") {
+            let fileURL = fallbackURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
+            if FileManager.default.fileExists(atPath: fileURL.path),
+               let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                return content
+            }
+        }
+        // Then try group directory
+        if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.skula.wBlock")?
+            .appendingPathComponent("userscripts") {
+            let fileURL = groupURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
+            if FileManager.default.fileExists(atPath: fileURL.path),
+               let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                return content
+            }
+        }
+        return nil
     }
 
     private func areUserScriptsEqual(_ scripts1: [UserScript], _ scripts2: [UserScript]) -> Bool {
