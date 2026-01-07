@@ -329,12 +329,11 @@ class FilterListUpdater {
 
     /// Validates if content appears to be a valid filter list
     private func isValidFilterContent(_ content: String) -> Bool {
-        // Check for DDoS protection pages (e.g., DDoS-Guard from gitflic.ru)
-        let lowerContent = content.lowercased()
-        if lowerContent.contains("ddos-guard") || lowerContent.contains("ddos protection")
-            || lowerContent.contains("checking your browser")
-            || (lowerContent.hasPrefix("<!doctype html") && lowerContent.contains("challenge"))
-        {
+        // Check for DDoS protection pages by looking at the structure, not keywords
+        // (filter lists legitimately contain rules with "ddos-guard" etc.)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if trimmedContent.hasPrefix("<!doctype html") || trimmedContent.hasPrefix("<html") {
+            // This is an HTML page, not a filter list - likely a DDoS protection/challenge page
             return false
         }
 
