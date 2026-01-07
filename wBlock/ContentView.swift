@@ -611,7 +611,7 @@ struct ContentModifiers: ViewModifier {
                     updateSheetPresentation()
                 }
             }
-            // Only react to hasCompletedOnboarding becoming true (sheet was completed)
+            // React to hasCompletedOnboarding changes
             .onChange(of: dataManager.hasCompletedOnboarding) { oldValue, newValue in
                 if newValue && !oldValue {
                     // Onboarding was just completed, hide onboarding and maybe show setup
@@ -619,6 +619,10 @@ struct ContentModifiers: ViewModifier {
                     if !dataManager.hasCompletedCriticalSetup {
                         showSetupChecklistSheet = true
                     }
+                } else if !newValue && oldValue {
+                    // Onboarding was reset (e.g., from Settings), show onboarding again
+                    showSetupChecklistSheet = false
+                    showOnboardingSheet = true
                 }
             }
             // Only react to hasCompletedCriticalSetup becoming true
