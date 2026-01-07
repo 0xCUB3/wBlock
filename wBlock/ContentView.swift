@@ -210,8 +210,8 @@ struct ContentView: View {
         }
         #if os(macOS)
             .frame(
-                minWidth: 520, idealWidth: 600, maxWidth: .infinity,
-                minHeight: 500, idealHeight: 650, maxHeight: .infinity
+                minWidth: 480, idealWidth: 540, maxWidth: .infinity,
+                minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
