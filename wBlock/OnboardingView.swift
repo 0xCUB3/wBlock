@@ -187,8 +187,8 @@ struct OnboardingView: View {
         "SD": ["ar"],
     ]
 
+    // Computed lazily on background queue to avoid main thread freeze
     private static let fallbackLanguagesByCountry: [String: Set<String>] = buildLanguagesByCountry()
-    private static let foreignFilterMetadataByURL: [String: FilterList] = buildForeignFilterMetadata()
     private static let countryOptions: [CountryOption] = {
         let current = Locale.current
         return Locale.isoRegionCodes.compactMap { code -> CountryOption? in
@@ -220,11 +220,9 @@ struct OnboardingView: View {
         return mapping
     }
 
-    private static func buildForeignFilterMetadata() -> [String: FilterList] {
-        let loader = FilterListLoader(logManager: ConcurrentLogManager.shared)
-        return Dictionary(uniqueKeysWithValues: loader.loadFilterLists()
-            .filter { $0.category == .foreign }
-            .map { ($0.url.absoluteString, $0) })
+    // Helper to look up canonical filter metadata from filterManager instead of loading separately
+    private func foreignFilterMetadata(for url: String) -> FilterList? {
+        filterManager.filterLists.first { $0.url.absoluteString == url && $0.category == .foreign }
     }
 
     init(filterManager: AppFilterManager) {
@@ -793,7 +791,7 @@ struct OnboardingView: View {
         if !filter.languages.isEmpty {
             return Set(filter.languages.map { $0.lowercased() })
         }
-        if let canonical = Self.foreignFilterMetadataByURL[filter.url.absoluteString], !canonical.languages.isEmpty {
+        if let canonical = foreignFilterMetadata(for: filter.url.absoluteString), !canonical.languages.isEmpty {
             return Set(canonical.languages.map { $0.lowercased() })
         }
         if let extracted = extractMetadata(from: filter.description, prefix: "Languages:") {
@@ -804,7 +802,7 @@ struct OnboardingView: View {
 
     private func resolvedTrustLevel(for filter: FilterList) -> String? {
         if let trust = filter.trustLevel, !trust.isEmpty { return trust }
-        if let canonical = Self.foreignFilterMetadataByURL[filter.url.absoluteString], let trust = canonical.trustLevel, !trust.isEmpty {
+        if let canonical = foreignFilterMetadata(for: filter.url.absoluteString), let trust = canonical.trustLevel, !trust.isEmpty {
             return trust
         }
         if let extracted = extractMetadata(from: filter.description, prefix: "Trust:")?.first {
