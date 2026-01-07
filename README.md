@@ -15,7 +15,7 @@
 <br>
 <br>
 
-![Version](https://img.shields.io/badge/v1.2.0-gray?style=flat&label=version)
+![Version](https://img.shields.io/badge/v1.2.1-gray?style=flat&label=version)
 ![Platform](https://img.shields.io/badge/macOS_14+_|_iOS_17+-gray?style=flat&logo=apple&logoColor=white)
 ![License](https://img.shields.io/badge/GPL--3.0-gray?style=flat&label=license)
 
