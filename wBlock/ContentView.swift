@@ -697,13 +697,11 @@ struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager
 
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var focusedField: Field?
+    @FocusState private var urlFieldIsFocused: Bool
 
-    @State private var nameInput: String = ""
     @State private var urlInput: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
     @State private var validationState: ValidationState = .idle
-    @State private var showRequirements: Bool = false
     @State private var isSaving: Bool = false
 
     var body: some View {
@@ -713,9 +711,8 @@ struct AddFilterListView: View {
             }
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 16) {
                     entryCard
-                    requirementsCard
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
                 .padding(.top, 12)
@@ -730,7 +727,7 @@ struct AddFilterListView: View {
         }
         .interactiveDismissDisabled(isSaving)
         .onAppear {
-            focusedField = .url
+            urlFieldIsFocused = true
         }
         .onChange(of: urlInput) { _, newValue in
             validateInput(newValue)
@@ -740,77 +737,28 @@ struct AddFilterListView: View {
     // MARK: - Content Sections
 
     private var entryCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Filter details")
-                    .font(.headline)
-                Text(
-                    "Paste the URL to a supported filter list. You can optionally provide a custom name."
-                )
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("URL")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextField("https://example.com/filter.txt", text: $urlInput)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                    #endif
+                    .focused($urlFieldIsFocused)
             }
 
-            VStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Filter name (optional)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Category")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-                    TextField("e.g. My Essential Filters", text: $nameInput)
-                        .textFieldStyle(.roundedBorder)
-                        #if os(iOS)
-                            .textInputAutocapitalization(.words)
-                        #endif
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .name)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Category")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    categoryMenu
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Filter URL")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    TextField("https://example.com/filter.txt", text: $urlInput)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        #if os(iOS)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.URL)
-                        #endif
-                        .focused($focusedField, equals: .url)
-
-                    HStack(spacing: 12) {
-                        Button {
-                            pasteFromClipboard()
-                        } label: {
-                            Label("Paste", systemImage: "doc.on.clipboard")
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                urlInput = ""
-                            }
-                        } label: {
-                            Label("Clear", systemImage: "xmark.circle")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(urlInput.isEmpty)
-
-                        Spacer()
-
-                        validationBadge
-                    }
-                }
+                categoryMenu
             }
 
             validationMessage
@@ -819,71 +767,11 @@ struct AddFilterListView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private var requirementsCard: some View {
-        DisclosureGroup(isExpanded: $showRequirements.animation(.easeInOut(duration: 0.2))) {
-            VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", description: "Starts with https://")
-                requirementRow(
-                    icon: "doc.text", description: "Points to a filter file (.txt, .list, .json)")
-                requirementRow(
-                    icon: "checkmark.shield", description: "Hosted by a trusted provider")
-                requirementRow(
-                    icon: "arrow.triangle.2.circlepath",
-                    description: "Accessible without authentication")
-            }
-            .padding(.top, 8)
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("URL requirements")
-                        .font(.headline)
-                    Text("Tap to review filter list guidelines.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var validationBadge: some View {
-        Group {
-            switch validationState {
-            case .idle:
-                EmptyView()
-            case .invalid:
-                Label("Invalid", systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            case .duplicate:
-                Label("Duplicate", systemImage: "exclamationmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            case .valid:
-                if isSelectedCategoryAlmostFull {
-                    Label("Near limit", systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                } else {
-                    Label("Ready", systemImage: "checkmark.circle")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                }
-            }
-        }
-        .animation(.easeInOut(duration: 0.15), value: validationState)
-    }
-
     private var validationMessage: some View {
         Group {
             switch validationState {
             case .idle:
-                Text("wBlock will download and turn on the filter list automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                EmptyView()
             case .invalid:
                 Text(
                     "Provide a valid https:// link to a filter file ending in .txt, .list, or .json."
@@ -902,23 +790,11 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
                 } else {
-                    Text("Looks good! Tap Add Filter to continue.")
-                        .font(.caption)
-                        .foregroundStyle(.green)
+                    EmptyView()
                 }
             }
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)
-    }
-
-    private func requirementRow(icon: String, description: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-            Text(description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
     }
 
     private var cancelButton: some View {
@@ -960,10 +836,8 @@ struct AddFilterListView: View {
         isSaving = true
 
         Task { @MainActor in
-            let trimmedName = nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
-            let finalName = trimmedName.isEmpty ? defaultName(for: url) : trimmedName
             filterManager.addFilterList(
-                name: finalName,
+                name: defaultName(for: url),
                 urlString: url.absoluteString,
                 category: selectedCategory
             )
@@ -989,23 +863,11 @@ struct AddFilterListView: View {
                 .disabled(isCategoryAlmostFull(category))
             }
         } label: {
-            HStack(spacing: 10) {
-                Text(selectedCategory.rawValue)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
-
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .background(.background, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
+            Text(categoryMenuTitle(for: selectedCategory))
+                .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
         }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .disabled(isSaving)
     }
 
@@ -1077,27 +939,10 @@ struct AddFilterListView: View {
         .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func pasteFromClipboard() {
-        #if os(iOS)
-            if let string = UIPasteboard.general.string {
-                urlInput = string
-            }
-        #elseif os(macOS)
-            if let string = NSPasteboard.general.string(forType: .string) {
-                urlInput = string
-            }
-        #endif
-    }
-
     private enum ValidationState: Equatable {
         case idle
         case invalid
         case duplicate
         case valid(URL)
-    }
-
-    private enum Field: Hashable {
-        case name
-        case url
     }
 }
