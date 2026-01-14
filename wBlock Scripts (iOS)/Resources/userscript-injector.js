@@ -35,8 +35,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
     class UserScriptEngine {
         constructor() {
             this.injectedScripts = new Set();
+            this.injectingScripts = new Set();
             this.pendingScripts = []; // Scripts waiting for document to be ready
             this.messageListenerAttached = false; // Ensure listener is attached only once
+            this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
             this.init();
         }
@@ -49,6 +51,104 @@ if (window.wBlockUserscriptInjectorHasRun) {
             
             // Listen for response from native app
             this.setupMessageListener();
+        }
+
+        generateRequestId(prefix) {
+            return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+
+        async sendNativeRequest(action, payload = {}) {
+            const requestId = payload.requestId || this.generateRequestId(action);
+            const messagePayload = { ...payload, requestId };
+
+            if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
+                return await browser.runtime.sendMessage({ action, ...messagePayload });
+            }
+
+            if (typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage) {
+                return await new Promise((resolve, reject) => {
+                    const timeoutMs = (typeof action === 'string' && action.includes('Chunk')) ? 120000 : 15000;
+                    const timeoutId = setTimeout(() => {
+                        this.pendingNativeRequests.delete(requestId);
+                        reject(new Error(`[wBlock] Native request timeout: ${action}`));
+                    }, timeoutMs);
+
+                    this.pendingNativeRequests.set(requestId, { resolve, reject, timeoutId });
+                    safari.extension.dispatchMessage(action, messagePayload);
+                });
+            }
+
+            throw new Error('[wBlock] No suitable messaging API found for native requests.');
+        }
+
+        getPreferredChunkSize() {
+            // Safari App Extensions can have smaller message size limits than WebExtensions.
+            const isSafariAppExtension = typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage;
+            return isSafariAppExtension ? (32 * 1024) : (256 * 1024); // bytes (before base64)
+        }
+
+        base64ToBytes(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return bytes;
+        }
+
+        concatBytes(arrays) {
+            const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+            const out = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const arr of arrays) {
+                out.set(arr, offset);
+                offset += arr.length;
+            }
+            return out;
+        }
+
+        async fetchTextFromChunks(action, params) {
+            const decoder = new TextDecoder('utf-8');
+            const chunkSize = this.getPreferredChunkSize();
+            const first = await this.sendNativeRequest(action, { ...params, chunkIndex: 0, chunkSize });
+            if (first && first.error) throw new Error(first.error);
+
+            const totalChunks = (first && typeof first.totalChunks === 'number') ? first.totalChunks : 1;
+            const chunks = new Array(totalChunks);
+            chunks[0] = first.chunk;
+
+            for (let i = 1; i < totalChunks; i++) {
+                const resp = await this.sendNativeRequest(action, { ...params, chunkIndex: i, chunkSize });
+                if (resp && resp.error) throw new Error(resp.error);
+                chunks[i] = resp.chunk;
+            }
+
+            const byteArrays = chunks.map(c => this.base64ToBytes(c || ''));
+            return decoder.decode(this.concatBytes(byteArrays));
+        }
+
+        async ensureScriptPayload(script) {
+            if (script && typeof script.content === 'string' && script.content.length > 0) {
+                // Legacy payload (already includes content/resources)
+                if (script.resources == null && script.resourceContents != null) {
+                    script.resources = script.resourceContents;
+                }
+                return script;
+            }
+
+            if (!script || !script.id) {
+                throw new Error('Userscript descriptor missing id');
+            }
+
+            const content = await this.fetchTextFromChunks('getUserScriptContentChunk', { scriptId: script.id });
+            const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
+            const resources = {};
+            for (const resourceName of resourceNames) {
+                resources[resourceName] = await this.fetchTextFromChunks('getUserScriptResourceChunk', {
+                    scriptId: script.id,
+                    resourceName
+                });
+            }
+
+            return { ...script, content, resources };
         }
 
         setupDocumentEventListeners() {
@@ -86,41 +186,21 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         requestUserScripts() {
-            const requestId = 'userscripts-' + Date.now();
-            const messagePayload = {
-                action: 'getUserScripts', // Must match background.js listener
-                requestId: requestId,
-                url: window.location.href
-            };
-            wBlockLog(`[wBlock] Requesting userscripts for URL: ${window.location.href} with requestId: ${requestId}`);
+            const url = window.location.href;
+            wBlockLog(`[wBlock] Requesting userscripts for URL: ${url}`);
 
-            if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
-                wBlockLog('[wBlock] Sending requestUserScripts via browser.runtime.sendMessage');
-                browser.runtime.sendMessage(messagePayload, (response) => {
-                    if (browser.runtime.lastError) {
-                        wBlockError('[wBlock] Error sending message to native via browser.runtime.sendMessage:', browser.runtime.lastError);
-                    } else {
-                        wBlockLog('[wBlock] browser.runtime.sendMessage response:', response);
-                        // Handle the response directly from the callback
-                        if (response && response.userScripts) {
-                            wBlockLog('[wBlock] Extracted userscripts from callback response:', response.userScripts);
-                            this.injectUserScripts(response.userScripts);
-                        } else {
-                            wBlockLog('[wBlock] No userscripts found in callback response.');
-                        }
+            this.sendNativeRequest('getUserScripts', { url })
+                .then((response) => {
+                    const scripts = response && response.userScripts ? response.userScripts : [];
+                    if (scripts.length === 0) {
+                        wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
+                        return;
                     }
-                }).catch(error => {
-                     wBlockError('[wBlock] Failed to send message via browser.runtime.sendMessage:', error);
+                    this.injectUserScripts(scripts);
+                })
+                .catch((error) => {
+                    wBlockError('[wBlock] Failed to request userscripts:', error);
                 });
-            } else if (typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage) {
-                wBlockLog('[wBlock] Sending requestUserScripts via safari.extension.dispatchMessage');
-                safari.extension.dispatchMessage('requestUserScripts', { 
-                    requestId: requestId,
-                    url: window.location.href
-                });
-            } else {
-                wBlockError('[wBlock] No suitable messaging API found for sending requestUserScripts.');
-            }
         }
 
         setupMessageListener() {
@@ -154,8 +234,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog('[wBlock] Using safari.self.addEventListener for listening.');
                 safari.self.addEventListener('message', (event) => {
                     wBlockLog('[wBlock] Received message via safari.self.addEventListener:', event.name, JSON.parse(JSON.stringify(event.message || {})));
+                    const requestId = event.message && event.message.requestId;
+                    if (requestId && this.pendingNativeRequests.has(requestId)) {
+                        const pending = this.pendingNativeRequests.get(requestId);
+                        this.pendingNativeRequests.delete(requestId);
+                        if (pending && pending.timeoutId) clearTimeout(pending.timeoutId);
+                        pending.resolve(event.message);
+                        return;
+                    }
                     let scriptsToInject = null;
-                    if (event.name === 'requestUserScripts' && event.message && event.message.userScripts) {
+                    if ((event.name === 'getUserScripts' || event.name === 'requestUserScripts') && event.message && event.message.userScripts) {
                         scriptsToInject = event.message.userScripts;
                     } else if (event.name === 'requestRules' && event.message && event.message.payload && event.message.payload.userScripts) {
                         scriptsToInject = event.message.payload.userScripts;
@@ -185,9 +273,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog('[wBlock] No userscripts to inject.');
                 return;
             }
-            userScripts.forEach(script => {
-                this.injectUserScript(script);
-            });
+            userScripts.forEach(script => this.injectUserScript(script));
         }
 
         injectUserScript(script) {
@@ -201,49 +287,61 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog(`[wBlock] Userscript ${script.name} already injected. Skipping.`);
                 return;
             }
+            if (this.injectingScripts.has(script.name)) {
+                wBlockLog(`[wBlock] Userscript ${script.name} is already being injected. Skipping.`);
+                return;
+            }
 
             this.injectSingleScript(script);
         }
 
         injectSingleScript(script) {
+            this.injectSingleScriptAsync(script).catch((error) => {
+                wBlockError(`[wBlock] Failed to inject userscript ${script && script.name ? script.name : 'unknown'}:`, error);
+            });
+        }
+
+        async injectSingleScriptAsync(script) {
+            // Check @noframes directive - skip if in iframe
+            if (script.noframes && window !== window.top) {
+                wBlockLog(`[wBlock] Skipping ${script.name} in iframe due to @noframes directive`);
+                return;
+            }
+
+            if (!this.shouldRunScript(script)) {
+                // Add to pending scripts if it's not ready to run
+                if (!this.pendingScripts.some(s => s.name === script.name)) {
+                    wBlockLog(`[wBlock] Adding ${script.name} to pending scripts list.`);
+                    this.pendingScripts.push(script);
+                }
+                return;
+            }
+
+            this.injectingScripts.add(script.name);
             try {
-                // Check @noframes directive - skip if in iframe
-                if (script.noframes && window !== window.top) {
-                    wBlockLog(`[wBlock] Skipping ${script.name} in iframe due to @noframes directive`);
-                    return;
-                }
+                const fullScript = await this.ensureScriptPayload(script);
 
-                if (!this.shouldRunScript(script)) {
-                    // Add to pending scripts if it's not ready to run
-                    if (!this.pendingScripts.some(s => s.name === script.name)) {
-                        wBlockLog(`[wBlock] Adding ${script.name} to pending scripts list.`);
-                        this.pendingScripts.push(script);
-                    }
-                    return;
-                }
-
-                const injectInto = script.injectInto || 'page';
-                wBlockLog(`[wBlock] Injecting userscript: ${script.name} (mode: ${injectInto})`);
+                const injectInto = fullScript.injectInto || 'page';
+                wBlockLog(`[wBlock] Injecting userscript: ${fullScript.name} (mode: ${injectInto})`);
 
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
-                    this.injectInContentContext(script);
+                    this.injectInContentContext(fullScript);
                 } else if (injectInto === 'auto') {
                     // Try page context first, fall back to content if CSP blocks
-                    if (!this.tryInjectInPageContext(script)) {
-                        wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${script.name}`);
-                        this.injectInContentContext(script);
+                    if (!this.tryInjectInPageContext(fullScript)) {
+                        wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${fullScript.name}`);
+                        this.injectInContentContext(fullScript);
                     }
                 } else {
                     // Default: page context
-                    this.injectInPageContext(script);
+                    this.injectInPageContext(fullScript);
                 }
 
-                this.injectedScripts.add(script.name);
-                wBlockLog(`[wBlock] Successfully injected and registered userscript: ${script.name} at ${script.runAt || 'document-end'}`);
-
-            } catch (error) {
-                wBlockError(`[wBlock] Failed to inject userscript ${script.name}:`, error);
+                this.injectedScripts.add(fullScript.name);
+                wBlockLog(`[wBlock] Successfully injected and registered userscript: ${fullScript.name} at ${fullScript.runAt || 'document-end'}`);
+            } finally {
+                this.injectingScripts.delete(script.name);
             }
         }
 
@@ -260,16 +358,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
         // Try page context, return false if CSP blocks
         tryInjectInPageContext(script) {
             try {
-                // Test if we can inject a script tag (CSP check)
+                // Test if we can inject a script tag (CSP check).
+                // NOTE: In WebExtension/Safari extension isolated worlds, `window` is not shared
+                // with the page context, so use a DOM side-effect to detect execution.
                 const testElement = document.createElement('script');
                 const testId = `__wblock_csp_test_${Date.now()}`;
-                testElement.textContent = `window.${testId} = true;`;
+                testElement.textContent = `try{document.documentElement && document.documentElement.setAttribute('${testId}','1');}catch(e){}`;
                 (document.head || document.documentElement).appendChild(testElement);
 
                 // Check if the script actually executed
-                const executed = window[testId] === true;
+                const executed = document.documentElement && document.documentElement.getAttribute(testId) === '1';
                 testElement.remove();
-                delete window[testId];
+                try { document.documentElement && document.documentElement.removeAttribute(testId); } catch (e) {}
 
                 if (executed) {
                     this.injectInPageContext(script);
@@ -680,7 +780,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         wBlockError('[wBlock UserScript Error Stack]:', error.stack);
 
         // Show a console warning for userscript errors
-        wBlockWarn(\`[wBlock] Error in userscript "\${script.name}": \${error.message}\`);
+        wBlockWarn('[wBlock] Error in userscript "${script.name}": ' + (error && error.message ? error.message : String(error)));
     }
 })();
         `;

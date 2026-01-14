@@ -16,6 +16,33 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
+    private static func extractResourceNames(from userScriptContent: String) -> [String] {
+        // Only parse the metadata header block to avoid scanning huge script bodies.
+        var names: [String] = []
+        var inMetadata = false
+
+        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed == "// ==UserScript==" {
+                inMetadata = true
+                continue
+            }
+            if trimmed == "// ==/UserScript==" { break }
+            if !inMetadata { continue }
+
+            if trimmed.hasPrefix("// @resource") {
+                // Format: // @resource <name> <url>
+                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
+                if parts.count >= 3 {
+                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !name.isEmpty { names.append(name) }
+                }
+            }
+        }
+
+        return Array(Set(names)).sorted()
+    }
     /// Processes an extension request and provides content blocking configuration.
     ///
     /// This method extracts the URL from the request, looks up the appropriate blocking
@@ -46,10 +73,21 @@ public enum WebExtensionRequestHandler {
 
         let nativeStart = Int64(Date().timeIntervalSince1970 * 1000)
         
-        // Check if this is a userscript request
-        if let action = message?["action"] as? String, action == "getUserScripts" {
-            handleUserScriptRequest(message: message!, context: context)
-            return
+        // Check if this is a userscript-related request
+        if let action = message?["action"] as? String {
+            switch action {
+            case "getUserScripts":
+                handleGetUserScriptsRequest(message: message!, context: context)
+                return
+            case "getUserScriptContentChunk":
+                handleUserScriptChunkRequest(message: message!, context: context, kind: .content)
+                return
+            case "getUserScriptResourceChunk":
+                handleUserScriptChunkRequest(message: message!, context: context, kind: .resource)
+                return
+            default:
+                break
+            }
         }
 
         let payload = message?["payload"] as? [String: Any] ?? [:]
@@ -183,35 +221,126 @@ public enum WebExtensionRequestHandler {
         return nil
     }
 
-    /// Handles userscript requests from the extension
-    ///
-    /// - Parameters:
-    ///   - message: The message containing the userscript request
-    ///   - context: The extension context to send the response
-    private static func handleUserScriptRequest(message: [String: Any?], context: NSExtensionContext) {
+    private enum UserScriptChunkKind {
+        case content
+        case resource
+    }
+
+    /// Returns enabled userscripts for a URL, but without inlining potentially huge `content`/`resources`.
+    private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         guard let urlString = message["url"] as? String else {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
         }
-        
-        // Use the shared UserScriptManager instance
+
         Task { @MainActor in
             let userScriptManager = UserScriptManager.shared
             let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
-            
-            let userScriptPayload = userScripts.map { script in
-                [
+
+            let userScriptDescriptors: [[String: Any]] = userScripts.map { script in
+                // Prefer cached resource names, but fall back to parsing metadata so scripts
+                // installed before resource caching still request the right dependencies.
+                let resourceNames =
+                    !script.resourceContents.isEmpty
+                    ? Array(script.resourceContents.keys).sorted()
+                    : extractResourceNames(from: script.content)
+                return [
+                    "id": script.id.uuidString,
                     "name": script.name,
-                    "content": script.content,
+                    "version": script.version,
+                    "description": script.description,
                     "runAt": script.runAt,
                     "noframes": script.noframes,
-                    "resources": script.resourceContents,
-                    "injectInto": script.injectInto
-                ] as [String: Any]
+                    "injectInto": script.injectInto,
+                    "resourceNames": resourceNames
+                ]
             }
-            
-            let response = createResponse(with: ["userScripts": userScriptPayload])
+
+            let response = createResponse(with: ["userScripts": userScriptDescriptors])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleUserScriptChunkRequest(
+        message: [String: Any?],
+        context: NSExtensionContext,
+        kind: UserScriptChunkKind
+    ) {
+        guard let scriptIdString = message["scriptId"] as? String, let scriptId = UUID(uuidString: scriptIdString) else {
+            let response = createResponse(with: ["error": "Missing or invalid scriptId"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        let chunkIndex = message["chunkIndex"] as? Int ?? 0
+        let chunkSize = message["chunkSize"] as? Int ?? 256 * 1024
+
+        if chunkIndex < 0 || chunkSize <= 0 {
+            let response = createResponse(with: ["error": "Invalid chunkIndex/chunkSize"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        let resourceName: String?
+        switch kind {
+        case .content:
+            resourceName = nil
+        case .resource:
+            resourceName = message["resourceName"] as? String
+            if resourceName == nil || resourceName?.isEmpty == true {
+                let response = createResponse(with: ["error": "Missing resourceName"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+        }
+
+        Task { @MainActor in
+            let manager = UserScriptManager.shared
+            guard let script = manager.userScript(withId: scriptId) else {
+                let response = createResponse(with: ["error": "Userscript not found"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            let text: String?
+            switch kind {
+            case .content:
+                text = script.content
+            case .resource:
+                // Lazily populate missing resources for scripts installed before caching existed.
+                text = await manager.ensureResourceContent(forScriptId: scriptId, resourceName: resourceName!)
+            }
+
+            guard let text, !text.isEmpty else {
+                let response = createResponse(with: ["error": "Requested content not available"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            let data = Data(text.utf8)
+            let totalChunks = Int(ceil(Double(data.count) / Double(chunkSize)))
+            guard totalChunks > 0, chunkIndex < totalChunks else {
+                let response = createResponse(with: ["error": "chunkIndex out of range", "totalChunks": totalChunks])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            let start = chunkIndex * chunkSize
+            let end = min(start + chunkSize, data.count)
+            let chunkData = data.subdata(in: start..<end)
+
+            var responsePayload: [String: Any] = [
+                "scriptId": scriptId.uuidString,
+                "chunkIndex": chunkIndex,
+                "totalChunks": totalChunks,
+                "chunk": chunkData.base64EncodedString()
+            ]
+            if let resourceName {
+                responsePayload["resourceName"] = resourceName
+            }
+
+            let response = createResponse(with: responsePayload)
             context.completeRequest(returningItems: [response])
         }
     }

@@ -60,6 +60,179 @@ public class UserScriptManager: ObservableObject {
         return URLSession(configuration: config)
     }()
 
+    public func userScript(withId id: UUID) -> UserScript? {
+        userScripts.first(where: { $0.id == id })
+    }
+
+    private func extractResourceURL(forResourceName name: String, from userScriptContent: String) -> String? {
+        var inMetadata = false
+        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed == "// ==UserScript==" {
+                inMetadata = true
+                continue
+            }
+            if trimmed == "// ==/UserScript==" { break }
+            if !inMetadata { continue }
+
+            if trimmed.hasPrefix("// @resource") {
+                // Format: // @resource <name> <url>
+                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
+                if parts.count >= 4 {
+                    let resourceName = String(parts[2])
+                    if resourceName == name {
+                        return parts.dropFirst(3).joined(separator: " ")
+                    }
+                }
+            }
+        }
+        return nil
+    }
+
+    public func ensureResourceContent(forScriptId scriptId: UUID, resourceName: String) async -> String? {
+        guard let index = self.userScripts.firstIndex(where: { $0.id == scriptId }) else {
+            return nil
+        }
+
+        // 1) In-memory cache
+        if let cached = self.userScripts[index].resourceContents[resourceName], !cached.isEmpty {
+            return cached
+        }
+
+        // 2) Disk cache
+        if let diskResources = readUserScriptResources(self.userScripts[index]),
+            let diskValue = diskResources[resourceName], !diskValue.isEmpty
+        {
+            self.userScripts[index].resourceContents = diskResources
+            return diskValue
+        }
+
+        // 3) Download on-demand by parsing metadata
+        let content = self.userScripts[index].content
+        guard let resourceURLString = self.extractResourceURL(forResourceName: resourceName, from: content),
+            let url = URL(string: resourceURLString)
+        else {
+            self.logger.error(
+                "❌ Missing @resource URL for '\(resourceName)' in script \(self.userScripts[index].name)"
+            )
+            return nil
+        }
+
+        do {
+            self.logger.info(
+                "📥 Downloading on-demand @resource '\(resourceName)' from \(resourceURLString)"
+            )
+
+            let data: Data
+            if url.host?.contains("gitflic") == true {
+                let request = self.createGitflicRequest(for: url)
+                let (responseData, _) = try await self.urlSession.data(for: request)
+                data = responseData
+            } else {
+                let (responseData, _) = try await self.urlSession.data(from: url)
+                data = responseData
+            }
+
+            guard let resourceContent = String(data: data, encoding: .utf8) else {
+                self.logger.error(
+                    "❌ Failed to decode on-demand @resource '\(resourceName)' from: \(resourceURLString)"
+                )
+                return nil
+            }
+            if self.isDDoSProtectionPage(resourceContent) {
+                self.logger.error(
+                    "❌ Received DDoS protection page for on-demand @resource: \(resourceURLString)"
+                )
+                return nil
+            }
+
+            self.userScripts[index].resourceContents[resourceName] = resourceContent
+            _ = self.writeUserScriptResources(self.userScripts[index])
+            return resourceContent
+        } catch {
+            self.logger.error(
+                "❌ Failed to download on-demand @resource '\(resourceName)' from \(resourceURLString): \(error)"
+            )
+            return nil
+        }
+    }
+
+    private func userScriptResourcesFileName(for userScript: UserScript) -> String {
+        "\(userScript.id.uuidString).resources.json"
+    }
+
+    private func readUserScriptResources(_ userScript: UserScript) -> [String: String]? {
+        let fileName = userScriptResourcesFileName(for: userScript)
+
+        // Try fallback directory first (files may exist here initially)
+        if let fallbackURL = fallbackScriptsDirectoryURL {
+            let fileURL = fallbackURL.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: fileURL.path), let data = try? Data(contentsOf: fileURL) {
+                if let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+                    // Migrate to group directory if available
+                    if let groupURL = groupScriptsDirectoryURL {
+                        let destURL = groupURL.appendingPathComponent(fileURL.lastPathComponent)
+                        if !FileManager.default.fileExists(atPath: destURL.path) {
+                            try? FileManager.default.copyItem(at: fileURL, to: destURL)
+                        }
+                    }
+                    return decoded
+                }
+            }
+        }
+
+        // Then try group directory
+        if let groupURL = groupScriptsDirectoryURL {
+            let fileURL = groupURL.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: fileURL.path), let data = try? Data(contentsOf: fileURL) {
+                if let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+                    return decoded
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private func removeUserScriptResourcesFile(_ userScript: UserScript) {
+        let fileName = userScriptResourcesFileName(for: userScript)
+        [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach { dirURL in
+            let fileURL = dirURL.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try? FileManager.default.removeItem(at: fileURL)
+            }
+        }
+    }
+
+    @discardableResult
+    private func writeUserScriptResources(_ userScript: UserScript) -> Bool {
+        if userScript.resourceContents.isEmpty {
+            removeUserScriptResourcesFile(userScript)
+            return true
+        }
+
+        do {
+            let data = try JSONEncoder().encode(userScript.resourceContents)
+            var success = false
+            let fileName = userScriptResourcesFileName(for: userScript)
+            [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach { dirURL in
+                let fileURL = dirURL.appendingPathComponent(fileName)
+                do {
+                    try data.write(to: fileURL, options: .atomic)
+                    success = true
+                    logger.info("💾 Wrote userscript resources to: \(fileURL.path)")
+                } catch {
+                    logger.error("❌ Failed to write userscript resources to \(fileURL.path): \(error)")
+                }
+            }
+            return success
+        } catch {
+            logger.error("❌ Failed to encode userscript resources for \(userScript.name): \(error)")
+            return false
+        }
+    }
+
     /// Creates a request with browser-like headers for gitflic.ru to bypass DDoS protection
     private func createGitflicRequest(for url: URL) -> URLRequest {
         var request = URLRequest(url: url)
@@ -488,6 +661,8 @@ public class UserScriptManager: ObservableObject {
                 "✅ Completely removed \(totalRemoved) file(s) for userscript: \(userScript.name) - no resurrection possible"
             )
         }
+
+        removeUserScriptResourcesFile(userScript)
     }
 
     private func setup() {
@@ -585,6 +760,11 @@ public class UserScriptManager: ObservableObject {
                     logger.info("✅ Loaded content for \(script.name) (\(content.count) characters)")
                 } else {
                     logger.warning("⚠️ Failed to load content for \(script.name)")
+                }
+
+                if let resources = readUserScriptResources(userScripts[i]) {
+                    userScripts[i].resourceContents = resources
+                    logger.info("✅ Loaded \(resources.count) cached resources for \(script.name)")
                 }
             }
         }
@@ -905,6 +1085,7 @@ public class UserScriptManager: ObservableObject {
                     userScripts[index].content = processedContent
                     userScripts[index].resourceContents = resourceContents
                     _ = writeUserScriptContent(userScripts[index])
+                    _ = writeUserScriptResources(userScripts[index])
                     await persistUserScriptsNow()
                     logger.info("✅ Downloaded and saved: \(self.userScripts[index].name)")
                 }
@@ -1075,6 +1256,7 @@ public class UserScriptManager: ObservableObject {
             }
 
             _ = writeUserScriptContent(newUserScript)
+            _ = writeUserScriptResources(newUserScript)
 
             // Check for duplicates after adding a script
             checkForDuplicatesAndAskForConfirmation()
@@ -1186,6 +1368,7 @@ public class UserScriptManager: ObservableObject {
             }
 
             _ = writeUserScriptContent(newUserScript)
+            _ = writeUserScriptResources(newUserScript)
 
             checkForDuplicatesAndAskForConfirmation()
 
@@ -1314,6 +1497,7 @@ public class UserScriptManager: ObservableObject {
                 userScripts[index].lastUpdated = Date()
 
                 _ = writeUserScriptContent(userScripts[index])
+                _ = writeUserScriptResources(userScripts[index])
                 await persistUserScriptsNow()
                 statusDescription = "Updated \(userScript.name)"
                 updateAlertMessage = "\(userScript.name) has been successfully updated."
@@ -1362,6 +1546,7 @@ public class UserScriptManager: ObservableObject {
                 userScripts[index].lastUpdated = Date()
 
                 _ = writeUserScriptContent(userScripts[index])
+                _ = writeUserScriptResources(userScripts[index])
                 await persistUserScriptsNow()
                 statusDescription = "Downloaded and enabled \(userScript.name)"
                 isLoading = false

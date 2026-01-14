@@ -17148,6 +17148,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { userScripts: [] };
       }
     }
+    if (message && (message.action === "getUserScriptContentChunk" || message.action === "getUserScriptResourceChunk")) {
+      const chunkRequest = {
+        action: message.action,
+        requestId: "userscript-chunk-" + Date.now(),
+        scriptId: message.scriptId,
+        chunkIndex: message.chunkIndex,
+        chunkSize: message.chunkSize,
+        resourceName: message.resourceName
+      };
+
+      try {
+        const response = await browser.runtime.sendNativeMessage("application.id", chunkRequest);
+        return response || { error: "Empty response from native host" };
+      } catch (error) {
+        console.error("[wBlock] Failed to get userscript chunk:", error);
+        return { error: String(error && error.message ? error.message : error) };
+      }
+    }
     const tabId = ((_sender$tab = sender.tab) === null || _sender$tab === void 0 ? void 0 : _sender$tab.id) ?? 0;
     const frameId = sender.frameId ?? 0;
     let blankFrame = false;

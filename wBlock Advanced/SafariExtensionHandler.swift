@@ -15,6 +15,31 @@ import os.log
 /// content scripts, dispatches configuration rules, and manages content
 /// blocking events.
 public class SafariExtensionHandler: SFSafariExtensionHandler {
+    private static func extractResourceNames(from userScriptContent: String) -> [String] {
+        var names: [String] = []
+        var inMetadata = false
+
+        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed == "// ==UserScript==" {
+                inMetadata = true
+                continue
+            }
+            if trimmed == "// ==/UserScript==" { break }
+            if !inMetadata { continue }
+
+            if trimmed.hasPrefix("// @resource") {
+                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
+                if parts.count >= 3 {
+                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !name.isEmpty { names.append(name) }
+                }
+            }
+        }
+
+        return Array(Set(names)).sorted()
+    }
     
     @MainActor
     private func getOrCreateUserScriptManager() -> UserScriptManager { // New helper method
@@ -160,66 +185,152 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                     os_log(.error, "SafariExtensionHandler: Invalid URL string: %@", urlString)
                 }
             }
-        case "requestUserScripts":
-            // Handle standalone userscript requests
+        case "requestUserScripts", "getUserScripts":
+            // Handle userscript list requests
+            let responseMessageName = messageName
             let requestId = userInfo?["requestId"] as? String ?? ""
             let urlString = userInfo?["url"] as? String ?? ""
-            
-            os_log(.info, "SafariExtensionHandler: Processing requestUserScripts for URL: %@", urlString)
-            
+
+            os_log(.info, "SafariExtensionHandler: Processing %@ for URL: %@", responseMessageName, urlString)
+
             Task {
                 // Reload data to ensure we have the latest
                 await ProtobufDataManager.shared.loadData()
                 let disabled = await ProtobufDataManager.shared.disabledSites
-                
+
                 // Check if site is disabled before processing userscripts
                 if let url = URL(string: urlString), let host = url.host {
                     let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
-                    
+
                     os_log(.info, "SafariExtensionHandler: UserScripts - Host '%@' disabled check: %{BOOL}d", host, isDisabled)
-                    
+
                     if isDisabled {
-                        // Send empty userscripts array for disabled sites
                         let emptyResponse: [String: Any] = [
                             "requestId": requestId,
-                            "userScripts": [],
-                            "verbose": false
+                            "userScripts": []
                         ]
                         os_log(.info, "SafariExtensionHandler: Sending empty userscripts for disabled host: %@", host)
-                        page.dispatchMessageToScript(withName: "requestUserScripts", userInfo: emptyResponse)
+                        page.dispatchMessageToScript(withName: responseMessageName, userInfo: emptyResponse)
                         return
                     }
                 }
-                
+
                 await MainActor.run {
                     let manager = userScriptManager
                     os_log(.info, "SafariExtensionHandler: Getting userscripts for URL: %@", urlString)
                     let userScripts = manager.getEnabledUserScriptsForURL(urlString)
                     os_log(.info, "SafariExtensionHandler: Found %d userscripts for URL: %@", userScripts.count, urlString)
-                    
-                    let userScriptPayload = userScripts.map { script in
-                        os_log(.info, "SafariExtensionHandler: Including userscript: %@", script.name)
+
+                    let userScriptDescriptors: [[String: Any]] = userScripts.map { script in
+                        os_log(.info, "SafariExtensionHandler: Including userscript descriptor: %@", script.name)
+                        let resourceNames =
+                            !script.resourceContents.isEmpty
+                            ? Array(script.resourceContents.keys).sorted()
+                            : Self.extractResourceNames(from: script.content)
                         return [
+                            "id": script.id.uuidString,
                             "name": script.name,
-                            "content": script.content,
+                            "version": script.version,
+                            "description": script.description,
                             "runAt": script.runAt,
                             "noframes": script.noframes,
-                            "resources": script.resourceContents,
-                            "injectInto": script.injectInto
-                        ] as [String: Any]
+                            "injectInto": script.injectInto,
+                            "resourceNames": resourceNames
+                        ]
                     }
-                    
+
                     let responseUserInfo: [String: Any] = [
                         "requestId": requestId,
-                        "userScripts": userScriptPayload
+                        "userScripts": userScriptDescriptors
                     ]
-                    
-                    os_log(.info, "SafariExtensionHandler: Dispatching response for requestUserScripts with %d scripts", userScriptPayload.count)
-                    page.dispatchMessageToScript(
-                        withName: "requestUserScripts",
-                        userInfo: responseUserInfo
-                    )
+
+                    os_log(.info, "SafariExtensionHandler: Dispatching response for %@ with %d scripts", responseMessageName, userScriptDescriptors.count)
+                    page.dispatchMessageToScript(withName: responseMessageName, userInfo: responseUserInfo)
                 }
+            }
+        case "getUserScriptContentChunk", "getUserScriptResourceChunk":
+            let responseMessageName = messageName
+            let requestId = userInfo?["requestId"] as? String ?? ""
+            let scriptIdString = userInfo?["scriptId"] as? String ?? ""
+            let chunkIndex = userInfo?["chunkIndex"] as? Int ?? 0
+            let chunkSize = userInfo?["chunkSize"] as? Int ?? 256 * 1024
+            let resourceName = userInfo?["resourceName"] as? String
+
+            guard let scriptId = UUID(uuidString: scriptIdString), chunkIndex >= 0, chunkSize > 0 else {
+                let errorResponse: [String: Any] = [
+                    "requestId": requestId,
+                    "error": "Missing or invalid parameters"
+                ]
+                page.dispatchMessageToScript(withName: responseMessageName, userInfo: errorResponse)
+                return
+            }
+
+            if responseMessageName == "getUserScriptResourceChunk" && (resourceName == nil || resourceName?.isEmpty == true) {
+                let errorResponse: [String: Any] = [
+                    "requestId": requestId,
+                    "error": "Missing resourceName"
+                ]
+                page.dispatchMessageToScript(withName: responseMessageName, userInfo: errorResponse)
+                return
+            }
+
+            Task { @MainActor in
+                let manager = userScriptManager
+                guard let script = manager.userScript(withId: scriptId) else {
+                    let errorResponse: [String: Any] = [
+                        "requestId": requestId,
+                        "scriptId": scriptIdString,
+                        "error": "Userscript not found"
+                    ]
+                    page.dispatchMessageToScript(withName: responseMessageName, userInfo: errorResponse)
+                    return
+                }
+
+                let text: String?
+                if responseMessageName == "getUserScriptContentChunk" {
+                    text = script.content
+                } else {
+                    text = await manager.ensureResourceContent(forScriptId: scriptId, resourceName: resourceName!)
+                }
+
+                guard let text, !text.isEmpty else {
+                    var errorResponse: [String: Any] = [
+                        "requestId": requestId,
+                        "scriptId": scriptIdString,
+                        "error": "Requested content not available"
+                    ]
+                    if let resourceName { errorResponse["resourceName"] = resourceName }
+                    page.dispatchMessageToScript(withName: responseMessageName, userInfo: errorResponse)
+                    return
+                }
+
+                let data = Data(text.utf8)
+                let totalChunks = Int(ceil(Double(data.count) / Double(chunkSize)))
+                guard totalChunks > 0, chunkIndex < totalChunks else {
+                    var errorResponse: [String: Any] = [
+                        "requestId": requestId,
+                        "scriptId": scriptIdString,
+                        "error": "chunkIndex out of range",
+                        "totalChunks": totalChunks
+                    ]
+                    if let resourceName { errorResponse["resourceName"] = resourceName }
+                    page.dispatchMessageToScript(withName: responseMessageName, userInfo: errorResponse)
+                    return
+                }
+
+                let start = chunkIndex * chunkSize
+                let end = min(start + chunkSize, data.count)
+                let chunkData = data.subdata(in: start..<end)
+
+                var response: [String: Any] = [
+                    "requestId": requestId,
+                    "scriptId": scriptIdString,
+                    "chunkIndex": chunkIndex,
+                    "totalChunks": totalChunks,
+                    "chunk": chunkData.base64EncodedString()
+                ]
+                if let resourceName { response["resourceName"] = resourceName }
+                page.dispatchMessageToScript(withName: responseMessageName, userInfo: response)
             }
         case "zapperController":
             // Handle element zapper messages
