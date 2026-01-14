@@ -701,8 +701,11 @@ struct AddFilterListView: View {
 
     @State private var urlInput: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
-    @State private var validationState: ValidationState = .idle
     @State private var isSaving: Bool = false
+
+    private var validationState: ValidationState {
+        validationState(for: urlInput)
+    }
 
     var body: some View {
         SheetContainer {
@@ -718,20 +721,49 @@ struct AddFilterListView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 40)
             }
+            #if os(iOS)
+                .scrollDismissesKeyboard(.interactively)
+            #endif
 
             SheetBottomToolbar {
-                cancelButton
-                Spacer()
-                addButton
+                #if os(iOS)
+                    Spacer()
+                    addButton
+                #else
+                    cancelButton
+                    Spacer()
+                    addButton
+                #endif
             }
         }
         .interactiveDismissDisabled(isSaving)
         .onAppear {
             urlFieldIsFocused = true
         }
-        .onChange(of: urlInput) { _, newValue in
-            validateInput(newValue)
-        }
+        #if os(iOS)
+            .presentationDetents([.height(340)])
+            .presentationDragIndicator(.visible)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Button {
+                        pasteFromClipboard()
+                    } label: {
+                        Label("Paste", systemImage: "doc.on.clipboard")
+                    }
+
+                    Spacer()
+
+                    Button("Clear") {
+                        urlInput = ""
+                    }
+                    .disabled(urlInput.isEmpty)
+
+                    Button("Done") {
+                        urlFieldIsFocused = false
+                    }
+                }
+            }
+        #endif
     }
 
     // MARK: - Content Sections
@@ -749,8 +781,16 @@ struct AddFilterListView: View {
                     #if os(iOS)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
+                        .submitLabel(.done)
                     #endif
                     .focused($urlFieldIsFocused)
+                    .onSubmit {
+                        if canSubmit {
+                            submit()
+                        } else {
+                            urlFieldIsFocused = false
+                        }
+                    }
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -863,11 +903,36 @@ struct AddFilterListView: View {
                 .disabled(isCategoryAlmostFull(category))
             }
         } label: {
-            Text(categoryMenuTitle(for: selectedCategory))
-                .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
+            #if os(iOS)
+                HStack(spacing: 10) {
+                    Text(categoryMenuTitle(for: selectedCategory))
+                        .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+            #else
+                Text(categoryMenuTitle(for: selectedCategory))
+                    .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
+            #endif
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        #if os(iOS)
+            .buttonStyle(.plain)
+        #else
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        #endif
         .disabled(isSaving)
     }
 
@@ -899,12 +964,11 @@ struct AddFilterListView: View {
         return category.rawValue
     }
 
-    private func validateInput(_ rawValue: String) {
+    private func validationState(for rawValue: String) -> ValidationState {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !trimmed.isEmpty else {
-            validationState = .idle
-            return
+            return .idle
         }
 
         guard let components = URLComponents(string: trimmed),
@@ -914,18 +978,16 @@ struct AddFilterListView: View {
             !host.isEmpty,
             let url = components.url
         else {
-            validationState = .invalid
-            return
+            return .invalid
         }
 
         if filterManager.filterLists.contains(where: {
             $0.url.absoluteString.lowercased() == url.absoluteString.lowercased()
         }) {
-            validationState = .duplicate
-            return
+            return .duplicate
         }
 
-        validationState = .valid(url)
+        return .valid(url)
     }
 
     private func defaultName(for url: URL) -> String {
@@ -945,4 +1007,12 @@ struct AddFilterListView: View {
         case duplicate
         case valid(URL)
     }
+
+    #if os(iOS)
+        private func pasteFromClipboard() {
+            if let string = UIPasteboard.general.string {
+                urlInput = string
+            }
+        }
+    #endif
 }
