@@ -13,6 +13,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var name: String
     public var url: URL
     public var category: FilterListCategory
+    public var isCustom: Bool = false
     public var isSelected: Bool = false
     public var description: String = ""
     public var version: String = ""
@@ -28,6 +29,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
                 name: String,
                 url: URL,
                 category: FilterListCategory,
+                isCustom: Bool = false,
                 isSelected: Bool = false,
                 description: String = "",
                 version: String = "",
@@ -42,6 +44,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.name = name
         self.url = url
         self.category = category
+        self.isCustom = isCustom
         self.isSelected = isSelected
         self.description = description
         self.version = version

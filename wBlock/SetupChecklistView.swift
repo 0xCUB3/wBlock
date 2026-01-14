@@ -103,10 +103,10 @@ struct SetupChecklistView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 #if os(macOS)
-                Text("wBlock Advanced must be enabled and set to 'All Websites' to block YouTube ads.")
+                Text("wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads.")
                     .font(.subheadline)
                 #else
-                Text("wBlock Scripts must be enabled and set to 'All Websites' to block YouTube ads.")
+                Text("wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads.")
                     .font(.subheadline)
                 #endif
             }

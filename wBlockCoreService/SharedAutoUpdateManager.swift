@@ -450,7 +450,11 @@ public actor SharedAutoUpdateManager {
             lists.append(contentsOf: decoded)
         }
         if let customData = defaults.data(forKey: "customFilterLists"), let decodedCustom = try? JSONDecoder().decode([FilterList].self, from: customData) {
-            lists.append(contentsOf: decodedCustom)
+            lists.append(contentsOf: decodedCustom.map { list in
+                var updated = list
+                updated.isCustom = true
+                return updated
+            })
         }
         // Restore selection state
         for idx in lists.indices {
@@ -482,8 +486,8 @@ public actor SharedAutoUpdateManager {
     }
 
     private func saveFilterListsToDefaults(_ lists: [FilterList], defaults: UserDefaults) {
-        let defaultLists = lists.filter { $0.category != .custom }
-        let customLists = lists.filter { $0.category == .custom }
+        let defaultLists = lists.filter { !$0.isCustom }
+        let customLists = lists.filter { $0.isCustom }
         if let data = try? JSONEncoder().encode(defaultLists) { defaults.set(data, forKey: "filterLists") }
         if let cdata = try? JSONEncoder().encode(customLists) { defaults.set(cdata, forKey: "customFilterLists") }
         for fl in lists { defaults.set(fl.isSelected, forKey: "filter_selected_\(fl.id.uuidString)") }

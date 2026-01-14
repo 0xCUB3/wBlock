@@ -25,6 +25,7 @@ extension ProtobufDataManager {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
+            protoFilterList.isCustom = filter.isCustom
             return protoFilterList
         }
         await MainActor.run {
@@ -129,12 +130,14 @@ extension ProtobufDataManager {
     public func getFilterLists() -> [FilterList] {
         return appData.filterLists.map { protoData in
             let category = mapProtoToFilterListCategory(protoData.category)
+            let isCustom = protoData.isCustom || category == .custom
 
             return FilterList(
                 id: UUID(uuidString: protoData.id) ?? UUID(),
                 name: protoData.name,
                 url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
                 category: category,
+                isCustom: isCustom,
                 isSelected: protoData.isSelected,
                 description: protoData.description_p,
                 version: protoData.version,
@@ -174,7 +177,7 @@ extension ProtobufDataManager {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = false
+            protoFilterList.isCustom = filterList.isCustom
             
             updatedData.filterLists.append(protoFilterList)
         }
@@ -496,6 +499,7 @@ extension ProtobufDataManager {
                 name: protoData.name,
                 url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
                 category: category,
+                isCustom: true,
                 isSelected: protoData.isSelected,
                 description: protoData.description_p,
                 version: protoData.version,

@@ -196,6 +196,36 @@ class AppFilterManager: ObservableObject {
         // Migrate old AdGuard Annoyances filter to new split filters
         storedFilterLists = migrateOldAnnoyancesFilter(in: storedFilterLists)
 
+        // Remove deprecated filter lists that are no longer shipped by wBlock.
+        let deprecatedFilterLists = storedFilterLists.filter { filter in
+            !filter.isCustom
+                && (filter.name == "AdGuard URL Tracking Filter"
+                    || filter.url.absoluteString.contains("filter_17_TrackParam"))
+        }
+        if !deprecatedFilterLists.isEmpty {
+            let removedSelected = deprecatedFilterLists.contains(where: { $0.isSelected })
+            storedFilterLists.removeAll { filter in
+                !filter.isCustom
+                    && (filter.name == "AdGuard URL Tracking Filter"
+                        || filter.url.absoluteString.contains("filter_17_TrackParam"))
+            }
+
+            let deprecatedFilterIDs = deprecatedFilterLists.map(\.id)
+            Task {
+                for id in deprecatedFilterIDs {
+                    await self.dataManager.removeFilterList(withId: id)
+                }
+                await ConcurrentLogManager.shared.info(
+                    .system, "Removed deprecated filter list(s)",
+                    metadata: ["filters": deprecatedFilterLists.map(\.name).joined(separator: ", ")]
+                )
+            }
+
+            if removedSelected {
+                hasUnappliedChanges = true
+            }
+        }
+
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         customFilterLists = dataManager.getCustomFilterLists()
 
@@ -1512,7 +1542,7 @@ class AppFilterManager: ObservableObject {
     }
 
     // MARK: - List Management
-    func addFilterList(name: String, urlString: String) {
+    func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom) {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines))
         else {
             statusDescription = "Invalid URL provided: \(urlString)"
@@ -1541,7 +1571,8 @@ class AppFilterManager: ObservableObject {
             id: UUID(),
             name: newName.isEmpty ? (url.host ?? "Custom Filter") : newName,
             url: url,
-            category: FilterListCategory.custom,
+            category: category,
+            isCustom: true,
             isSelected: true,
             description: "User-added filter list.",
             sourceRuleCount: nil)

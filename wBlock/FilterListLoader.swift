@@ -117,10 +117,9 @@ class FilterListLoader {
         // Handle custom lists separately - these should always be preserved and updated
         let customLists = loadCustomFilterLists()
 
-        // Remove any custom filters that are no longer in the custom list
+        // Remove any user-added filters that are no longer in the saved custom list
         filterLists.removeAll { filter in
-            filter.category == FilterListCategory.custom
-                && !customLists.contains(where: { $0.url == filter.url })
+            filter.isCustom && !customLists.contains(where: { $0.url == filter.url })
         }
 
         // Add or update custom filters
@@ -133,6 +132,7 @@ class FilterListLoader {
                     name: customFilter.name,  // Use custom filter name (may have been updated)
                     url: customFilter.url,  // Use custom filter URL
                     category: customFilter.category,  // Use custom filter category
+                    isCustom: true,
                     isSelected: existingFilter.isSelected,  // Preserve user's selection
                     description: customFilter.description,  // Use custom filter description (may have been updated)
                     version: existingFilter.version,  // Keep version info
@@ -757,17 +757,6 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy, isSelected: true,
                 description:
                     "Blocks tracking scripts, web beacons, and other privacy-invasive elements."))
-        filterLists.append(
-            FilterList(
-                id: UUID(), name: "AdGuard URL Tracking Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt"
-                )!, category: FilterListCategory.privacy, isSelected: false,
-                description:
-                    "Removes tracking parameters from URLs (utm_source, fbclid, gclid, etc.) to enhance privacy."
-            ))
-
         #if os(iOS)
             filterLists.append(
                 FilterList(
@@ -798,7 +787,6 @@ class FilterListLoader {
                 "AdGuard Base Filter",
                 "AdGuard Tracking Protection Filter",
                 "EasyPrivacy",
-                "AdGuard URL Tracking Filter",
                 "Online Security Filter",
                 "d3Host List by d3ward",
                 "AdGuard Cookie Notices",
@@ -813,7 +801,6 @@ class FilterListLoader {
                 "AdGuard Base Filter",
                 "AdGuard Tracking Protection Filter",
                 "EasyPrivacy",
-                "AdGuard URL Tracking Filter",
                 "Online Security Filter",
                 "d3Host List by d3ward",
                 "AdGuard Cookie Notices",
@@ -836,8 +823,8 @@ class FilterListLoader {
     /// Saves filter lists to UserDefaults
     func saveFilterLists(_ filterLists: [FilterList]) {
         // Separate default and custom lists before saving
-        let defaultLists = filterLists.filter { $0.category != FilterListCategory.custom }
-        let customLists = filterLists.filter { $0.category == FilterListCategory.custom }
+        let defaultLists = filterLists.filter { !$0.isCustom }
+        let customLists = filterLists.filter { $0.isCustom }
 
         if let data = try? JSONEncoder().encode(defaultLists) {
             defaults.set(data, forKey: "filterLists")
@@ -879,7 +866,11 @@ class FilterListLoader {
         if let data = defaults.data(forKey: customFilterListsKey),
             let customLists = try? JSONDecoder().decode([FilterList].self, from: data)
         {
-            return customLists
+            return customLists.map { list in
+                var updated = list
+                updated.isCustom = true
+                return updated
+            }
         }
         return []
     }

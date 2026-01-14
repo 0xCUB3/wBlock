@@ -51,7 +51,7 @@ struct ContentView: View {
     }
 
     private var displayableCategories: [FilterListCategory] {
-        FilterListCategory.allCases.filter { $0 != .all && $0 != .custom }
+        FilterListCategory.allCases.filter { $0 != .all }
     }
 
     /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
@@ -66,14 +66,6 @@ struct ContentView: View {
             if !filters.isEmpty {
                 result.append((category: category, filters: filters))
             }
-        }
-
-        // Add custom lists at the end
-        let customFilters = allFilters.filter {
-            $0.category == .custom && (!showOnlyEnabledLists || $0.isSelected)
-        }
-        if !customFilters.isEmpty {
-            result.append((category: .custom, filters: customFilters))
         }
 
         return result
@@ -484,11 +476,11 @@ struct ContentView: View {
         #endif
         .contentShape(.interaction, Rectangle())
         .contextMenu {
-            if filter.category == .custom {
+            if filter.isCustom {
                 Button(role: .destructive) {
                     filterManager.removeFilterList(filter)
                 } label: {
-                    Label("Delete Custom List", systemImage: "trash")
+                    Label("Delete Added List", systemImage: "trash")
                 }
             }
             Button {
@@ -709,6 +701,7 @@ struct AddFilterListView: View {
 
     @State private var nameInput: String = ""
     @State private var urlInput: String = ""
+    @State private var selectedCategory: FilterListCategory = .custom
     @State private var validationState: ValidationState = .idle
     @State private var showRequirements: Bool = false
     @State private var isSaving: Bool = false
@@ -771,6 +764,14 @@ struct AddFilterListView: View {
                         #endif
                         .autocorrectionDisabled()
                         .focused($focusedField, equals: .name)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Category")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    categoryMenu
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -862,9 +863,15 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             case .valid:
-                Label("Ready", systemImage: "checkmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.green)
+                if isSelectedCategoryAlmostFull {
+                    Label("Near limit", systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                } else {
+                    Label("Ready", systemImage: "checkmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
             }
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)
@@ -888,9 +895,17 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             case .valid:
-                Text("Looks good! Tap Add Filter to continue.")
+                if isSelectedCategoryAlmostFull {
+                    Text(
+                        "That category is nearly full. Pick another category to stay under Safari’s 150,000 rule limit."
+                    )
                     .font(.caption)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.orange)
+                } else {
+                    Text("Looks good! Tap Add Filter to continue.")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
             }
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)
@@ -932,7 +947,7 @@ struct AddFilterListView: View {
     }
 
     private var canSubmit: Bool {
-        if case .valid = validationState, !isSaving {
+        if case .valid = validationState, !isSaving, !isSelectedCategoryAlmostFull {
             return true
         }
         return false
@@ -940,19 +955,87 @@ struct AddFilterListView: View {
 
     private func submit() {
         guard case .valid(let url) = validationState else { return }
+        guard !isSelectedCategoryAlmostFull else { return }
 
         isSaving = true
 
         Task { @MainActor in
             let trimmedName = nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
             let finalName = trimmedName.isEmpty ? defaultName(for: url) : trimmedName
-            filterManager.addFilterList(name: finalName, urlString: url.absoluteString)
+            filterManager.addFilterList(
+                name: finalName,
+                urlString: url.absoluteString,
+                category: selectedCategory
+            )
             isSaving = false
             dismiss()
         }
     }
 
     // MARK: - Helpers
+
+    private var categoryMenu: some View {
+        Menu {
+            ForEach(contentBlockerCategories) { category in
+                Button {
+                    selectedCategory = category
+                } label: {
+                    if category == selectedCategory {
+                        Label(categoryMenuTitle(for: category), systemImage: "checkmark")
+                    } else {
+                        Text(categoryMenuTitle(for: category))
+                    }
+                }
+                .disabled(isCategoryAlmostFull(category))
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Text(selectedCategory.rawValue)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .background(.background, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+        }
+        .disabled(isSaving)
+    }
+
+    private var contentBlockerCategories: [FilterListCategory] {
+        let availableCategories = Set(
+            ContentBlockerTargetManager.shared
+                .allTargets(forPlatform: filterManager.currentPlatform)
+                .map(\.primaryCategory)
+        )
+
+        let preferredOrder: [FilterListCategory] = [.ads, .privacy, .security, .custom, .foreign]
+        return preferredOrder.filter { availableCategories.contains($0) }
+    }
+
+    private var isSelectedCategoryAlmostFull: Bool {
+        isCategoryAlmostFull(selectedCategory)
+    }
+
+    private func isCategoryAlmostFull(_ category: FilterListCategory) -> Bool {
+        let ruleLimit = 150_000
+        let warningThreshold = Int(Double(ruleLimit) * 0.8)
+        return filterManager.getCategoryRuleCount(category) >= warningThreshold
+    }
+
+    private func categoryMenuTitle(for category: FilterListCategory) -> String {
+        if isCategoryAlmostFull(category) {
+            return "\(category.rawValue) (Near limit)"
+        }
+        return category.rawValue
+    }
 
     private func validateInput(_ rawValue: String) {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
