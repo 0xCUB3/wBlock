@@ -28,6 +28,48 @@ class FilterListLoader {
             UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
     }
 
+    func filename(for filter: FilterList) -> String {
+        if filter.isCustom {
+            return "custom-\(filter.id.uuidString).txt"
+        }
+        return "\(filter.name).txt"
+    }
+
+    func localFileURL(for filter: FilterList) -> URL? {
+        guard let containerURL = getSharedContainerURL() else { return nil }
+        return containerURL.appendingPathComponent(filename(for: filter))
+    }
+
+    /// Migrates legacy custom filter filenames (`<name>.txt`) to the current ID-based filename.
+    func migrateCustomFilterFileIfNeeded(_ filter: FilterList) {
+        guard filter.isCustom else { return }
+        guard let containerURL = getSharedContainerURL() else { return }
+
+        let newURL = containerURL.appendingPathComponent(filename(for: filter))
+        let oldURL = containerURL.appendingPathComponent("\(filter.name).txt")
+
+        guard !FileManager.default.fileExists(atPath: newURL.path),
+            FileManager.default.fileExists(atPath: oldURL.path)
+        else { return }
+
+        do {
+            try FileManager.default.moveItem(at: oldURL, to: newURL)
+            Task {
+                await ConcurrentLogManager.shared.info(
+                    .system, "Migrated custom filter filename",
+                    metadata: ["filter": filter.name, "to": newURL.lastPathComponent]
+                )
+            }
+        } catch {
+            Task {
+                await ConcurrentLogManager.shared.error(
+                    .system, "Failed migrating custom filter filename",
+                    metadata: ["filter": filter.name, "error": "\(error)"]
+                )
+            }
+        }
+    }
+
     func checkAndCreateGroupFolder() {
         guard let containerURL = getSharedContainerURL() else {
             Task {
@@ -889,9 +931,8 @@ class FilterListLoader {
 
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
-        guard let containerURL = getSharedContainerURL() else { return false }
-        return FileManager.default.fileExists(
-            atPath: containerURL.appendingPathComponent("\(filter.name).txt").path)
+        guard let fileURL = localFileURL(for: filter) else { return false }
+        return FileManager.default.fileExists(atPath: fileURL.path)
     }
 
     /// Gets the URL for the shared container
@@ -902,8 +943,7 @@ class FilterListLoader {
 
     /// Reads the content of a filter list from the local file system
     func readLocalFilterContent(_ filter: FilterList) -> String? {
-        guard let containerURL = getSharedContainerURL() else { return nil }
-        let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard let fileURL = localFileURL(for: filter) else { return nil }
 
         do {
             return try String(contentsOf: fileURL, encoding: .utf8)

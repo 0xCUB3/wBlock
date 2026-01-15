@@ -441,9 +441,10 @@ class FilterListUpdater {
                 return false
             }
 
-            try? content.write(
-                to: containerURL.appendingPathComponent("\(filter.name).txt"), atomically: true,
-                encoding: .utf8)
+            let fileURL =
+                loader.localFileURL(for: filter)
+                ?? containerURL.appendingPathComponent(loader.filename(for: filter))
+            try? content.write(to: fileURL, atomically: true, encoding: .utf8)
 
             return true
         } catch {

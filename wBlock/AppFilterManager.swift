@@ -246,6 +246,13 @@ class AppFilterManager: ObservableObject {
 
         filterLists = migratedFilterLists
 
+        // Ensure custom filter files use ID-based filenames so users can rename lists safely.
+        Task.detached(priority: .utility) { [loader, migratedFilterLists] in
+            for filter in migratedFilterLists where filter.isCustom {
+                loader.migrateCustomFilterFileIfNeeded(filter)
+            }
+        }
+
         // Persist migrated filter URLs to the data store when needed
         if storedFilterLists != migratedFilterLists {
             Task {
@@ -1089,7 +1096,9 @@ class AppFilterManager: ObservableObject {
                                 && filter.category == targetInfo.secondaryCategory!)
                         {
                             guard let containerURL = containerURL else { continue }
-                            let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                            let fileURL = containerURL.appendingPathComponent(
+                                self.loader.filename(for: filter)
+                            )
                             if FileManager.default.fileExists(atPath: fileURL.path) {
                                 do {
                                     resetRulesString +=
@@ -1655,14 +1664,51 @@ class AppFilterManager: ObservableObject {
         loader.saveFilterLists(filterLists)
 
         if let containerURL = loader.getSharedContainerURL() {
-            let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            try? FileManager.default.removeItem(at: fileURL)
+            let idFileURL = containerURL.appendingPathComponent(loader.filename(for: filter))
+            try? FileManager.default.removeItem(at: idFileURL)
+            // Clean up any legacy name-based file.
+            let legacyFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            try? FileManager.default.removeItem(at: legacyFileURL)
         }
         Task {
             await ConcurrentLogManager.shared.info(
                 .system, "Removed custom filter", metadata: ["filter": filter.name])
         }
         hasUnappliedChanges = true
+    }
+
+    func updateCustomFilterListName(id: UUID, newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        guard let index = filterLists.firstIndex(where: { $0.id == id && $0.isCustom }) else {
+            return
+        }
+
+        // Avoid confusing duplicate names in the UI.
+        if filterLists.contains(where: {
+            $0.id != id && $0.name.caseInsensitiveCompare(trimmed) == .orderedSame
+        }) {
+            statusDescription = "A filter list with this name already exists."
+            hasError = true
+            return
+        }
+
+        filterLists[index].name = trimmed
+        if let customIndex = customFilterLists.firstIndex(where: { $0.id == id }) {
+            customFilterLists[customIndex].name = trimmed
+            loader.saveCustomFilterLists(customFilterLists)
+        }
+
+        loader.saveFilterLists(filterLists)
+        saveFilterListsSync()
+
+        Task {
+            await ConcurrentLogManager.shared.info(
+                .system, "Renamed custom filter list",
+                metadata: ["filterId": id.uuidString, "name": trimmed]
+            )
+        }
     }
 
     func revertToRecommendedFilters() async {
@@ -1729,7 +1775,7 @@ class AppFilterManager: ObservableObject {
 
             // Stream each filter file directly to temp file
             for filter in filters {
-                let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                let fileURL = containerURL.appendingPathComponent(loader.filename(for: filter))
                 if FileManager.default.fileExists(atPath: fileURL.path) {
                     if let data = try? Data(contentsOf: fileURL) {
                         try fileHandle.write(contentsOf: data)

@@ -529,7 +529,7 @@ public actor SharedAutoUpdateManager {
 
             // Compare body with local file if exists
             if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
-                let localURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                let localURL = containerURL.appendingPathComponent(localFilename(for: filter))
                 if FileManager.default.fileExists(atPath: localURL.path),
                    let localData = try? Data(contentsOf: localURL),
                    localData == data { return false }
@@ -561,7 +561,7 @@ public actor SharedAutoUpdateManager {
             
             // Write data directly to file to avoid keeping large content in memory
             if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
-                let fileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                let fileURL = containerURL.appendingPathComponent(localFilename(for: filter))
                 try data.write(to: fileURL, options: .atomic)
             }
             
@@ -581,6 +581,13 @@ public actor SharedAutoUpdateManager {
             os_log("Fetch error for %{public}@ – %{public}@", log: log, type: .error, filter.name, error.localizedDescription)
             return nil
         }
+    }
+
+    private func localFilename(for filter: FilterList) -> String {
+        if filter.isCustom {
+            return "custom-\(filter.id.uuidString).txt"
+        }
+        return "\(filter.name).txt"
     }
 
     // MARK: - Conversion & Reload

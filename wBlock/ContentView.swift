@@ -23,6 +23,7 @@ struct ContentView: View {
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
     @State private var showOnlyEnabledLists = false
+    @State private var editingCustomFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
     private var hasCompletedOnboarding: Bool {
@@ -93,6 +94,9 @@ struct ContentView: View {
                         showingAddFilterSheet: $showingAddFilterSheet,
                         scenePhase: scenePhase
                     ))
+                .sheet(item: $editingCustomFilter) { filter in
+                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                }
             } else {
                 // iOS 17 fallback
                 TabView {
@@ -117,6 +121,9 @@ struct ContentView: View {
                         showingAddFilterSheet: $showingAddFilterSheet,
                         scenePhase: scenePhase
                     ))
+                .sheet(item: $editingCustomFilter) { filter in
+                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                }
             }
         #elseif os(macOS)
             // Use same liquid glass bottom tab bar as iOS
@@ -142,6 +149,9 @@ struct ContentView: View {
                     showingAddFilterSheet: $showingAddFilterSheet,
                     scenePhase: scenePhase
                 ))
+            .sheet(item: $editingCustomFilter) { filter in
+                EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+            }
         #endif
     }
 
@@ -477,6 +487,12 @@ struct ContentView: View {
         .contentShape(.interaction, Rectangle())
         .contextMenu {
             if filter.isCustom {
+                Button {
+                    editingCustomFilter = filter
+                } label: {
+                    Label("Edit Name", systemImage: "pencil")
+                }
+
                 Button(role: .destructive) {
                     filterManager.removeFilterList(filter)
                 } label: {
@@ -700,6 +716,8 @@ struct AddFilterListView: View {
     @FocusState private var urlFieldIsFocused: Bool
 
     @State private var urlInput: String = ""
+    @State private var customName: String = ""
+    @State private var isNameSectionExpanded: Bool = false
     @State private var selectedCategory: FilterListCategory = .custom
     @State private var isSaving: Bool = false
 
@@ -793,6 +811,30 @@ struct AddFilterListView: View {
                     }
             }
 
+            DisclosureGroup(isExpanded: $isNameSectionExpanded) {
+                TextField(namePlaceholder, text: $customName)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                    #endif
+            } label: {
+                HStack(spacing: 10) {
+                    Text("Name (optional)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    if !trimmedCustomName.isEmpty && !isNameSectionExpanded {
+                        Text(trimmedCustomName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Category")
                     .font(.caption)
@@ -809,6 +851,12 @@ struct AddFilterListView: View {
 
     private var validationMessage: some View {
         Group {
+            if isCustomNameDuplicate {
+                Text("That name is already used by another filter list.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
             switch validationState {
             case .idle:
                 EmptyView()
@@ -863,7 +911,9 @@ struct AddFilterListView: View {
     }
 
     private var canSubmit: Bool {
-        if case .valid = validationState, !isSaving, !isSelectedCategoryAlmostFull {
+        if case .valid = validationState, !isSaving, !isSelectedCategoryAlmostFull,
+            !isCustomNameDuplicate
+        {
             return true
         }
         return false
@@ -876,8 +926,9 @@ struct AddFilterListView: View {
         isSaving = true
 
         Task { @MainActor in
+            let finalName = trimmedCustomName.isEmpty ? defaultName(for: url) : trimmedCustomName
             filterManager.addFilterList(
-                name: defaultName(for: url),
+                name: finalName,
                 urlString: url.absoluteString,
                 category: selectedCategory
             )
@@ -1001,6 +1052,25 @@ struct AddFilterListView: View {
         .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var trimmedCustomName: String {
+        customName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isCustomNameDuplicate: Bool {
+        let candidate = trimmedCustomName
+        guard !candidate.isEmpty else { return false }
+        return filterManager.filterLists.contains(where: {
+            $0.name.caseInsensitiveCompare(candidate) == .orderedSame
+        })
+    }
+
+    private var namePlaceholder: String {
+        if case .valid(let url) = validationState {
+            return defaultName(for: url)
+        }
+        return "Custom name"
+    }
+
     private enum ValidationState: Equatable {
         case idle
         case invalid
@@ -1015,4 +1085,122 @@ struct AddFilterListView: View {
             }
         }
     #endif
+}
+
+struct EditCustomFilterNameView: View {
+    @ObservedObject var filterManager: AppFilterManager
+    let filter: FilterList
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var nameFieldIsFocused: Bool
+
+    @State private var name: String
+
+    init(filterManager: AppFilterManager, filter: FilterList) {
+        self.filterManager = filterManager
+        self.filter = filter
+        self._name = State(initialValue: filter.name)
+    }
+
+    var body: some View {
+        SheetContainer {
+            SheetHeader(title: "Edit Name") {
+                dismiss()
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Name")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        TextField("Filter name", text: $name)
+                            .textFieldStyle(.roundedBorder)
+                            .focused($nameFieldIsFocused)
+                            #if os(iOS)
+                                .textInputAutocapitalization(.words)
+                                .submitLabel(.done)
+                            #endif
+                            .onSubmit {
+                                if canSave {
+                                    save()
+                                } else {
+                                    nameFieldIsFocused = false
+                                }
+                            }
+
+                        Text(filter.url.absoluteString)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                            .textSelection(.enabled)
+
+                        if isDuplicate {
+                            Text("That name is already used by another filter list.")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .padding(20)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+            #if os(iOS)
+                .scrollDismissesKeyboard(.interactively)
+            #endif
+
+            SheetBottomToolbar {
+                #if os(iOS)
+                    Spacer()
+                    saveButton
+                #else
+                    Button("Cancel") { dismiss() }
+                        .secondaryActionButtonStyle()
+                    Spacer()
+                    saveButton
+                #endif
+            }
+        }
+        .onAppear {
+            nameFieldIsFocused = true
+        }
+        #if os(iOS)
+            .presentationDetents([.height(300)])
+            .presentationDragIndicator(.visible)
+        #endif
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isDuplicate: Bool {
+        let candidate = trimmedName
+        guard !candidate.isEmpty else { return false }
+        return filterManager.filterLists.contains(where: {
+            $0.id != filter.id && $0.name.caseInsensitiveCompare(candidate) == .orderedSame
+        })
+    }
+
+    private var canSave: Bool {
+        !trimmedName.isEmpty && !isDuplicate
+    }
+
+    private var saveButton: some View {
+        Button("Save") {
+            save()
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSave)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    private func save() {
+        filterManager.updateCustomFilterListName(id: filter.id, newName: trimmedName)
+        dismiss()
+    }
 }
