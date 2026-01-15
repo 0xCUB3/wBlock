@@ -988,14 +988,27 @@ struct AddFilterListView: View {
     }
 
     private var contentBlockerCategories: [FilterListCategory] {
-        let availableCategories = Set(
-            ContentBlockerTargetManager.shared
-                .allTargets(forPlatform: filterManager.currentPlatform)
-                .map(\.primaryCategory)
+        let targets = ContentBlockerTargetManager.shared.allTargets(
+            forPlatform: filterManager.currentPlatform
         )
 
-        let preferredOrder: [FilterListCategory] = [.ads, .privacy, .security, .custom, .foreign]
-        return preferredOrder.filter { availableCategories.contains($0) }
+        var availableCategories = Set<FilterListCategory>()
+        for target in targets {
+            availableCategories.insert(target.primaryCategory)
+            if let secondary = target.secondaryCategory {
+                availableCategories.insert(secondary)
+            }
+        }
+
+        // Keep this list aligned with the sections users see in the Filters view.
+        let preferredOrder: [FilterListCategory] = [
+            .ads, .privacy, .security, .annoyances, .custom, .foreign, .experimental,
+        ]
+
+        let ordered = preferredOrder.filter { availableCategories.contains($0) }
+        let remaining = availableCategories.subtracting(ordered)
+        let remainingOrdered = FilterListCategory.allCases.filter { remaining.contains($0) }
+        return ordered + remainingOrdered
     }
 
     private var isSelectedCategoryAlmostFull: Bool {
