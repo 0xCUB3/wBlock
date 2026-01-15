@@ -53,6 +53,7 @@ struct SheetHeader: View {
                         .font(.title2)
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
                 .transition(.scale.combined(with: .opacity))
             }
         }

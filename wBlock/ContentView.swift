@@ -744,14 +744,8 @@ struct AddFilterListView: View {
             #endif
 
             SheetBottomToolbar {
-                #if os(iOS)
-                    Spacer()
-                    addButton
-                #else
-                    cancelButton
-                    Spacer()
-                    addButton
-                #endif
+                Spacer()
+                addButton
             }
         }
         .interactiveDismissDisabled(isSaving)
@@ -1167,15 +1161,8 @@ struct EditCustomFilterNameView: View {
             #endif
 
             SheetBottomToolbar {
-                #if os(iOS)
-                    Spacer()
-                    saveButton
-                #else
-                    Button("Cancel") { dismiss() }
-                        .secondaryActionButtonStyle()
-                    Spacer()
-                    saveButton
-                #endif
+                Spacer()
+                saveButton
             }
         }
         .onAppear {
