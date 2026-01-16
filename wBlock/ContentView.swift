@@ -22,7 +22,7 @@ struct ContentView: View {
     @StateObject private var userScriptManager = UserScriptManager.shared
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
-    @State private var showOnlyEnabledLists = false
+    @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @State private var editingCustomFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 

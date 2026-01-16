@@ -406,6 +406,22 @@ struct UserScriptManagerView: View {
             Spacer()
 
             HStack(spacing: 8) {
+                if !script.isDownloaded, !script.isLocal, script.url != nil {
+                    Button {
+                        Task {
+                            await ConcurrentLogManager.shared.debug(.userScript, "Downloading userscript", metadata: ["script": script.name])
+                            await userScriptManager.downloadUserScript(script)
+                            refreshScripts()
+                        }
+                    } label: {
+                        Image(systemName: "arrow.down.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    #if os(macOS)
+                    .help("Download Script")
+                    #endif
+                }
+
                 if script.isDownloaded {
                     Button {
                         Task {
@@ -469,14 +485,16 @@ struct UserScriptManagerView: View {
                     Label("Update", systemImage: "arrow.clockwise")
                 }
             }
-            Button(role: .destructive) {
-                Task {
-                    await ConcurrentLogManager.shared.info(.userScript, "Removing userscript", metadata: ["script": script.name])
+            if !userScriptManager.isDefaultUserScript(script) {
+                Button(role: .destructive) {
+                    Task {
+                        await ConcurrentLogManager.shared.info(.userScript, "Removing userscript", metadata: ["script": script.name])
+                    }
+                    userScriptManager.removeUserScript(script)
+                    refreshScripts()
+                } label: {
+                    Label("Remove", systemImage: "trash")
                 }
-                userScriptManager.removeUserScript(script)
-                refreshScripts()
-            } label: {
-                Label("Remove", systemImage: "trash")
             }
         }
     }

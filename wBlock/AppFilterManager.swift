@@ -1542,8 +1542,10 @@ class AppFilterManager: ObservableObject {
 
         if let userScriptManager = filterUpdater.userScriptManager {
             for script in missingUserScripts where script.url != nil {
-                await userScriptManager.addUserScript(from: script.url!)
-                await MainActor.run { self.missingUserScripts.removeAll { $0.id == script.id } }
+                let downloaded = await userScriptManager.downloadUserScript(script)
+                if downloaded {
+                    await MainActor.run { self.missingUserScripts.removeAll { $0.id == script.id } }
+                }
             }
         }
 

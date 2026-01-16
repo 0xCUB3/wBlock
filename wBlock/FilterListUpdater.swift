@@ -54,16 +54,15 @@ class FilterListUpdater {
 
             // --- Update Version if needed ---
             if modifiedFilter.version.isEmpty && loader.filterFileExists(modifiedFilter) {
-                if let newVersion = await fetchVersionFromURL(for: modifiedFilter) {
-                    modifiedFilter.version = newVersion
-                    filterWasModifiedThisIteration = true
-                    await ConcurrentLogManager.shared.info(
-                        .filterUpdate, "Fetched version for filter",
-                        metadata: ["filter": modifiedFilter.name, "version": newVersion])
-                } else {
-                    await ConcurrentLogManager.shared.error(
-                        .filterUpdate, "Failed to fetch version for filter",
-                        metadata: ["filter": modifiedFilter.name])
+                if let localContent = loader.readLocalFilterContent(modifiedFilter) {
+                    let metadata = parseMetadata(from: localContent)
+                    if let newVersion = metadata.version {
+                        modifiedFilter.version = newVersion
+                        filterWasModifiedThisIteration = true
+                        await ConcurrentLogManager.shared.info(
+                            .filterUpdate, "Loaded local version for filter",
+                            metadata: ["filter": modifiedFilter.name, "version": newVersion])
+                    }
                 }
             }
 

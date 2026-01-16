@@ -284,6 +284,11 @@ public class UserScriptManager: ObservableObject {
         ),
     ]
 
+    public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
+        guard let urlString = userScript.url?.absoluteString else { return false }
+        return defaultUserScripts.contains(where: { $0.url == urlString })
+    }
+
     private init() {
         logger.info("🔧 UserScriptManager initializing...")
 
@@ -774,19 +779,10 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔍 Checking for missing default userscripts...")
         logger.info("🔍 Current userscripts count: \(self.userScripts.count)")
 
-        // Get excluded defaults from settings
-        let excludedURLs = Set(ProtobufDataManager.shared.getExcludedDefaultUserScriptURLs())
-
         var hasAddedNew = false
 
         for defaultScript in defaultUserScripts {
             logger.info("🔍 Checking default script: '\(defaultScript.name)'")
-
-            // Check if user explicitly excluded this default
-            if excludedURLs.contains(defaultScript.url) {
-                logger.info("⏭️ Skipping excluded default script: \(defaultScript.name)")
-                continue
-            }
 
             // Simple check - does this URL already exist?
             let existsByURL = userScripts.contains { script in
@@ -803,8 +799,8 @@ public class UserScriptManager: ObservableObject {
                 var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
                 newUserScript.isEnabled = false
                 newUserScript.isLocal = false
-                newUserScript.description = "Default userscript - downloading..."
-                newUserScript.version = "Downloading..."
+                newUserScript.description = "Default userscript"
+                newUserScript.version = ""
 
                 userScripts.append(newUserScript)
                 hasAddedNew = true
@@ -819,22 +815,18 @@ public class UserScriptManager: ObservableObject {
             Task { @MainActor in
                 await persistUserScriptsNow()
             }
-
-            // Start downloading missing scripts in the background
-            Task {
-                await downloadMissingDefaultScripts()
-            }
         } else {
             logger.info("ℹ️ No missing default scripts to add")
-            // Check if any existing default scripts need to be downloaded
-            Task {
-                await downloadMissingDefaultScripts()
-            }
+        }
+
+        // Only download scripts that are enabled but missing content (e.g., from migration).
+        Task {
+            await downloadMissingDefaultScripts()
         }
     }
 
     private func downloadMissingDefaultScripts() async {
-        logger.info("📥 Checking and downloading missing default userscripts...")
+        logger.info("📥 Checking and downloading enabled userscripts that are missing content...")
 
         for i in 0..<userScripts.count {
             let script = userScripts[i]
@@ -844,13 +836,26 @@ public class UserScriptManager: ObservableObject {
                 script.name == defaultScript.name || script.url?.absoluteString == defaultScript.url
             }
 
-            if isDefaultScript && !script.isLocal && script.content.isEmpty, let url = script.url {
+            guard isDefaultScript else { continue }
+            guard script.isEnabled else { continue }
+            guard !script.isLocal else { continue }
+
+            // Prefer local disk content if available (avoid unnecessary network requests on launch).
+            if script.content.isEmpty, let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
+                userScripts[i].content = diskContent
+                if let resources = readUserScriptResources(script) {
+                    userScripts[i].resourceContents = resources
+                }
+                continue
+            }
+
+            if script.content.isEmpty, let url = script.url {
                 await downloadUserScriptInBackground(at: i, from: url)
             }
         }
 
         await MainActor.run {
-            logger.info("✅ Finished checking default userscripts")
+            logger.info("✅ Finished checking enabled userscripts")
         }
     }
 
@@ -868,8 +873,8 @@ public class UserScriptManager: ObservableObject {
             newUserScript.isLocal = false  // Mark as remote
 
             // Add placeholder metadata so they show up in the list
-            newUserScript.description = "Default userscript - downloading..."
-            newUserScript.version = "Downloading..."
+            newUserScript.description = "Default userscript"
+            newUserScript.version = ""
 
             userScripts.append(newUserScript)
             logger.info("✅ Added default userscript placeholder: \(defaultScript.name)")
@@ -881,11 +886,6 @@ public class UserScriptManager: ObservableObject {
                 await persistUserScriptsNow()
                 logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
             }
-
-            // Start downloading default scripts in the background
-            Task {
-                await downloadDefaultUserScripts()
-            }
         }
     }
 
@@ -896,14 +896,14 @@ public class UserScriptManager: ObservableObject {
             let script = userScripts[i]
 
             // Only download if it's a default script and not yet downloaded
-            if !script.isLocal && script.content.isEmpty, let url = script.url {
+            if script.isEnabled && !script.isLocal && script.content.isEmpty, let url = script.url {
                 await downloadUserScriptInBackground(at: i, from: url)
             }
         }
 
         await MainActor.run {
             logger.info("✅ Finished downloading default userscripts")
-            statusDescription = "Default userscripts ready"
+            statusDescription = "Default userscripts checked"
         }
     }
 
@@ -1420,17 +1420,36 @@ public class UserScriptManager: ObservableObject {
 
     /// Batch apply enabled state using a set of IDs (single persistence write)
     public func setEnabledScripts(withIDs enabledIDs: Set<UUID>) async {
+        // Ensure any scripts being enabled have content available.
+        for i in userScripts.indices where enabledIDs.contains(userScripts[i].id) {
+            guard !userScripts[i].isLocal else { continue }
+            guard userScripts[i].content.isEmpty else { continue }
+
+            if let diskContent = readUserScriptContent(userScripts[i]), !diskContent.isEmpty {
+                userScripts[i].content = diskContent
+                if let resources = readUserScriptResources(userScripts[i]) {
+                    userScripts[i].resourceContents = resources
+                }
+                continue
+            }
+
+            if let url = userScripts[i].url {
+                await downloadUserScriptInBackground(at: i, from: url)
+            }
+        }
+
         var changed = false
         for i in userScripts.indices {
-            let shouldEnable = enabledIDs.contains(userScripts[i].id)
+            let requestedEnable = enabledIDs.contains(userScripts[i].id)
+            let shouldEnable = requestedEnable && (userScripts[i].isLocal || userScripts[i].isDownloaded)
             if userScripts[i].isEnabled != shouldEnable {
                 userScripts[i].isEnabled = shouldEnable
                 changed = true
             }
         }
+
         if changed {
-            logger.info(
-                "💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
+            logger.info("💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
             await dataManager.updateUserScripts(self.userScripts)
             logger.info("💾 Userscripts saved after batch setEnabled")
         } else {
@@ -1439,15 +1458,13 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func removeUserScript(_ userScript: UserScript) {
-        if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-            // If this is a default script, mark it as excluded to prevent re-adding
-            if let scriptURL = userScript.url?.absoluteString,
-                defaultUserScripts.contains(where: { $0.url == scriptURL })
-            {
-                ProtobufDataManager.shared.addExcludedDefaultUserScriptURL(scriptURL)
-                logger.info("🚫 Marked default script as excluded: '\(userScript.name)'")
-            }
+        if isDefaultUserScript(userScript) {
+            statusDescription = "Default userscripts can't be removed"
+            logger.info("🛑 Prevented removal of default userscript: '\(userScript.name)'")
+            return
+        }
 
+        if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
             // Remove file
             removeUserScriptFile(userScript)
 
@@ -1458,6 +1475,28 @@ public class UserScriptManager: ObservableObject {
 
             logger.info("🗑️ Removed userscript: '\(userScript.name)'")
         }
+    }
+
+    /// Downloads a userscript (and its dependencies) without changing the enabled state.
+    @discardableResult
+    public func downloadUserScript(_ userScript: UserScript) async -> Bool {
+        guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return false }
+        guard !userScripts[index].isLocal else { return true }
+        guard userScripts[index].content.isEmpty else { return true }
+        guard let url = userScripts[index].url else { return false }
+
+        isLoading = true
+        statusDescription = "Downloading \(userScripts[index].name)..."
+        await downloadUserScriptInBackground(at: index, from: url)
+        isLoading = false
+
+        if userScripts[index].isDownloaded {
+            statusDescription = "Downloaded \(userScripts[index].name)"
+            return true
+        }
+
+        statusDescription = "Download failed"
+        return false
     }
 
     public func updateUserScript(_ userScript: UserScript) async {
