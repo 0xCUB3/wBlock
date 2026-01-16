@@ -481,7 +481,9 @@ extension ContentBlockerService {
             }
         }
 
-        let lines = filterRules.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
+        // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
+        let lines = filterRules.split(whereSeparator: \.isNewline).map(String.init)
 
         let result = measure(label: "Conversion") {
             ContentBlockerConverter().convertArray(
