@@ -444,53 +444,16 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Loading / Saving
-    private func loadFilterListsFromDefaults(defaults: UserDefaults) throws -> ([FilterList], [FilterList]) {
-        var lists: [FilterList] = []
-        if let data = defaults.data(forKey: "filterLists"), let decoded = try? JSONDecoder().decode([FilterList].self, from: data) {
-            lists.append(contentsOf: decoded)
-        }
-        if let customData = defaults.data(forKey: "customFilterLists"), let decodedCustom = try? JSONDecoder().decode([FilterList].self, from: customData) {
-            lists.append(contentsOf: decodedCustom.map { list in
-                var updated = list
-                updated.isCustom = true
-                return updated
-            })
-        }
-        // Restore selection state
-        for idx in lists.indices {
-            let key = "filter_selected_\(lists[idx].id.uuidString)"
-            if let sel = defaults.object(forKey: key) as? Bool {
-                lists[idx].isSelected = sel
-            }
-        }
-        let selected = lists.filter { $0.isSelected }
-        return (lists, selected)
-    }
-
     private func loadFilterListsFromProtobuf() async -> ([FilterList], [FilterList]) {
-        // Wait for ProtobufDataManager to finish loading data
-        let dataManager = await MainActor.run { ProtobufDataManager.shared }
-        while await MainActor.run { dataManager.isLoading } {
-            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-        }
-
-        let allFilters = await MainActor.run { dataManager.getFilterLists() }
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        let allFilters = await ProtobufDataManager.shared.getFilterLists()
         let selectedFilters = allFilters.filter { $0.isSelected }
 
         return (allFilters, selectedFilters)
     }
 
     private func saveFilterListsToProtobuf(_ lists: [FilterList]) async {
-        let dataManager = await MainActor.run { ProtobufDataManager.shared }
-        await dataManager.updateFilterLists(lists)
-    }
-
-    private func saveFilterListsToDefaults(_ lists: [FilterList], defaults: UserDefaults) {
-        let defaultLists = lists.filter { !$0.isCustom }
-        let customLists = lists.filter { $0.isCustom }
-        if let data = try? JSONEncoder().encode(defaultLists) { defaults.set(data, forKey: "filterLists") }
-        if let cdata = try? JSONEncoder().encode(customLists) { defaults.set(cdata, forKey: "customFilterLists") }
-        for fl in lists { defaults.set(fl.isSelected, forKey: "filter_selected_\(fl.id.uuidString)") }
+        await ProtobufDataManager.shared.updateFilterLists(lists)
     }
 
     // MARK: - Update Detection
@@ -618,15 +581,17 @@ public actor SharedAutoUpdateManager {
             if mustReconvert {
                 // Rebuild combined raw rules for this target from selected filters
                 let filtersForTarget = selectedFilters.filter { targetCategories.contains($0.category) }
-                var combined = ""
+                var combinedChunks: [String] = []
                 if !filtersForTarget.isEmpty, let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
+                    combinedChunks.reserveCapacity(filtersForTarget.count)
                     for f in filtersForTarget {
                         let fileURL = containerURL.appendingPathComponent("\(f.name).txt")
                         if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
-                            combined += content + "\n"
+                            combinedChunks.append(content)
                         }
                     }
                 }
+                let combined = combinedChunks.joined(separator: "\n")
                 let conversion = ContentBlockerService.convertFilter(rules: combined.isEmpty ? "" : combined, groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename, disabledSites: disabledSites)
                 if let adv = conversion.advancedRulesText, !adv.isEmpty {
                     storeAdvancedRules(adv, for: target)
@@ -635,7 +600,7 @@ public actor SharedAutoUpdateManager {
                     // Clear stored file if previously had advanced rules
                     removeStoredAdvancedRules(for: target)
                 }
-                _ = ContentBlockerService.reloadContentBlocker(withIdentifier: target.bundleIdentifier)
+                _ = await ContentBlockerService.reloadContentBlocker(withIdentifier: target.bundleIdentifier)
             } else if let existingAdvanced = existingAdvanced, !existingAdvanced.isEmpty {
                 // Reuse stored advanced rules without reconversion
                 advancedRulesSnippets.append(existingAdvanced)
@@ -650,46 +615,56 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Helpers
-    private func countRulesInContent(content: String) -> Int {
-        content.split(separator: "\n").filter { line in
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            return !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[") && !trimmed.hasPrefix("#")
-        }.count
-    }
-    
     private func countRulesInData(data: Data) -> Int {
-        var count = 0
-        var position = 0
-        let chunkSize = 8192
-        var remainingLine = ""
-        
-        // Process data in chunks to avoid loading everything into memory
-        while position < data.count {
-            let endPosition = min(position + chunkSize, data.count)
-            let chunk = data.subdata(in: position..<endPosition)
-            
-            if let string = String(data: chunk, encoding: .utf8) {
-                let fullString = remainingLine + string
-                let lines = fullString.components(separatedBy: .newlines)
-                
-                // Process all lines except the last (which may be incomplete)
-                let linesToProcess = position + chunkSize >= data.count ? lines[...] : lines.dropLast()
-                
-                for line in linesToProcess {
-                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[") && !trimmed.hasPrefix("#") {
-                        count += 1
+        guard !data.isEmpty else { return 0 }
+
+        return data.withUnsafeBytes { rawBuffer in
+            let bytes = rawBuffer.bindMemory(to: UInt8.self)
+            var count = 0
+            var firstNonWhitespace: UInt8?
+            var skipLF = false
+
+            @inline(__always)
+            func finishLine() {
+                guard let first = firstNonWhitespace else { return }
+                if first != UInt8(ascii: "!") && first != UInt8(ascii: "[") && first != UInt8(ascii: "#") {
+                    count += 1
+                }
+                firstNonWhitespace = nil
+            }
+
+            for byte in bytes {
+                if skipLF {
+                    skipLF = false
+                    if byte == UInt8(ascii: "\n") {
+                        continue
                     }
                 }
-                
-                // Keep the incomplete line for next chunk
-                remainingLine = position + chunkSize >= data.count ? "" : lines.last ?? ""
+
+                if byte == UInt8(ascii: "\n") {
+                    finishLine()
+                    continue
+                }
+
+                if byte == UInt8(ascii: "\r") {
+                    finishLine()
+                    skipLF = true
+                    continue
+                }
+
+                if firstNonWhitespace == nil {
+                    // Trim leading ASCII whitespace (space/tab + vertical tab/form feed).
+                    if byte == UInt8(ascii: " ") || byte == UInt8(ascii: "\t") || byte == 0x0B || byte == 0x0C {
+                        continue
+                    }
+                    firstNonWhitespace = byte
+                }
             }
-            
-            position = endPosition
+
+            // Account for the last line when the file doesn't end with a newline.
+            finishLine()
+            return count
         }
-        
-        return count
     }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {

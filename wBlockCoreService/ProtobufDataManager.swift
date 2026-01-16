@@ -10,6 +10,47 @@ internal import SwiftProtobuf
 import Combine
 import os.log
 
+// MARK: - Disk I/O (off MainActor)
+
+/// Performs protobuf file reads/writes off the MainActor to avoid UI stalls.
+/// An actor is used so reads/writes are serialized.
+private actor ProtobufDiskStore {
+    private let fileManager = FileManager.default
+
+    func fileExists(at url: URL) -> Bool {
+        fileManager.fileExists(atPath: url.path)
+    }
+
+    func modificationDate(for url: URL) -> Date? {
+        guard fileExists(at: url) else { return nil }
+        return (try? fileManager.attributesOfItem(atPath: url.path)[.modificationDate]) as? Date
+    }
+
+    func readAppData(from url: URL) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?) {
+        let rawData = try Data(contentsOf: url)
+        let appData = try Wblock_Data_AppData(serializedData: rawData)
+        return (appData: appData, rawData: rawData, modificationDate: modificationDate(for: url))
+    }
+
+    func writeData(_ data: Data, to url: URL) throws {
+        try data.write(to: url, options: .atomic)
+    }
+
+    func writeAppDataIfChanged(appData: Wblock_Data_AppData, previousData: Data?, to url: URL) throws -> (rawData: Data, modificationDate: Date?)? {
+        let rawData = try appData.serializedData()
+        if let previousData, previousData == rawData {
+            return nil
+        }
+        try writeData(rawData, to: url)
+        return (rawData: rawData, modificationDate: modificationDate(for: url))
+    }
+
+    func removeItemIfExists(at url: URL) throws {
+        guard fileExists(at: url) else { return }
+        try fileManager.removeItem(at: url)
+    }
+}
+
 /// Centralized data manager using Protocol Buffers for efficient, type-safe data storage
 /// Replaces UserDefaults and SwiftData
 @MainActor
@@ -319,23 +360,59 @@ public class ProtobufDataManager: ObservableObject {
     // MARK: - Private Properties
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "ProtobufDataManager")
     private let fileManager = FileManager.default
+    private let diskStore = ProtobufDiskStore()
     private let dataFileName = "wblock_data.pb"
     private let backupFileName = "wblock_data_backup.pb"
     private let migrationFileName = "migration_completed.flag"
     private let terminologySanitizationVersion = 1 // Increment this to re-run sanitization
+    private var lastLoadedDataFileModificationDate: Date?
+    private var initialLoadTask: Task<Void, Never>?
 
     /// Returns the most recent app data snapshot from disk if available; otherwise, returns the in-memory value.
     /// This helps avoid clobbering concurrent writes from other processes that share the app group file.
     func latestAppDataSnapshot() async -> Wblock_Data_AppData {
+        let currentModDate = await diskStore.modificationDate(for: dataFileURL)
+
+        // If nothing changed on disk, avoid redundant decode work.
+        if let currentModDate, currentModDate == lastLoadedDataFileModificationDate {
+            return appData
+        }
+
         // Try to read the persisted file first to incorporate recent writes from extensions or helper processes.
-        if fileManager.fileExists(atPath: dataFileURL.path),
-           let data = try? Data(contentsOf: dataFileURL),
-           let loaded = try? Wblock_Data_AppData(serializedData: data) {
-            return loaded
+        if await diskStore.fileExists(at: dataFileURL),
+           let loaded = try? await diskStore.readAppData(from: dataFileURL) {
+            lastLoadedDataFileModificationDate = loaded.modificationDate ?? currentModDate
+            lastSavedData = loaded.rawData
+            return loaded.appData
         }
 
         // Fallback to current in-memory state if file is missing or unreadable.
-        return await MainActor.run { appData }
+        return appData
+    }
+
+    /// Reloads protobuf data from disk only if the underlying file has changed.
+    /// Returns `true` when in-memory state was refreshed.
+    @discardableResult
+    public func refreshFromDiskIfModified() async -> Bool {
+        guard let currentModDate = await diskStore.modificationDate(for: dataFileURL) else {
+            return false
+        }
+        if let lastLoaded = lastLoadedDataFileModificationDate, lastLoaded == currentModDate {
+            return false
+        }
+
+        do {
+            let loaded = try await diskStore.readAppData(from: dataFileURL)
+            appData = loaded.appData
+            lastSavedData = loaded.rawData
+            lastLoadedDataFileModificationDate = loaded.modificationDate ?? currentModDate
+            lastError = nil
+            return true
+        } catch {
+            lastError = error
+            logger.error("❌ Failed to refresh protobuf data from disk: \(error.localizedDescription)")
+            return false
+        }
     }
     
     // File URLs
@@ -355,8 +432,21 @@ public class ProtobufDataManager: ObservableObject {
     private init() {
         logger.info("🔧 ProtobufDataManager initializing...")
         setupDataDirectory()
-        Task {
-            await loadData()
+        initialLoadTask = Task { [weak self] in
+            await self?.loadData()
+        }
+    }
+
+    /// Waits for the initial protobuf load to complete.
+    public func waitUntilLoaded() async {
+        if let task = initialLoadTask {
+            await task.value
+            return
+        }
+
+        // Fallback (shouldn't happen): suspend until initial load flips `isLoading`.
+        while isLoading {
+            await Task.yield()
         }
     }
 
@@ -397,35 +487,30 @@ public class ProtobufDataManager: ObservableObject {
     
     // MARK: - Data Loading
     public func loadData() async {
-        await MainActor.run { isLoading = true }
+        isLoading = true
         
         do {
             // Check if migration is needed
-            if !fileManager.fileExists(atPath: migrationFlagURL.path) {
+            if !(await diskStore.fileExists(at: migrationFlagURL)) {
                 logger.info("🔄 Starting migration from UserDefaults/SwiftData...")
                 await migrateFromLegacyStorage()
-                try Data().write(to: migrationFlagURL)
+                try await diskStore.writeData(Data(), to: migrationFlagURL)
                 logger.info("✅ Migration completed")
             }
             
             // Load protobuf data
-            if fileManager.fileExists(atPath: dataFileURL.path) {
-                let data = try Data(contentsOf: dataFileURL)
-                let loadedData = try Wblock_Data_AppData(serializedData: data)
+            if await diskStore.fileExists(at: dataFileURL) {
+                let loaded = try await diskStore.readAppData(from: dataFileURL)
 
-                await MainActor.run {
-                    self.appData = loadedData
-                    self.lastError = nil
-                }
+                appData = loaded.appData
+                lastSavedData = loaded.rawData
+                lastLoadedDataFileModificationDate = loaded.modificationDate
+                lastError = nil
 
-                logger.info("✅ Loaded protobuf data (\(data.count) bytes)")
+                logger.info("✅ Loaded protobuf data (\(loaded.rawData.count) bytes)")
 
-                // Check if terminology sanitization is needed (must check on MainActor)
-                let needsSanitization = await MainActor.run {
-                    appData.settings.lastTerminologySanitizationVersion < terminologySanitizationVersion
-                }
-
-                if needsSanitization {
+                // Check if terminology sanitization is needed
+                if appData.settings.lastTerminologySanitizationVersion < terminologySanitizationVersion {
                     logger.info("🧹 Running terminology sanitization (version \(self.terminologySanitizationVersion))...")
                     await sanitizeStoredTerminology()
                 }
@@ -436,32 +521,30 @@ public class ProtobufDataManager: ObservableObject {
             
         } catch {
             logger.error("❌ Failed to load data: \(error)")
-            await MainActor.run { self.lastError = error }
+            lastError = error
             
             // Try to load backup
             await loadBackup()
         }
         
-        await MainActor.run { isLoading = false }
+        isLoading = false
     }
     
     private func loadBackup() async {
-        guard fileManager.fileExists(atPath: backupFileURL.path) else {
+        guard await diskStore.fileExists(at: backupFileURL) else {
             logger.info("📝 No backup file available, creating default data")
             await createDefaultData()
             return
         }
         
         do {
-            let backupData = try Data(contentsOf: backupFileURL)
-            let loadedData = try Wblock_Data_AppData(serializedData: backupData)
-            
-            await MainActor.run {
-                self.appData = loadedData
-                self.lastError = nil
-            }
-            
-            logger.info("✅ Loaded backup data (\(backupData.count) bytes)")
+            let loaded = try await diskStore.readAppData(from: backupFileURL)
+
+            appData = loaded.appData
+            lastSavedData = loaded.rawData
+            lastError = nil
+
+            logger.info("✅ Loaded backup data (\(loaded.rawData.count) bytes)")
         } catch {
             logger.error("❌ Failed to load backup: \(error)")
             await createDefaultData()
@@ -471,22 +554,19 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func resetToDefaultData() async {
         logger.info("🔄 Resetting protobuf data to default state")
-        pendingSaveWorkItem?.cancel()
+        pendingSaveTask?.cancel()
         do {
-            if fileManager.fileExists(atPath: dataFileURL.path) {
-                try fileManager.removeItem(at: dataFileURL)
-            }
+            try await diskStore.removeItemIfExists(at: dataFileURL)
         } catch {
             logger.error("⚠️ Failed to remove data file during reset: \(error.localizedDescription)")
         }
         do {
-            if fileManager.fileExists(atPath: backupFileURL.path) {
-                try fileManager.removeItem(at: backupFileURL)
-            }
+            try await diskStore.removeItemIfExists(at: backupFileURL)
         } catch {
             logger.error("⚠️ Failed to remove backup file during reset: \(error.localizedDescription)")
         }
         lastSavedData = nil
+        lastLoadedDataFileModificationDate = nil
         await createDefaultData()
     }
 
@@ -523,63 +603,56 @@ public class ProtobufDataManager: ObservableObject {
         defaultData.performance.lastReloadTime = "N/A"
         defaultData.performance.lastFastUpdateTime = "N/A"
 
-        await MainActor.run {
-            self.appData = defaultData
-        }
-
-        await saveData()
+        appData = defaultData
+        await saveDataImmediately()
         logger.info("✅ Created default data")
     }
     
     // MARK: - Data Saving (debounced)
-    private var pendingSaveWorkItem: DispatchWorkItem?
-    private let saveDebounceInterval: TimeInterval = 0.5
-    private let ioQueue = DispatchQueue(label: "com.skula.wBlock.dataIO", qos: .utility)
+    private var pendingSaveTask: Task<Void, Never>?
+    private let saveDebounceDelay: Duration = .milliseconds(500)
     private var lastSavedData: Data?
 
     public func saveData() {
-        // Cancel previous pending save
-        pendingSaveWorkItem?.cancel()
-        // Schedule new save
-        let work = DispatchWorkItem { [weak self] in
-            Task.detached { [weak self] in
-                await self?.performSaveData()
+        pendingSaveTask?.cancel()
+        let delay = saveDebounceDelay
+        pendingSaveTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: delay)
+            } catch {
+                return
             }
+            guard let self else { return }
+            await self.performSaveData()
         }
-    pendingSaveWorkItem = work
-    // Schedule on dedicated I/O queue to ensure serialized file operations
-    ioQueue.asyncAfter(deadline: .now() + saveDebounceInterval, execute: work)
     }
 
     /// Saves data immediately without debounce delay
     /// Use when changes must be persisted before other cross-process actions
     @MainActor
     public func saveDataImmediately() async {
-        pendingSaveWorkItem?.cancel()
+        pendingSaveTask?.cancel()
         await performSaveData()
     }
 
-    // Perform serialization and file I/O off the main actor to avoid blocking UI
     private func performSaveData() async {
-        // Snapshot appData on main actor, then serialize in background
-        let snapshot = await MainActor.run { appData }
+        let snapshot = appData
+        let previous = lastSavedData
+
         do {
-            // Serialize new data from snapshot
-            let data = try snapshot.serializedData()
-            // Skip save if data hasn't changed since last write
-            let previous = await MainActor.run { lastSavedData }
-            if let previous = previous, previous == data {
-                return
+            if let result = try await diskStore.writeAppDataIfChanged(
+                appData: snapshot,
+                previousData: previous,
+                to: dataFileURL
+            ) {
+                lastSavedData = result.rawData
+                lastLoadedDataFileModificationDate = result.modificationDate
+                lastError = nil
+                logger.info("✅ Saved protobuf data (\(result.rawData.count) bytes)")
             }
-                try data.write(to: dataFileURL, options: .atomic)
-        logger.info("✅ Saved protobuf data (\(data.count) bytes)")
-        await MainActor.run {
-            lastSavedData = data
-            lastError = nil
-        }
         } catch {
             logger.error("❌ Failed to save data: \(error)")
-            await MainActor.run { lastError = error }
+            lastError = error
         }
     }
     
@@ -658,7 +731,7 @@ public class ProtobufDataManager: ObservableObject {
         }
 
         // Save once after all modifications
-        await saveData()
+        await saveDataImmediately()
     }
 
     /// Sanitizes text by replacing Apple-flagged terminology using pre-compiled regexes

@@ -9,24 +9,12 @@ import Foundation
 import wBlockCoreService
 
 class FilterListLoader {
-    private let logManager: ConcurrentLogManager
-    private let customFilterListsKey = "customFilterLists"
-    private let sharedContainerIdentifier = "group.skula.wBlock"
     private let filterURLMigrations: [String: URL] = [
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
     ]
-
-    // Cache the defaults instance
-    private let defaults: UserDefaults
-
-    init(logManager: ConcurrentLogManager) {
-        self.logManager = logManager
-        self.defaults =
-            UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-    }
 
     func filename(for filter: FilterList) -> String {
         if filter.isCustom {
@@ -70,131 +58,6 @@ class FilterListLoader {
         }
     }
 
-    func checkAndCreateGroupFolder() {
-        guard let containerURL = getSharedContainerURL() else {
-            Task {
-                await ConcurrentLogManager.shared.error(
-                    .system, "Unable to access shared container")
-            }
-            return
-        }
-
-        if !FileManager.default.fileExists(atPath: containerURL.path) {
-            do {
-                try FileManager.default.createDirectory(
-                    at: containerURL, withIntermediateDirectories: true, attributes: nil)
-                Task {
-                    await ConcurrentLogManager.shared.debug(
-                        .system, "Created shared container directory")
-                }
-            } catch {
-                Task {
-                    await ConcurrentLogManager.shared.error(
-                        .system, "Failed to create shared container directory",
-                        metadata: ["error": "\(error)"])
-                }
-            }
-        }
-    }
-
-    /// Loads filter lists from UserDefaults or creates default ones
-    func loadFilterLists() -> [FilterList] {
-        var filterLists: [FilterList] = []
-
-        let defaultFilterLists = createDefaultFilterLists()
-
-        if let data = defaults.data(forKey: "filterLists"),
-            let savedFilterLists = try? JSONDecoder().decode([FilterList].self, from: data)
-        {
-
-            // Migrate any legacy URLs to their new locations
-            let migratedSavedFilters = migrateFilterURLs(in: savedFilterLists)
-
-            // Create a map of default filters by URL for quick lookup
-            let defaultFiltersByURL = Dictionary(
-                uniqueKeysWithValues: defaultFilterLists.map { ($0.url, $0) })
-
-            // Update saved filters with default properties, preserving user settings
-            for savedFilter in migratedSavedFilters {
-                if let defaultFilter = defaultFiltersByURL[savedFilter.url] {
-                    // Create updated filter with default properties but preserve user choices
-                    let updatedFilter = FilterList(
-                        id: savedFilter.id,  // Keep the original ID
-                        name: defaultFilter.name,  // Use default name (may have been updated)
-                        url: defaultFilter.url,  // Use default URL (may have been updated)
-                        category: defaultFilter.category,  // Use default category
-                        isSelected: savedFilter.isSelected,  // Preserve user's selection
-                        description: defaultFilter.description,  // Use default description (may have been updated)
-                        version: savedFilter.version,  // Keep version info
-                        sourceRuleCount: savedFilter.sourceRuleCount,  // Keep rule count
-                        lastUpdated: savedFilter.lastUpdated,
-                        languages: defaultFilter.languages.isEmpty
-                            ? savedFilter.languages : defaultFilter.languages,
-                        trustLevel: defaultFilter.trustLevel ?? savedFilter.trustLevel,
-                        etag: savedFilter.etag,
-                        serverLastModified: savedFilter.serverLastModified
-                    )
-                    filterLists.append(updatedFilter)
-                } else {
-                    // Keep filters that aren't in defaults (like custom filters)
-                    filterLists.append(savedFilter)
-                }
-            }
-
-            // Add any new default filters that weren't in saved data
-            let existingURLs = Set(migratedSavedFilters.map { $0.url })
-            for defaultFilter in defaultFilterLists {
-                if !existingURLs.contains(defaultFilter.url) {
-                    filterLists.append(defaultFilter)
-                }
-            }
-
-            // Migrate old AdGuard Annoyances Filter to new split filters
-            filterLists = migrateOldAnnoyancesFilter(
-                in: filterLists, defaultFilters: defaultFilterLists)
-        } else {
-            filterLists = defaultFilterLists
-        }
-
-        // Handle custom lists separately - these should always be preserved and updated
-        let customLists = loadCustomFilterLists()
-
-        // Remove any user-added filters that are no longer in the saved custom list
-        filterLists.removeAll { filter in
-            filter.isCustom && !customLists.contains(where: { $0.url == filter.url })
-        }
-
-        // Add or update custom filters
-        for customFilter in customLists {
-            if let existingIndex = filterLists.firstIndex(where: { $0.url == customFilter.url }) {
-                // Create updated custom filter with new data but preserve user settings
-                let existingFilter = filterLists[existingIndex]
-                let updatedCustomFilter = FilterList(
-                    id: existingFilter.id,  // Keep the original ID
-                    name: customFilter.name,  // Use custom filter name (may have been updated)
-                    url: customFilter.url,  // Use custom filter URL
-                    category: customFilter.category,  // Use custom filter category
-                    isCustom: true,
-                    isSelected: existingFilter.isSelected,  // Preserve user's selection
-                    description: customFilter.description,  // Use custom filter description (may have been updated)
-                    version: existingFilter.version,  // Keep version info
-                    sourceRuleCount: existingFilter.sourceRuleCount,
-                    lastUpdated: existingFilter.lastUpdated,
-                    languages: existingFilter.languages,
-                    trustLevel: existingFilter.trustLevel,
-                    etag: existingFilter.etag,
-                    serverLastModified: existingFilter.serverLastModified
-                )
-                filterLists[existingIndex] = updatedCustomFilter
-            } else {
-                // Add new custom filter
-                filterLists.append(customFilter)
-            }
-        }
-
-        return filterLists
-    }
-
     /// Updates any known legacy filter URLs to their current endpoints.
     func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
         filters.map { filter in
@@ -208,51 +71,6 @@ class FilterListLoader {
             migratedFilter.serverLastModified = nil
             return migratedFilter
         }
-    }
-
-    private func migrateOldAnnoyancesFilter(in filters: [FilterList], defaultFilters: [FilterList])
-        -> [FilterList]
-    {
-        var result = filters
-
-        // Migration 1: Replace old combined AdGuard Annoyances Filter (14) with split filters (18-22)
-        if let oldFilterIndex = result.firstIndex(where: {
-            $0.url.absoluteString.contains("14_optimized.txt")
-        }) {
-            let wasSelected = result[oldFilterIndex].isSelected
-            result.remove(at: oldFilterIndex)
-
-            let newFilterURLs = [
-                "18_optimized.txt", "19_optimized.txt", "20_optimized.txt", "21_optimized.txt",
-                "22_optimized.txt",
-            ]
-            for newURL in newFilterURLs {
-                if !result.contains(where: { $0.url.absoluteString.contains(newURL) }),
-                    let defaultFilter = defaultFilters.first(where: {
-                        $0.url.absoluteString.contains(newURL)
-                    })
-                {
-                    var newFilter = defaultFilter
-                    newFilter.isSelected = wasSelected
-                    result.append(newFilter)
-                }
-            }
-        }
-
-        // Migration 2: Remove duplicate iOS-specific "AdGuard Mobile App Banners" filter
-        // (filters.adtidy.org/ios/filters/20_optimized.txt) if the main one exists
-        // (FiltersRegistry/.../20_optimized.txt)
-        let hasMainMobileAppBanners = result.contains(where: {
-            $0.url.absoluteString.contains("FiltersRegistry")
-                && $0.url.absoluteString.contains("20_optimized.txt")
-        })
-        if hasMainMobileAppBanners {
-            result.removeAll(where: {
-                $0.url.absoluteString.contains("filters.adtidy.org/ios/filters/20_optimized.txt")
-            })
-        }
-
-        return result
     }
 
     /// Returns the default filter lists without any user customizations
@@ -862,73 +680,6 @@ class FilterListLoader {
         return filterLists
     }
 
-    /// Saves filter lists to UserDefaults
-    func saveFilterLists(_ filterLists: [FilterList]) {
-        // Separate default and custom lists before saving
-        let defaultLists = filterLists.filter { !$0.isCustom }
-        let customLists = filterLists.filter { $0.isCustom }
-
-        if let data = try? JSONEncoder().encode(defaultLists) {
-            defaults.set(data, forKey: "filterLists")
-        } else {
-            Task {
-                await ConcurrentLogManager.shared.error(
-                    .system, "Failed to encode default filterLists")
-            }
-        }
-
-        // Save custom lists separately
-        saveCustomFilterLists(customLists)
-
-        // Save the selected state
-        saveSelectedState(for: filterLists)
-    }
-
-    /// Loads selected state for filter lists from UserDefaults
-    func loadSelectedState(for filterLists: inout [FilterList]) {
-        for index in filterLists.indices {
-            let key = "filter_selected_\(filterLists[index].id.uuidString)"
-            filterLists[index].isSelected =
-                defaults.object(forKey: key) as? Bool ?? filterLists[index].isSelected
-        }
-    }
-
-    /// Saves selected state for filter lists to UserDefaults
-    func saveSelectedState(for filterLists: [FilterList]) {
-        Task.detached(priority: .background) { [defaults] in
-            for filter in filterLists {
-                let key = "filter_selected_\(filter.id.uuidString)"
-                defaults.set(filter.isSelected, forKey: key)
-            }
-        }
-    }
-
-    /// Loads custom filter lists from UserDefaults
-    func loadCustomFilterLists() -> [FilterList] {
-        if let data = defaults.data(forKey: customFilterListsKey),
-            let customLists = try? JSONDecoder().decode([FilterList].self, from: data)
-        {
-            return customLists.map { list in
-                var updated = list
-                updated.isCustom = true
-                return updated
-            }
-        }
-        return []
-    }
-
-    /// Saves custom filter lists to UserDefaults
-    func saveCustomFilterLists(_ customFilterLists: [FilterList]) {
-        Task.detached(priority: .background) { [defaults, customFilterListsKey] in
-            if let data = try? JSONEncoder().encode(customFilterLists) {
-                defaults.set(data, forKey: customFilterListsKey)
-            } else {
-                await ConcurrentLogManager.shared.error(
-                    .system, "Failed to encode customFilterLists")
-            }
-        }
-    }
-
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
         guard let fileURL = localFileURL(for: filter) else { return false }
@@ -938,7 +689,7 @@ class FilterListLoader {
     /// Gets the URL for the shared container
     func getSharedContainerURL() -> URL? {
         FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
     }
 
     /// Reads the content of a filter list from the local file system

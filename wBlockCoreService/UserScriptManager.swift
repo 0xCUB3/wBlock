@@ -306,10 +306,7 @@ public class UserScriptManager: ObservableObject {
 
         // Initialize userscripts after data manager finishes loading saved data
         Task { @MainActor in
-            // Wait until ProtobufDataManager has loaded existing data
-            while dataManager.isLoading {
-                try? await Task.sleep(nanoseconds: 100_000_000)
-            }
+            await dataManager.waitUntilLoaded()
             // Load existing scripts
             self.userScripts = dataManager.getUserScripts()
             logger.info("🔧 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")

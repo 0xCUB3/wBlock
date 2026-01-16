@@ -115,7 +115,7 @@ class AppFilterManager: ObservableObject {
 
     init() {
         self.logManager = ConcurrentLogManager.shared
-        self.loader = FilterListLoader(logManager: self.logManager)
+        self.loader = FilterListLoader()
         self.filterUpdater = FilterListUpdater(loader: self.loader, logManager: self.logManager)
 
         #if os(macOS)
@@ -160,7 +160,7 @@ class AppFilterManager: ObservableObject {
         filterLists = []
         customFilterLists = []
 
-        let defaultLists = loader.loadFilterLists()
+        let defaultLists = loader.getDefaultFilterLists()
         filterLists = defaultLists
         saveFilterListsSync()
 
@@ -177,14 +177,8 @@ class AppFilterManager: ObservableObject {
     }
 
     private func setupAsync() async {
-        // Wait for ProtobufDataManager to finish loading
-        while dataManager.isLoading {
-            try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
-        }
-
-        await MainActor.run {
-            setup()
-        }
+        await dataManager.waitUntilLoaded()
+        setup()
     }
 
     private func setup() {
@@ -270,9 +264,9 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        // Only load defaults if truly no data exists (not just during async loading)
+        // Only load defaults if truly no data exists
         if filterLists.isEmpty && !dataManager.isLoading {
-            let defaultLists = loader.loadFilterLists()
+            let defaultLists = loader.getDefaultFilterLists()
             filterLists = defaultLists
             saveFilterListsSync()
         }
@@ -307,8 +301,8 @@ class AppFilterManager: ObservableObject {
     /// Checks for changes in disabled sites and triggers fast rebuild if needed
     @MainActor
     private func checkForDisabledSitesChanges() async {
-        // Reload data to get latest changes from extension
-        await dataManager.loadData()
+        // Only reload protobuf data when the shared file actually changed
+        _ = await dataManager.refreshFromDiskIfModified()
 
         let currentDisabledSites = dataManager.disabledSites
 
@@ -717,7 +711,7 @@ class AppFilterManager: ObservableObject {
             self.autoDisabledFilters.append(contentsOf: disabledFiltersInCategory)
         }
 
-        loader.saveSelectedState(for: filterLists)
+        await saveFilterLists()
         await ConcurrentLogManager.shared.info(
             .filterApply, "Reset category to recommended filters",
             metadata: [
@@ -762,7 +756,7 @@ class AppFilterManager: ObservableObject {
         let categoryName = targetInfo.primaryCategory.rawValue
 
         for attempt in 1...maxRetries {
-            let result = ContentBlockerService.reloadContentBlocker(
+            let result = await ContentBlockerService.reloadContentBlocker(
                 withIdentifier: targetInfo.bundleIdentifier)
             if case .success = result {
                 if attempt > 1 {
@@ -1083,12 +1077,13 @@ class AppFilterManager: ObservableObject {
                 let disabledSites = self.dataManager.disabledSites
                 let resetResult = await Task.detached {
                     let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
-                    var resetRulesString = ""
+                    var resetRulesChunks: [String] = []
 
                     // Get the updated filter list after reset
                     let updatedSelectedFilters = await MainActor.run {
                         self.filterLists.filter { $0.isSelected }
                     }
+                    resetRulesChunks.reserveCapacity(updatedSelectedFilters.count)
 
                     for filter in updatedSelectedFilters {
                         if filter.category == targetInfo.primaryCategory
@@ -1101,8 +1096,7 @@ class AppFilterManager: ObservableObject {
                             )
                             if FileManager.default.fileExists(atPath: fileURL.path) {
                                 do {
-                                    resetRulesString +=
-                                        try String(contentsOf: fileURL, encoding: .utf8) + "\n"
+                                    resetRulesChunks.append(try String(contentsOf: fileURL, encoding: .utf8))
                                 } catch {
                                     await ConcurrentLogManager.shared.error(
                                         .filterApply, "Error reading filter after reset",
@@ -1112,6 +1106,7 @@ class AppFilterManager: ObservableObject {
                         }
                     }
 
+                    let resetRulesString = resetRulesChunks.joined(separator: "\n")
                     return ContentBlockerService.convertFilter(
                         rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
                         groupIdentifier: GroupIdentifier.shared.value,
@@ -1590,18 +1585,6 @@ class AppFilterManager: ObservableObject {
         addCustomFilterList(newFilter)
     }
 
-    func removeFilterList(at offsets: IndexSet) {
-        let removedNames = offsets.map { filterLists[$0].name }.joined(separator: ", ")
-        filterLists.remove(atOffsets: offsets)
-        loader.saveFilterLists(filterLists)
-        statusDescription = "Removed filter(s): \(removedNames)"
-        hasError = false
-        Task {
-            await ConcurrentLogManager.shared.info(
-                .system, "Removed filters", metadata: ["filters": removedNames])
-        }
-    }
-
     func removeFilterList(_ listToRemove: FilterList) {
         removeCustomFilterList(listToRemove)
     }
@@ -1615,9 +1598,9 @@ class AppFilterManager: ObservableObject {
             let newFilterToAdd = filter
 
             customFilterLists.append(newFilterToAdd)
-            loader.saveCustomFilterLists(customFilterLists)
 
             filterLists.append(newFilterToAdd)
+            saveFilterListsSync()
 
             Task {
                 await ConcurrentLogManager.shared.info(
@@ -1660,10 +1643,9 @@ class AppFilterManager: ObservableObject {
 
     func removeCustomFilterList(_ filter: FilterList) {
         customFilterLists.removeAll { $0.id == filter.id }
-        loader.saveCustomFilterLists(customFilterLists)
 
         filterLists.removeAll { $0.id == filter.id }
-        loader.saveFilterLists(filterLists)
+        saveFilterListsSync()
 
         if let containerURL = loader.getSharedContainerURL() {
             let idFileURL = containerURL.appendingPathComponent(loader.filename(for: filter))
@@ -1699,10 +1681,7 @@ class AppFilterManager: ObservableObject {
         filterLists[index].name = trimmed
         if let customIndex = customFilterLists.firstIndex(where: { $0.id == id }) {
             customFilterLists[customIndex].name = trimmed
-            loader.saveCustomFilterLists(customFilterLists)
         }
-
-        loader.saveFilterLists(filterLists)
         saveFilterListsSync()
 
         Task {

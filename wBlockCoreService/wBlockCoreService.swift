@@ -20,6 +20,7 @@ public enum ContentBlockerService {
     
     /// Cache for conversion results to avoid redundant SafariConverterLib calls
     private static var conversionCache: [String: ConversionResult] = [:]
+    private static let maxConversionCacheEntries: Int = 8
     private static let cacheQueue = DispatchQueue(label: "conversion-cache", attributes: .concurrent)
     
     /// Clears the conversion cache to free memory
@@ -87,12 +88,16 @@ public enum ContentBlockerService {
     /// - Returns: A Result indicating success or containing an error if the reload failed.
     public static func reloadContentBlocker(
         withIdentifier identifier: String
-    ) -> Result<Void, Error> {
+    ) async -> Result<Void, Error> {
         os_log(.info, "Start reloading the content blocker")
 
-        let result = measure(label: "Reload safari") {
-            reloadContentBlockerSynchronously(withIdentifier: identifier)
+        let error: Error? = await withCheckedContinuation { continuation in
+            SFContentBlockerManager.reloadContentBlocker(withIdentifier: identifier) { error in
+                continuation.resume(returning: error)
+            }
         }
+
+        let result: Result<Void, Error> = if let error { .failure(error) } else { .success(()) }
 
         switch result {
         case .success:
@@ -170,28 +175,42 @@ public enum ContentBlockerService {
         let cachedResult = cacheQueue.sync { conversionCache[cacheKey] }
         
         let result: ConversionResult
+        let isCacheMiss: Bool
         if let cached = cachedResult {
             os_log(.info, "Using cached conversion result for %@", targetRulesFilename)
             result = cached
+            isCacheMiss = false
         } else {
             os_log(.info, "Converting rules for %@ (cache miss)", targetRulesFilename)
             result = convertRules(rules: rules) // Convert AdGuard rules to Safari JSON
+            isCacheMiss = true
             
             // Cache the result for future use
             cacheQueue.async(flags: .barrier) {
                 conversionCache[cacheKey] = result
+                if conversionCache.count > maxConversionCacheEntries {
+                    conversionCache.removeAll(keepingCapacity: true)
+                    conversionCache[cacheKey] = result
+                }
             }
         }
-        
-        // Always inject ignore rules for current disabled sites
+
+        // Persist the raw (non-disabled-site) JSON once per conversion so fast disabled-site updates
+        // don't need to parse/strip "ignore-previous-rules" (which is also used by filter exceptions).
+        if isCacheMiss {
+            let baseFilename = baseRulesFilename(for: targetRulesFilename)
+            let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
+            saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+            saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
+        }
+
+        // Inject ignore rules for current disabled sites (string-based to avoid massive JSONSerialization overhead)
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
 
-        measure(label: "Saving content blocking rules file \(targetRulesFilename)") {
-            saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
-        }
-        
-        // Count rules from final JSON for accurate reporting
-        let finalRuleCount = countRulesInJSON(finalJSON)
+        saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+        // Rule count is the converter's base count plus 1 ignore rule per disabled site.
+        let finalRuleCount = result.safariRulesCount + sitesToUse.count
         
         // Return both the count and advanced rules text for the caller to handle engine building
         return (safariRulesCount: finalRuleCount, advancedRulesText: result.advancedRulesText)
@@ -208,39 +227,44 @@ public enum ContentBlockerService {
     public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
         
-        // Try to read existing file
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             os_log(.error, "Failed to access App Group container for fast update")
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
         
-        let fileURL = containerURL.appendingPathComponent(targetRulesFilename)
-        
-        guard FileManager.default.fileExists(atPath: fileURL.path),
-              let existingJSON = try? String(contentsOf: fileURL, encoding: .utf8) else {
-            os_log(.info, "No existing file found for fast update, will use empty rules")
-            // Create minimal rules with just ignore rules
-            let emptyJSON = "[]"
-            let finalJSON = injectIgnoreRulesForDisabledSites(json: emptyJSON, disabledSites: sitesToUse)
-            
-            measure(label: "Fast saving content blocking rules file \(targetRulesFilename)") {
-                saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
-            }
-            
-            return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: nil)
-        }
-        
-        // Remove existing ignore rules and inject new ones
-        let baseJSON = removeIgnoreRulesForDisabledSites(json: existingJSON)
-        let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
-        
-        measure(label: "Fast updating content blocking rules file \(targetRulesFilename)") {
+        let baseFilename = baseRulesFilename(for: targetRulesFilename)
+        let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
+
+        // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
+        let baseURL = containerURL.appendingPathComponent(baseFilename)
+        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
+        if FileManager.default.fileExists(atPath: baseURL.path),
+           let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8) {
+            let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
+                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
+            let finalRuleCount = baseCount + sitesToUse.count
+
+            os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
+            return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
         }
-        
-        let finalRuleCount = countRulesInJSON(finalJSON)
+
+        // Fallback/migration: derive a base JSON by stripping legacy disabled-site ignore rules (only),
+        // then persist it for future fast updates.
+        let targetURL = containerURL.appendingPathComponent(targetRulesFilename)
+        let existingJSON = (try? String(contentsOf: targetURL, encoding: .utf8)) ?? "[]"
+        let derived = deriveBaseRulesFromLegacyFinalJSON(existingJSON)
+
+        saveBlockerListFile(contents: derived.baseJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        saveBlockerListFile(contents: String(derived.baseRuleCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
+
+        let finalJSON = injectIgnoreRulesForDisabledSites(json: derived.baseJSON, disabledSites: sitesToUse)
+        saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+        let finalRuleCount = derived.baseRuleCount + sitesToUse.count
         os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
-        
         return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
     }
     
@@ -252,6 +276,80 @@ public enum ContentBlockerService {
         let defaults = UserDefaults(suiteName: groupIdentifier)
         return defaults?.stringArray(forKey: "disabledSites") ?? []
     }
+
+    private static func baseRulesFilename(for targetRulesFilename: String) -> String {
+        if targetRulesFilename.lowercased().hasSuffix(".json") {
+            let stem = targetRulesFilename.dropLast(5)
+            return "\(stem).base.json"
+        }
+        return "\(targetRulesFilename).base"
+    }
+
+    private static func baseRulesCountFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).count"
+    }
+
+    private struct DerivedBaseRules {
+        let baseJSON: String
+        let baseRuleCount: Int
+    }
+
+    private static func deriveBaseRulesFromLegacyFinalJSON(_ json: String) -> DerivedBaseRules {
+        guard let jsonData = json.data(using: .utf8),
+              let existingRules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
+            return DerivedBaseRules(baseJSON: json, baseRuleCount: countRulesInJSON(json))
+        }
+
+        let filteredRules = existingRules.filter { !isLegacyDisabledSiteIgnoreRule($0) }
+        if let updatedData = try? JSONSerialization.data(withJSONObject: filteredRules, options: []),
+           let baseJSON = String(data: updatedData, encoding: .utf8) {
+            return DerivedBaseRules(baseJSON: baseJSON, baseRuleCount: filteredRules.count)
+        }
+
+        return DerivedBaseRules(baseJSON: json, baseRuleCount: existingRules.count)
+    }
+
+    private static func isLegacyDisabledSiteIgnoreRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              let type = action["type"] as? String,
+              type == "ignore-previous-rules",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = trigger["url-filter"] as? String,
+              urlFilter == ".*",
+              let ifDomain = trigger["if-domain"] as? [String],
+              ifDomain.count == 2 else {
+            return false
+        }
+
+        // Legacy injected rules used only these trigger keys and encoded subdomains as "*.<domain>".
+        if Set(trigger.keys) != Set(["url-filter", "if-domain"]) {
+            return false
+        }
+
+        let domainSet = Set(ifDomain)
+        for item in ifDomain where item.hasPrefix("*.") {
+            let base = String(item.dropFirst(2))
+            if domainSet.contains(base) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private static func escapeForJSONString(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
+        let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+        let escapedDomain = escapeForJSONString(wildcardDomain)
+
+        return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedDomain)\"]}}"
+    }
     
     /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.
     /// This uses Safari's native ignore-previous-rules action to whitelist disabled sites.
@@ -262,76 +360,22 @@ public enum ContentBlockerService {
     /// - Returns: Modified JSON string with ignore rules injected.
     private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
         guard !disabledSites.isEmpty else { return json }
-        
-        do {
-            // Parse existing JSON
-            guard let jsonData = json.data(using: .utf8),
-                  let existingRules = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
-                os_log(.error, "Failed to parse existing content blocker JSON for disabled sites injection")
-                return json
-            }
-            
-            var modifiedRules = existingRules
-            
-            // Add ignore-previous-rules for each disabled site
-            // This rule tells Safari to ignore all previous blocking rules for the specified domains
-            for site in disabledSites {
-                let ignoreRule: [String: Any] = [
-                    "action": [
-                        "type": "ignore-previous-rules"
-                    ],
-                    "trigger": [
-                        "url-filter": ".*",
-                        "if-domain": [site, "*." + site] // Include both domain and all subdomains
-                    ]
-                ]
-                modifiedRules.append(ignoreRule)
-            }
-            
-            // Convert back to JSON
-            let modifiedJsonData = try JSONSerialization.data(withJSONObject: modifiedRules, options: [])
-            if let modifiedJsonString = String(data: modifiedJsonData, encoding: .utf8) {
-                os_log(.info, "Successfully injected ignore-previous-rules for %d disabled sites", disabledSites.count)
-                return modifiedJsonString
-            }
-        } catch {
-            os_log(.error, "Error injecting ignore rules for disabled sites: %@", error.localizedDescription)
-        }
-        
-        return json // Return original JSON if injection fails
-    }
-    
-    /// Removes existing ignore-previous-rules for disabled sites from JSON.
-    /// This is used for fast updates to clean slate before re-injecting rules.
-    ///
-    /// - Parameter json: Existing Safari content blocker JSON string.
-    /// - Returns: JSON string with ignore rules removed.
-    private static func removeIgnoreRulesForDisabledSites(json: String) -> String {
-        do {
-            guard let jsonData = json.data(using: .utf8),
-                  let existingRules = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
-                os_log(.error, "Failed to parse JSON for ignore rules removal")
-                return json
-            }
-            
-            // Filter out rules that are ignore-previous-rules (our disabled sites rules)
-            let filteredRules = existingRules.filter { rule in
-                if let action = rule["action"] as? [String: Any],
-                   let type = action["type"] as? String,
-                   type == "ignore-previous-rules" {
-                    return false // Remove ignore rules
-                }
-                return true // Keep other rules
-            }
-            
-            // Convert back to JSON
-            let updatedData = try JSONSerialization.data(withJSONObject: filteredRules, options: [])
-            return String(data: updatedData, encoding: .utf8) ?? json
-            
-        } catch {
-            os_log(.error, "Error removing ignore rules: %@", error.localizedDescription)
+        let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let openBracket = trimmed.firstIndex(of: "["),
+              let closeBracket = trimmed.lastIndex(of: "]"),
+              openBracket < closeBracket else {
             return json
         }
+
+        let ignoreRules = disabledSites.map { disabledSiteIgnoreRuleJSON(for: $0) }.joined(separator: ",")
+        guard !ignoreRules.isEmpty else { return trimmed }
+
+        let inner = trimmed[trimmed.index(after: openBracket)..<closeBracket]
+        if inner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "[\(ignoreRules)]"
+        }
+
+        return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
     }
     
     /// Counts the number of rules in a Safari content blocker JSON string.
@@ -437,7 +481,7 @@ extension ContentBlockerService {
             }
         }
 
-        let lines = filterRules.components(separatedBy: "\n")
+        let lines = filterRules.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         let result = measure(label: "Conversion") {
             ContentBlockerConverter().convertArray(
@@ -449,33 +493,6 @@ extension ContentBlockerService {
             )
         }
 
-        return result
-    }
-
-    /// Provides a synchronous wrapper over SFContentBlockerManager.reloadContentBlocker.
-    ///
-    /// - Parameters:
-    ///   - identifier: Bundle ID of the content blocker extension to reload.
-    /// - Returns: A Result indicating success or containing an error if the reload failed.
-    private static func reloadContentBlockerSynchronously(
-        withIdentifier identifier: String
-    ) -> Result<Void, Error> {
-        // Create a semaphore with an initial count of 0
-        let semaphore = DispatchSemaphore(value: 0)
-        var result: Result<Void, Error> = .success(())
-
-        SFContentBlockerManager.reloadContentBlocker(withIdentifier: identifier) { error in
-            if let error = error {
-                result = .failure(error)
-            } else {
-                result = .success(())
-            }
-            // Signal the semaphore to unblock
-            semaphore.signal()
-        }
-
-        // Block the thread until the semaphore is signaled
-        semaphore.wait()
         return result
     }
 
@@ -497,7 +514,11 @@ extension ContentBlockerService {
         let sharedFileURL = appGroupURL.appendingPathComponent(filename)
 
         do {
-            try contents.data(using: .utf8)?.write(to: sharedFileURL)
+            guard let data = contents.data(using: .utf8) else {
+                os_log(.error, "Failed to encode contents as UTF-8 for %@", filename)
+                return
+            }
+            try data.write(to: sharedFileURL, options: .atomic)
             os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
         } catch {
             os_log(

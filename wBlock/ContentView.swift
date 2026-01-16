@@ -609,10 +609,7 @@ struct ContentModifiers: ViewModifier {
             }
             // Show onboarding/setup sheets only on initial load
             .task {
-                // Wait for initial data load to complete
-                while dataManager.isLoading {
-                    try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms
-                }
+                await dataManager.waitUntilLoaded()
                 // Only check once on initial load
                 if !hasPerformedInitialCheck {
                     hasPerformedInitialCheck = true
