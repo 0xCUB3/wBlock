@@ -239,24 +239,13 @@ extension AppDelegate: NSApplicationDelegate {
     /// Handle silent push on macOS
     func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
         os_log("Silent push received for filterList (macOS)", type: .info)
-        guard let updateType = userInfo["update"] as? String, updateType == "filterList",
-              let manager = filterManager else { return }
+        guard let updateType = userInfo["update"] as? String, updateType == "filterList" else { return }
         Task {
-            os_log("Checking for pending filter-list updates...", type: .info)
-            let pending = await manager.filterUpdater.checkForUpdates(filterLists: manager.filterLists)
-            if pending.isEmpty {
-                os_log("No pending filter-list updates found", type: .info)
-            } else {
-                let names = pending.map { $0.name }.joined(separator: ", ")
-                os_log("Pending filter-list updates for: %{public}@", type: .info, names)
-            }
-            for filter in pending {
-                os_log("Fetching and processing filter list: %{public}@", type: .info, filter.name)
-                _ = await manager.filterUpdater.fetchAndProcessFilter(filter)
-            }
-            os_log("Applying filter changes...", type: .info)
-            await manager.applyChanges()
-            os_log("Background filter update process completed (macOS)", type: .info)
+            // Silent pushes may arrive when the UI hasn't been created; use the shared auto-update
+            // path so this works even with no AppFilterManager instance.
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+                trigger: "SilentPush(macOS)", force: true)
         }
     }
 }
@@ -273,10 +262,13 @@ extension AppDelegate: UIApplicationDelegate {
         
         // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
-        
-        // Schedule initial background refresh + processing tasks
+
+        // Schedule initial background refresh + processing tasks (also re-schedules after protobuf loads)
         scheduleBackgroundFilterUpdate()
         scheduleBackgroundProcessingUpdate()
+        Task { @MainActor in
+            await rescheduleBackgroundTasks(reason: "Launch")
+        }
 
         // Opportunistic update on app launch
         // Note: maybeRunAutoUpdate includes staleness check to clear stuck flags
@@ -309,31 +301,18 @@ extension AppDelegate: UIApplicationDelegate {
                      didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         os_log("Silent push received for filterList", type: .info)
-        // Only handle filter list updates
-        if let updateType = userInfo["update"] as? String, updateType == "filterList",
-           let manager = filterManager {
-            Task {
-                os_log("Checking for pending filter-list updates...", type: .info)
-                let pending = await manager.filterUpdater.checkForUpdates(filterLists: manager.filterLists)
-                if pending.isEmpty {
-                    os_log("No pending filter-list updates found", type: .info)
-                } else {
-                    let names = pending.map { $0.name }.joined(separator: ", ")
-                    os_log("Pending filter-list updates for: %{public}@", type: .info, names)
-                }
-                // For each pending filter, fetch and save new list
-                for filter in pending {
-                    os_log("Fetching and processing filter list: %{public}@", type: .info, filter.name)
-                    _ = await manager.filterUpdater.fetchAndProcessFilter(filter)
-                }
-                // Apply all changes to content blockers
-                os_log("Applying filter changes...", type: .info)
-                await manager.applyChanges()
-                os_log("Background filter update process completed", type: .info)
-                completionHandler(.newData)
-            }
-        } else {
+        guard let updateType = userInfo["update"] as? String, updateType == "filterList" else {
             completionHandler(.noData)
+            return
+        }
+
+        // Silent pushes may launch the app in the background without constructing SwiftUI scenes,
+        // meaning `filterManager` may be nil. Use SharedAutoUpdateManager so pushes always work.
+        Task {
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+                trigger: "SilentPush(iOS)", force: true)
+            completionHandler(.newData)
         }
     }
     
@@ -357,8 +336,12 @@ extension AppDelegate: UIApplicationDelegate {
     }
     
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Schedule next background task when entering background
+        // Schedule next background tasks when entering background
         scheduleBackgroundFilterUpdate()
+        scheduleBackgroundProcessingUpdate()
+        Task { @MainActor in
+            await rescheduleBackgroundTasks(reason: "EnterBackground")
+        }
 
         // Flush any pending protobuf saves when entering background
         ProtobufDataManager.shared.saveData()
@@ -381,11 +364,12 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
 
+    @MainActor
     private func scheduleBackgroundFilterUpdate() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-        // Use configured interval, but cap at reasonable limits
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-        let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
+        // Use protobuf-backed interval (legacy UserDefaults may be stale). Fall back to 6h if unset.
+        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
+        let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
         // Schedule for 75% of interval to account for iOS's discretionary nature
         let delaySeconds = min(max(intervalHours * appRefreshScheduleDelayFactor, minAppRefreshDelayHours), maxAppRefreshDelayHours) * 60 * 60
         request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
@@ -409,13 +393,14 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
 
+    @MainActor
     private func scheduleBackgroundProcessingUpdate() {
         let request = BGProcessingTaskRequest(identifier: backgroundProcessingIdentifier)
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = false // Don't require power - be more aggressive
         // Schedule processing task for full interval (less critical than app refresh)
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-        let intervalHours = defaults?.double(forKey: "autoUpdateIntervalHours") ?? 6.0
+        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
+        let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
         let delaySeconds = min(max(intervalHours, minProcessingDelayHours), maxProcessingDelayHours) * 60 * 60
         request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
         do {
@@ -445,18 +430,21 @@ extension AppDelegate: UIApplicationDelegate {
         task.expirationHandler = {
             os_log("Background filter update task expired - clearing running flag", type: .default)
 
-            // CRITICAL: Clear the running flag to prevent stuck state
-            // This runs even if the async Task is still executing
-            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-            defaults?.set(false, forKey: "autoUpdateIsRunning")
-            defaults?.removeObject(forKey: "autoUpdateIsRunningTimestamp")
-            defaults?.synchronize()
+            // CRITICAL: Clear the protobuf-backed running flag to prevent stuck state.
+            // This runs even if the async Task is still executing.
+            Task { @MainActor in
+                await ProtobufDataManager.shared.waitUntilLoaded()
+                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                await ProtobufDataManager.shared.saveDataImmediately()
+            }
 
             if !taskCompleted {
                 taskCompleted = true
                 task.setTaskCompleted(success: false)
                 // Schedule next attempt sooner due to failure
-                self.scheduleBackgroundFilterUpdate()
+                Task { @MainActor in
+                    self.scheduleBackgroundFilterUpdate()
+                }
             }
         }
 
@@ -473,8 +461,10 @@ extension AppDelegate: UIApplicationDelegate {
                 task.setTaskCompleted(success: true)
 
                 // Schedule next occurrence after success
-                self.scheduleBackgroundFilterUpdate()
-                self.scheduleBackgroundProcessingUpdate()
+                await MainActor.run {
+                    self.scheduleBackgroundFilterUpdate()
+                    self.scheduleBackgroundProcessingUpdate()
+                }
             }
         }
     }
@@ -487,18 +477,21 @@ extension AppDelegate: UIApplicationDelegate {
         task.expirationHandler = {
             os_log("Background processing update task expired - clearing running flag", type: .default)
 
-            // CRITICAL: Clear the running flag to prevent stuck state
-            // This runs even if the async Task is still executing
-            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-            defaults?.set(false, forKey: "autoUpdateIsRunning")
-            defaults?.removeObject(forKey: "autoUpdateIsRunningTimestamp")
-            defaults?.synchronize()
+            // CRITICAL: Clear the protobuf-backed running flag to prevent stuck state.
+            // This runs even if the async Task is still executing.
+            Task { @MainActor in
+                await ProtobufDataManager.shared.waitUntilLoaded()
+                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+                await ProtobufDataManager.shared.saveDataImmediately()
+            }
 
             if !taskCompleted {
                 taskCompleted = true
                 task.setTaskCompleted(success: false)
                 // Schedule next attempt
-                self.scheduleBackgroundProcessingUpdate()
+                Task { @MainActor in
+                    self.scheduleBackgroundProcessingUpdate()
+                }
             }
         }
 
@@ -515,10 +508,30 @@ extension AppDelegate: UIApplicationDelegate {
                 task.setTaskCompleted(success: true)
 
                 // Schedule next occurrence after success
-                self.scheduleBackgroundFilterUpdate()
-                self.scheduleBackgroundProcessingUpdate()
+                await MainActor.run {
+                    self.scheduleBackgroundFilterUpdate()
+                    self.scheduleBackgroundProcessingUpdate()
+                }
             }
         }
+    }
+
+    /// Re-schedules BGTaskScheduler requests using the protobuf-backed settings once loaded.
+    @MainActor
+    private func rescheduleBackgroundTasks(reason: String) async {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+
+        let enabled = ProtobufDataManager.shared.autoUpdateEnabled
+        if !enabled {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingIdentifier)
+            os_log("Auto-update disabled; canceled background tasks (%{public}@)", type: .info, reason)
+            return
+        }
+
+        scheduleBackgroundFilterUpdate()
+        scheduleBackgroundProcessingUpdate()
+        os_log("Rescheduled background tasks (%{public}@)", type: .info, reason)
     }
 }
 

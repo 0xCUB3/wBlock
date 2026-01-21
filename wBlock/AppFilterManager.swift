@@ -1440,33 +1440,6 @@ class AppFilterManager: ObservableObject {
         isLoading = false
     }
 
-    func autoUpdateFilters() async -> [FilterList] {
-        isLoading = true
-        progress = 0
-
-        // Ensure counts and versions are fresh before auto-update logic
-        await updateVersionsAndCounts()
-
-        let updatedFilters = await filterUpdater.autoUpdateFilters(
-            filterLists: filterLists.filter { $0.isSelected },
-            progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
-                }
-            }
-        )
-
-        saveFilterListsSync()  // Save lists as autoUpdateFilters calls fetchAndProcessFilter
-
-        if !updatedFilters.isEmpty {
-            await applyChanges()
-        }
-
-        isLoading = false
-        progress = 0  // Reset progress after completion
-        return updatedFilters
-    }
-
     func updateSelectedFilters(_ selectedFilters: [FilterList]) async {  // From UpdatePopupView
         isLoading = true
         progress = 0

@@ -221,7 +221,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateIsRunning(_ value: Bool) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         updatedData.autoUpdate.isRunning = value
         updatedData.autoUpdate.runningSinceTimestamp = value ? Int64(Date().timeIntervalSince1970) : 0
         appData = updatedData
@@ -240,7 +240,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setFilterEtag(_ uuid: String, etag: String?) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         if let etag = etag {
             updatedData.autoUpdate.filterEtags[uuid] = etag
         } else {
@@ -257,7 +257,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setFilterLastModified(_ uuid: String, lastModified: String?) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         if let lastModified = lastModified {
             updatedData.autoUpdate.filterLastModified[uuid] = lastModified
         } else {
@@ -296,7 +296,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setTabDisabled(_ tabId: String, isDisabled: Bool) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         var tabData = updatedData.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
         tabData.isDisabled = isDisabled
         tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
@@ -308,7 +308,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func removeTabData(_ tabId: String) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         updatedData.extensionData.tabBlockedRequests.removeValue(forKey: tabId)
         updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         appData = updatedData
@@ -317,7 +317,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func updateTabBlockedCount(_ tabId: String, host: String, increment: Int = 1) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         var tabData = updatedData.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
         tabData.blockedCount += Int32(increment)
         tabData.host = host
@@ -330,7 +330,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func clearOldTabData(olderThan: TimeInterval) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         let cutoffTime = Int64(Date().timeIntervalSince1970 - olderThan)
         updatedData.extensionData.tabBlockedRequests = updatedData.extensionData.tabBlockedRequests.filter { _, tabData in
             tabData.lastUpdated >= cutoffTime
@@ -456,7 +456,7 @@ public class ProtobufDataManager: ObservableObject {
     /// Updates appData using a closure and saves the changes
     @MainActor
     private func updateData(with block: (inout Wblock_Data_AppData) -> Void) async {
-        var updatedData = appData
+        var updatedData = await latestAppDataSnapshot()
         block(&updatedData)
         appData = updatedData
         await saveData()
