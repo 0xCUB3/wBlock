@@ -19,6 +19,10 @@ actor ToolbarData {
 
     // Delay used to batch disk writes (persisting data) to avoid writing too often.
     private static let flushDelay: UInt64 = 5 * 1_000_000_000  // 5 seconds
+    
+    // Keep a bounded per-tab log of blocked resource URLs for the popover logger UI.
+    // This is intentionally NOT persisted to disk to avoid bloating UserDefaults.
+    private static let maxBlockedURLLogEntriesPerTab: Int = 200
 
     // The key under which the blocked requests data will be stored in UserDefaults.
     private static let userDefaultsKey = "tabBlockedRequests"
@@ -44,6 +48,9 @@ actor ToolbarData {
 
     // A dictionary mapping each tab's unique key to its corresponding TabData.
     private var tabBlockedRequests: [String: TabData] = [:]
+    
+    // In-memory blocked URL log per tab key (newest last).
+    private var tabBlockedURLs: [String: [String]] = [:]
     // A flag to indicate that there are changes that haven't yet been saved.
     private var tabBlockedRequestsDirty: Bool = false
 
@@ -91,6 +98,7 @@ actor ToolbarData {
             if let value = tabBlockedRequests[key], now - value.lastTimeUpdated > Self.evictionDelay
             {
                 tabBlockedRequests.removeValue(forKey: key)
+                tabBlockedURLs.removeValue(forKey: key)
             }
         }
 
@@ -107,9 +115,9 @@ actor ToolbarData {
     /// It then marks the data as dirty and schedules a save.
     ///
     /// - Parameters:
-    ///   - page: The Safari page on which a request was blocked.
-    ///   - count: The number of blocked requests to account for.
-    func trackBlocked(on page: SFSafariPage, count: Int) async {
+    ///   - page: The Safari page on which resources were blocked.
+    ///   - urls: Blocked resource URLs.
+    func trackBlocked(on page: SFSafariPage, urls: [URL]) async {
         let tab = await page.containingTab()
 
         // Retrieve the current data for the specified tab.
@@ -117,17 +125,30 @@ actor ToolbarData {
             return
         }
 
+        let blockedURLStrings = urls.map { $0.absoluteString }
+        let increment = blockedURLStrings.count
+
         // Compare with any previously stored data for consistency.
         if let currentTabData = tabBlockedRequests[tabData.key],
             tabData.url == currentTabData.url
         {
-            tabData.blockedCount = currentTabData.blockedCount + count
+            tabData.blockedCount = currentTabData.blockedCount + increment
         } else {
-            tabData.blockedCount = count
+            tabData.blockedCount = increment
         }
 
         // Update the stored data for this tab.
         tabBlockedRequests[tabData.key] = tabData
+        
+        // Update the in-memory blocked URL log for this tab.
+        if increment > 0 {
+            var log = tabBlockedURLs[tabData.key] ?? []
+            log.append(contentsOf: blockedURLStrings)
+            if log.count > Self.maxBlockedURLLogEntriesPerTab {
+                log = Array(log.suffix(Self.maxBlockedURLLogEntriesPerTab))
+            }
+            tabBlockedURLs[tabData.key] = log
+        }
 
         // Mark that our data is modified and that we need to persist these changes.
         tabBlockedRequestsDirty = true
@@ -148,6 +169,7 @@ actor ToolbarData {
         if page == activePage {
             if let tabData = await getTabData(for: tab) {
                 tabBlockedRequests[tabData.key] = tabData
+                tabBlockedURLs[tabData.key] = []
 
                 // Mark and schedule a save to update the persisted data.
                 tabBlockedRequestsDirty = true
@@ -168,6 +190,18 @@ actor ToolbarData {
 
         let tabKey = tab.tabKey()
         return tabBlockedRequests[tabKey]?.blockedCount ?? 0
+    }
+    
+    /// Retrieves the blocked resource URL log for the current active tab.
+    ///
+    /// - Parameter window: The Safari window from which to obtain the active tab.
+    /// - Returns: Most-recent-first list of blocked resource URLs.
+    func getBlockedURLsOnActiveTab(in window: SFSafariWindow) async -> [String] {
+        guard let tab = await window.activeTab() else {
+            return []
+        }
+        let tabKey = tab.tabKey()
+        return (tabBlockedURLs[tabKey] ?? []).reversed()
     }
 
     /// Fetches the current state for a given tab and packages it into TabData.

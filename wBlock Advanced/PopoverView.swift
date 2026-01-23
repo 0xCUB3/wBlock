@@ -18,6 +18,73 @@ struct PopoverView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
 
+            // Blocked requests logger
+            VStack(spacing: 8) {
+                Button(action: {
+                    viewModel.toggleBlockedRequests()
+                }) {
+                    HStack {
+                        Text("Blocked Requests (\(viewModel.blockedRequests.count))")
+                            .font(.system(size: 14, weight: .medium))
+                        Spacer()
+                        Image(systemName: viewModel.showingBlockedRequests ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 8)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                if viewModel.showingBlockedRequests {
+                    VStack(spacing: 6) {
+                        if viewModel.blockedRequests.isEmpty {
+                            Text("No blocked requests recorded yet")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 8)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 3) {
+                                    ForEach(viewModel.blockedRequests, id: \.self) { url in
+                                        Text(url)
+                                            .font(.system(size: 10, design: .monospaced))
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                            .textSelection(.enabled)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.vertical, 3)
+                                            .padding(.horizontal, 6)
+                                            .background(Color.gray.opacity(0.05))
+                                            .cornerRadius(4)
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 120)
+
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    Task { await viewModel.refreshBlockedRequests() }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.system(size: 11))
+                                        Text("Refresh")
+                                            .font(.system(size: 12, weight: .medium))
+                                    }
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+            }
+
             // Disable toggle
             Toggle(isOn: $viewModel.isDisabled) {
                 Text(viewModel.host.isEmpty ? "Disable for this site" : "Disable for \(viewModel.host)")

@@ -8,6 +8,8 @@ import os.log
 @MainActor
 public class PopoverViewModel: ObservableObject {
     @Published public var blockedCount: Int = 0
+    @Published public var blockedRequests: [String] = []
+    @Published public var showingBlockedRequests: Bool = false
     @Published public var isDisabled: Bool = false {
         didSet { saveDisabledState() }
     }
@@ -39,6 +41,9 @@ public class PopoverViewModel: ObservableObject {
             
             // Load zapper rules after host is set
             self.loadZapperRules()
+            
+            // Load blocked requests log for the active tab
+            self.blockedRequests = await ToolbarData.shared.getBlockedURLsOnActiveTab(in: window)
             
             os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))
         }
@@ -177,5 +182,21 @@ public class PopoverViewModel: ObservableObject {
             loadZapperRules()
             os_log(.info, "PopoverViewModel: Toggled zapper rules visibility to %{BOOL}d, reloaded %d rules", showingZapperRules, zapperRules.count)
         }
+    }
+    
+    /// Toggle the visibility of blocked requests section
+    public func toggleBlockedRequests() {
+        showingBlockedRequests.toggle()
+        if showingBlockedRequests {
+            Task {
+                await refreshBlockedRequests()
+            }
+        }
+    }
+    
+    /// Refresh blocked requests log for the active tab
+    public func refreshBlockedRequests() async {
+        guard let window = await SFSafariApplication.activeWindow() else { return }
+        blockedRequests = await ToolbarData.shared.getBlockedURLsOnActiveTab(in: window)
     }
 }

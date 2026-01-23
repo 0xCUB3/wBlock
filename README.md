@@ -62,7 +62,7 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 - **HTTP conditional requests** (If-Modified-Since/ETag) for efficient filter update detection
 
 ### Content Modification
-- **Element Zapper** (macOS only) generates persistent CSS selectors for manual element removal
+- **Element Zapper** (macOS, iOS, iPadOS, visionOS) generates persistent CSS selectors for manual element removal
 - **Userscript engine** implements Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
 - **Custom filter list ingestion** supports AdGuard-syntax blocklists via URL import
 - **Category-based filter organization** with per-list toggle and automatic rule distribution
@@ -81,6 +81,7 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 ### Configuration & Management
 - **Configurable auto-update intervals** from 1 hour to 7 days with background refresh
 - **Per-site blocking controls** through Safari's content blocker enable/disable API
+- **Safari toolbar popover logger** (macOS) shows recent blocked requests per page
 - **Whitelist management** for trusted domains with Safari extension state persistence
 - **Regional filter support** with preset lists for language-specific content blocking
 - **Filter compilation monitoring** with real-time rule count and compilation status
@@ -231,7 +232,7 @@ Auto-update intervals are configurable from 1 hour to 7 days, or manually trigge
 <details>
 <summary><b>Is the element zapper available on iOS?</b></summary>
 <br>
-Not yet.
+Yes. Open the wBlock extension popup in Safari and tap <i>Activate Element Zapper</i>.
 </details>
 
 <br>

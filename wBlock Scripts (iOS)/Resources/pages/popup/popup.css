@@ -1,0 +1,158 @@
+:root {
+  color-scheme: light dark;
+  --bg: rgba(20, 20, 22, 0.06);
+  --card: rgba(120, 120, 128, 0.12);
+  --border: rgba(120, 120, 128, 0.22);
+  --text: rgba(28, 28, 30, 1);
+  --subtext: rgba(60, 60, 67, 0.7);
+  --accent: #ff7a18;
+  --btn: rgba(120, 120, 128, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: rgba(255, 255, 255, 0.06);
+    --card: rgba(44, 44, 46, 0.75);
+    --border: rgba(84, 84, 88, 0.65);
+    --text: rgba(255, 255, 255, 0.92);
+    --subtext: rgba(235, 235, 245, 0.65);
+    --btn: rgba(84, 84, 88, 0.55);
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, system-ui, sans-serif;
+  background: transparent;
+  color: var(--text);
+}
+
+.popup-container {
+  width: 320px;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.header {
+  margin-bottom: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shield-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.brand-text .title {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.brand-text .subtitle {
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.row + .row {
+  margin-top: 6px;
+}
+
+.row-label {
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.row-value {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn {
+  flex: 1;
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--btn);
+  color: var(--text);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+}
+
+.btn-primary {
+  border-color: rgba(255, 122, 24, 0.6);
+}
+
+.footer {
+  margin-top: 6px;
+}
+
+.info-subtext {
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #d70015;
+}
+

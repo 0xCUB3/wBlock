@@ -449,7 +449,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         // Use an asynchronous task to update the blocking counter.
         Task {
             // Update the blocked count and then refresh the toolbar badge
-            await ToolbarData.shared.trackBlocked(on: page, count: urls.count)
+            await ToolbarData.shared.trackBlocked(on: page, urls: urls)
         }
     }
 
@@ -532,6 +532,8 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         Task {
             let blockedCount = await ToolbarData.shared.getBlockedOnActiveTab(in: window)
             await SafariExtensionViewController.shared.updateBlockedCount(blockedCount)
+            let blockedRequests = await ToolbarData.shared.getBlockedURLsOnActiveTab(in: window)
+            await SafariExtensionViewController.shared.updateBlockedRequests(blockedRequests)
         }
     }
     

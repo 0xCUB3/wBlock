@@ -16,8 +16,8 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     /// The shared instance of the view controller
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()
-        // Increase height for disable toggle
-        shared.preferredContentSize = NSSize(width: 300, height: 160)
+        // Leave extra vertical room for optional sections (logger + zapper rules).
+        shared.preferredContentSize = NSSize(width: 300, height: 420)
         return shared
     }()
 
@@ -41,6 +41,11 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     func updateBlockedCount(_ count: Int) {
         viewModel.blockedCount = count
     }
+    
+    /// Updates the blocked request URL log for the active tab.
+    func updateBlockedRequests(_ urls: [String]) {
+        viewModel.blockedRequests = urls
+    }
 
     // MARK: - UI Setup
 
@@ -61,4 +66,3 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
 
     // Legacy loadCurrentSiteState removed; state handled via ViewModel within SwiftUI view
 }
-

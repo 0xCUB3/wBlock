@@ -85,6 +85,12 @@ public enum WebExtensionRequestHandler {
             case "getUserScriptResourceChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .resource)
                 return
+            case "getSiteDisabledState":
+                handleGetSiteDisabledState(message: message!, context: context)
+                return
+            case "setSiteDisabledState":
+                handleSetSiteDisabledState(message: message!, context: context)
+                return
             default:
                 break
             }
@@ -224,6 +230,68 @@ public enum WebExtensionRequestHandler {
     private enum UserScriptChunkKind {
         case content
         case resource
+    }
+
+    private static func handleGetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if host.isEmpty {
+            let response = createResponse(with: ["disabled": false])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        Task { @MainActor in
+            await ProtobufDataManager.shared.loadData()
+            let disabled = ProtobufDataManager.shared.disabledSites.contains(host)
+            let response = createResponse(with: ["disabled": disabled])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleSetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let disabled = message["disabled"] as? Bool ?? false
+
+        guard !host.isEmpty else {
+            let response = createResponse(with: ["disabled": false, "error": "Missing host"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        Task { @MainActor in
+            await ProtobufDataManager.shared.loadData()
+
+            var list = ProtobufDataManager.shared.disabledSites
+            if disabled {
+                if !list.contains(host) { list.append(host) }
+            } else {
+                list.removeAll { $0 == host }
+            }
+
+            await ProtobufDataManager.shared.setWhitelistedDomains(list)
+
+            // Apply the change immediately by fast-updating the existing blocker JSON
+            // and reloading each content blocker target for the current platform.
+            #if os(macOS)
+            let platform: Platform = .macOS
+            #else
+            let platform: Platform = .iOS
+            #endif
+
+            let groupID = GroupIdentifier.shared.value
+            let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
+            for target in targets {
+                _ = ContentBlockerService.fastUpdateDisabledSites(
+                    groupIdentifier: groupID,
+                    targetRulesFilename: target.rulesFilename,
+                    disabledSites: list
+                )
+                _ = await ContentBlockerService.reloadContentBlocker(withIdentifier: target.bundleIdentifier)
+            }
+
+            let response = createResponse(with: ["disabled": disabled])
+            context.completeRequest(returningItems: [response])
+        }
     }
 
     /// Returns enabled userscripts for a URL, but without inlining potentially huge `content`/`resources`.

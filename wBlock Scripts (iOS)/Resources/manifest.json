@@ -21,6 +21,7 @@
     "content_scripts": [
         {
             "js": [
+                "zapper-content.js",
                 "content.js"
             ],
             "matches": [
