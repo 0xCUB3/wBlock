@@ -97,8 +97,9 @@ public actor SharedAutoUpdateManager {
     private func getAutoUpdateIntervalHours() async -> Double {
         let manager = await getDataManager()
         let interval = await MainActor.run { manager.autoUpdateIntervalHours }
+        guard interval.isFinite else { return defaultIntervalHours }
         guard interval > 0 else { return defaultIntervalHours }
-        return max(interval, 1.0)
+        return min(max(interval, 1.0), 24.0 * 7.0)
     }
 
     private func getAutoUpdateLastCheckTime() async -> Int64 {

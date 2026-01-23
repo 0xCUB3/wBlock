@@ -480,9 +480,29 @@ public class ProtobufDataManager: ObservableObject {
             return containerURL.appendingPathComponent("ProtobufData")
         } else {
             // Fallback to app support directory
-            let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? fileManager.temporaryDirectory
             return appSupport.appendingPathComponent("wBlock").appendingPathComponent("ProtobufData")
         }
+    }
+
+    // MARK: - Legacy Migration Sanitization
+
+    private static let defaultAutoUpdateIntervalHours: Double = 6.0
+    private static let minimumAutoUpdateIntervalHours: Double = 1.0
+    private static let maximumAutoUpdateIntervalHours: Double = 24.0 * 7.0
+
+    private static func sanitizeAutoUpdateIntervalHours(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultAutoUpdateIntervalHours }
+        guard value > 0 else { return defaultAutoUpdateIntervalHours }
+        return min(max(value, minimumAutoUpdateIntervalHours), maximumAutoUpdateIntervalHours)
+    }
+
+    private static func sanitizeEpochSecondsToInt64(_ value: Double) -> Int64 {
+        guard value.isFinite else { return 0 }
+        guard value > 0 else { return 0 }
+        if value >= Double(Int64.max) { return Int64.max }
+        return Int64(value)
     }
     
     // MARK: - Data Loading
@@ -777,13 +797,24 @@ public class ProtobufDataManager: ObservableObject {
             migratedData.autoUpdate.enabled = true  // Default to enabled
         }
 
-        migratedData.autoUpdate.intervalHours = groupDefaults.object(forKey: "autoUpdateIntervalHours") as? Double ?? 6.0
-        migratedData.autoUpdate.lastCheckTime = Int64(groupDefaults.double(forKey: "autoUpdateLastCheckTime"))
-        migratedData.autoUpdate.lastSuccessfulTime = Int64(groupDefaults.double(forKey: "autoUpdateLastSuccessful"))
-        migratedData.autoUpdate.nextEligibleTime = Int64(groupDefaults.double(forKey: "autoUpdateNextEligibleTime"))
+        migratedData.autoUpdate.intervalHours = Self.sanitizeAutoUpdateIntervalHours(
+            groupDefaults.object(forKey: "autoUpdateIntervalHours") as? Double
+                ?? Self.defaultAutoUpdateIntervalHours
+        )
+        migratedData.autoUpdate.lastCheckTime = Self.sanitizeEpochSecondsToInt64(
+            groupDefaults.double(forKey: "autoUpdateLastCheckTime")
+        )
+        migratedData.autoUpdate.lastSuccessfulTime = Self.sanitizeEpochSecondsToInt64(
+            groupDefaults.double(forKey: "autoUpdateLastSuccessful")
+        )
+        migratedData.autoUpdate.nextEligibleTime = Self.sanitizeEpochSecondsToInt64(
+            groupDefaults.double(forKey: "autoUpdateNextEligibleTime")
+        )
         migratedData.autoUpdate.forceNext = groupDefaults.bool(forKey: "autoUpdateForceNext")
         migratedData.autoUpdate.isRunning = groupDefaults.bool(forKey: "autoUpdateIsRunning")
-        migratedData.autoUpdate.runningSinceTimestamp = Int64(groupDefaults.double(forKey: "autoUpdateIsRunningTimestamp"))
+        migratedData.autoUpdate.runningSinceTimestamp = Self.sanitizeEpochSecondsToInt64(
+            groupDefaults.double(forKey: "autoUpdateIsRunningTimestamp")
+        )
 
         // Migrate userscripts initial setup flag (from standard UserDefaults)
         migratedData.autoUpdate.userscriptsInitialSetupCompleted = UserDefaults.standard.bool(forKey: "userScriptsInitialSetupCompleted")
