@@ -7,52 +7,44 @@
     <script type="module" src="popup.js"></script>
 </head>
 <body>
-    <div class="popup-container">
-        <header class="header">
-            <div class="brand">
-                <img src="../../assets/images/shield-icon.png" alt="wBlock" class="shield-icon">
-                <div class="brand-text">
+    <div class="popup">
+        <header class="top">
+            <img src="../../assets/images/shield-icon.png" alt="wBlock" class="app-icon">
+            <div class="top-text">
+                <div class="title-row">
                     <div class="title">wBlock</div>
-                    <div class="subtitle">Safari extension</div>
+                    <div id="blocking-status" class="pill">Loading…</div>
                 </div>
+                <div class="subtitle" id="site-host">—</div>
             </div>
         </header>
 
-        <div class="card">
-            <div class="row">
-                <div class="row-label">Site</div>
-                <div id="site-host" class="row-value">—</div>
-            </div>
-            <div class="row">
-                <div class="row-label">Status</div>
-                <div id="blocking-status" class="row-value">Loading…</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <label class="toggle-row">
-                <span>Disable wBlock on this site</span>
-                <input id="disable-toggle" type="checkbox" />
+        <div class="section">
+            <label class="toggle-row" for="disable-toggle">
+                <span class="label">Disable on this site</span>
+                <span class="switch">
+                    <input id="disable-toggle" type="checkbox" />
+                    <span class="slider" aria-hidden="true"></span>
+                </span>
             </label>
-            <div class="hint">Applies to content blockers and scripts.</div>
         </div>
 
-        <div class="card">
+        <div class="section">
             <div class="row">
-                <div class="row-label">Element zaps</div>
-                <div id="zapper-count" class="row-value">0</div>
+                <div class="label">Element zapper</div>
+                <div id="zapper-count" class="value">0</div>
             </div>
             <div class="button-row">
-                <button id="zapper-activate" class="btn btn-primary" type="button">Activate Element Zapper</button>
-                <button id="zapper-clear" class="btn btn-secondary" type="button" disabled>Clear zaps</button>
+                <button id="zapper-activate" class="btn btn-primary" type="button">Activate</button>
+                <button id="zapper-clear" class="btn btn-secondary" type="button" disabled>Clear</button>
             </div>
-            <div class="hint">Tap an element on the page to hide it. Rules persist per-site.</div>
+            <div class="hint">Tap an element on the page to hide it.</div>
         </div>
 
-        <div class="footer">
+        <footer class="footer">
             <div class="info-subtext">Configure filter lists in the wBlock app.</div>
             <div id="error" class="error" hidden></div>
-        </div>
+        </footer>
     </div>
 </body>
 </html>

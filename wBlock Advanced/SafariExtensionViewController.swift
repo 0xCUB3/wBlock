@@ -17,7 +17,7 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     static let shared: SafariExtensionViewController = {
         let shared = SafariExtensionViewController()
         // Leave extra vertical room for optional sections (logger + zapper rules).
-        shared.preferredContentSize = NSSize(width: 300, height: 420)
+        shared.preferredContentSize = NSSize(width: 320, height: 420)
         return shared
     }()
 

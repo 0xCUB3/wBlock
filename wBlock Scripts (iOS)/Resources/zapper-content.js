@@ -20,6 +20,7 @@
     host: '',
     rules: [],
     lastAddedSelector: null,
+    lastPickAt: 0,
     cleanupFns: [],
     ui: {
       root: null,
@@ -353,6 +354,7 @@
     ensureUi();
     state.active = true;
     state.lastAddedSelector = null;
+    state.lastPickAt = 0;
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
     if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
     showToast('Element Zapper enabled.');
@@ -365,18 +367,36 @@
       setHighlightForElement(el);
     };
 
-    const onDown = (event) => {
+    const pickFromEvent = (event) => {
       if (!state.active) return;
       if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
+      const now = Date.now();
+      if (now - state.lastPickAt < 120) return;
       const el = elementFromEvent(event);
       if (!el || shouldIgnoreTarget(el)) return;
       interceptEvent(event);
+      state.lastPickAt = now;
       const selector = selectorForElement(el);
       if (!selector) {
         showToast('Unable to create a rule for that element.');
         return;
       }
       addSelectorRule(selector).catch(() => {});
+    };
+
+    // Prevent navigation/actions that fire on click (e.g. <a href=...>) while
+    // the zapper is active. On iOS Safari, preventing pointer/touch events
+    // alone does not always cancel the subsequent click.
+    const onClick = (event) => {
+      if (!state.active) return;
+      if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
+      interceptEvent(event);
+
+      // If we didn't get a down/touch event (some pages / input types),
+      // fall back to treating this click as a pick action.
+      const now = Date.now();
+      if (now - state.lastPickAt < 350) return;
+      pickFromEvent(event);
     };
 
     const onKeyDown = (event) => {
@@ -395,13 +415,19 @@
 
     const moveEvent = 'PointerEvent' in window ? 'pointermove' : 'mousemove';
     const downEvent = 'PointerEvent' in window ? 'pointerdown' : 'mousedown';
+    const touchOptions = { capture: true, passive: false };
 
     document.addEventListener(moveEvent, onMove, true);
-    document.addEventListener(downEvent, onDown, true);
+    document.addEventListener(downEvent, pickFromEvent, true);
+    document.addEventListener('click', onClick, true);
+    // Ensure preventDefault works for touch-driven clicks.
+    document.addEventListener('touchstart', pickFromEvent, touchOptions);
     document.addEventListener('keydown', onKeyDown, true);
 
     addCleanup(() => document.removeEventListener(moveEvent, onMove, true));
-    addCleanup(() => document.removeEventListener(downEvent, onDown, true));
+    addCleanup(() => document.removeEventListener(downEvent, pickFromEvent, true));
+    addCleanup(() => document.removeEventListener('click', onClick, true));
+    addCleanup(() => document.removeEventListener('touchstart', pickFromEvent, touchOptions));
     addCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
   }
 
@@ -440,4 +466,3 @@
   // Initial load: apply existing rules for this host.
   reloadRulesAndApply().catch(() => {});
 })();
-

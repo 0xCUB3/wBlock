@@ -1,2 +1,7 @@
 .claude/settings.local.json
 build/
+
+# Xcode
+*.xcuserstate
+**/xcuserdata/
+DerivedData/

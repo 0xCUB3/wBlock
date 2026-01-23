@@ -6,229 +6,191 @@ struct PopoverView: View {
     @ObservedObject var viewModel: PopoverViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Title
-            Text("wBlock Ad Blocker")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                header
 
-            // Blocked count
-            Text(blockedCountText)
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                Divider()
 
-            // Blocked requests logger
-            VStack(spacing: 8) {
-                Button(action: {
-                    viewModel.toggleBlockedRequests()
-                }) {
+                Toggle("Disable on this site", isOn: $viewModel.isDisabled)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Blocked Requests (\(viewModel.blockedRequests.count))")
-                            .font(.system(size: 14, weight: .medium))
+                        Text("Element zapper")
+                            .font(.system(size: 13, weight: .semibold))
                         Spacer()
-                        Image(systemName: viewModel.showingBlockedRequests ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 12))
+                        Text("\(viewModel.zapperRules.count)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.secondary)
                     }
-                    .foregroundColor(.primary)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 8)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(6)
-                }
-                .buttonStyle(PlainButtonStyle())
 
-                if viewModel.showingBlockedRequests {
-                    VStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        Button {
+                            Task { await viewModel.activateElementZapper() }
+                        } label: {
+                            Text("Activate")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.regular)
+
+                        Button {
+                            viewModel.deleteAllZapperRules()
+                        } label: {
+                            Text("Clear")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .disabled(viewModel.zapperRules.isEmpty)
+                    }
+
+                    Text("Click an element on the page to hide it.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
+                Divider()
+
+                DisclosureGroup(
+                    "Blocked requests (\(viewModel.blockedRequests.count))",
+                    isExpanded: $viewModel.showingBlockedRequests
+                ) {
+                    VStack(alignment: .leading, spacing: 8) {
                         if viewModel.blockedRequests.isEmpty {
-                            Text("No blocked requests recorded yet")
-                                .font(.caption)
+                            Text("No blocked requests yet.")
+                                .font(.footnote)
                                 .foregroundColor(.secondary)
-                                .padding(.vertical, 8)
                         } else {
-                            ScrollView {
-                                VStack(spacing: 3) {
-                                    ForEach(viewModel.blockedRequests, id: \.self) { url in
-                                        Text(url)
-                                            .font(.system(size: 10, design: .monospaced))
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                            .textSelection(.enabled)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.vertical, 3)
-                                            .padding(.horizontal, 6)
-                                            .background(Color.gray.opacity(0.05))
-                                            .cornerRadius(4)
-                                    }
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(viewModel.blockedRequests, id: \.self) { url in
+                                    Text(url)
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                            }
-                            .frame(maxHeight: 120)
-
-                            HStack {
-                                Spacer()
-                                Button(action: {
-                                    Task { await viewModel.refreshBlockedRequests() }
-                                }) {
-                                    HStack {
-                                        Image(systemName: "arrow.clockwise")
-                                            .font(.system(size: 11))
-                                        Text("Refresh")
-                                            .font(.system(size: 12, weight: .medium))
-                                    }
-                                }
-                                .buttonStyle(PlainButtonStyle())
                             }
                         }
-                    }
-                    .padding(.horizontal, 4)
-                }
-            }
 
-            // Disable toggle
-            Toggle(isOn: $viewModel.isDisabled) {
-                Text(viewModel.host.isEmpty ? "Disable for this site" : "Disable for \(viewModel.host)")
-            }
-            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-            .padding(.top, 8)
-
-                // Minimal disclaimer directly under toggle
-                VStack(spacing: 2) {
-                    Text("Safari may take a few minutes to apply changes.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                    Text("Restart Safari if needed.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, 8)
-                .padding(.top, 2)
-            
-            // Element Zapper button
-            Button(action: {
-                Task {
-                    await viewModel.activateElementZapper()
-                }
-            }) {
-                HStack {
-                    Image(systemName: "target")
-                        .foregroundColor(.white)
-                    Text("Element Zapper")
-                        .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(Color.orange)
-                .cornerRadius(8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.top, 4)
-            
-            
-                // Zapper Rules section
-            VStack(spacing: 8) {
-                Button(action: {
-                    viewModel.toggleZapperRules()
-                }) {
-                    HStack {
-                        Text("Zapper Rules (\(viewModel.zapperRules.count))")
-                            .font(.system(size: 14, weight: .medium))
-                        Spacer()
-                        Image(systemName: viewModel.showingZapperRules ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 12))
+                        HStack {
+                            Spacer()
+                            Button("Refresh") {
+                                Task { await viewModel.refreshBlockedRequests() }
+                            }
+                            .controlSize(.small)
+                        }
                     }
-                    .foregroundColor(.primary)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 8)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(6)
+                    .padding(.top, 6)
                 }
-                .buttonStyle(PlainButtonStyle())
-                
-                if viewModel.showingZapperRules {
-                    VStack(spacing: 4) {
+
+                DisclosureGroup(
+                    "Zapper rules (\(viewModel.zapperRules.count))",
+                    isExpanded: $viewModel.showingZapperRules
+                ) {
+                    VStack(alignment: .leading, spacing: 6) {
                         if viewModel.zapperRules.isEmpty {
-                            Text("No zapper rules for this site")
-                                .font(.caption)
+                            Text("No zapper rules for this site.")
+                                .font(.footnote)
                                 .foregroundColor(.secondary)
-                                .padding(.vertical, 8)
                         } else {
-                            // Rules list
-                            VStack(spacing: 3) {
-ForEach(viewModel.zapperRules, id: \.self) { rule in
-                                    HStack {
-                                        Text(rule.isEmpty ? "(empty rule)" : rule)
-                                            .font(.system(size: 11))
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                        
-                                        Spacer()
-                                        
-                                        Button(action: {
-                                            viewModel.deleteZapperRule(rule)
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(.red)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                    .padding(.vertical, 3)
-                                    .padding(.horizontal, 6)
-                                    .background(Color.gray.opacity(0.05))
-                                    .cornerRadius(4)
-                                }
-                            }
-                            .frame(maxHeight: 120)
-                            
-                            // Clear all button
-                            Button(action: {
-                                viewModel.deleteAllZapperRules()
-                            }) {
-                                HStack {
-                                    Image(systemName: "trash")
+                            ForEach(viewModel.zapperRules, id: \.self) { rule in
+                                HStack(spacing: 8) {
+                                    Text(rule.isEmpty ? "(empty rule)" : rule)
                                         .font(.system(size: 11))
-                                    Text("Clear All")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Button {
+                                        viewModel.deleteZapperRule(rule)
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .foregroundColor(.red)
-                                .padding(.vertical, 4)
-                                .padding(.horizontal, 8)
-                                .background(Color.red.opacity(0.1))
-                                .cornerRadius(4)
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .padding(.top, 8)
                         }
                     }
-                    .padding(.horizontal, 4)
+                    .padding(.top, 6)
                 }
+
+                Text(blockedCountText)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
             }
+            .padding(14)
         }
-        .padding(16)
-        .frame(width: 300)
+        .frame(width: 320)
         .onAppear {
             Task {
                 await viewModel.loadState()
             }
         }
+        .onChange(of: viewModel.showingBlockedRequests) { expanded in
+            guard expanded else { return }
+            Task { await viewModel.refreshBlockedRequests() }
+        }
+        .onChange(of: viewModel.showingZapperRules) { expanded in
+            guard expanded else { return }
+            viewModel.loadZapperRules()
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "shield.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.accentColor)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("wBlock")
+                        .font(.system(size: 14, weight: .bold))
+                    Spacer()
+                    Text(viewModel.isDisabled ? "Disabled" : "Active")
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(statusBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 999)
+                                .stroke(statusBorder, lineWidth: 1)
+                        )
+                        .cornerRadius(999)
+                }
+
+                Text(viewModel.host.isEmpty ? "—" : viewModel.host)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
+    }
+
+    private var statusBackground: Color {
+        viewModel.isDisabled ? Color.red.opacity(0.18) : Color.green.opacity(0.18)
+    }
+
+    private var statusBorder: Color {
+        viewModel.isDisabled ? Color.red.opacity(0.45) : Color.green.opacity(0.45)
     }
 
     private var blockedCountText: String {
         switch viewModel.blockedCount {
         case 0:
-            return "No requests blocked on this page."
+            return "Blocked: 0"
         case 1:
-            return "1 request blocked on this page."
+            return "Blocked: 1"
         default:
-            return "\(viewModel.blockedCount) requests blocked on this page."
+            return "Blocked: \(viewModel.blockedCount)"
         }
     }
 }

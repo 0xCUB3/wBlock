@@ -13,6 +13,16 @@ function setError(message) {
     el.textContent = message;
 }
 
+function setStatus(text, kind = 'neutral') {
+    const statusEl = document.getElementById('blocking-status');
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.classList.remove('is-active', 'is-disabled', 'is-neutral');
+    if (kind === 'active') statusEl.classList.add('is-active');
+    else if (kind === 'disabled') statusEl.classList.add('is-disabled');
+    else statusEl.classList.add('is-neutral');
+}
+
 async function getActiveTab() {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     return tabs && tabs.length ? tabs[0] : null;
@@ -75,7 +85,6 @@ async function refreshUi() {
     setError('');
 
     const hostEl = document.getElementById('site-host');
-    const statusEl = document.getElementById('blocking-status');
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
 
@@ -85,21 +94,21 @@ async function refreshUi() {
     if (hostEl) hostEl.textContent = host || '—';
 
     if (!tab || !tab.id || !host) {
-        if (statusEl) statusEl.textContent = 'Unavailable on this page';
+        setStatus('Unavailable', 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
         await updateZapperCount('');
         return;
     }
 
-    if (statusEl) statusEl.textContent = 'Checking…';
+    setStatus('Checking…', 'neutral');
 
     const disabled = await getSiteDisabledState(host);
     if (disableToggle) {
         disableToggle.checked = disabled;
         disableToggle.disabled = false;
     }
-    if (statusEl) statusEl.textContent = disabled ? 'Disabled on this site' : 'Active';
+    setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');
 
     await updateZapperCount(host);
 
@@ -109,9 +118,9 @@ async function refreshUi() {
                 setError('');
                 disableToggle.disabled = true;
                 const next = disableToggle.checked;
-                if (statusEl) statusEl.textContent = next ? 'Disabling…' : 'Enabling…';
+                setStatus(next ? 'Disabling…' : 'Enabling…', 'neutral');
                 await setSiteDisabledState(host, next);
-                if (statusEl) statusEl.textContent = next ? 'Disabled on this site' : 'Active';
+                setStatus(next ? 'Disabled' : 'Active', next ? 'disabled' : 'active');
             } catch (error) {
                 console.error('[wBlock] Failed to update disabled state:', error);
                 setError('Failed to update site setting.');

@@ -23881,6 +23881,11 @@ class WBlockElementZapper {
 
         event.preventDefault();
         event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') {
+            event.stopImmediatePropagation();
+        }
+        event.cancelBubble = true;
+        event.returnValue = false;
 
         if (this.isPickerMode) {
             // Store the clicked element and generate candidates
