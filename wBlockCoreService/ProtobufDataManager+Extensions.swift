@@ -217,10 +217,17 @@ extension ProtobufDataManager {
     // MARK: - Userscripts
     public func getUserScripts() -> [UserScript] {
         return appData.userScripts.map { protoData in
+            let rawURLString = protoData.url.trimmingCharacters(in: .whitespacesAndNewlines)
+            let parsedURL = rawURLString.isEmpty ? nil : URL(string: rawURLString)
+
+            // Treat userscripts with no URL (or file URLs) as local imports.
+            // This also acts as a migration for older stored entries where `isLocal` may be unset
+            // (protobuf defaults booleans to `false` when the field wasn't written).
+            let inferredIsLocalFromURL = rawURLString.isEmpty || (parsedURL?.isFileURL == true)
             var script = UserScript(
                 id: UUID(uuidString: protoData.id) ?? UUID(),
                 name: protoData.name,
-                url: protoData.url.isEmpty ? nil : URL(string: protoData.url),
+                url: parsedURL,
                 content: protoData.content
             )
             script.isEnabled = protoData.isEnabled
@@ -233,7 +240,7 @@ extension ProtobufDataManager {
             script.runAt = protoData.runAt
             script.injectInto = protoData.injectInto
             script.grant = protoData.grant
-            script.isLocal = protoData.isLocal
+            script.isLocal = protoData.isLocal || inferredIsLocalFromURL
             script.updateURL = protoData.updateURL.isEmpty ? nil : protoData.updateURL
             script.downloadURL = protoData.downloadURL.isEmpty ? nil : protoData.downloadURL
             return script
@@ -257,7 +264,8 @@ extension ProtobufDataManager {
             protoUserScript.runAt = userScript.runAt
             protoUserScript.injectInto = userScript.injectInto
             protoUserScript.grant = userScript.grant
-            protoUserScript.isLocal = userScript.isLocal
+            protoUserScript.isLocal =
+                userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
             protoUserScript.content = userScript.content
@@ -280,7 +288,8 @@ extension ProtobufDataManager {
             protoUserScript.runAt = userScript.runAt
             protoUserScript.injectInto = userScript.injectInto
             protoUserScript.grant = userScript.grant
-            protoUserScript.isLocal = userScript.isLocal
+            protoUserScript.isLocal =
+                userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
             protoUserScript.content = userScript.content
@@ -573,7 +582,8 @@ extension ProtobufDataManager {
             protoUserScript.runAt = userScript.runAt
             protoUserScript.injectInto = userScript.injectInto
             protoUserScript.grant = userScript.grant
-            protoUserScript.isLocal = userScript.isLocal
+            protoUserScript.isLocal =
+                userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
             protoUserScript.content = userScript.content
