@@ -11,16 +11,33 @@ public class PopoverViewModel: ObservableObject {
     @Published public var blockedRequests: [String] = []
     @Published public var showingBlockedRequests: Bool = false
     @Published public var isDisabled: Bool = false {
-        didSet { saveDisabledState() }
+        didSet {
+            guard !isLoading, oldValue != isDisabled else { return }
+            saveDisabledState()
+        }
     }
     @Published public var host: String = ""
     @Published public var zapperRules: [String] = []
     @Published public var showingZapperRules: Bool = false
 
     private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+    private var isLoading: Bool = false
+
+    private func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
+        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalizedHost.isEmpty { return false }
+        for site in disabledSites {
+            let disabled = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if disabled.isEmpty { continue }
+            if normalizedHost == disabled { return true }
+            if normalizedHost.hasSuffix("." + disabled) { return true }
+        }
+        return false
+    }
 
     /// Load current site host and disabled state
     public func loadState() async {
+        isLoading = true
         do {
             guard let window = await SFSafariApplication.activeWindow(),
                   let tab = await window.activeTab(),
@@ -30,14 +47,15 @@ public class PopoverViewModel: ObservableObject {
                   let host = url.host else {
                 os_log(.info, "PopoverViewModel: Could not determine active host.")
                 self.host = "Unknown"
+                isLoading = false
                 return
             }
             
             self.host = host
             // Reload data to ensure we have the latest
-            await ProtobufDataManager.shared.loadData()
+            await ProtobufDataManager.shared.waitUntilLoaded()
             let list = ProtobufDataManager.shared.disabledSites
-            self.isDisabled = list.contains(host)
+            self.isDisabled = isHostDisabled(host: host, disabledSites: list)
             
             // Load zapper rules after host is set
             self.loadZapperRules()
@@ -47,6 +65,7 @@ public class PopoverViewModel: ObservableObject {
             
             os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))
         }
+        isLoading = false
     }
 
     /// Save toggled disabled state for current host
@@ -55,13 +74,20 @@ public class PopoverViewModel: ObservableObject {
         
         Task {
             // Ensure we have the latest data before modifying
-            await ProtobufDataManager.shared.loadData()
+            await ProtobufDataManager.shared.waitUntilLoaded()
             var list = ProtobufDataManager.shared.disabledSites
             
             if isDisabled {
                 if !list.contains(host) { list.append(host) }
             } else {
-                list.removeAll { $0 == host }
+                // If a parent domain is disabled, we should remove it as well to make the current site active.
+                let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                list.removeAll { entry in
+                    let normalizedEntry = entry.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    if normalizedEntry.isEmpty { return true }
+                    if normalizedEntry == normalizedHost { return true }
+                    return normalizedHost.hasSuffix("." + normalizedEntry)
+                }
             }
             
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
@@ -69,6 +95,9 @@ public class PopoverViewModel: ObservableObject {
             // The main app will automatically detect this change via ProtobufDataManager observer
             // and rebuild/reload all content blockers with the updated allowlist rules
             os_log(.info, "PopoverViewModel: Updated disabled sites list for host: %@, isDisabled: %{BOOL}d, final list: %@", host, isDisabled, list.joined(separator: ", "))
+
+            // Apply to the active page immediately.
+            await reloadCurrentPage()
         }
     }
     

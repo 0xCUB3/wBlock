@@ -174,7 +174,7 @@
       #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 14px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
       #${UI_ROOT_ID} .wblock-status { font-size: 12px; line-height: 1.2; flex: 1; min-width: 0; }
       #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 8px; }
-      #${UI_ROOT_ID} button { appearance: none; border: 0; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.14); }
+      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; padding: 8px 10px; min-height: 30px; line-height: 1; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.14); }
       #${UI_ROOT_ID} button:disabled { opacity: 0.5; }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
       #${TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
@@ -200,20 +200,34 @@
     undoButton.type = 'button';
     undoButton.textContent = 'Undo';
     undoButton.disabled = true;
-    undoButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    const onUndo = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      }
       undoLastZap().catch(() => {});
-    });
+    };
+    undoButton.addEventListener('click', onUndo);
+    undoButton.addEventListener('pointerup', onUndo, true);
+    undoButton.addEventListener('touchend', onUndo, { passive: false });
 
     const doneButton = document.createElement('button');
     doneButton.type = 'button';
     doneButton.textContent = 'Done';
-    doneButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      deactivateZapper();
-    });
+    const onDone = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      }
+      // Delay teardown until after the current input/click sequence completes
+      // so we don't accidentally retarget the synthetic click to the page.
+      setTimeout(() => deactivateZapper({ removeUi: true }), 0);
+    };
+    doneButton.addEventListener('click', onDone);
+    doneButton.addEventListener('pointerup', onDone, true);
+    doneButton.addEventListener('touchend', onDone, { passive: false });
 
     actions.appendChild(undoButton);
     actions.appendChild(doneButton);
@@ -330,6 +344,44 @@
     state.cleanupFns.push(fn);
   }
 
+  function teardownUi() {
+    clearTimeout(showToast._timer);
+
+    const root = state.ui.root;
+    const highlight = state.ui.highlight;
+    const toast = state.ui.toast;
+
+    try {
+      if (root && root.parentNode) root.parentNode.removeChild(root);
+      if (highlight && highlight.parentNode) highlight.parentNode.removeChild(highlight);
+      if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+    } catch {}
+
+    try {
+      const uiStyle = document.getElementById(UI_STYLE_ID);
+      if (uiStyle && uiStyle.parentNode) uiStyle.parentNode.removeChild(uiStyle);
+    } catch {}
+
+    // Fallback: remove any lingering nodes by ID (in case state references changed).
+    try {
+      const rootEl = document.getElementById(UI_ROOT_ID);
+      if (rootEl) rootEl.remove();
+      const highlightEl = document.getElementById(HIGHLIGHT_ID);
+      if (highlightEl) highlightEl.remove();
+      const toastEl = document.getElementById(TOAST_ID);
+      if (toastEl) toastEl.remove();
+      const uiStyleEl = document.getElementById(UI_STYLE_ID);
+      if (uiStyleEl) uiStyleEl.remove();
+    } catch {}
+
+    state.ui.root = null;
+    state.ui.highlight = null;
+    state.ui.toast = null;
+    state.ui.statusText = null;
+    state.ui.undoButton = null;
+    state.ui.doneButton = null;
+  }
+
   function clearCleanup() {
     const fns = state.cleanupFns.slice();
     state.cleanupFns = [];
@@ -431,11 +483,17 @@
     addCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
   }
 
-  function deactivateZapper() {
-    if (!state.active) return;
+  function deactivateZapper(options = {}) {
+    const removeUi = Boolean(options.removeUi);
+    if (!state.active && !removeUi) return;
     state.active = false;
     clearCleanup();
     clearHighlight();
+    if (removeUi) {
+      teardownUi();
+      return;
+    }
+
     showToast('Element Zapper disabled.');
     if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Off';
   }
@@ -454,7 +512,7 @@
       return;
     }
     if (message.type === 'wblock:zapper:deactivate') {
-      deactivateZapper();
+      deactivateZapper({ removeUi: true });
       return;
     }
     if (message.type === 'wblock:zapper:reloadRules') {

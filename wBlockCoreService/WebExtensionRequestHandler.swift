@@ -16,6 +16,28 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
+    private static func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
+        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalizedHost.isEmpty { return false }
+        for site in disabledSites {
+            let disabled = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if disabled.isEmpty { continue }
+            if normalizedHost == disabled { return true }
+            if normalizedHost.hasSuffix("." + disabled) { return true }
+        }
+        return false
+    }
+
+    private static func emptyRulesPayload() -> [String: Any] {
+        [
+            "css": [],
+            "extendedCss": [],
+            "js": [],
+            "scriptlets": [],
+            "userScripts": []
+        ]
+    }
+
     private static func extractResourceNames(from userScriptContent: String) -> [String] {
         // Only parse the metadata header block to avoid scanning huge script bodies.
         var names: [String] = []
@@ -99,26 +121,58 @@ public enum WebExtensionRequestHandler {
         let payload = message?["payload"] as? [String: Any] ?? [:]
         if let urlString = payload["url"] as? String {
             if let url = URL(string: urlString) {
-                do {
-                    let webExtension = try WebExtension.shared(
-                        groupID: GroupIdentifier.shared.value
-                    )
+                // Respect per-site disable immediately for both content blockers and scripts.
+                Task { @MainActor in
+                    await ProtobufDataManager.shared.waitUntilLoaded()
+                    let disabledSites = ProtobufDataManager.shared.disabledSites
+                    let disabled = isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
 
-                    var topUrl: URL?
-                    if let topUrlString = payload["topUrl"] as? String {
-                        topUrl = URL(string: topUrlString)
+                    if disabled {
+                        message?["payload"] = emptyRulesPayload()
+                    } else {
+                        do {
+                            let webExtension = try WebExtension.shared(
+                                groupID: GroupIdentifier.shared.value
+                            )
+
+                            var topUrl: URL?
+                            if let topUrlString = payload["topUrl"] as? String {
+                                topUrl = URL(string: topUrlString)
+                            }
+
+                            if let configuration = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
+                                message?["payload"] = convertToPayload(configuration)
+                            }
+                        } catch {
+                            os_log(
+                                .error,
+                                "Failed to get WebExtension instance: %@",
+                                error.localizedDescription
+                            )
+                        }
                     }
 
-                    if let configuration = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
-                        message?["payload"] = convertToPayload(configuration)
+                    if var trace = message?["trace"] as? [String: Int64] {
+                        trace["nativeStart"] = nativeStart
+                        trace["nativeEnd"] = Int64(Date().timeIntervalSince1970 * 1000)
+                        message?["trace"] = trace
                     }
-                } catch {
-                    os_log(
-                        .error,
-                        "Failed to get WebExtension instance: %@",
-                        error.localizedDescription
-                    )
+
+                    // Enable verbose logging in the content script only in debug builds
+                    #if DEBUG
+                    message?["verbose"] = true
+                    #else
+                    message?["verbose"] = false
+                    #endif
+
+                    if let safeMessage = message {
+                        let response = createResponse(with: safeMessage)
+                        context.completeRequest(returningItems: [response], completionHandler: nil)
+                    } else {
+                        context.completeRequest(returningItems: [], completionHandler: nil)
+                    }
                 }
+                return
             }
         }
 
@@ -241,8 +295,9 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.loadData()
-            let disabled = ProtobufDataManager.shared.disabledSites.contains(host)
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            let disabledSites = ProtobufDataManager.shared.disabledSites
+            let disabled = isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled])
             context.completeRequest(returningItems: [response])
         }
@@ -259,13 +314,20 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.loadData()
+            await ProtobufDataManager.shared.waitUntilLoaded()
 
             var list = ProtobufDataManager.shared.disabledSites
             if disabled {
                 if !list.contains(host) { list.append(host) }
             } else {
-                list.removeAll { $0 == host }
+                // If a parent domain is disabled, remove it as well so the current host is active.
+                let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                list.removeAll { entry in
+                    let normalizedEntry = entry.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    if normalizedEntry.isEmpty { return true }
+                    if normalizedEntry == normalizedHost { return true }
+                    return normalizedHost.hasSuffix("." + normalizedEntry)
+                }
             }
 
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
@@ -303,6 +365,16 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            if let url = URL(string: urlString) {
+                let disabledSites = ProtobufDataManager.shared.disabledSites
+                if isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
+                    let response = createResponse(with: ["userScripts": []])
+                    context.completeRequest(returningItems: [response])
+                    return
+                }
+            }
+
             let userScriptManager = UserScriptManager.shared
             let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
 

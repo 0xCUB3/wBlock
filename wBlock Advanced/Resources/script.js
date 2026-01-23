@@ -23820,6 +23820,16 @@ class WBlockElementZapper {
         if (this.overlay && this.overlay.parentNode) {
             this.overlay.parentNode.removeChild(this.overlay);
         }
+        if (this.toolbar && this.toolbar.parentNode) {
+            this.toolbar.parentNode.removeChild(this.toolbar);
+        }
+        if (this.pickerPanel && this.pickerPanel.parentNode) {
+            this.pickerPanel.parentNode.removeChild(this.pickerPanel);
+        }
+
+        this.overlay = null;
+        this.toolbar = null;
+        this.pickerPanel = null;
 
         if (safari && safari.extension) {
             safari.extension.dispatchMessage('zapperController', { action: 'quit' });

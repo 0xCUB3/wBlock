@@ -58,6 +58,75 @@ async function updateZapperCount(host) {
     return count;
 }
 
+async function loadZapperRules(host) {
+    if (!host) return [];
+    try {
+        const key = zapperStorageKey(host);
+        const result = await browser.storage.local.get(key);
+        const rules = Array.isArray(result[key]) ? result[key] : [];
+        return rules
+            .filter((r) => typeof r === 'string')
+            .map((r) => r.trim())
+            .filter(Boolean);
+    } catch (error) {
+        console.warn('[wBlock] Failed to load zapper rules:', error);
+        return [];
+    }
+}
+
+async function saveZapperRules(host, rules) {
+    if (!host) return;
+    const key = zapperStorageKey(host);
+    const normalized = Array.from(new Set((rules || []).map((r) => String(r).trim()).filter(Boolean)));
+    await browser.storage.local.set({ [key]: normalized });
+}
+
+let zapperRulesExpanded = false;
+let currentZapperRules = [];
+
+function setRulesExpanded(expanded) {
+    zapperRulesExpanded = expanded;
+    const toggle = document.getElementById('zapper-rules-toggle');
+    const container = document.getElementById('zapper-rules');
+    if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (container) container.hidden = !expanded;
+}
+
+function renderZapperRules(rules) {
+    const container = document.getElementById('zapper-rules');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!rules.length) {
+        const empty = document.createElement('div');
+        empty.className = 'rule-empty';
+        empty.textContent = 'No rules';
+        container.appendChild(empty);
+        return;
+    }
+
+    for (let index = 0; index < rules.length; index += 1) {
+        const rule = rules[index];
+        const row = document.createElement('div');
+        row.className = 'rule-row';
+
+        const text = document.createElement('div');
+        text.className = 'rule-text';
+        text.textContent = rule;
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'rule-delete';
+        del.setAttribute('data-index', String(index));
+        del.setAttribute('aria-label', 'Delete rule');
+        del.textContent = '✕';
+
+        row.appendChild(text);
+        row.appendChild(del);
+        container.appendChild(row);
+    }
+}
+
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
@@ -81,12 +150,22 @@ async function setSiteDisabledState(host, disabled) {
     });
 }
 
+async function reloadActiveTab(tabId) {
+    if (!tabId) return;
+    try {
+        await browser.tabs.reload(tabId);
+    } catch (error) {
+        console.warn('[wBlock] Failed to reload tab:', error);
+    }
+}
+
 async function refreshUi() {
     setError('');
 
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
+    const rulesToggle = document.getElementById('zapper-rules-toggle');
 
     const tab = await getActiveTab();
     const host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
@@ -97,7 +176,9 @@ async function refreshUi() {
         setStatus('Unavailable', 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
+        if (rulesToggle) rulesToggle.disabled = true;
         await updateZapperCount('');
+        setRulesExpanded(false);
         return;
     }
 
@@ -112,6 +193,50 @@ async function refreshUi() {
 
     await updateZapperCount(host);
 
+    if (rulesToggle) {
+        rulesToggle.disabled = false;
+        rulesToggle.addEventListener('click', async () => {
+            try {
+                setError('');
+                setRulesExpanded(!zapperRulesExpanded);
+                if (!zapperRulesExpanded) return;
+                currentZapperRules = await loadZapperRules(host);
+                renderZapperRules(currentZapperRules);
+            } catch (error) {
+                console.error('[wBlock] Failed to toggle rules:', error);
+                setError('Failed to load rules.');
+            }
+        });
+    }
+
+    const rulesContainer = document.getElementById('zapper-rules');
+    if (rulesContainer) {
+        rulesContainer.addEventListener('click', async (event) => {
+            const element = event && event.target && event.target.closest ? event.target.closest('button.rule-delete') : null;
+            if (!element) return;
+            const idx = Number(element.getAttribute('data-index'));
+            if (!Number.isFinite(idx) || idx < 0 || idx >= currentZapperRules.length) return;
+
+            try {
+                setError('');
+                const next = currentZapperRules.slice();
+                next.splice(idx, 1);
+                await saveZapperRules(host, next);
+                currentZapperRules = await loadZapperRules(host);
+                renderZapperRules(currentZapperRules);
+                await updateZapperCount(host);
+                try {
+                    await browser.tabs.sendMessage(tab.id, { type: 'wblock:zapper:reloadRules' });
+                } catch {
+                    // Content script may not be reachable on certain pages; ignore.
+                }
+            } catch (error) {
+                console.error('[wBlock] Failed to delete rule:', error);
+                setError('Failed to delete rule.');
+            }
+        });
+    }
+
     if (disableToggle) {
         disableToggle.addEventListener('change', async () => {
             try {
@@ -121,6 +246,7 @@ async function refreshUi() {
                 setStatus(next ? 'Disabling…' : 'Enabling…', 'neutral');
                 await setSiteDisabledState(host, next);
                 setStatus(next ? 'Disabled' : 'Active', next ? 'disabled' : 'active');
+                await reloadActiveTab(tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to update disabled state:', error);
                 setError('Failed to update site setting.');
@@ -152,6 +278,8 @@ async function refreshUi() {
                 const key = zapperStorageKey(host);
                 await browser.storage.local.remove(key);
                 await updateZapperCount(host);
+                currentZapperRules = [];
+                if (zapperRulesExpanded) renderZapperRules(currentZapperRules);
                 try {
                     await browser.tabs.sendMessage(tab.id, { type: 'wblock:zapper:reloadRules' });
                 } catch {

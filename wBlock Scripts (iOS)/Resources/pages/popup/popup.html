@@ -39,10 +39,15 @@
                 <button id="zapper-clear" class="btn btn-secondary" type="button" disabled>Clear</button>
             </div>
             <div class="hint">Tap an element on the page to hide it.</div>
+
+            <button id="zapper-rules-toggle" class="disclosure" type="button" aria-expanded="false">
+                <span>Rules</span>
+                <span id="zapper-rules-chevron" class="chevron" aria-hidden="true">▾</span>
+            </button>
+            <div id="zapper-rules" class="rules" hidden></div>
         </div>
 
         <footer class="footer">
-            <div class="info-subtext">Configure filter lists in the wBlock app.</div>
             <div id="error" class="error" hidden></div>
         </footer>
     </div>
