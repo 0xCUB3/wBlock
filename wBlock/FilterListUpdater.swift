@@ -28,6 +28,14 @@ class FilterListUpdater {
         self.loader = loader
         self.logManager = logManager
     }
+    
+    private func storedValidators(for filter: FilterList) async -> (etag: String?, lastModified: String?) {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        let uuid = filter.id.uuidString
+        return await MainActor.run {
+            (ProtobufDataManager.shared.getFilterEtag(uuid), ProtobufDataManager.shared.getFilterLastModified(uuid))
+        }
+    }
 
     /// Counts effective rules in a given filter list content string.
     private func countRulesInContent(content: String) -> Int {
@@ -253,14 +261,15 @@ class FilterListUpdater {
     /// Checks if a filter has an update by comparing lightweight metadata before falling back to full downloads
     func hasUpdate(for filter: FilterList) async -> Bool {
         do {
-            var headRequest = URLRequest(url: filter.url)
+            let validators = await storedValidators(for: filter)
+            var headRequest = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
             headRequest.httpMethod = "HEAD"
 
-            if let etag = filter.etag, !etag.isEmpty {
+            if let etag = validators.etag, !etag.isEmpty {
                 headRequest.setValue(etag, forHTTPHeaderField: "If-None-Match")
             }
 
-            if let lastModified = filter.serverLastModified, !lastModified.isEmpty {
+            if let lastModified = validators.lastModified, !lastModified.isEmpty {
                 headRequest.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
             }
 
@@ -272,19 +281,37 @@ class FilterListUpdater {
                     return false
                 case 200:
                     let remoteETag = httpResponse.value(forHTTPHeaderField: "ETag")
-                    if let remoteETag, let localETag = filter.etag, remoteETag == localETag {
-                        return false
-                    }
-
                     let remoteLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
-                    if let remoteLastModified,
-                        let localLastModified = filter.serverLastModified,
-                        remoteLastModified == localLastModified
+                    
+                    if let remoteETag,
+                       let localETag = validators.etag,
+                       !localETag.isEmpty
                     {
-                        return false
+                        let changed = remoteETag != localETag
+                        if changed {
+                            await ConcurrentLogManager.shared.debug(
+                                .filterUpdate, "Filter update available (ETag changed)",
+                                metadata: ["filter": filter.name]
+                            )
+                        }
+                        return changed
                     }
-
-                    // Metadata indicates a potential update; confirm by inspecting content when needed
+                    
+                    if let remoteLastModified,
+                       let localLastModified = validators.lastModified,
+                       !localLastModified.isEmpty
+                    {
+                        let changed = remoteLastModified != localLastModified
+                        if changed {
+                            await ConcurrentLogManager.shared.debug(
+                                .filterUpdate, "Filter update available (Last-Modified changed)",
+                                metadata: ["filter": filter.name]
+                            )
+                        }
+                        return changed
+                    }
+                    
+                    // No validators available; confirm by inspecting content when needed
                     return try await compareRemoteToLocal(filter: filter)
                 default:
                     break
@@ -309,7 +336,8 @@ class FilterListUpdater {
 
     /// Downloads remote content and compares it against the locally cached version
     private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
-        let (data, response) = try await urlSession.data(from: filter.url)
+        let request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
+        let (data, response) = try await urlSession.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
@@ -361,10 +389,19 @@ class FilterListUpdater {
     /// Fetches, processes, and saves a filter list
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
         do {
+            let validators = await storedValidators(for: filter)
+            
             // Special handling for GitFlic URLs which may be blocked by Cloudflare
             let (data, response): (Data, URLResponse)
             if filter.url.host?.contains("gitflic.ru") == true {
                 var request = URLRequest(url: filter.url)
+                request.cachePolicy = .reloadIgnoringLocalCacheData
+                if let etag = validators.etag, !etag.isEmpty {
+                    request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+                }
+                if let lastModified = validators.lastModified, !lastModified.isEmpty {
+                    request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+                }
                 // Try to mimic a more complete browser request
                 request.setValue(
                     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
@@ -383,16 +420,37 @@ class FilterListUpdater {
                 request.timeoutInterval = 30
                 (data, response) = try await urlSession.data(for: request)
             } else {
-                (data, response) = try await urlSession.data(from: filter.url)
+                var request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+                if let etag = validators.etag, !etag.isEmpty {
+                    request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+                }
+                if let lastModified = validators.lastModified, !lastModified.isEmpty {
+                    request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+                }
+                (data, response) = try await urlSession.data(for: request)
             }
 
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
-            else {
+            guard let httpResponse = response as? HTTPURLResponse else {
                 await ConcurrentLogManager.shared.error(
                     .network, "Failed to fetch filter - HTTP error",
                     metadata: [
                         "filter": filter.name,
-                        "statusCode": "\((response as? HTTPURLResponse)?.statusCode ?? 0)",
+                        "statusCode": "0",
+                    ])
+                return false
+            }
+            
+            if httpResponse.statusCode == 304 {
+                // No changes on the server.
+                return true
+            }
+
+            guard httpResponse.statusCode == 200 else {
+                await ConcurrentLogManager.shared.error(
+                    .network, "Failed to fetch filter - HTTP error",
+                    metadata: [
+                        "filter": filter.name,
+                        "statusCode": "\(httpResponse.statusCode)",
                     ])
                 return false
             }
@@ -418,10 +476,19 @@ class FilterListUpdater {
             }
             updatedFilter.sourceRuleCount = countRulesInContent(content: content)
             updatedFilter.lastUpdated = Date()
-            if let httpResponse = response as? HTTPURLResponse {
-                updatedFilter.etag = httpResponse.value(forHTTPHeaderField: "ETag")
-                updatedFilter.serverLastModified = httpResponse.value(
-                    forHTTPHeaderField: "Last-Modified")
+            
+            let uuid = filter.id.uuidString
+            let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
+            let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+            updatedFilter.etag = responseEtag
+            updatedFilter.serverLastModified = responseLastModified
+            
+            // Persist validators so update checks can be lightweight across app launches.
+            if let responseEtag {
+                await ProtobufDataManager.shared.setFilterEtag(uuid, etag: responseEtag)
+            }
+            if let responseLastModified {
+                await ProtobufDataManager.shared.setFilterLastModified(uuid, lastModified: responseLastModified)
             }
 
             let finalFilter = updatedFilter
