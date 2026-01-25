@@ -2477,7 +2477,7 @@
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 1";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2507,7 +2507,7 @@
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 1";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2535,7 +2535,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 1";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2566,7 +2566,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 1";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Ads";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2765,7 +2765,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 3";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2797,7 +2797,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 3";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2829,7 +2829,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2861,7 +2861,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2893,7 +2893,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 4";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2925,7 +2925,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 4";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2957,7 +2957,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 5";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Custom";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2989,7 +2989,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 5";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Custom";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -3017,7 +3017,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3048,7 +3048,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3080,7 +3080,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 3";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3111,7 +3111,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 3";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Security";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3143,7 +3143,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3174,7 +3174,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Privacy";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3269,7 +3269,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 4";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3300,7 +3300,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 4";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Foreign";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3395,7 +3395,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 5";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Custom";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3426,7 +3426,7 @@
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 5";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Custom";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
