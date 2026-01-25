@@ -452,7 +452,7 @@ class AppFilterManager: ObservableObject {
 
         for targetInfo in platformTargets {
             // Check if this extension has any rules before reloading
-            let rulesCount = self.ruleCountsByCategory[targetInfo.primaryCategory] ?? 0
+            let rulesCount = self.ruleCountsByExtension[targetInfo.bundleIdentifier] ?? 0
             if rulesCount > 0 {
                 let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 if reloadSuccess {
@@ -464,7 +464,7 @@ class AppFilterManager: ObservableObject {
                 // Skip reload for empty extensions
                 await ConcurrentLogManager.shared.debug(
                     .filterApply, "Skipping reload for empty extension",
-                    metadata: ["category": targetInfo.primaryCategory.rawValue])
+                    metadata: ["target": targetDisplayName(for: targetInfo)])
             }
         }
 
@@ -753,7 +753,7 @@ class AppFilterManager: ObservableObject {
     /// Returns true if successful, false if all attempts failed
     private func reloadContentBlockerWithRetry(targetInfo: ContentBlockerTargetInfo) async -> Bool {
         let maxRetries = 5
-        let categoryName = targetInfo.primaryCategory.rawValue
+        let categoryName = targetDisplayName(for: targetInfo)
 
         for attempt in 1...maxRetries {
             let result = await ContentBlockerService.reloadContentBlocker(
@@ -792,6 +792,18 @@ class AppFilterManager: ObservableObject {
         }
 
         return false
+    }
+
+    private func targetDisplayName(for targetInfo: ContentBlockerTargetInfo) -> String {
+        let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        if let index = platformTargets.firstIndex(of: targetInfo) {
+            return "wBlock \(index + 1)"
+        }
+        return targetInfo.primaryCategory.rawValue
+    }
+
+    private func conversionDisplayName(for targetInfo: ContentBlockerTargetInfo) -> String {
+        return targetDisplayName(for: targetInfo)
     }
 
     // MARK: - Delegated methods
@@ -924,28 +936,38 @@ class AppFilterManager: ObservableObject {
             return
         }
 
-        // Group filters by their target ContentBlockerTargetInfo - avoid loading everything into memory at once
+        // Group filters by target ContentBlockerTargetInfo - avoid loading everything into memory at once
         var filtersByTargetInfo: [ContentBlockerTargetInfo: [FilterList]] = [:]
         var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
 
-        for filter in allSelectedFilters {
-            guard
-                let targetInfo = ContentBlockerTargetManager.shared.targetInfo(
-                    forCategory: filter.category, platform: self.currentPlatform)
-            else {
-                await ConcurrentLogManager.shared.warning(
-                    .filterApply, "No target extension found for category, skipping filter",
-                    metadata: [
-                        "category": filter.category.rawValue,
-                        "platform": self.currentPlatform == .macOS ? "macOS" : "iOS",
-                        "filter": filter.name,
-                    ])
+        let platformTargets = ContentBlockerTargetManager.shared.allTargets(
+            forPlatform: self.currentPlatform)
+        var targetLoads: [ContentBlockerTargetInfo: Int] = [:]
+        for target in platformTargets {
+            targetLoads[target] = 0
+        }
+
+        let sortedFilters = allSelectedFilters.sorted {
+            ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0)
+        }
+
+        for filter in sortedFilters {
+            guard let target = targetLoads.min(by: { $0.value < $1.value })?.key else {
                 continue
             }
 
-            filtersByTargetInfo[targetInfo, default: []].append(filter)
-            sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? 0
+            filtersByTargetInfo[target, default: []].append(filter)
+            let ruleCount = filter.sourceRuleCount ?? 0
+            sourceRulesByTargetInfo[target, default: 0] += ruleCount
+            targetLoads[target, default: 0] += ruleCount
         }
+
+        await ConcurrentLogManager.shared.info(
+            .filterApply, "Distributed filters across content blocker targets",
+            metadata: [
+                "filterCount": "\(allSelectedFilters.count)",
+                "targetCount": "\(platformTargets.count)",
+            ])
 
         let totalFiltersCount = filtersByTargetInfo.keys.count
         await MainActor.run {
@@ -980,21 +1002,23 @@ class AppFilterManager: ObservableObject {
         // Collect advanced rules by target bundle ID (single storage)
         var advancedRulesByTarget: [String: String] = [:]  // Track advanced rules by target bundle ID
         for (targetInfo, filters) in filtersByTargetInfo {
+            let categoriesForTarget = Set(filters.map { $0.category })
             await MainActor.run {
                 self.processedFiltersCount += 1
                 self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
-                self.currentFilterName = targetInfo.primaryCategory.rawValue  // More user-friendly
+                let displayName = self.conversionDisplayName(for: targetInfo)
+                self.currentFilterName = displayName  // More user-friendly
                 self.conversionStageDescription =
-                    "Converting \(targetInfo.primaryCategory.rawValue)..."
+                    "Converting \(displayName)..."
                 self.isInSavingPhase = true  // Set saving phase for each conversion
 
                 // Batched ViewModel update - single call with all data
                 self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
+                self.applyProgressViewModel.updateCurrentFilter(displayName)
                 self.applyProgressViewModel.updateProcessedCount(
                     self.processedFiltersCount, total: totalFiltersCount)
                 self.applyProgressViewModel.updateStageDescription(
-                    "Converting \(targetInfo.primaryCategory.rawValue)...")
+                    "Converting \(displayName)...")
             }
 
             // Yield to prevent main thread starvation on iOS
@@ -1027,10 +1051,11 @@ class AppFilterManager: ObservableObject {
                 conversionResult.advancedRulesText?.isEmpty == false
                 ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count : 0
             await ConcurrentLogManager.shared.info(
-                .filterApply, "Converted category rules",
+                .filterApply, "Converted target rules",
                 metadata: [
-                    "category": targetInfo.primaryCategory.rawValue,
-                    "safariRules": "\(ruleCountForThisTarget)", "advancedRules": "\(advancedCount)",
+                    "target": targetDisplayName(for: targetInfo),
+                    "safariRules": "\(ruleCountForThisTarget)",
+                    "advancedRules": "\(advancedCount)",
                 ])
 
             // Update per-extension rule count on main thread
@@ -1053,25 +1078,26 @@ class AppFilterManager: ObservableObject {
 
             if ruleCountForThisTarget > ruleLimit {
                 await ConcurrentLogManager.shared.error(
-                    .filterApply, "Rule limit exceeded for category",
+                    .filterApply, "Rule limit exceeded for target",
                     metadata: [
-                        "bundleId": targetInfo.bundleIdentifier,
+                        "target": targetDisplayName(for: targetInfo),
                         "ruleCount": "\(ruleCountForThisTarget)", "ruleLimit": "\(ruleLimit)",
                     ])
 
-                // Auto-reset this specific category and warn the user
-                await resetCategoryToRecommended(targetInfo.primaryCategory)
-                if let secondaryCategory = targetInfo.secondaryCategory {
-                    await resetCategoryToRecommended(secondaryCategory)
+                // Auto-reset categories assigned to this target and warn the user
+                for category in categoriesForTarget where category != .all {
+                    await resetCategoryToRecommended(category)
                 }
 
                 await MainActor.run {
-                    self.showCategoryWarning(for: targetInfo.primaryCategory)
+                    if let category = categoriesForTarget.first(where: { $0 != .all }) {
+                        self.showCategoryWarning(for: category)
+                    }
                     self.showingAutoDisabledAlert = true
                 }
                 await ConcurrentLogManager.shared.info(
-                    .filterApply, "Auto-reset category due to rule limit exceeded",
-                    metadata: ["category": targetInfo.primaryCategory.rawValue])
+                    .filterApply, "Auto-reset categories due to rule limit exceeded",
+                    metadata: ["target": targetDisplayName(for: targetInfo)])
 
                 // Re-process this target with the reset filters - on background thread
                 let disabledSites = self.dataManager.disabledSites
@@ -1086,10 +1112,7 @@ class AppFilterManager: ObservableObject {
                     resetRulesChunks.reserveCapacity(updatedSelectedFilters.count)
 
                     for filter in updatedSelectedFilters {
-                        if filter.category == targetInfo.primaryCategory
-                            || (targetInfo.secondaryCategory != nil
-                                && filter.category == targetInfo.secondaryCategory!)
-                        {
+                        if categoriesForTarget.contains(filter.category) {
                             guard let containerURL = containerURL else { continue }
                             let fileURL = containerURL.appendingPathComponent(
                                 self.loader.filename(for: filter)
@@ -1134,9 +1157,9 @@ class AppFilterManager: ObservableObject {
 
                 overallSafariRulesApplied += resetRuleCount
                 await ConcurrentLogManager.shared.info(
-                    .filterApply, "After reset, category now has fewer rules",
+                    .filterApply, "After reset, target now has fewer rules",
                     metadata: [
-                        "category": targetInfo.primaryCategory.rawValue,
+                        "target": targetDisplayName(for: targetInfo),
                         "ruleCount": "\(resetRuleCount)",
                     ])
                 continue
@@ -1181,11 +1204,12 @@ class AppFilterManager: ObservableObject {
                 self.processedFiltersCount += 1
                 self.progress =
                     0.7 + (Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.2)  // 70% to 90%
-                self.currentFilterName = targetInfo.primaryCategory.rawValue
+                let displayName = targetDisplayName(for: targetInfo)
+                self.currentFilterName = displayName
 
                 // Batched ViewModel update
                 self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
+                self.applyProgressViewModel.updateCurrentFilter(displayName)
             }
 
             // Yield to prevent blocking
@@ -1200,7 +1224,7 @@ class AppFilterManager: ObservableObject {
                 await MainActor.run {
                     if !self.hasError {
                         self.statusDescription =
-                            "Failed to reload \(targetInfo.primaryCategory.rawValue) extension after 5 attempts."
+                            "Failed to reload \(targetDisplayName(for: targetInfo)) extension after 5 attempts."
                     }
                     self.hasError = true
                 }
@@ -1238,7 +1262,7 @@ class AppFilterManager: ObservableObject {
                     await MainActor.run {
                         if !self.hasError {
                             self.statusDescription =
-                                "Failed to reload \(targetInfo.primaryCategory.rawValue) extension after 5 attempts."
+                                "Failed to reload \(targetDisplayName(for: targetInfo)) extension after 5 attempts."
                         }
                         self.hasError = true
                     }
@@ -1747,9 +1771,9 @@ class AppFilterManager: ObservableObject {
             if totalSourceLines > 10000 {
                 Task {
                     await ConcurrentLogManager.shared.debug(
-                        .filterApply, "Converting large category",
+                        .filterApply, "Converting large target",
                         metadata: [
-                            "category": targetInfo.primaryCategory.rawValue,
+                            "target": targetDisplayName(for: targetInfo),
                             "sourceLines": "\(totalSourceLines)",
                         ])
                 }
