@@ -747,6 +747,22 @@ class AppFilterManager: ObservableObject {
         showingCategoryWarningAlert = true
     }
 
+    func showTargetWarning(targetName: String, categories: [FilterListCategory]) {
+        let categoryList = categories.map(\.rawValue).sorted().joined(separator: ", ")
+        let ruleLimit = 150000
+
+        categoryWarningMessage = """
+            Content blocker "\(targetName)" exceeded its rule limit.
+
+            Affected categories: \(categoryList.isEmpty ? "Unknown" : categoryList)
+            Limit: \(ruleLimit.formatted())
+
+            Filters in these categories were reset to recommended lists to stay within Safari's content blocker limits.
+            """
+
+        showingCategoryWarningAlert = true
+    }
+
     // MARK: - Helper Methods
 
     /// Attempts to reload a content blocker with up to 5 retry attempts
@@ -762,7 +778,7 @@ class AppFilterManager: ObservableObject {
                 if attempt > 1 {
                     await ConcurrentLogManager.shared.info(
                         .filterApply, "Content blocker reloaded successfully after retry",
-                        metadata: ["category": categoryName, "attempt": "\(attempt)"])
+                        metadata: ["target": categoryName, "attempt": "\(attempt)"])
                 }
                 return true
             } else if case .failure(let error) = result {
@@ -773,7 +789,7 @@ class AppFilterManager: ObservableObject {
                             ? "Content blocker reload failed after all attempts"
                             : "Content blocker reload failed",
                         metadata: [
-                            "category": categoryName, "attempt": "\(attempt)",
+                            "target": categoryName, "attempt": "\(attempt)",
                             "maxRetries": "\(maxRetries)", "error": error.localizedDescription,
                         ])
                 }
@@ -802,8 +818,36 @@ class AppFilterManager: ObservableObject {
         return targetInfo.primaryCategory.rawValue
     }
 
-    private func conversionDisplayName(for targetInfo: ContentBlockerTargetInfo) -> String {
-        return targetDisplayName(for: targetInfo)
+    private func distributeFiltersToTargets(
+        _ filters: [FilterList]
+    ) -> (filtersByTarget: [ContentBlockerTargetInfo: [FilterList]],
+          sourceRuleCounts: [ContentBlockerTargetInfo: Int]) {
+        let platformTargets = ContentBlockerTargetManager.shared.allTargets(
+            forPlatform: currentPlatform)
+        var targetLoads: [ContentBlockerTargetInfo: Int] = [:]
+        var filtersByTarget: [ContentBlockerTargetInfo: [FilterList]] = [:]
+        var sourceRulesByTarget: [ContentBlockerTargetInfo: Int] = [:]
+
+        for target in platformTargets {
+            targetLoads[target] = 0
+        }
+
+        let sortedFilters = filters.sorted {
+            ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0)
+        }
+
+        for filter in sortedFilters {
+            guard let target = targetLoads.min(by: { $0.value < $1.value })?.key else {
+                continue
+            }
+
+            filtersByTarget[target, default: []].append(filter)
+            let ruleCount = filter.sourceRuleCount ?? 0
+            sourceRulesByTarget[target, default: 0] += ruleCount
+            targetLoads[target, default: 0] += ruleCount
+        }
+
+        return (filtersByTarget, sourceRulesByTarget)
     }
 
     // MARK: - Delegated methods
@@ -939,251 +983,204 @@ class AppFilterManager: ObservableObject {
         // Group filters by target ContentBlockerTargetInfo - avoid loading everything into memory at once
         var filtersByTargetInfo: [ContentBlockerTargetInfo: [FilterList]] = [:]
         var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
+        var advancedRulesByTarget: [String: String] = [:]
+        var overallSafariRulesApplied = 0
+        var totalFiltersCount = 0
+        let maxRedistributions = 3
+        var redistributionAttempt = 0
+        var didRedistribute = false
 
-        let platformTargets = ContentBlockerTargetManager.shared.allTargets(
-            forPlatform: self.currentPlatform)
-        var targetLoads: [ContentBlockerTargetInfo: Int] = [:]
-        for target in platformTargets {
-            targetLoads[target] = 0
-        }
+        while redistributionAttempt < maxRedistributions {
+            redistributionAttempt += 1
+            didRedistribute = false
 
-        let sortedFilters = allSelectedFilters.sorted {
-            ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0)
-        }
+            let distribution = distributeFiltersToTargets(allSelectedFilters)
+            filtersByTargetInfo = distribution.filtersByTarget
+            sourceRulesByTargetInfo = distribution.sourceRuleCounts
 
-        for filter in sortedFilters {
-            guard let target = targetLoads.min(by: { $0.value < $1.value })?.key else {
+            let platformTargets = ContentBlockerTargetManager.shared.allTargets(
+                forPlatform: self.currentPlatform)
+            await ConcurrentLogManager.shared.info(
+                .filterApply, "Distributed filters across content blocker targets",
+                metadata: [
+                    "filterCount": "\(allSelectedFilters.count)",
+                    "targetCount": "\(platformTargets.count)",
+                    "attempt": "\(redistributionAttempt)",
+                ])
+
+            totalFiltersCount = filtersByTargetInfo.keys.count
+            await MainActor.run {
+                self.sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +)  // Sum of all source rules for UI
+                self.totalFiltersCount = totalFiltersCount  // Number of unique extensions to process
+
+                // Update ViewModel
+                self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
+                self.applyProgressViewModel.updateStageDescription("Starting conversion...")
+            }
+
+            if totalFiltersCount == 0 {
+                await MainActor.run {
+                    self.statusDescription = "No matching extensions for selected filters."
+                    self.isLoading = false
+                    self.showingApplyProgressSheet = false
+                }
+                return
+            }
+
+            overallSafariRulesApplied = 0
+            advancedRulesByTarget = [:]
+            let overallConversionStartTime = Date()
+
+            await MainActor.run {
+                self.processedFiltersCount = 0  // Use this to track processed targets for progress
+                self.isInConversionPhase = true
+
+                // Update ViewModel phase
+                self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
+            }
+
+            for (targetInfo, filters) in filtersByTargetInfo {
+                let categoriesForTarget = Set(filters.map { $0.category })
+                await MainActor.run {
+                    self.processedFiltersCount += 1
+                    self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
+                    let displayName = self.targetDisplayName(for: targetInfo)
+                    self.currentFilterName = displayName  // More user-friendly
+                    self.conversionStageDescription =
+                        "Converting \(displayName)..."
+                    self.isInSavingPhase = true  // Set saving phase for each conversion
+
+                    // Batched ViewModel update - single call with all data
+                    self.applyProgressViewModel.updateProgress(self.progress)
+                    self.applyProgressViewModel.updateCurrentFilter(displayName)
+                    self.applyProgressViewModel.updateProcessedCount(
+                        self.processedFiltersCount, total: totalFiltersCount)
+                    self.applyProgressViewModel.updateStageDescription(
+                        "Converting \(displayName)...")
+                }
+
+                // Yield to prevent main thread starvation on iOS
+                await Task.yield()
+
+                // Capture disabled sites
+                let disabledSites = self.dataManager.disabledSites
+
+                // Efficiently combine rules from multiple files without loading all into memory at once
+                let conversionResult = await Task.detached {
+                    return await self.convertFiltersMemoryEfficient(
+                        filters: filters, targetInfo: targetInfo, disabledSites: disabledSites)
+                }.value
+
+                await MainActor.run {
+                    self.isInSavingPhase = false  // Clear saving phase after conversion
+                }
+
+                let ruleCountForThisTarget = conversionResult.safariRulesCount
+
+                // Store advanced rules for later engine building
+                if let advancedRulesText = conversionResult.advancedRulesText,
+                    !conversionResult.advancedRulesText!.isEmpty
+                {
+                    advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
+                }
+
+                // Single consolidated log per target
+                let advancedCount =
+                    conversionResult.advancedRulesText?.isEmpty == false
+                    ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count : 0
+                await ConcurrentLogManager.shared.info(
+                    .filterApply, "Converted target rules",
+                    metadata: [
+                        "target": targetDisplayName(for: targetInfo),
+                        "safariRules": "\(ruleCountForThisTarget)",
+                        "advancedRules": "\(advancedCount)",
+                    ])
+
+                // Update per-extension rule count on main thread
+                await MainActor.run {
+                    self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
+                }
+
+                let ruleLimit = 150000
+                let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
+
+                // Check if this extension is approaching the limit
+                await MainActor.run {
+                    if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit
+                    {
+                        self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
+                    } else {
+                        self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
+                    }
+                }
+
+                if ruleCountForThisTarget > ruleLimit {
+                    await ConcurrentLogManager.shared.error(
+                        .filterApply, "Rule limit exceeded for target",
+                        metadata: [
+                            "target": targetDisplayName(for: targetInfo),
+                            "ruleCount": "\(ruleCountForThisTarget)", "ruleLimit": "\(ruleLimit)",
+                        ])
+
+                    // Auto-reset categories assigned to this target and warn the user
+                    let affectedCategories = categoriesForTarget.filter { $0 != .all }
+                    for category in affectedCategories {
+                        await resetCategoryToRecommended(category)
+                    }
+
+                    await MainActor.run {
+                        self.showTargetWarning(targetName: targetDisplayName(for: targetInfo), categories: affectedCategories)
+                        self.showingAutoDisabledAlert = true
+                    }
+                    await ConcurrentLogManager.shared.info(
+                        .filterApply, "Auto-reset categories due to rule limit exceeded",
+                        metadata: ["target": targetDisplayName(for: targetInfo)])
+
+                    didRedistribute = true
+                    break
+                } else {
+                    overallSafariRulesApplied += ruleCountForThisTarget
+                }
+            }
+
+            if didRedistribute {
                 continue
             }
 
-            filtersByTargetInfo[target, default: []].append(filter)
-            let ruleCount = filter.sourceRuleCount ?? 0
-            sourceRulesByTargetInfo[target, default: 0] += ruleCount
-            targetLoads[target, default: 0] += ruleCount
-        }
-
-        await ConcurrentLogManager.shared.info(
-            .filterApply, "Distributed filters across content blocker targets",
-            metadata: [
-                "filterCount": "\(allSelectedFilters.count)",
-                "targetCount": "\(platformTargets.count)",
-            ])
-
-        let totalFiltersCount = filtersByTargetInfo.keys.count
-        await MainActor.run {
-            self.sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +)  // Sum of all source rules for UI
-            self.totalFiltersCount = totalFiltersCount  // Number of unique extensions to process
-
-            // Update ViewModel
-            self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
-            self.applyProgressViewModel.updateStageDescription("Starting conversion...")
-        }
-
-        if totalFiltersCount == 0 {
             await MainActor.run {
-                self.statusDescription = "No matching extensions for selected filters."
+                self.isInConversionPhase = false
+                self.lastRuleCount = overallSafariRulesApplied
+                self.lastConversionTime = String(
+                    format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
+                self.progress = 0.7
+
+                // Update ViewModel - conversion complete
+                self.applyProgressViewModel.updateProgress(self.progress)
+                self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
+            }
+
+            await ConcurrentLogManager.shared.info(
+                .filterApply, "All conversions finished",
+                metadata: [
+                    "totalRules": "\(overallSafariRulesApplied)",
+                    "conversionTime": await MainActor.run { self.lastConversionTime },
+                ])
+            break
+        }
+
+        if didRedistribute {
+            await ConcurrentLogManager.shared.warning(
+                .filterApply, "Redistribution retry limit reached after rule limit resets",
+                metadata: ["attempts": "\(redistributionAttempt)"])
+            await MainActor.run {
+                self.statusDescription =
+                    "Unable to redistribute filters after multiple attempts. Please reduce enabled lists and try again."
+                self.hasError = true
                 self.isLoading = false
                 self.showingApplyProgressSheet = false
             }
             return
         }
-
-        var overallSafariRulesApplied = 0
-        let overallConversionStartTime = Date()
-
-        await MainActor.run {
-            self.processedFiltersCount = 0  // Use this to track processed targets for progress
-            self.isInConversionPhase = true
-
-            // Update ViewModel phase
-            self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
-        }
-
-        // Collect advanced rules by target bundle ID (single storage)
-        var advancedRulesByTarget: [String: String] = [:]  // Track advanced rules by target bundle ID
-        for (targetInfo, filters) in filtersByTargetInfo {
-            let categoriesForTarget = Set(filters.map { $0.category })
-            await MainActor.run {
-                self.processedFiltersCount += 1
-                self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
-                let displayName = self.conversionDisplayName(for: targetInfo)
-                self.currentFilterName = displayName  // More user-friendly
-                self.conversionStageDescription =
-                    "Converting \(displayName)..."
-                self.isInSavingPhase = true  // Set saving phase for each conversion
-
-                // Batched ViewModel update - single call with all data
-                self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateCurrentFilter(displayName)
-                self.applyProgressViewModel.updateProcessedCount(
-                    self.processedFiltersCount, total: totalFiltersCount)
-                self.applyProgressViewModel.updateStageDescription(
-                    "Converting \(displayName)...")
-            }
-
-            // Yield to prevent main thread starvation on iOS
-            await Task.yield()
-
-            // Capture disabled sites
-            let disabledSites = self.dataManager.disabledSites
-
-            // Efficiently combine rules from multiple files without loading all into memory at once
-            let conversionResult = await Task.detached {
-                return await self.convertFiltersMemoryEfficient(
-                    filters: filters, targetInfo: targetInfo, disabledSites: disabledSites)
-            }.value
-
-            await MainActor.run {
-                self.isInSavingPhase = false  // Clear saving phase after conversion
-            }
-
-            let ruleCountForThisTarget = conversionResult.safariRulesCount
-
-            // Store advanced rules for later engine building
-            if let advancedRulesText = conversionResult.advancedRulesText,
-                !conversionResult.advancedRulesText!.isEmpty
-            {
-                advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
-            }
-
-            // Single consolidated log per target
-            let advancedCount =
-                conversionResult.advancedRulesText?.isEmpty == false
-                ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count : 0
-            await ConcurrentLogManager.shared.info(
-                .filterApply, "Converted target rules",
-                metadata: [
-                    "target": targetDisplayName(for: targetInfo),
-                    "safariRules": "\(ruleCountForThisTarget)",
-                    "advancedRules": "\(advancedCount)",
-                ])
-
-            // Update per-extension rule count on main thread
-            await MainActor.run {
-                self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
-            }
-
-            let ruleLimit = 150000
-            let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
-
-            // Check if this extension is approaching the limit
-            await MainActor.run {
-                if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit
-                {
-                    self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
-                } else {
-                    self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
-                }
-            }
-
-            if ruleCountForThisTarget > ruleLimit {
-                await ConcurrentLogManager.shared.error(
-                    .filterApply, "Rule limit exceeded for target",
-                    metadata: [
-                        "target": targetDisplayName(for: targetInfo),
-                        "ruleCount": "\(ruleCountForThisTarget)", "ruleLimit": "\(ruleLimit)",
-                    ])
-
-                // Auto-reset categories assigned to this target and warn the user
-                for category in categoriesForTarget where category != .all {
-                    await resetCategoryToRecommended(category)
-                }
-
-                await MainActor.run {
-                    if let category = categoriesForTarget.first(where: { $0 != .all }) {
-                        self.showCategoryWarning(for: category)
-                    }
-                    self.showingAutoDisabledAlert = true
-                }
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, "Auto-reset categories due to rule limit exceeded",
-                    metadata: ["target": targetDisplayName(for: targetInfo)])
-
-                // Re-process this target with the reset filters - on background thread
-                let disabledSites = self.dataManager.disabledSites
-                let resetResult = await Task.detached {
-                    let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
-                    var resetRulesChunks: [String] = []
-
-                    // Get the updated filter list after reset
-                    let updatedSelectedFilters = await MainActor.run {
-                        self.filterLists.filter { $0.isSelected }
-                    }
-                    resetRulesChunks.reserveCapacity(updatedSelectedFilters.count)
-
-                    for filter in updatedSelectedFilters {
-                        if categoriesForTarget.contains(filter.category) {
-                            guard let containerURL = containerURL else { continue }
-                            let fileURL = containerURL.appendingPathComponent(
-                                self.loader.filename(for: filter)
-                            )
-                            if FileManager.default.fileExists(atPath: fileURL.path) {
-                                do {
-                                    resetRulesChunks.append(try String(contentsOf: fileURL, encoding: .utf8))
-                                } catch {
-                                    await ConcurrentLogManager.shared.error(
-                                        .filterApply, "Error reading filter after reset",
-                                        metadata: ["filter": filter.name, "error": "\(error)"])
-                                }
-                            }
-                        }
-                    }
-
-                    let resetRulesString = resetRulesChunks.joined(separator: "\n")
-                    return ContentBlockerService.convertFilter(
-                        rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
-                        groupIdentifier: GroupIdentifier.shared.value,
-                        targetRulesFilename: targetInfo.rulesFilename,
-                        disabledSites: disabledSites
-                    )
-                }.value
-
-                let resetRuleCount = resetResult.safariRulesCount
-
-                // Update advanced rules from reset filters
-                if let resetAdvancedRulesText = resetResult.advancedRulesText,
-                    !resetResult.advancedRulesText!.isEmpty
-                {
-                    advancedRulesByTarget[targetInfo.bundleIdentifier] = resetAdvancedRulesText
-                } else {
-                    // Remove advanced rules for this target if reset resulted in none
-                    advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
-                }
-
-                await MainActor.run {
-                    self.ruleCountsByExtension[targetInfo.bundleIdentifier] = resetRuleCount
-                    self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
-                }
-
-                overallSafariRulesApplied += resetRuleCount
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, "After reset, target now has fewer rules",
-                    metadata: [
-                        "target": targetDisplayName(for: targetInfo),
-                        "ruleCount": "\(resetRuleCount)",
-                    ])
-                continue
-            } else {
-                overallSafariRulesApplied += ruleCountForThisTarget
-            }
-        }
-        await MainActor.run {
-            self.isInConversionPhase = false
-            self.lastRuleCount = overallSafariRulesApplied
-            self.lastConversionTime = String(
-                format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
-            self.progress = 0.7
-
-            // Update ViewModel - conversion complete
-            self.applyProgressViewModel.updateProgress(self.progress)
-            self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
-        }
-        await ConcurrentLogManager.shared.info(
-            .filterApply, "All conversions finished",
-            metadata: [
-                "totalRules": "\(overallSafariRulesApplied)",
-                "conversionTime": await MainActor.run { self.lastConversionTime },
-            ])
 
         // Reloading phase - reload all content blockers FIRST before building advanced engine
         await MainActor.run {
