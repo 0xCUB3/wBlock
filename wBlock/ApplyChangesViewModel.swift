@@ -70,8 +70,6 @@ struct ApplyChangesState: Equatable {
     var progress: Double = 0
     var statusMessage: String = ""
     var currentFilterName: String = ""
-    /// The most recently completed target name (e.g. "wBlock 3").
-    var lastCompletedFilterName: String = ""
     /// Total number of blocker targets for the current platform (typically 5).
     var totalCount: Int = 0
     /// Per-phase progress for target-based phases.
@@ -142,11 +140,6 @@ class ApplyChangesViewModel: ObservableObject {
     func updateCurrentFilter(_ name: String) {
         guard name != state.currentFilterName else { return }
         state.currentFilterName = name
-    }
-
-    func updateLastCompletedFilter(_ name: String) {
-        guard name != state.lastCompletedFilterName else { return }
-        state.lastCompletedFilterName = name
     }
 
     func updateProcessedCount(_ processed: Int, total: Int) {

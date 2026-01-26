@@ -230,9 +230,7 @@ struct ApplyChangesProgressView: View {
                 return nil
             }
 
-            let label = viewModel.state.lastCompletedFilterName.isEmpty
-                ? nil
-                : viewModel.state.lastCompletedFilterName
+            let label = totalCount > 0 ? "\(done)/\(totalCount)" : nil
 
             return PhaseRow.SubProgress(value: fraction, label: label)
 
@@ -244,9 +242,7 @@ struct ApplyChangesProgressView: View {
             let total = Double(max(1, totalCount))
             let fraction = Swift.min(Swift.max(Double(done) / total, 0), 1)
 
-            let label = viewModel.state.lastCompletedFilterName.isEmpty
-                ? nil
-                : viewModel.state.lastCompletedFilterName
+            let label = totalCount > 0 ? "\(done)/\(totalCount)" : nil
 
             if totalCount > 0, done >= totalCount {
                 return nil
