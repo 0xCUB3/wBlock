@@ -909,6 +909,7 @@ class AppFilterManager: ObservableObject {
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
             self.applyProgressViewModel.updateConvertingDone(0)
             self.applyProgressViewModel.updateReloadingDone(0)
+            self.applyProgressViewModel.updateLastCompletedFilter("")
             self.applyProgressViewModel.updateStageDescription("Starting conversion...")
         }
 
@@ -931,6 +932,7 @@ class AppFilterManager: ObservableObject {
             // Update ViewModel phase
             self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
             self.applyProgressViewModel.updateConvertingDone(0)
+            self.applyProgressViewModel.updateLastCompletedFilter("")
         }
 
         await MainActor.run {
@@ -1005,6 +1007,7 @@ class AppFilterManager: ObservableObject {
                 self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
                 self.applyProgressViewModel.updateProgress(self.progress)
                 self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
+                self.applyProgressViewModel.updateLastCompletedFilter(blockerName)
                 self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
 
                 if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
@@ -1063,6 +1066,7 @@ class AppFilterManager: ObservableObject {
             self.applyProgressViewModel.updateStageDescription("Reloading Safari extensions...")
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
             self.applyProgressViewModel.updateReloadingDone(0)
+            self.applyProgressViewModel.updateLastCompletedFilter("")
         }
 
         let overallReloadStartTime = Date()
@@ -1673,6 +1677,7 @@ class AppFilterManager: ObservableObject {
                 await MainActor.run {
                     self.processedFiltersCount += 1
                     self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
+                    self.applyProgressViewModel.updateLastCompletedFilter(name)
 
                     self.progress =
                         0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
