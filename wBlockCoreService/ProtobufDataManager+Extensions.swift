@@ -397,8 +397,8 @@ extension ProtobufDataManager {
     // MARK: - Rule Count Management
     public func updateRuleCounts(
         lastRuleCount: Int? = nil,
-        ruleCountsByCategory: [FilterListCategory: Int]? = nil,
-        categoriesApproachingLimit: Set<FilterListCategory>? = nil
+        ruleCountsByIdentifier: [String: Int]? = nil,
+        identifiersApproachingLimit: Set<String>? = nil
     ) async {
         var updatedData = appData
         
@@ -406,15 +406,15 @@ extension ProtobufDataManager {
             updatedData.ruleCounts.lastRuleCount = Int32(lastRuleCount)
         }
         
-        if let ruleCountsByCategory = ruleCountsByCategory {
+        if let ruleCountsByIdentifier = ruleCountsByIdentifier {
             updatedData.ruleCounts.ruleCountsByCategory.removeAll()
-            for (category, count) in ruleCountsByCategory {
-                updatedData.ruleCounts.ruleCountsByCategory[category.rawValue] = Int32(count)
+            for (identifier, count) in ruleCountsByIdentifier {
+                updatedData.ruleCounts.ruleCountsByCategory[identifier] = Int32(count)
             }
         }
         
-        if let categoriesApproachingLimit = categoriesApproachingLimit {
-            updatedData.ruleCounts.categoriesApproachingLimit = categoriesApproachingLimit.map { $0.rawValue }
+        if let identifiersApproachingLimit = identifiersApproachingLimit {
+            updatedData.ruleCounts.categoriesApproachingLimit = Array(identifiersApproachingLimit)
         }
         
         updatedData.ruleCounts.lastUpdated = Int64(Date().timeIntervalSince1970)

@@ -41,33 +41,8 @@ class AppFilterManager: ObservableObject {
     // This is the source of truth since extensions can serve multiple categories
     @Published var ruleCountsByExtension: [String: Int] = [:]
     @Published var extensionsApproachingLimit: Set<String> = []
-    @Published var showingCategoryWarningAlert = false
-    @Published var categoryWarningMessage = ""
-
-    /// Computed property mapping extension counts to categories for backward compatibility
-    var ruleCountsByCategory: [FilterListCategory: Int] {
-        var result: [FilterListCategory: Int] = [:]
-        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform) {
-            let count = ruleCountsByExtension[target.bundleIdentifier] ?? 0
-            result[target.primaryCategory] = count
-            if let secondary = target.secondaryCategory {
-                result[secondary] = count
-            }
-        }
-        return result
-    }
-
-    /// Categories whose extension is approaching the 150k limit
-    var categoriesApproachingLimit: Set<FilterListCategory> {
-        var result: Set<FilterListCategory> = []
-        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform) {
-            if extensionsApproachingLimit.contains(target.bundleIdentifier) {
-                result.insert(target.primaryCategory)
-                // Don't insert secondary - show warning only on primary to avoid duplication
-            }
-        }
-        return result
-    }
+    @Published var showingRuleLimitWarningAlert = false
+    @Published var ruleLimitWarningMessage = ""
 
     // Performance tracking
     @Published var lastFastUpdateTime: String = "N/A"
@@ -142,8 +117,8 @@ class AppFilterManager: ObservableObject {
         availableUpdates = []
         ruleCountsByExtension = [:]
         extensionsApproachingLimit = []
-        showingCategoryWarningAlert = false
-        categoryWarningMessage = ""
+        showingRuleLimitWarningAlert = false
+        ruleLimitWarningMessage = ""
         lastRuleCount = 0
         lastFastUpdateTime = "N/A"
         fastUpdateCount = 0
@@ -166,8 +141,8 @@ class AppFilterManager: ObservableObject {
 
         await dataManager.updateRuleCounts(
             lastRuleCount: 0,
-            ruleCountsByCategory: [:],
-            categoriesApproachingLimit: []
+            ruleCountsByIdentifier: [:],
+            identifiersApproachingLimit: []
         )
 
         ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
@@ -452,7 +427,7 @@ class AppFilterManager: ObservableObject {
 
         for targetInfo in platformTargets {
             // Check if this extension has any rules before reloading
-            let rulesCount = self.ruleCountsByCategory[targetInfo.primaryCategory] ?? 0
+            let rulesCount = self.ruleCountsByExtension[targetInfo.bundleIdentifier] ?? 0
             if rulesCount > 0 {
                 let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 if reloadSuccess {
@@ -464,7 +439,7 @@ class AppFilterManager: ObservableObject {
                 // Skip reload for empty extensions
                 await ConcurrentLogManager.shared.debug(
                     .filterApply, "Skipping reload for empty extension",
-                    metadata: ["category": targetInfo.primaryCategory.rawValue])
+                    metadata: ["blocker": targetInfo.displayName])
             }
         }
 
@@ -499,40 +474,74 @@ class AppFilterManager: ObservableObject {
         lastRuleCount = dataManager.lastRuleCount
 
         // Load extension-specific rule counts
-        // The protobuf storage uses category names as keys for backward compatibility,
-        // but we need to map them to extension bundle IDs
+        // Stored keys may be legacy category names or (new) bundle identifiers.
         for (categoryKey, count) in dataManager.ruleCountsByCategory {
+            if ContentBlockerTargetManager.shared.targetInfo(forBundleIdentifier: categoryKey, platform: currentPlatform) != nil {
+                ruleCountsByExtension[categoryKey] = Int(count)
+                continue
+            }
+
             if let category = FilterListCategory(rawValue: categoryKey),
-                let targetInfo = ContentBlockerTargetManager.shared.targetInfo(
-                    forCategory: category, platform: currentPlatform)
-            {
-                // Only set if not already set (avoid overwriting with duplicate for shared extensions)
-                if ruleCountsByExtension[targetInfo.bundleIdentifier] == nil {
-                    ruleCountsByExtension[targetInfo.bundleIdentifier] = Int(count)
+               let legacyBundleID = legacyBundleIdentifier(for: category) {
+                if ruleCountsByExtension[legacyBundleID] == nil {
+                    ruleCountsByExtension[legacyBundleID] = Int(count)
                 }
             }
         }
 
-        // Load extensions approaching limit
-        for categoryName in dataManager.categoriesApproachingLimit {
-            if let category = FilterListCategory(rawValue: categoryName),
-                let targetInfo = ContentBlockerTargetManager.shared.targetInfo(
-                    forCategory: category, platform: currentPlatform)
-            {
-                extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
+        // Load extensions approaching limit (legacy category names or bundle identifiers).
+        for identifierOrCategory in dataManager.categoriesApproachingLimit {
+            if ContentBlockerTargetManager.shared.targetInfo(forBundleIdentifier: identifierOrCategory, platform: currentPlatform) != nil {
+                extensionsApproachingLimit.insert(identifierOrCategory)
+                continue
+            }
+            if let category = FilterListCategory(rawValue: identifierOrCategory),
+               let legacyBundleID = legacyBundleIdentifier(for: category) {
+                extensionsApproachingLimit.insert(legacyBundleID)
             }
         }
     }
 
     private func saveRuleCounts() {
         Task { @MainActor in
-            // Convert extension-based counts back to category-based for storage compatibility
+            let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+            let countsByIdentifier = Dictionary(
+                uniqueKeysWithValues: platformTargets.map { target in
+                    (target.bundleIdentifier, ruleCountsByExtension[target.bundleIdentifier] ?? 0)
+                }
+            )
+            let approaching = Set(platformTargets.map(\.bundleIdentifier)).intersection(extensionsApproachingLimit)
+
             await dataManager.updateRuleCounts(
                 lastRuleCount: lastRuleCount,
-                ruleCountsByCategory: ruleCountsByCategory,
-                categoriesApproachingLimit: categoriesApproachingLimit
+                ruleCountsByIdentifier: countsByIdentifier,
+                identifiersApproachingLimit: approaching
             )
         }
+    }
+
+    private func legacyBundleIdentifier(for category: FilterListCategory) -> String? {
+        let slot: Int?
+        switch category {
+        case .ads:
+            slot = 1
+        case .privacy:
+            slot = 2
+        case .security, .annoyances, .multipurpose:
+            slot = 3
+        case .foreign, .experimental:
+            slot = 4
+        case .custom:
+            slot = 5
+        default:
+            slot = nil
+        }
+
+        guard let slot = slot else { return nil }
+        return ContentBlockerTargetManager.shared
+            .allTargets(forPlatform: currentPlatform)
+            .first { $0.slot == slot }?
+            .bundleIdentifier
     }
 
     func updateVersionsAndCounts() async {
@@ -663,88 +672,46 @@ class AppFilterManager: ObservableObject {
         hasUnappliedChanges = true
     }
 
-    // MARK: - Per-category rule limit management
+    // MARK: - Rule limit UX
 
-    private func resetCategoryToRecommended(_ category: FilterListCategory) async {
-        await ConcurrentLogManager.shared.warning(
-            .filterApply, "Resetting category to recommended filters due to rule limit exceeded",
-            metadata: ["category": category.rawValue])
+    func showRuleLimitWarning(for filter: FilterList? = nil) {
+        let ruleLimitPerBlocker = 150_000
+        let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        let totalCapacity = platformTargets.count * ruleLimitPerBlocker
 
-        let recommendedFiltersByCategory: [FilterListCategory: [String]] = [
-            .ads: ["AdGuard Base Filter"],
-            .privacy: ["AdGuard Tracking Protection Filter", "EasyPrivacy"],
-            .security: ["Online Security Filter"],
-            .annoyances: ["AdGuard Annoyances Filter"],
-            .multipurpose: ["d3Host List by d3ward", "Anti-Adblock List"],
-            .foreign: [],
-            .experimental: [],
-            .custom: [],
-        ]
+        let totalRules = lastRuleCount
+        let totalWarningThreshold = Int(Double(totalCapacity) * 0.8)
 
-        let recommendedForCategory = recommendedFiltersByCategory[category] ?? []
-        var disabledFiltersInCategory: [FilterList] = []
+        var message = ""
+        if let filter, let reason = filter.limitExceededReason, !reason.isEmpty {
+            message = reason
+        } else {
+            message = """
+            Safari limits each content blocker extension to \(ruleLimitPerBlocker.formatted()) rules.
+            Total capacity (all wBlock blockers): \(totalCapacity.formatted()) rules.
 
-        for index in filterLists.indices {
-            if filterLists[index].category == category {
-                if filterLists[index].isSelected
-                    && !recommendedForCategory.contains(filterLists[index].name)
-                {
-                    filterLists[index].limitExceededReason =
-                        "Automatically disabled because the '\(category.rawValue)' category exceeded Safari's 150,000 rule limit. To re-enable, disable other filters in this category first."
-                    disabledFiltersInCategory.append(filterLists[index])
-                }
-                filterLists[index].isSelected = false
-            }
-        }
+            Current Safari rules: \(totalRules.formatted())\(totalRules >= totalWarningThreshold ? " (near limit)" : "")
 
-        for index in filterLists.indices {
-            if filterLists[index].category == category
-                && recommendedForCategory.contains(filterLists[index].name)
-            {
-                filterLists[index].isSelected = true
-                filterLists[index].limitExceededReason = nil
-            }
-        }
-
-        await MainActor.run {
-            self.autoDisabledFilters.removeAll { $0.category == category }
-            self.autoDisabledFilters.append(contentsOf: disabledFiltersInCategory)
-        }
-
-        await saveFilterLists()
-        await ConcurrentLogManager.shared.info(
-            .filterApply, "Reset category to recommended filters",
-            metadata: [
-                "category": category.rawValue,
-                "filters": recommendedForCategory.joined(separator: ", "),
-                "autoDisabled": "\(disabledFiltersInCategory.count)",
-            ])
-    }
-
-    func getCategoryRuleCount(_ category: FilterListCategory) -> Int {
-        return ruleCountsByCategory[category] ?? 0
-    }
-
-    func isCategoryApproachingLimit(_ category: FilterListCategory) -> Bool {
-        return categoriesApproachingLimit.contains(category)
-    }
-
-    func showCategoryWarning(for category: FilterListCategory) {
-        let ruleCount = getCategoryRuleCount(category)
-        let ruleLimit = 150000
-        let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
-
-        categoryWarningMessage = """
-            Category "\(category.rawValue)" is approaching its rule limit:
-
-            Current rules: \(ruleCount.formatted())
-            Limit: \(ruleLimit.formatted())
-            Warning threshold: \(warningThreshold.formatted())
-
-            When this category exceeds \(ruleLimit.formatted()) rules, it will be automatically reset to recommended filters only to stay within Safari's content blocker limits.
+            wBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.
             """
+        }
 
-        showingCategoryWarningAlert = true
+        let perBlockerWarningThreshold = Int(Double(ruleLimitPerBlocker) * 0.8)
+        let nearLimitBlockers = platformTargets
+            .map { target -> (name: String, count: Int) in
+                (target.displayName, ruleCountsByExtension[target.bundleIdentifier] ?? 0)
+            }
+            .filter { $0.count >= perBlockerWarningThreshold }
+            .sorted { $0.count > $1.count }
+
+        if !nearLimitBlockers.isEmpty {
+            message += "\n\nBlockers near the per-extension limit:\n" + nearLimitBlockers
+                .map { "\($0.name): \($0.count.formatted())" }
+                .joined(separator: "\n")
+        }
+
+        ruleLimitWarningMessage = message
+        showingRuleLimitWarningAlert = true
     }
 
     // MARK: - Helper Methods
@@ -753,7 +720,7 @@ class AppFilterManager: ObservableObject {
     /// Returns true if successful, false if all attempts failed
     private func reloadContentBlockerWithRetry(targetInfo: ContentBlockerTargetInfo) async -> Bool {
         let maxRetries = 5
-        let categoryName = targetInfo.primaryCategory.rawValue
+        let blockerName = targetInfo.displayName
 
         for attempt in 1...maxRetries {
             let result = await ContentBlockerService.reloadContentBlocker(
@@ -762,7 +729,7 @@ class AppFilterManager: ObservableObject {
                 if attempt > 1 {
                     await ConcurrentLogManager.shared.info(
                         .filterApply, "Content blocker reloaded successfully after retry",
-                        metadata: ["category": categoryName, "attempt": "\(attempt)"])
+                        metadata: ["blocker": blockerName, "attempt": "\(attempt)"])
                 }
                 return true
             } else if case .failure(let error) = result {
@@ -773,7 +740,7 @@ class AppFilterManager: ObservableObject {
                             ? "Content blocker reload failed after all attempts"
                             : "Content blocker reload failed",
                         metadata: [
-                            "category": categoryName, "attempt": "\(attempt)",
+                            "blocker": blockerName, "attempt": "\(attempt)",
                             "maxRetries": "\(maxRetries)", "error": error.localizedDescription,
                         ])
                 }
@@ -783,7 +750,7 @@ class AppFilterManager: ObservableObject {
                     if attempt >= 2 {
                         await MainActor.run {
                             self.conversionStageDescription =
-                                "Retrying \(categoryName) (attempt \(attempt + 1))..."
+                                "Retrying \(blockerName) (attempt \(attempt + 1))..."
                         }
                     }
                     try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000))
@@ -911,7 +878,7 @@ class AppFilterManager: ObservableObject {
                             targetRulesFilename: targetInfo.rulesFilename,
                             disabledSites: disabledSites
                         ).safariRulesCount
-                    await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
+                    _ = await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 }
             }.value
 
@@ -924,33 +891,36 @@ class AppFilterManager: ObservableObject {
             return
         }
 
-        // Group filters by their target ContentBlockerTargetInfo - avoid loading everything into memory at once
-        var filtersByTargetInfo: [ContentBlockerTargetInfo: [FilterList]] = [:]
-        var sourceRulesByTargetInfo: [ContentBlockerTargetInfo: Int] = [:]
+        let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
 
-        for filter in allSelectedFilters {
-            guard
-                let targetInfo = ContentBlockerTargetManager.shared.targetInfo(
-                    forCategory: filter.category, platform: self.currentPlatform)
-            else {
-                await ConcurrentLogManager.shared.warning(
-                    .filterApply, "No target extension found for category, skipping filter",
-                    metadata: [
-                        "category": filter.category.rawValue,
-                        "platform": self.currentPlatform == .macOS ? "macOS" : "iOS",
-                        "filter": filter.name,
-                    ])
-                continue
-            }
+        // Distribute all selected filter lists across available blocker slots by least-filled estimate.
+        var filtersByTargetInfo: [ContentBlockerTargetInfo: [FilterList]] = Dictionary(
+            uniqueKeysWithValues: platformTargets.map { ($0, []) }
+        )
+        var estimatedSourceRulesByTarget: [ContentBlockerTargetInfo: Int] = Dictionary(
+            uniqueKeysWithValues: platformTargets.map { ($0, 0) }
+        )
 
-            filtersByTargetInfo[targetInfo, default: []].append(filter)
-            sourceRulesByTargetInfo[targetInfo, default: 0] += filter.sourceRuleCount ?? 0
+        let sortedFilters = allSelectedFilters.sorted { lhs, rhs in
+            let lhsCount = lhs.sourceRuleCount ?? 0
+            let rhsCount = rhs.sourceRuleCount ?? 0
+            if lhsCount != rhsCount { return lhsCount > rhsCount }
+            return lhs.id.uuidString < rhs.id.uuidString
         }
 
-        let totalFiltersCount = filtersByTargetInfo.keys.count
+        for filter in sortedFilters {
+            guard let destination = platformTargets.min(by: {
+                (estimatedSourceRulesByTarget[$0] ?? 0) < (estimatedSourceRulesByTarget[$1] ?? 0)
+            }) else { break }
+
+            filtersByTargetInfo[destination, default: []].append(filter)
+            estimatedSourceRulesByTarget[destination, default: 0] += filter.sourceRuleCount ?? 0
+        }
+
+        let totalFiltersCount = platformTargets.count
         await MainActor.run {
-            self.sourceRulesCount = sourceRulesByTargetInfo.values.reduce(0, +)  // Sum of all source rules for UI
-            self.totalFiltersCount = totalFiltersCount  // Number of unique extensions to process
+            self.sourceRulesCount = sortedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
+            self.totalFiltersCount = totalFiltersCount
 
             // Update ViewModel
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
@@ -977,24 +947,34 @@ class AppFilterManager: ObservableObject {
             self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
         }
 
+        await MainActor.run {
+            self.ruleCountsByExtension = [:]
+            self.extensionsApproachingLimit = []
+        }
+
         // Collect advanced rules by target bundle ID (single storage)
-        var advancedRulesByTarget: [String: String] = [:]  // Track advanced rules by target bundle ID
-        for (targetInfo, filters) in filtersByTargetInfo {
+        var advancedRulesByTarget: [String: String] = [:]  // bundleIdentifier -> advanced rules
+
+        let ruleLimit = 150_000
+        let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
+
+        for targetInfo in platformTargets {
+            let filters = filtersByTargetInfo[targetInfo] ?? []
+            let blockerName = targetInfo.displayName
+
             await MainActor.run {
                 self.processedFiltersCount += 1
                 self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
-                self.currentFilterName = targetInfo.primaryCategory.rawValue  // More user-friendly
-                self.conversionStageDescription =
-                    "Converting \(targetInfo.primaryCategory.rawValue)..."
-                self.isInSavingPhase = true  // Set saving phase for each conversion
+                self.currentFilterName = blockerName
+                self.conversionStageDescription = "Converting \(blockerName)…"
+                self.isInSavingPhase = true
 
                 // Batched ViewModel update - single call with all data
                 self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
+                self.applyProgressViewModel.updateCurrentFilter(blockerName)
                 self.applyProgressViewModel.updateProcessedCount(
                     self.processedFiltersCount, total: totalFiltersCount)
-                self.applyProgressViewModel.updateStageDescription(
-                    "Converting \(targetInfo.primaryCategory.rawValue)...")
+                self.applyProgressViewModel.updateStageDescription(self.conversionStageDescription)
             }
 
             // Yield to prevent main thread starvation on iOS
@@ -1005,46 +985,41 @@ class AppFilterManager: ObservableObject {
 
             // Efficiently combine rules from multiple files without loading all into memory at once
             let conversionResult = await Task.detached {
-                return await self.convertFiltersMemoryEfficient(
+                await self.convertFiltersMemoryEfficient(
                     filters: filters, targetInfo: targetInfo, disabledSites: disabledSites)
             }.value
 
             await MainActor.run {
-                self.isInSavingPhase = false  // Clear saving phase after conversion
+                self.isInSavingPhase = false
             }
 
             let ruleCountForThisTarget = conversionResult.safariRulesCount
 
-            // Store advanced rules for later engine building
-            if let advancedRulesText = conversionResult.advancedRulesText,
-                !conversionResult.advancedRulesText!.isEmpty
-            {
+            if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
                 advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
+            } else {
+                advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
             }
 
-            // Single consolidated log per target
             let advancedCount =
                 conversionResult.advancedRulesText?.isEmpty == false
-                ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count : 0
-            await ConcurrentLogManager.shared.info(
-                .filterApply, "Converted category rules",
-                metadata: [
-                    "category": targetInfo.primaryCategory.rawValue,
-                    "safariRules": "\(ruleCountForThisTarget)", "advancedRules": "\(advancedCount)",
-                ])
+                ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count
+                : 0
 
-            // Update per-extension rule count on main thread
+            await ConcurrentLogManager.shared.info(
+                .filterApply, "Converted blocker rules",
+                metadata: [
+                    "blocker": blockerName,
+                    "filterCount": "\(filters.count)",
+                    "safariRules": "\(ruleCountForThisTarget)",
+                    "advancedRules": "\(advancedCount)",
+                ]
+            )
+
             await MainActor.run {
                 self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
-            }
 
-            let ruleLimit = 150000
-            let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
-
-            // Check if this extension is approaching the limit
-            await MainActor.run {
-                if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit
-                {
+                if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
                     self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
                 } else {
                     self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
@@ -1053,96 +1028,23 @@ class AppFilterManager: ObservableObject {
 
             if ruleCountForThisTarget > ruleLimit {
                 await ConcurrentLogManager.shared.error(
-                    .filterApply, "Rule limit exceeded for category",
+                    .filterApply, "Rule limit exceeded for blocker",
                     metadata: [
+                        "blocker": blockerName,
                         "bundleId": targetInfo.bundleIdentifier,
-                        "ruleCount": "\(ruleCountForThisTarget)", "ruleLimit": "\(ruleLimit)",
-                    ])
-
-                // Auto-reset this specific category and warn the user
-                await resetCategoryToRecommended(targetInfo.primaryCategory)
-                if let secondaryCategory = targetInfo.secondaryCategory {
-                    await resetCategoryToRecommended(secondaryCategory)
-                }
+                        "ruleCount": "\(ruleCountForThisTarget)",
+                        "ruleLimit": "\(ruleLimit)",
+                    ]
+                )
 
                 await MainActor.run {
-                    self.showCategoryWarning(for: targetInfo.primaryCategory)
-                    self.showingAutoDisabledAlert = true
+                    self.hasError = true
+                    self.statusDescription =
+                        "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
                 }
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, "Auto-reset category due to rule limit exceeded",
-                    metadata: ["category": targetInfo.primaryCategory.rawValue])
-
-                // Re-process this target with the reset filters - on background thread
-                let disabledSites = self.dataManager.disabledSites
-                let resetResult = await Task.detached {
-                    let containerURL = await MainActor.run { self.loader.getSharedContainerURL() }
-                    var resetRulesChunks: [String] = []
-
-                    // Get the updated filter list after reset
-                    let updatedSelectedFilters = await MainActor.run {
-                        self.filterLists.filter { $0.isSelected }
-                    }
-                    resetRulesChunks.reserveCapacity(updatedSelectedFilters.count)
-
-                    for filter in updatedSelectedFilters {
-                        if filter.category == targetInfo.primaryCategory
-                            || (targetInfo.secondaryCategory != nil
-                                && filter.category == targetInfo.secondaryCategory!)
-                        {
-                            guard let containerURL = containerURL else { continue }
-                            let fileURL = containerURL.appendingPathComponent(
-                                self.loader.filename(for: filter)
-                            )
-                            if FileManager.default.fileExists(atPath: fileURL.path) {
-                                do {
-                                    resetRulesChunks.append(try String(contentsOf: fileURL, encoding: .utf8))
-                                } catch {
-                                    await ConcurrentLogManager.shared.error(
-                                        .filterApply, "Error reading filter after reset",
-                                        metadata: ["filter": filter.name, "error": "\(error)"])
-                                }
-                            }
-                        }
-                    }
-
-                    let resetRulesString = resetRulesChunks.joined(separator: "\n")
-                    return ContentBlockerService.convertFilter(
-                        rules: resetRulesString.isEmpty ? "[]" : resetRulesString,
-                        groupIdentifier: GroupIdentifier.shared.value,
-                        targetRulesFilename: targetInfo.rulesFilename,
-                        disabledSites: disabledSites
-                    )
-                }.value
-
-                let resetRuleCount = resetResult.safariRulesCount
-
-                // Update advanced rules from reset filters
-                if let resetAdvancedRulesText = resetResult.advancedRulesText,
-                    !resetResult.advancedRulesText!.isEmpty
-                {
-                    advancedRulesByTarget[targetInfo.bundleIdentifier] = resetAdvancedRulesText
-                } else {
-                    // Remove advanced rules for this target if reset resulted in none
-                    advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
-                }
-
-                await MainActor.run {
-                    self.ruleCountsByExtension[targetInfo.bundleIdentifier] = resetRuleCount
-                    self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
-                }
-
-                overallSafariRulesApplied += resetRuleCount
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, "After reset, category now has fewer rules",
-                    metadata: [
-                        "category": targetInfo.primaryCategory.rawValue,
-                        "ruleCount": "\(resetRuleCount)",
-                    ])
-                continue
-            } else {
-                overallSafariRulesApplied += ruleCountForThisTarget
             }
+
+            overallSafariRulesApplied += ruleCountForThisTarget
         }
         await MainActor.run {
             self.isInConversionPhase = false
@@ -1176,16 +1078,16 @@ class AppFilterManager: ObservableObject {
         let overallReloadStartTime = Date()
         var allReloadsSuccessful = true
 
-        for targetInfo in filtersByTargetInfo.keys {  // Reload only affected targets
+        for targetInfo in platformTargets {
             await MainActor.run {
                 self.processedFiltersCount += 1
                 self.progress =
                     0.7 + (Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.2)  // 70% to 90%
-                self.currentFilterName = targetInfo.primaryCategory.rawValue
+                self.currentFilterName = targetInfo.displayName
 
                 // Batched ViewModel update
                 self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateCurrentFilter(targetInfo.primaryCategory.rawValue)
+                self.applyProgressViewModel.updateCurrentFilter(targetInfo.displayName)
             }
 
             // Yield to prevent blocking
@@ -1200,50 +1102,12 @@ class AppFilterManager: ObservableObject {
                 await MainActor.run {
                     if !self.hasError {
                         self.statusDescription =
-                            "Failed to reload \(targetInfo.primaryCategory.rawValue) extension after 5 attempts."
+                            "Failed to reload \(targetInfo.displayName) after 5 attempts."
                     }
                     self.hasError = true
                 }
             }
             try? await Task.sleep(nanoseconds: 100_000_000)  // Longer delay between reloads to reduce memory pressure
-        }
-
-        // Reload any other extensions that might have had their rules implicitly cleared (if no selected filters mapped to them)
-        let currentPlatform = self.currentPlatform
-        let disabledSites = self.dataManager.disabledSites
-
-        let allPlatformTargets = await Task.detached {
-            ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
-        }.value
-
-        let affectedTargetBundleIDs = Set(filtersByTargetInfo.keys.map { $0.bundleIdentifier })
-
-        for targetInfo in allPlatformTargets {
-            if !affectedTargetBundleIDs.contains(targetInfo.bundleIdentifier) {
-                // Run conversion and reload on background thread
-                await Task.detached {
-                    _ =
-                        ContentBlockerService.convertFilter(
-                            rules: "", groupIdentifier: GroupIdentifier.shared.value,
-                            targetRulesFilename: targetInfo.rulesFilename,
-                            disabledSites: disabledSites
-                        ).safariRulesCount  // Ensure it has an empty list
-                }.value
-
-                let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
-
-                // Final result after all attempts
-                if !reloadSuccess {
-                    allReloadsSuccessful = false
-                    await MainActor.run {
-                        if !self.hasError {
-                            self.statusDescription =
-                                "Failed to reload \(targetInfo.primaryCategory.rawValue) extension after 5 attempts."
-                        }
-                        self.hasError = true
-                    }
-                }
-            }
         }
 
         // Log reload summary
@@ -1338,14 +1202,26 @@ class AppFilterManager: ObservableObject {
         await MainActor.run {
             self.isLoading = false
 
+            let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
+            let ruleCountsByBlocker = Dictionary(
+                uniqueKeysWithValues: platformTargets.map { target in
+                    (target.displayName, self.ruleCountsByExtension[target.bundleIdentifier] ?? 0)
+                }
+            )
+            let blockersApproachingLimit = Set(
+                platformTargets
+                    .filter { self.extensionsApproachingLimit.contains($0.bundleIdentifier) }
+                    .map { $0.displayName }
+            )
+
             // Update ViewModel with final statistics
             self.applyProgressViewModel.updateStatistics(
                 sourceRules: self.sourceRulesCount,
                 safariRules: self.lastRuleCount,
                 conversionTime: self.lastConversionTime,
                 reloadTime: self.lastReloadTime,
-                ruleCountsByCategory: self.ruleCountsByCategory,
-                categoriesApproachingLimit: self.categoriesApproachingLimit,
+                ruleCountsByBlocker: ruleCountsByBlocker,
+                blockersApproachingLimit: blockersApproachingLimit,
                 statusMessage: self.statusDescription
             )
             self.applyProgressViewModel.updateIsLoading(false)
@@ -1747,9 +1623,9 @@ class AppFilterManager: ObservableObject {
             if totalSourceLines > 10000 {
                 Task {
                     await ConcurrentLogManager.shared.debug(
-                        .filterApply, "Converting large category",
+                        .filterApply, "Converting large blocker",
                         metadata: [
-                            "category": targetInfo.primaryCategory.rawValue,
+                            "blocker": targetInfo.displayName,
                             "sourceLines": "\(totalSourceLines)",
                         ])
                 }

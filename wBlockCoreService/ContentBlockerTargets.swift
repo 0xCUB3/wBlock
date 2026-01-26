@@ -13,18 +13,19 @@ public enum Platform {
 }
 
 public struct ContentBlockerTargetInfo: Hashable {
-    public let primaryCategory: FilterListCategory
+    /// Stable slot index shown to users (e.g. "wBlock 1").
+    public let slot: Int
     public let platform: Platform
     public let bundleIdentifier: String
     public let rulesFilename: String
-    public let secondaryCategory: FilterListCategory?
+    public let displayName: String
 
-    init(primaryCategory: FilterListCategory, platform: Platform, bundleIdentifier: String, rulesFilename: String, secondaryCategory: FilterListCategory? = nil) {
-        self.primaryCategory = primaryCategory
+    init(slot: Int, platform: Platform, bundleIdentifier: String, rulesFilename: String, displayName: String) {
+        self.slot = slot
         self.platform = platform
         self.bundleIdentifier = bundleIdentifier
         self.rulesFilename = rulesFilename
-        self.secondaryCategory = secondaryCategory
+        self.displayName = displayName
     }
 
     // Implement Hashable
@@ -45,26 +46,26 @@ public class ContentBlockerTargetManager {
     private init() {
         targets = [
             // macOS Targets (5 content blockers)
-            ContentBlockerTargetInfo(primaryCategory: .ads, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Ads", rulesFilename: "rules_ads_macos.json"),
-            ContentBlockerTargetInfo(primaryCategory: .privacy, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Privacy", rulesFilename: "rules_privacy_macos.json"),
-            ContentBlockerTargetInfo(primaryCategory: .security, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Security", rulesFilename: "rules_security_annoyances_macos.json", secondaryCategory: .annoyances),
-            ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign", rulesFilename: "rules_foreign_experimental_macos.json", secondaryCategory: .experimental),
-            ContentBlockerTargetInfo(primaryCategory: .custom, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Custom", rulesFilename: "rules_custom_macos.json"),
+            ContentBlockerTargetInfo(slot: 1, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Ads", rulesFilename: "rules_ads_macos.json", displayName: "wBlock 1"),
+            ContentBlockerTargetInfo(slot: 2, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Privacy", rulesFilename: "rules_privacy_macos.json", displayName: "wBlock 2"),
+            ContentBlockerTargetInfo(slot: 3, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Security", rulesFilename: "rules_security_annoyances_macos.json", displayName: "wBlock 3"),
+            ContentBlockerTargetInfo(slot: 4, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign", rulesFilename: "rules_foreign_experimental_macos.json", displayName: "wBlock 4"),
+            ContentBlockerTargetInfo(slot: 5, platform: .macOS, bundleIdentifier: "skula.wBlock.wBlock-Custom", rulesFilename: "rules_custom_macos.json", displayName: "wBlock 5"),
 
-            // iOS Targets (same 5 categories as macOS)
-            ContentBlockerTargetInfo(primaryCategory: .ads, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Ads-iOS", rulesFilename: "rules_ads_ios.json"),
-            ContentBlockerTargetInfo(primaryCategory: .privacy, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Privacy-iOS", rulesFilename: "rules_privacy_ios.json"),
-            ContentBlockerTargetInfo(primaryCategory: .security, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Security-iOS", rulesFilename: "rules_security_annoyances_ios.json", secondaryCategory: .annoyances),
-            ContentBlockerTargetInfo(primaryCategory: .foreign, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign-iOS", rulesFilename: "rules_foreign_experimental_ios.json", secondaryCategory: .experimental),
-            ContentBlockerTargetInfo(primaryCategory: .custom, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Custom-iOS", rulesFilename: "rules_custom_ios.json")
+            // iOS Targets (same 5 slots as macOS)
+            ContentBlockerTargetInfo(slot: 1, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Ads-iOS", rulesFilename: "rules_ads_ios.json", displayName: "wBlock 1"),
+            ContentBlockerTargetInfo(slot: 2, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Privacy-iOS", rulesFilename: "rules_privacy_ios.json", displayName: "wBlock 2"),
+            ContentBlockerTargetInfo(slot: 3, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Security-iOS", rulesFilename: "rules_security_annoyances_ios.json", displayName: "wBlock 3"),
+            ContentBlockerTargetInfo(slot: 4, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Foreign-iOS", rulesFilename: "rules_foreign_experimental_ios.json", displayName: "wBlock 4"),
+            ContentBlockerTargetInfo(slot: 5, platform: .iOS, bundleIdentifier: "skula.wBlock.wBlock-Custom-iOS", rulesFilename: "rules_custom_ios.json", displayName: "wBlock 5")
         ]
-    }
-
-    public func targetInfo(forCategory category: FilterListCategory, platform: Platform) -> ContentBlockerTargetInfo? {
-        return targets.first { $0.platform == platform && ($0.primaryCategory == category || $0.secondaryCategory == category) }
     }
     
     public func allTargets(forPlatform platform: Platform) -> [ContentBlockerTargetInfo] {
-        return targets.filter { $0.platform == platform }
+        targets.filter { $0.platform == platform }.sorted { $0.slot < $1.slot }
+    }
+
+    public func targetInfo(forBundleIdentifier bundleIdentifier: String, platform: Platform) -> ContentBlockerTargetInfo? {
+        targets.first { $0.platform == platform && $0.bundleIdentifier == bundleIdentifier }
     }
 }

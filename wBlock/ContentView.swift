@@ -51,6 +51,21 @@ struct ContentView: View {
         filterManager.lastRuleCount > 0
     }
 
+    private var totalSafariRuleCapacity: Int {
+        let blockers = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
+        return blockers.count * 150_000
+    }
+
+    private var isApproachingTotalSafariRuleCapacity: Bool {
+        guard hasAppliedFilters else { return false }
+        let warningThreshold = Int(Double(totalSafariRuleCapacity) * 0.8)
+        return appliedSafariRulesCount >= warningThreshold
+    }
+
+    private var shouldShowRuleLimitIndicator: Bool {
+        isApproachingTotalSafariRuleCapacity || !filterManager.extensionsApproachingLimit.isEmpty
+    }
+
     private var displayableCategories: [FilterListCategory] {
         FilterListCategory.allCases.filter { $0 != .all }
     }
@@ -280,25 +295,53 @@ struct ContentView: View {
                 valueColor: .primary
             )
             #if os(iOS)
-                StatCard(
-                    title: "Rules",
-                    value: hasAppliedFilters
-                        ? appliedSafariRulesCount.formatted()
-                        : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
-                    icon: "shield.lefthalf.filled",
-                    pillColor: .clear,
-                    valueColor: hasAppliedFilters ? .primary : .secondary
-                )
+                Button {
+                    filterManager.showRuleLimitWarning()
+                } label: {
+                    StatCard(
+                        title: "Rules",
+                        value: hasAppliedFilters
+                            ? appliedSafariRulesCount.formatted()
+                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
+                        icon: "shield.lefthalf.filled",
+                        pillColor: .clear,
+                        valueColor: hasAppliedFilters ? .primary : .secondary
+                    )
+                    .overlay(alignment: .topTrailing) {
+                        if shouldShowRuleLimitIndicator {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                                .padding(.trailing, 10)
+                                .padding(.top, 8)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
             #else
-                StatCard(
-                    title: hasAppliedFilters ? "Safari Rules" : "Source Rules",
-                    value: hasAppliedFilters
-                        ? appliedSafariRulesCount.formatted()
-                        : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
-                    icon: "shield.lefthalf.filled",
-                    pillColor: .clear,
-                    valueColor: hasAppliedFilters ? .primary : .secondary
-                )
+                Button {
+                    filterManager.showRuleLimitWarning()
+                } label: {
+                    StatCard(
+                        title: hasAppliedFilters ? "Safari Rules" : "Source Rules",
+                        value: hasAppliedFilters
+                            ? appliedSafariRulesCount.formatted()
+                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
+                        icon: "shield.lefthalf.filled",
+                        pillColor: .clear,
+                        valueColor: hasAppliedFilters ? .primary : .secondary
+                    )
+                    .overlay(alignment: .topTrailing) {
+                        if shouldShowRuleLimitIndicator {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                                .padding(.trailing, 10)
+                                .padding(.top, 8)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
             #endif
         }
         .padding(.horizontal)
@@ -311,17 +354,6 @@ struct ContentView: View {
                 Text(category.rawValue)
                     .font(.headline)
                     .foregroundColor(.primary)
-
-                if filterManager.isCategoryApproachingLimit(category) {
-                    Button {
-                        filterManager.showCategoryWarning(for: category)
-                    } label: {
-                        Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.orange)
-                            .font(.caption)
-                    }
-                    .buttonStyle(.plain)
-                }
 
                 Spacer()
             }
@@ -354,17 +386,6 @@ struct ContentView: View {
                     Text(FilterListCategory.foreign.rawValue)
                         .font(.headline)
                         .foregroundColor(.primary)
-
-                    if filterManager.isCategoryApproachingLimit(.foreign) {
-                        Button {
-                            filterManager.showCategoryWarning(for: .foreign)
-                        } label: {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.orange)
-                                .font(.caption)
-                        }
-                        .buttonStyle(.plain)
-                    }
 
                     Spacer()
 
@@ -466,7 +487,8 @@ struct ContentView: View {
                         // Defer state change to next run loop to avoid layout invalidation during scroll
                         DispatchQueue.main.async {
                             if newValue && filter.limitExceededReason != nil {
-                                filterManager.showCategoryWarning(for: filter.category)
+                                filterManager.showRuleLimitWarning(for: filter)
+                                filterManager.toggleFilterListSelection(id: filter.id)
                             } else {
                                 filterManager.toggleFilterListSelection(id: filter.id)
                             }
@@ -477,7 +499,6 @@ struct ContentView: View {
             .labelsHidden()
             .toggleStyle(.switch)
             .frame(alignment: .center)
-            .disabled(filter.limitExceededReason != nil && !filter.isSelected)
         }
         .padding(16)
         .id(filter.id)
@@ -547,23 +568,23 @@ struct ContentModifiers: ViewModifier {
                 Button("OK", role: .cancel) {}
             }
             .alert(
-                "Category Rule Limit Warning",
-                isPresented: $filterManager.showingCategoryWarningAlert
+                "Rule Limit Warning",
+                isPresented: $filterManager.showingRuleLimitWarningAlert
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(filterManager.categoryWarningMessage)
+                Text(filterManager.ruleLimitWarningMessage)
             }
             .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
                 if filterManager.autoDisabledFilters.isEmpty {
                     Text(
-                        "Some filters were automatically disabled because their category exceeded Safari's 150,000 rule limit."
+                        "Some filters were automatically disabled because Safari's rule limits were exceeded."
                     )
                 } else {
                     Text(
-                        "The following filters were automatically disabled:\n\n\(filterManager.autoDisabledFilters.map { $0.name }.joined(separator: "\n"))\n\nTo re-enable these filters, disable other filters in the same category first."
+                        "The following filters were automatically disabled:\n\n\(filterManager.autoDisabledFilters.map { $0.name }.joined(separator: "\n"))\n\nTo re-enable these filters, disable other large filters and apply changes again."
                     )
                 }
             }
@@ -862,15 +883,7 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             case .valid:
-                if isSelectedCategoryAlmostFull {
-                    Text(
-                        "That category is nearly full. Pick another category to stay under Safari’s 150,000 rule limit."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                } else {
-                    EmptyView()
-                }
+                EmptyView()
             }
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)
@@ -902,9 +915,7 @@ struct AddFilterListView: View {
     }
 
     private var canSubmit: Bool {
-        if case .valid = validationState, !isSaving, !isSelectedCategoryAlmostFull,
-            !isCustomNameDuplicate
-        {
+        if case .valid = validationState, !isSaving, !isCustomNameDuplicate {
             return true
         }
         return false
@@ -912,7 +923,6 @@ struct AddFilterListView: View {
 
     private func submit() {
         guard case .valid(let url) = validationState else { return }
-        guard !isSelectedCategoryAlmostFull else { return }
 
         isSaving = true
 
@@ -942,13 +952,12 @@ struct AddFilterListView: View {
                         Text(categoryMenuTitle(for: category))
                     }
                 }
-                .disabled(isCategoryAlmostFull(category))
             }
         } label: {
             #if os(iOS)
                 HStack(spacing: 10) {
                     Text(categoryMenuTitle(for: selectedCategory))
-                        .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
+                        .foregroundStyle(.primary)
 
                     Spacer()
 
@@ -966,7 +975,7 @@ struct AddFilterListView: View {
                 )
             #else
                 Text(categoryMenuTitle(for: selectedCategory))
-                    .foregroundStyle(isSelectedCategoryAlmostFull ? .secondary : .primary)
+                    .foregroundStyle(.primary)
             #endif
         }
         #if os(iOS)
@@ -979,43 +988,19 @@ struct AddFilterListView: View {
     }
 
     private var contentBlockerCategories: [FilterListCategory] {
-        let targets = ContentBlockerTargetManager.shared.allTargets(
-            forPlatform: filterManager.currentPlatform
-        )
-
-        var availableCategories = Set<FilterListCategory>()
-        for target in targets {
-            availableCategories.insert(target.primaryCategory)
-            if let secondary = target.secondaryCategory {
-                availableCategories.insert(secondary)
-            }
-        }
-
         // Keep this list aligned with the sections users see in the Filters view.
         let preferredOrder: [FilterListCategory] = [
             .ads, .privacy, .security, .annoyances, .custom, .foreign, .experimental,
         ]
 
+        let availableCategories = Set(FilterListCategory.allCases.filter { $0 != .all })
         let ordered = preferredOrder.filter { availableCategories.contains($0) }
         let remaining = availableCategories.subtracting(ordered)
         let remainingOrdered = FilterListCategory.allCases.filter { remaining.contains($0) }
         return ordered + remainingOrdered
     }
 
-    private var isSelectedCategoryAlmostFull: Bool {
-        isCategoryAlmostFull(selectedCategory)
-    }
-
-    private func isCategoryAlmostFull(_ category: FilterListCategory) -> Bool {
-        let ruleLimit = 150_000
-        let warningThreshold = Int(Double(ruleLimit) * 0.8)
-        return filterManager.getCategoryRuleCount(category) >= warningThreshold
-    }
-
     private func categoryMenuTitle(for category: FilterListCategory) -> String {
-        if isCategoryAlmostFull(category) {
-            return "\(category.rawValue) (Near limit)"
-        }
         return category.rawValue
     }
 

@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Blocks content using international and region-specific filter lists, plus experimental filters for testing new blocking rules.</string>
+	<string>Part of wBlock&apos;s content blocker set. Enable all wBlock blockers for maximum coverage.</string>
 </dict>
 </plist>

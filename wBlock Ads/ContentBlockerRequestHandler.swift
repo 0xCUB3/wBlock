@@ -11,27 +11,16 @@ import os.log
 
 public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
 
-    // --- CONFIGURE THESE FOR EACH EXTENSION ---
-    private let myPrimaryCategory: wBlockCoreService.FilterListCategory = .ads
-    private let mySecondaryCategory: wBlockCoreService.FilterListCategory? = nil
-    private let myPlatform = Platform.macOS
-    // --- END CONFIGURATION ---
-
     public func beginRequest(with context: NSExtensionContext) {
-        // Try primary category first
-        var targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: myPrimaryCategory, platform: myPlatform)
+        #if os(iOS)
+        let platform: Platform = .iOS
+        #else
+        let platform: Platform = .macOS
+        #endif
 
-        // If not found and there's a secondary category, try that (for combined extensions)
-        if targetInfo == nil, let secondary = mySecondaryCategory {
-            targetInfo = ContentBlockerTargetManager.shared.targetInfo(forCategory: secondary, platform: myPlatform)
-        }
-        
-        guard let finalTargetInfo = targetInfo else {
-            os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for primaryCategory '%@' (secondary: '%@') on platform '%@'. Extension Bundle: %@",
-                   myPrimaryCategory.rawValue,
-                   mySecondaryCategory?.rawValue ?? "N/A",
-                   String(describing: myPlatform),
-                   Bundle.main.bundleIdentifier ?? "Unknown")
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "Unknown"
+        guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forBundleIdentifier: bundleIdentifier, platform: platform) else {
+            os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for bundleIdentifier '%@' on platform '%@'.", bundleIdentifier, String(describing: platform))
             // Fallback to sending empty rules
             let emptyRules = "[]"; let item = NSExtensionItem(); item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: kUTTypeJSON as String)]; context.completeRequest(returningItems: [item]);
             return
@@ -40,7 +29,7 @@ public class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling 
         ContentBlockerExtensionRequestHandler.handleRequest(
             with: context,
             groupIdentifier: GroupIdentifier.shared.value,
-            rulesFilenameInAppGroup: finalTargetInfo.rulesFilename
+            rulesFilenameInAppGroup: targetInfo.rulesFilename
         )
     }
 }

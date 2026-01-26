@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Applies your personally added custom filter lists and rules.</string>
+	<string>Part of wBlock&apos;s content blocker set. Enable all wBlock blockers for maximum coverage.</string>
 </dict>
 </plist>

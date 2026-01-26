@@ -6,15 +6,6 @@
 //
 
 import SwiftUI
-// The production target exposes FilterListCategory via wBlockCoreService.
-#if canImport(wBlockCoreService)
-import wBlockCoreService
-#else
-// Fallback used by previews and static analysis when the module is unavailable.
-enum FilterListCategory: String, CaseIterable, Hashable {
-    case all, ads, privacy, security, multipurpose, annoyances, experimental, foreign, custom
-}
-#endif
 
 /// The phases the apply flow walks through.
 enum ApplyChangesPhase: String, CaseIterable, Identifiable {
@@ -68,8 +59,8 @@ struct ApplyChangesSummary: Equatable {
     var safariRules: Int
     var conversionTime: String
     var reloadTime: String
-    var ruleCountsByCategory: [FilterListCategory: Int]
-    var categoriesApproachingLimit: Set<FilterListCategory>
+    var ruleCountsByBlocker: [String: Int]
+    var blockersApproachingLimit: Set<String>
 }
 
 /// Consolidated state for the apply progress presentation.
@@ -172,8 +163,8 @@ class ApplyChangesViewModel: ObservableObject {
         safariRules: Int,
         conversionTime: String,
         reloadTime: String,
-        ruleCountsByCategory: [FilterListCategory: Int],
-        categoriesApproachingLimit: Set<FilterListCategory>,
+        ruleCountsByBlocker: [String: Int],
+        blockersApproachingLimit: Set<String>,
         statusMessage: String? = nil
     ) {
         state.summary = ApplyChangesSummary(
@@ -181,8 +172,8 @@ class ApplyChangesViewModel: ObservableObject {
             safariRules: safariRules,
             conversionTime: conversionTime,
             reloadTime: reloadTime,
-            ruleCountsByCategory: ruleCountsByCategory,
-            categoriesApproachingLimit: categoriesApproachingLimit
+            ruleCountsByBlocker: ruleCountsByBlocker,
+            blockersApproachingLimit: blockersApproachingLimit
         )
         markAllPhasesComplete()
         state.isLoading = false

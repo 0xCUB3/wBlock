@@ -448,11 +448,8 @@ public actor SharedAutoUpdateManager {
             // Persist metadata (versions, counts)
             await saveFilterListsToProtobuf(merged)
 
-            // Determine impacted categories for partial target reconversion
-            let updatedCategorySet = Set(updatedFilterSet.map { $0.category })
-
-            // Re-convert & reload only impacted targets; rebuild engine from per-target stored advanced rules
-            try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected }, updatedCategories: updatedCategorySet)
+            // Re-convert & reload content blockers. (Rule distribution is slot-based, so updates can affect any target.)
+            try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected })
 
             // Record successful update and schedule next
             let successTime = Date().timeIntervalSince1970
@@ -737,70 +734,86 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Conversion & Reload
-    private func rebuildAndReload(selectedFilters: [FilterList], updatedCategories: Set<FilterListCategory>) async throws {
-        // Build rules per target using same mapping logic as main app
+    private func rebuildAndReload(selectedFilters: [FilterList]) async throws {
+        // Build rules per target using same slot-based mapping logic as the main app.
         #if os(iOS)
         let detectedPlatform: Platform = .iOS
         #else
         let detectedPlatform: Platform = .macOS
         #endif
+
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
         var advancedRulesSnippets: [String] = []
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
         }
-        
+
         // Get disabled sites for injection
         let disabledSites = await getDisabledSites()
 
+        // Distribute all selected filter lists across available blocker slots by least-filled estimate.
+        var filtersByTarget: [ContentBlockerTargetInfo: [FilterList]] = Dictionary(
+            uniqueKeysWithValues: targets.map { ($0, []) }
+        )
+        var estimatedSourceRulesByTarget: [ContentBlockerTargetInfo: Int] = Dictionary(
+            uniqueKeysWithValues: targets.map { ($0, 0) }
+        )
+
+        let sortedFilters = selectedFilters.sorted { lhs, rhs in
+            let lhsCount = lhs.sourceRuleCount ?? 0
+            let rhsCount = rhs.sourceRuleCount ?? 0
+            if lhsCount != rhsCount { return lhsCount > rhsCount }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+
+        for filter in sortedFilters {
+            guard let destination = targets.min(by: {
+                (estimatedSourceRulesByTarget[$0] ?? 0) < (estimatedSourceRulesByTarget[$1] ?? 0)
+            }) else { break }
+
+            filtersByTarget[destination, default: []].append(filter)
+            estimatedSourceRulesByTarget[destination, default: 0] += filter.sourceRuleCount ?? 0
+        }
+
         for target in targets {
-            let targetCategories: [FilterListCategory] = {
-                if let secondary = target.secondaryCategory { return [target.primaryCategory, secondary] }
-                return [target.primaryCategory]
-            }()
-
-            let intersects = !updatedCategories.isDisjoint(with: targetCategories)
-            let existingAdvanced = loadStoredAdvancedRules(for: target)
-            let targetRulesFileExists = FileManager.default.fileExists(
-                atPath: containerURL.appendingPathComponent(target.rulesFilename).path
-            )
-
-            // Decide if we must reconvert this target
-            let mustReconvert: Bool = intersects || existingAdvanced == nil || !targetRulesFileExists
-            if mustReconvert {
-                // Rebuild combined raw rules for this target from selected filters
-                let filtersForTarget = selectedFilters.filter { targetCategories.contains($0.category) }
-                var combinedChunks: [String] = []
-                if !filtersForTarget.isEmpty {
-                    combinedChunks.reserveCapacity(filtersForTarget.count)
-                    for f in filtersForTarget {
-                        if let content = readFilterTextForConversion(f, containerURL: containerURL) {
-                            combinedChunks.append(content)
-                        }
+            // Rebuild combined raw rules for this target from assigned filters
+            let filtersForTarget = filtersByTarget[target] ?? []
+            var combinedChunks: [String] = []
+            if !filtersForTarget.isEmpty {
+                combinedChunks.reserveCapacity(filtersForTarget.count)
+                for f in filtersForTarget {
+                    if let content = readFilterTextForConversion(f, containerURL: containerURL) {
+                        combinedChunks.append(content)
                     }
                 }
-                let combined = combinedChunks.joined(separator: "\n")
-                let conversion = ContentBlockerService.convertFilter(rules: combined.isEmpty ? "" : combined, groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename, disabledSites: disabledSites)
-                if let adv = conversion.advancedRulesText, !adv.isEmpty {
-                    storeAdvancedRules(adv, for: target)
-                    advancedRulesSnippets.append(adv)
-                } else {
-                    // Clear stored file if previously had advanced rules
-                    removeStoredAdvancedRules(for: target)
-                }
-                let reloaded = await reloadContentBlockerWithRetry(identifier: target.bundleIdentifier)
-                if !reloaded {
-                    throw AutoUpdateError.contentBlockerReloadFailed(identifier: target.bundleIdentifier)
-                }
-            } else if let existingAdvanced = existingAdvanced, !existingAdvanced.isEmpty {
-                // Reuse stored advanced rules without reconversion
-                advancedRulesSnippets.append(existingAdvanced)
+            }
+            let combined = combinedChunks.joined(separator: "\n")
+            let conversion = ContentBlockerService.convertFilter(
+                rules: combined.isEmpty ? "" : combined,
+                groupIdentifier: GroupIdentifier.shared.value,
+                targetRulesFilename: target.rulesFilename,
+                disabledSites: disabledSites
+            )
+
+            if let adv = conversion.advancedRulesText, !adv.isEmpty {
+                storeAdvancedRules(adv, for: target)
+                advancedRulesSnippets.append(adv)
+            } else {
+                removeStoredAdvancedRules(for: target)
+            }
+
+            let reloaded = await reloadContentBlockerWithRetry(identifier: target.bundleIdentifier)
+            if !reloaded {
+                throw AutoUpdateError.contentBlockerReloadFailed(identifier: target.bundleIdentifier)
             }
         }
 
         if !advancedRulesSnippets.isEmpty {
-            ContentBlockerService.buildCombinedFilterEngine(combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"), groupIdentifier: GroupIdentifier.shared.value)
+            ContentBlockerService.buildCombinedFilterEngine(
+                combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
+                groupIdentifier: GroupIdentifier.shared.value
+            )
         } else {
             ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
         }

@@ -10,6 +10,6 @@
 		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
 	</dict>
 	<key>NSHumanReadableDescription</key>
-	<string>Protects against malware, phishing, and other security threats. Also blocks multipurpose filters and annoying web elements like cookie notices and popups.</string>
+	<string>Part of wBlock&apos;s content blocker set. Enable all wBlock blockers for maximum coverage.</string>
 </dict>
 </plist>
