@@ -48,25 +48,22 @@ struct ApplyChangesProgressView: View {
 
     private var progressCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 10) {
-                    if viewModel.state.isLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
+            if viewModel.state.isComplete {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
+
+                        Text(headerTitle)
+                            .font(.title3)
+                            .fontWeight(.semibold)
                     }
 
-                    Text(headerTitle)
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                    Text(headerSubtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
-
-                Text(headerSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
             }
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -193,17 +190,14 @@ struct ApplyChangesProgressView: View {
         if viewModel.state.isComplete {
             return "Applied"
         }
-        return "Applying changes…"
+        return ""
     }
 
     private var headerSubtitle: String {
         if viewModel.state.isComplete {
             return "Filters applied successfully."
         }
-        if !viewModel.state.statusMessage.isEmpty {
-            return viewModel.state.statusMessage
-        }
-        return activePhase?.title ?? "Working…"
+        return ""
     }
 
     private var processedText: String {
