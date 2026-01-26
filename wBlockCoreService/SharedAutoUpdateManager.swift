@@ -19,6 +19,7 @@
 //  extensions. Keep this file pure Foundation + wBlockCoreService.
 
 import Foundation
+import CryptoKit
 import os.log
 import SafariServices
 #if canImport(UIKit)
@@ -55,7 +56,6 @@ public actor SharedAutoUpdateManager {
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
 
-    private let advancedRulesFilenamePrefix = "advanced_" // + bundleIdentifier + .txt
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
     // Staleness threshold: if running flag is set for longer than this, it's considered stuck
@@ -644,16 +644,16 @@ public actor SharedAutoUpdateManager {
         return "\(filter.name).txt"
     }
 
-    private func readFilterTextForConversion(_ filter: FilterList, containerURL: URL) -> String? {
+    private func readFilterDataForConversion(_ filter: FilterList, containerURL: URL) -> Data? {
         let primaryURL = containerURL.appendingPathComponent(localFilename(for: filter))
-        if let content = try? String(contentsOf: primaryURL, encoding: .utf8) {
+        if let content = try? Data(contentsOf: primaryURL) {
             return content
         }
 
         // Backward compatibility: legacy custom filters were stored as "<name>.txt".
         guard filter.isCustom else { return nil }
         let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-        guard let legacyContent = try? String(contentsOf: legacyURL, encoding: .utf8) else { return nil }
+        guard let legacyContent = try? Data(contentsOf: legacyURL) else { return nil }
 
         // Best-effort migration to the stable ID-based filename.
         if !FileManager.default.fileExists(atPath: primaryURL.path),
@@ -713,10 +713,14 @@ public actor SharedAutoUpdateManager {
         var allReloaded = true
         var advancedRulesSnippets: [String] = []
 
+        let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
+
         for target in targets {
             let reloaded = await reloadContentBlockerWithRetry(identifier: target.bundleIdentifier)
             allReloaded = allReloaded && reloaded
-            if let adv = loadStoredAdvancedRules(for: target), !adv.isEmpty {
+            if let containerURL,
+               let adv = loadCachedAdvancedRules(for: target, containerURL: containerURL),
+               !adv.isEmpty {
                 advancedRulesSnippets.append(adv)
             }
         }
@@ -777,30 +781,41 @@ public actor SharedAutoUpdateManager {
         }
 
         for target in targets {
-            // Rebuild combined raw rules for this target from assigned filters
+            // Rebuild combined raw rules for this target from assigned filters (streaming + hashed).
             let filtersForTarget = filtersByTarget[target] ?? []
-            var combinedChunks: [String] = []
-            if !filtersForTarget.isEmpty {
-                combinedChunks.reserveCapacity(filtersForTarget.count)
+            let tempURL = containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
+            defer { try? FileManager.default.removeItem(at: tempURL) }
+
+            FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
+            let newlineData = Data("\n".utf8)
+            var hasher = SHA256()
+
+            if let fileHandle = try? FileHandle(forWritingTo: tempURL) {
+                defer { try? fileHandle.close() }
+
                 for f in filtersForTarget {
-                    if let content = readFilterTextForConversion(f, containerURL: containerURL) {
-                        combinedChunks.append(content)
+                    if let data = readFilterDataForConversion(f, containerURL: containerURL) {
+                        hasher.update(data: data)
+                        try? fileHandle.write(contentsOf: data)
+                        hasher.update(data: newlineData)
+                        try? fileHandle.write(contentsOf: newlineData)
                     }
                 }
             }
-            let combined = combinedChunks.joined(separator: "\n")
-            let conversion = ContentBlockerService.convertFilter(
-                rules: combined.isEmpty ? "" : combined,
+
+            let digest = hasher.finalize()
+            let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
+
+            let conversion = ContentBlockerService.convertFilterFromFile(
+                rulesFileURL: tempURL,
+                rulesSHA256Hex: rulesSHA256Hex,
                 groupIdentifier: GroupIdentifier.shared.value,
                 targetRulesFilename: target.rulesFilename,
                 disabledSites: disabledSites
             )
 
             if let adv = conversion.advancedRulesText, !adv.isEmpty {
-                storeAdvancedRules(adv, for: target)
                 advancedRulesSnippets.append(adv)
-            } else {
-                removeStoredAdvancedRules(for: target)
             }
 
             let reloaded = await reloadContentBlockerWithRetry(identifier: target.bundleIdentifier)
@@ -907,25 +922,22 @@ public actor SharedAutoUpdateManager {
         return (title, description, version)
     }
 
-    // MARK: - Advanced Rules Persistence
-    private func advancedRulesURL(for target: ContentBlockerTargetInfo) -> URL? {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else { return nil }
-        return containerURL.appendingPathComponent("\(advancedRulesFilenamePrefix)\(target.bundleIdentifier).txt")
+    private func baseRulesFilename(for targetRulesFilename: String) -> String {
+        if targetRulesFilename.lowercased().hasSuffix(".json") {
+            let stem = targetRulesFilename.dropLast(5)
+            return "\(stem).base.json"
+        }
+        return "\(targetRulesFilename).base"
     }
 
-    private func storeAdvancedRules(_ text: String, for target: ContentBlockerTargetInfo) {
-        guard let url = advancedRulesURL(for: target) else { return }
-        try? text.write(to: url, atomically: true, encoding: .utf8)
+    private func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
     }
 
-    private func loadStoredAdvancedRules(for target: ContentBlockerTargetInfo) -> String? {
-        guard let url = advancedRulesURL(for: target), FileManager.default.fileExists(atPath: url.path) else { return nil }
+    private func loadCachedAdvancedRules(for target: ContentBlockerTargetInfo, containerURL: URL) -> String? {
+        let url = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: target.rulesFilename))
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return try? String(contentsOf: url, encoding: .utf8)
-    }
-
-    private func removeStoredAdvancedRules(for target: ContentBlockerTargetInfo) {
-        guard let url = advancedRulesURL(for: target), FileManager.default.fileExists(atPath: url.path) else { return }
-        try? FileManager.default.removeItem(at: url)
     }
 
     // MARK: - Shared Log (File-Based for Extensions)

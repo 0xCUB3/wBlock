@@ -8,7 +8,7 @@
 import Foundation
 import wBlockCoreService
 
-class FilterListUpdater {
+final class FilterListUpdater: @unchecked Sendable {
     private let loader: FilterListLoader
     private let logManager: ConcurrentLogManager
 

@@ -43,6 +43,7 @@ enum ApplyChangesPhaseStatus: Equatable {
     case pending
     case active
     case complete
+    case failed
 }
 
 /// Model used to render the phase list in the progress sheet.
@@ -69,8 +70,11 @@ struct ApplyChangesState: Equatable {
     var progress: Double = 0
     var statusMessage: String = ""
     var currentFilterName: String = ""
-    var processedCount: Int = 0
+    /// Total number of blocker targets for the current platform (typically 5).
     var totalCount: Int = 0
+    /// Per-phase progress for target-based phases.
+    var convertingDone: Int = 0
+    var reloadingDone: Int = 0
     var updatesFound: Int = 0
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map { ApplyChangesPhaseProgress(phase: $0, status: .pending) }
     var summary: ApplyChangesSummary? = nil
@@ -139,13 +143,21 @@ class ApplyChangesViewModel: ObservableObject {
     }
 
     func updateProcessedCount(_ processed: Int, total: Int) {
-        let clampedProcessed = max(0, processed)
         let clampedTotal = max(0, total)
-
-        guard clampedProcessed != state.processedCount || clampedTotal != state.totalCount else { return }
-
-        state.processedCount = clampedProcessed
+        guard clampedTotal != state.totalCount else { return }
         state.totalCount = clampedTotal
+    }
+
+    func updateConvertingDone(_ done: Int) {
+        let clamped = max(0, done)
+        guard clamped != state.convertingDone else { return }
+        state.convertingDone = clamped
+    }
+
+    func updateReloadingDone(_ done: Int) {
+        let clamped = max(0, done)
+        guard clamped != state.reloadingDone else { return }
+        state.reloadingDone = clamped
     }
 
     func updateStageDescription(_ description: String) {

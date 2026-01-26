@@ -7,6 +7,7 @@
 
 internal import ContentBlockerConverter
 internal import FilterEngine
+import CryptoKit
 import Foundation
 import SafariServices
 internal import ZIPFoundation
@@ -15,25 +16,7 @@ import os.log
 /// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
 /// and manage content blocker extensions.
 public enum ContentBlockerService {
-    
-    // MARK: - Performance Optimization Cache
-    
-    /// Cache for conversion results to avoid redundant SafariConverterLib calls
-    private static var conversionCache: [String: ConversionResult] = [:]
-    private static let maxConversionCacheEntries: Int = 8
-    private static let cacheQueue = DispatchQueue(label: "conversion-cache", attributes: .concurrent)
-    
-    /// Clears the conversion cache to free memory
-    public static func clearConversionCache() {
-        cacheQueue.async(flags: .barrier) {
-            conversionCache.removeAll()
-        }
-    }
-    
-    /// Gets cache key for rules to enable caching
-    private static func getCacheKey(for rules: String) -> String {
-        return String(rules.hash)
-    }
+
     /// Reads the default filter file contents from the main bundle.
     ///
     /// - Returns: The contents of the default filter list or an error message if the file cannot be read.
@@ -86,6 +69,7 @@ public enum ContentBlockerService {
     /// - Parameters:
     ///   - identifier: Bundle ID of the content blocker extension to reload.
     /// - Returns: A Result indicating success or containing an error if the reload failed.
+    @MainActor
     public static func reloadContentBlocker(
         withIdentifier identifier: String
     ) async -> Result<Void, Error> {
@@ -167,53 +151,118 @@ public enum ContentBlockerService {
     /// - Returns: A tuple containing the number of Safari content blocker rules generated 
     ///           and the advanced rules text (if any).
     public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        // Check if we can use fast path for disabled sites only changes
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
-        
-        // Try to use cached conversion result if rules haven't changed
-        let cacheKey = getCacheKey(for: rules)
-        let cachedResult = cacheQueue.sync { conversionCache[cacheKey] }
-        
-        let result: ConversionResult
-        let isCacheMiss: Bool
-        if let cached = cachedResult {
-            os_log(.info, "Using cached conversion result for %@", targetRulesFilename)
-            result = cached
-            isCacheMiss = false
-        } else {
-            os_log(.info, "Converting rules for %@ (cache miss)", targetRulesFilename)
-            result = convertRules(rules: rules) // Convert AdGuard rules to Safari JSON
-            isCacheMiss = true
-            
-            // Cache the result for future use
-            cacheQueue.async(flags: .barrier) {
-                conversionCache[cacheKey] = result
-                if conversionCache.count > maxConversionCacheEntries {
-                    conversionCache.removeAll(keepingCapacity: true)
-                    conversionCache[cacheKey] = result
-                }
-            }
+
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
+            os_log(.error, "Failed to access App Group container for %@", targetRulesFilename)
+            return (safariRulesCount: 0, advancedRulesText: nil)
         }
 
-        // Persist the raw (non-disabled-site) JSON once per conversion so fast disabled-site updates
-        // don't need to parse/strip "ignore-previous-rules" (which is also used by filter exceptions).
-        if isCacheMiss {
-            let baseFilename = baseRulesFilename(for: targetRulesFilename)
-            let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
-            saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
-            saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
+        let digest = SHA256.hash(data: Data(rules.utf8))
+        let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
+
+        let baseFilename = baseRulesFilename(for: targetRulesFilename)
+        let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
+        let baseHashFilename = baseRulesHashFilename(for: targetRulesFilename)
+        let advancedFilename = baseAdvancedRulesFilename(for: targetRulesFilename)
+
+        let baseURL = containerURL.appendingPathComponent(baseFilename)
+        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
+        let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
+        let advancedURL = containerURL.appendingPathComponent(advancedFilename)
+
+        if let cachedHash = try? String(contentsOf: baseHashURL, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            cachedHash == rulesSHA256Hex,
+            FileManager.default.fileExists(atPath: baseURL.path),
+            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
+        {
+            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
+                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
+
+            let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
+            saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+            let advancedText =
+                (try? String(contentsOf: advancedURL, encoding: .utf8))
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .flatMap { $0.isEmpty ? nil : $0 }
+
+            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
         }
 
-        // Inject ignore rules for current disabled sites (string-based to avoid massive JSONSerialization overhead)
+        let result = convertRules(rules: rules)
+
+        saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
+        saveBlockerListFile(contents: rulesSHA256Hex, groupIdentifier: groupIdentifier, filename: baseHashFilename)
+        saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
+
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
-
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        // Rule count is the converter's base count plus 1 ignore rule per disabled site.
-        let finalRuleCount = result.safariRulesCount + sitesToUse.count
-        
-        // Return both the count and advanced rules text for the caller to handle engine building
-        return (safariRulesCount: finalRuleCount, advancedRulesText: result.advancedRulesText)
+        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+    }
+
+    /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
+    /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
+    public static func convertFilterFromFile(
+        rulesFileURL: URL,
+        rulesSHA256Hex: String,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]? = nil
+    ) -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
+            os_log(.error, "Failed to access App Group container for %@", targetRulesFilename)
+            return (safariRulesCount: 0, advancedRulesText: nil)
+        }
+
+        let baseFilename = baseRulesFilename(for: targetRulesFilename)
+        let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
+        let baseHashFilename = baseRulesHashFilename(for: targetRulesFilename)
+        let advancedFilename = baseAdvancedRulesFilename(for: targetRulesFilename)
+
+        let baseURL = containerURL.appendingPathComponent(baseFilename)
+        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
+        let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
+        let advancedURL = containerURL.appendingPathComponent(advancedFilename)
+
+        if let cachedHash = try? String(contentsOf: baseHashURL, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            cachedHash == rulesSHA256Hex,
+            FileManager.default.fileExists(atPath: baseURL.path),
+            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
+        {
+            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
+                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
+
+            let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
+            saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+            let advancedText =
+                (try? String(contentsOf: advancedURL, encoding: .utf8))
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .flatMap { $0.isEmpty ? nil : $0 }
+
+            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+        }
+
+        // Cache miss: read rules file and run conversion.
+        let combinedRules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
+        let result = convertRules(rules: combinedRules)
+
+        saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
+        saveBlockerListFile(contents: rulesSHA256Hex, groupIdentifier: groupIdentifier, filename: baseHashFilename)
+        saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
+
+        let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
+        saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
     }
     
     /// Fast update for disabled sites changes only - skips SafariConverterLib conversion
@@ -287,6 +336,14 @@ public enum ContentBlockerService {
 
     private static func baseRulesCountFilename(for targetRulesFilename: String) -> String {
         "\(baseRulesFilename(for: targetRulesFilename)).count"
+    }
+
+    private static func baseRulesHashFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).sha256"
+    }
+
+    private static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
     }
 
     private struct DerivedBaseRules {

@@ -41,13 +41,13 @@ final class CloudSyncManager: ObservableObject {
         self.filterManager = filterManager
     }
 
-    func setEnabled(_ enabled: Bool) {
+    func setEnabled(_ enabled: Bool, startSync: Bool = true) {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
         defaults.set(enabled, forKey: Keys.enabled)
         refreshStatusFromDefaults()
 
-        if enabled {
+        if enabled && startSync {
             Task { await syncNow(trigger: "Enabled") }
         }
     }
@@ -67,6 +67,55 @@ final class CloudSyncManager: ObservableObject {
         pendingSyncTask = Task { [weak self] in
             guard let self else { return }
             await self.performTwoWaySync(trigger: trigger)
+        }
+    }
+
+    struct RemoteConfigProbe: Sendable {
+        let exists: Bool
+        let updatedAt: TimeInterval?
+        let schemaVersion: Int?
+    }
+
+    func probeRemoteConfig() async -> RemoteConfigProbe {
+        do {
+            guard let record = try await fetchRecord() else {
+                return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
+            }
+            guard let payload = try decodePayload(from: record) else {
+                return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
+            }
+            return RemoteConfigProbe(
+                exists: true,
+                updatedAt: payload.updatedAt > 0 ? payload.updatedAt : nil,
+                schemaVersion: payload.schemaVersion
+            )
+        } catch {
+            return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
+        }
+    }
+
+    func downloadAndApplyLatestRemoteConfig(trigger: String) async -> Bool {
+        await dataManager.waitUntilLoaded()
+        await userScriptManager.waitUntilReady()
+
+        do {
+            guard let record = try await fetchRecord() else { return false }
+            guard let payload = try decodePayload(from: record) else { return false }
+
+            if isSyncing { return false }
+            isSyncing = true
+            statusLine = "Sync: Downloading…"
+            lastErrorMessage = nil
+            defer { isSyncing = false }
+
+            await applyRemotePayload(payload, trigger: trigger)
+            logger.info("✅ Applied remote sync payload (\(trigger, privacy: .public))")
+            return true
+        } catch {
+            lastErrorMessage = error.localizedDescription
+            statusLine = "Sync: Error"
+            logger.error("❌ Download/apply failed: \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 

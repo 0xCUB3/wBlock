@@ -44,6 +44,10 @@ struct OnboardingView: View {
     @State private var hasManuallyEditedRegionalSelection = false
     @State private var isCommunityExpanded = false
     @State private var wantsCloudSync: Bool = false
+    @State private var hasProbedRemoteConfig: Bool = false
+    @State private var remoteConfigUpdatedAtText: String?
+    @State private var showRemoteConfigPrompt: Bool = false
+    @State private var isAdoptingRemoteConfig: Bool = false
 #if os(iOS)
     @State private var wantsReminderNotifications: Bool = true
 #endif
@@ -291,7 +295,7 @@ struct OnboardingView: View {
     var body: some View {
         VStack {
             if isApplying {
-                OnboardingDownloadView(progress: applyProgress)
+                OnboardingDownloadView(progress: applyProgress, isSyncingFromICloud: isAdoptingRemoteConfig)
             } else {
                 if step == 0 {
                     blockingLevelStep
@@ -316,6 +320,7 @@ struct OnboardingView: View {
 #endif
     .onAppear {
         updateRegionalRecommendations(for: selectedCountryCode)
+        probeForExistingICloudSetupIfNeeded()
     }
     .onChange(of: selectedCountryCode) { newValue in
         let sanitized = newValue.uppercased()
@@ -326,23 +331,53 @@ struct OnboardingView: View {
     .onChange(of: filterManager.filterLists) { _ in
         updateRegionalRecommendations(for: selectedCountryCode)
     }
+    .confirmationDialog(
+        "Use existing iCloud setup?",
+        isPresented: $showRemoteConfigPrompt,
+        titleVisibility: .visible
+    ) {
+        Button("Use iCloud Setup") {
+            Task { await adoptRemoteICloudSetup() }
+        }
+        Button("Continue Setup", role: .cancel) {}
+    } message: {
+        if let remoteConfigUpdatedAtText {
+            Text("We found an existing wBlock configuration in iCloud (\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.")
+        } else {
+            Text("We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead.")
+        }
+    }
     }
 
     struct OnboardingDownloadView: View {
         let progress: Float
+        let isSyncingFromICloud: Bool
         var body: some View {
             VStack(spacing: 24) {
-                ProgressView(value: progress)
-                    .progressViewStyle(.linear)
-                    .frame(maxWidth: 300)
+                if progress > 0 {
+                    ProgressView(value: progress)
+                        .progressViewStyle(.linear)
+                        .frame(maxWidth: 300)
+                } else {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                }
                 VStack(spacing: 4) {
-                    Text("Downloading and applying filter lists...")
+                    Text(primaryText)
                         .multilineTextAlignment(.center)
-                    Text("This may take awhile")
+                    Text(secondaryText)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
+        }
+
+        private var primaryText: String {
+            isSyncingFromICloud ? "Syncing iCloud configuration…" : "Downloading and applying filter lists…"
+        }
+
+        private var secondaryText: String {
+            "This may take a while"
         }
     }
     
@@ -655,6 +690,56 @@ struct OnboardingView: View {
             dismiss()
             filterManager.showingApplyProgressSheet = true
         }
+    }
+
+    private func probeForExistingICloudSetupIfNeeded() {
+        guard !hasProbedRemoteConfig else { return }
+        guard !hasCompletedOnboarding else { return }
+        guard step == 0 else { return }
+        guard !isApplying else { return }
+
+        hasProbedRemoteConfig = true
+
+        Task {
+            let probe = await CloudSyncManager.shared.probeRemoteConfig()
+            guard probe.exists else { return }
+            guard !wantsCloudSync else { return }
+
+            if let updatedAt = probe.updatedAt {
+                let formatter = RelativeDateTimeFormatter()
+                formatter.unitsStyle = .short
+                let date = Date(timeIntervalSince1970: updatedAt)
+                remoteConfigUpdatedAtText = "last updated \(formatter.localizedString(for: date, relativeTo: Date()))"
+            } else {
+                remoteConfigUpdatedAtText = nil
+            }
+
+            showRemoteConfigPrompt = true
+        }
+    }
+
+    @MainActor
+    private func adoptRemoteICloudSetup() async {
+        guard !isAdoptingRemoteConfig else { return }
+        isAdoptingRemoteConfig = true
+        defer { isAdoptingRemoteConfig = false }
+
+        wantsCloudSync = true
+        applyProgress = 0
+        isApplying = true
+
+        filterManager.showingApplyProgressSheet = true
+        CloudSyncManager.shared.setEnabled(true, startSync: false)
+
+        let applied = await CloudSyncManager.shared.downloadAndApplyLatestRemoteConfig(
+            trigger: "Onboarding-AdoptRemote"
+        )
+
+        isApplying = false
+
+        guard applied else { return }
+        setHasCompletedOnboarding(true)
+        dismiss()
     }
 
     private func updateRegionalRecommendations(for countryCode: String) {

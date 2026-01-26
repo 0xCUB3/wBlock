@@ -6,6 +6,7 @@
 //
 
 import Combine
+import CryptoKit
 import SafariServices
 import SwiftUI
 import wBlockCoreService
@@ -546,8 +547,10 @@ class AppFilterManager: ObservableObject {
 
     func updateVersionsAndCounts() async {
         let initiallyLoadedLists = self.filterLists
-        let updatedListsFromServer = await filterUpdater.updateMissingVersionsAndCounts(
-            filterLists: initiallyLoadedLists)
+        let updater = self.filterUpdater
+        let updatedListsFromServer = await Task.detached(priority: .utility) {
+            await updater.updateMissingVersionsAndCounts(filterLists: initiallyLoadedLists)
+        }.value
 
         var newFilterLists = self.filterLists
         for updatedListFromServer in updatedListsFromServer {
@@ -563,9 +566,10 @@ class AppFilterManager: ObservableObject {
 
     /// Updates version and count for a single filter instead of all filters
     func updateSingleFilterVersionAndCount(_ filter: FilterList) async {
-        let updatedFilters = await filterUpdater.updateMissingVersionsAndCounts(filterLists: [
-            filter
-        ])
+        let updater = self.filterUpdater
+        let updatedFilters = await Task.detached(priority: .utility) {
+            await updater.updateMissingVersionsAndCounts(filterLists: [filter])
+        }.value
 
         guard let updatedFilter = updatedFilters.first,
             let index = self.filterLists.firstIndex(where: { $0.id == filter.id })
@@ -604,6 +608,7 @@ class AppFilterManager: ObservableObject {
         if !missingFilters.isEmpty || !missingUserScripts.isEmpty || forceReload
             || hasUnappliedChanges
         {
+            prepareApplyRunState()
             showingApplyProgressSheet = true
             Task {
                 if !missingFilters.isEmpty || !missingUserScripts.isEmpty {
@@ -764,34 +769,14 @@ class AppFilterManager: ObservableObject {
     // MARK: - Delegated methods
 
     func applyChanges() async {
-        await MainActor.run {
-            self.isLoading = true
-            self.hasError = false
-            self.progress = 0
-            self.statusDescription = "Checking for updates..."
-
-            // Reset and initialize new ViewModel
-            self.applyProgressViewModel.reset()
-            self.applyProgressViewModel.updateIsLoading(true)
-            self.applyProgressViewModel.updateProgress(0)
-
-            // Legacy properties (kept for backward compatibility)
-            self.sourceRulesCount = 0
-            self.conversionStageDescription = ""
-            self.currentFilterName = ""
-            self.processedFiltersCount = 0
-            self.totalFiltersCount = 0
-            self.isInConversionPhase = false
-            self.isInSavingPhase = false
-            self.isInEnginePhase = false
-            self.isInReloadPhase = false
-        }
+        await MainActor.run { self.prepareApplyRunState() }
 
         // Allow the apply progress UI to render fully before heavy work begins.
         let shouldDelayForUI = await MainActor.run { self.showingApplyProgressSheet }
         if shouldDelayForUI {
             await Task.yield()
-            try? await Task.sleep(nanoseconds: 120_000_000)  // ~0.12s for sheet presentation
+            await Task.yield()
+            try? await Task.sleep(nanoseconds: 280_000_000)  // ~0.28s for sheet presentation + layout
         }
 
         await ConcurrentLogManager.shared.info(
@@ -861,7 +846,6 @@ class AppFilterManager: ObservableObject {
 
             // Perform heavy operations on background thread
             let currentPlatform = self.currentPlatform
-            let disabledSites = self.dataManager.disabledSites
 
             await Task.detached {
                 // Clear the filter engine when no filters are selected
@@ -872,12 +856,11 @@ class AppFilterManager: ObservableObject {
                 let platformTargets = ContentBlockerTargetManager.shared.allTargets(
                     forPlatform: currentPlatform)
                 for targetInfo in platformTargets {
-                    _ =
-                        ContentBlockerService.convertFilter(
-                            rules: "", groupIdentifier: GroupIdentifier.shared.value,
-                            targetRulesFilename: targetInfo.rulesFilename,
-                            disabledSites: disabledSites
-                        ).safariRulesCount
+                    _ = ContentBlockerService.saveContentBlocker(
+                        jsonRules: "[]",
+                        groupIdentifier: GroupIdentifier.shared.value,
+                        targetRulesFilename: targetInfo.rulesFilename
+                    )
                     _ = await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
                 }
             }.value
@@ -924,6 +907,8 @@ class AppFilterManager: ObservableObject {
 
             // Update ViewModel
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
+            self.applyProgressViewModel.updateConvertingDone(0)
+            self.applyProgressViewModel.updateReloadingDone(0)
             self.applyProgressViewModel.updateStageDescription("Starting conversion...")
         }
 
@@ -945,6 +930,7 @@ class AppFilterManager: ObservableObject {
 
             // Update ViewModel phase
             self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
+            self.applyProgressViewModel.updateConvertingDone(0)
         }
 
         await MainActor.run {
@@ -958,35 +944,33 @@ class AppFilterManager: ObservableObject {
         let ruleLimit = 150_000
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
+        let disabledSites = self.dataManager.disabledSites
+
         for targetInfo in platformTargets {
             let filters = filtersByTargetInfo[targetInfo] ?? []
             let blockerName = targetInfo.displayName
 
             await MainActor.run {
-                self.processedFiltersCount += 1
-                self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
                 self.currentFilterName = blockerName
                 self.conversionStageDescription = "Converting \(blockerName)…"
                 self.isInSavingPhase = true
 
                 // Batched ViewModel update - single call with all data
-                self.applyProgressViewModel.updateProgress(self.progress)
                 self.applyProgressViewModel.updateCurrentFilter(blockerName)
-                self.applyProgressViewModel.updateProcessedCount(
-                    self.processedFiltersCount, total: totalFiltersCount)
                 self.applyProgressViewModel.updateStageDescription(self.conversionStageDescription)
             }
 
             // Yield to prevent main thread starvation on iOS
             await Task.yield()
 
-            // Capture disabled sites
-            let disabledSites = self.dataManager.disabledSites
-
             // Efficiently combine rules from multiple files without loading all into memory at once
             let conversionResult = await Task.detached {
-                await self.convertFiltersMemoryEfficient(
-                    filters: filters, targetInfo: targetInfo, disabledSites: disabledSites)
+                Self.convertFiltersMemoryEfficient(
+                    filters: filters,
+                    targetInfo: targetInfo,
+                    disabledSites: disabledSites,
+                    groupIdentifier: GroupIdentifier.shared.value
+                )
             }.value
 
             await MainActor.run {
@@ -1017,6 +1001,10 @@ class AppFilterManager: ObservableObject {
             )
 
             await MainActor.run {
+                self.processedFiltersCount += 1
+                self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
+                self.applyProgressViewModel.updateProgress(self.progress)
+                self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
                 self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
 
                 if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
@@ -1073,42 +1061,12 @@ class AppFilterManager: ObservableObject {
             // Update ViewModel - starting reload phase
             self.applyProgressViewModel.updatePhaseCompletion(saving: true, reloading: false)
             self.applyProgressViewModel.updateStageDescription("Reloading Safari extensions...")
+            self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
+            self.applyProgressViewModel.updateReloadingDone(0)
         }
 
         let overallReloadStartTime = Date()
-        var allReloadsSuccessful = true
-
-        for targetInfo in platformTargets {
-            await MainActor.run {
-                self.processedFiltersCount += 1
-                self.progress =
-                    0.7 + (Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.2)  // 70% to 90%
-                self.currentFilterName = targetInfo.displayName
-
-                // Batched ViewModel update
-                self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateCurrentFilter(targetInfo.displayName)
-            }
-
-            // Yield to prevent blocking
-            await Task.yield()
-
-            // Reload with retry logic (logging handled in helper function)
-            let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
-
-            // Final result after all attempts
-            if !reloadSuccess {
-                allReloadsSuccessful = false
-                await MainActor.run {
-                    if !self.hasError {
-                        self.statusDescription =
-                            "Failed to reload \(targetInfo.displayName) after 5 attempts."
-                    }
-                    self.hasError = true
-                }
-            }
-            try? await Task.sleep(nanoseconds: 100_000_000)  // Longer delay between reloads to reduce memory pressure
-        }
+        let allReloadsSuccessful = await reloadContentBlockersInParallel(platformTargets, totalCount: totalFiltersCount)
 
         // Log reload summary
         await MainActor.run {
@@ -1251,6 +1209,27 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    private func prepareApplyRunState() {
+        isLoading = true
+        hasError = false
+        progress = 0
+        statusDescription = "Checking for updates..."
+
+        applyProgressViewModel.reset()
+        applyProgressViewModel.updateIsLoading(true)
+        applyProgressViewModel.updateProgress(0)
+
+        sourceRulesCount = 0
+        conversionStageDescription = ""
+        currentFilterName = ""
+        processedFiltersCount = 0
+        totalFiltersCount = 0
+        isInConversionPhase = false
+        isInSavingPhase = false
+        isInEnginePhase = false
+        isInReloadPhase = false
+    }
+
     @MainActor
     public func downloadAndApplyFilters(filters: [FilterList], progress: @escaping (Float) -> Void)
         async
@@ -1370,6 +1349,7 @@ class AppFilterManager: ObservableObject {
         // Close the update popup and show apply progress sheet
         await MainActor.run {
             showingUpdatePopup = false
+            self.prepareApplyRunState()
             showingApplyProgressSheet = true
         }
 
@@ -1569,6 +1549,7 @@ class AppFilterManager: ObservableObject {
         statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
 
         await MainActor.run {
+            self.prepareApplyRunState()
             showingApplyProgressSheet = true
         }
         await applyChanges()
@@ -1580,10 +1561,13 @@ class AppFilterManager: ObservableObject {
     }
 
     /// Memory-efficient conversion that combines filter files using streaming I/O
-    private func convertFiltersMemoryEfficient(
-        filters: [FilterList], targetInfo: ContentBlockerTargetInfo, disabledSites: [String]
+    nonisolated private static func convertFiltersMemoryEfficient(
+        filters: [FilterList],
+        targetInfo: ContentBlockerTargetInfo,
+        disabledSites: [String],
+        groupIdentifier: String
     ) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        guard let containerURL = loader.getSharedContainerURL() else {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
 
@@ -1601,42 +1585,38 @@ class AppFilterManager: ObservableObject {
             let fileHandle = try FileHandle(forWritingTo: tempURL)
             defer { try? fileHandle.close() }
 
-            var totalSourceLines = 0
+            var hasher = SHA256()
+            let newlineData = Data("\n".utf8)
 
             // Stream each filter file directly to temp file
             for filter in filters {
-                let fileURL = containerURL.appendingPathComponent(loader.filename(for: filter))
+                let fileURL = containerURL.appendingPathComponent(Self.localFilename(for: filter))
                 if FileManager.default.fileExists(atPath: fileURL.path) {
                     if let data = try? Data(contentsOf: fileURL) {
+                        hasher.update(data: data)
                         try fileHandle.write(contentsOf: data)
-                        try fileHandle.write(contentsOf: Data("\n".utf8))
-
-                        // Count lines efficiently without loading into memory
-                        totalSourceLines += countLinesInData(data)
+                        hasher.update(data: newlineData)
+                        try fileHandle.write(contentsOf: newlineData)
+                    }
+                } else if filter.isCustom {
+                    // Backward compatibility: legacy custom filters were stored as "<name>.txt".
+                    let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+                    if let data = try? Data(contentsOf: legacyURL) {
+                        hasher.update(data: data)
+                        try fileHandle.write(contentsOf: data)
+                        hasher.update(data: newlineData)
+                        try fileHandle.write(contentsOf: newlineData)
                     }
                 }
             }
 
-            try fileHandle.synchronize()
+            let digest = hasher.finalize()
+            let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-            // Log only for large conversions
-            if totalSourceLines > 10000 {
-                Task {
-                    await ConcurrentLogManager.shared.debug(
-                        .filterApply, "Converting large blocker",
-                        metadata: [
-                            "blocker": targetInfo.displayName,
-                            "sourceLines": "\(totalSourceLines)",
-                        ])
-                }
-            }
-
-            // Read combined rules for conversion
-            let combinedRules = try String(contentsOf: tempURL, encoding: .utf8)
-
-            return ContentBlockerService.convertFilter(
-                rules: combinedRules.isEmpty ? "" : combinedRules,
-                groupIdentifier: GroupIdentifier.shared.value,
+            return ContentBlockerService.convertFilterFromFile(
+                rulesFileURL: tempURL,
+                rulesSHA256Hex: rulesSHA256Hex,
+                groupIdentifier: groupIdentifier,
                 targetRulesFilename: targetInfo.rulesFilename,
                 disabledSites: disabledSites
             )
@@ -1651,23 +1631,82 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    /// Efficiently count lines in data without loading into String
-    private func countLinesInData(_ data: Data) -> Int {
-        guard !data.isEmpty else { return 0 }
-        var count = 0
-        let newline = UInt8(ascii: "\n")
+    nonisolated private static func localFilename(for filter: FilterList) -> String {
+        if filter.isCustom {
+            return "custom-\(filter.id.uuidString).txt"
+        }
+        return "\(filter.name).txt"
+    }
 
-        data.forEach { byte in
-            if byte == newline {
-                count += 1
+    private func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo], totalCount: Int) async -> Bool {
+        #if os(macOS)
+        let maxConcurrent = 3
+        #else
+        let maxConcurrent = 2
+        #endif
+        var allSuccessful = true
+
+        var iterator = targets.makeIterator()
+
+        await withTaskGroup(of: (ContentBlockerTargetInfo, Bool).self) { group in
+            func startNext() {
+                guard let target = iterator.next() else { return }
+                let name = target.displayName
+
+                Task { @MainActor in
+                    self.applyProgressViewModel.updateCurrentFilter(name)
+                }
+
+                group.addTask {
+                    let ok = await Self.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 5)
+                    return (target, ok)
+                }
+            }
+
+            for _ in 0..<min(maxConcurrent, targets.count) {
+                startNext()
+            }
+
+            while let (target, ok) = await group.next() {
+                let name = target.displayName
+
+                await MainActor.run {
+                    self.processedFiltersCount += 1
+                    self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
+
+                    self.progress =
+                        0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
+                    self.applyProgressViewModel.updateProgress(self.progress)
+
+                    if !ok {
+                        if !self.hasError {
+                            self.statusDescription = "Failed to reload \(name)."
+                        }
+                        self.hasError = true
+                    }
+                }
+
+                allSuccessful = allSuccessful && ok
+                startNext()
             }
         }
 
-        // Account for the last line if the file doesn't end with a newline
-        if data.last != newline {
-            count += 1
-        }
+        return allSuccessful
+    }
 
-        return count
+    nonisolated private static func reloadWithRetry(identifier: String, maxRetries: Int) async -> Bool {
+        for attempt in 1...maxRetries {
+            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
+            if case .success = result {
+                return true
+            }
+
+            if attempt < maxRetries {
+                // Back off quickly; WKErrorDomain error 6 is often transient right after writes.
+                let delayMs = min(200 * attempt, 1500)
+                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+            }
+        }
+        return false
     }
 }

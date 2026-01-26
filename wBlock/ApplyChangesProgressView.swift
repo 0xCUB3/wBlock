@@ -6,116 +6,160 @@
 //
 
 import SwiftUI
-// The production target exposes FilterListCategory via wBlockCoreService.
-#if canImport(wBlockCoreService)
-import wBlockCoreService
-#endif
 
 struct ApplyChangesProgressView: View {
     @ObservedObject var viewModel: ApplyChangesViewModel
     @Binding var isPresented: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, viewModel.state.isLoading ? 16 : 12)
+        SheetContainer {
+            VStack(spacing: 0) {
+                SheetHeader(title: "Apply Changes", isLoading: viewModel.state.isLoading) {
+                    isPresented = false
+                }
 
-            if viewModel.state.isLoading {
-                progressSection
-            } else if let summary = viewModel.state.summary {
-                summarySection(summary)
-            } else {
-                placeholderSection
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ZStack(alignment: .topLeading) {
+                            if viewModel.state.isLoading {
+                                progressCard
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            } else if let summary = viewModel.state.summary {
+                                summaryCard(summary)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                        }
+                        .animation(.easeInOut(duration: 0.25), value: viewModel.state.isLoading)
+                        .animation(.easeInOut(duration: 0.25), value: viewModel.state.isComplete)
+
+                        if viewModel.state.isLoading {
+                            phaseCard
+                                .transition(.opacity)
+                                .animation(.easeInOut(duration: 0.2), value: viewModel.state.isLoading)
+                        }
+                    }
+                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
+                }
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.state.isLoading)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.state.isComplete)
-        #if os(macOS)
-        .frame(minWidth: 420, idealWidth: 460, maxWidth: 500, minHeight: 420, idealHeight: 480, maxHeight: 580)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
-        #else
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(uiColor: .secondarySystemBackground))
-        #endif
     }
 
-    // MARK: Header
+    private var progressCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 10) {
+                    if viewModel.state.isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    }
 
-    private var header: some View {
-        VStack(spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.state.isComplete ? "Filters Applied" : "Applying Filter Lists")
+                    Text(headerTitle)
                         .font(.title3)
                         .fontWeight(.semibold)
-
-                    if viewModel.state.isLoading && !viewModel.state.statusMessage.isEmpty {
-                        Text(viewModel.state.statusMessage)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                    }
                 }
 
-                Spacer()
-
-                if viewModel.state.isComplete {
-                    Button {
-                        isPresented = false
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Close")
-                }
+                Text(headerSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
 
-            if viewModel.state.isLoading {
-                VStack(spacing: 6) {
-                    ProgressView(value: progressValue)
-                        .progressViewStyle(.linear)
-
-                    HStack(spacing: 8) {
-                        Text(progressPercentageText)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                StatCard(
+                    title: "Extensions",
+                    value: processedText,
+                    icon: "puzzlepiece.extension",
+                    pillColor: .blue,
+                    valueColor: .primary
+                )
+                StatCard(
+                    title: "Updates",
+                    value: viewModel.state.updatesFound.formatted(),
+                    icon: "arrow.down.circle",
+                    pillColor: .green,
+                    valueColor: .primary
+                )
             }
         }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
-    // MARK: Progress
+    private var phaseCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Progress")
+                .font(.headline)
 
-    private var progressSection: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                phaseList
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
-        }
-    }
-
-    private var phaseList: some View {
-        VStack(spacing: 0) {
-            ForEach(viewModel.state.phases.indices, id: \.self) { index in
-                PhaseRow(step: viewModel.state.phases[index], detail: detail(for: viewModel.state.phases[index]))
-
-                if index < viewModel.state.phases.count - 1 {
-                    Divider()
-                        .padding(.leading, 44)
+            VStack(spacing: 0) {
+                ForEach(viewModel.state.phases.indices, id: \.self) { index in
+                    let step = viewModel.state.phases[index]
+                    PhaseRow(
+                        step: step,
+                        detail: detail(for: step),
+                        subProgress: subProgress(for: step.phase, status: step.status)
+                    )
+                    if index < viewModel.state.phases.count - 1 {
+                        Divider()
+                            .padding(.leading, 44)
+                    }
                 }
             }
+            .padding(.vertical, 4)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .padding(.vertical, 4)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private func summaryCard(_ summary: ApplyChangesSummary) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Summary")
+                .font(.headline)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                StatCard(
+                    title: "Safari Rules",
+                    value: summary.safariRules.formatted(),
+                    icon: "shield.lefthalf.filled",
+                    pillColor: .blue,
+                    valueColor: .primary
+                )
+                StatCard(
+                    title: "Source Rules",
+                    value: summary.sourceRules.formatted(),
+                    icon: "doc.text",
+                    pillColor: .orange,
+                    valueColor: .primary
+                )
+                StatCard(
+                    title: "Conversion",
+                    value: summary.conversionTime,
+                    icon: "clock",
+                    pillColor: .green,
+                    valueColor: .primary
+                )
+                StatCard(
+                    title: "Reload",
+                    value: summary.reloadTime,
+                    icon: "arrow.clockwise",
+                    pillColor: .purple,
+                    valueColor: .primary
+                )
+            }
+
+            if !summary.blockersApproachingLimit.isEmpty {
+                Text("Near Safari limit: \(summary.blockersApproachingLimit.sorted().joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private func detail(for step: ApplyChangesPhaseProgress) -> String? {
@@ -125,11 +169,8 @@ struct ApplyChangesProgressView: View {
                 let count = viewModel.state.updatesFound
                 if count > 0 {
                     return "Downloaded \(count) update\(count == 1 ? "" : "s")"
-                } else {
-                    return "No updates available"
                 }
-            } else if step.status == .active {
-                return "Checking enabled filter lists"
+                return "No updates available"
             }
             return nil
         case .reading:
@@ -137,191 +178,154 @@ struct ApplyChangesProgressView: View {
             return "Preparing \(viewModel.state.totalCount) extension\(viewModel.state.totalCount == 1 ? "" : "s")"
         case .converting:
             guard !viewModel.state.currentFilterName.isEmpty else { return nil }
-            return "Processing \(viewModel.state.currentFilterName)"
+            return viewModel.state.currentFilterName
         case .saving:
-            return step.status == .complete ? "Saved" : "Writing files and building engines"
+            return nil
         case .reloading:
             guard !viewModel.state.currentFilterName.isEmpty else { return nil }
-            return step.status == .complete ? "Reloaded" : "Reloading \(viewModel.state.currentFilterName)"
+            return viewModel.state.currentFilterName
         }
     }
 
-    // MARK: Summary
+    private var headerTitle: String {
+        if viewModel.state.isComplete {
+            return "Applied"
+        }
+        return "Applying changes…"
+    }
 
-    private func summarySection(_ summary: ApplyChangesSummary) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                cardSection(title: "Overall Statistics", icon: "chart.bar.doc.horizontal") {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        if summary.sourceRules > 0 {
-                            ProgressStatCard(title: "Source Rules", value: summary.sourceRules.formatted(), icon: "doc.text", color: .orange)
-                        }
-                        if summary.safariRules > 0 {
-                            ProgressStatCard(title: "Safari Rules", value: summary.safariRules.formatted(), icon: "shield.lefthalf.filled", color: .blue)
-                        }
-                        if summary.conversionTime != "N/A" {
-                            ProgressStatCard(title: "Conversion", value: summary.conversionTime, icon: "clock", color: .green)
-                        }
-                        if summary.reloadTime != "N/A" {
-                            ProgressStatCard(title: "Reload", value: summary.reloadTime, icon: "arrow.clockwise", color: .purple)
-                        }
-                    }
-                }
+    private var headerSubtitle: String {
+        if viewModel.state.isComplete {
+            return "Filters applied successfully."
+        }
+        if !viewModel.state.statusMessage.isEmpty {
+            return viewModel.state.statusMessage
+        }
+        return activePhase?.title ?? "Working…"
+    }
 
+    private var processedText: String {
+        let total = viewModel.state.totalCount
+        if total > 0 {
+            return "\(total)"
+        }
+        return "—"
+    }
+
+    private var activePhase: ApplyChangesPhase? {
+        viewModel.state.phases.first(where: { $0.status == .active })?.phase
+    }
+
+    private func subProgress(for phase: ApplyChangesPhase, status: ApplyChangesPhaseStatus) -> PhaseRow.SubProgress? {
+        switch phase {
+        case .converting:
+            guard status == .active else { return nil }
+
+            let totalCount = viewModel.state.totalCount
+            let done = viewModel.state.convertingDone
+            let total = Double(max(1, totalCount))
+            let fraction = Swift.min(Swift.max(Double(done) / total, 0), 1)
+
+            if totalCount > 0, done >= totalCount {
+                return nil
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
-        }
-    }
 
-    private func cardSection<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .foregroundStyle(Color.accentColor)
-                Text(title)
-                    .font(.headline)
+            let label = totalCount > 0
+                ? "\(done)/\(totalCount)"
+                : nil
+
+            return PhaseRow.SubProgress(value: fraction, label: label)
+
+        case .reloading:
+            guard status == .active else { return nil }
+
+            let totalCount = viewModel.state.totalCount
+            let done = viewModel.state.reloadingDone
+            let total = Double(max(1, totalCount))
+            let fraction = Swift.min(Swift.max(Double(done) / total, 0), 1)
+
+            let label = totalCount > 0
+                ? "\(done)/\(totalCount)"
+                : nil
+
+            if totalCount > 0, done >= totalCount {
+                return nil
             }
 
-            content()
-        }
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-    }
+            return PhaseRow.SubProgress(value: fraction, label: label)
 
-    private var placeholderSection: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "hourglass")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-            Text("Preparing…")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        case .updating, .reading, .saving:
+            return nil
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
 }
 
-// MARK: - Subviews
-
-struct PhaseRow: View {
+private struct PhaseRow: View {
     let step: ApplyChangesPhaseProgress
     let detail: String?
+    let subProgress: SubProgress?
 
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: step.phase.systemImage)
-                .foregroundStyle(iconColor)
-                .frame(width: 24, height: 24)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(step.phase.title)
-                    .font(.subheadline)
-                    .fontWeight(textWeight)
-                    .foregroundStyle(titleColor)
-
-                if let detail {
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            statusIndicator
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+    struct SubProgress {
+        let value: Double
+        let label: String?
     }
-
-    private var iconColor: Color {
-        switch step.status {
-        case .pending: return .secondary
-        case .active: return .accentColor
-        case .complete: return .green
-        }
-    }
-
-    private var titleColor: Color {
-        switch step.status {
-        case .pending: return .secondary
-        case .active: return .primary
-        case .complete: return .green
-        }
-    }
-
-    private var textWeight: Font.Weight {
-        step.status == .active ? .medium : .regular
-    }
-
-    @ViewBuilder
-    private var statusIndicator: some View {
-        switch step.status {
-        case .pending:
-            Image(systemName: "circle")
-                .foregroundStyle(.quaternary)
-        case .active:
-            ProgressView()
-                .progressViewStyle(.circular)
-                .frame(width: 18, height: 18)
-        case .complete:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        }
-    }
-}
-
-// MARK: - Private helpers
-
-private extension ApplyChangesProgressView {
-    var progressValue: Double {
-        Swift.min(Swift.max(viewModel.state.progress, 0), 1)
-    }
-
-    var progressPercentageText: String {
-        let percentage = (progressValue * 100).rounded()
-        return "\(Int(percentage))%"
-    }
-}
-
-struct ProgressStatCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    var showWarning: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
+            HStack(spacing: 12) {
+                statusLeading
+                    .frame(width: 18, height: 18)
 
-                if showWarning {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.yellow)
-                        .offset(x: 6, y: -6)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(step.phase.title)
+                        .font(.subheadline)
+                        .fontWeight(step.status == .active ? .semibold : .regular)
+
+                    if let detail, !detail.isEmpty {
+                        Text(detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+
+                Spacer()
             }
 
-            Text(value)
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            if let subProgress {
+                HStack(spacing: 10) {
+                    ProgressView(value: subProgress.value)
+                        .progressViewStyle(.linear)
+                        .scaleEffect(y: 1.15)
 
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                    if let label = subProgress.label {
+                        Text(label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                }
+                .padding(.leading, 30)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+    }
+
+    @ViewBuilder
+    private var statusLeading: some View {
+        switch step.status {
+        case .pending:
+            Image(systemName: "circle")
+                .foregroundStyle(.tertiary)
+        case .active:
+            ProgressView()
+                .controlSize(.small)
+        case .complete:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case .failed:
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.red)
+        }
     }
 }
