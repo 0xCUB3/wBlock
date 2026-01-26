@@ -43,6 +43,7 @@ struct OnboardingView: View {
     @State private var regionInfoMessage: String?
     @State private var hasManuallyEditedRegionalSelection = false
     @State private var isCommunityExpanded = false
+    @State private var wantsCloudSync: Bool = false
 #if os(iOS)
     @State private var wantsReminderNotifications: Bool = true
 #endif
@@ -53,6 +54,7 @@ struct OnboardingView: View {
     #if os(iOS)
     private static let reminderPreferenceKey = "onboardingWantsReminderNotifications"
     #endif
+    private static let cloudSyncEnabledDefaultsKey = "cloudSyncEnabled"
     private static let fallbackLocale = Locale(identifier: "en_US")
     private static let manualCountryLanguageOverrides: [String: [String]] = [
         // North America
@@ -241,6 +243,7 @@ struct OnboardingView: View {
         _recommendedRegionalFilters = State(initialValue: [])
         _optionalRegionalFilters = State(initialValue: [])
         _regionInfoMessage = State(initialValue: nil)
+        _wantsCloudSync = State(initialValue: defaults.bool(forKey: Self.cloudSyncEnabledDefaultsKey))
 #if os(iOS)
     let storedReminderPreference = defaults.object(forKey: Self.reminderPreferenceKey) as? Bool ?? true
     _wantsReminderNotifications = State(initialValue: storedReminderPreference)
@@ -553,6 +556,8 @@ struct OnboardingView: View {
             Text("Regional filters: \(selectedRegionalFilterNames.isEmpty ? "None" : selectedRegionalFilterNames.joined(separator: ", "))")
             Text("Userscripts: \(selectedUserscripts.isEmpty ? "None" : selectedUserscripts.compactMap { id in defaultUserScripts.first(where: { $0.id == id })?.name }.joined(separator: ", "))")
 
+            cloudSyncCard
+
 #if os(iOS)
             reminderCard
 #endif
@@ -642,6 +647,7 @@ struct OnboardingView: View {
                 applyProgress = progress
             })
             isApplying = false
+            CloudSyncManager.shared.setEnabled(wantsCloudSync)
             setHasCompletedOnboarding(true)
 #if os(iOS)
             await requestNotificationPermissionIfNeeded()
@@ -720,6 +726,28 @@ struct OnboardingView: View {
         } else {
             regionInfoMessage = "Only community-maintained lists are available for \(countryName(for: normalizedCode)). Enable them if you're comfortable."
         }
+    }
+
+    private var cloudSyncCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("iCloud Sync")
+                        .font(.headline)
+                    Text("Sync your filter selections, custom lists, userscripts, and whitelist across devices.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } icon: {
+                Image(systemName: "icloud")
+                    .foregroundStyle(.blue)
+            }
+
+            Toggle("Sync settings across devices", isOn: $wantsCloudSync)
+                .toggleStyle(.switch)
+        }
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
 #if os(iOS)
