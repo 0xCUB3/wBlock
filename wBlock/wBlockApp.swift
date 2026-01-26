@@ -19,6 +19,7 @@ struct wBlockApp: App {
     @StateObject private var filterManager = AppFilterManager()
 
     @StateObject private var dataManager = ProtobufDataManager.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     #if os(macOS)
     @State private var showingRestartConfirmation = false
@@ -33,6 +34,8 @@ struct wBlockApp: App {
             ContentView(filterManager: filterManager)
                     .onAppear {
                         appDelegate.filterManager = filterManager
+                        CloudSyncManager.shared.attach(filterManager: filterManager)
+                        CloudSyncManager.shared.startIfEnabled()
                         if appDelegate.hasPendingApplyNotification {
                             appDelegate.hasPendingApplyNotification = false
                             NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
@@ -44,6 +47,11 @@ struct wBlockApp: App {
                             await dataManager.migrateMultipurposeToAnnoyances()
                             await dataManager.migrateAnnoyancesFilterToSplitFilters()
                             await dataManager.migrateMobileFilterToAdsCategory()
+                        }
+                    }
+                    .onChange(of: scenePhase) { newPhase in
+                        if newPhase == .active {
+                            Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
                         }
                     }
                     #if os(macOS)

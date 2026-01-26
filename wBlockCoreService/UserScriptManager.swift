@@ -43,6 +43,7 @@ public class UserScriptManager: ObservableObject {
     @Published public var duplicatesMessage = ""
     @Published public var pendingDuplicatesToRemove: [UserScript] = []
     @Published public var hasCompletedInitialSetup = false
+    @Published public private(set) var isReady = false
 
     private let userScriptsKey = "userScripts"
     private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
@@ -50,6 +51,7 @@ public class UserScriptManager: ObservableObject {
     private let dataManager = ProtobufDataManager.shared
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
+    private var initialLoadTask: Task<Void, Never>?
 
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
@@ -305,7 +307,8 @@ public class UserScriptManager: ObservableObject {
         logger.info("✅ Using ProtobufDataManager for userscript persistence")
 
         // Initialize userscripts after data manager finishes loading saved data
-        Task { @MainActor in
+        initialLoadTask = Task { @MainActor [weak self] in
+            guard let self else { return }
             await dataManager.waitUntilLoaded()
             // Load existing scripts
             self.userScripts = dataManager.getUserScripts()
@@ -325,6 +328,19 @@ public class UserScriptManager: ObservableObject {
                 }
                 .store(in: &cancellables)
             logger.info("✅ UserScriptManager data sync observer setup complete")
+            self.isReady = true
+        }
+    }
+
+    /// Waits until the manager has finished loading and initial setup has run.
+    public func waitUntilReady() async {
+        if let initialLoadTask {
+            await initialLoadTask.value
+            return
+        }
+
+        while !isReady {
+            await Task.yield()
         }
     }
 

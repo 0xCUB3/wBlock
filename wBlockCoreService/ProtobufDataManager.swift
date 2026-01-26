@@ -55,6 +55,12 @@ private actor ProtobufDiskStore {
 /// Replaces UserDefaults and SwiftData
 @MainActor
 public class ProtobufDataManager: ObservableObject {
+    /// Publishes after a successful on-disk save of the protobuf file.
+    /// Useful for cross-process features (e.g. sync) that should react only when data is persisted.
+    public var didSaveData: AnyPublisher<Void, Never> {
+        didSaveDataSubject.eraseToAnyPublisher()
+    }
+
     public var lastRuleCount: Int {
         Int(appData.ruleCounts.lastRuleCount)
     }
@@ -356,6 +362,8 @@ public class ProtobufDataManager: ObservableObject {
     }
     @Published public private(set) var isLoading = true
     @Published public private(set) var lastError: Error?
+
+    private let didSaveDataSubject = PassthroughSubject<Void, Never>()
     
     // MARK: - Private Properties
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "ProtobufDataManager")
@@ -669,6 +677,7 @@ public class ProtobufDataManager: ObservableObject {
                 lastLoadedDataFileModificationDate = result.modificationDate
                 lastError = nil
                 logger.info("✅ Saved protobuf data (\(result.rawData.count) bytes)")
+                didSaveDataSubject.send()
             }
         } catch {
             logger.error("❌ Failed to save data: \(error)")

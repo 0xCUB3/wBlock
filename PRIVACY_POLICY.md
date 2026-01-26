@@ -6,6 +6,8 @@
 
 wBlock is a privacy-focused content blocker for Safari on macOS, iOS, and iPadOS. This Privacy Policy explains how wBlock collects, uses, and protects your information. wBlock is designed with privacy as a core principle and operates entirely on your device without sending your browsing data to external servers.
 
+If you enable **iCloud Sync**, wBlock will store and transmit a copy of your configuration using Apple’s iCloud/CloudKit so it can sync across your devices. This data is stored in your private iCloud database under your Apple ID.
+
 ## Developer Information
 
 - **App Name:** wBlock
@@ -39,7 +41,7 @@ wBlock processes the following data entirely on your device:
 - **What:** Your selected filter lists, custom filters, and whitelist preferences
 - **Purpose:** To remember your blocking preferences and apply them consistently
 - **Storage:** Stored locally using Protocol Buffers format in the app's shared container
-- **Sharing:** Never shared or transmitted
+- **Sharing:** Not shared with the developer. If iCloud Sync is enabled, your configuration is stored in your private iCloud database for syncing.
 
 ### 3. Userscript Data
 - **What:** Userscripts you choose to download and enable (e.g., Return YouTube Dislike, Bypass Paywalls Clean)
@@ -51,7 +53,7 @@ wBlock processes the following data entirely on your device:
 - **What:** List of websites where you have disabled wBlock
 - **Purpose:** To respect your per-site preferences
 - **Storage:** Stored locally in UserDefaults within the app's shared container
-- **Sharing:** Never shared or transmitted
+- **Sharing:** Not shared with the developer. If iCloud Sync is enabled, your configuration is stored in your private iCloud database for syncing.
 
 ### 5. Application Logs
 - **What:** Debugging and diagnostic logs for troubleshooting
@@ -70,7 +72,7 @@ wBlock processes the following data entirely on your device:
 - **What:** Your app preferences including whether you've completed onboarding, notification preferences, and auto-update settings
 - **Purpose:** To provide a personalized app experience
 - **Storage:** Stored locally using Protocol Buffers in the app's shared container
-- **Sharing:** Never shared or transmitted
+- **Sharing:** Not shared with the developer. If iCloud Sync is enabled, your configuration is stored in your private iCloud database for syncing.
 
 ## Network Requests Made by wBlock
 
@@ -96,6 +98,13 @@ wBlock makes network requests only for the following purposes:
 - **Data Sent:** HTTP requests to library URLs specified in the userscript
 - **Data Received:** JavaScript library code
 - **Privacy:** These requests do not include your browsing history or personal information
+
+### 4. iCloud Sync (Optional)
+- **What:** Syncs your wBlock configuration across devices using Apple CloudKit
+- **When:** Only if you enable iCloud Sync in Settings
+- **Data Sent:** Your selected filter lists, custom filter list URLs, userscripts configuration (and content for local/imported scripts), whitelist domains, and related app preferences
+- **Data Received:** The same configuration data from your other devices
+- **Privacy:** Stored in your private iCloud database under your Apple ID and not shared with the developer
 
 ## Background Tasks
 

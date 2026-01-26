@@ -1,0 +1,639 @@
+import CloudKit
+import Combine
+import CryptoKit
+import Foundation
+import os.log
+import wBlockCoreService
+
+@MainActor
+final class CloudSyncManager: ObservableObject {
+    static let shared = CloudSyncManager()
+
+    @Published private(set) var isEnabled: Bool
+    @Published private(set) var isSyncing: Bool = false
+    @Published private(set) var statusLine: String = "Sync: Off"
+    @Published private(set) var lastSyncLine: String = "Last Sync: Never"
+    @Published private(set) var lastErrorMessage: String?
+
+    private weak var filterManager: AppFilterManager?
+
+    private let logger = Logger(subsystem: "skula.wBlock", category: "CloudSync")
+    private let dataManager = ProtobufDataManager.shared
+    private let userScriptManager = UserScriptManager.shared
+
+    private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    private let database = CKContainer.default().privateCloudDatabase
+    private let recordID = CKRecord.ID(recordName: "wblock-sync-config")
+    private let recordType = "wBlockSync"
+
+    private var cancellables = Set<AnyCancellable>()
+    private var pendingUploadTask: Task<Void, Never>?
+    private var pendingSyncTask: Task<Void, Never>?
+
+    private init() {
+        isEnabled = defaults.bool(forKey: Keys.enabled)
+        refreshStatusFromDefaults()
+        observeLocalSaves()
+    }
+
+    func attach(filterManager: AppFilterManager) {
+        self.filterManager = filterManager
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        guard enabled != isEnabled else { return }
+        isEnabled = enabled
+        defaults.set(enabled, forKey: Keys.enabled)
+        refreshStatusFromDefaults()
+
+        if enabled {
+            Task { await syncNow(trigger: "Enabled") }
+        }
+    }
+
+    func startIfEnabled() {
+        guard isEnabled else { return }
+        Task {
+            await dataManager.waitUntilLoaded()
+            await userScriptManager.waitUntilReady()
+            await syncNow(trigger: "Launch")
+        }
+    }
+
+    func syncNow(trigger: String) async {
+        guard isEnabled else { return }
+        pendingSyncTask?.cancel()
+        pendingSyncTask = Task { [weak self] in
+            guard let self else { return }
+            await self.performTwoWaySync(trigger: trigger)
+        }
+    }
+
+    // MARK: - Local change tracking / upload
+
+    private func observeLocalSaves() {
+        dataManager.didSaveData
+            .receive(on: RunLoop.main)
+            .debounce(for: .seconds(1.5), scheduler: RunLoop.main)
+            .sink { [weak self] in
+                guard let self else { return }
+                self.handleLocalSave()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleLocalSave() {
+        guard isEnabled else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            await self.dataManager.waitUntilLoaded()
+            await self.userScriptManager.waitUntilReady()
+
+            let localContent = self.buildPayloadContent()
+            guard let localContentData = try? JSONEncoder.sorted.encode(localContent) else { return }
+            let localHash = Self.sha256Hex(localContentData)
+
+            if localHash != self.defaults.string(forKey: Keys.lastLocalHash) {
+                self.defaults.set(localHash, forKey: Keys.lastLocalHash)
+                self.defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+            }
+
+            self.scheduleUpload(trigger: "LocalSave")
+        }
+    }
+
+    private func scheduleUpload(trigger: String) {
+        pendingUploadTask?.cancel()
+        pendingUploadTask = Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(for: .seconds(2))
+            await self.uploadLatestPayload(trigger: trigger)
+        }
+    }
+
+    private func uploadLatestPayload(trigger: String) async {
+        guard isEnabled else { return }
+        await dataManager.waitUntilLoaded()
+        await userScriptManager.waitUntilReady()
+
+        if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        }
+
+        let payload = buildPayload()
+        let payloadHash = payload.contentHash
+
+        if payloadHash == defaults.string(forKey: Keys.lastUploadedHash) {
+            return
+        }
+
+        do {
+            isSyncing = true
+            statusLine = "Sync: Uploading…"
+
+            var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
+            let payloadURL = try await applyPayloadFields(payload, to: &record)
+            defer { try? FileManager.default.removeItem(at: payloadURL) }
+
+            _ = try await saveRecord(record)
+
+            defaults.set(payloadHash, forKey: Keys.lastUploadedHash)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+            lastErrorMessage = nil
+            refreshStatusFromDefaults()
+
+            logger.info("✅ Uploaded sync payload (\(trigger, privacy: .public))")
+        } catch {
+            lastErrorMessage = error.localizedDescription
+            statusLine = "Sync: Error"
+            logger.error("❌ Upload failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        isSyncing = false
+    }
+
+    // MARK: - Two-way sync
+
+    private func performTwoWaySync(trigger: String) async {
+        guard isEnabled else { return }
+        await dataManager.waitUntilLoaded()
+        await userScriptManager.waitUntilReady()
+
+        if isSyncing { return }
+        isSyncing = true
+        statusLine = "Sync: Checking…"
+        lastErrorMessage = nil
+
+        do {
+            let localPayload = buildPayload()
+            let localUpdatedAt = localPayload.updatedAt
+
+            guard let remoteRecord = try await fetchRecord() else {
+                statusLine = "Sync: Uploading…"
+                await uploadLatestPayload(trigger: "\(trigger)-NoRemote")
+                isSyncing = false
+                return
+            }
+
+            guard let remotePayload = try decodePayload(from: remoteRecord) else {
+                statusLine = "Sync: Uploading…"
+                await uploadLatestPayload(trigger: "\(trigger)-BadRemote")
+                isSyncing = false
+                return
+            }
+
+            if remotePayload.contentHash == localPayload.contentHash {
+                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+                refreshStatusFromDefaults()
+                statusLine = "Sync: Up to date"
+                isSyncing = false
+                return
+            }
+
+            if remotePayload.updatedAt > localUpdatedAt {
+                statusLine = "Sync: Downloading…"
+                await applyRemotePayload(remotePayload, trigger: trigger)
+            } else {
+                statusLine = "Sync: Uploading…"
+                await uploadLatestPayload(trigger: "\(trigger)-LocalNewer")
+            }
+        } catch {
+            lastErrorMessage = error.localizedDescription
+            statusLine = "Sync: Error"
+            logger.error("❌ Sync failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        isSyncing = false
+    }
+
+    private func applyRemotePayload(_ payload: SyncPayload, trigger: String) async {
+        logger.info("⬇️ Applying remote payload (\(trigger, privacy: .public))")
+
+        // Settings
+        await dataManager.setSelectedBlockingLevel(payload.settings.selectedBlockingLevel)
+        await dataManager.setIsBadgeCounterEnabled(payload.settings.isBadgeCounterEnabled)
+        await dataManager.setAutoUpdateEnabled(payload.settings.autoUpdateEnabled)
+        await dataManager.setAutoUpdateIntervalHours(payload.settings.autoUpdateIntervalHours)
+        dataManager.setUserScriptShowEnabledOnly(payload.settings.userScriptShowEnabledOnly)
+
+        let currentExcluded = Set(dataManager.getExcludedDefaultUserScriptURLs())
+        let desiredExcluded = Set(payload.settings.excludedDefaultUserScriptURLs)
+        for url in desiredExcluded.subtracting(currentExcluded) {
+            dataManager.addExcludedDefaultUserScriptURL(url)
+        }
+        for url in currentExcluded.subtracting(desiredExcluded) {
+            dataManager.removeExcludedDefaultUserScriptURL(url)
+        }
+
+        // Whitelist
+        await dataManager.setWhitelistedDomains(payload.whitelistDomains)
+
+        // Filter lists (selection + custom lists)
+        await applyRemoteFilters(payload.filters)
+
+        // User scripts (remote URLs + local imports)
+        await applyRemoteUserScripts(payload.userScripts)
+
+        // Mark local state as matching the remote payload so we don't echo-upload.
+        defaults.set(payload.contentHash, forKey: Keys.lastLocalHash)
+        defaults.set(payload.updatedAt, forKey: Keys.lastLocalUpdatedAt)
+        defaults.set(payload.contentHash, forKey: Keys.lastDownloadedHash)
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastDownloadedAt)
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+        refreshStatusFromDefaults()
+
+        // Rebuild blockers so the synced config takes effect.
+        if let filterManager {
+            await filterManager.applyChanges()
+        }
+    }
+
+    private func applyRemoteFilters(_ filters: SyncPayload.Filters) async {
+        let desiredSelected = Set(filters.selectedURLs)
+        let desiredCustomByURL = Dictionary(uniqueKeysWithValues: filters.customLists.map { ($0.url, $0) })
+
+        if let filterManager {
+            var changed = false
+
+            // Update selection for all non-custom filters by URL
+            for index in filterManager.filterLists.indices {
+                guard !filterManager.filterLists[index].isCustom else { continue }
+                let urlString = filterManager.filterLists[index].url.absoluteString
+                let shouldSelect = desiredSelected.contains(urlString)
+                if filterManager.filterLists[index].isSelected != shouldSelect {
+                    filterManager.filterLists[index].isSelected = shouldSelect
+                    changed = true
+                }
+            }
+
+            // Remove custom lists missing from remote
+            let remoteCustomURLs = Set(desiredCustomByURL.keys)
+            let localCustoms = filterManager.customFilterLists
+            for localCustom in localCustoms where !remoteCustomURLs.contains(localCustom.url.absoluteString) {
+                filterManager.removeCustomFilterList(localCustom)
+                changed = true
+            }
+
+            // Upsert custom lists from remote
+            for remoteCustom in filters.customLists {
+                if let existingIndex = filterManager.filterLists.firstIndex(where: {
+                    $0.isCustom && $0.url.absoluteString == remoteCustom.url
+                }) {
+                    if filterManager.filterLists[existingIndex].name != remoteCustom.name {
+                        filterManager.filterLists[existingIndex].name = remoteCustom.name
+                        changed = true
+                    }
+                    if filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected {
+                        filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
+                        changed = true
+                    }
+                } else {
+                    let newFilter = FilterList(
+                        id: UUID(),
+                        name: remoteCustom.name,
+                        url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                        category: .custom,
+                        isCustom: true,
+                        isSelected: remoteCustom.isSelected,
+                        description: "User-added filter list.",
+                        sourceRuleCount: nil
+                    )
+                    filterManager.customFilterLists.append(newFilter)
+                    filterManager.filterLists.append(newFilter)
+                    changed = true
+                }
+            }
+
+            if changed {
+                filterManager.hasUnappliedChanges = true
+                await filterManager.saveFilterLists()
+            }
+            return
+        }
+
+        // Fallback: update persisted lists without touching the in-memory manager.
+        var storedLists = dataManager.getFilterLists()
+
+        for index in storedLists.indices where !storedLists[index].isCustom {
+            let urlString = storedLists[index].url.absoluteString
+            storedLists[index].isSelected = desiredSelected.contains(urlString)
+        }
+
+        // Remove existing customs and recreate from payload
+        storedLists.removeAll { $0.isCustom }
+        for remoteCustom in filters.customLists {
+            let newFilter = FilterList(
+                id: UUID(),
+                name: remoteCustom.name,
+                url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                category: .custom,
+                isCustom: true,
+                isSelected: remoteCustom.isSelected,
+                description: "User-added filter list.",
+                sourceRuleCount: nil
+            )
+            storedLists.append(newFilter)
+        }
+
+        await dataManager.updateFilterLists(storedLists)
+    }
+
+    private func applyRemoteUserScripts(_ scripts: SyncPayload.UserScripts) async {
+        // Remote scripts (URL-based)
+        let desiredRemoteByURL = Dictionary(uniqueKeysWithValues: scripts.remote.map { ($0.url, $0) })
+        let desiredRemoteURLs = Set(desiredRemoteByURL.keys)
+
+        // Remove remote (non-default) scripts that are not present remotely.
+        for local in userScriptManager.userScripts {
+            guard let url = local.url, !local.isLocal else { continue }
+            guard !userScriptManager.isDefaultUserScript(local) else { continue }
+            if !desiredRemoteURLs.contains(url.absoluteString) {
+                userScriptManager.removeUserScript(local)
+            }
+        }
+
+        // Ensure each desired remote script exists and has the correct enabled state.
+        for remote in scripts.remote {
+            guard let url = URL(string: remote.url) else { continue }
+
+            if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
+                await userScriptManager.setUserScript(existing, isEnabled: remote.isEnabled)
+            } else {
+                await userScriptManager.addUserScript(from: url)
+                if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
+                    await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                }
+            }
+        }
+
+        // Local scripts (content-based)
+        let desiredLocalNames = Set(scripts.local.map(\.name))
+
+        // Remove local scripts missing from remote.
+        for local in userScriptManager.userScripts where local.isLocal {
+            if !desiredLocalNames.contains(local.name) {
+                userScriptManager.removeUserScript(local)
+            }
+        }
+
+        // Import or replace local scripts.
+        for local in scripts.local {
+            let filename = Self.sanitizedFilename(from: local.name)
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(filename).user.js")
+            do {
+                try local.content.write(to: tempURL, atomically: true, encoding: .utf8)
+            } catch {
+                continue
+            }
+            defer { try? FileManager.default.removeItem(at: tempURL) }
+
+            _ = await userScriptManager.addUserScript(fromLocalFile: tempURL)
+
+            if let imported = userScriptManager.userScripts.first(where: { $0.isLocal && $0.name == local.name }) {
+                await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
+            }
+        }
+    }
+
+    // MARK: - Payload construction
+
+    private func buildPayload() -> SyncPayload {
+        let content = buildPayloadContent()
+        let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
+        let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
+        return SyncPayload(
+            schemaVersion: 1,
+            updatedAt: max(0, updatedAt),
+            contentHash: contentHash,
+            settings: content.settings,
+            filters: content.filters,
+            userScripts: content.userScripts,
+            whitelistDomains: content.whitelistDomains
+        )
+    }
+
+    private func buildPayloadContent() -> SyncPayload.Content {
+        let settings = SyncPayload.Settings(
+            selectedBlockingLevel: dataManager.selectedBlockingLevel,
+            isBadgeCounterEnabled: dataManager.isBadgeCounterEnabled,
+            autoUpdateEnabled: dataManager.autoUpdateEnabled,
+            autoUpdateIntervalHours: dataManager.autoUpdateIntervalHours,
+            userScriptShowEnabledOnly: dataManager.getUserScriptShowEnabledOnly(),
+            excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted()
+        )
+
+        let filterLists = dataManager.getFilterLists()
+        let selectedURLs = filterLists
+            .filter { $0.isSelected }
+            .map { $0.url.absoluteString }
+            .sorted()
+
+        let customLists = dataManager.getCustomFilterLists()
+            .map {
+                SyncPayload.CustomFilterList(
+                    url: $0.url.absoluteString,
+                    name: $0.name,
+                    isSelected: $0.isSelected
+                )
+            }
+            .sorted { $0.url < $1.url }
+
+        let filters = SyncPayload.Filters(
+            selectedURLs: selectedURLs,
+            customLists: customLists
+        )
+
+        let remoteScripts = userScriptManager.userScripts
+            .filter { !$0.isLocal && $0.url != nil }
+            .compactMap { script -> SyncPayload.RemoteUserScript? in
+                guard let url = script.url else { return nil }
+                return SyncPayload.RemoteUserScript(url: url.absoluteString, isEnabled: script.isEnabled)
+            }
+            .sorted { $0.url < $1.url }
+
+        let localScripts = userScriptManager.userScripts
+            .filter { $0.isLocal }
+            .map { script in
+                SyncPayload.LocalUserScript(name: script.name, content: script.content, isEnabled: script.isEnabled)
+            }
+            .sorted { $0.name < $1.name }
+
+        let userScripts = SyncPayload.UserScripts(remote: remoteScripts, local: localScripts)
+
+        let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
+
+        return SyncPayload.Content(
+            settings: settings,
+            filters: filters,
+            userScripts: userScripts,
+            whitelistDomains: whitelistDomains
+        )
+    }
+
+    // MARK: - CloudKit I/O
+
+    private func fetchRecord() async throws -> CKRecord? {
+        do {
+            return try await withCheckedThrowingContinuation { continuation in
+                database.fetch(withRecordID: recordID) { record, error in
+                    if let error {
+                        if let ckError = error as? CKError, ckError.code == .unknownItem {
+                            continuation.resume(returning: nil)
+                            return
+                        }
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    continuation.resume(returning: record)
+                }
+            }
+        } catch {
+            throw error
+        }
+    }
+
+    private func saveRecord(_ record: CKRecord) async throws -> CKRecord {
+        try await withCheckedThrowingContinuation { continuation in
+            database.save(record) { saved, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                continuation.resume(returning: saved ?? record)
+            }
+        }
+    }
+
+    private func applyPayloadFields(_ payload: SyncPayload, to record: inout CKRecord) async throws -> URL {
+        let data = try JSONEncoder.sorted.encode(payload)
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-sync-\(UUID().uuidString).json")
+        try data.write(to: tempURL, options: .atomic)
+
+        record["schemaVersion"] = payload.schemaVersion as CKRecordValue
+        record["updatedAt"] = Date(timeIntervalSince1970: payload.updatedAt) as CKRecordValue
+        record["contentHash"] = payload.contentHash as CKRecordValue
+        record["payload"] = CKAsset(fileURL: tempURL)
+        return tempURL
+    }
+
+    private func decodePayload(from record: CKRecord) throws -> SyncPayload? {
+        guard let asset = record["payload"] as? CKAsset, let url = asset.fileURL else { return nil }
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(SyncPayload.self, from: data)
+    }
+
+    // MARK: - Status
+
+    private func refreshStatusFromDefaults() {
+        if !isEnabled {
+            statusLine = "Sync: Off"
+            lastSyncLine = "Last Sync: Never"
+            return
+        }
+
+        statusLine = isSyncing ? "Sync: Working…" : "Sync: On"
+
+        let lastSyncAt = defaults.double(forKey: Keys.lastSyncAt)
+        if lastSyncAt > 0 {
+            lastSyncLine = "Last Sync: \(Self.relativeDateString(from: Date(timeIntervalSince1970: lastSyncAt)))"
+        } else {
+            lastSyncLine = "Last Sync: Never"
+        }
+    }
+
+    // MARK: - Helpers
+
+    private enum Keys {
+        static let enabled = "cloudSyncEnabled"
+        static let lastLocalHash = "cloudSyncLastLocalHash"
+        static let lastLocalUpdatedAt = "cloudSyncLastLocalUpdatedAt"
+        static let lastUploadedHash = "cloudSyncLastUploadedHash"
+        static let lastUploadedAt = "cloudSyncLastUploadedAt"
+        static let lastDownloadedHash = "cloudSyncLastDownloadedHash"
+        static let lastDownloadedAt = "cloudSyncLastDownloadedAt"
+        static let lastSyncAt = "cloudSyncLastSyncAt"
+    }
+
+    private static func sha256Hex(_ data: Data) -> String {
+        let digest = SHA256.hash(data: data)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func sanitizedFilename(from input: String) -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "Userscript" }
+        let allowed = CharacterSet.alphanumerics.union(.init(charactersIn: " -_()[]"))
+        let filtered = trimmed.unicodeScalars.map { allowed.contains($0) ? Character($0) : "-" }
+        return String(filtered).prefix(60).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func relativeDateString(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+private extension JSONEncoder {
+    static var sorted: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }
+}
+
+private struct SyncPayload: Codable {
+    struct Settings: Codable {
+        let selectedBlockingLevel: String
+        let isBadgeCounterEnabled: Bool
+        let autoUpdateEnabled: Bool
+        let autoUpdateIntervalHours: Double
+        let userScriptShowEnabledOnly: Bool
+        let excludedDefaultUserScriptURLs: [String]
+    }
+
+    struct CustomFilterList: Codable {
+        let url: String
+        let name: String
+        let isSelected: Bool
+    }
+
+    struct Filters: Codable {
+        let selectedURLs: [String]
+        let customLists: [CustomFilterList]
+    }
+
+    struct RemoteUserScript: Codable {
+        let url: String
+        let isEnabled: Bool
+    }
+
+    struct LocalUserScript: Codable {
+        let name: String
+        let content: String
+        let isEnabled: Bool
+    }
+
+    struct UserScripts: Codable {
+        let remote: [RemoteUserScript]
+        let local: [LocalUserScript]
+    }
+
+    struct Content: Codable {
+        let settings: Settings
+        let filters: Filters
+        let userScripts: UserScripts
+        let whitelistDomains: [String]
+    }
+
+    let schemaVersion: Int
+    let updatedAt: TimeInterval
+    let contentHash: String
+    let settings: Settings
+    let filters: Filters
+    let userScripts: UserScripts
+    let whitelistDomains: [String]
+}

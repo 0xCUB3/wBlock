@@ -5,6 +5,7 @@ import wBlockCoreService
 struct SettingsView: View {
     let filterManager: AppFilterManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
+    @ObservedObject private var syncManager = CloudSyncManager.shared
     private let minimumAutoUpdateIntervalHours: Double = 1
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
     private let openCollectiveURL = URL(string: "https://opencollective.com/skula/projects/wblock")
@@ -188,6 +189,79 @@ struct SettingsView: View {
                                                 .foregroundStyle(.secondary)
                                         }
                                     }
+                                    .padding(16)
+                                }
+                            }
+                        }
+
+                        settingsSectionView(title: "Sync") {
+                            VStack(spacing: 0) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Sync across devices (iCloud)")
+                                            .font(.body)
+                                        Text("Stores your configuration in your private iCloud database.")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Toggle(
+                                        "",
+                                        isOn: Binding(
+                                            get: { syncManager.isEnabled },
+                                            set: { newValue in
+                                                syncManager.setEnabled(newValue)
+                                            }
+                                        )
+                                    )
+                                    .labelsHidden()
+                                    .toggleStyle(.switch)
+                                }
+                                .padding(16)
+
+                                if syncManager.isEnabled {
+                                    Divider()
+                                        .padding(.leading, 16)
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(syncManager.statusLine)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Text(syncManager.lastSyncLine)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        if let message = syncManager.lastErrorMessage,
+                                            !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                        {
+                                            Text(message)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(3)
+                                        }
+                                    }
+                                    .padding(16)
+
+                                    Divider()
+                                        .padding(.leading, 16)
+
+                                    Button {
+                                        Task { await syncManager.syncNow(trigger: "Manual") }
+                                    } label: {
+                                        HStack {
+                                            Text(syncManager.isSyncing ? "Syncing…" : "Sync Now")
+                                                .font(.body)
+                                            Spacer()
+                                            if syncManager.isSyncing {
+                                                ProgressView()
+                                                    .progressViewStyle(.circular)
+                                            } else {
+                                                Image(systemName: "arrow.triangle.2.circlepath")
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(syncManager.isSyncing)
                                     .padding(16)
                                 }
                             }
