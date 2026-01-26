@@ -231,7 +231,7 @@ struct ApplyChangesProgressView: View {
             }
 
             let label = totalCount > 0
-                ? "\(done)/\(totalCount)"
+                ? "\(done)/\(totalCount) completed"
                 : nil
 
             return PhaseRow.SubProgress(value: fraction, label: label)
@@ -245,7 +245,7 @@ struct ApplyChangesProgressView: View {
             let fraction = Swift.min(Swift.max(Double(done) / total, 0), 1)
 
             let label = totalCount > 0
-                ? "\(done)/\(totalCount)"
+                ? "\(done)/\(totalCount) completed"
                 : nil
 
             if totalCount > 0, done >= totalCount {
