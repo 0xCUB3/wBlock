@@ -7,6 +7,7 @@ struct SettingsView: View {
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     private let minimumAutoUpdateIntervalHours: Double = 1
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
+    private let openCollectiveURL = URL(string: "https://opencollective.com/skula/projects/wblock")
     @State private var nextScheduleLine = "Next: Loading…"
     @State private var lastUpdateLine = "Last: Never"
     @State private var isOverdue = false
@@ -223,6 +224,22 @@ struct SettingsView: View {
                             .buttonStyle(.plain)
                             .disabled(isRestarting)
                             .padding(16)
+                        }
+
+                        if let openCollectiveURL {
+                            settingsSectionView(title: "Support") {
+                                Link(destination: openCollectiveURL) {
+                                    HStack {
+                                        Text("Support on Open Collective")
+                                            .font(.body)
+                                        Spacer()
+                                        Image(systemName: "arrow.up.right.square")
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .padding(16)
+                            }
                         }
                     }
                     .padding(.horizontal)
