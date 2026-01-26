@@ -177,11 +177,13 @@ struct ApplyChangesProgressView: View {
             guard viewModel.state.totalCount > 0 else { return nil }
             return "Preparing \(viewModel.state.totalCount) extension\(viewModel.state.totalCount == 1 ? "" : "s")"
         case .converting:
+            guard step.status == .active else { return nil }
             guard !viewModel.state.currentFilterName.isEmpty else { return nil }
             return viewModel.state.currentFilterName
         case .saving:
             return nil
         case .reloading:
+            guard step.status == .active else { return nil }
             guard !viewModel.state.currentFilterName.isEmpty else { return nil }
             return viewModel.state.currentFilterName
         }
@@ -275,7 +277,6 @@ private struct PhaseRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(step.phase.title)
                         .font(.subheadline)
-                        .fontWeight(step.status == .active ? .semibold : .regular)
 
                     if let detail, !detail.isEmpty {
                         Text(detail)
