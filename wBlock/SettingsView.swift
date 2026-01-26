@@ -204,13 +204,12 @@ struct SettingsView: View {
                                 Button {
                                     Task { await syncManager.syncNow(trigger: "Manual") }
                                 } label: {
-                                    if syncManager.isSyncing {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                    } else {
-                                        Image(systemName: "arrow.triangle.2.circlepath")
-                                            .foregroundColor(.secondary)
-                                    }
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                        .symbolRenderingMode(.hierarchical)
+                                        .foregroundStyle(
+                                            (!syncManager.isEnabled || syncManager.isSyncing)
+                                                ? .tertiary : .secondary
+                                        )
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(!syncManager.isEnabled || syncManager.isSyncing)
