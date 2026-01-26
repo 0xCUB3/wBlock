@@ -29,6 +29,7 @@ final class CloudSyncManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var pendingUploadTask: Task<Void, Never>?
     private var pendingSyncTask: Task<Void, Never>?
+    private var isApplyingRemoteChanges: Bool = false
 
     private init() {
         isEnabled = defaults.bool(forKey: Keys.enabled)
@@ -84,6 +85,7 @@ final class CloudSyncManager: ObservableObject {
 
     private func handleLocalSave() {
         guard isEnabled else { return }
+        guard !isApplyingRemoteChanges else { return }
 
         Task { [weak self] in
             guard let self else { return }
@@ -117,22 +119,31 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
 
-        if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
-            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-        }
-
-        let payload = buildPayload()
-        let payloadHash = payload.contentHash
-
-        if payloadHash == defaults.string(forKey: Keys.lastUploadedHash) {
-            return
-        }
-
         do {
             isSyncing = true
             statusLine = "Sync: Uploading…"
 
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
+
+            if let remotePayload = try? decodePayload(from: record) {
+                await reconcileMissingDefinitionsIfNeeded(from: remotePayload)
+            }
+
+            if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
+                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+            }
+
+            let payload = buildPayload()
+            let payloadHash = payload.contentHash
+
+            if payloadHash == defaults.string(forKey: Keys.lastUploadedHash) {
+                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+                refreshStatusFromDefaults()
+                statusLine = "Sync: Up to date"
+                isSyncing = false
+                return
+            }
+
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
 
@@ -210,6 +221,8 @@ final class CloudSyncManager: ObservableObject {
 
     private func applyRemotePayload(_ payload: SyncPayload, trigger: String) async {
         logger.info("⬇️ Applying remote payload (\(trigger, privacy: .public))")
+        isApplyingRemoteChanges = true
+        defer { isApplyingRemoteChanges = false }
 
         // Settings
         await dataManager.setSelectedBlockingLevel(payload.settings.selectedBlockingLevel)
@@ -241,6 +254,7 @@ final class CloudSyncManager: ObservableObject {
         defaults.set(payload.updatedAt, forKey: Keys.lastLocalUpdatedAt)
         defaults.set(payload.contentHash, forKey: Keys.lastDownloadedHash)
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastDownloadedAt)
+        defaults.set(payload.contentHash, forKey: Keys.lastUploadedHash)
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
         refreshStatusFromDefaults()
 
@@ -252,7 +266,7 @@ final class CloudSyncManager: ObservableObject {
 
     private func applyRemoteFilters(_ filters: SyncPayload.Filters) async {
         let desiredSelected = Set(filters.selectedURLs)
-        let desiredCustomByURL = Dictionary(uniqueKeysWithValues: filters.customLists.map { ($0.url, $0) })
+        let knownURLs = Set(filters.knownURLs ?? filters.selectedURLs)
 
         if let filterManager {
             var changed = false
@@ -261,19 +275,12 @@ final class CloudSyncManager: ObservableObject {
             for index in filterManager.filterLists.indices {
                 guard !filterManager.filterLists[index].isCustom else { continue }
                 let urlString = filterManager.filterLists[index].url.absoluteString
+                guard knownURLs.contains(urlString) else { continue }
                 let shouldSelect = desiredSelected.contains(urlString)
                 if filterManager.filterLists[index].isSelected != shouldSelect {
                     filterManager.filterLists[index].isSelected = shouldSelect
                     changed = true
                 }
-            }
-
-            // Remove custom lists missing from remote
-            let remoteCustomURLs = Set(desiredCustomByURL.keys)
-            let localCustoms = filterManager.customFilterLists
-            for localCustom in localCustoms where !remoteCustomURLs.contains(localCustom.url.absoluteString) {
-                filterManager.removeCustomFilterList(localCustom)
-                changed = true
             }
 
             // Upsert custom lists from remote
@@ -318,23 +325,39 @@ final class CloudSyncManager: ObservableObject {
 
         for index in storedLists.indices where !storedLists[index].isCustom {
             let urlString = storedLists[index].url.absoluteString
+            guard knownURLs.contains(urlString) else { continue }
             storedLists[index].isSelected = desiredSelected.contains(urlString)
         }
 
-        // Remove existing customs and recreate from payload
-        storedLists.removeAll { $0.isCustom }
+        // Upsert custom lists from remote without removing local-only customs.
+        let localCustomIndexByURL: [String: Int] = Dictionary(
+            uniqueKeysWithValues: storedLists.indices.compactMap { idx in
+                guard storedLists[idx].isCustom else { return nil }
+                return (storedLists[idx].url.absoluteString, idx)
+            }
+        )
+
         for remoteCustom in filters.customLists {
-            let newFilter = FilterList(
-                id: UUID(),
-                name: remoteCustom.name,
-                url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
-                category: .custom,
-                isCustom: true,
-                isSelected: remoteCustom.isSelected,
-                description: "User-added filter list.",
-                sourceRuleCount: nil
-            )
-            storedLists.append(newFilter)
+            if let existingIndex = localCustomIndexByURL[remoteCustom.url] {
+                var updated = storedLists[existingIndex]
+                if updated.name != remoteCustom.name {
+                    updated.name = remoteCustom.name
+                }
+                updated.isSelected = remoteCustom.isSelected
+                storedLists[existingIndex] = updated
+            } else {
+                let newFilter = FilterList(
+                    id: UUID(),
+                    name: remoteCustom.name,
+                    url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                    category: .custom,
+                    isCustom: true,
+                    isSelected: remoteCustom.isSelected,
+                    description: "User-added filter list.",
+                    sourceRuleCount: nil
+                )
+                storedLists.append(newFilter)
+            }
         }
 
         await dataManager.updateFilterLists(storedLists)
@@ -342,18 +365,6 @@ final class CloudSyncManager: ObservableObject {
 
     private func applyRemoteUserScripts(_ scripts: SyncPayload.UserScripts) async {
         // Remote scripts (URL-based)
-        let desiredRemoteByURL = Dictionary(uniqueKeysWithValues: scripts.remote.map { ($0.url, $0) })
-        let desiredRemoteURLs = Set(desiredRemoteByURL.keys)
-
-        // Remove remote (non-default) scripts that are not present remotely.
-        for local in userScriptManager.userScripts {
-            guard let url = local.url, !local.isLocal else { continue }
-            guard !userScriptManager.isDefaultUserScript(local) else { continue }
-            if !desiredRemoteURLs.contains(url.absoluteString) {
-                userScriptManager.removeUserScript(local)
-            }
-        }
-
         // Ensure each desired remote script exists and has the correct enabled state.
         for remote in scripts.remote {
             guard let url = URL(string: remote.url) else { continue }
@@ -369,17 +380,15 @@ final class CloudSyncManager: ObservableObject {
         }
 
         // Local scripts (content-based)
-        let desiredLocalNames = Set(scripts.local.map(\.name))
-
-        // Remove local scripts missing from remote.
-        for local in userScriptManager.userScripts where local.isLocal {
-            if !desiredLocalNames.contains(local.name) {
-                userScriptManager.removeUserScript(local)
-            }
-        }
-
-        // Import or replace local scripts.
+        // Import or replace local scripts from the remote payload. Do not remove local-only scripts.
         for local in scripts.local {
+            if let existing = userScriptManager.userScripts.first(where: { $0.isLocal && $0.name == local.name }) {
+                if existing.content == local.content {
+                    await userScriptManager.setUserScript(existing, isEnabled: local.isEnabled)
+                    continue
+                }
+            }
+
             let filename = Self.sanitizedFilename(from: local.name)
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(filename).user.js")
             do {
@@ -397,6 +406,112 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
+    private func reconcileMissingDefinitionsIfNeeded(from remotePayload: SyncPayload) async {
+        // Import missing custom filter lists and userscripts before uploading so we don't
+        // accidentally drop them from the single shared CloudKit payload.
+
+        let localCustomURLs: Set<String> = Set(dataManager.getCustomFilterLists().map { $0.url.absoluteString })
+        let remoteCustoms = remotePayload.filters.customLists
+        let missingCustoms = remoteCustoms.filter { !localCustomURLs.contains($0.url) }
+
+        let localRemoteScriptURLs: Set<String> = Set(
+            userScriptManager.userScripts.compactMap { script in
+                guard !script.isLocal, let url = script.url else { return nil }
+                return url.absoluteString
+            }
+        )
+        let remoteRemoteScripts = remotePayload.userScripts.remote
+        let missingRemoteScripts = remoteRemoteScripts.filter { !localRemoteScriptURLs.contains($0.url) }
+
+        let localLocalNames = Set(userScriptManager.userScripts.filter(\.isLocal).map(\.name))
+        let remoteLocalScripts = remotePayload.userScripts.local
+        let missingLocalScripts = remoteLocalScripts.filter { !localLocalNames.contains($0.name) }
+
+        guard !missingCustoms.isEmpty || !missingRemoteScripts.isEmpty || !missingLocalScripts.isEmpty else {
+            return
+        }
+
+        isApplyingRemoteChanges = true
+        defer { isApplyingRemoteChanges = false }
+
+        if !missingCustoms.isEmpty {
+            if let filterManager {
+                var changed = false
+                for remoteCustom in missingCustoms {
+                    guard URL(string: remoteCustom.url) != nil else { continue }
+                    if filterManager.filterLists.contains(where: { $0.isCustom && $0.url.absoluteString == remoteCustom.url }) {
+                        continue
+                    }
+                    let newFilter = FilterList(
+                        id: UUID(),
+                        name: remoteCustom.name,
+                        url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                        category: .custom,
+                        isCustom: true,
+                        isSelected: remoteCustom.isSelected,
+                        description: "User-added filter list.",
+                        sourceRuleCount: nil
+                    )
+                    filterManager.customFilterLists.append(newFilter)
+                    filterManager.filterLists.append(newFilter)
+                    changed = true
+                }
+                if changed {
+                    filterManager.hasUnappliedChanges = true
+                    await filterManager.saveFilterLists()
+                }
+            } else {
+                var storedLists = dataManager.getFilterLists()
+                let existingCustomURLs = Set(storedLists.filter(\.isCustom).map { $0.url.absoluteString })
+                for remoteCustom in missingCustoms where !existingCustomURLs.contains(remoteCustom.url) {
+                    let newFilter = FilterList(
+                        id: UUID(),
+                        name: remoteCustom.name,
+                        url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                        category: .custom,
+                        isCustom: true,
+                        isSelected: remoteCustom.isSelected,
+                        description: "User-added filter list.",
+                        sourceRuleCount: nil
+                    )
+                    storedLists.append(newFilter)
+                }
+                await dataManager.updateFilterLists(storedLists)
+            }
+        }
+
+        for remote in missingRemoteScripts {
+            guard let url = URL(string: remote.url) else { continue }
+            await userScriptManager.addUserScript(from: url)
+            if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
+                await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+            }
+        }
+
+        for local in missingLocalScripts {
+            let filename = Self.sanitizedFilename(from: local.name)
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(filename).user.js")
+            do {
+                try local.content.write(to: tempURL, atomically: true, encoding: .utf8)
+            } catch {
+                continue
+            }
+            defer { try? FileManager.default.removeItem(at: tempURL) }
+
+            _ = await userScriptManager.addUserScript(fromLocalFile: tempURL)
+            if let imported = userScriptManager.userScripts.first(where: { $0.isLocal && $0.name == local.name }) {
+                await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
+            }
+        }
+
+        // Mark local state as changed so the upcoming upload includes the reconciled definitions.
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        let localContent = buildPayloadContent()
+        if let localContentData = try? JSONEncoder.sorted.encode(localContent) {
+            defaults.set(Self.sha256Hex(localContentData), forKey: Keys.lastLocalHash)
+        }
+    }
+
     // MARK: - Payload construction
 
     private func buildPayload() -> SyncPayload {
@@ -404,7 +519,7 @@ final class CloudSyncManager: ObservableObject {
         let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
         let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
         return SyncPayload(
-            schemaVersion: 1,
+            schemaVersion: 2,
             updatedAt: max(0, updatedAt),
             contentHash: contentHash,
             settings: content.settings,
@@ -425,6 +540,11 @@ final class CloudSyncManager: ObservableObject {
         )
 
         let filterLists = dataManager.getFilterLists()
+        let knownURLs = filterLists
+            .filter { !$0.isCustom }
+            .map { $0.url.absoluteString }
+            .sorted()
+
         let selectedURLs = filterLists
             .filter { $0.isSelected }
             .map { $0.url.absoluteString }
@@ -441,6 +561,7 @@ final class CloudSyncManager: ObservableObject {
             .sorted { $0.url < $1.url }
 
         let filters = SyncPayload.Filters(
+            knownURLs: knownURLs,
             selectedURLs: selectedURLs,
             customLists: customLists
         )
@@ -602,6 +723,9 @@ private struct SyncPayload: Codable {
     }
 
     struct Filters: Codable {
+        /// All non-custom filters known on the uploading device. Used to avoid cross-platform
+        /// state overrides for platform-only filters when syncing.
+        let knownURLs: [String]?
         let selectedURLs: [String]
         let customLists: [CustomFilterList]
     }
