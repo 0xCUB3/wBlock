@@ -198,7 +198,7 @@ struct SettingsView: View {
                             VStack(spacing: 0) {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Sync across devices (iCloud)")
+                                        Text("Sync across devices")
                                             .font(.body)
                                         Text("Stores your configuration in your private iCloud database.")
                                             .font(.caption)
