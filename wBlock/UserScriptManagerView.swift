@@ -27,6 +27,8 @@ struct UserScriptManagerView: View {
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
+    @State private var searchText = ""
+    @State private var isSearchActive = false
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
@@ -40,7 +42,16 @@ struct UserScriptManagerView: View {
     }
 
     private var displayedScripts: [UserScript] {
-        showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
+        let base = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return base }
+
+        return base.filter { script in
+            script.name.localizedCaseInsensitiveContains(query)
+                || script.description.localizedCaseInsensitiveContains(query)
+                || (script.url?.absoluteString.localizedCaseInsensitiveContains(query) ?? false)
+                || (script.updateURL?.localizedCaseInsensitiveContains(query) ?? false)
+        }
     }
 
     var body: some View {
@@ -96,24 +107,32 @@ struct UserScriptManagerView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack {
-                    if !scripts.filter(\.isDownloaded).isEmpty {
-                        Button {
-                            refreshAllUserScripts()
-                        } label: {
-                            Image(systemName: "arrow.down.circle")
+                    ToolbarSearchControl(
+                        text: $searchText,
+                        isActive: $isSearchActive,
+                        placeholder: "Search scripts"
+                    )
+
+                    if !isSearchActive {
+                        if !scripts.filter(\.isDownloaded).isEmpty {
+                            Button {
+                                refreshAllUserScripts()
+                            } label: {
+                                Image(systemName: "arrow.down.circle")
+                            }
+                            .disabled(isRefreshing)
                         }
-                        .disabled(isRefreshing)
-                    }
-                    Button {
-                        showingAddScriptSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    Button {
-                        showOnlyEnabled.toggle()
-                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                    } label: {
-                        Image(systemName: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        Button {
+                            showingAddScriptSheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        Button {
+                            showOnlyEnabled.toggle()
+                            ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                        } label: {
+                            Image(systemName: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        }
                     }
                 }
             }
@@ -121,6 +140,12 @@ struct UserScriptManagerView: View {
         #elseif os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
+                ToolbarSearchControl(
+                    text: $searchText,
+                    isActive: $isSearchActive,
+                    placeholder: "Search scripts"
+                )
+
                 if !scripts.filter(\.isDownloaded).isEmpty {
                     Button {
                         refreshAllUserScripts()
@@ -130,17 +155,19 @@ struct UserScriptManagerView: View {
                     .disabled(isRefreshing)
                 }
 
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Label("Add Userscript", systemImage: "plus")
-                }
+                if !isSearchActive {
+                    Button {
+                        showingAddScriptSheet = true
+                    } label: {
+                        Label("Add Userscript", systemImage: "plus")
+                    }
 
-                Button {
-                    showOnlyEnabled.toggle()
-                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                } label: {
-                    Label("Show Enabled Only", systemImage: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    Button {
+                        showOnlyEnabled.toggle()
+                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                    } label: {
+                        Label("Show Enabled Only", systemImage: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    }
                 }
             }
         }

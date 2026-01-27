@@ -24,6 +24,8 @@ struct ContentView: View {
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
+    @State private var filterSearchText = ""
+    @State private var isFilterSearchActive = false
     @State private var editingCustomFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
@@ -74,14 +76,22 @@ struct ContentView: View {
     /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
     private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
         let allFilters = filterManager.filterLists
+        let query = filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         var result: [(category: FilterListCategory, filters: [FilterList])] = []
 
         for category in displayableCategories {
             let filters = allFilters.filter {
                 $0.category == category && (!showOnlyEnabledLists || $0.isSelected)
             }
-            if !filters.isEmpty {
-                result.append((category: category, filters: filters))
+            let searched = query.isEmpty
+                ? filters
+                : filters.filter { filter in
+                    filter.name.localizedCaseInsensitiveContains(query)
+                        || filter.description.localizedCaseInsensitiveContains(query)
+                        || filter.url.absoluteString.localizedCaseInsensitiveContains(query)
+                }
+            if !searched.isEmpty {
+                result.append((category: category, filters: searched))
             }
         }
 
@@ -226,18 +236,26 @@ struct ContentView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         HStack {
-                            Button {
-                                showingAddFilterSheet = true
-                            } label: {
-                                Image(systemName: "plus")
-                            }
-                            Button {
-                                showOnlyEnabledLists.toggle()
-                            } label: {
-                                Image(
-                                    systemName: showOnlyEnabledLists
-                                        ? "line.3.horizontal.decrease.circle.fill"
-                                        : "line.3.horizontal.decrease.circle")
+                            ToolbarSearchControl(
+                                text: $filterSearchText,
+                                isActive: $isFilterSearchActive,
+                                placeholder: "Search filters"
+                            )
+
+                            if !isFilterSearchActive {
+                                Button {
+                                    showingAddFilterSheet = true
+                                } label: {
+                                    Image(systemName: "plus")
+                                }
+                                Button {
+                                    showOnlyEnabledLists.toggle()
+                                } label: {
+                                    Image(
+                                        systemName: showOnlyEnabledLists
+                                            ? "line.3.horizontal.decrease.circle.fill"
+                                            : "line.3.horizontal.decrease.circle")
+                                }
                             }
                         }
                     }
@@ -251,6 +269,12 @@ struct ContentView: View {
             )
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
+                    ToolbarSearchControl(
+                        text: $filterSearchText,
+                        isActive: $isFilterSearchActive,
+                        placeholder: "Search filters"
+                    )
+
                     Button {
                         Task {
                             await filterManager.checkAndEnableFilters(forceReload: true)
@@ -260,19 +284,21 @@ struct ContentView: View {
                     }
                     .disabled(filterManager.isLoading || enabledListsCount == 0)
 
-                    Button {
-                        showingAddFilterSheet = true
-                    } label: {
-                        Label("Add Filter", systemImage: "plus")
-                    }
-                    Button {
-                        showOnlyEnabledLists.toggle()
-                    } label: {
-                        Label(
-                            "Show Enabled Only",
-                            systemImage: showOnlyEnabledLists
-                                ? "line.3.horizontal.decrease.circle.fill"
-                                : "line.3.horizontal.decrease.circle")
+                    if !isFilterSearchActive {
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Label("Add Filter", systemImage: "plus")
+                        }
+                        Button {
+                            showOnlyEnabledLists.toggle()
+                        } label: {
+                            Label(
+                                "Show Enabled Only",
+                                systemImage: showOnlyEnabledLists
+                                    ? "line.3.horizontal.decrease.circle.fill"
+                                    : "line.3.horizontal.decrease.circle")
+                        }
                     }
                 }
             }
