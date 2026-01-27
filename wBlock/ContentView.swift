@@ -795,18 +795,7 @@ struct AddFilterListView: View {
 	            .presentationDetents([.large])
 	            .presentationDragIndicator(.visible)
 	        #elseif os(macOS)
-	            NavigationStack {
-	                addTabs
-	                    .navigationTitle("Add Filter List")
-	                    .toolbar {
-	                        ToolbarItem(placement: .cancellationAction) {
-	                            Button("Cancel") { dismiss() }
-	                                .disabled(isSaving)
-	                        }
-	                    }
-	            }
-	            .interactiveDismissDisabled(isSaving)
-	            .frame(minWidth: 520, minHeight: 560)
+	            macosBody
 	        #endif
 	    }
 	    .onAppear {
@@ -862,6 +851,175 @@ struct AddFilterListView: View {
             Text(importErrorMessage ?? "")
 	        }
 	    }
+
+	    #if os(macOS)
+	        private var macosBody: some View {
+	            SheetContainer {
+	                SheetHeader(title: "Add Filter List", isLoading: isSaving) {
+	                    dismiss()
+	                }
+
+	                ScrollView {
+	                    VStack(alignment: .leading, spacing: 16) {
+	                        modePickerCard
+	                        macosModeContent
+	                    }
+	                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+	                    .padding(.top, 12)
+	                    .padding(.bottom, 40)
+	                }
+
+	                SheetBottomToolbar {
+	                    Spacer()
+	                    macosAddButton
+	                }
+	            }
+	            .interactiveDismissDisabled(isSaving)
+	            .frame(minWidth: 560, minHeight: addMode == .paste ? 620 : 520)
+	        }
+
+	        private var macosAddButton: some View {
+	            Button(action: submit) {
+	                HStack(spacing: 8) {
+	                    if isSaving {
+	                        ProgressView()
+	                            .scaleEffect(0.9)
+	                    }
+	                    Text(isSaving ? "Adding…" : addButtonTitle)
+	                        .fontWeight(.semibold)
+	                }
+	            }
+	            .primaryActionButtonStyle()
+	            .disabled(!canSubmit || isSaving)
+	            .keyboardShortcut(.defaultAction)
+	        }
+
+	        private var modePickerCard: some View {
+	            HStack(spacing: 10) {
+	                Text("Add Mode")
+	                    .font(.caption)
+	                    .foregroundStyle(.secondary)
+
+	                Picker("", selection: $addMode) {
+	                    ForEach(AddMode.allCases) { mode in
+	                        Text(mode.rawValue).tag(mode)
+	                    }
+	                }
+	                .pickerStyle(.segmented)
+	                .labelsHidden()
+	                .controlSize(.small)
+	                .animation(.easeInOut(duration: 0.15), value: addMode)
+
+	                Spacer(minLength: 0)
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+
+	        @ViewBuilder
+	        private var macosModeContent: some View {
+	            switch addMode {
+	            case .url:
+	                macosURLCard
+	            case .paste:
+	                macosPasteCard
+	            case .file:
+	                macosFileCard
+	            }
+	        }
+
+	        private var macosURLCard: some View {
+	            VStack(alignment: .leading, spacing: 12) {
+	                VStack(alignment: .leading, spacing: 6) {
+	                    Text("URL")
+	                        .font(.caption)
+	                        .foregroundStyle(.secondary)
+
+	                    TextField("https://example.com/filter.txt", text: $urlInput)
+	                        .textFieldStyle(.roundedBorder)
+	                        .autocorrectionDisabled()
+	                        .focused($urlFieldIsFocused)
+	                        .onSubmit {
+	                            if canSubmit {
+	                                submit()
+	                            } else {
+	                                urlFieldIsFocused = false
+	                            }
+	                        }
+	                }
+
+	                VStack(alignment: .leading, spacing: 6) {
+	                    Text("Title (optional)")
+	                        .font(.caption)
+	                        .foregroundStyle(.secondary)
+
+	                    TextField("Title", text: $customName)
+	                        .textFieldStyle(.roundedBorder)
+	                        .autocorrectionDisabled()
+	                }
+
+	                urlFooterMessage
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+
+	        private var macosPasteCard: some View {
+	            VStack(alignment: .leading, spacing: 12) {
+	                userListMetaFields
+
+	                VStack(alignment: .leading, spacing: 6) {
+	                    Text("Rules")
+	                        .font(.caption)
+	                        .foregroundStyle(.secondary)
+
+	                    TextEditor(text: $pastedRules)
+	                        .font(.system(.body, design: .monospaced))
+	                        .frame(minHeight: 260)
+	                        .scrollContentBackground(.hidden)
+	                        .padding(10)
+	                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+	                        .overlay(
+	                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+	                                .stroke(.quaternary, lineWidth: 1)
+	                        )
+	                }
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+
+	        private var macosFileCard: some View {
+	            VStack(alignment: .leading, spacing: 12) {
+	                userListMetaFields
+
+	                Button {
+	                    showingFileImporter = true
+	                } label: {
+	                    HStack(spacing: 10) {
+	                        Image(systemName: "doc")
+	                        Text("Choose File…")
+	                        Spacer()
+	                        Image(systemName: "chevron.right")
+	                            .font(.caption2)
+	                            .foregroundStyle(.secondary)
+	                    }
+	                    .padding(.vertical, 10)
+	                    .padding(.horizontal, 12)
+	                    .frame(maxWidth: .infinity, alignment: .leading)
+	                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+	                    .overlay(
+	                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+	                            .stroke(.quaternary, lineWidth: 1)
+	                    )
+	                }
+	                .buttonStyle(.plain)
+	                .disabled(isSaving || !canSubmit)
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+	    #endif
 
 	    private var addTabs: some View {
 	        TabView(selection: $addMode) {
