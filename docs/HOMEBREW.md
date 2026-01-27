@@ -2,6 +2,29 @@
 
 This repo ships a Homebrew cask (`Casks/wblock.rb`) that downloads `wBlock.dmg` from GitHub Releases.
 
+## Installing via Homebrew
+
+Homebrew “taps” use a naming convention: when you run `brew tap USER/TAP`, Homebrew tries to clone `https://github.com/USER/homebrew-TAP`.
+
+Since the cask lives inside this repository (`0xCUB3/wBlock`), you have two options:
+
+### Option A (works today): tap this repo by URL
+
+```sh
+brew tap 0xcub3/wblock https://github.com/0xCUB3/wBlock
+brew install --cask wblock
+```
+
+### Option B (more standard): create a dedicated tap repo
+
+Create a GitHub repo named `0xCUB3/homebrew-wblock` and put the cask at `Casks/wblock.rb`.
+Then users can do:
+
+```sh
+brew tap 0xcub3/wblock
+brew install --cask wblock
+```
+
 ## Releasing a notarized DMG (GitHub Actions)
 
 The workflow `.github/workflows/homebrew-cask.yml` runs on tags like `v1.2.3` and:
