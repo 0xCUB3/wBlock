@@ -1128,7 +1128,7 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                TextField("YouTube Shorts Remover", text: $userListTitle)
+                TextField("User List", text: $userListTitle)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     #if os(iOS)
@@ -1141,7 +1141,7 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                TextField("What this list does…", text: $userListDescription)
+                TextField("Optional notes", text: $userListDescription)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     #if os(iOS)
