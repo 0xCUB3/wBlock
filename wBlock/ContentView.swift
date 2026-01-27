@@ -781,121 +781,37 @@ struct AddFilterListView: View {
 	    Group {
 	        #if os(iOS)
 	            NavigationStack {
-	                TabView(selection: $addMode) {
-	                    Form {
-	                        Section {
-	                            TextField("https://example.com/filter.txt", text: $urlInput)
-	                                .accessibilityLabel("URL")
-	                                .textInputAutocapitalization(.never)
-	                                .keyboardType(.URL)
-	                                .submitLabel(.done)
-	                                .focused($urlFieldIsFocused)
-	                                .onSubmit {
-	                                    if canSubmit {
-	                                        submit()
-	                                    } else {
-	                                        urlFieldIsFocused = false
-	                                    }
-	                                }
-
-	                            TextField("Title (optional)", text: $customName)
-	                                .textInputAutocapitalization(.words)
-	                        } footer: {
-	                            urlFooterMessage
-	                        }
-
-	                        Section {
-	                            Button("Add URL") { submit() }
-	                                .disabled(!canSubmit)
+	                addTabs
+	                    .navigationTitle("Add Filter List")
+	                    .navigationBarTitleDisplayMode(.inline)
+	                    .toolbar {
+	                        ToolbarItem(placement: .cancellationAction) {
+	                            Button("Cancel") { dismiss() }
+	                                .disabled(isSaving)
 	                        }
 	                    }
-	                    .tag(AddMode.url)
-	                    .tabItem { Label("URL", systemImage: "link") }
-
-	                    Form {
-	                        Section {
-	                            TextField("Title", text: $userListTitle)
-	                                .textInputAutocapitalization(.words)
-	                                .autocorrectionDisabled()
-	                            TextField("Description", text: $userListDescription)
-	                                .textInputAutocapitalization(.sentences)
-	                                .autocorrectionDisabled()
-	                        }
-
-	                        Section("Rules") {
-	                            TextEditor(text: $pastedRules)
-	                                .font(.system(.body, design: .monospaced))
-	                                .frame(minHeight: 220)
-	                        }
-
-	                        Section {
-	                            Button("Add Rules") { submit() }
-	                                .disabled(!canSubmit)
-	                        }
-	                    }
-	                    .tag(AddMode.paste)
-	                    .tabItem { Label("Paste", systemImage: "text.badge.plus") }
-
-	                    Form {
-	                        Section {
-	                            TextField("Title", text: $userListTitle)
-	                                .textInputAutocapitalization(.words)
-	                                .autocorrectionDisabled()
-	                            TextField("Description", text: $userListDescription)
-	                                .textInputAutocapitalization(.sentences)
-	                                .autocorrectionDisabled()
-	                        }
-
-	                        Section {
-	                            Button {
-	                                submit()
-	                            } label: {
-	                                Label("Choose File…", systemImage: "doc")
-	                            }
-	                            .disabled(!canSubmit)
-	                        }
-	                    }
-	                    .tag(AddMode.file)
-	                    .tabItem { Label("File", systemImage: "doc") }
-	                }
-	                .navigationTitle("Add Filter List")
-	                .navigationBarTitleDisplayMode(.inline)
-	                .toolbar {
-	                    ToolbarItem(placement: .cancellationAction) {
-	                        Button("Cancel") { dismiss() }
-	                            .disabled(isSaving)
-	                    }
-	                }
 	            }
-                .interactiveDismissDisabled(isSaving)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-            #else
-                SheetContainer {
-                    SheetHeader(title: "Add Filter List", isLoading: isSaving) {
-                        dismiss()
-                    }
-
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            entryCard
-                        }
-                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                        .padding(.top, 12)
-                        .padding(.bottom, 40)
-                    }
-
-                    SheetBottomToolbar {
-                        Spacer()
-                        addButton
-                    }
-                }
-                .interactiveDismissDisabled(isSaving)
-            #endif
-        }
-        .onAppear {
-            urlFieldIsFocused = addMode == .url
-        }
+	            .interactiveDismissDisabled(isSaving)
+	            .presentationDetents([.large])
+	            .presentationDragIndicator(.visible)
+	        #elseif os(macOS)
+	            NavigationStack {
+	                addTabs
+	                    .navigationTitle("Add Filter List")
+	                    .toolbar {
+	                        ToolbarItem(placement: .cancellationAction) {
+	                            Button("Cancel") { dismiss() }
+	                                .disabled(isSaving)
+	                        }
+	                    }
+	            }
+	            .interactiveDismissDisabled(isSaving)
+	            .frame(minWidth: 520, minHeight: 560)
+	        #endif
+	    }
+	    .onAppear {
+	        urlFieldIsFocused = addMode == .url
+	    }
         .onChange(of: addMode) { _, newValue in
             urlFieldIsFocused = newValue == .url
         }
@@ -944,230 +860,136 @@ struct AddFilterListView: View {
             Button("OK", role: .cancel) { importErrorMessage = nil }
         } message: {
             Text(importErrorMessage ?? "")
-        }
-    }
+	        }
+	    }
 
-    // MARK: - Content Sections
+	    private var addTabs: some View {
+	        TabView(selection: $addMode) {
+	            urlTab
+	                .tag(AddMode.url)
+	                .tabItem { Label("URL", systemImage: "link") }
 
-    private var entryCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Text("Add Mode")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+	            pasteTab
+	                .tag(AddMode.paste)
+	                .tabItem { Label("Paste", systemImage: "text.badge.plus") }
 
-            Picker("", selection: $addMode) {
-                ForEach(AddMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            #if os(macOS)
-                .controlSize(.small)
-            #endif
-            .animation(.easeInOut(duration: 0.15), value: addMode)
-        }
+	            fileTab
+	                .tag(AddMode.file)
+	                .tabItem { Label("File", systemImage: "doc") }
+	        }
+	    }
 
-            switch addMode {
-            case .url:
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("URL")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+	    private var urlTab: some View {
+	        Form {
+	            Section {
+	                TextField("https://example.com/filter.txt", text: $urlInput)
+	                    .accessibilityLabel("URL")
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.never)
+	                        .keyboardType(.URL)
+	                        .submitLabel(.done)
+	                    #endif
+	                    .focused($urlFieldIsFocused)
+	                    .onSubmit {
+	                        if canSubmit {
+	                            submit()
+	                        } else {
+	                            urlFieldIsFocused = false
+	                        }
+	                    }
 
-                    TextField("https://example.com/filter.txt", text: $urlInput)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        #if os(iOS)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.URL)
-                            .submitLabel(.done)
-                        #endif
-                        .focused($urlFieldIsFocused)
-                        .onSubmit {
-                            if canSubmit {
-                                submit()
-                            } else {
-                                urlFieldIsFocused = false
-                            }
-                        }
-                }
-            case .file:
-                userListMetaFields
-                Button {
-                    showingFileImporter = true
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "doc")
-                        Text("Choose Filter File…")
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(.quaternary, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(isSaving)
-            case .paste:
-                userListMetaFields
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Rules")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+	                TextField("Title (optional)", text: $customName)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.words)
+	                    #endif
+	            } footer: {
+	                urlFooterMessage
+	            }
 
-                        TextEditor(text: $pastedRules)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(minHeight: 220)
-                        .scrollContentBackground(.hidden)
-                        .padding(10)
-                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(.quaternary, lineWidth: 1)
-                        )
+	            Section {
+	                Button("Add URL") { submit() }
+	                    .disabled(!canSubmit)
+	            }
+	        }
+	    }
 
-                    HStack(spacing: 10) {
-                        #if os(iOS)
-                            Button {
-                                if let string = UIPasteboard.general.string {
-                                    pastedRules = string
-                                }
-                            } label: {
-                                Label("Paste", systemImage: "doc.on.clipboard")
-                            }
-                            .secondaryActionButtonStyle()
-                            .disabled(isSaving)
-                        #endif
+	    private var pasteTab: some View {
+	        Form {
+	            Section {
+	                TextField("Title", text: $userListTitle)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.words)
+	                    #endif
+	                    .autocorrectionDisabled()
+	                TextField("Description", text: $userListDescription)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.sentences)
+	                    #endif
+	                    .autocorrectionDisabled()
+	            }
 
-                        Spacer()
+	            Section("Rules") {
+	                TextEditor(text: $pastedRules)
+	                    .font(.system(.body, design: .monospaced))
+	                    .frame(minHeight: 220)
+	            }
 
-                        Button("Clear") {
-                            pastedRules = ""
-                        }
-                        .secondaryActionButtonStyle()
-                        .disabled(isSaving || pastedRules.isEmpty)
-                    }
-                }
-            }
+	            Section {
+	                Button("Add Rules") { submit() }
+	                    .disabled(!canSubmit)
+	            }
+	        }
+	    }
 
-            if addMode == .url {
-                DisclosureGroup(isExpanded: $isNameSectionExpanded) {
-                    TextField(namePlaceholder, text: $customName)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        #if os(iOS)
-                            .textInputAutocapitalization(.words)
-                        #endif
-                } label: {
-                    HStack(spacing: 10) {
-                        Text("Title (optional)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+	    private var fileTab: some View {
+	        Form {
+	            Section {
+	                TextField("Title", text: $userListTitle)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.words)
+	                    #endif
+	                    .autocorrectionDisabled()
+	                TextField("Description", text: $userListDescription)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.sentences)
+	                    #endif
+	                    .autocorrectionDisabled()
+	            }
 
-                        Spacer()
+	            Section {
+	                Button {
+	                    submit()
+	                } label: {
+	                    Label("Choose File…", systemImage: "doc")
+	                }
+	                .disabled(!canSubmit)
+	            }
+	        }
+	    }
 
-                        if !trimmedCustomName.isEmpty && !isNameSectionExpanded {
-                            Text(trimmedCustomName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-            }
-
-            validationMessage
-        }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var validationMessage: some View {
-        Group {
-            if isCustomNameDuplicate {
-                Text("That name is already used by another filter list.")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-
-            switch validationState {
-            case .idle:
-                EmptyView()
-            case .invalid:
-                Text(
-                    "Provide a valid https:// link to a filter file ending in .txt, .list, or .json."
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
-            case .duplicate:
-                Text("A filter list with this URL already exists in wBlock.")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            case .valid:
-                EmptyView()
-            }
-        }
-        .animation(.easeInOut(duration: 0.15), value: validationState)
-    }
-
-    #if os(iOS)
-        private var urlFooterMessage: some View {
-            Group {
-                if isCustomNameDuplicate {
-                    Text("That name is already used by another filter list.")
-                        .foregroundStyle(.orange)
-                } else {
-                    switch validationState {
-                    case .idle:
-                        EmptyView()
-                    case .invalid:
-                        Text("Enter a valid http(s) URL to a .txt, .list, or .json filter.")
-                            .foregroundStyle(.orange)
-                    case .duplicate:
-                        Text("A filter list with this URL already exists in wBlock.")
-                            .foregroundStyle(.orange)
-                    case .valid:
-                        EmptyView()
-                    }
-                }
-            }
-            .font(.footnote)
-        }
-    #endif
-
-    private var cancelButton: some View {
-        Button("Cancel") {
-            dismiss()
-        }
-        .secondaryActionButtonStyle()
-        .disabled(isSaving)
-        .keyboardShortcut(.cancelAction)
-    }
-
-    private var addButton: some View {
-        Button(action: submit) {
-            HStack(spacing: 8) {
-                if isSaving {
-                    ProgressView()
-                        .scaleEffect(0.9)
-                }
-                Text(isSaving ? "Adding…" : addButtonTitle)
-                    .fontWeight(.semibold)
-            }
-        }
-        .primaryActionButtonStyle()
-        .disabled(!canSubmit)
-        .keyboardShortcut(.defaultAction)
-    }
+	    // MARK: - Footer
+	    private var urlFooterMessage: some View {
+	        Group {
+	            if isCustomNameDuplicate {
+	                Text("That name is already used by another filter list.")
+	                    .foregroundStyle(.orange)
+	            } else {
+	                switch validationState {
+	                case .idle:
+	                    EmptyView()
+	                case .invalid:
+	                    Text("Enter a valid http(s) URL to a .txt, .list, or .json filter.")
+	                        .foregroundStyle(.orange)
+	                case .duplicate:
+	                    Text("A filter list with this URL already exists in wBlock.")
+	                        .foregroundStyle(.orange)
+	                case .valid:
+	                    EmptyView()
+	                }
+	            }
+	        }
+	        .font(.footnote)
+	    }
 
     private var canSubmit: Bool {
         if isSaving || isCustomNameDuplicate { return false }
