@@ -25,7 +25,7 @@ struct ContentView: View {
     @State private var showingAddFilterSheet = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @State private var filterSearchText = ""
-    @State private var isFilterSearchPresented = false
+    @State private var isFilterSearchActive = false
     @State private var editingCustomFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
@@ -236,7 +236,13 @@ struct ContentView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         HStack {
-                            if !isFilterSearchPresented {
+                            ToolbarSearchControl(
+                                text: $filterSearchText,
+                                isActive: $isFilterSearchActive,
+                                placeholder: "Search filters"
+                            )
+
+                            if !isFilterSearchActive {
                                 Button {
                                     showingAddFilterSheet = true
                                 } label: {
@@ -256,13 +262,6 @@ struct ContentView: View {
                 }
             #endif
         }
-        .modifier(
-            SearchableToolbarModifier(
-                text: $filterSearchText,
-                isPresented: $isFilterSearchPresented,
-                prompt: "Search filters"
-            )
-        )
         #if os(macOS)
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
@@ -270,6 +269,12 @@ struct ContentView: View {
             )
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
+                    ToolbarSearchControl(
+                        text: $filterSearchText,
+                        isActive: $isFilterSearchActive,
+                        placeholder: "Search filters"
+                    )
+
                     Button {
                         Task {
                             await filterManager.checkAndEnableFilters(forceReload: true)
@@ -279,7 +284,7 @@ struct ContentView: View {
                     }
                     .disabled(filterManager.isLoading || enabledListsCount == 0)
 
-                    if !isFilterSearchPresented {
+                    if !isFilterSearchActive {
                         Button {
                             showingAddFilterSheet = true
                         } label: {

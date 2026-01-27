@@ -28,7 +28,7 @@ struct UserScriptManagerView: View {
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
-    @State private var isSearchPresented = false
+    @State private var isSearchActive = false
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
@@ -107,7 +107,13 @@ struct UserScriptManagerView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack {
-                    if !isSearchPresented {
+                    ToolbarSearchControl(
+                        text: $searchText,
+                        isActive: $isSearchActive,
+                        placeholder: "Search scripts"
+                    )
+
+                    if !isSearchActive {
                         if !scripts.filter(\.isDownloaded).isEmpty {
                             Button {
                                 refreshAllUserScripts()
@@ -134,6 +140,12 @@ struct UserScriptManagerView: View {
         #elseif os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
+                ToolbarSearchControl(
+                    text: $searchText,
+                    isActive: $isSearchActive,
+                    placeholder: "Search scripts"
+                )
+
                 if !scripts.filter(\.isDownloaded).isEmpty {
                     Button {
                         refreshAllUserScripts()
@@ -143,7 +155,7 @@ struct UserScriptManagerView: View {
                     .disabled(isRefreshing)
                 }
 
-                if !isSearchPresented {
+                if !isSearchActive {
                     Button {
                         showingAddScriptSheet = true
                     } label: {
@@ -160,13 +172,6 @@ struct UserScriptManagerView: View {
             }
         }
         #endif
-        .modifier(
-            SearchableToolbarModifier(
-                text: $searchText,
-                isPresented: $isSearchPresented,
-                prompt: "Search scripts"
-            )
-        )
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
         }) {
