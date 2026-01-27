@@ -328,7 +328,7 @@ final class CloudSyncManager: ObservableObject {
 
         // Rebuild blockers so the synced config takes effect.
         if let filterManager {
-            await filterManager.applyChanges()
+            await filterManager.applyChanges(allowUserInteraction: true)
         }
     }
 

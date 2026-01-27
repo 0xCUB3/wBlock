@@ -35,6 +35,7 @@ class AppFilterManager: ObservableObject {
     @Published var showingNoUpdatesAlert = false
     @Published var hasUnappliedChanges = false
     @Published var showingApplyProgressSheet = false
+    @Published var suppressBlockingOverlay = false
     @Published var autoDisabledFilters: [FilterList] = []  // Filters auto-disabled due to rule limits
     @Published var showingAutoDisabledAlert = false
 
@@ -768,7 +769,10 @@ class AppFilterManager: ObservableObject {
 
     // MARK: - Delegated methods
 
-    func applyChanges() async {
+    func applyChanges(allowUserInteraction: Bool = false) async {
+        suppressBlockingOverlay = allowUserInteraction
+        defer { suppressBlockingOverlay = false }
+
         await MainActor.run { self.prepareApplyRunState() }
 
         // Allow the apply progress UI to render fully before heavy work begins.

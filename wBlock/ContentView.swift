@@ -623,6 +623,7 @@ struct ContentModifiers: ViewModifier {
             .overlay {
                 if filterManager.isLoading && !filterManager.showingApplyProgressSheet
                     && !filterManager.showingUpdatePopup
+                    && !filterManager.suppressBlockingOverlay
                 {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
@@ -751,6 +752,7 @@ struct AddFilterListView: View {
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var urlFieldIsFocused: Bool
+    @Namespace private var addModeNamespace
 
     @State private var urlInput: String = ""
     @State private var customName: String = ""
@@ -782,12 +784,9 @@ struct AddFilterListView: View {
                 NavigationStack {
                     Form {
                         Section {
-                            Picker("Add Mode", selection: $addMode) {
-                                ForEach(AddMode.allCases) { mode in
-                                    Text(mode.rawValue).tag(mode)
-                                }
-                            }
-                            .pickerStyle(.segmented)
+                            addModePicker
+                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                .listRowBackground(Color.clear)
                         }
 
                         switch addMode {
@@ -826,20 +825,6 @@ struct AddFilterListView: View {
                                 TextEditor(text: $pastedRules)
                                     .font(.system(.body, design: .monospaced))
                                     .frame(minHeight: 220)
-
-                                Button {
-                                    pasteRulesFromClipboard()
-                                } label: {
-                                    Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
-                                }
-                                .disabled(isSaving)
-
-                                Button(role: .destructive) {
-                                    pastedRules = ""
-                                } label: {
-                                    Text("Clear Rules")
-                                }
-                                .disabled(isSaving || pastedRules.isEmpty)
                             }
                         case .file:
                             Section {
@@ -873,7 +858,7 @@ struct AddFilterListView: View {
                     }
                 }
                 .interactiveDismissDisabled(isSaving)
-                .presentationDetents(addMode == .paste ? [.large] : [.medium])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             #else
                 SheetContainer {
@@ -1147,12 +1132,6 @@ struct AddFilterListView: View {
             }
             .font(.footnote)
         }
-
-        private func pasteRulesFromClipboard() {
-            if let string = UIPasteboard.general.string {
-                pastedRules = string
-            }
-        }
     #endif
 
     private var cancelButton: some View {
@@ -1337,9 +1316,40 @@ struct AddFilterListView: View {
     }
 
     #if os(iOS)
-        private func pasteFromClipboard() {
-            if let string = UIPasteboard.general.string {
-                urlInput = string
+        private var addModePicker: some View {
+            HStack {
+                Spacer(minLength: 0)
+                HStack(spacing: 0) {
+                    ForEach(AddMode.allCases) { mode in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                addMode = mode
+                            }
+                        } label: {
+                            Text(mode.rawValue)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(addMode == mode ? .primary : .secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .background {
+                            if addMode == mode {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(.background)
+                                    .matchedGeometryEffect(id: "addModeSelection", in: addModeNamespace)
+                            }
+                        }
+                    }
+                }
+                .padding(4)
+                .frame(maxWidth: 320)
+                .background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().stroke(.quaternary, lineWidth: 1))
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Add Mode")
+                Spacer(minLength: 0)
             }
         }
     #endif
