@@ -10,6 +10,7 @@ import SwiftUI
 /// The phases the apply flow walks through.
 enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     case updating
+    case scripts
     case reading
     case converting
     case saving
@@ -20,6 +21,7 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .updating: return "Checking for Updates"
+        case .scripts: return "Updating Scripts"
         case .reading: return "Reading Files"
         case .converting: return "Converting Rules"
         case .saving: return "Saving & Building"
@@ -30,6 +32,7 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .updating: return "arrow.down.circle"
+        case .scripts: return "bolt.horizontal.circle"
         case .reading: return "folder.badge.questionmark"
         case .converting: return "gearshape.2"
         case .saving: return "square.and.arrow.down"
@@ -70,6 +73,8 @@ struct ApplyChangesState: Equatable {
     var progress: Double = 0
     var statusMessage: String = ""
     var currentFilterName: String = ""
+    var scriptsUpdatedCount: Int = 0
+    var scriptsFailedCount: Int = 0
     /// Total number of blocker targets for the current platform (typically 5).
     var totalCount: Int = 0
     /// Per-phase progress for target-based phases.
@@ -129,8 +134,9 @@ class ApplyChangesViewModel: ObservableObject {
         }
     }
 
-    func updatePhaseCompletion(updating: Bool? = nil, reading: Bool? = nil, converting: Bool? = nil, saving: Bool? = nil, reloading: Bool? = nil) {
+    func updatePhaseCompletion(updating: Bool? = nil, scripts: Bool? = nil, reading: Bool? = nil, converting: Bool? = nil, saving: Bool? = nil, reloading: Bool? = nil) {
         if let updating = updating { setPhase(.updating, isComplete: updating) }
+        if let scripts = scripts { setPhase(.scripts, isComplete: scripts) }
         if let reading = reading { setPhase(.reading, isComplete: reading) }
         if let converting = converting { setPhase(.converting, isComplete: converting) }
         if let saving = saving { setPhase(.saving, isComplete: saving) }
@@ -168,6 +174,13 @@ class ApplyChangesViewModel: ObservableObject {
     func updateUpdatesFound(_ count: Int) {
         guard count != state.updatesFound else { return }
         state.updatesFound = count
+    }
+
+    func updateScriptsUpdateResult(updated: Int, failed: Int) {
+        let updatedClamped = max(0, updated)
+        let failedClamped = max(0, failed)
+        state.scriptsUpdatedCount = updatedClamped
+        state.scriptsFailedCount = failedClamped
     }
 
     func updateStatistics(

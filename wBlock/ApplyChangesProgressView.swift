@@ -170,6 +170,15 @@ struct ApplyChangesProgressView: View {
                 return "No updates available"
             }
             return nil
+        case .scripts:
+            if step.status == .complete {
+                let count = viewModel.state.scriptsUpdatedCount
+                if count > 0 {
+                    return "Updated \(count) script\(count == 1 ? "" : "s")"
+                }
+                return "No script updates"
+            }
+            return nil
         case .reading:
             guard viewModel.state.totalCount > 0 else { return nil }
             return "Preparing \(viewModel.state.totalCount) extension\(viewModel.state.totalCount == 1 ? "" : "s")"
@@ -246,7 +255,7 @@ struct ApplyChangesProgressView: View {
 
             return PhaseRow.SubProgress(value: fraction, label: label)
 
-        case .updating, .reading, .saving:
+        case .updating, .scripts, .reading, .saving:
             return nil
         }
     }

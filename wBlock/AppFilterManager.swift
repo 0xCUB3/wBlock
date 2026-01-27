@@ -829,9 +829,26 @@ class AppFilterManager: ObservableObject {
 
         // Mark updating phase as complete
         await MainActor.run {
-            self.applyProgressViewModel.updatePhaseCompletion(updating: true, reading: false)
+            self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
             self.statusDescription = "Applying filters...\n(This may take a while)"
             self.applyProgressViewModel.updateStageDescription("Applying filters...")
+        }
+
+        // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
+        if let userScriptManager = filterUpdater.userScriptManager {
+            let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts()
+            await MainActor.run {
+                self.applyProgressViewModel.updateScriptsUpdateResult(
+                    updated: scriptsResult.updated,
+                    failed: scriptsResult.failed
+                )
+                self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
+            }
+        } else {
+            await MainActor.run {
+                self.applyProgressViewModel.updateScriptsUpdateResult(updated: 0, failed: 0)
+                self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
+            }
         }
 
         let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
