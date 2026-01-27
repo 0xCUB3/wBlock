@@ -1419,6 +1419,10 @@ class AppFilterManager: ObservableObject {
             return
         }
 
+        if category == .custom, CloudSyncManager.shared.isEnabled {
+            CloudSyncManager.shared.clearDeletedCustomListURL(url.absoluteString)
+        }
+
         let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let newFilter = FilterList(
             id: UUID(),
@@ -1588,6 +1592,10 @@ class AppFilterManager: ObservableObject {
     }
 
     func removeCustomFilterList(_ filter: FilterList) {
+        if filter.isCustom, CloudSyncManager.shared.isEnabled {
+            CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)
+        }
+
         customFilterLists.removeAll { $0.id == filter.id }
 
         filterLists.removeAll { $0.id == filter.id }

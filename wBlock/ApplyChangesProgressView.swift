@@ -23,10 +23,10 @@ struct ApplyChangesProgressView: View {
                         ZStack(alignment: .topLeading) {
                             if viewModel.state.isLoading {
                                 progressCard
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                    .transition(.opacity)
                             } else if let summary = viewModel.state.summary {
                                 summaryCard(summary)
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                    .transition(.opacity)
                             }
                         }
                         .animation(.easeInOut(duration: 0.25), value: viewModel.state.isLoading)

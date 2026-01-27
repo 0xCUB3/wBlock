@@ -1009,12 +1009,6 @@ struct AddFilterListView: View {
                     .foregroundStyle(.orange)
             }
 
-            if addMode != .url && userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text("Title is required for user lists.")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-
             switch validationState {
             case .idle:
                 EmptyView()
@@ -1141,7 +1135,7 @@ struct AddFilterListView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                TextField("Optional notes", text: $userListDescription)
+                TextField("Description", text: $userListDescription)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     #if os(iOS)
