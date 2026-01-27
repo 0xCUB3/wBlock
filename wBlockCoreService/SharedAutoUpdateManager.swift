@@ -147,6 +147,12 @@ public actor SharedAutoUpdateManager {
         return await MainActor.run { manager.disabledSites }
     }
 
+    private func autoUpdateUserScriptsIfNeeded() async -> (updated: Int, failed: Int) {
+        let manager = await MainActor.run { UserScriptManager.shared }
+        let result = await manager.autoUpdateEnabledUserScripts()
+        return (result.updated, result.failed)
+    }
+
     // Public entry point invoked by extensions.
     public func maybeRunAutoUpdate(trigger: String, force: Bool = false) async {
         await runIfNeeded(trigger: trigger, force: force)
@@ -380,8 +386,21 @@ public actor SharedAutoUpdateManager {
         do {
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             guard !selectedFilters.isEmpty else {
-                // Still record check time even though no filters selected
+                // Still auto-update enabled userscripts even if no filters are selected.
+                let scriptsResult = await autoUpdateUserScriptsIfNeeded()
+                if scriptsResult.updated > 0 {
+                    await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
+                    appendSharedLog("Auto-updated userscripts: \(scriptsResult.updated)")
+                } else if scriptsResult.failed > 0 {
+                    appendSharedLog("Userscript auto-update errors: \(scriptsResult.failed)")
+                }
+
+                let completionTime = Date().timeIntervalSince1970
+                let nextEligibleTime = completionTime + interval * 3600
+                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                 invalidateStatusCache()
+
+                // Still record check time even though no filters selected
                 // Clear running flag before return
                 await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
                 await ProtobufDataManager.shared.saveDataImmediately()
@@ -424,6 +443,15 @@ public actor SharedAutoUpdateManager {
                     appendSharedLog("No updates found - filters are up to date")
                 }
 
+                // Auto-update enabled userscripts during the same schedule window.
+                let scriptsResult = await autoUpdateUserScriptsIfNeeded()
+                if scriptsResult.updated > 0 {
+                    await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
+                    appendSharedLog("Auto-updated userscripts: \(scriptsResult.updated)")
+                } else if scriptsResult.failed > 0 {
+                    appendSharedLog("Userscript auto-update errors: \(scriptsResult.failed)")
+                }
+
                 // Clear running flag before return
                 await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
                 await ProtobufDataManager.shared.saveDataImmediately()
@@ -450,6 +478,14 @@ public actor SharedAutoUpdateManager {
 
             // Re-convert & reload content blockers. (Rule distribution is slot-based, so updates can affect any target.)
             try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected })
+
+            // Auto-update enabled userscripts during the same schedule window.
+            let scriptsResult = await autoUpdateUserScriptsIfNeeded()
+            if scriptsResult.updated > 0 {
+                appendSharedLog("Auto-updated userscripts: \(scriptsResult.updated)")
+            } else if scriptsResult.failed > 0 {
+                appendSharedLog("Userscript auto-update errors: \(scriptsResult.failed)")
+            }
 
             // Record successful update and schedule next
             let successTime = Date().timeIntervalSince1970

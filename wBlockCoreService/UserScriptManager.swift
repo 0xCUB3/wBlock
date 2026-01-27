@@ -1569,6 +1569,90 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    public struct AutoUpdateResult: Sendable {
+        public let updated: Int
+        public let failed: Int
+
+        public init(updated: Int, failed: Int) {
+            self.updated = updated
+            self.failed = failed
+        }
+    }
+
+    /// Auto-updates enabled remote userscripts without presenting UI alerts.
+    /// This intentionally keeps behavior simple: download latest, process `@require`/`@resource`,
+    /// and persist if the resulting content differs.
+    public func autoUpdateEnabledUserScripts() async -> AutoUpdateResult {
+        await waitUntilReady()
+
+        let candidates = userScripts.filter { script in
+            script.isEnabled && !script.isLocal && script.url != nil
+        }
+
+        guard !candidates.isEmpty else { return AutoUpdateResult(updated: 0, failed: 0) }
+
+        var updatedCount = 0
+        var failedCount = 0
+        var didChange = false
+
+        for candidate in candidates {
+            guard let url = candidate.url else { continue }
+            do {
+                let (data, _) = try await urlSession.data(from: url)
+                let rawContent = String(data: data, encoding: .utf8) ?? ""
+                if rawContent.isEmpty { continue }
+
+                var tempUserScript = UserScript(name: candidate.name, content: rawContent)
+                tempUserScript.parseMetadata()
+
+                let processedContent = await processRequireDirectives(tempUserScript)
+                let resourceContents = await processResourceDirectives(tempUserScript)
+
+                guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { continue }
+
+                // Skip if nothing changed (cheap check).
+                if userScripts[index].content == processedContent,
+                   userScripts[index].resourceContents == resourceContents {
+                    continue
+                }
+
+                userScripts[index].content = processedContent
+                userScripts[index].resourceContents = resourceContents
+                userScripts[index].description = tempUserScript.description
+                userScripts[index].version = tempUserScript.version
+                userScripts[index].matches = tempUserScript.matches
+                userScripts[index].excludeMatches = tempUserScript.excludeMatches
+                userScripts[index].includes = tempUserScript.includes
+                userScripts[index].excludes = tempUserScript.excludes
+                userScripts[index].runAt = tempUserScript.runAt
+                userScripts[index].injectInto = tempUserScript.injectInto
+                userScripts[index].grant = tempUserScript.grant
+                userScripts[index].require = tempUserScript.require
+                userScripts[index].updateURL = tempUserScript.updateURL
+                userScripts[index].downloadURL = tempUserScript.downloadURL
+                userScripts[index].lastUpdated = Date()
+
+                _ = writeUserScriptContent(userScripts[index])
+                _ = writeUserScriptResources(userScripts[index])
+                updatedCount += 1
+                didChange = true
+            } catch {
+                failedCount += 1
+                logger.error("❌ Auto-update userscript failed: \(candidate.name) – \(error.localizedDescription)")
+            }
+        }
+
+        if didChange {
+            await persistUserScriptsNow()
+        }
+
+        if updatedCount > 0 {
+            logger.info("✅ Auto-updated \(updatedCount) userscripts (\(failedCount) failed)")
+        }
+
+        return AutoUpdateResult(updated: updatedCount, failed: failedCount)
+    }
+
     public func downloadAndEnableUserScript(_ userScript: UserScript) async {
         guard let url = userScript.url else { return }
 
