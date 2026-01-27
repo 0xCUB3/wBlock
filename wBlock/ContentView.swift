@@ -111,7 +111,11 @@ struct ContentView: View {
                         scenePhase: scenePhase
                     ))
                 .sheet(item: $editingCustomFilter) { filter in
-                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                    if isInlineUserList(filter) {
+                        EditUserListView(filterManager: filterManager, filter: filter)
+                    } else {
+                        EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                    }
                 }
             } else {
                 // iOS 17 fallback
@@ -138,7 +142,11 @@ struct ContentView: View {
                         scenePhase: scenePhase
                     ))
                 .sheet(item: $editingCustomFilter) { filter in
-                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                    if isInlineUserList(filter) {
+                        EditUserListView(filterManager: filterManager, filter: filter)
+                    } else {
+                        EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                    }
                 }
             }
         #elseif os(macOS)
@@ -166,9 +174,19 @@ struct ContentView: View {
                     scenePhase: scenePhase
                 ))
             .sheet(item: $editingCustomFilter) { filter in
-                EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                if isInlineUserList(filter) {
+                    EditUserListView(filterManager: filterManager, filter: filter)
+                } else {
+                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                }
             }
         #endif
+    }
+
+    private func isInlineUserList(_ filter: FilterList) -> Bool {
+        filter.isCustom
+            && filter.url.scheme?.lowercased() == "wblock"
+            && filter.url.host?.lowercased() == "userlist"
     }
 
     private var filtersView: some View {
@@ -512,7 +530,7 @@ struct ContentView: View {
                 Button {
                     editingCustomFilter = filter
                 } label: {
-                    Label("Edit Name", systemImage: "pencil")
+                    Label(isInlineUserList(filter) ? "Edit Rules" : "Edit Name", systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
@@ -759,59 +777,179 @@ struct AddFilterListView: View {
     }
 
     var body: some View {
-        SheetContainer {
-            SheetHeader(title: "Add Filter List", isLoading: isSaving) {
-                dismiss()
-            }
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    entryCard
-                }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
-            }
+        Group {
             #if os(iOS)
-                .scrollDismissesKeyboard(.interactively)
-            #endif
+                NavigationStack {
+                    Form {
+                        Section {
+                            Picker("Add Mode", selection: $addMode) {
+                                ForEach(AddMode.allCases) { mode in
+                                    Text(mode.rawValue).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
 
-            SheetBottomToolbar {
-                Spacer()
-                addButton
-            }
+                        switch addMode {
+                        case .url:
+                            Section {
+                                TextField("URL", text: $urlInput)
+                                    .textInputAutocapitalization(.never)
+                                    .keyboardType(.URL)
+                                    .submitLabel(.done)
+                                    .focused($urlFieldIsFocused)
+                                    .onSubmit {
+                                        if canSubmit {
+                                            submit()
+                                        } else {
+                                            urlFieldIsFocused = false
+                                        }
+                                    }
+
+                                TextField("Name (optional)", text: $customName)
+                                    .textInputAutocapitalization(.words)
+                            } footer: {
+                                urlFooterMessage
+                            }
+
+                        case .paste:
+                            Section {
+                                TextField("Title", text: $userListTitle)
+                                    .textInputAutocapitalization(.words)
+                                    .autocorrectionDisabled()
+                                TextField("Description", text: $userListDescription)
+                                    .textInputAutocapitalization(.sentences)
+                                    .autocorrectionDisabled()
+                            }
+
+                            Section("Rules") {
+                                TextEditor(text: $pastedRules)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(minHeight: 220)
+
+                                Button {
+                                    pasteRulesFromClipboard()
+                                } label: {
+                                    Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
+                                }
+                                .disabled(isSaving)
+
+                                Button(role: .destructive) {
+                                    pastedRules = ""
+                                } label: {
+                                    Text("Clear Rules")
+                                }
+                                .disabled(isSaving || pastedRules.isEmpty)
+                            }
+                        case .file:
+                            Section {
+                                TextField("Title", text: $userListTitle)
+                                    .textInputAutocapitalization(.words)
+                                    .autocorrectionDisabled()
+                                TextField("Description", text: $userListDescription)
+                                    .textInputAutocapitalization(.sentences)
+                                    .autocorrectionDisabled()
+
+                                Button {
+                                    showingFileImporter = true
+                                } label: {
+                                    Label("Choose File…", systemImage: "doc")
+                                }
+                                .disabled(isSaving)
+                            }
+                        }
+                    }
+                    .navigationTitle("Add Filter List")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }
+                                .disabled(isSaving)
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(addButtonTitle) { submit() }
+                                .disabled(!canSubmit)
+                        }
+                    }
+                }
+                .interactiveDismissDisabled(isSaving)
+                .presentationDetents(addMode == .paste ? [.large] : [.medium])
+                .presentationDragIndicator(.visible)
+            #else
+                SheetContainer {
+                    SheetHeader(title: "Add Filter List", isLoading: isSaving) {
+                        dismiss()
+                    }
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            entryCard
+                        }
+                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
+                    }
+
+                    SheetBottomToolbar {
+                        Spacer()
+                        addButton
+                    }
+                }
+                .interactiveDismissDisabled(isSaving)
+            #endif
         }
-        .interactiveDismissDisabled(isSaving)
         .onAppear {
             urlFieldIsFocused = addMode == .url
         }
         .onChange(of: addMode) { _, newValue in
             urlFieldIsFocused = newValue == .url
         }
-        #if os(iOS)
-            .presentationDetents(addMode == .paste ? [.large] : [.height(340)])
-            .presentationDragIndicator(.visible)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Button {
-                        pasteFromClipboard()
-                    } label: {
-                        Label("Paste", systemImage: "doc.on.clipboard")
+        .fileImporter(
+            isPresented: $showingFileImporter,
+            allowedContentTypes: [UTType.plainText, UTType.text],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                Task { @MainActor in
+                    isSaving = true
+                    var didAccess = false
+                    #if os(iOS)
+                        didAccess = url.startAccessingSecurityScopedResource()
+                    #endif
+                    defer {
+                        #if os(iOS)
+                            if didAccess { url.stopAccessingSecurityScopedResource() }
+                        #endif
                     }
 
-                    Spacer()
-
-                    Button("Clear") {
-                        urlInput = ""
-                    }
-                    .disabled(urlInput.isEmpty)
-
-                    Button("Done") {
-                        urlFieldIsFocused = false
+                    let title = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let description = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                    filterManager.addUserListFromFile(
+                        url,
+                        nameOverride: title,
+                        description: description.isEmpty ? nil : description
+                    )
+                    isSaving = false
+                    if !filterManager.hasError {
+                        dismiss()
+                    } else {
+                        importErrorMessage = filterManager.statusDescription
                     }
                 }
+            case .failure(let error):
+                importErrorMessage = error.localizedDescription
             }
-        #endif
+        }
+        .alert(
+            "Couldn’t Add List",
+            isPresented: Binding(get: { importErrorMessage != nil }, set: { _ in importErrorMessage = nil })
+        ) {
+            Button("OK", role: .cancel) { importErrorMessage = nil }
+        } message: {
+            Text(importErrorMessage ?? "")
+        }
     }
 
     // MARK: - Content Sections
@@ -956,49 +1094,6 @@ struct AddFilterListView: View {
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .fileImporter(
-            isPresented: $showingFileImporter,
-            allowedContentTypes: [UTType.plainText, UTType.text],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                guard let url = urls.first else { return }
-                Task { @MainActor in
-                    isSaving = true
-                    var didAccess = false
-                    #if os(iOS)
-                        didAccess = url.startAccessingSecurityScopedResource()
-                    #endif
-                    defer {
-                        #if os(iOS)
-                            if didAccess { url.stopAccessingSecurityScopedResource() }
-                        #endif
-                    }
-
-                    let title = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let description = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                    filterManager.addUserListFromFile(
-                        url,
-                        nameOverride: title,
-                        description: description.isEmpty ? nil : description
-                    )
-                    isSaving = false
-                    if !filterManager.hasError {
-                        dismiss()
-                    } else {
-                        importErrorMessage = filterManager.statusDescription
-                    }
-                }
-            case .failure(let error):
-                importErrorMessage = error.localizedDescription
-            }
-        }
-        .alert("Couldn’t Add List", isPresented: Binding(get: { importErrorMessage != nil }, set: { _ in importErrorMessage = nil })) {
-            Button("OK", role: .cancel) { importErrorMessage = nil }
-        } message: {
-            Text(importErrorMessage ?? "")
-        }
     }
 
     private var validationMessage: some View {
@@ -1028,6 +1123,37 @@ struct AddFilterListView: View {
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)
     }
+
+    #if os(iOS)
+        private var urlFooterMessage: some View {
+            Group {
+                if isCustomNameDuplicate {
+                    Text("That name is already used by another filter list.")
+                        .foregroundStyle(.orange)
+                } else {
+                    switch validationState {
+                    case .idle:
+                        EmptyView()
+                    case .invalid:
+                        Text("Enter a valid http(s) URL to a .txt, .list, or .json filter.")
+                            .foregroundStyle(.orange)
+                    case .duplicate:
+                        Text("A filter list with this URL already exists in wBlock.")
+                            .foregroundStyle(.orange)
+                    case .valid:
+                        EmptyView()
+                    }
+                }
+            }
+            .font(.footnote)
+        }
+
+        private func pasteRulesFromClipboard() {
+            if let string = UIPasteboard.general.string {
+                pastedRules = string
+            }
+        }
+    #endif
 
     private var cancelButton: some View {
         Button("Cancel") {
@@ -1235,68 +1361,103 @@ struct EditCustomFilterNameView: View {
     }
 
     var body: some View {
-        SheetContainer {
-            SheetHeader(title: "Edit Name") {
-                dismiss()
-            }
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Name")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        TextField("Filter name", text: $name)
-                            .textFieldStyle(.roundedBorder)
-                            .focused($nameFieldIsFocused)
-                            #if os(iOS)
+        Group {
+            #if os(iOS)
+                NavigationStack {
+                    Form {
+                        Section {
+                            TextField("Name", text: $name)
+                                .focused($nameFieldIsFocused)
                                 .textInputAutocapitalization(.words)
                                 .submitLabel(.done)
-                            #endif
-                            .onSubmit {
-                                if canSave {
-                                    save()
-                                } else {
-                                    nameFieldIsFocused = false
+                                .onSubmit {
+                                    if canSave {
+                                        save()
+                                    } else {
+                                        nameFieldIsFocused = false
+                                    }
                                 }
+
+                            Text(filter.url.absoluteString)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        } footer: {
+                            if isDuplicate {
+                                Text("That name is already used by another filter list.")
+                                    .foregroundStyle(.orange)
                             }
-
-                        Text(filter.url.absoluteString)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(2)
-                            .textSelection(.enabled)
-
-                        if isDuplicate {
-                            Text("That name is already used by another filter list.")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
                         }
                     }
-                    .padding(20)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .navigationTitle("Edit Name")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") { save() }
+                                .disabled(!canSave)
+                        }
+                    }
                 }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
-            }
-            #if os(iOS)
-                .scrollDismissesKeyboard(.interactively)
-            #endif
+                .onAppear {
+                    nameFieldIsFocused = true
+                }
+            #else
+                SheetContainer {
+                    SheetHeader(title: "Edit Name") {
+                        dismiss()
+                    }
 
-            SheetBottomToolbar {
-                Spacer()
-                saveButton
-            }
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Name")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextField("Filter name", text: $name)
+                                    .textFieldStyle(.roundedBorder)
+                                    .focused($nameFieldIsFocused)
+                                    .onSubmit {
+                                        if canSave {
+                                            save()
+                                        } else {
+                                            nameFieldIsFocused = false
+                                        }
+                                    }
+
+                                Text(filter.url.absoluteString)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(2)
+                                    .textSelection(.enabled)
+
+                                if isDuplicate {
+                                    Text("That name is already used by another filter list.")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                            .padding(20)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
+                    }
+
+                    SheetBottomToolbar {
+                        Spacer()
+                        saveButton
+                    }
+                }
+                .onAppear {
+                    nameFieldIsFocused = true
+                }
+            #endif
         }
-        .onAppear {
-            nameFieldIsFocused = true
-        }
-        #if os(iOS)
-            .presentationDetents([.height(300)])
-            .presentationDragIndicator(.visible)
-        #endif
     }
 
     private var trimmedName: String {
@@ -1327,5 +1488,253 @@ struct EditCustomFilterNameView: View {
     private func save() {
         filterManager.updateCustomFilterListName(id: filter.id, newName: trimmedName)
         dismiss()
+    }
+}
+
+struct EditUserListView: View {
+    @ObservedObject var filterManager: AppFilterManager
+    let filter: FilterList
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var titleFieldIsFocused: Bool
+
+    @State private var title: String
+    @State private var description: String
+    @State private var rules: String = ""
+    @State private var isLoadingContent: Bool = true
+    @State private var errorMessage: String?
+
+    init(filterManager: AppFilterManager, filter: FilterList) {
+        self.filterManager = filterManager
+        self.filter = filter
+        self._title = State(initialValue: filter.name)
+        self._description = State(initialValue: filter.description == "User list." ? "" : filter.description)
+    }
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+                NavigationStack {
+                    Form {
+                        Section {
+                            TextField("Title", text: $title)
+                                .focused($titleFieldIsFocused)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+
+                            TextField("Description", text: $description)
+                                .textInputAutocapitalization(.sentences)
+                                .autocorrectionDisabled()
+                        } footer: {
+                            if isDuplicateTitle {
+                                Text("That title is already used by another filter list.")
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+
+                        Section("Rules") {
+                            TextEditor(text: $rules)
+                                .font(.system(.body, design: .monospaced))
+                                .frame(minHeight: 260)
+                        }
+                    }
+                    .navigationTitle("Edit User List")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }
+                                .disabled(isLoadingContent)
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") { save() }
+                                .disabled(!canSave)
+                        }
+                        ToolbarItem(placement: .principal) {
+                            if isLoadingContent {
+                                ProgressView()
+                            }
+                        }
+                    }
+                }
+                .interactiveDismissDisabled(isLoadingContent)
+                .onAppear {
+                    titleFieldIsFocused = true
+                    loadContent()
+                }
+                .alert(
+                    "Couldn’t Save",
+                    isPresented: Binding(
+                        get: { errorMessage != nil },
+                        set: { _ in errorMessage = nil }
+                    )
+                ) {
+                    Button("OK", role: .cancel) { errorMessage = nil }
+                } message: {
+                    Text(errorMessage ?? "")
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            #else
+                SheetContainer {
+                    SheetHeader(title: "Edit User List", isLoading: isLoadingContent) {
+                        dismiss()
+                    }
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Title")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextField("User List", text: $title)
+                                    .textFieldStyle(.roundedBorder)
+                                    .focused($titleFieldIsFocused)
+                                    .autocorrectionDisabled()
+                                    .onSubmit {
+                                        titleFieldIsFocused = false
+                                    }
+
+                                Text("Description")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextField("Description", text: $description)
+                                    .textFieldStyle(.roundedBorder)
+                                    .autocorrectionDisabled()
+
+                                Text(filter.url.absoluteString)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(2)
+                                    .textSelection(.enabled)
+
+                                if isDuplicateTitle {
+                                    Text("That title is already used by another filter list.")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                            .padding(20)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Rules")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextEditor(text: $rules)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(minHeight: 260)
+                                    .scrollContentBackground(.hidden)
+                                    .padding(10)
+                                    .background(
+                                        .background,
+                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(.quaternary, lineWidth: 1)
+                                    )
+                            }
+                            .padding(20)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
+                    }
+
+                    SheetBottomToolbar {
+                        Spacer()
+                        saveButton
+                    }
+                }
+                .interactiveDismissDisabled(isLoadingContent)
+                .onAppear {
+                    titleFieldIsFocused = true
+                    loadContent()
+                }
+                .alert(
+                    "Couldn’t Save",
+                    isPresented: Binding(
+                        get: { errorMessage != nil },
+                        set: { _ in errorMessage = nil }
+                    )
+                ) {
+                    Button("OK", role: .cancel) { errorMessage = nil }
+                } message: {
+                    Text(errorMessage ?? "")
+                }
+            #endif
+        }
+    }
+
+    private var trimmedTitle: String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedRules: String {
+        rules.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isDuplicateTitle: Bool {
+        let candidate = trimmedTitle
+        guard !candidate.isEmpty else { return false }
+        return filterManager.filterLists.contains(where: {
+            $0.id != filter.id && $0.name.caseInsensitiveCompare(candidate) == .orderedSame
+        })
+    }
+
+    private var canSave: Bool {
+        !trimmedTitle.isEmpty && !trimmedRules.isEmpty && !isDuplicateTitle && !isLoadingContent
+    }
+
+    private var saveButton: some View {
+        Button("Save") {
+            save()
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSave)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    private func loadContent() {
+        isLoadingContent = true
+        Task { @MainActor in
+            guard let containerURL = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
+            ) else {
+                isLoadingContent = false
+                return
+            }
+
+            let idBasedURL = containerURL.appendingPathComponent("custom-\(filter.id.uuidString).txt")
+            if let loaded = try? String(contentsOf: idBasedURL, encoding: .utf8) {
+                rules = loaded
+                isLoadingContent = false
+                return
+            }
+
+            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            if let loaded = try? String(contentsOf: legacyURL, encoding: .utf8) {
+                rules = loaded
+            }
+            isLoadingContent = false
+        }
+    }
+
+    private func save() {
+        filterManager.updateUserList(
+            id: filter.id,
+            name: trimmedTitle,
+            description: description,
+            content: trimmedRules
+        )
+        if filterManager.hasError {
+            errorMessage = filterManager.statusDescription
+        } else {
+            dismiss()
+        }
     }
 }

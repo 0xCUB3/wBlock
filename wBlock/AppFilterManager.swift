@@ -1658,6 +1658,84 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    func updateUserList(id: UUID, name: String, description: String, content: String) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedName.isEmpty else {
+            statusDescription = "Title is required."
+            hasError = true
+            return
+        }
+
+        guard !trimmedContent.isEmpty else {
+            statusDescription = "User list is empty."
+            hasError = true
+            return
+        }
+
+        guard let index = filterLists.firstIndex(where: { $0.id == id && $0.isCustom }) else {
+            statusDescription = "User list not found."
+            hasError = true
+            return
+        }
+
+        let filter = filterLists[index]
+        let isInlineUserList = filter.url.scheme?.lowercased() == "wblock"
+            && filter.url.host?.lowercased() == "userlist"
+        guard isInlineUserList else {
+            statusDescription = "Only pasted user lists can be edited."
+            hasError = true
+            return
+        }
+
+        if filterLists.contains(where: {
+            $0.id != id && $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
+        }) {
+            statusDescription = "A filter list with this name already exists."
+            hasError = true
+            return
+        }
+
+        loader.migrateCustomFilterFileIfNeeded(filter)
+        guard let destinationURL = loader.localFileURL(for: filter) else {
+            statusDescription = "Failed to access shared storage."
+            hasError = true
+            return
+        }
+
+        do {
+            try trimmedContent.write(to: destinationURL, atomically: true, encoding: .utf8)
+        } catch {
+            statusDescription = "Failed to save user list."
+            hasError = true
+            Task {
+                await ConcurrentLogManager.shared.error(
+                    .system,
+                    "Failed saving user list edits",
+                    metadata: ["error": error.localizedDescription]
+                )
+            }
+            return
+        }
+
+        filterLists[index].name = trimmedName
+        filterLists[index].description = trimmedDescription
+        filterLists[index].sourceRuleCount = Self.countRulesInUserListContent(trimmedContent)
+
+        if let customIndex = customFilterLists.firstIndex(where: { $0.id == id }) {
+            customFilterLists[customIndex].name = trimmedName
+            customFilterLists[customIndex].description = trimmedDescription
+            customFilterLists[customIndex].sourceRuleCount = filterLists[index].sourceRuleCount
+        }
+
+        saveFilterListsSync()
+        hasUnappliedChanges = true
+        statusDescription = "✅ User list updated. Apply changes to enable it."
+        hasError = false
+    }
+
     func revertToRecommendedFilters() async {
         for index in filterLists.indices {
             filterLists[index].isSelected = false
