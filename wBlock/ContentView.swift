@@ -737,11 +737,20 @@ struct AddFilterListView: View {
     @State private var urlInput: String = ""
     @State private var customName: String = ""
     @State private var isNameSectionExpanded: Bool = false
-    @State private var selectedCategory: FilterListCategory = .custom
     @State private var isSaving: Bool = false
     @State private var showingFileImporter = false
     @State private var showingPasteRulesSheet = false
     @State private var importErrorMessage: String?
+
+    private enum AddMode: String, CaseIterable, Identifiable {
+        case url = "URL"
+        case paste = "Paste"
+        case file = "File"
+
+        var id: String { rawValue }
+    }
+
+    @State private var addMode: AddMode = .url
 
     private var validationState: ValidationState {
         validationState(for: urlInput)
@@ -767,12 +776,23 @@ struct AddFilterListView: View {
 
             SheetBottomToolbar {
                 Spacer()
-                addButton
+                if addMode == .url {
+                    addButton
+                } else {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .secondaryActionButtonStyle()
+                    .disabled(isSaving)
+                }
             }
         }
         .interactiveDismissDisabled(isSaving)
         .onAppear {
-            urlFieldIsFocused = true
+            urlFieldIsFocused = addMode == .url
+        }
+        .onChange(of: addMode) { _, newValue in
+            urlFieldIsFocused = newValue == .url
         }
         #if os(iOS)
             .presentationDetents([.height(340)])
@@ -804,45 +824,83 @@ struct AddFilterListView: View {
 
     private var entryCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("URL")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("https://example.com/filter.txt", text: $urlInput)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .submitLabel(.done)
-                    #endif
-                    .focused($urlFieldIsFocused)
-                    .onSubmit {
-                        if canSubmit {
-                            submit()
-                        } else {
-                            urlFieldIsFocused = false
-                        }
-                    }
-
-                HStack(spacing: 10) {
-                    Button {
-                        showingFileImporter = true
-                    } label: {
-                        Label("Import File…", systemImage: "doc")
-                    }
-                    .secondaryActionButtonStyle()
-                    .disabled(isSaving)
-
-                    Button {
-                        showingPasteRulesSheet = true
-                    } label: {
-                        Label("Paste Rules…", systemImage: "list.bullet.rectangle")
-                    }
-                    .secondaryActionButtonStyle()
-                    .disabled(isSaving)
+            Picker("Add Mode", selection: $addMode) {
+                ForEach(AddMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
+            }
+            .pickerStyle(.segmented)
+
+            switch addMode {
+            case .url:
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("URL")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    TextField("https://example.com/filter.txt", text: $urlInput)
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
+                            .submitLabel(.done)
+                        #endif
+                        .focused($urlFieldIsFocused)
+                        .onSubmit {
+                            if canSubmit {
+                                submit()
+                            } else {
+                                urlFieldIsFocused = false
+                            }
+                        }
+                }
+            case .file:
+                Button {
+                    showingFileImporter = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc")
+                        Text("Choose Filter File…")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(.quaternary, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSaving)
+            case .paste:
+                Button {
+                    showingPasteRulesSheet = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "list.bullet.rectangle")
+                        Text("Paste Rules…")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(.quaternary, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSaving)
             }
 
             DisclosureGroup(isExpanded: $isNameSectionExpanded) {
@@ -867,14 +925,6 @@ struct AddFilterListView: View {
                             .lineLimit(1)
                     }
                 }
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Category")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                categoryMenu
             }
 
             validationMessage
@@ -972,7 +1022,7 @@ struct AddFilterListView: View {
                     ProgressView()
                         .scaleEffect(0.9)
                 }
-                Text(isSaving ? "Adding…" : "Add Filter")
+                Text(isSaving ? "Adding…" : "Add URL")
                     .fontWeight(.semibold)
             }
         }
@@ -982,6 +1032,7 @@ struct AddFilterListView: View {
     }
 
     private var canSubmit: Bool {
+        guard addMode == .url else { return false }
         if case .valid = validationState, !isSaving, !isCustomNameDuplicate {
             return true
         }
@@ -998,7 +1049,7 @@ struct AddFilterListView: View {
             filterManager.addFilterList(
                 name: finalName,
                 urlString: url.absoluteString,
-                category: selectedCategory
+                category: .custom
             )
             isSaving = false
             dismiss()
@@ -1006,70 +1057,6 @@ struct AddFilterListView: View {
     }
 
     // MARK: - Helpers
-
-    private var categoryMenu: some View {
-        Menu {
-            ForEach(contentBlockerCategories) { category in
-                Button {
-                    selectedCategory = category
-                } label: {
-                    if category == selectedCategory {
-                        Label(categoryMenuTitle(for: category), systemImage: "checkmark")
-                    } else {
-                        Text(categoryMenuTitle(for: category))
-                    }
-                }
-            }
-        } label: {
-            #if os(iOS)
-                HStack(spacing: 10) {
-                    Text(categoryMenuTitle(for: selectedCategory))
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.background, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
-            #else
-                Text(categoryMenuTitle(for: selectedCategory))
-                    .foregroundStyle(.primary)
-            #endif
-        }
-        #if os(iOS)
-            .buttonStyle(.plain)
-        #else
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        #endif
-        .disabled(isSaving)
-    }
-
-    private var contentBlockerCategories: [FilterListCategory] {
-        // Keep this list aligned with the sections users see in the Filters view.
-        let preferredOrder: [FilterListCategory] = [
-            .ads, .privacy, .security, .annoyances, .custom, .foreign, .experimental,
-        ]
-
-        let availableCategories = Set(FilterListCategory.allCases.filter { $0 != .all })
-        let ordered = preferredOrder.filter { availableCategories.contains($0) }
-        let remaining = availableCategories.subtracting(ordered)
-        let remainingOrdered = FilterListCategory.allCases.filter { remaining.contains($0) }
-        return ordered + remainingOrdered
-    }
-
-    private func categoryMenuTitle(for category: FilterListCategory) -> String {
-        return category.rawValue
-    }
 
     private func validationState(for rawValue: String) -> ValidationState {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1192,8 +1179,11 @@ private struct PasteUserListView: View {
                         TextEditor(text: $rules)
                             .font(.system(.body, design: .monospaced))
                             .frame(minHeight: 220)
+                            .scrollContentBackground(.hidden)
+                            .padding(10)
+                            .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 10)
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     .stroke(.quaternary, lineWidth: 1)
                             )
                     }
