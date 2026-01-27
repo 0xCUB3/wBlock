@@ -741,6 +741,8 @@ struct AddFilterListView: View {
     @State private var showingFileImporter = false
     @State private var importErrorMessage: String?
     @State private var pastedRules: String = ""
+    @State private var userListTitle: String = ""
+    @State private var userListDescription: String = ""
 
     private enum AddMode: String, CaseIterable, Identifiable {
         case url = "URL"
@@ -859,6 +861,7 @@ struct AddFilterListView: View {
                         }
                 }
             case .file:
+                userListMetaFields
                 Button {
                     showingFileImporter = true
                 } label: {
@@ -882,12 +885,13 @@ struct AddFilterListView: View {
                 .buttonStyle(.plain)
                 .disabled(isSaving)
             case .paste:
+                userListMetaFields
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Rules")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    TextEditor(text: $pastedRules)
+                        TextEditor(text: $pastedRules)
                         .font(.system(.body, design: .monospaced))
                         .frame(minHeight: 220)
                         .scrollContentBackground(.hidden)
@@ -922,26 +926,28 @@ struct AddFilterListView: View {
                 }
             }
 
-            DisclosureGroup(isExpanded: $isNameSectionExpanded) {
-                TextField(namePlaceholder, text: $customName)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.words)
-                    #endif
-            } label: {
-                HStack(spacing: 10) {
-                    Text("Name (optional)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    if !trimmedCustomName.isEmpty && !isNameSectionExpanded {
-                        Text(trimmedCustomName)
+            if addMode == .url {
+                DisclosureGroup(isExpanded: $isNameSectionExpanded) {
+                    TextField(namePlaceholder, text: $customName)
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                            .textInputAutocapitalization(.words)
+                        #endif
+                } label: {
+                    HStack(spacing: 10) {
+                        Text("Name (optional)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+
+                        Spacer()
+
+                        if !trimmedCustomName.isEmpty && !isNameSectionExpanded {
+                            Text(trimmedCustomName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
                 }
             }
@@ -970,7 +976,13 @@ struct AddFilterListView: View {
                         #endif
                     }
 
-                    filterManager.addUserListFromFile(url, nameOverride: trimmedCustomName.isEmpty ? nil : trimmedCustomName)
+                    let title = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let description = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                    filterManager.addUserListFromFile(
+                        url,
+                        nameOverride: title,
+                        description: description.isEmpty ? nil : description
+                    )
                     isSaving = false
                     if !filterManager.hasError {
                         dismiss()
@@ -993,6 +1005,12 @@ struct AddFilterListView: View {
         Group {
             if isCustomNameDuplicate {
                 Text("That name is already used by another filter list.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            if addMode != .url && userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text("Title is required for user lists.")
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
@@ -1049,9 +1067,10 @@ struct AddFilterListView: View {
             if case .valid = validationState { return true }
             return false
         case .paste:
-            return !pastedRules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && !pastedRules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
-            return false
+            return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -1073,9 +1092,15 @@ struct AddFilterListView: View {
         case .paste:
             isSaving = true
             Task { @MainActor in
-                let finalName = trimmedCustomName.isEmpty ? "User List" : trimmedCustomName
+                let finalName = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                let finalDescription = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
                 let finalRules = pastedRules.trimmingCharacters(in: .whitespacesAndNewlines)
-                filterManager.addUserList(name: finalName, content: finalRules, isSelected: true)
+                filterManager.addUserList(
+                    name: finalName,
+                    description: finalDescription.isEmpty ? nil : finalDescription,
+                    content: finalRules,
+                    isSelected: true
+                )
                 isSaving = false
                 if !filterManager.hasError {
                     dismiss()
@@ -1093,6 +1118,36 @@ struct AddFilterListView: View {
         case .url: return "Add URL"
         case .paste: return "Add Rules"
         case .file: return "Choose File"
+        }
+    }
+
+    private var userListMetaFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Title")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextField("YouTube Shorts Remover", text: $userListTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                    #endif
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Description (optional)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextField("What this list does…", text: $userListDescription)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.sentences)
+                    #endif
+            }
         }
     }
 

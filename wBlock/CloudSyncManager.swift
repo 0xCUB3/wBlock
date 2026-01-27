@@ -359,6 +359,12 @@ final class CloudSyncManager: ObservableObject {
                             filterManager.filterLists[existingIndex].name = remoteCustom.name
                             changed = true
                         }
+                        if let desc = remoteCustom.description,
+                           filterManager.filterLists[existingIndex].description != desc
+                        {
+                            filterManager.filterLists[existingIndex].description = desc
+                            changed = true
+                        }
                         if filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected {
                             filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
                             changed = true
@@ -371,7 +377,7 @@ final class CloudSyncManager: ObservableObject {
                             category: .custom,
                             isCustom: true,
                             isSelected: remoteCustom.isSelected,
-                            description: "User-added filter list.",
+                            description: remoteCustom.description ?? "User-added filter list.",
                             sourceRuleCount: nil
                         )
                         filterManager.customFilterLists.append(newFilter)
@@ -386,7 +392,7 @@ final class CloudSyncManager: ObservableObject {
                         category: .custom,
                         isCustom: true,
                         isSelected: remoteCustom.isSelected,
-                        description: "User-added filter list.",
+                        description: remoteCustom.description ?? "User-added filter list.",
                         sourceRuleCount: nil
                     )
                     filterManager.customFilterLists.append(newFilter)
@@ -430,6 +436,9 @@ final class CloudSyncManager: ObservableObject {
                 if updated.name != remoteCustom.name {
                     updated.name = remoteCustom.name
                 }
+                if let desc = remoteCustom.description, updated.description != desc {
+                    updated.description = desc
+                }
                 updated.isSelected = remoteCustom.isSelected
                 storedLists[existingIndex] = updated
             } else {
@@ -440,7 +449,7 @@ final class CloudSyncManager: ObservableObject {
                     category: .custom,
                     isCustom: true,
                     isSelected: remoteCustom.isSelected,
-                    description: "User-added filter list.",
+                    description: remoteCustom.description ?? "User-added filter list.",
                     sourceRuleCount: nil
                 )
                 storedLists.append(newFilter)
@@ -540,7 +549,7 @@ final class CloudSyncManager: ObservableObject {
                         category: .custom,
                         isCustom: true,
                         isSelected: remoteCustom.isSelected,
-                        description: "User-added filter list.",
+                        description: remoteCustom.description ?? "User-added filter list.",
                         sourceRuleCount: nil
                     )
                     filterManager.customFilterLists.append(newFilter)
@@ -650,6 +659,7 @@ final class CloudSyncManager: ObservableObject {
                 SyncPayload.CustomFilterList(
                     url: list.url.absoluteString,
                     name: list.name,
+                    description: list.description.isEmpty ? nil : list.description,
                     isSelected: list.isSelected,
                     content: Self.readInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
                 )
@@ -847,6 +857,7 @@ private struct SyncPayload: Codable {
     struct CustomFilterList: Codable {
         let url: String
         let name: String
+        let description: String?
         let isSelected: Bool
         /// Inline user list content (for wblock://userlist/<uuid> lists). Nil for URL-hosted lists.
         let content: String?

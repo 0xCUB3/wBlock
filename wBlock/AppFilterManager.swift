@@ -1432,9 +1432,16 @@ class AppFilterManager: ObservableObject {
         addCustomFilterList(newFilter)
     }
 
-    func addUserList(name: String, content: String, isSelected: Bool = true) {
+    func addUserList(name: String, description: String? = nil, content: String, isSelected: Bool = true) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedName.isEmpty else {
+            statusDescription = "Title is required."
+            hasError = true
+            return
+        }
 
         guard !trimmedContent.isEmpty else {
             statusDescription = "User list is empty."
@@ -1451,7 +1458,7 @@ class AppFilterManager: ObservableObject {
 
         let id = UUID()
         let url = URL(string: "wblock://userlist/\(id.uuidString)")!
-        let finalName = trimmedName.isEmpty ? "User List" : trimmedName
+        let finalName = trimmedName
 
         let newFilter = FilterList(
             id: id,
@@ -1460,7 +1467,7 @@ class AppFilterManager: ObservableObject {
             category: .custom,
             isCustom: true,
             isSelected: isSelected,
-            description: "User list.",
+            description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "User list.",
             sourceRuleCount: Self.countRulesInUserListContent(trimmedContent)
         )
 
@@ -1491,13 +1498,11 @@ class AppFilterManager: ObservableObject {
         hasError = false
     }
 
-    func addUserListFromFile(_ fileURL: URL, nameOverride: String? = nil, isSelected: Bool = true) {
+    func addUserListFromFile(_ fileURL: URL, nameOverride: String?, description: String? = nil, isSelected: Bool = true) {
         do {
             let content = try String(contentsOf: fileURL, encoding: .utf8)
-            let name =
-                (nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 }
-                ?? fileURL.deletingPathExtension().lastPathComponent
-            addUserList(name: name, content: content, isSelected: isSelected)
+            let name = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            addUserList(name: name, description: description, content: content, isSelected: isSelected)
         } catch {
             statusDescription = "Failed to read file."
             hasError = true
