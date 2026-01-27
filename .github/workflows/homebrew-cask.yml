@@ -1,0 +1,37 @@
+name: homebrew-cask
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build DMG
+        run: |
+          bash scripts/build-dmg.sh
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          dmg="build/homebrew/wBlock.dmg"
+
+          # Ensure a release exists for this tag
+          if ! gh release view "${tag}" >/dev/null 2>&1; then
+            gh release create "${tag}" --title "${tag}" --notes ""
+          fi
+
+          # Upload/tagged asset
+          gh release upload "${tag}" "${dmg}" --clobber

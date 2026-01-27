@@ -99,6 +99,25 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 
 <div align="center">
 
+## Install
+
+</div>
+
+### Homebrew (native cask)
+```bash
+brew tap 0xCUB3/wBlock
+brew install --cask wblock
+```
+
+### Mac App Store
+Use the App Store link above.
+
+---
+
+<br>
+
+<div align="center">
+
 ## Screenshots
 
 <br>
