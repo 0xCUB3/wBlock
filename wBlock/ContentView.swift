@@ -25,6 +25,7 @@ struct ContentView: View {
     @State private var showingAddFilterSheet = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @State private var filterSearchText = ""
+    @State private var isFilterSearchPresented = false
     @State private var editingCustomFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
@@ -219,7 +220,6 @@ struct ContentView: View {
                 }
                 .padding(.vertical)
             }
-            .searchable(text: $filterSearchText, placement: .toolbar)
             #if os(iOS)
                 .padding(.horizontal, 16)
                 .navigationBarTitleDisplayMode(.inline)
@@ -236,24 +236,33 @@ struct ContentView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         HStack {
-                            Button {
-                                showingAddFilterSheet = true
-                            } label: {
-                                Image(systemName: "plus")
-                            }
-                            Button {
-                                showOnlyEnabledLists.toggle()
-                            } label: {
-                                Image(
-                                    systemName: showOnlyEnabledLists
-                                        ? "line.3.horizontal.decrease.circle.fill"
-                                        : "line.3.horizontal.decrease.circle")
+                            if !isFilterSearchPresented {
+                                Button {
+                                    showingAddFilterSheet = true
+                                } label: {
+                                    Image(systemName: "plus")
+                                }
+                                Button {
+                                    showOnlyEnabledLists.toggle()
+                                } label: {
+                                    Image(
+                                        systemName: showOnlyEnabledLists
+                                            ? "line.3.horizontal.decrease.circle.fill"
+                                            : "line.3.horizontal.decrease.circle")
+                                }
                             }
                         }
                     }
                 }
             #endif
         }
+        .modifier(
+            SearchableToolbarModifier(
+                text: $filterSearchText,
+                isPresented: $isFilterSearchPresented,
+                prompt: "Search filters"
+            )
+        )
         #if os(macOS)
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
@@ -270,19 +279,21 @@ struct ContentView: View {
                     }
                     .disabled(filterManager.isLoading || enabledListsCount == 0)
 
-                    Button {
-                        showingAddFilterSheet = true
-                    } label: {
-                        Label("Add Filter", systemImage: "plus")
-                    }
-                    Button {
-                        showOnlyEnabledLists.toggle()
-                    } label: {
-                        Label(
-                            "Show Enabled Only",
-                            systemImage: showOnlyEnabledLists
-                                ? "line.3.horizontal.decrease.circle.fill"
-                                : "line.3.horizontal.decrease.circle")
+                    if !isFilterSearchPresented {
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Label("Add Filter", systemImage: "plus")
+                        }
+                        Button {
+                            showOnlyEnabledLists.toggle()
+                        } label: {
+                            Label(
+                                "Show Enabled Only",
+                                systemImage: showOnlyEnabledLists
+                                    ? "line.3.horizontal.decrease.circle.fill"
+                                    : "line.3.horizontal.decrease.circle")
+                        }
                     }
                 }
             }
