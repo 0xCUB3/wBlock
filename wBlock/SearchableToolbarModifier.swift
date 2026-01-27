@@ -14,7 +14,7 @@ struct SearchableToolbarModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         #if os(iOS)
-            if #available(iOS 17.0, *) {
+            if #available(iOS 26.0, *) {
                 content
                     .searchable(text: $text, isPresented: $isPresented, placement: .toolbar, prompt: prompt)
                     .searchToolbarBehavior(.minimize)
@@ -23,13 +23,8 @@ struct SearchableToolbarModifier: ViewModifier {
                     .searchable(text: $text, placement: .toolbar, prompt: prompt)
             }
         #else
-            if #available(macOS 14.0, *) {
-                content
-                    .searchable(text: $text, isPresented: $isPresented, placement: .toolbar, prompt: prompt)
-            } else {
-                content
-                    .searchable(text: $text, placement: .toolbar, prompt: prompt)
-            }
+            content
+                .searchable(text: $text, prompt: prompt)
         #endif
     }
 }
