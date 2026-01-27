@@ -13,7 +13,6 @@ struct ToolbarSearchControl: View {
     let placeholder: String
 
     @FocusState private var isFocused: Bool
-    @State private var shimmerPhase: CGFloat = -1
 
     private var trimmedQuery: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -61,53 +60,7 @@ struct ToolbarSearchControl: View {
                 .padding(.vertical, 8)
                 .frame(minWidth: 220)
                 .liquidGlassCapsuleCompat(material: .regularMaterial)
-                .overlay {
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    .white.opacity(0.0),
-                                    .white.opacity(0.16),
-                                    .white.opacity(0.0),
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .blendMode(.plusLighter)
-                        .opacity(0.85)
-                        .offset(x: shimmerPhase * 260)
-                        .blur(radius: 14)
-                        .mask(Capsule())
-                        .allowsHitTesting(false)
-                }
-                .overlay(alignment: .topLeading) {
-                    Capsule()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    .white.opacity(0.18),
-                                    .white.opacity(0.0),
-                                ],
-                                center: .topLeading,
-                                startRadius: 0,
-                                endRadius: 120
-                            )
-                        )
-                        .blendMode(.plusLighter)
-                        .allowsHitTesting(false)
-                }
-                .compositingGroup()
                 .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .trailing)))
-                .onAppear {
-                    shimmerPhase = -1
-                    withAnimation(.linear(duration: 1.25).repeatForever(autoreverses: false)) {
-                        shimmerPhase = 1
-                    }
-                }
-                .onDisappear {
-                    shimmerPhase = -1
-                }
             } else {
                 Button {
                     expand()
