@@ -7,80 +7,109 @@
 
 import SwiftUI
 
-// MARK: - Liquid Glass Design System
+// MARK: - Liquid Glass (wBlock style)
 
-@available(iOS 26.0, macOS 26.0, *)
 struct LiquidGlassDesignSystem {
-    // Glass styles for different use cases
-    enum GlassStyle {
+    enum GlassStyle: Equatable {
         case regular
         case regularTinted(Color)
         case regularInteractive
         case clear
         case clearTinted(Color)
 
-        var glass: Glass {
+        var material: Material {
             switch self {
-            case .regular:
-                return .regular
-            case .regularTinted(let color):
-                return .regular.tint(color)
-            case .regularInteractive:
-                return .regular.interactive()
-            case .clear:
-                return .clear
-            case .clearTinted(let color):
-                return .clear.tint(color)
+            case .regular, .regularTinted, .regularInteractive:
+                return .regularMaterial
+            case .clear, .clearTinted:
+                return .ultraThinMaterial
+            }
+        }
+
+        var tint: Color? {
+            switch self {
+            case .regularTinted(let color), .clearTinted(let color):
+                return color
+            default:
+                return nil
             }
         }
     }
 
-    // Standard shapes for liquid glass
     static let standardCornerRadius: CGFloat = 12
     static let cardCornerRadius: CGFloat = 16
-    static let buttonCornerRadius: CGFloat = 10
+    static let buttonCornerRadius: CGFloat = 12
 }
 
-// MARK: - View Extensions for Liquid Glass
-
-@available(iOS 26.0, macOS 26.0, *)
 extension View {
-    /// Applies liquid glass effect with standard rounded rectangle shape
     func liquidGlass(
         style: LiquidGlassDesignSystem.GlassStyle = .regular,
         cornerRadius: CGFloat = LiquidGlassDesignSystem.standardCornerRadius
     ) -> some View {
-        self.glassEffect(style.glass, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        self.liquidGlass(style: style, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 
-    /// Applies liquid glass effect with capsule shape
     func liquidGlassCapsule(
         style: LiquidGlassDesignSystem.GlassStyle = .regular
     ) -> some View {
-        self.glassEffect(style.glass, in: Capsule())
+        self.liquidGlass(style: style, in: Capsule())
     }
 
-    /// Applies liquid glass effect with custom shape
     func liquidGlass<S: Shape>(
         style: LiquidGlassDesignSystem.GlassStyle = .regular,
         in shape: S
     ) -> some View {
-        self.glassEffect(style.glass, in: shape)
+        self
+            .background(style.material, in: shape)
+            .overlay {
+                shape
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .overlay {
+                if let tint = style.tint {
+                    shape
+                        .fill(tint.opacity(0.12))
+                        .blendMode(.plusLighter)
+                }
+            }
     }
 
-    /// Applies interactive liquid glass for buttons and controls
     func liquidGlassInteractive(
         tint: Color? = nil,
         cornerRadius: CGFloat = LiquidGlassDesignSystem.buttonCornerRadius
     ) -> some View {
-        let glass = tint.map { Glass.regular.tint($0).interactive() } ?? Glass.regular.interactive()
-        return self.glassEffect(glass, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        self.liquidGlass(
+            style: tint.map { .regularTinted($0) } ?? .regularInteractive,
+            cornerRadius: cornerRadius
+        )
+    }
+
+    @ViewBuilder
+    func liquidGlassCompat(
+        cornerRadius: CGFloat = LiquidGlassDesignSystem.standardCornerRadius,
+        material: Material = .regularMaterial
+    ) -> some View {
+        self
+            .background(material, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+    }
+
+    @ViewBuilder
+    func liquidGlassCapsuleCompat(
+        material: Material = .regularMaterial
+    ) -> some View {
+        self
+            .background(material, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
     }
 }
 
-// MARK: - Liquid Glass Card Container
-
-@available(iOS 26.0, macOS 26.0, *)
 struct LiquidGlassCard<Content: View>: View {
     let content: Content
     let cornerRadius: CGFloat
@@ -102,9 +131,6 @@ struct LiquidGlassCard<Content: View>: View {
     }
 }
 
-// MARK: - Liquid Glass Button Style
-
-@available(iOS 26.0, macOS 26.0, *)
 struct LiquidGlassButtonStyle: ButtonStyle {
     let tint: Color?
     let cornerRadius: CGFloat
@@ -119,54 +145,7 @@ struct LiquidGlassButtonStyle: ButtonStyle {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .liquidGlassInteractive(tint: tint, cornerRadius: cornerRadius)
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Fallback for Earlier OS Versions
-
-// For iOS 18 and earlier, provide graceful fallback using materials
-extension View {
-    @ViewBuilder
-    func liquidGlassCompat(
-        cornerRadius: CGFloat = 12,
-        material: Material = .regular
-    ) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            self.liquidGlass(cornerRadius: cornerRadius)
-        } else {
-            self
-                .background(material, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        }
-    }
-
-    @ViewBuilder
-    func liquidGlassCapsuleCompat(
-        material: Material = .regular
-    ) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            self.liquidGlassCapsule()
-        } else {
-            self
-                .background(material, in: Capsule())
-        }
-    }
-}
-
-// MARK: - Grouped Glass Container
-
-@available(iOS 26.0, macOS 26.0, *)
-struct LiquidGlassGroup<Content: View>: View {
-    let content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        GlassEffectContainer {
-            content
-        }
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
