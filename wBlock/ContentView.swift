@@ -750,9 +750,8 @@ struct ContentModifiers: ViewModifier {
 struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager
 
-    @Environment(\.dismiss) private var dismiss
-    @FocusState private var urlFieldIsFocused: Bool
-    @Namespace private var addModeNamespace
+	@Environment(\.dismiss) private var dismiss
+	@FocusState private var urlFieldIsFocused: Bool
 
     @State private var urlInput: String = ""
     @State private var customName: String = ""
@@ -778,85 +777,96 @@ struct AddFilterListView: View {
         validationState(for: urlInput)
     }
 
-    var body: some View {
-        Group {
-            #if os(iOS)
-                NavigationStack {
-                    Form {
-                        Section {
-                            addModePicker
-                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                                .listRowBackground(Color.clear)
-                        }
+	var body: some View {
+	    Group {
+	        #if os(iOS)
+	            NavigationStack {
+	                TabView(selection: $addMode) {
+	                    Form {
+	                        Section {
+	                            TextField("https://example.com/filter.txt", text: $urlInput)
+	                                .accessibilityLabel("URL")
+	                                .textInputAutocapitalization(.never)
+	                                .keyboardType(.URL)
+	                                .submitLabel(.done)
+	                                .focused($urlFieldIsFocused)
+	                                .onSubmit {
+	                                    if canSubmit {
+	                                        submit()
+	                                    } else {
+	                                        urlFieldIsFocused = false
+	                                    }
+	                                }
 
-                        switch addMode {
-                        case .url:
-                            Section {
-                                TextField("URL", text: $urlInput)
-                                    .textInputAutocapitalization(.never)
-                                    .keyboardType(.URL)
-                                    .submitLabel(.done)
-                                    .focused($urlFieldIsFocused)
-                                    .onSubmit {
-                                        if canSubmit {
-                                            submit()
-                                        } else {
-                                            urlFieldIsFocused = false
-                                        }
-                                    }
+	                            TextField("Title (optional)", text: $customName)
+	                                .textInputAutocapitalization(.words)
+	                        } footer: {
+	                            urlFooterMessage
+	                        }
 
-                                TextField("Name (optional)", text: $customName)
-                                    .textInputAutocapitalization(.words)
-                            } footer: {
-                                urlFooterMessage
-                            }
+	                        Section {
+	                            Button("Add URL") { submit() }
+	                                .disabled(!canSubmit)
+	                        }
+	                    }
+	                    .tag(AddMode.url)
+	                    .tabItem { Label("URL", systemImage: "link") }
 
-                        case .paste:
-                            Section {
-                                TextField("Title", text: $userListTitle)
-                                    .textInputAutocapitalization(.words)
-                                    .autocorrectionDisabled()
-                                TextField("Description", text: $userListDescription)
-                                    .textInputAutocapitalization(.sentences)
-                                    .autocorrectionDisabled()
-                            }
+	                    Form {
+	                        Section {
+	                            TextField("Title", text: $userListTitle)
+	                                .textInputAutocapitalization(.words)
+	                                .autocorrectionDisabled()
+	                            TextField("Description", text: $userListDescription)
+	                                .textInputAutocapitalization(.sentences)
+	                                .autocorrectionDisabled()
+	                        }
 
-                            Section("Rules") {
-                                TextEditor(text: $pastedRules)
-                                    .font(.system(.body, design: .monospaced))
-                                    .frame(minHeight: 220)
-                            }
-                        case .file:
-                            Section {
-                                TextField("Title", text: $userListTitle)
-                                    .textInputAutocapitalization(.words)
-                                    .autocorrectionDisabled()
-                                TextField("Description", text: $userListDescription)
-                                    .textInputAutocapitalization(.sentences)
-                                    .autocorrectionDisabled()
+	                        Section("Rules") {
+	                            TextEditor(text: $pastedRules)
+	                                .font(.system(.body, design: .monospaced))
+	                                .frame(minHeight: 220)
+	                        }
 
-                                Button {
-                                    showingFileImporter = true
-                                } label: {
-                                    Label("Choose File…", systemImage: "doc")
-                                }
-                                .disabled(isSaving)
-                            }
-                        }
-                    }
-                    .navigationTitle("Add Filter List")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") { dismiss() }
-                                .disabled(isSaving)
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(addButtonTitle) { submit() }
-                                .disabled(!canSubmit)
-                        }
-                    }
-                }
+	                        Section {
+	                            Button("Add Rules") { submit() }
+	                                .disabled(!canSubmit)
+	                        }
+	                    }
+	                    .tag(AddMode.paste)
+	                    .tabItem { Label("Paste", systemImage: "text.badge.plus") }
+
+	                    Form {
+	                        Section {
+	                            TextField("Title", text: $userListTitle)
+	                                .textInputAutocapitalization(.words)
+	                                .autocorrectionDisabled()
+	                            TextField("Description", text: $userListDescription)
+	                                .textInputAutocapitalization(.sentences)
+	                                .autocorrectionDisabled()
+	                        }
+
+	                        Section {
+	                            Button {
+	                                submit()
+	                            } label: {
+	                                Label("Choose File…", systemImage: "doc")
+	                            }
+	                            .disabled(!canSubmit)
+	                        }
+	                    }
+	                    .tag(AddMode.file)
+	                    .tabItem { Label("File", systemImage: "doc") }
+	                }
+	                .navigationTitle("Add Filter List")
+	                .navigationBarTitleDisplayMode(.inline)
+	                .toolbar {
+	                    ToolbarItem(placement: .cancellationAction) {
+	                        Button("Cancel") { dismiss() }
+	                            .disabled(isSaving)
+	                    }
+	                }
+	            }
                 .interactiveDismissDisabled(isSaving)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
@@ -1059,7 +1069,7 @@ struct AddFilterListView: View {
                         #endif
                 } label: {
                     HStack(spacing: 10) {
-                        Text("Name (optional)")
+                        Text("Title (optional)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
@@ -1315,44 +1325,6 @@ struct AddFilterListView: View {
         case valid(URL)
     }
 
-    #if os(iOS)
-        private var addModePicker: some View {
-            HStack {
-                Spacer(minLength: 0)
-                HStack(spacing: 0) {
-                    ForEach(AddMode.allCases) { mode in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.18)) {
-                                addMode = mode
-                            }
-                        } label: {
-                            Text(mode.rawValue)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(addMode == mode ? .primary : .secondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .background {
-                            if addMode == mode {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(.background)
-                                    .matchedGeometryEffect(id: "addModeSelection", in: addModeNamespace)
-                            }
-                        }
-                    }
-                }
-                .padding(4)
-                .frame(maxWidth: 320)
-                .background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().stroke(.quaternary, lineWidth: 1))
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel("Add Mode")
-                Spacer(minLength: 0)
-            }
-        }
-    #endif
 }
 
 struct EditCustomFilterNameView: View {
