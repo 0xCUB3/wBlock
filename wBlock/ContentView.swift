@@ -8,6 +8,7 @@
 import Combine
 import SafariServices
 import SwiftUI
+import UniformTypeIdentifiers
 import UserNotifications
 import wBlockCoreService
 
@@ -738,6 +739,9 @@ struct AddFilterListView: View {
     @State private var isNameSectionExpanded: Bool = false
     @State private var selectedCategory: FilterListCategory = .custom
     @State private var isSaving: Bool = false
+    @State private var showingFileImporter = false
+    @State private var showingPasteRulesSheet = false
+    @State private var importErrorMessage: String?
 
     private var validationState: ValidationState {
         validationState(for: urlInput)
@@ -821,6 +825,24 @@ struct AddFilterListView: View {
                             urlFieldIsFocused = false
                         }
                     }
+
+                HStack(spacing: 10) {
+                    Button {
+                        showingFileImporter = true
+                    } label: {
+                        Label("Import File…", systemImage: "doc")
+                    }
+                    .secondaryActionButtonStyle()
+                    .disabled(isSaving)
+
+                    Button {
+                        showingPasteRulesSheet = true
+                    } label: {
+                        Label("Paste Rules…", systemImage: "list.bullet.rectangle")
+                    }
+                    .secondaryActionButtonStyle()
+                    .disabled(isSaving)
+                }
             }
 
             DisclosureGroup(isExpanded: $isNameSectionExpanded) {
@@ -859,6 +881,51 @@ struct AddFilterListView: View {
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .fileImporter(
+            isPresented: $showingFileImporter,
+            allowedContentTypes: [UTType.plainText, UTType.text],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                Task { @MainActor in
+                    isSaving = true
+                    var didAccess = false
+                    #if os(iOS)
+                        didAccess = url.startAccessingSecurityScopedResource()
+                    #endif
+                    defer {
+                        #if os(iOS)
+                            if didAccess { url.stopAccessingSecurityScopedResource() }
+                        #endif
+                    }
+
+                    filterManager.addUserListFromFile(url, nameOverride: trimmedCustomName.isEmpty ? nil : trimmedCustomName)
+                    isSaving = false
+                    if !filterManager.hasError {
+                        dismiss()
+                    } else {
+                        importErrorMessage = filterManager.statusDescription
+                    }
+                }
+            case .failure(let error):
+                importErrorMessage = error.localizedDescription
+            }
+        }
+        .sheet(isPresented: $showingPasteRulesSheet) {
+            PasteUserListView(
+                filterManager: filterManager,
+                defaultName: trimmedCustomName.isEmpty ? nil : trimmedCustomName
+            ) {
+                dismiss()
+            }
+        }
+        .alert("Couldn’t Add List", isPresented: Binding(get: { importErrorMessage != nil }, set: { _ in importErrorMessage = nil })) {
+            Button("OK", role: .cancel) { importErrorMessage = nil }
+        } message: {
+            Text(importErrorMessage ?? "")
+        }
     }
 
     private var validationMessage: some View {
@@ -1074,6 +1141,101 @@ struct AddFilterListView: View {
             }
         }
     #endif
+}
+
+private struct PasteUserListView: View {
+    @ObservedObject var filterManager: AppFilterManager
+    let defaultName: String?
+    let onAdded: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var rules: String = ""
+    @State private var isSaving = false
+
+    init(filterManager: AppFilterManager, defaultName: String?, onAdded: @escaping () -> Void) {
+        self.filterManager = filterManager
+        self.defaultName = defaultName
+        self.onAdded = onAdded
+        self._name = State(initialValue: defaultName ?? "")
+    }
+
+    var body: some View {
+        SheetContainer {
+            SheetHeader(title: "Add User List", isLoading: isSaving) {
+                dismiss()
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Name (optional)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        TextField("User List", text: $name)
+                            .textFieldStyle(.roundedBorder)
+                            .autocorrectionDisabled()
+                            #if os(iOS)
+                                .textInputAutocapitalization(.words)
+                            #endif
+                    }
+                    .padding(20)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Rules")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        TextEditor(text: $rules)
+                            .font(.system(.body, design: .monospaced))
+                            .frame(minHeight: 220)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(.quaternary, lineWidth: 1)
+                            )
+                    }
+                    .padding(20)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+            #if os(iOS)
+                .scrollDismissesKeyboard(.interactively)
+            #endif
+
+            SheetBottomToolbar {
+                Spacer()
+                Button(action: add) {
+                    HStack(spacing: 8) {
+                        if isSaving { ProgressView().scaleEffect(0.9) }
+                        Text(isSaving ? "Adding…" : "Add")
+                            .fontWeight(.semibold)
+                    }
+                }
+                .primaryActionButtonStyle()
+                .disabled(isSaving || rules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .interactiveDismissDisabled(isSaving)
+    }
+
+    private func add() {
+        isSaving = true
+        let finalName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalRules = rules.trimmingCharacters(in: .whitespacesAndNewlines)
+        filterManager.addUserList(name: finalName, content: finalRules, isSelected: true)
+        isSaving = false
+        if !filterManager.hasError {
+            onAdded()
+            dismiss()
+        }
+    }
 }
 
 struct EditCustomFilterNameView: View {

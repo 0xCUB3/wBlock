@@ -1432,6 +1432,85 @@ class AppFilterManager: ObservableObject {
         addCustomFilterList(newFilter)
     }
 
+    func addUserList(name: String, content: String, isSelected: Bool = true) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedContent.isEmpty else {
+            statusDescription = "User list is empty."
+            hasError = true
+            return
+        }
+
+        let lower = trimmedContent.lowercased()
+        if lower.hasPrefix("<!doctype html") || lower.hasPrefix("<html") {
+            statusDescription = "That doesn’t look like a filter list."
+            hasError = true
+            return
+        }
+
+        let id = UUID()
+        let url = URL(string: "wblock://userlist/\(id.uuidString)")!
+        let finalName = trimmedName.isEmpty ? "User List" : trimmedName
+
+        let newFilter = FilterList(
+            id: id,
+            name: finalName,
+            url: url,
+            category: .custom,
+            isCustom: true,
+            isSelected: isSelected,
+            description: "User list.",
+            sourceRuleCount: Self.countRulesInUserListContent(trimmedContent)
+        )
+
+        guard let destinationURL = loader.localFileURL(for: newFilter) else {
+            statusDescription = "Failed to access shared storage."
+            hasError = true
+            return
+        }
+
+        do {
+            try trimmedContent.write(to: destinationURL, atomically: true, encoding: .utf8)
+        } catch {
+            statusDescription = "Failed to save user list."
+            hasError = true
+            Task {
+                await ConcurrentLogManager.shared.error(
+                    .system,
+                    "Failed saving user list",
+                    metadata: ["error": error.localizedDescription]
+                )
+            }
+            return
+        }
+
+        addCustomFilterListWithoutFetch(newFilter)
+        hasUnappliedChanges = true
+        statusDescription = "✅ User list added. Apply changes to enable it."
+        hasError = false
+    }
+
+    func addUserListFromFile(_ fileURL: URL, nameOverride: String? = nil, isSelected: Bool = true) {
+        do {
+            let content = try String(contentsOf: fileURL, encoding: .utf8)
+            let name =
+                (nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 }
+                ?? fileURL.deletingPathExtension().lastPathComponent
+            addUserList(name: name, content: content, isSelected: isSelected)
+        } catch {
+            statusDescription = "Failed to read file."
+            hasError = true
+            Task {
+                await ConcurrentLogManager.shared.error(
+                    .system,
+                    "Failed reading user list file",
+                    metadata: ["error": error.localizedDescription]
+                )
+            }
+        }
+    }
+
     func removeFilterList(_ listToRemove: FilterList) {
         removeCustomFilterList(listToRemove)
     }
@@ -1488,6 +1567,21 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    private func addCustomFilterListWithoutFetch(_ filter: FilterList) {
+        guard !customFilterLists.contains(where: { $0.url == filter.url }) else { return }
+
+        customFilterLists.append(filter)
+        filterLists.append(filter)
+        saveFilterListsSync()
+
+        Task {
+            await ConcurrentLogManager.shared.info(
+                .system, "Added user list",
+                metadata: ["filter": filter.name, "url": filter.url.absoluteString]
+            )
+        }
+    }
+
     func removeCustomFilterList(_ filter: FilterList) {
         customFilterLists.removeAll { $0.id == filter.id }
 
@@ -1506,6 +1600,18 @@ class AppFilterManager: ObservableObject {
                 .system, "Removed custom filter", metadata: ["filter": filter.name])
         }
         hasUnappliedChanges = true
+    }
+
+    nonisolated private static func countRulesInUserListContent(_ content: String) -> Int {
+        var count = 0
+        content.enumerateLines { line, _ in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty { return }
+            if trimmed.hasPrefix("!") { return }
+            if trimmed.hasPrefix("[") { return }
+            count += 1
+        }
+        return count
     }
 
     func updateCustomFilterListName(id: UUID, newName: String) {

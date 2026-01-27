@@ -260,6 +260,10 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks if a filter has an update by comparing lightweight metadata before falling back to full downloads
     func hasUpdate(for filter: FilterList) async -> Bool {
+        if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
+            // Local / inline user lists don't have remote updates.
+            return false
+        }
         do {
             let validators = await storedValidators(for: filter)
             var headRequest = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
@@ -388,6 +392,10 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Fetches, processes, and saves a filter list
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
+        if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
+            // Local / inline user lists are already stored on disk.
+            return loader.filterFileExists(filter)
+        }
         do {
             let validators = await storedValidators(for: filter)
             

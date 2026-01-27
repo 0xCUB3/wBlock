@@ -334,20 +334,53 @@ final class CloudSyncManager: ObservableObject {
 
             // Upsert custom lists from remote
             for remoteCustom in filters.customLists {
+                if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
+                    guard let content = remoteCustom.content else { continue }
+                    Self.writeInlineUserListContent(id: inlineID, content: content)
+                }
+
                 if let existingIndex = filterManager.filterLists.firstIndex(where: {
                     $0.isCustom && $0.url.absoluteString == remoteCustom.url
                 }) {
-                    if filterManager.filterLists[existingIndex].name != remoteCustom.name {
-                        filterManager.filterLists[existingIndex].name = remoteCustom.name
+                    var shouldTreatAsMissing = false
+                    if let inlineID = Self.inlineUserListID(from: remoteCustom.url),
+                       filterManager.filterLists[existingIndex].id != inlineID
+                    {
+                        // Replace mismatched legacy entry (ID-based filename mismatch breaks local storage).
+                        let existing = filterManager.filterLists[existingIndex]
+                        filterManager.filterLists.removeAll { $0.id == existing.id }
+                        filterManager.customFilterLists.removeAll { $0.id == existing.id }
                         changed = true
+                        shouldTreatAsMissing = true
                     }
-                    if filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected {
-                        filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
+
+                    if !shouldTreatAsMissing {
+                        if filterManager.filterLists[existingIndex].name != remoteCustom.name {
+                            filterManager.filterLists[existingIndex].name = remoteCustom.name
+                            changed = true
+                        }
+                        if filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected {
+                            filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
+                            changed = true
+                        }
+                    } else {
+                        let newFilter = FilterList(
+                            id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
+                            name: remoteCustom.name,
+                            url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                            category: .custom,
+                            isCustom: true,
+                            isSelected: remoteCustom.isSelected,
+                            description: "User-added filter list.",
+                            sourceRuleCount: nil
+                        )
+                        filterManager.customFilterLists.append(newFilter)
+                        filterManager.filterLists.append(newFilter)
                         changed = true
                     }
                 } else {
                     let newFilter = FilterList(
-                        id: UUID(),
+                        id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                         name: remoteCustom.name,
                         url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
                         category: .custom,
@@ -387,6 +420,11 @@ final class CloudSyncManager: ObservableObject {
         )
 
         for remoteCustom in filters.customLists {
+            if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
+                guard let content = remoteCustom.content else { continue }
+                Self.writeInlineUserListContent(id: inlineID, content: content)
+            }
+
             if let existingIndex = localCustomIndexByURL[remoteCustom.url] {
                 var updated = storedLists[existingIndex]
                 if updated.name != remoteCustom.name {
@@ -396,7 +434,7 @@ final class CloudSyncManager: ObservableObject {
                 storedLists[existingIndex] = updated
             } else {
                 let newFilter = FilterList(
-                    id: UUID(),
+                    id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                     name: remoteCustom.name,
                     url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
                     category: .custom,
@@ -491,8 +529,12 @@ final class CloudSyncManager: ObservableObject {
                     if filterManager.filterLists.contains(where: { $0.isCustom && $0.url.absoluteString == remoteCustom.url }) {
                         continue
                     }
+                    if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
+                        guard let content = remoteCustom.content else { continue }
+                        Self.writeInlineUserListContent(id: inlineID, content: content)
+                    }
                     let newFilter = FilterList(
-                        id: UUID(),
+                        id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                         name: remoteCustom.name,
                         url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
                         category: .custom,
@@ -513,8 +555,12 @@ final class CloudSyncManager: ObservableObject {
                 var storedLists = dataManager.getFilterLists()
                 let existingCustomURLs = Set(storedLists.filter(\.isCustom).map { $0.url.absoluteString })
                 for remoteCustom in missingCustoms where !existingCustomURLs.contains(remoteCustom.url) {
+                    if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
+                        guard let content = remoteCustom.content else { continue }
+                        Self.writeInlineUserListContent(id: inlineID, content: content)
+                    }
                     let newFilter = FilterList(
-                        id: UUID(),
+                        id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                         name: remoteCustom.name,
                         url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
                         category: .custom,
@@ -568,7 +614,7 @@ final class CloudSyncManager: ObservableObject {
         let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
         let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
         return SyncPayload(
-            schemaVersion: 2,
+            schemaVersion: 3,
             updatedAt: max(0, updatedAt),
             contentHash: contentHash,
             settings: content.settings,
@@ -600,11 +646,12 @@ final class CloudSyncManager: ObservableObject {
             .sorted()
 
         let customLists = dataManager.getCustomFilterLists()
-            .map {
+            .map { list in
                 SyncPayload.CustomFilterList(
-                    url: $0.url.absoluteString,
-                    name: $0.name,
-                    isSelected: $0.isSelected
+                    url: list.url.absoluteString,
+                    name: list.name,
+                    isSelected: list.isSelected,
+                    content: Self.readInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
                 )
             }
             .sorted { $0.url < $1.url }
@@ -745,6 +792,38 @@ final class CloudSyncManager: ObservableObject {
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
     }
+
+    private static func inlineUserListID(from urlString: String) -> UUID? {
+        guard let url = URL(string: urlString) else { return nil }
+        guard url.scheme?.lowercased() == "wblock" else { return nil }
+        guard url.host?.lowercased() == "userlist" else { return nil }
+        let idString = url.pathComponents.dropFirst().first
+        guard let idString, let id = UUID(uuidString: idString) else { return nil }
+        return id
+    }
+
+    private static func readInlineUserListContentIfNeeded(urlString: String) -> String? {
+        guard let id = inlineUserListID(from: urlString) else { return nil }
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            return nil
+        }
+        let fileURL = containerURL.appendingPathComponent("custom-\(id.uuidString).txt")
+        return try? String(contentsOf: fileURL, encoding: .utf8)
+    }
+
+    private static func writeInlineUserListContent(id: UUID, content: String) {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            return
+        }
+        let fileURL = containerURL.appendingPathComponent("custom-\(id.uuidString).txt")
+        do {
+            try content.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            Logger(subsystem: "skula.wBlock", category: "CloudSync").error(
+                "Failed writing inline user list content: \(error.localizedDescription, privacy: .public)"
+            )
+        }
+    }
 }
 
 private extension JSONEncoder {
@@ -769,6 +848,8 @@ private struct SyncPayload: Codable {
         let url: String
         let name: String
         let isSelected: Bool
+        /// Inline user list content (for wblock://userlist/<uuid> lists). Nil for URL-hosted lists.
+        let content: String?
     }
 
     struct Filters: Codable {
