@@ -16779,6 +16779,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
     const message = request;
+    if (message && message.action === "wblock:clearCache") {
+      cache.clear();
+      engineTimestamp = 0;
+      return {
+        ok: true
+      };
+    }
     if (message && message.action === "getUserScripts") {
       const userScriptRequest = {
         action: "getUserScripts",

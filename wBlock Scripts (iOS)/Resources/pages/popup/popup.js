@@ -245,6 +245,11 @@ async function refreshUi() {
                 const next = disableToggle.checked;
                 setStatus(next ? 'Disabling…' : 'Enabling…', 'neutral');
                 await setSiteDisabledState(host, next);
+                try {
+                    await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
+                } catch (error) {
+                    console.warn('[wBlock] Failed to clear configuration cache:', error);
+                }
                 setStatus(next ? 'Disabled' : 'Active', next ? 'disabled' : 'active');
                 await reloadActiveTab(tab.id);
             } catch (error) {
