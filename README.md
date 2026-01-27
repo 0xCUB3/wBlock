@@ -109,6 +109,8 @@ brew tap 0xCUB3/wBlock
 brew install --cask wblock
 ```
 
+For maintainers: notarized DMG release notes are in `docs/HOMEBREW.md`.
+
 ### Mac App Store
 Use the App Store link above.
 
