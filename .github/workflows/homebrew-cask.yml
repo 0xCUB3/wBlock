@@ -46,7 +46,7 @@ jobs:
 
       - name: Build DMG
         env:
-          SIGNING_IDENTITY: Developer ID Application: Alexander Skula (DNP7DGUB7B)
+          SIGNING_IDENTITY: "Developer ID Application: Alexander Skula (DNP7DGUB7B)"
           DEVELOPMENT_TEAM_ID: DNP7DGUB7B
         run: |
           bash scripts/build-dmg.sh
