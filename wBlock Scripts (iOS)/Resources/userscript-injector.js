@@ -46,11 +46,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
         init() {
             wBlockLog('[wBlock] UserScriptEngine init.');
             this.setupDocumentEventListeners();
+            // Listen for response from native app before making any requests.
+            // On Safari App Extensions, responses can arrive very quickly and be missed
+            // if the listener isn't attached yet.
+            this.setupMessageListener();
+
             // Request userscripts from native app
             this.requestUserScripts();
-            
-            // Listen for response from native app
-            this.setupMessageListener();
         }
 
         generateRequestId(prefix) {
