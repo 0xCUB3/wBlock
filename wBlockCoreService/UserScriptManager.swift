@@ -1403,9 +1403,20 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func toggleUserScript(_ userScript: UserScript) async {
-        // Toggle the enabled state and persist immediately
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-            userScripts[index].isEnabled.toggle()
+            let shouldEnable = !userScripts[index].isEnabled
+
+            if shouldEnable {
+                let isReady = await ensureScriptReadyForEnabling(at: index)
+                guard isReady else {
+                    hasError = true
+                    errorMessage = "Failed to download \(userScript.name). Please try again."
+                    statusDescription = "Download failed"
+                    return
+                }
+            }
+
+            userScripts[index].isEnabled = shouldEnable
             statusDescription =
                 userScripts[index].isEnabled
                 ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
@@ -1422,6 +1433,17 @@ public class UserScriptManager: ObservableObject {
     public func setUserScript(_ userScript: UserScript, isEnabled: Bool) async {
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
             guard userScripts[index].isEnabled != isEnabled else { return }
+
+            if isEnabled {
+                let isReady = await ensureScriptReadyForEnabling(at: index)
+                guard isReady else {
+                    hasError = true
+                    errorMessage = "Failed to download \(userScript.name). Please try again."
+                    statusDescription = "Download failed"
+                    return
+                }
+            }
+
             userScripts[index].isEnabled = isEnabled
             statusDescription =
                 isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
@@ -1429,6 +1451,24 @@ public class UserScriptManager: ObservableObject {
             await dataManager.updateUserScripts(self.userScripts)
             logger.info("💾 Userscripts saved after setEnabled")
         }
+    }
+
+    private func ensureScriptReadyForEnabling(at index: Int) async -> Bool {
+        guard userScripts.indices.contains(index) else { return false }
+        guard !userScripts[index].isLocal else { return !userScripts[index].content.isEmpty }
+        guard userScripts[index].content.isEmpty else { return true }
+
+        if let diskContent = readUserScriptContent(userScripts[index]), !diskContent.isEmpty {
+            userScripts[index].content = diskContent
+            if let resources = readUserScriptResources(userScripts[index]) {
+                userScripts[index].resourceContents = resources
+            }
+            return true
+        }
+
+        guard let url = userScripts[index].url else { return false }
+        await downloadUserScriptInBackground(at: index, from: url)
+        return userScripts[index].isDownloaded
     }
 
     /// Batch apply enabled state using a set of IDs (single persistence write)
