@@ -1473,6 +1473,8 @@ public class UserScriptManager: ObservableObject {
 
     /// Batch apply enabled state using a set of IDs (single persistence write)
     public func setEnabledScripts(withIDs enabledIDs: Set<UUID>) async {
+        var failedRemoteEnables = Set<String>()
+
         // Ensure any scripts being enabled have content available.
         for i in userScripts.indices where enabledIDs.contains(userScripts[i].id) {
             guard !userScripts[i].isLocal else { continue }
@@ -1489,12 +1491,22 @@ public class UserScriptManager: ObservableObject {
             if let url = userScripts[i].url {
                 await downloadUserScriptInBackground(at: i, from: url)
             }
+
+            if !userScripts[i].isDownloaded {
+                failedRemoteEnables.insert(userScripts[i].name)
+            }
         }
 
         var changed = false
         for i in userScripts.indices {
             let requestedEnable = enabledIDs.contains(userScripts[i].id)
-            let shouldEnable = requestedEnable && (userScripts[i].isLocal || userScripts[i].isDownloaded)
+            let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded
+            let shouldEnable = requestedEnable && canEnable
+
+            if requestedEnable && !canEnable && !userScripts[i].isLocal {
+                failedRemoteEnables.insert(userScripts[i].name)
+            }
+
             if userScripts[i].isEnabled != shouldEnable {
                 userScripts[i].isEnabled = shouldEnable
                 changed = true
@@ -1507,6 +1519,19 @@ public class UserScriptManager: ObservableObject {
             logger.info("💾 Userscripts saved after batch setEnabled")
         } else {
             logger.info("ℹ️ No userscript enable state changes to persist (batch)")
+        }
+
+        if !failedRemoteEnables.isEmpty {
+            let names = failedRemoteEnables.sorted()
+            let preview = names.prefix(3).joined(separator: ", ")
+            let remainingCount = names.count - min(names.count, 3)
+            let suffix = remainingCount > 0 ? " (+\(remainingCount) more)" : ""
+            hasError = true
+            errorMessage =
+                "Could not enable some userscripts because they failed to download: \(preview)\(suffix)."
+            statusDescription = "Some userscripts could not be enabled"
+            logger.error(
+                "❌ Failed to enable remote userscripts due to missing content: \(names.joined(separator: ", "))")
         }
     }
 

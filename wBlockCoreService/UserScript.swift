@@ -135,33 +135,23 @@ public struct UserScript: Identifiable, Codable, Hashable {
     
     /// Check if userscript matches a given URL
     public func matches(url: String) -> Bool {
-        // Check @match patterns
-        for pattern in matches {
-            if matchesPattern(pattern: pattern, url: url) {
-                // Check exclude patterns
-                for excludePattern in excludeMatches {
-                    if matchesPattern(pattern: excludePattern, url: url) {
-                        return false
-                    }
-                }
-                return true
-            }
+        guard URL(string: url) != nil else { return false }
+
+        let isIncludedByMatch = matches.contains { matchesPattern(pattern: $0, url: url) }
+        let isIncludedByInclude = includes.contains { matchesIncludePattern(pattern: $0, url: url) }
+        let isIncluded = isIncludedByMatch || isIncludedByInclude
+
+        guard isIncluded else { return false }
+
+        if excludeMatches.contains(where: { matchesPattern(pattern: $0, url: url) }) {
+            return false
         }
-        
-        // Check @include patterns
-        for pattern in includes {
-            if matchesIncludePattern(pattern: pattern, url: url) {
-                // Check exclude patterns
-                for excludePattern in excludes {
-                    if matchesIncludePattern(pattern: excludePattern, url: url) {
-                        return false
-                    }
-                }
-                return true
-            }
+
+        if excludes.contains(where: { matchesIncludePattern(pattern: $0, url: url) }) {
+            return false
         }
-        
-        return false
+
+        return true
     }
     
     private func matchesPattern(pattern: String, url: String) -> Bool {
@@ -199,17 +189,22 @@ public struct UserScript: Identifiable, Codable, Hashable {
     }
     
     private func matchesIncludePattern(pattern: String, url: String) -> Bool {
-        // Basic include pattern implementation (supports * wildcards)
-        let regexPattern = pattern
-            .replacingOccurrences(of: "*", with: ".*")
-            .replacingOccurrences(of: ".", with: "\\.")
-        
-        if let regex = try? NSRegularExpression(pattern: regexPattern) {
+        guard URL(string: url) != nil else { return false }
+
+        // Escape first, then restore wildcard semantics.
+        var regexPattern = NSRegularExpression.escapedPattern(for: pattern)
+        regexPattern = regexPattern.replacingOccurrences(of: "\\*", with: ".*")
+        regexPattern = regexPattern.replacingOccurrences(of: "\\?", with: ".")
+        regexPattern = "^" + regexPattern + "$"
+
+        do {
+            let regex = try NSRegularExpression(pattern: regexPattern, options: [])
             let range = NSRange(location: 0, length: url.utf16.count)
             return regex.firstMatch(in: url, options: [], range: range) != nil
+        } catch {
+            print("🚨 Regex compilation failed for include pattern: \(pattern), regex: \(regexPattern), error: \(error)")
+            return false
         }
-        
-        return false
     }
     
     /// Returns a formatted string for the last updated date
