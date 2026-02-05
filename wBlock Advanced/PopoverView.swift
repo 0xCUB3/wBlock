@@ -48,7 +48,29 @@ struct PopoverView: View {
                         .disabled(viewModel.zapperRules.isEmpty)
                     }
 
-                    Text("Click an element on the page to hide it.")
+                    HStack(spacing: 8) {
+                        TextField("CSS selector (e.g. .ad, #sponsored)", text: $viewModel.manualZapperRule)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12))
+                            .onSubmit {
+                                viewModel.addManualZapperRule()
+                            }
+
+                        Button("Add rule") {
+                            viewModel.addManualZapperRule()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(viewModel.manualZapperRule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+
+                    if !viewModel.zapperRuleError.isEmpty {
+                        Text(viewModel.zapperRuleError)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
+
+                    Text("Click an element on the page, or add a selector manually.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -140,6 +162,9 @@ struct PopoverView: View {
         .onChange(of: viewModel.showingZapperRules) { expanded in
             guard expanded else { return }
             viewModel.loadZapperRules()
+        }
+        .onChange(of: viewModel.manualZapperRule) { _ in
+            viewModel.clearManualZapperRuleError()
         }
     }
 
