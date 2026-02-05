@@ -19,8 +19,6 @@ public class PopoverViewModel: ObservableObject {
     @Published public var host: String = ""
     @Published public var zapperRules: [String] = []
     @Published public var showingZapperRules: Bool = false
-    @Published public var manualZapperRule: String = ""
-    @Published public var zapperRuleError: String = ""
 
     private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
     private var isLoading: Bool = false
@@ -152,88 +150,6 @@ public class PopoverViewModel: ObservableObject {
         #endif
     }
 
-    public func clearManualZapperRuleError() {
-        if !zapperRuleError.isEmpty {
-            zapperRuleError = ""
-        }
-    }
-
-    private func parseManualRuleInput(_ input: String) -> (selector: String, error: String) {
-        let raw = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else {
-            return ("", "Enter a CSS selector.")
-        }
-
-        var selector = raw
-        if raw.contains("{") {
-            guard let openIndex = raw.firstIndex(of: "{"),
-                  let closeIndex = raw.lastIndex(of: "}"),
-                  closeIndex > openIndex else {
-                return ("", "CSS rule syntax is invalid.")
-            }
-
-            let trailing = raw[raw.index(after: closeIndex)...].trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trailing.isEmpty {
-                return ("", "CSS rule syntax is invalid.")
-            }
-
-            selector = String(raw[..<openIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-        } else if raw.contains("}") {
-            return ("", "CSS rule syntax is invalid.")
-        }
-
-        guard !selector.isEmpty else {
-            return ("", "Enter a CSS selector.")
-        }
-        guard selector.count <= 512 else {
-            return ("", "Selector is too long.")
-        }
-        return (selector, "")
-    }
-
-    /// Add a zapper rule manually for the current host.
-    public func addManualZapperRule() {
-        guard !host.isEmpty else { return }
-
-        let parsed = parseManualRuleInput(manualZapperRule)
-        if !parsed.error.isEmpty {
-            zapperRuleError = parsed.error
-            return
-        }
-        let selector = parsed.selector
-
-        let key = "zapperRules_\(host)"
-        var rules = defaults?.stringArray(forKey: key) ?? []
-        if rules.contains(selector) {
-            zapperRuleError = "Rule already exists for this site."
-            return
-        }
-
-        rules.append(selector)
-
-        var normalizedRules: [String] = []
-        var seenRules = Set<String>()
-        for rule in rules {
-            let trimmedRule = rule.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedRule.isEmpty, !seenRules.contains(trimmedRule) else { continue }
-            seenRules.insert(trimmedRule)
-            normalizedRules.append(trimmedRule)
-        }
-
-        defaults?.setValue(normalizedRules, forKey: key)
-        defaults?.synchronize()
-
-        zapperRules = normalizedRules
-        manualZapperRule = ""
-        zapperRuleError = ""
-
-        os_log(.info, "PopoverViewModel: Added manual zapper rule '%@' for host %@ (total: %d)", selector, host, normalizedRules.count)
-
-        Task {
-            await reloadCurrentPage()
-        }
-    }
-    
     /// Delete a specific zapper rule
     public func deleteZapperRule(_ rule: String) {
         guard !host.isEmpty else { return }

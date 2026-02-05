@@ -81,49 +81,6 @@ async function saveZapperRules(host, rules) {
     await browser.storage.local.set({ [key]: normalized });
 }
 
-function isValidCssSelector(selector) {
-    try {
-        document.createDocumentFragment().querySelector(selector);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-function parseManualRuleInput(input) {
-    const raw = String(input || '').trim();
-    if (!raw) {
-        return { selector: '', error: 'Enter a CSS selector.' };
-    }
-
-    let selector = raw;
-    if (raw.includes('{')) {
-        const openIndex = raw.indexOf('{');
-        const closeIndex = raw.lastIndexOf('}');
-        if (closeIndex <= openIndex) {
-            return { selector: '', error: 'CSS rule syntax is invalid.' };
-        }
-        if (raw.slice(closeIndex + 1).trim().length > 0) {
-            return { selector: '', error: 'CSS rule syntax is invalid.' };
-        }
-        selector = raw.slice(0, openIndex).trim();
-    } else if (raw.includes('}')) {
-        return { selector: '', error: 'CSS rule syntax is invalid.' };
-    }
-
-    if (!selector) {
-        return { selector: '', error: 'Enter a CSS selector.' };
-    }
-    if (selector.length > 512) {
-        return { selector: '', error: 'Selector is too long.' };
-    }
-    if (!isValidCssSelector(selector)) {
-        return { selector: '', error: 'Selector syntax is invalid.' };
-    }
-
-    return { selector, error: '' };
-}
-
 async function notifyZapperRulesChanged(tabId) {
     if (!tabId) return;
     try {
@@ -218,8 +175,6 @@ async function refreshUi() {
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
-    const manualRuleInput = document.getElementById('zapper-manual-rule');
-    const addRuleBtn = document.getElementById('zapper-add-rule');
 
     const tab = await getActiveTab();
     const host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
@@ -231,8 +186,6 @@ async function refreshUi() {
         if (disableToggle) disableToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
-        if (manualRuleInput) manualRuleInput.disabled = true;
-        if (addRuleBtn) addRuleBtn.disabled = true;
         await updateZapperCount('');
         setRulesExpanded(false);
         return;
@@ -248,47 +201,6 @@ async function refreshUi() {
     setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');
 
     await updateZapperCount(host);
-    if (manualRuleInput) manualRuleInput.disabled = false;
-    if (addRuleBtn) addRuleBtn.disabled = false;
-
-    if (manualRuleInput && addRuleBtn) {
-        const addManualRule = async () => {
-            try {
-                setError('');
-                const { selector, error } = parseManualRuleInput(manualRuleInput.value);
-                if (error) {
-                    setError(error);
-                    return;
-                }
-
-                currentZapperRules = await loadZapperRules(host);
-                if (currentZapperRules.includes(selector)) {
-                    setError('Rule already exists for this site.');
-                    return;
-                }
-
-                addRuleBtn.disabled = true;
-                await saveZapperRules(host, currentZapperRules.concat([selector]));
-                currentZapperRules = await loadZapperRules(host);
-                manualRuleInput.value = '';
-                await updateZapperCount(host);
-                if (zapperRulesExpanded) renderZapperRules(currentZapperRules);
-                await notifyZapperRulesChanged(tab.id);
-            } catch (error) {
-                console.error('[wBlock] Failed to add manual rule:', error);
-                setError('Failed to add rule.');
-            } finally {
-                addRuleBtn.disabled = false;
-            }
-        };
-
-        addRuleBtn.addEventListener('click', addManualRule);
-        manualRuleInput.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            addManualRule().catch(() => {});
-        });
-    }
 
     if (rulesToggle) {
         rulesToggle.disabled = false;

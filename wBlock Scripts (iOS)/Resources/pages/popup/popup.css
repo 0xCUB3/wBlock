@@ -190,32 +190,6 @@ body {
   color: var(--subtext);
 }
 
-.manual-rule-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.manual-rule-input {
-  flex: 1;
-  min-width: 0;
-  appearance: none;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 12px;
-  background: rgba(120, 120, 128, 0.08);
-  color: var(--text);
-}
-
-.manual-rule-input::placeholder {
-  color: var(--subtext);
-}
-
-.manual-rule-input:disabled {
-  opacity: 0.55;
-}
-
 .disclosure {
   width: 100%;
   margin-top: 10px;
@@ -308,11 +282,6 @@ body {
 
 .btn:disabled {
   opacity: 0.55;
-}
-
-.btn-compact {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 
 .btn-primary {

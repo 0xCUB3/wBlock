@@ -28,6 +28,7 @@
       toast: null,
       statusText: null,
       undoButton: null,
+      manualButton: null,
       doneButton: null,
     },
   };
@@ -212,6 +213,21 @@
     undoButton.addEventListener('pointerup', onUndo, true);
     undoButton.addEventListener('touchend', onUndo, { passive: false });
 
+    const manualButton = document.createElement('button');
+    manualButton.type = 'button';
+    manualButton.textContent = 'Add Rule';
+    const onManualRule = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      }
+      addManualRuleFromPrompt().catch(() => {});
+    };
+    manualButton.addEventListener('click', onManualRule);
+    manualButton.addEventListener('pointerup', onManualRule, true);
+    manualButton.addEventListener('touchend', onManualRule, { passive: false });
+
     const doneButton = document.createElement('button');
     doneButton.type = 'button';
     doneButton.textContent = 'Done';
@@ -230,6 +246,7 @@
     doneButton.addEventListener('touchend', onDone, { passive: false });
 
     actions.appendChild(undoButton);
+    actions.appendChild(manualButton);
     actions.appendChild(doneButton);
     bar.appendChild(status);
     bar.appendChild(actions);
@@ -250,6 +267,7 @@
     state.ui.toast = toast;
     state.ui.statusText = status;
     state.ui.undoButton = undoButton;
+    state.ui.manualButton = manualButton;
     state.ui.doneButton = doneButton;
 
     (document.documentElement || document).appendChild(highlight);
@@ -314,11 +332,54 @@
     }
   }
 
-  async function addSelectorRule(selector) {
+  function isValidCssSelector(selector) {
+    try {
+      document.createDocumentFragment().querySelector(selector);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function parseManualRuleInput(input) {
+    const raw = String(input || '').trim();
+    if (!raw) {
+      return { selector: '', error: 'Enter a CSS selector.' };
+    }
+
+    let selector = raw;
+    if (raw.includes('{')) {
+      const openIndex = raw.indexOf('{');
+      const closeIndex = raw.lastIndexOf('}');
+      if (closeIndex <= openIndex) {
+        return { selector: '', error: 'CSS rule syntax is invalid.' };
+      }
+      if (raw.slice(closeIndex + 1).trim().length > 0) {
+        return { selector: '', error: 'CSS rule syntax is invalid.' };
+      }
+      selector = raw.slice(0, openIndex).trim();
+    } else if (raw.includes('}')) {
+      return { selector: '', error: 'CSS rule syntax is invalid.' };
+    }
+
+    if (!selector) {
+      return { selector: '', error: 'Enter a CSS selector.' };
+    }
+    if (selector.length > 512) {
+      return { selector: '', error: 'Selector is too long.' };
+    }
+    if (!isValidCssSelector(selector)) {
+      return { selector: '', error: 'Selector syntax is invalid.' };
+    }
+
+    return { selector, error: '' };
+  }
+
+  async function addSelectorRule(selector, options = {}) {
     const normalized = (selector || '').trim();
     if (!normalized) return;
     if (state.rules.includes(normalized)) {
-      showToast('Already hidden.');
+      showToast(options.manual ? 'Rule already exists.' : 'Already hidden.');
       return;
     }
     state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
@@ -326,7 +387,20 @@
     await saveRulesForHost(state.host, state.rules);
     applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
-    showToast('Hidden. Rule saved for this site.');
+    showToast(options.manual ? 'Rule saved for this site.' : 'Hidden. Rule saved for this site.');
+  }
+
+  async function addManualRuleFromPrompt() {
+    const rawInput = window.prompt('Enter CSS selector for this site');
+    if (rawInput === null) return;
+
+    const parsed = parseManualRuleInput(rawInput);
+    if (parsed.error) {
+      showToast(parsed.error);
+      return;
+    }
+
+    await addSelectorRule(parsed.selector, { manual: true });
   }
 
   async function undoLastZap() {
@@ -379,6 +453,7 @@
     state.ui.toast = null;
     state.ui.statusText = null;
     state.ui.undoButton = null;
+    state.ui.manualButton = null;
     state.ui.doneButton = null;
   }
 
