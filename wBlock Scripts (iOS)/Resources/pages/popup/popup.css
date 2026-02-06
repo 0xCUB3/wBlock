@@ -36,21 +36,21 @@ body {
 .popup {
   width: 100%;
   min-width: 320px;
-  max-width: 360px;
-  padding: 12px;
+  max-width: 380px;
+  padding: 14px;
   box-sizing: border-box;
 }
 
 .top {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 14px;
+  margin-bottom: 12px;
 }
 
 .app-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
 }
 
@@ -68,13 +68,13 @@ body {
 
 .title {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.1;
 }
 
 .subtitle {
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--subtext);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -82,9 +82,9 @@ body {
 }
 
 .pill {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
-  padding: 4px 8px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: var(--pill);
   border: 1px solid var(--border);
@@ -111,8 +111,8 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
 }
 
 .row {
@@ -123,12 +123,12 @@ body {
 }
 
 .label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
 }
 
 .value {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--subtext);
 }
@@ -142,8 +142,8 @@ body {
 
 .switch {
   position: relative;
-  width: 44px;
-  height: 26px;
+  width: 50px;
+  height: 30px;
   flex: 0 0 auto;
 }
 
@@ -166,10 +166,10 @@ body {
 .slider:before {
   content: "";
   position: absolute;
-  height: 20px;
-  width: 20px;
+  height: 22px;
+  width: 22px;
   left: 3px;
-  top: 2px;
+  top: 3px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 999px;
   transition: transform 0.15s ease;
@@ -181,24 +181,26 @@ body {
 }
 
 .switch input:checked + .slider:before {
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 .hint {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.35;
   color: var(--subtext);
 }
 
 .disclosure {
   width: 100%;
   margin-top: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
+  min-height: 42px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   display: flex;
   align-items: center;
@@ -219,17 +221,17 @@ body {
   margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 140px;
+  gap: 8px;
+  max-height: 170px;
   overflow: auto;
-  padding: 2px 0;
+  padding: 4px 0;
 }
 
 .rule-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: rgba(120, 120, 128, 0.08);
@@ -238,7 +240,7 @@ body {
 .rule-text {
   flex: 1;
   min-width: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -251,20 +253,23 @@ body {
   border: 0;
   background: transparent;
   color: var(--subtext);
-  padding: 2px 4px;
-  font-size: 14px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 17px;
   line-height: 1;
 }
 
 .rule-empty {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--subtext);
-  padding: 6px 0;
+  padding: 8px 0;
 }
 
 .button-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-top: 10px;
 }
 
@@ -273,8 +278,9 @@ body {
   appearance: none;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 9px 10px;
-  font-size: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 13px;
   font-weight: 750;
   background: var(--btn);
   color: var(--text);
@@ -296,6 +302,6 @@ body {
 
 .error {
   margin-top: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: #d70015;
 }

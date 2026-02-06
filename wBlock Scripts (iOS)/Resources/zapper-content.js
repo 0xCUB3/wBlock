@@ -171,15 +171,21 @@
 
     const uiStyle = ensureStyleElement(UI_STYLE_ID);
     uiStyle.textContent = `
-      #${UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; }
-      #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 14px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
-      #${UI_ROOT_ID} .wblock-status { font-size: 12px; line-height: 1.2; flex: 1; min-width: 0; }
-      #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 8px; }
-      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; padding: 8px 10px; min-height: 30px; line-height: 1; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.14); }
+      #${UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; }
+      #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+      #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; }
+      #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 10px; }
+      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
       #${UI_ROOT_ID} button:disabled { opacity: 0.5; }
+      @media (max-width: 430px) {
+        #${UI_ROOT_ID} .wblock-bar { flex-direction: column; align-items: stretch; }
+        #${UI_ROOT_ID} .wblock-status { font-size: 14px; }
+        #${UI_ROOT_ID} .wblock-actions { width: 100%; }
+        #${UI_ROOT_ID} .wblock-actions button { flex: 1; min-height: 44px; }
+      }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
-      #${TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
-      #${TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 10px 12px; border-radius: 12px; background: rgba(20, 20, 22, 0.82); color: #fff; font-size: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
+      #${TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: calc(94px + env(safe-area-inset-bottom)); z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
+      #${TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 12px 14px; border-radius: 12px; background: rgba(20, 20, 22, 0.82); color: #fff; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
     `.trim();
 
     const root = document.createElement('div');
