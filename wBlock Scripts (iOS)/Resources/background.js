@@ -8,6 +8,11 @@
 const NATIVE_HOST_ID = 'application.id';
 const CACHE_CLEAR_ACTION = 'wblock:clearCache';
 const REFRESH_BADGE_ACTION = 'wblock:refreshBadgeCounter';
+const MANUAL_BADGE_COLOR = '#1f6fff';
+const MANUAL_BADGE_ERROR_PATTERNS = ['blocked', 'denied', 'by_client'];
+
+let isMacPlatform = false;
+const blockedCountByTab = new Map();
 
 async function applyBadgeCounterState(enabled) {
   const dnr = browser && browser.declarativeNetRequest;
@@ -40,8 +45,10 @@ async function refreshBadgeCounterState() {
 
   // iOS should behave identically except no toolbar blocked-item badge.
   if (!platformInfo || platformInfo.os !== 'mac') {
+    isMacPlatform = false;
     return;
   }
+  isMacPlatform = true;
 
   let enabled = true;
   try {
@@ -56,6 +63,45 @@ async function refreshBadgeCounterState() {
   } catch (error) {
     console.warn('[wBlock] Failed to apply badge counter setting:', error);
   }
+}
+
+function shouldCountBlockedRequest(errorString) {
+  const normalized = String(errorString || '').toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return MANUAL_BADGE_ERROR_PATTERNS.some((pattern) => normalized.includes(pattern));
+}
+
+async function updateBadgeForTab(tabId) {
+  if (!isMacPlatform || typeof tabId !== 'number' || tabId < 0) {
+    return;
+  }
+
+  const action = browser && browser.action;
+  if (!action || typeof action.setBadgeText !== 'function') {
+    return;
+  }
+
+  const count = blockedCountByTab.get(tabId) || 0;
+  const text = count > 0 ? String(count) : '';
+
+  try {
+    await action.setBadgeText({ tabId, text });
+    if (count > 0 && typeof action.setBadgeBackgroundColor === 'function') {
+      await action.setBadgeBackgroundColor({ tabId, color: MANUAL_BADGE_COLOR });
+    }
+  } catch {
+    // Ignore tab-scoped badge failures (for example restricted tabs).
+  }
+}
+
+async function resetBadgeForTab(tabId) {
+  if (typeof tabId !== 'number' || tabId < 0) {
+    return;
+  }
+  blockedCountByTab.set(tabId, 0);
+  await updateBadgeForTab(tabId);
 }
 
 function extractRequestPayload(request) {
@@ -164,17 +210,50 @@ browser.runtime.onMessage.addListener((request) => {
 });
 
 if (browser.tabs && browser.tabs.onActivated) {
-  browser.tabs.onActivated.addListener(() => {
+  browser.tabs.onActivated.addListener((activeInfo) => {
+    if (activeInfo && typeof activeInfo.tabId === 'number') {
+      updateBadgeForTab(activeInfo.tabId).catch(() => {});
+    }
     refreshBadgeCounterState().catch(() => {});
   });
 }
 
 if (browser.tabs && browser.tabs.onUpdated) {
   browser.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+    if (typeof _tabId === 'number' && changeInfo && changeInfo.status === 'loading') {
+      resetBadgeForTab(_tabId).catch(() => {});
+    }
     if (changeInfo && changeInfo.status === 'loading') {
       refreshBadgeCounterState().catch(() => {});
     }
   });
+}
+
+if (browser.tabs && browser.tabs.onRemoved) {
+  browser.tabs.onRemoved.addListener((tabId) => {
+    blockedCountByTab.delete(tabId);
+  });
+}
+
+if (browser.webRequest && browser.webRequest.onErrorOccurred) {
+  browser.webRequest.onErrorOccurred.addListener(
+    (details) => {
+      if (!isMacPlatform) {
+        return;
+      }
+      if (!details || typeof details.tabId !== 'number' || details.tabId < 0) {
+        return;
+      }
+      if (!shouldCountBlockedRequest(details.error)) {
+        return;
+      }
+
+      const current = blockedCountByTab.get(details.tabId) || 0;
+      blockedCountByTab.set(details.tabId, current + 1);
+      updateBadgeForTab(details.tabId).catch(() => {});
+    },
+    { urls: ['<all_urls>'] }
+  );
 }
 
 refreshBadgeCounterState();
