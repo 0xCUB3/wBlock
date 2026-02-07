@@ -104,7 +104,7 @@ public class ProtobufDataManager: ObservableObject {
         appData.settings.hasEnabledContentBlockers_p
     }
 
-    /// Indicates if wBlock Advanced (macOS) or wBlock Scripts (iOS) has been enabled
+    /// Indicates if the platform Safari extension has been enabled
     public var hasEnabledPlatformExtension: Bool {
         appData.settings.hasEnabledPlatformExtension_p
     }

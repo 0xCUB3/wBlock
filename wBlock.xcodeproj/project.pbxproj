@@ -11,7 +11,7 @@
 		750C5D492E82D75100FC2F60 /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D4C2E82D75100FC2F60 /* wBlock Privacy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C032DE354E40031E7EF /* wBlock Privacy.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, macos, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D4E2E82D75100FC2F60 /* wBlock Ads.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		750C5D502E82D75100FC2F60 /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -31,7 +31,7 @@
 		C1A41C6C2DE08AD30056F63D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41C892DE08BDA0056F63D /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, macos, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1E44F382E4CBA9300F58897 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = C1E44F372E4CBA9300F58897 /* SwiftProtobuf */; };
 		C1F16BF02DE354C30031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
@@ -315,7 +315,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */,
 				750C5D4C2E82D75100FC2F60 /* wBlock Privacy.appex in Embed Foundation Extensions */,
 				750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
 				750C5D4E2E82D75100FC2F60 /* wBlock Ads.appex in Embed Foundation Extensions */,
@@ -370,7 +369,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */,
 				C1F16C0E2DE354E40031E7EF /* wBlock Privacy.appex in Embed Foundation Extensions */,
 				C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
 				C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */,
@@ -891,7 +889,6 @@
 				750C5D262E82D75100FC2F60 /* PBXTargetDependency */,
 				750C5D282E82D75100FC2F60 /* PBXTargetDependency */,
 				750C5D2A2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D2C2E82D75100FC2F60 /* PBXTargetDependency */,
 				750C5D2E2E82D75100FC2F60 /* PBXTargetDependency */,
 				750C5D302E82D75100FC2F60 /* PBXTargetDependency */,
 				750C5D322E82D75100FC2F60 /* PBXTargetDependency */,
@@ -954,7 +951,6 @@
 				C1A41C752DE08AD30056F63D /* PBXTargetDependency */,
 				C1A41C882DE08BDA0056F63D /* PBXTargetDependency */,
 				C1A41CCD2DE08CAB0056F63D /* PBXTargetDependency */,
-				C1A41CE82DE08CC90056F63D /* PBXTargetDependency */,
 				C1F16BF92DE354C30031E7EF /* PBXTargetDependency */,
 				C1F16C0D2DE354E40031E7EF /* PBXTargetDependency */,
 				C1F16C212DE354FB0031E7EF /* PBXTargetDependency */,
@@ -1059,6 +1055,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C1F16D682DE36D980031E7EF /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C1A41CB72DE08CAB0056F63D /* wBlock Scripts (iOS) */,
@@ -1726,6 +1723,7 @@
 			isa = PBXTargetDependency;
 			platformFilters = (
 				ios,
+				macos,
 				xros,
 			);
 			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
@@ -1860,6 +1858,7 @@
 			isa = PBXTargetDependency;
 			platformFilters = (
 				ios,
+				macos,
 				xros,
 			);
 			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
@@ -2596,26 +2595,31 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Scripts (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
 				);
 				MARKETING_VERSION = 2.0.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Scripts--iOS-";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
+				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2631,26 +2635,31 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Scripts (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
 				);
 				MARKETING_VERSION = 2.0.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Scripts--iOS-";
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
+				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;

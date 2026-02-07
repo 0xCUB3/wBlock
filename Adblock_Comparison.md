@@ -15,7 +15,7 @@ You can examine detailed statistics for source rules and how they’re converted
 
 You can see exactly what's happening with detailed statistics showing X source rules converted to Y Safari rules, complete with conversion and reload times. If you're into these kind of things, it's great to have the numbers right in front of you.
 
-The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Advanced (macOS only) also has a nice popover that informs you of how many requests are blocked, as well as a few customization options.
+The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Extension also has a popover with site controls and element-zapper management.
 
 <img width="318" height="326" alt="CleanShot 2025-08-20 at 18 18 11" src="https://github.com/user-attachments/assets/3bf5b7ed-a0d6-49e1-b729-a32033fff59c" />
 

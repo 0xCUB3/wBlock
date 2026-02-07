@@ -98,6 +98,8 @@ public enum WebExtensionRequestHandler {
         // Check if this is a userscript-related request
         if let action = message?["action"] as? String {
             switch action {
+            case "requestRules":
+                break
             case "getUserScripts":
                 handleGetUserScriptsRequest(message: message!, context: context)
                 return
@@ -112,6 +114,12 @@ public enum WebExtensionRequestHandler {
                 return
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
+                return
+            case "getBadgeCounterState":
+                handleGetBadgeCounterState(context: context)
+                return
+            case "zapperController":
+                handleZapperControllerRequest(message: message!, context: context)
                 return
             default:
                 break
@@ -356,6 +364,15 @@ public enum WebExtensionRequestHandler {
         }
     }
 
+    private static func handleGetBadgeCounterState(context: NSExtensionContext) {
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            let enabled = ProtobufDataManager.shared.isBadgeCounterEnabled
+            let response = createResponse(with: ["enabled": enabled])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
     /// Returns enabled userscripts for a URL, but without inlining potentially huge `content`/`resources`.
     private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         guard let urlString = message["url"] as? String else {
@@ -483,5 +500,91 @@ public enum WebExtensionRequestHandler {
             let response = createResponse(with: responsePayload)
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func handleZapperControllerRequest(message: [String: Any?], context: NSExtensionContext) {
+        let payload = message["payload"] as? [String: Any] ?? [:]
+        let action = payload["action"] as? String ?? ""
+
+        switch action {
+        case "saveRule":
+            guard
+                let hostname = (payload["hostname"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !hostname.isEmpty,
+                let selector = (payload["selector"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !selector.isEmpty
+            else {
+                let response = createResponse(with: ["error": "Missing hostname/selector"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            saveZapperRule(hostname: hostname, selector: selector)
+            let response = createResponse(with: ["ok": true])
+            context.completeRequest(returningItems: [response])
+
+        case "removeRule":
+            guard
+                let hostname = (payload["hostname"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !hostname.isEmpty,
+                let selector = (payload["selector"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !selector.isEmpty
+            else {
+                let response = createResponse(with: ["error": "Missing hostname/selector"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            removeZapperRule(hostname: hostname, selector: selector)
+            let response = createResponse(with: ["ok": true])
+            context.completeRequest(returningItems: [response])
+
+        case "loadRules":
+            guard
+                let hostname = (payload["hostname"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !hostname.isEmpty
+            else {
+                let response = createResponse(with: ["action": "loadRulesResponse", "rules": []])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            let rules = loadZapperRules(for: hostname)
+            let response = createResponse(with: [
+                "action": "loadRulesResponse",
+                "rules": rules,
+            ])
+            context.completeRequest(returningItems: [response])
+
+        default:
+            let response = createResponse(with: ["error": "Unknown zapper action"])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func saveZapperRule(hostname: String, selector: String) {
+        guard let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) else { return }
+        let key = "zapperRules_\(hostname)"
+        var existingRules = defaults.stringArray(forKey: key) ?? []
+        if existingRules.contains(selector) == false {
+            existingRules.append(selector)
+            defaults.set(existingRules, forKey: key)
+            defaults.synchronize()
+        }
+    }
+
+    private static func loadZapperRules(for hostname: String) -> [String] {
+        guard let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) else { return [] }
+        let key = "zapperRules_\(hostname)"
+        return defaults.stringArray(forKey: key) ?? []
+    }
+
+    private static func removeZapperRule(hostname: String, selector: String) {
+        guard let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) else { return }
+        let key = "zapperRules_\(hostname)"
+        var existingRules = defaults.stringArray(forKey: key) ?? []
+        existingRules.removeAll { $0 == selector }
+        defaults.set(existingRules, forKey: key)
+        defaults.synchronize()
     }
 }

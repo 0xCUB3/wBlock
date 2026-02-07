@@ -15,6 +15,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C1A41CB52DE08CAB0056F63D"
+               BuildableName = "wBlock Scripts iOS.appex"
+               BlueprintName = "wBlock Scripts iOS"
+               ReferencedContainer = "container:wBlock.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "750C5D232E82D75100FC2F60"
                BuildableName = "wBlock beta.app"
                BlueprintName = "wBlock beta"

@@ -76,7 +76,8 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
       entitlements=""
       case "${appex_name}" in
         "wBlock Ads") entitlements="${ROOT_DIR}/wBlock Ads/wBlock_Ads.entitlements" ;;
-        "wBlock Advanced") entitlements="${ROOT_DIR}/wBlock Advanced/wBlock_Advanced.entitlements" ;;
+        "wBlock Scripts iOS") entitlements="${ROOT_DIR}/wBlock Scripts (iOS)/wBlock Scripts (iOS).entitlements" ;;
+        "wBlock Extension") entitlements="${ROOT_DIR}/wBlock Scripts (iOS)/wBlock Scripts (iOS).entitlements" ;;
         "wBlock Security") entitlements="${ROOT_DIR}/wBlock Security/wBlock_Security.entitlements" ;;
         "wBlock Foreign") entitlements="${ROOT_DIR}/wBlock Foreign/wBlock_Foreign.entitlements" ;;
         "wBlock Custom") entitlements="${ROOT_DIR}/wBlock Custom/wBlock_Custom.entitlements" ;;

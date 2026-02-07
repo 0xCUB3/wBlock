@@ -102,13 +102,8 @@ struct SetupChecklistView: View {
                 .symbolRenderingMode(.multicolor)
 
             VStack(alignment: .leading, spacing: 4) {
-                #if os(macOS)
-                Text("wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads.")
+                Text("wBlock Extension must be enabled and set to 'Always Allow on All Websites' to block YouTube ads.")
                     .font(.subheadline)
-                #else
-                Text("wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads.")
-                    .font(.subheadline)
-                #endif
             }
         }
         .padding(12)
@@ -176,21 +171,12 @@ struct SetupChecklistView: View {
                         .frame(width: 20, alignment: .trailing)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        #if os(macOS)
-                        Text("Enable 'wBlock Advanced' → Always Allow on Every Website")
+                        Text("Enable 'wBlock Extension' → Always Allow on Every Website")
                             .font(.subheadline)
                             .fontWeight(.medium)
                         Text("Required for YouTube ad blocking and much more")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        #else
-                        Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text("Required for YouTube ad blocking and much more")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        #endif
                     }
 
                     Spacer()

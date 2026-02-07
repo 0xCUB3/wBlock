@@ -4,13 +4,11 @@ wBlock vendors AdGuard’s scriptlet function bundle into the extension JS files
 
 ## Where the bundle lives
 
-- `wBlock Advanced/Resources/script.js`
-- `wBlock Scripts (iOS)/Resources/background.js`
-- `wBlock Scripts (iOS)/Resources/content.js`
+- `wBlock Scripts (iOS)/Resources/script.js`
 
 ## What to update
 
-Only the “scriptlet function bundle” section should be replaced. In all three files it starts at:
+Only the “scriptlet function bundle” section should be replaced. In this file it starts at:
 
 - `function AmazonApstag(source, args) {`
 
@@ -34,4 +32,3 @@ Notes:
 
 - Remove the ESM line `export { getScriptletFunction };` before embedding.
 - The bundle now includes a scriptlet named `log`, so wBlock’s own logger binding must not be named `log` (use `wBlockLogger`).
-

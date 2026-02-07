@@ -1,14 +1,38 @@
-function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _defineProperty2(e, r, t) {
+  return (
+    (r = _toPropertyKey(r)) in e
+      ? Object.defineProperty(e, r, {
+          value: t,
+          enumerable: !0,
+          configurable: !0,
+          writable: !0,
+        })
+      : (e[r] = t),
+    e
+  );
+}
+function _toPropertyKey(t) {
+  var i = _toPrimitive(t, "string");
+  return "symbol" == typeof i ? i : i + "";
+}
+function _toPrimitive(t, r) {
+  if ("object" != typeof t || !t) return t;
+  var e = t[Symbol.toPrimitive];
+  if (void 0 !== e) {
+    var i = e.call(t, r || "default");
+    if ("object" != typeof i) return i;
+    throw new TypeError("@@toPrimitive must return a primitive value.");
+  }
+  return ("string" === r ? String : Number)(t);
+}
 /*
- * WebExtension v1.0.4 (build date: Fri, 15 Aug 2025 06:15:41 GMT)
+ * AppExtension v1.0.4 (build date: Fri, 15 Aug 2025 06:15:47 GMT)
  * (c) 2025 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
  */
-(function (browser) {
-  'use strict';
+(function () {
+  "use strict";
 
   /**
    * @adguard/extended-css - v2.1.1 - Thu Dec 19 2024
@@ -21,7 +45,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         value: value,
         enumerable: true,
         configurable: true,
-        writable: true
+        writable: true,
       });
     } else {
       obj[key] = value;
@@ -36,12 +60,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * during ExtendedCss import into other libraries.
    */
   const NODE = {
-    SELECTOR_LIST: 'SelectorList',
-    SELECTOR: 'Selector',
-    REGULAR_SELECTOR: 'RegularSelector',
-    EXTENDED_SELECTOR: 'ExtendedSelector',
-    ABSOLUTE_PSEUDO_CLASS: 'AbsolutePseudoClass',
-    RELATIVE_PSEUDO_CLASS: 'RelativePseudoClass'
+    SELECTOR_LIST: "SelectorList",
+    SELECTOR: "Selector",
+    REGULAR_SELECTOR: "RegularSelector",
+    EXTENDED_SELECTOR: "ExtendedSelector",
+    ABSOLUTE_PSEUDO_CLASS: "AbsolutePseudoClass",
+    RELATIVE_PSEUDO_CLASS: "RelativePseudoClass",
   };
 
   /**
@@ -110,91 +134,139 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     constructor(name) {
       super(NODE.ABSOLUTE_PSEUDO_CLASS);
-      _defineProperty(this, "value", '');
+      _defineProperty(this, "value", "");
       this.name = name;
     }
   }
-  const LEFT_SQUARE_BRACKET = '[';
-  const RIGHT_SQUARE_BRACKET = ']';
-  const LEFT_PARENTHESIS = '(';
-  const RIGHT_PARENTHESIS = ')';
-  const LEFT_CURLY_BRACKET = '{';
-  const RIGHT_CURLY_BRACKET = '}';
+  const LEFT_SQUARE_BRACKET = "[";
+  const RIGHT_SQUARE_BRACKET = "]";
+  const LEFT_PARENTHESIS = "(";
+  const RIGHT_PARENTHESIS = ")";
+  const LEFT_CURLY_BRACKET = "{";
+  const RIGHT_CURLY_BRACKET = "}";
   const BRACKET = {
     SQUARE: {
       LEFT: LEFT_SQUARE_BRACKET,
-      RIGHT: RIGHT_SQUARE_BRACKET
+      RIGHT: RIGHT_SQUARE_BRACKET,
     },
     PARENTHESES: {
       LEFT: LEFT_PARENTHESIS,
-      RIGHT: RIGHT_PARENTHESIS
+      RIGHT: RIGHT_PARENTHESIS,
     },
     CURLY: {
       LEFT: LEFT_CURLY_BRACKET,
-      RIGHT: RIGHT_CURLY_BRACKET
-    }
+      RIGHT: RIGHT_CURLY_BRACKET,
+    },
   };
-  const SLASH = '/';
-  const BACKSLASH = '\\';
-  const SPACE = ' ';
-  const COMMA = ',';
-  const DOT = '.';
-  const SEMICOLON = ';';
-  const COLON = ':';
-  const SINGLE_QUOTE = '\'';
+  const SLASH = "/";
+  const BACKSLASH = "\\";
+  const SPACE = " ";
+  const COMMA = ",";
+  const DOT = ".";
+  const SEMICOLON = ";";
+  const COLON = ":";
+  const SINGLE_QUOTE = "'";
   const DOUBLE_QUOTE = '"'; // do not consider hyphen `-` as separated mark
   // to avoid pseudo-class names splitting
   // e.g. 'matches-css' or 'if-not'
 
-  const CARET = '^';
-  const DOLLAR_SIGN = '$';
-  const EQUAL_SIGN = '=';
-  const TAB = '\t';
-  const CARRIAGE_RETURN = '\r';
-  const LINE_FEED = '\n';
-  const FORM_FEED = '\f';
-  const WHITE_SPACE_CHARACTERS = [SPACE, TAB, CARRIAGE_RETURN, LINE_FEED, FORM_FEED]; // for universal selector and attributes
+  const CARET = "^";
+  const DOLLAR_SIGN = "$";
+  const EQUAL_SIGN = "=";
+  const TAB = "\t";
+  const CARRIAGE_RETURN = "\r";
+  const LINE_FEED = "\n";
+  const FORM_FEED = "\f";
+  const WHITE_SPACE_CHARACTERS = [
+    SPACE,
+    TAB,
+    CARRIAGE_RETURN,
+    LINE_FEED,
+    FORM_FEED,
+  ]; // for universal selector and attributes
 
-  const ASTERISK = '*';
-  const ID_MARKER = '#';
+  const ASTERISK = "*";
+  const ID_MARKER = "#";
   const CLASS_MARKER = DOT;
   const DESCENDANT_COMBINATOR = SPACE;
-  const CHILD_COMBINATOR = '>';
-  const NEXT_SIBLING_COMBINATOR = '+';
-  const SUBSEQUENT_SIBLING_COMBINATOR = '~';
-  const COMBINATORS = [DESCENDANT_COMBINATOR, CHILD_COMBINATOR, NEXT_SIBLING_COMBINATOR, SUBSEQUENT_SIBLING_COMBINATOR];
-  const SUPPORTED_SELECTOR_MARKS = [LEFT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET, LEFT_PARENTHESIS, RIGHT_PARENTHESIS, LEFT_CURLY_BRACKET, RIGHT_CURLY_BRACKET, SLASH, BACKSLASH, SEMICOLON, COLON, COMMA, SINGLE_QUOTE, DOUBLE_QUOTE, CARET, DOLLAR_SIGN, ASTERISK, ID_MARKER, CLASS_MARKER, DESCENDANT_COMBINATOR, CHILD_COMBINATOR, NEXT_SIBLING_COMBINATOR, SUBSEQUENT_SIBLING_COMBINATOR, TAB, CARRIAGE_RETURN, LINE_FEED, FORM_FEED];
+  const CHILD_COMBINATOR = ">";
+  const NEXT_SIBLING_COMBINATOR = "+";
+  const SUBSEQUENT_SIBLING_COMBINATOR = "~";
+  const COMBINATORS = [
+    DESCENDANT_COMBINATOR,
+    CHILD_COMBINATOR,
+    NEXT_SIBLING_COMBINATOR,
+    SUBSEQUENT_SIBLING_COMBINATOR,
+  ];
+  const SUPPORTED_SELECTOR_MARKS = [
+    LEFT_SQUARE_BRACKET,
+    RIGHT_SQUARE_BRACKET,
+    LEFT_PARENTHESIS,
+    RIGHT_PARENTHESIS,
+    LEFT_CURLY_BRACKET,
+    RIGHT_CURLY_BRACKET,
+    SLASH,
+    BACKSLASH,
+    SEMICOLON,
+    COLON,
+    COMMA,
+    SINGLE_QUOTE,
+    DOUBLE_QUOTE,
+    CARET,
+    DOLLAR_SIGN,
+    ASTERISK,
+    ID_MARKER,
+    CLASS_MARKER,
+    DESCENDANT_COMBINATOR,
+    CHILD_COMBINATOR,
+    NEXT_SIBLING_COMBINATOR,
+    SUBSEQUENT_SIBLING_COMBINATOR,
+    TAB,
+    CARRIAGE_RETURN,
+    LINE_FEED,
+    FORM_FEED,
+  ];
   const SUPPORTED_STYLE_DECLARATION_MARKS = [
-  // divider between property and value in declaration
-  COLON,
-  // divider between declarations
-  SEMICOLON,
-  // sometimes is needed for value wrapping
-  // e.g. 'content: "-"'
-  SINGLE_QUOTE, DOUBLE_QUOTE,
-  // needed for quote escaping inside the same-type quotes
-  BACKSLASH,
-  // whitespaces
-  SPACE, TAB, CARRIAGE_RETURN, LINE_FEED, FORM_FEED]; // absolute:
+    // divider between property and value in declaration
+    COLON,
+    // divider between declarations
+    SEMICOLON,
+    // sometimes is needed for value wrapping
+    // e.g. 'content: "-"'
+    SINGLE_QUOTE,
+    DOUBLE_QUOTE,
+    // needed for quote escaping inside the same-type quotes
+    BACKSLASH,
+    // whitespaces
+    SPACE,
+    TAB,
+    CARRIAGE_RETURN,
+    LINE_FEED,
+    FORM_FEED,
+  ]; // absolute:
 
-  const CONTAINS_PSEUDO = 'contains';
-  const HAS_TEXT_PSEUDO = 'has-text';
-  const ABP_CONTAINS_PSEUDO = '-abp-contains';
-  const MATCHES_CSS_PSEUDO = 'matches-css';
-  const MATCHES_CSS_BEFORE_PSEUDO = 'matches-css-before';
-  const MATCHES_CSS_AFTER_PSEUDO = 'matches-css-after';
-  const MATCHES_ATTR_PSEUDO_CLASS_MARKER = 'matches-attr';
-  const MATCHES_PROPERTY_PSEUDO_CLASS_MARKER = 'matches-property';
-  const XPATH_PSEUDO_CLASS_MARKER = 'xpath';
-  const NTH_ANCESTOR_PSEUDO_CLASS_MARKER = 'nth-ancestor';
-  const CONTAINS_PSEUDO_NAMES = [CONTAINS_PSEUDO, HAS_TEXT_PSEUDO, ABP_CONTAINS_PSEUDO];
+  const CONTAINS_PSEUDO = "contains";
+  const HAS_TEXT_PSEUDO = "has-text";
+  const ABP_CONTAINS_PSEUDO = "-abp-contains";
+  const MATCHES_CSS_PSEUDO = "matches-css";
+  const MATCHES_CSS_BEFORE_PSEUDO = "matches-css-before";
+  const MATCHES_CSS_AFTER_PSEUDO = "matches-css-after";
+  const MATCHES_ATTR_PSEUDO_CLASS_MARKER = "matches-attr";
+  const MATCHES_PROPERTY_PSEUDO_CLASS_MARKER = "matches-property";
+  const XPATH_PSEUDO_CLASS_MARKER = "xpath";
+  const NTH_ANCESTOR_PSEUDO_CLASS_MARKER = "nth-ancestor";
+  const CONTAINS_PSEUDO_NAMES = [
+    CONTAINS_PSEUDO,
+    HAS_TEXT_PSEUDO,
+    ABP_CONTAINS_PSEUDO,
+  ];
   /**
    * Pseudo-class :upward() can get number or selector arg
    * and if the arg is selector it should be standard, not extended
    * so :upward pseudo-class is always absolute.
    */
 
-  const UPWARD_PSEUDO_CLASS_MARKER = 'upward';
+  const UPWARD_PSEUDO_CLASS_MARKER = "upward";
   /**
    * Pseudo-class `:remove()` and pseudo-property `remove`
    * are used for element actions, not for element selecting.
@@ -204,25 +276,50 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * and both are handled by stylesheet parser.
    */
 
-  const REMOVE_PSEUDO_MARKER = 'remove'; // relative:
+  const REMOVE_PSEUDO_MARKER = "remove"; // relative:
 
-  const HAS_PSEUDO_CLASS_MARKER = 'has';
-  const ABP_HAS_PSEUDO_CLASS_MARKER = '-abp-has';
-  const HAS_PSEUDO_CLASS_MARKERS = [HAS_PSEUDO_CLASS_MARKER, ABP_HAS_PSEUDO_CLASS_MARKER];
-  const IS_PSEUDO_CLASS_MARKER = 'is';
-  const NOT_PSEUDO_CLASS_MARKER = 'not';
-  const ABSOLUTE_PSEUDO_CLASSES = [CONTAINS_PSEUDO, HAS_TEXT_PSEUDO, ABP_CONTAINS_PSEUDO, MATCHES_CSS_PSEUDO, MATCHES_CSS_BEFORE_PSEUDO, MATCHES_CSS_AFTER_PSEUDO, MATCHES_ATTR_PSEUDO_CLASS_MARKER, MATCHES_PROPERTY_PSEUDO_CLASS_MARKER, XPATH_PSEUDO_CLASS_MARKER, NTH_ANCESTOR_PSEUDO_CLASS_MARKER, UPWARD_PSEUDO_CLASS_MARKER];
-  const RELATIVE_PSEUDO_CLASSES = [...HAS_PSEUDO_CLASS_MARKERS, IS_PSEUDO_CLASS_MARKER, NOT_PSEUDO_CLASS_MARKER];
-  const SUPPORTED_PSEUDO_CLASSES = [...ABSOLUTE_PSEUDO_CLASSES, ...RELATIVE_PSEUDO_CLASSES]; // these pseudo-classes should be part of RegularSelector value
+  const HAS_PSEUDO_CLASS_MARKER = "has";
+  const ABP_HAS_PSEUDO_CLASS_MARKER = "-abp-has";
+  const HAS_PSEUDO_CLASS_MARKERS = [
+    HAS_PSEUDO_CLASS_MARKER,
+    ABP_HAS_PSEUDO_CLASS_MARKER,
+  ];
+  const IS_PSEUDO_CLASS_MARKER = "is";
+  const NOT_PSEUDO_CLASS_MARKER = "not";
+  const ABSOLUTE_PSEUDO_CLASSES = [
+    CONTAINS_PSEUDO,
+    HAS_TEXT_PSEUDO,
+    ABP_CONTAINS_PSEUDO,
+    MATCHES_CSS_PSEUDO,
+    MATCHES_CSS_BEFORE_PSEUDO,
+    MATCHES_CSS_AFTER_PSEUDO,
+    MATCHES_ATTR_PSEUDO_CLASS_MARKER,
+    MATCHES_PROPERTY_PSEUDO_CLASS_MARKER,
+    XPATH_PSEUDO_CLASS_MARKER,
+    NTH_ANCESTOR_PSEUDO_CLASS_MARKER,
+    UPWARD_PSEUDO_CLASS_MARKER,
+  ];
+  const RELATIVE_PSEUDO_CLASSES = [
+    ...HAS_PSEUDO_CLASS_MARKERS,
+    IS_PSEUDO_CLASS_MARKER,
+    NOT_PSEUDO_CLASS_MARKER,
+  ];
+  const SUPPORTED_PSEUDO_CLASSES = [
+    ...ABSOLUTE_PSEUDO_CLASSES,
+    ...RELATIVE_PSEUDO_CLASSES,
+  ]; // these pseudo-classes should be part of RegularSelector value
   // if its arg does not contain extended selectors.
   // the ast will be checked after the selector is completely parsed
 
-  const OPTIMIZATION_PSEUDO_CLASSES = [NOT_PSEUDO_CLASS_MARKER, IS_PSEUDO_CLASS_MARKER];
+  const OPTIMIZATION_PSEUDO_CLASSES = [
+    NOT_PSEUDO_CLASS_MARKER,
+    IS_PSEUDO_CLASS_MARKER,
+  ];
   /**
    * ':scope' is used for extended pseudo-class :has(), if-not(), :is() and :not().
    */
 
-  const SCOPE_CSS_PSEUDO_CLASS = ':scope';
+  const SCOPE_CSS_PSEUDO_CLASS = ":scope";
   /**
    * ':after' and ':before' are needed for :matches-css() pseudo-class
    * all other are needed for :has() limitation after regular pseudo-elements.
@@ -231,60 +328,62 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const REGULAR_PSEUDO_ELEMENTS = {
-    AFTER: 'after',
-    BACKDROP: 'backdrop',
-    BEFORE: 'before',
-    CUE: 'cue',
-    CUE_REGION: 'cue-region',
-    FIRST_LETTER: 'first-letter',
-    FIRST_LINE: 'first-line',
-    FILE_SELECTION_BUTTON: 'file-selector-button',
-    GRAMMAR_ERROR: 'grammar-error',
-    MARKER: 'marker',
-    PART: 'part',
-    PLACEHOLDER: 'placeholder',
-    SELECTION: 'selection',
-    SLOTTED: 'slotted',
-    SPELLING_ERROR: 'spelling-error',
-    TARGET_TEXT: 'target-text'
+    AFTER: "after",
+    BACKDROP: "backdrop",
+    BEFORE: "before",
+    CUE: "cue",
+    CUE_REGION: "cue-region",
+    FIRST_LETTER: "first-letter",
+    FIRST_LINE: "first-line",
+    FILE_SELECTION_BUTTON: "file-selector-button",
+    GRAMMAR_ERROR: "grammar-error",
+    MARKER: "marker",
+    PART: "part",
+    PLACEHOLDER: "placeholder",
+    SELECTION: "selection",
+    SLOTTED: "slotted",
+    SPELLING_ERROR: "spelling-error",
+    TARGET_TEXT: "target-text",
   }; // ExtendedCss does not support at-rules
   // https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule
 
-  const AT_RULE_MARKER = '@';
-  const CONTENT_CSS_PROPERTY = 'content';
-  const PSEUDO_PROPERTY_POSITIVE_VALUE = 'true';
-  const DEBUG_PSEUDO_PROPERTY_GLOBAL_VALUE = 'global';
-  const NO_SELECTOR_ERROR_PREFIX = 'Selector should be defined';
+  const AT_RULE_MARKER = "@";
+  const CONTENT_CSS_PROPERTY = "content";
+  const PSEUDO_PROPERTY_POSITIVE_VALUE = "true";
+  const DEBUG_PSEUDO_PROPERTY_GLOBAL_VALUE = "global";
+  const NO_SELECTOR_ERROR_PREFIX = "Selector should be defined";
   const STYLE_ERROR_PREFIX = {
-    NO_STYLE: 'No style declaration found',
+    NO_STYLE: "No style declaration found",
     NO_SELECTOR: `${NO_SELECTOR_ERROR_PREFIX} before style declaration in stylesheet`,
-    INVALID_STYLE: 'Invalid style declaration',
-    UNCLOSED_STYLE: 'Unclosed style declaration',
-    NO_PROPERTY: 'Missing style property in declaration',
-    NO_VALUE: 'Missing style value in declaration',
-    NO_STYLE_OR_REMOVE: 'Style should be declared or :remove() pseudo-class should used',
-    NO_COMMENT: 'Comments are not supported'
+    INVALID_STYLE: "Invalid style declaration",
+    UNCLOSED_STYLE: "Unclosed style declaration",
+    NO_PROPERTY: "Missing style property in declaration",
+    NO_VALUE: "Missing style value in declaration",
+    NO_STYLE_OR_REMOVE:
+      "Style should be declared or :remove() pseudo-class should used",
+    NO_COMMENT: "Comments are not supported",
   };
-  const NO_AT_RULE_ERROR_PREFIX = 'At-rules are not supported';
+  const NO_AT_RULE_ERROR_PREFIX = "At-rules are not supported";
   const REMOVE_ERROR_PREFIX = {
-    INVALID_REMOVE: 'Invalid :remove() pseudo-class in selector',
+    INVALID_REMOVE: "Invalid :remove() pseudo-class in selector",
     NO_TARGET_SELECTOR: `${NO_SELECTOR_ERROR_PREFIX} before :remove() pseudo-class`,
-    MULTIPLE_USAGE: 'Pseudo-class :remove() appears more than once in selector',
-    INVALID_POSITION: 'Pseudo-class :remove() should be at the end of selector'
+    MULTIPLE_USAGE: "Pseudo-class :remove() appears more than once in selector",
+    INVALID_POSITION: "Pseudo-class :remove() should be at the end of selector",
   };
-  const MATCHING_ELEMENT_ERROR_PREFIX = 'Error while matching element';
+  const MATCHING_ELEMENT_ERROR_PREFIX = "Error while matching element";
   const MAX_STYLE_PROTECTION_COUNT = 50;
 
   /**
    * Regexp that matches backward compatible syntaxes.
    */
 
-  const REGEXP_VALID_OLD_SYNTAX = /\[-(?:ext)-([a-z-_]+)=(["'])((?:(?=(\\?))\4.)*?)\2\]/g;
+  const REGEXP_VALID_OLD_SYNTAX =
+    /\[-(?:ext)-([a-z-_]+)=(["'])((?:(?=(\\?))\4.)*?)\2\]/g;
   /**
    * Marker for checking invalid selector after old-syntax normalizing by selector converter.
    */
 
-  const INVALID_OLD_SYNTAX_MARKER = '[-ext-';
+  const INVALID_OLD_SYNTAX_MARKER = "[-ext-";
   /**
    * Complex replacement function.
    * Undo quote escaping inside of an extended selector.
@@ -299,16 +398,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
   const evaluateMatch = (match, name, quoteChar, rawValue) => {
     // Unescape quotes
-    const re = new RegExp(`([^\\\\]|^)\\\\${quoteChar}`, 'g');
+    const re = new RegExp(`([^\\\\]|^)\\\\${quoteChar}`, "g");
     const value = rawValue.replace(re, `$1${quoteChar}`);
     return `:${name}(${value})`;
   }; // ':scope' pseudo may be at start of :has() argument
   // but ExtCssDocument.querySelectorAll() already use it for selecting exact element descendants
 
   const SCOPE_MARKER_REGEXP = /\(:scope >/g;
-  const SCOPE_REPLACER = '(>';
+  const SCOPE_REPLACER = "(>";
   const MATCHES_CSS_PSEUDO_ELEMENT_REGEXP = /(:matches-css)-(before|after)\(/g;
-  const convertMatchesCss = (match, extendedPseudoClass, regularPseudoElement) => {
+  const convertMatchesCss = (
+    match,
+    extendedPseudoClass,
+    regularPseudoElement,
+  ) => {
     // ':matches-css-before('  -->  ':matches-css(before, '
     // ':matches-css-after('   -->  ':matches-css(after, '
     return `${extendedPseudoClass}${BRACKET.PARENTHESES.LEFT}${regularPseudoElement}${COMMA}`;
@@ -322,12 +425,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid old extended syntax selector.
    */
 
-  const normalize = selector => {
-    const normalizedSelector = selector.replace(REGEXP_VALID_OLD_SYNTAX, evaluateMatch).replace(SCOPE_MARKER_REGEXP, SCOPE_REPLACER).replace(MATCHES_CSS_PSEUDO_ELEMENT_REGEXP, convertMatchesCss); // validate old syntax after normalizing
+  const normalize = (selector) => {
+    const normalizedSelector = selector
+      .replace(REGEXP_VALID_OLD_SYNTAX, evaluateMatch)
+      .replace(SCOPE_MARKER_REGEXP, SCOPE_REPLACER)
+      .replace(MATCHES_CSS_PSEUDO_ELEMENT_REGEXP, convertMatchesCss); // validate old syntax after normalizing
     // e.g. '[-ext-matches-css-before=\'content:  /^[A-Z][a-z]'
 
     if (normalizedSelector.includes(INVALID_OLD_SYNTAX_MARKER)) {
-      throw new Error(`Invalid extended-css old syntax selector: '${selector}'`);
+      throw new Error(
+        `Invalid extended-css old syntax selector: '${selector}'`,
+      );
     }
     return normalizedSelector;
   };
@@ -341,7 +449,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Prepared selector with no style declaration.
    */
 
-  const convert = rawSelector => {
+  const convert = (rawSelector) => {
     const trimmedSelector = rawSelector.trim();
     return normalize(trimmedSelector);
   };
@@ -353,8 +461,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * during ExtendedCss import into other libraries.
    */
   const TOKEN_TYPE = {
-    MARK: 'mark',
-    WORD: 'word'
+    MARK: "mark",
+    WORD: "word",
   };
 
   /**
@@ -368,27 +476,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const tokenize = (input, supportedMarks) => {
     // buffer is needed for words collecting while iterating
-    let wordBuffer = ''; // result collection
+    let wordBuffer = ""; // result collection
 
     const tokens = [];
-    const selectorSymbols = input.split(''); // iterate through selector chars and collect tokens
+    const selectorSymbols = input.split(""); // iterate through selector chars and collect tokens
 
-    selectorSymbols.forEach(symbol => {
+    selectorSymbols.forEach((symbol) => {
       if (supportedMarks.includes(symbol)) {
         // if anything was collected to the buffer before
         if (wordBuffer.length > 0) {
           // now it is time to stop buffer collecting and save is as "word"
           tokens.push({
             type: TOKEN_TYPE.WORD,
-            value: wordBuffer
+            value: wordBuffer,
           }); // reset the buffer
 
-          wordBuffer = '';
+          wordBuffer = "";
         } // save current symbol as "mark"
 
         tokens.push({
           type: TOKEN_TYPE.MARK,
-          value: symbol
+          value: symbol,
         });
         return;
       } // otherwise collect symbol to the buffer
@@ -399,7 +507,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (wordBuffer.length > 0) {
       tokens.push({
         type: TOKEN_TYPE.WORD,
-        value: wordBuffer
+        value: wordBuffer,
       });
     }
     return tokens;
@@ -413,7 +521,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of tokens supported for selector.
    */
 
-  const tokenizeSelector = rawSelector => {
+  const tokenizeSelector = (rawSelector) => {
     const selector = convert(rawSelector);
     return tokenize(selector, SUPPORTED_SELECTOR_MARKS);
   };
@@ -425,7 +533,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of tokens supported for attribute.
    */
 
-  const tokenizeAttribute = attribute => {
+  const tokenizeAttribute = (attribute) => {
     // equal sigh `=` in attribute is considered as `TOKEN_TYPE.MARK`
     return tokenize(attribute, [...SUPPORTED_SELECTOR_MARKS, EQUAL_SIGN]);
   };
@@ -441,19 +549,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Flatten array.
    * @throws An error if array cannot be flatten.
    */
-  const flatten = input => {
+  const flatten = (input) => {
     const stack = [];
-    input.forEach(el => stack.push(el));
+    input.forEach((el) => stack.push(el));
     const res = [];
     while (stack.length) {
       // pop value from stack
       const next = stack.pop();
       if (!next) {
-        throw new Error('Unable to make array flat');
+        throw new Error("Unable to make array flat");
       }
       if (Array.isArray(next)) {
         // push back array items, won't modify the original input
-        next.forEach(el => stack.push(el));
+        next.forEach((el) => stack.push(el));
       } else {
         res.push(next);
       }
@@ -469,7 +577,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns First array item, or `undefined` if there is no such item.
    */
 
-  const getFirst = array => {
+  const getFirst = (array) => {
     return array[0];
   };
   /**
@@ -480,7 +588,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Last array item, or `undefined` if there is no such item.
    */
 
-  const getLast = array => {
+  const getLast = (array) => {
     return array[array.length - 1];
   };
   /**
@@ -492,7 +600,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Previous to last array item, or `undefined` if there is no such item.
    */
 
-  const getPrevToLast = array => {
+  const getPrevToLast = (array) => {
     return array[array.length - 2];
   };
   /**
@@ -513,7 +621,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return indexChild;
   };
-  const NO_REGULAR_SELECTOR_ERROR = 'At least one of Selector node children should be RegularSelector';
+  const NO_REGULAR_SELECTOR_ERROR =
+    "At least one of Selector node children should be RegularSelector";
   /**
    * Checks whether the type of `astNode` is SelectorList.
    *
@@ -522,8 +631,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if astNode.type === SelectorList.
    */
 
-  const isSelectorListNode = astNode => {
-    return (astNode === null || astNode === void 0 ? void 0 : astNode.type) === NODE.SELECTOR_LIST;
+  const isSelectorListNode = (astNode) => {
+    return (
+      (astNode === null || astNode === void 0 ? void 0 : astNode.type) ===
+      NODE.SELECTOR_LIST
+    );
   };
   /**
    * Checks whether the type of `astNode` is Selector.
@@ -533,8 +645,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if astNode.type === Selector.
    */
 
-  const isSelectorNode = astNode => {
-    return (astNode === null || astNode === void 0 ? void 0 : astNode.type) === NODE.SELECTOR;
+  const isSelectorNode = (astNode) => {
+    return (
+      (astNode === null || astNode === void 0 ? void 0 : astNode.type) ===
+      NODE.SELECTOR
+    );
   };
   /**
    * Checks whether the type of `astNode` is RegularSelector.
@@ -544,8 +659,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if astNode.type === RegularSelector.
    */
 
-  const isRegularSelectorNode = astNode => {
-    return (astNode === null || astNode === void 0 ? void 0 : astNode.type) === NODE.REGULAR_SELECTOR;
+  const isRegularSelectorNode = (astNode) => {
+    return (
+      (astNode === null || astNode === void 0 ? void 0 : astNode.type) ===
+      NODE.REGULAR_SELECTOR
+    );
   };
   /**
    * Checks whether the type of `astNode` is ExtendedSelector.
@@ -555,7 +673,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if astNode.type === ExtendedSelector.
    */
 
-  const isExtendedSelectorNode = astNode => {
+  const isExtendedSelectorNode = (astNode) => {
     return astNode.type === NODE.EXTENDED_SELECTOR;
   };
   /**
@@ -566,8 +684,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if astNode.type === AbsolutePseudoClass.
    */
 
-  const isAbsolutePseudoClassNode = astNode => {
-    return (astNode === null || astNode === void 0 ? void 0 : astNode.type) === NODE.ABSOLUTE_PSEUDO_CLASS;
+  const isAbsolutePseudoClassNode = (astNode) => {
+    return (
+      (astNode === null || astNode === void 0 ? void 0 : astNode.type) ===
+      NODE.ABSOLUTE_PSEUDO_CLASS
+    );
   };
   /**
    * Checks whether the type of `astNode` is RelativePseudoClass.
@@ -577,8 +698,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if astNode.type === RelativePseudoClass.
    */
 
-  const isRelativePseudoClassNode = astNode => {
-    return (astNode === null || astNode === void 0 ? void 0 : astNode.type) === NODE.RELATIVE_PSEUDO_CLASS;
+  const isRelativePseudoClassNode = (astNode) => {
+    return (
+      (astNode === null || astNode === void 0 ? void 0 : astNode.type) ===
+      NODE.RELATIVE_PSEUDO_CLASS
+    );
   };
   /**
    * Returns name of `astNode`.
@@ -589,15 +713,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on unsupported ast node or no name found.
    */
 
-  const getNodeName = astNode => {
+  const getNodeName = (astNode) => {
     if (astNode === null) {
-      throw new Error('Ast node should be defined');
+      throw new Error("Ast node should be defined");
     }
-    if (!isAbsolutePseudoClassNode(astNode) && !isRelativePseudoClassNode(astNode)) {
-      throw new Error('Only AbsolutePseudoClass or RelativePseudoClass ast node can have a name');
+    if (
+      !isAbsolutePseudoClassNode(astNode) &&
+      !isRelativePseudoClassNode(astNode)
+    ) {
+      throw new Error(
+        "Only AbsolutePseudoClass or RelativePseudoClass ast node can have a name",
+      );
     }
     if (!astNode.name) {
-      throw new Error('Extended pseudo-class should have a name');
+      throw new Error("Extended pseudo-class should have a name");
     }
     return astNode.name;
   };
@@ -613,13 +742,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
   const getNodeValue = (astNode, errorMessage) => {
     if (astNode === null) {
-      throw new Error('Ast node should be defined');
+      throw new Error("Ast node should be defined");
     }
-    if (!isRegularSelectorNode(astNode) && !isAbsolutePseudoClassNode(astNode)) {
-      throw new Error('Only RegularSelector ot AbsolutePseudoClass ast node can have a value');
+    if (
+      !isRegularSelectorNode(astNode) &&
+      !isAbsolutePseudoClassNode(astNode)
+    ) {
+      throw new Error(
+        "Only RegularSelector ot AbsolutePseudoClass ast node can have a value",
+      );
     }
     if (!astNode.value) {
-      throw new Error(errorMessage || 'Ast RegularSelector ot AbsolutePseudoClass node should have a value');
+      throw new Error(
+        errorMessage ||
+          "Ast RegularSelector ot AbsolutePseudoClass node should have a value",
+      );
     }
     return astNode.value;
   };
@@ -631,7 +768,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of RegularSelector nodes.
    */
 
-  const getRegularSelectorNodes = children => {
+  const getRegularSelectorNodes = (children) => {
     return children.filter(isRegularSelectorNode);
   };
   /**
@@ -661,7 +798,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if no RegularSelector node found.
    */
 
-  const getLastRegularChild = children => {
+  const getLastRegularChild = (children) => {
     const regularSelectorNodes = getRegularSelectorNodes(children);
     const lastRegularSelectorNode = getLast(regularSelectorNodes);
     if (!lastRegularSelectorNode) {
@@ -698,8 +835,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if there is no specific pseudo-class ast node.
    */
 
-  const getPseudoClassNode = extendedSelectorNode => {
-    return getNodeOnlyChild(extendedSelectorNode, 'Extended selector should be specified');
+  const getPseudoClassNode = (extendedSelectorNode) => {
+    return getNodeOnlyChild(
+      extendedSelectorNode,
+      "Extended selector should be specified",
+    );
   };
   /**
    * Takes RelativePseudoClass node and returns its only child
@@ -711,13 +851,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if no selector list found.
    */
 
-  const getRelativeSelectorListNode = pseudoClassNode => {
+  const getRelativeSelectorListNode = (pseudoClassNode) => {
     if (!isRelativePseudoClassNode(pseudoClassNode)) {
-      throw new Error('Only RelativePseudoClass node can have relative SelectorList node as child');
+      throw new Error(
+        "Only RelativePseudoClass node can have relative SelectorList node as child",
+      );
     }
-    return getNodeOnlyChild(pseudoClassNode, `Missing arg for :${getNodeName(pseudoClassNode)}() pseudo-class`);
+    return getNodeOnlyChild(
+      pseudoClassNode,
+      `Missing arg for :${getNodeName(pseudoClassNode)}() pseudo-class`,
+    );
   };
-  const ATTRIBUTE_CASE_INSENSITIVE_FLAG = 'i';
+  const ATTRIBUTE_CASE_INSENSITIVE_FLAG = "i";
   /**
    * Limited list of available symbols before slash `/`
    * to check whether it is valid regexp pattern opening.
@@ -725,27 +870,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
   const POSSIBLE_MARKS_BEFORE_REGEXP = {
     COMMON: [
-    // e.g. ':matches-attr(/data-/)'
-    BRACKET.PARENTHESES.LEFT,
-    // e.g. `:matches-attr('/data-/')`
-    SINGLE_QUOTE,
-    // e.g. ':matches-attr("/data-/")'
-    DOUBLE_QUOTE,
-    // e.g. ':matches-attr(check=/data-v-/)'
-    EQUAL_SIGN,
-    // e.g. ':matches-property(inner./_test/=null)'
-    DOT,
-    // e.g. ':matches-css(height:/20px/)'
-    COLON,
-    // ':matches-css-after( content  :   /(\\d+\\s)*me/  )'
-    SPACE],
+      // e.g. ':matches-attr(/data-/)'
+      BRACKET.PARENTHESES.LEFT,
+      // e.g. `:matches-attr('/data-/')`
+      SINGLE_QUOTE,
+      // e.g. ':matches-attr("/data-/")'
+      DOUBLE_QUOTE,
+      // e.g. ':matches-attr(check=/data-v-/)'
+      EQUAL_SIGN,
+      // e.g. ':matches-property(inner./_test/=null)'
+      DOT,
+      // e.g. ':matches-css(height:/20px/)'
+      COLON,
+      // ':matches-css-after( content  :   /(\\d+\\s)*me/  )'
+      SPACE,
+    ],
     CONTAINS: [
-    // e.g. ':contains(/text/)'
-    BRACKET.PARENTHESES.LEFT,
-    // e.g. `:contains('/text/')`
-    SINGLE_QUOTE,
-    // e.g. ':contains("/text/")'
-    DOUBLE_QUOTE]
+      // e.g. ':contains(/text/)'
+      BRACKET.PARENTHESES.LEFT,
+      // e.g. `:contains('/text/')`
+      SINGLE_QUOTE,
+      // e.g. ':contains("/text/")'
+      DOUBLE_QUOTE,
+    ],
   };
   /**
    * Checks whether the passed token is supported extended pseudo-class.
@@ -755,7 +902,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `tokenValue` is one of supported extended pseudo-class names.
    */
 
-  const isSupportedPseudoClass = tokenValue => {
+  const isSupportedPseudoClass = (tokenValue) => {
     return SUPPORTED_PSEUDO_CLASSES.includes(tokenValue);
   };
   /**
@@ -767,7 +914,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `name` is one if pseudo-class which should be optimized.
    */
 
-  const isOptimizationPseudoClass = name => {
+  const isOptimizationPseudoClass = (name) => {
     return OPTIMIZATION_PSEUDO_CLASSES.includes(name);
   };
   /**
@@ -784,11 +931,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!nextTokenType || !nextTokenValue) {
       return false;
     }
-    return COMBINATORS.includes(nextTokenValue) || nextTokenType === TOKEN_TYPE.WORD // e.g. '#main *:has(> .ad)'
-    || nextTokenValue === ASTERISK || nextTokenValue === ID_MARKER || nextTokenValue === CLASS_MARKER // e.g. 'div :where(.content)'
-    || nextTokenValue === COLON // e.g. "div[class*=' ']"
-    || nextTokenValue === SINGLE_QUOTE // e.g. 'div[class*=" "]'
-    || nextTokenValue === DOUBLE_QUOTE || nextTokenValue === BRACKET.SQUARE.LEFT;
+    return (
+      COMBINATORS.includes(nextTokenValue) ||
+      nextTokenType === TOKEN_TYPE.WORD || // e.g. '#main *:has(> .ad)'
+      nextTokenValue === ASTERISK ||
+      nextTokenValue === ID_MARKER ||
+      nextTokenValue === CLASS_MARKER || // e.g. 'div :where(.content)'
+      nextTokenValue === COLON || // e.g. "div[class*=' ']"
+      nextTokenValue === SINGLE_QUOTE || // e.g. 'div[class*=" "]'
+      nextTokenValue === DOUBLE_QUOTE ||
+      nextTokenValue === BRACKET.SQUARE.LEFT
+    );
   };
   /**
    * Checks whether the regexp pattern for pseudo-class arg starts.
@@ -803,9 +956,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const isRegexpOpening = (context, prevTokenValue, bufferNodeValue) => {
-    const lastExtendedPseudoClassName = getLast(context.extendedPseudoNamesStack);
+    const lastExtendedPseudoClassName = getLast(
+      context.extendedPseudoNamesStack,
+    );
     if (!lastExtendedPseudoClassName) {
-      throw new Error('Regexp pattern allowed only in arg of extended pseudo-class');
+      throw new Error(
+        "Regexp pattern allowed only in arg of extended pseudo-class",
+      );
     } // for regexp pattens the slash should not be escaped
     // const isRegexpPatternSlash = prevTokenValue !== BACKSLASH;
     // regexp pattern can be set as arg of pseudo-class
@@ -815,9 +972,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (CONTAINS_PSEUDO_NAMES.includes(lastExtendedPseudoClassName)) {
       return POSSIBLE_MARKS_BEFORE_REGEXP.CONTAINS.includes(prevTokenValue);
     }
-    if (prevTokenValue === SLASH && lastExtendedPseudoClassName !== XPATH_PSEUDO_CLASS_MARKER) {
-      const rawArgDesc = bufferNodeValue ? `in arg part: '${bufferNodeValue}'` : 'arg';
-      throw new Error(`Invalid regexp pattern for :${lastExtendedPseudoClassName}() pseudo-class ${rawArgDesc}`);
+    if (
+      prevTokenValue === SLASH &&
+      lastExtendedPseudoClassName !== XPATH_PSEUDO_CLASS_MARKER
+    ) {
+      const rawArgDesc = bufferNodeValue
+        ? `in arg part: '${bufferNodeValue}'`
+        : "arg";
+      throw new Error(
+        `Invalid regexp pattern for :${lastExtendedPseudoClassName}() pseudo-class ${rawArgDesc}`,
+      );
     } // for other pseudo-classes regexp pattern can be either the whole arg or its part
 
     return POSSIBLE_MARKS_BEFORE_REGEXP.COMMON.includes(prevTokenValue);
@@ -843,7 +1007,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid attribute.
    */
 
-  const isAttributeClosing = context => {
+  const isAttributeClosing = (context) => {
     var _getPrevToLast;
     if (!context.isAttributeBracketsOpen) {
       return false;
@@ -854,31 +1018,53 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     //     e.g. 'a[ title ]' is the same as 'a[title]'
     //          'div[style *= "MARGIN" i]' is the same as 'div[style*="MARGIN"i]'
 
-    const noSpaceAttr = context.attributeBuffer.split(SPACE).join(''); // tokenize the prepared attribute string
+    const noSpaceAttr = context.attributeBuffer.split(SPACE).join(""); // tokenize the prepared attribute string
 
     const attrTokens = tokenizeAttribute(noSpaceAttr);
     const firstAttrToken = getFirst(attrTokens);
-    const firstAttrTokenType = firstAttrToken === null || firstAttrToken === void 0 ? void 0 : firstAttrToken.type;
-    const firstAttrTokenValue = firstAttrToken === null || firstAttrToken === void 0 ? void 0 : firstAttrToken.value; // signal an error on any mark-type token except backslash
+    const firstAttrTokenType =
+      firstAttrToken === null || firstAttrToken === void 0
+        ? void 0
+        : firstAttrToken.type;
+    const firstAttrTokenValue =
+      firstAttrToken === null || firstAttrToken === void 0
+        ? void 0
+        : firstAttrToken.value; // signal an error on any mark-type token except backslash
     // e.g. '[="margin"]'
 
-    if (firstAttrTokenType === TOKEN_TYPE.MARK // backslash is allowed at start of attribute
-    // e.g. '[\\:data-service-slot]'
-    && firstAttrTokenValue !== BACKSLASH) {
+    if (
+      firstAttrTokenType === TOKEN_TYPE.MARK && // backslash is allowed at start of attribute
+      // e.g. '[\\:data-service-slot]'
+      firstAttrTokenValue !== BACKSLASH
+    ) {
       // eslint-disable-next-line max-len
-      throw new Error(`'[${context.attributeBuffer}]' is not a valid attribute due to '${firstAttrTokenValue}' at start of it`);
+      throw new Error(
+        `'[${context.attributeBuffer}]' is not a valid attribute due to '${firstAttrTokenValue}' at start of it`,
+      );
     }
     const lastAttrToken = getLast(attrTokens);
-    const lastAttrTokenType = lastAttrToken === null || lastAttrToken === void 0 ? void 0 : lastAttrToken.type;
-    const lastAttrTokenValue = lastAttrToken === null || lastAttrToken === void 0 ? void 0 : lastAttrToken.value;
+    const lastAttrTokenType =
+      lastAttrToken === null || lastAttrToken === void 0
+        ? void 0
+        : lastAttrToken.type;
+    const lastAttrTokenValue =
+      lastAttrToken === null || lastAttrToken === void 0
+        ? void 0
+        : lastAttrToken.value;
     if (lastAttrTokenValue === EQUAL_SIGN) {
       // e.g. '[style=]'
-      throw new Error(`'[${context.attributeBuffer}]' is not a valid attribute due to '${EQUAL_SIGN}'`);
+      throw new Error(
+        `'[${context.attributeBuffer}]' is not a valid attribute due to '${EQUAL_SIGN}'`,
+      );
     }
-    const equalSignIndex = attrTokens.findIndex(token => {
+    const equalSignIndex = attrTokens.findIndex((token) => {
       return token.type === TOKEN_TYPE.MARK && token.value === EQUAL_SIGN;
     });
-    const prevToLastAttrTokenValue = (_getPrevToLast = getPrevToLast(attrTokens)) === null || _getPrevToLast === void 0 ? void 0 : _getPrevToLast.value;
+    const prevToLastAttrTokenValue =
+      (_getPrevToLast = getPrevToLast(attrTokens)) === null ||
+      _getPrevToLast === void 0
+        ? void 0
+        : _getPrevToLast.value;
     if (equalSignIndex === -1) {
       // if there is no '=' inside attribute,
       // it must be just attribute name which means the word-type token before closing bracket
@@ -886,16 +1072,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (lastAttrTokenType === TOKEN_TYPE.WORD) {
         return true;
       }
-      return prevToLastAttrTokenValue === BACKSLASH // some weird attribute are valid too
-      // e.g. '[class\\"ads-article\\"]'
-      && (lastAttrTokenValue === DOUBLE_QUOTE // e.g. "[class\\'ads-article\\']"
-      || lastAttrTokenValue === SINGLE_QUOTE);
+      return (
+        prevToLastAttrTokenValue === BACKSLASH && // some weird attribute are valid too
+        // e.g. '[class\\"ads-article\\"]'
+        (lastAttrTokenValue === DOUBLE_QUOTE || // e.g. "[class\\'ads-article\\']"
+          lastAttrTokenValue === SINGLE_QUOTE)
+      );
     } // get the value of token next to `=`
 
     const nextToEqualSignToken = getItemByIndex(attrTokens, equalSignIndex + 1);
     const nextToEqualSignTokenValue = nextToEqualSignToken.value; // check whether the attribute value wrapper in quotes
 
-    const isAttrValueQuote = nextToEqualSignTokenValue === SINGLE_QUOTE || nextToEqualSignTokenValue === DOUBLE_QUOTE; // for no quotes after `=` the last token before `]` should be a word-type one
+    const isAttrValueQuote =
+      nextToEqualSignTokenValue === SINGLE_QUOTE ||
+      nextToEqualSignTokenValue === DOUBLE_QUOTE; // for no quotes after `=` the last token before `]` should be a word-type one
     // e.g. 'div[style*=margin]'
     //      'div[style*=MARGIN i]'
 
@@ -905,12 +1095,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       } // otherwise signal an error
       // e.g. 'table[style*=border: 0px"]'
 
-      throw new Error(`'[${context.attributeBuffer}]' is not a valid attribute`);
+      throw new Error(
+        `'[${context.attributeBuffer}]' is not a valid attribute`,
+      );
     } // otherwise if quotes for value are present
     // the last token before `]` can still be word-type token
     // e.g. 'div[style*="MARGIN" i]'
 
-    if (lastAttrTokenType === TOKEN_TYPE.WORD && (lastAttrTokenValue === null || lastAttrTokenValue === void 0 ? void 0 : lastAttrTokenValue.toLocaleLowerCase()) === ATTRIBUTE_CASE_INSENSITIVE_FLAG) {
+    if (
+      lastAttrTokenType === TOKEN_TYPE.WORD &&
+      (lastAttrTokenValue === null || lastAttrTokenValue === void 0
+        ? void 0
+        : lastAttrTokenValue.toLocaleLowerCase()) ===
+        ATTRIBUTE_CASE_INSENSITIVE_FLAG
+    ) {
       return prevToLastAttrTokenValue === nextToEqualSignTokenValue;
     } // eventually if there is quotes for attribute value and last token is not a word,
     // the closing mark should be the same quote as opening one
@@ -925,7 +1123,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `tokenValue` is a whitespace character.
    */
 
-  const isWhiteSpaceChar = tokenValue => {
+  const isWhiteSpaceChar = (tokenValue) => {
     if (!tokenValue) {
       return false;
     }
@@ -941,7 +1139,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `str` is one of absolute extended pseudo-class names.
    */
 
-  const isAbsolutePseudoClass = str => {
+  const isAbsolutePseudoClass = (str) => {
     return ABSOLUTE_PSEUDO_CLASSES.includes(str);
   };
   /**
@@ -953,7 +1151,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `str` is one of relative extended pseudo-class names.
    */
 
-  const isRelativePseudoClass = str => {
+  const isRelativePseudoClass = (str) => {
     return RELATIVE_PSEUDO_CLASSES.includes(str);
   };
 
@@ -966,7 +1164,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Buffer node or null.
    */
 
-  const getBufferNode = context => {
+  const getBufferNode = (context) => {
     if (context.pathToBufferNode.length === 0) {
       return null;
     } // buffer node is always the last in the pathToBufferNode stack
@@ -982,7 +1180,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Parent node of buffer node or null.
    */
 
-  const getBufferNodeParent = context => {
+  const getBufferNodeParent = (context) => {
     // at least two nodes should exist — the buffer node and its parent
     // otherwise return null
     if (context.pathToBufferNode.length < 2) {
@@ -1005,13 +1203,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * - no RegularSelector in bufferNode.
    */
 
-  const getContextLastRegularSelectorNode = context => {
+  const getContextLastRegularSelectorNode = (context) => {
     const bufferNode = getBufferNode(context);
     if (!bufferNode) {
-      throw new Error('No bufferNode found');
+      throw new Error("No bufferNode found");
     }
     if (!isSelectorNode(bufferNode)) {
-      throw new Error('Unsupported bufferNode type');
+      throw new Error("Unsupported bufferNode type");
     }
     const lastRegularSelectorNode = getLastRegularChild(bufferNode.children);
     context.pathToBufferNode.push(lastRegularSelectorNode);
@@ -1033,7 +1231,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const updateBufferNode = (context, tokenValue) => {
     const bufferNode = getBufferNode(context);
     if (bufferNode === null) {
-      throw new Error('No bufferNode to update');
+      throw new Error("No bufferNode to update");
     }
     if (isAbsolutePseudoClassNode(bufferNode)) {
       bufferNode.value += tokenValue;
@@ -1044,7 +1242,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     } else {
       // eslint-disable-next-line max-len
-      throw new Error(`${bufferNode.type} node cannot be updated. Only RegularSelector and AbsolutePseudoClass are supported`);
+      throw new Error(
+        `${bufferNode.type} node cannot be updated. Only RegularSelector and AbsolutePseudoClass are supported`,
+      );
     }
   };
   /**
@@ -1053,7 +1253,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param context Selector parser context.
    */
 
-  const addSelectorListNode = context => {
+  const addSelectorListNode = (context) => {
     const selectorListNode = new AnySelectorNode(NODE.SELECTOR_LIST);
     context.ast = selectorListNode;
     context.pathToBufferNode.push(selectorListNode);
@@ -1070,10 +1270,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const addAstNodeByType = function (context, type) {
-    let tokenValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+    let tokenValue =
+      arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
     const bufferNode = getBufferNode(context);
     if (bufferNode === null) {
-      throw new Error('No buffer node');
+      throw new Error("No buffer node");
     }
     let node;
     if (type === NODE.REGULAR_SELECTOR) {
@@ -1110,7 +1311,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const initRelativeSubtree = function (context) {
-    let tokenValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    let tokenValue =
+      arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
     addAstNodeByType(context, NODE.SELECTOR_LIST);
     addAstNodeByType(context, NODE.SELECTOR);
     addAstNodeByType(context, NODE.REGULAR_SELECTOR, tokenValue);
@@ -1126,7 +1328,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const upToClosest = (context, parentType) => {
     for (let i = context.pathToBufferNode.length - 1; i >= 0; i -= 1) {
       var _context$pathToBuffer;
-      if (((_context$pathToBuffer = context.pathToBufferNode[i]) === null || _context$pathToBuffer === void 0 ? void 0 : _context$pathToBuffer.type) === parentType) {
+      if (
+        ((_context$pathToBuffer = context.pathToBufferNode[i]) === null ||
+        _context$pathToBuffer === void 0
+          ? void 0
+          : _context$pathToBuffer.type) === parentType
+      ) {
         context.pathToBufferNode = context.pathToBufferNode.slice(0, i + 1);
         break;
       }
@@ -1141,7 +1348,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if there is no upper SelectorNode is ast.
    */
 
-  const getUpdatedBufferNode = context => {
+  const getUpdatedBufferNode = (context) => {
     // it may happen during the parsing of selector list
     // which is an argument of relative pseudo-class
     // e.g. '.banner:has(~span, ~p)'
@@ -1149,27 +1356,45 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // so if after the comma the buffer node type is SelectorList and parent type is RelativePseudoClass
     // we should simply return the current buffer node
     const bufferNode = getBufferNode(context);
-    if (bufferNode && isSelectorListNode(bufferNode) && isRelativePseudoClassNode(getBufferNodeParent(context))) {
+    if (
+      bufferNode &&
+      isSelectorListNode(bufferNode) &&
+      isRelativePseudoClassNode(getBufferNodeParent(context))
+    ) {
       return bufferNode;
     }
     upToClosest(context, NODE.SELECTOR);
     const selectorNode = getBufferNode(context);
     if (!selectorNode) {
-      throw new Error('No SelectorNode, impossible to continue selector parsing by ExtendedCss');
+      throw new Error(
+        "No SelectorNode, impossible to continue selector parsing by ExtendedCss",
+      );
     }
     const lastSelectorNodeChild = getLast(selectorNode.children);
-    const hasExtended = lastSelectorNodeChild && isExtendedSelectorNode(lastSelectorNodeChild) // parser position might be inside standard pseudo-class brackets which has space
-    // e.g. 'div:contains(/а/):nth-child(100n + 2)'
-    && context.standardPseudoBracketsStack.length === 0;
-    const supposedPseudoClassNode = hasExtended && getFirst(lastSelectorNodeChild.children);
+    const hasExtended =
+      lastSelectorNodeChild &&
+      isExtendedSelectorNode(lastSelectorNodeChild) && // parser position might be inside standard pseudo-class brackets which has space
+      // e.g. 'div:contains(/а/):nth-child(100n + 2)'
+      context.standardPseudoBracketsStack.length === 0;
+    const supposedPseudoClassNode =
+      hasExtended && getFirst(lastSelectorNodeChild.children);
     let newNeededBufferNode = selectorNode;
     if (supposedPseudoClassNode) {
       // name of pseudo-class for last extended-node child for Selector node
-      const lastExtendedPseudoName = hasExtended && supposedPseudoClassNode.name;
-      const isLastExtendedNameRelative = lastExtendedPseudoName && isRelativePseudoClass(lastExtendedPseudoName);
-      const isLastExtendedNameAbsolute = lastExtendedPseudoName && isAbsolutePseudoClass(lastExtendedPseudoName);
-      const hasRelativeExtended = isLastExtendedNameRelative && context.extendedPseudoBracketsStack.length > 0 && context.extendedPseudoBracketsStack.length === context.extendedPseudoNamesStack.length;
-      const hasAbsoluteExtended = isLastExtendedNameAbsolute && lastExtendedPseudoName === getLast(context.extendedPseudoNamesStack);
+      const lastExtendedPseudoName =
+        hasExtended && supposedPseudoClassNode.name;
+      const isLastExtendedNameRelative =
+        lastExtendedPseudoName && isRelativePseudoClass(lastExtendedPseudoName);
+      const isLastExtendedNameAbsolute =
+        lastExtendedPseudoName && isAbsolutePseudoClass(lastExtendedPseudoName);
+      const hasRelativeExtended =
+        isLastExtendedNameRelative &&
+        context.extendedPseudoBracketsStack.length > 0 &&
+        context.extendedPseudoBracketsStack.length ===
+          context.extendedPseudoNamesStack.length;
+      const hasAbsoluteExtended =
+        isLastExtendedNameAbsolute &&
+        lastExtendedPseudoName === getLast(context.extendedPseudoNamesStack);
       if (hasRelativeExtended) {
         // return relative selector node to update later
         context.pathToBufferNode.push(lastSelectorNodeChild);
@@ -1206,9 +1431,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * or :has() inside regular pseudo limitation.
    */
 
-  const handleNextTokenOnColon = (context, selector, tokenValue, nextTokenValue, nextToNextTokenValue) => {
+  const handleNextTokenOnColon = (
+    context,
+    selector,
+    tokenValue,
+    nextTokenValue,
+    nextToNextTokenValue,
+  ) => {
     if (!nextTokenValue) {
-      throw new Error(`Invalid colon ':' at the end of selector: '${selector}'`);
+      throw new Error(
+        `Invalid colon ':' at the end of selector: '${selector}'`,
+      );
     }
     if (!isSupportedPseudoClass(nextTokenValue.toLowerCase())) {
       if (nextTokenValue.toLowerCase() === REMOVE_PSEUDO_MARKER) {
@@ -1226,19 +1459,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       // parser position is on first colon after the 'div':
       // e.g. 'div:last-child:has(button.privacy-policy__btn)'
 
-      if (nextToNextTokenValue && nextToNextTokenValue === BRACKET.PARENTHESES.LEFT // no brackets balance needed for parentheses inside attribute value
-      // e.g. 'a[href="javascript:void(0)"]'   <-- parser position is on colon `:`
-      // before `void`           ↑
-      && !context.isAttributeBracketsOpen) {
+      if (
+        nextToNextTokenValue &&
+        nextToNextTokenValue === BRACKET.PARENTHESES.LEFT && // no brackets balance needed for parentheses inside attribute value
+        // e.g. 'a[href="javascript:void(0)"]'   <-- parser position is on colon `:`
+        // before `void`           ↑
+        !context.isAttributeBracketsOpen
+      ) {
         context.standardPseudoNamesStack.push(nextTokenValue);
       }
     } else {
       // it is supported extended pseudo-class.
       // Disallow :has() inside the pseudos accepting only compound selectors
       // https://bugs.chromium.org/p/chromium/issues/detail?id=669058#c54 [2]
-      if (HAS_PSEUDO_CLASS_MARKERS.includes(nextTokenValue) && context.standardPseudoNamesStack.length > 0) {
+      if (
+        HAS_PSEUDO_CLASS_MARKERS.includes(nextTokenValue) &&
+        context.standardPseudoNamesStack.length > 0
+      ) {
         // eslint-disable-next-line max-len
-        throw new Error(`Usage of :${nextTokenValue}() pseudo-class is not allowed inside regular pseudo: '${getLast(context.standardPseudoNamesStack)}'`);
+        throw new Error(
+          `Usage of :${nextTokenValue}() pseudo-class is not allowed inside regular pseudo: '${getLast(context.standardPseudoNamesStack)}'`,
+        );
       } else {
         // stop RegularSelector value collecting
         upToClosest(context, NODE.SELECTOR); // add ExtendedSelector to Selector children
@@ -1259,9 +1500,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `selectorList` has any inner ExtendedSelector node.
    */
 
-  const hasExtendedSelector = selectorList => {
-    return selectorList.children.some(selectorNode => {
-      return selectorNode.children.some(selectorNodeChild => {
+  const hasExtendedSelector = (selectorList) => {
+    return selectorList.children.some((selectorNode) => {
+      return selectorNode.children.some((selectorNodeChild) => {
         return isExtendedSelectorNode(selectorNodeChild);
       });
     });
@@ -1274,12 +1515,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns String representation for selector list of regular selectors.
    */
 
-  const selectorListOfRegularsToString = selectorList => {
+  const selectorListOfRegularsToString = (selectorList) => {
     // if there is no ExtendedSelector in relative SelectorList
     // it means that each Selector node has single child — RegularSelector node
     // and their values should be combined to string
-    const standardCssSelectors = selectorList.children.map(selectorNode => {
-      const selectorOnlyChild = getNodeOnlyChild(selectorNode, 'Ast Selector node should have RegularSelector node');
+    const standardCssSelectors = selectorList.children.map((selectorNode) => {
+      const selectorOnlyChild = getNodeOnlyChild(
+        selectorNode,
+        "Ast Selector node should have RegularSelector node",
+      );
       return getNodeValue(selectorOnlyChild);
     });
     return standardCssSelectors.join(`${COMMA}${SPACE}`);
@@ -1307,36 +1551,45 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True is ExtendedSelector should be optimized.
    */
 
-  const shouldOptimizeExtendedSelector = currExtendedSelectorNode => {
+  const shouldOptimizeExtendedSelector = (currExtendedSelectorNode) => {
     if (currExtendedSelectorNode === null) {
       return false;
     }
-    const extendedPseudoClassNode = getPseudoClassNode(currExtendedSelectorNode);
+    const extendedPseudoClassNode = getPseudoClassNode(
+      currExtendedSelectorNode,
+    );
     const pseudoName = getNodeName(extendedPseudoClassNode);
     if (isAbsolutePseudoClass(pseudoName)) {
       return false;
     }
-    const relativeSelectorList = getRelativeSelectorListNode(extendedPseudoClassNode);
+    const relativeSelectorList = getRelativeSelectorListNode(
+      extendedPseudoClassNode,
+    );
     const innerSelectorNodes = relativeSelectorList.children; // simple checking for standard selectors in arg of :not() or :is() pseudo-class
     // e.g. 'div > *:is(div, a, span)'
 
     if (isOptimizationPseudoClass(pseudoName)) {
-      const areAllSelectorNodeChildrenRegular = innerSelectorNodes.every(selectorNode => {
-        try {
-          const selectorOnlyChild = getNodeOnlyChild(selectorNode, 'Selector node should have RegularSelector'); // it means that the only child is RegularSelector and it can be optimized
+      const areAllSelectorNodeChildrenRegular = innerSelectorNodes.every(
+        (selectorNode) => {
+          try {
+            const selectorOnlyChild = getNodeOnlyChild(
+              selectorNode,
+              "Selector node should have RegularSelector",
+            ); // it means that the only child is RegularSelector and it can be optimized
 
-          return isRegularSelectorNode(selectorOnlyChild);
-        } catch (e) {
-          return false;
-        }
-      });
+            return isRegularSelectorNode(selectorOnlyChild);
+          } catch (e) {
+            return false;
+          }
+        },
+      );
       if (areAllSelectorNodeChildrenRegular) {
         return true;
       }
     } // for other extended pseudo-classes than :not() and :is()
 
-    return innerSelectorNodes.some(selectorNode => {
-      return selectorNode.children.some(selectorNodeChild => {
+    return innerSelectorNodes.some((selectorNode) => {
+      return selectorNode.children.some((selectorNodeChild) => {
         if (!isExtendedSelectorNode(selectorNodeChild)) {
           return false;
         } // check inner ExtendedSelector recursively
@@ -1357,17 +1610,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Ast node or null.
    */
 
-  const getOptimizedExtendedSelector = (currExtendedSelectorNode, prevRegularSelectorNode) => {
+  const getOptimizedExtendedSelector = (
+    currExtendedSelectorNode,
+    prevRegularSelectorNode,
+  ) => {
     if (!currExtendedSelectorNode) {
       return null;
     }
-    const extendedPseudoClassNode = getPseudoClassNode(currExtendedSelectorNode);
-    const relativeSelectorList = getRelativeSelectorListNode(extendedPseudoClassNode);
+    const extendedPseudoClassNode = getPseudoClassNode(
+      currExtendedSelectorNode,
+    );
+    const relativeSelectorList = getRelativeSelectorListNode(
+      extendedPseudoClassNode,
+    );
     const hasInnerExtendedSelector = hasExtendedSelector(relativeSelectorList);
     if (!hasInnerExtendedSelector) {
       // if there is no extended selectors for :not() or :is()
       // e.g. 'div:not(.content, .main)'
-      const relativeSelectorListStr = selectorListOfRegularsToString(relativeSelectorList);
+      const relativeSelectorListStr =
+        selectorListOfRegularsToString(relativeSelectorList);
       const pseudoName = getNodeName(extendedPseudoClassNode); // eslint-disable-next-line max-len
 
       const optimizedExtendedStr = `${COLON}${pseudoName}${BRACKET.PARENTHESES.LEFT}${relativeSelectorListStr}${BRACKET.PARENTHESES.RIGHT}`;
@@ -1375,9 +1636,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null;
     } // eslint-disable-next-line @typescript-eslint/no-use-before-define
 
-    const optimizedRelativeSelectorList = optimizeSelectorListNode(relativeSelectorList);
-    const optimizedExtendedPseudoClassNode = updateNodeChildren(extendedPseudoClassNode, [optimizedRelativeSelectorList]);
-    return updateNodeChildren(currExtendedSelectorNode, [optimizedExtendedPseudoClassNode]);
+    const optimizedRelativeSelectorList =
+      optimizeSelectorListNode(relativeSelectorList);
+    const optimizedExtendedPseudoClassNode = updateNodeChildren(
+      extendedPseudoClassNode,
+      [optimizedRelativeSelectorList],
+    );
+    return updateNodeChildren(currExtendedSelectorNode, [
+      optimizedExtendedPseudoClassNode,
+    ]);
   };
   /**
    * Combines values of `previous` and `current` RegularSelector nodes.
@@ -1399,7 +1666,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error while collecting optimized nodes.
    */
 
-  const optimizeSelectorNode = selectorNode => {
+  const optimizeSelectorNode = (selectorNode) => {
     // non-optimized list of SelectorNode children
     const rawSelectorNodeChildren = selectorNode.children; // for collecting optimized children list
 
@@ -1407,7 +1674,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     let currentIndex = 0; // iterate through all children in non-optimized ast Selector node
 
     while (currentIndex < rawSelectorNodeChildren.length) {
-      const currentChild = getItemByIndex(rawSelectorNodeChildren, currentIndex, 'currentChild should be specified'); // no need to optimize the very first child which is always RegularSelector node
+      const currentChild = getItemByIndex(
+        rawSelectorNodeChildren,
+        currentIndex,
+        "currentChild should be specified",
+      ); // no need to optimize the very first child which is always RegularSelector node
 
       if (currentIndex === 0) {
         optimizedChildrenList.push(currentChild);
@@ -1417,15 +1688,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           // start checking with point is null
           let optimizedExtendedSelector = null; // check whether the optimization is needed
 
-          let isOptimizationNeeded = shouldOptimizeExtendedSelector(currentChild); // update optimizedExtendedSelector so it can be optimized recursively
+          let isOptimizationNeeded =
+            shouldOptimizeExtendedSelector(currentChild); // update optimizedExtendedSelector so it can be optimized recursively
           // i.e. `getOptimizedExtendedSelector(optimizedExtendedSelector)` below
 
           optimizedExtendedSelector = currentChild;
           while (isOptimizationNeeded) {
             // recursively optimize ExtendedSelector until no optimization needed
             // e.g. div > *:is(.banner:not(.block))
-            optimizedExtendedSelector = getOptimizedExtendedSelector(optimizedExtendedSelector, prevRegularChild);
-            isOptimizationNeeded = shouldOptimizeExtendedSelector(optimizedExtendedSelector);
+            optimizedExtendedSelector = getOptimizedExtendedSelector(
+              optimizedExtendedSelector,
+              prevRegularChild,
+            );
+            isOptimizationNeeded = shouldOptimizeExtendedSelector(
+              optimizedExtendedSelector,
+            );
           } // if it was simple :not() of :is() with standard selector arg
           // e.g. 'div:not([class][id])'
           // or   '.main > *:is([data-loaded], .banner)'
@@ -1437,14 +1714,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           if (optimizedExtendedSelector !== null) {
             optimizedChildrenList.push(optimizedExtendedSelector); // if optimization is not needed
 
-            const optimizedPseudoClass = getPseudoClassNode(optimizedExtendedSelector);
+            const optimizedPseudoClass = getPseudoClassNode(
+              optimizedExtendedSelector,
+            );
             const optimizedPseudoName = getNodeName(optimizedPseudoClass); // parent element checking is used to apply :is() and :not() pseudo-classes as extended.
             // as there is no parentNode for root element (html)
             // so element selection should be limited to it's children
             // e.g. '*:is(:has(.page))' -> 'html *:is(has(.page))'
             // or   '*:not(:has(span))' -> 'html *:not(:has(span))'
 
-            if (getNodeValue(prevRegularChild) === ASTERISK && isOptimizationPseudoClass(optimizedPseudoName)) {
+            if (
+              getNodeValue(prevRegularChild) === ASTERISK &&
+              isOptimizationPseudoClass(optimizedPseudoName)
+            ) {
               prevRegularChild.value = IS_OR_NOT_PSEUDO_SELECTING_ROOT;
             }
           }
@@ -1484,8 +1766,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Optimized ast node.
    */
 
-  const optimizeSelectorListNode = selectorListNode => {
-    return updateNodeChildren(selectorListNode, selectorListNode.children.map(s => optimizeSelectorNode(s)));
+  const optimizeSelectorListNode = (selectorListNode) => {
+    return updateNodeChildren(
+      selectorListNode,
+      selectorListNode.children.map((s) => optimizeSelectorNode(s)),
+    );
   };
   /**
    * Optimizes ast:
@@ -1499,15 +1784,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Optimized ast.
    */
 
-  const optimizeAst = ast => {
+  const optimizeAst = (ast) => {
     // ast is basically the selector list of selectors
     return optimizeSelectorListNode(ast);
   };
 
   // https://github.com/AdguardTeam/ExtendedCss/issues/115
 
-  const XPATH_PSEUDO_SELECTING_ROOT = 'body';
-  const NO_WHITESPACE_ERROR_PREFIX = 'No white space is allowed before or after extended pseudo-class name in selector';
+  const XPATH_PSEUDO_SELECTING_ROOT = "body";
+  const NO_WHITESPACE_ERROR_PREFIX =
+    "No white space is allowed before or after extended pseudo-class name in selector";
   /**
    * Parses selector into ast for following element selection.
    *
@@ -1517,7 +1803,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid selector.
    */
 
-  const parse = selector => {
+  const parse = (selector) => {
     const tokens = tokenizeSelector(selector);
     const context = {
       ast: null,
@@ -1527,9 +1813,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       standardPseudoNamesStack: [],
       standardPseudoBracketsStack: [],
       isAttributeBracketsOpen: false,
-      attributeBuffer: '',
+      attributeBuffer: "",
       isRegexpOpen: false,
-      shouldOptimize: false
+      shouldOptimize: false,
     };
     let i = 0;
     while (i < tokens.length) {
@@ -1538,30 +1824,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         break;
       } // Token to process
 
-      const {
-        type: tokenType,
-        value: tokenValue
-      } = token; // needed for SPACE and COLON tokens checking
+      const { type: tokenType, value: tokenValue } = token; // needed for SPACE and COLON tokens checking
 
       const nextToken = tokens[i + 1];
-      const nextTokenType = nextToken === null || nextToken === void 0 ? void 0 : nextToken.type;
-      const nextTokenValue = nextToken === null || nextToken === void 0 ? void 0 : nextToken.value; // needed for limitations
+      const nextTokenType =
+        nextToken === null || nextToken === void 0 ? void 0 : nextToken.type;
+      const nextTokenValue =
+        nextToken === null || nextToken === void 0 ? void 0 : nextToken.value; // needed for limitations
       // - :not() and :is() root element
       // - :has() usage
       // - white space before and after pseudo-class name
 
       const nextToNextToken = tokens[i + 2];
-      const nextToNextTokenValue = nextToNextToken === null || nextToNextToken === void 0 ? void 0 : nextToNextToken.value; // needed for COLON token checking for none-specified regular selector before extended one
+      const nextToNextTokenValue =
+        nextToNextToken === null || nextToNextToken === void 0
+          ? void 0
+          : nextToNextToken.value; // needed for COLON token checking for none-specified regular selector before extended one
       // e.g. 'p, :hover'
       // or   '.banner, :contains(ads)'
 
       const previousToken = tokens[i - 1];
-      const prevTokenType = previousToken === null || previousToken === void 0 ? void 0 : previousToken.type;
-      const prevTokenValue = previousToken === null || previousToken === void 0 ? void 0 : previousToken.value; // needed for proper parsing of regexp pattern arg
+      const prevTokenType =
+        previousToken === null || previousToken === void 0
+          ? void 0
+          : previousToken.type;
+      const prevTokenValue =
+        previousToken === null || previousToken === void 0
+          ? void 0
+          : previousToken.value; // needed for proper parsing of regexp pattern arg
       // e.g. ':matches-css(background-image: /^url\(https:\/\/example\.org\//)'
 
       const previousToPreviousToken = tokens[i - 2];
-      const prevToPrevTokenValue = previousToPreviousToken === null || previousToPreviousToken === void 0 ? void 0 : previousToPreviousToken.value;
+      const prevToPrevTokenValue =
+        previousToPreviousToken === null || previousToPreviousToken === void 0
+          ? void 0
+          : previousToPreviousToken.value;
       let bufferNode = getBufferNode(context);
       switch (tokenType) {
         case TOKEN_TYPE.WORD:
@@ -1579,7 +1876,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             // and its opening parenthesis
             // https://www.w3.org/TR/selectors-4/#pseudo-classes
             // e.g. 'span:contains (text)'
-            if (isWhiteSpaceChar(nextTokenValue) && nextToNextTokenValue === BRACKET.PARENTHESES.LEFT) {
+            if (
+              isWhiteSpaceChar(nextTokenValue) &&
+              nextToNextTokenValue === BRACKET.PARENTHESES.LEFT
+            ) {
               throw new Error(`${NO_WHITESPACE_ERROR_PREFIX}: '${selector}'`);
             }
             const lowerCaseTokenValue = tokenValue.toLowerCase(); // save pseudo-class name for brackets balance checking
@@ -1589,11 +1889,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             // https://www.w3.org/TR/selectors-4/#pseudo-classes
 
             if (isAbsolutePseudoClass(lowerCaseTokenValue)) {
-              addAstNodeByType(context, NODE.ABSOLUTE_PSEUDO_CLASS, lowerCaseTokenValue);
+              addAstNodeByType(
+                context,
+                NODE.ABSOLUTE_PSEUDO_CLASS,
+                lowerCaseTokenValue,
+              );
             } else {
               // if it is not absolute pseudo-class, it must be relative one
               // add RelativePseudoClass with tokenValue as pseudo-class name to ExtendedSelector children
-              addAstNodeByType(context, NODE.RELATIVE_PSEUDO_CLASS, lowerCaseTokenValue); // for :not() and :is() pseudo-classes parsed ast should be optimized later
+              addAstNodeByType(
+                context,
+                NODE.RELATIVE_PSEUDO_CLASS,
+                lowerCaseTokenValue,
+              ); // for :not() and :is() pseudo-classes parsed ast should be optimized later
 
               if (isOptimizationPseudoClass(lowerCaseTokenValue)) {
                 context.shouldOptimize = true;
@@ -1609,7 +1917,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         case TOKEN_TYPE.MARK:
           switch (tokenValue) {
             case COMMA:
-              if (!bufferNode || typeof bufferNode !== 'undefined' && !nextTokenValue) {
+              if (
+                !bufferNode ||
+                (typeof bufferNode !== "undefined" && !nextTokenValue)
+              ) {
                 // consider the selector is invalid if there is no bufferNode yet (e.g. ', a')
                 // or there is nothing after the comma while bufferNode is defined (e.g. 'div, ')
                 throw new Error(`'${selector}' is not a valid selector`);
@@ -1639,10 +1950,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               // e.g. 'div:has(img).banner span'
               // so we need to check whether the new ast node should be added (example above)
               // or previous regular selector node should be updated
-              if (isRegularSelectorNode(bufferNode) // no need to update the buffer node if attribute value is being parsed
-              // e.g. 'div:not([id])[style="position: absolute; z-index: 10000;"]'
-              // parser position inside attribute    ↑
-              && !context.isAttributeBracketsOpen) {
+              if (
+                isRegularSelectorNode(bufferNode) && // no need to update the buffer node if attribute value is being parsed
+                // e.g. 'div:not([id])[style="position: absolute; z-index: 10000;"]'
+                // parser position inside attribute    ↑
+                !context.isAttributeBracketsOpen
+              ) {
                 bufferNode = getUpdatedBufferNode(context);
               }
               if (isRegularSelectorNode(bufferNode)) {
@@ -1652,20 +1965,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 // than proper parsing of invalid selector and passing it further.
                 // first of all do not check attributes
                 // e.g. div[style="text-align: center"]
-                if (!context.isAttributeBracketsOpen // check the space after the colon and before the pseudo
-                // e.g. '.block: nth-child(2)
-                && (prevTokenValue === COLON && nextTokenType === TOKEN_TYPE.WORD // or after the pseudo and before the opening parenthesis
-                // e.g. '.block:nth-child (2)
-                || prevTokenType === TOKEN_TYPE.WORD && nextTokenValue === BRACKET.PARENTHESES.LEFT)) {
+                if (
+                  !context.isAttributeBracketsOpen && // check the space after the colon and before the pseudo
+                  // e.g. '.block: nth-child(2)
+                  ((prevTokenValue === COLON &&
+                    nextTokenType === TOKEN_TYPE.WORD) || // or after the pseudo and before the opening parenthesis
+                    // e.g. '.block:nth-child (2)
+                    (prevTokenType === TOKEN_TYPE.WORD &&
+                      nextTokenValue === BRACKET.PARENTHESES.LEFT))
+                ) {
                   throw new Error(`'${selector}' is not a valid selector`);
                 } // collect current tokenValue to value of RegularSelector
                 // if it is the last token or standard selector continues after the space.
                 // otherwise it will be skipped
 
-                if (!nextTokenValue || doesRegularContinueAfterSpace(nextTokenType, nextTokenValue) // we also should collect space inside attribute value
-                // e.g. `[onclick^="window.open ('https://example.com/share?url="]`
-                // parser position             ↑
-                || context.isAttributeBracketsOpen) {
+                if (
+                  !nextTokenValue ||
+                  doesRegularContinueAfterSpace(
+                    nextTokenType,
+                    nextTokenValue,
+                  ) || // we also should collect space inside attribute value
+                  // e.g. `[onclick^="window.open ('https://example.com/share?url="]`
+                  // parser position             ↑
+                  context.isAttributeBracketsOpen
+                ) {
                   updateBufferNode(context, tokenValue);
                 }
               }
@@ -1683,7 +2006,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               if (isSelectorNode(bufferNode)) {
                 // do NOT add RegularSelector if parser position on space BEFORE the comma in selector list
                 // e.g. '.block:has(> img) , .banner)'
-                if (doesRegularContinueAfterSpace(nextTokenType, nextTokenValue)) {
+                if (
+                  doesRegularContinueAfterSpace(nextTokenType, nextTokenValue)
+                ) {
                   // regular selector might be after the extended one.
                   // extra space before combinator or selector should not be collected
                   // e.g. '.banner:upward(2) .block'
@@ -1739,7 +2064,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   context.isAttributeBracketsOpen = true;
                 }
               } else if (isRegularSelectorNode(bufferNode)) {
-                if (tokenValue === BRACKET.CURLY.LEFT && !(context.isAttributeBracketsOpen || context.isRegexpOpen)) {
+                if (
+                  tokenValue === BRACKET.CURLY.LEFT &&
+                  !(context.isAttributeBracketsOpen || context.isRegexpOpen)
+                ) {
                   // e.g. 'div { content: "'
                   throw new Error(`'${selector}' is not a valid selector`);
                 } // collect the mark to the value of RegularSelector node
@@ -1754,14 +2082,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 // collect the mark to the arg of AbsolutePseudoClass node
                 updateBufferNode(context, tokenValue); // 'isRegexpOpen' flag is needed for brackets balancing inside extended pseudo-class arg
 
-                if (tokenValue === SLASH && context.extendedPseudoNamesStack.length > 0) {
-                  if (prevTokenValue === SLASH && prevToPrevTokenValue === BACKSLASH) {
+                if (
+                  tokenValue === SLASH &&
+                  context.extendedPseudoNamesStack.length > 0
+                ) {
+                  if (
+                    prevTokenValue === SLASH &&
+                    prevToPrevTokenValue === BACKSLASH
+                  ) {
                     // it may be specific url regexp pattern in arg of pseudo-class
                     // e.g. ':matches-css(background-image: /^url\(https:\/\/example\.org\//)'
                     // parser position is on final slash before `)`                        ↑
                     context.isRegexpOpen = false;
                   } else if (prevTokenValue && prevTokenValue !== BACKSLASH) {
-                    if (isRegexpOpening(context, prevTokenValue, getNodeValue(bufferNode))) {
+                    if (
+                      isRegexpOpening(
+                        context,
+                        prevTokenValue,
+                        getNodeValue(bufferNode),
+                      )
+                    ) {
                       context.isRegexpOpen = !context.isRegexpOpen;
                     } else {
                       // otherwise force `isRegexpOpen` flag to `false`
@@ -1816,17 +2156,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             case BRACKET.SQUARE.RIGHT:
               if (isRegularSelectorNode(bufferNode)) {
                 // unescaped `]` in regular selector allowed only inside attribute value
-                if (!context.isAttributeBracketsOpen && prevTokenValue !== BACKSLASH) {
+                if (
+                  !context.isAttributeBracketsOpen &&
+                  prevTokenValue !== BACKSLASH
+                ) {
                   // e.g. 'div]'
                   // eslint-disable-next-line max-len
-                  throw new Error(`'${selector}' is not a valid selector due to '${tokenValue}' after '${getNodeValue(bufferNode)}'`);
+                  throw new Error(
+                    `'${selector}' is not a valid selector due to '${tokenValue}' after '${getNodeValue(bufferNode)}'`,
+                  );
                 } // needed for proper parsing regular selectors after the attributes with comma
                 // e.g. 'div[data-comma="0,1"] > img'
 
                 if (isAttributeClosing(context)) {
                   context.isAttributeBracketsOpen = false; // reset attribute buffer on closing `]`
 
-                  context.attributeBuffer = '';
+                  context.attributeBuffer = "";
                 } // collect the bracket to the value of RegularSelector node
 
                 updateBufferNode(context, tokenValue);
@@ -1842,7 +2187,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               // No white space is allowed between the colon and the following name of the pseudo-class
               // https://www.w3.org/TR/selectors-4/#pseudo-classes
               // e.g. 'span: contains(text)'
-              if (isWhiteSpaceChar(nextTokenValue) && nextToNextTokenValue && SUPPORTED_PSEUDO_CLASSES.includes(nextToNextTokenValue)) {
+              if (
+                isWhiteSpaceChar(nextTokenValue) &&
+                nextToNextTokenValue &&
+                SUPPORTED_PSEUDO_CLASSES.includes(nextToNextTokenValue)
+              ) {
                 throw new Error(`${NO_WHITESPACE_ERROR_PREFIX}: '${selector}'`);
               }
               if (bufferNode === null) {
@@ -1851,11 +2200,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   // limit applying of "naked" :xpath pseudo-class
                   // https://github.com/AdguardTeam/ExtendedCss/issues/115
                   initAst(context, XPATH_PSEUDO_SELECTING_ROOT);
-                } else if (nextTokenValue === UPWARD_PSEUDO_CLASS_MARKER || nextTokenValue === NTH_ANCESTOR_PSEUDO_CLASS_MARKER) {
+                } else if (
+                  nextTokenValue === UPWARD_PSEUDO_CLASS_MARKER ||
+                  nextTokenValue === NTH_ANCESTOR_PSEUDO_CLASS_MARKER
+                ) {
                   // selector should be specified before :nth-ancestor() or :upward()
                   // e.g. ':nth-ancestor(3)'
                   // or   ':upward(span)'
-                  throw new Error(`${NO_SELECTOR_ERROR_PREFIX} before :${nextTokenValue}() pseudo-class`);
+                  throw new Error(
+                    `${NO_SELECTOR_ERROR_PREFIX} before :${nextTokenValue}() pseudo-class`,
+                  );
                 } else {
                   // make it more obvious if selector starts with pseudo with no tag specified
                   // e.g. ':has(a)' -> '*:has(a)'
@@ -1881,17 +2235,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 // e.g. '#share, :contains(share it)'
                 // or   'div,:hover'
                 // of   'div:has(+:contains(text))'  // position is after '+'
-                if (prevTokenValue && COMBINATORS.includes(prevTokenValue) || prevTokenValue === COMMA) {
+                if (
+                  (prevTokenValue && COMBINATORS.includes(prevTokenValue)) ||
+                  prevTokenValue === COMMA
+                ) {
                   // case with colon at the start of string - e.g. ':contains(text)'
                   // is covered by 'bufferNode === null' above at start of COLON checking
                   updateBufferNode(context, ASTERISK);
                 }
-                handleNextTokenOnColon(context, selector, tokenValue, nextTokenValue, nextToNextTokenValue);
+                handleNextTokenOnColon(
+                  context,
+                  selector,
+                  tokenValue,
+                  nextTokenValue,
+                  nextToNextTokenValue,
+                );
               }
               if (isSelectorNode(bufferNode)) {
                 // e.g. 'div:contains(text):'
                 if (!nextTokenValue) {
-                  throw new Error(`Invalid colon ':' at the end of selector: '${selector}'`);
+                  throw new Error(
+                    `Invalid colon ':' at the end of selector: '${selector}'`,
+                  );
                 } // after the extended pseudo closing parentheses
                 // parser position is on Selector node
                 // and there is might be another extended selector.
@@ -1902,24 +2267,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   // if supported extended pseudo-class is next to colon
                   // add ExtendedSelector to Selector children
                   addAstNodeByType(context, NODE.EXTENDED_SELECTOR);
-                } else if (nextTokenValue.toLowerCase() === REMOVE_PSEUDO_MARKER) {
+                } else if (
+                  nextTokenValue.toLowerCase() === REMOVE_PSEUDO_MARKER
+                ) {
                   // :remove() pseudo-class should be handled before
                   // as it is not about element selecting but actions with elements
                   // e.g. '#banner:upward(2):remove()'
-                  throw new Error(`${REMOVE_ERROR_PREFIX.INVALID_REMOVE}: '${selector}'`);
+                  throw new Error(
+                    `${REMOVE_ERROR_PREFIX.INVALID_REMOVE}: '${selector}'`,
+                  );
                 } else {
                   // otherwise it is standard pseudo after extended pseudo-class in complex selector
                   // and colon should be collected to value of previous RegularSelector
                   // e.g. 'body *:not(input)::selection'
                   //      'input:matches-css(padding: 10):checked'
                   bufferNode = getContextLastRegularSelectorNode(context);
-                  handleNextTokenOnColon(context, selector, tokenValue, nextTokenType, nextToNextTokenValue);
+                  handleNextTokenOnColon(
+                    context,
+                    selector,
+                    tokenValue,
+                    nextTokenType,
+                    nextToNextTokenValue,
+                  );
                 }
               }
               if (isAbsolutePseudoClassNode(bufferNode)) {
                 // :xpath() pseudo-class should be the last of extended pseudo-classes
-                if (getNodeName(bufferNode) === XPATH_PSEUDO_CLASS_MARKER && nextTokenValue && SUPPORTED_PSEUDO_CLASSES.includes(nextTokenValue) && nextToNextTokenValue === BRACKET.PARENTHESES.LEFT) {
-                  throw new Error(`:xpath() pseudo-class should be the last in selector: '${selector}'`);
+                if (
+                  getNodeName(bufferNode) === XPATH_PSEUDO_CLASS_MARKER &&
+                  nextTokenValue &&
+                  SUPPORTED_PSEUDO_CLASSES.includes(nextTokenValue) &&
+                  nextToNextTokenValue === BRACKET.PARENTHESES.LEFT
+                ) {
+                  throw new Error(
+                    `:xpath() pseudo-class should be the last in selector: '${selector}'`,
+                  );
                 } // collecting arg for absolute pseudo-class
                 // e.g. 'div:matches-css(width:400px)'
 
@@ -1928,7 +2310,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               if (isRelativePseudoClassNode(bufferNode)) {
                 if (!nextTokenValue) {
                   // e.g. 'div:has(:'
-                  throw new Error(`Invalid pseudo-class arg at the end of selector: '${selector}'`);
+                  throw new Error(
+                    `Invalid pseudo-class arg at the end of selector: '${selector}'`,
+                  );
                 } // make it more obvious if selector starts with pseudo with no tag specified
                 // parser position is on colon inside :has() arg
                 // e.g. 'div:has(:contains(text))'
@@ -1958,7 +2342,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 // no brackets balancing needed inside
                 // 1. :xpath() extended pseudo-class arg
                 // 2. regexp arg for other extended pseudo-classes
-                if (getNodeName(bufferNode) !== XPATH_PSEUDO_CLASS_MARKER && context.isRegexpOpen) {
+                if (
+                  getNodeName(bufferNode) !== XPATH_PSEUDO_CLASS_MARKER &&
+                  context.isRegexpOpen
+                ) {
                   // if the parentheses is escaped it should be part of regexp
                   // collect it to arg of AbsolutePseudoClass
                   // e.g. 'div:matches-css(background-image: /^url\\("data:image\\/gif;base64.+/)'
@@ -1968,7 +2355,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   // e.g. 'div:xpath(//h3[contains(text(),"Share it!")]/..)'
                   context.extendedPseudoBracketsStack.push(tokenValue); // eslint-disable-next-line max-len
 
-                  if (context.extendedPseudoBracketsStack.length > context.extendedPseudoNamesStack.length) {
+                  if (
+                    context.extendedPseudoBracketsStack.length >
+                    context.extendedPseudoNamesStack.length
+                  ) {
                     updateBufferNode(context, tokenValue);
                   }
                 }
@@ -1998,7 +2388,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 // no brackets balancing needed inside
                 // 1. :xpath() extended pseudo-class arg
                 // 2. regexp arg for other extended pseudo-classes
-                if (getNodeName(bufferNode) !== XPATH_PSEUDO_CLASS_MARKER && context.isRegexpOpen) {
+                if (
+                  getNodeName(bufferNode) !== XPATH_PSEUDO_CLASS_MARKER &&
+                  context.isRegexpOpen
+                ) {
                   // if closing bracket is part of regexp
                   // simply save it to pseudo-class arg
                   updateBufferNode(context, tokenValue);
@@ -2012,13 +2405,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                     // remove stacked name of extended pseudo-class
                     context.extendedPseudoNamesStack.pop(); // eslint-disable-next-line max-len
 
-                    if (context.extendedPseudoBracketsStack.length > context.extendedPseudoNamesStack.length) {
+                    if (
+                      context.extendedPseudoBracketsStack.length >
+                      context.extendedPseudoNamesStack.length
+                    ) {
                       // if brackets stack is not empty yet,
                       // save tokenValue to arg of AbsolutePseudoClass
                       // parser position on first closing bracket after 'Ads':
                       // e.g. 'h3:contains((Ads))'
                       updateBufferNode(context, tokenValue);
-                    } else if (context.extendedPseudoBracketsStack.length >= 0 && context.extendedPseudoNamesStack.length >= 0) {
+                    } else if (
+                      context.extendedPseudoBracketsStack.length >= 0 &&
+                      context.extendedPseudoNamesStack.length >= 0
+                    ) {
                       // assume it is combined extended pseudo-classes
                       // parser position on first closing bracket after 'advert':
                       // e.g. 'div:has(.banner, :contains(advert))'
@@ -2027,7 +2426,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   } else {
                     // for :xpath()
                     // eslint-disable-next-line max-len
-                    if (context.extendedPseudoBracketsStack.length < context.extendedPseudoNamesStack.length) {
+                    if (
+                      context.extendedPseudoBracketsStack.length <
+                      context.extendedPseudoNamesStack.length
+                    ) {
                       // remove stacked name of extended pseudo-class
                       // if there are less brackets than pseudo-class names
                       // with means last removes bracket was closing for pseudo-class
@@ -2045,7 +2447,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   // e.g. 'div:not([href*="window.print()"])'   <-- parser position
                   // is on the `)` after `print(`       ↑
                   updateBufferNode(context, tokenValue);
-                } else if (context.standardPseudoNamesStack.length > 0 && context.standardPseudoBracketsStack.length > 0) {
+                } else if (
+                  context.standardPseudoNamesStack.length > 0 &&
+                  context.standardPseudoBracketsStack.length > 0
+                ) {
                   // standard pseudo-class was processing.
                   // collect the closing bracket to value of RegularSelector
                   // parser position is on bracket after 'class' now:
@@ -2053,20 +2458,31 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   updateBufferNode(context, tokenValue); // remove bracket and pseudo name from stacks
 
                   context.standardPseudoBracketsStack.pop();
-                  const lastStandardPseudo = context.standardPseudoNamesStack.pop();
+                  const lastStandardPseudo =
+                    context.standardPseudoNamesStack.pop();
                   if (!lastStandardPseudo) {
                     // standard pseudo should be in standardPseudoNamesStack
                     // as related to standardPseudoBracketsStack
-                    throw new Error(`Parsing error. Invalid selector: ${selector}`);
+                    throw new Error(
+                      `Parsing error. Invalid selector: ${selector}`,
+                    );
                   } // Disallow :has() after regular pseudo-elements
                   // https://bugs.chromium.org/p/chromium/issues/detail?id=669058#c54 [3]
 
-                  if (Object.values(REGULAR_PSEUDO_ELEMENTS).includes(lastStandardPseudo) // check token which is next to closing parentheses and token after it
-                  // parser position is on bracket after 'foo' now:
-                  // e.g. '::part(foo):has(.a)'
-                  && nextTokenValue === COLON && nextToNextTokenValue && HAS_PSEUDO_CLASS_MARKERS.includes(nextToNextTokenValue)) {
+                  if (
+                    Object.values(REGULAR_PSEUDO_ELEMENTS).includes(
+                      lastStandardPseudo,
+                    ) && // check token which is next to closing parentheses and token after it
+                    // parser position is on bracket after 'foo' now:
+                    // e.g. '::part(foo):has(.a)'
+                    nextTokenValue === COLON &&
+                    nextToNextTokenValue &&
+                    HAS_PSEUDO_CLASS_MARKERS.includes(nextToNextTokenValue)
+                  ) {
                     // eslint-disable-next-line max-len
-                    throw new Error(`Usage of :${nextToNextTokenValue}() pseudo-class is not allowed after any regular pseudo-element: '${lastStandardPseudo}'`);
+                    throw new Error(
+                      `Usage of :${nextToNextTokenValue}() pseudo-class is not allowed after any regular pseudo-element: '${lastStandardPseudo}'`,
+                    );
                   }
                 } else {
                   // extended pseudo-class was processing.
@@ -2093,7 +2509,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 // save opening bracket for balancing
                 // e.g. 'div:not()'  // position is on `)`
                 // context.extendedPseudoBracketsStack.push(tokenValue);
-                if (context.extendedPseudoNamesStack.length > 0 && context.extendedPseudoBracketsStack.length > 0) {
+                if (
+                  context.extendedPseudoNamesStack.length > 0 &&
+                  context.extendedPseudoBracketsStack.length > 0
+                ) {
                   context.extendedPseudoBracketsStack.pop();
                   context.extendedPseudoNamesStack.pop();
                 }
@@ -2110,7 +2529,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               // as there are such valid rules in filter lists
               // e.g. 'div[style^="margin-right: auto;	text-align: left;',
               // parser position                      ↑
-              if (isRegularSelectorNode(bufferNode) && context.isAttributeBracketsOpen) {
+              if (
+                isRegularSelectorNode(bufferNode) &&
+                context.isAttributeBracketsOpen
+              ) {
                 updateBufferNode(context, tokenValue);
               } else {
                 // otherwise not valid
@@ -2130,17 +2552,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (context.ast === null) {
       throw new Error(`'${selector}' is not a valid selector`);
     }
-    if (context.extendedPseudoNamesStack.length > 0 || context.extendedPseudoBracketsStack.length > 0) {
+    if (
+      context.extendedPseudoNamesStack.length > 0 ||
+      context.extendedPseudoBracketsStack.length > 0
+    ) {
       // eslint-disable-next-line max-len
-      throw new Error(`Unbalanced brackets for extended pseudo-class: '${getLast(context.extendedPseudoNamesStack)}'`);
+      throw new Error(
+        `Unbalanced brackets for extended pseudo-class: '${getLast(context.extendedPseudoNamesStack)}'`,
+      );
     }
     if (context.isAttributeBracketsOpen) {
-      throw new Error(`Unbalanced attribute brackets in selector: '${selector}'`);
+      throw new Error(
+        `Unbalanced attribute brackets in selector: '${selector}'`,
+      );
     }
     return context.shouldOptimize ? optimizeAst(context.ast) : context.ast;
   };
   const natives = {
-    MutationObserver: window.MutationObserver || window.WebKitMutationObserver
+    MutationObserver: window.MutationObserver || window.WebKitMutationObserver,
   };
   /**
    * Class NativeTextContent is needed to intercept and save the native Node textContent getter
@@ -2170,7 +2599,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
     setGetter() {
       var _Object$getOwnPropert;
-      this.getter = (_Object$getOwnPropert = Object.getOwnPropertyDescriptor(this.nativeNode.prototype, 'textContent')) === null || _Object$getOwnPropert === void 0 ? void 0 : _Object$getOwnPropert.get;
+      this.getter =
+        (_Object$getOwnPropert = Object.getOwnPropertyDescriptor(
+          this.nativeNode.prototype,
+          "textContent",
+        )) === null || _Object$getOwnPropert === void 0
+          ? void 0
+          : _Object$getOwnPropert.get;
     }
   }
   const nativeTextContent = new NativeTextContent();
@@ -2183,13 +2618,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns DOM element textContent.
    */
 
-  const getNodeTextContent = domElement => {
+  const getNodeTextContent = (domElement) => {
     if (nativeTextContent.getter) {
       return nativeTextContent.getter.apply(domElement);
     } // if ExtendedCss.init() has not been executed and there is no nodeTextContentGetter,
     // use simple approach, especially when init() is not really needed, e.g. local tests
 
-    return domElement.textContent || '';
+    return domElement.textContent || "";
   };
   /**
    * Returns element selector text based on it's tagName and attributes.
@@ -2199,11 +2634,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns String representation of `element`.
    */
 
-  const getElementSelectorDesc = element => {
+  const getElementSelectorDesc = (element) => {
     let selectorText = element.tagName.toLowerCase();
-    selectorText += Array.from(element.attributes).map(attr => {
-      return `[${attr.name}="${element.getAttribute(attr.name)}"]`;
-    }).join('');
+    selectorText += Array.from(element.attributes)
+      .map((attr) => {
+        return `[${attr.name}="${element.getAttribute(attr.name)}"]`;
+      })
+      .join("");
     return selectorText;
   };
   /**
@@ -2215,9 +2652,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if `inputEl` in not instance of `Element`.
    */
 
-  const getElementSelectorPath = inputEl => {
+  const getElementSelectorPath = (inputEl) => {
     if (!(inputEl instanceof Element)) {
-      throw new Error('Function received argument with wrong type');
+      throw new Error("Function received argument with wrong type");
     }
     let el;
     el = inputEl;
@@ -2226,7 +2663,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
     while (!!el && el.nodeType === Node.ELEMENT_NODE) {
       let selector = el.nodeName.toLowerCase();
-      if (el.id && typeof el.id === 'string') {
+      if (el.id && typeof el.id === "string") {
         selector += `#${el.id}`;
         path.unshift(selector);
         break;
@@ -2235,7 +2672,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       let nth = 1;
       while (sibling.previousElementSibling) {
         sibling = sibling.previousElementSibling;
-        if (sibling.nodeType === Node.ELEMENT_NODE && sibling.nodeName.toLowerCase() === selector) {
+        if (
+          sibling.nodeType === Node.ELEMENT_NODE &&
+          sibling.nodeName.toLowerCase() === selector
+        ) {
           nth += 1;
         }
       }
@@ -2245,7 +2685,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       path.unshift(selector);
       el = el.parentElement;
     }
-    return path.join(' > ');
+    return path.join(" > ");
   };
   /**
    * Checks whether the element is instance of HTMLElement.
@@ -2255,7 +2695,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if `element` is HTMLElement.
    */
 
-  const isHtmlElement = element => {
+  const isHtmlElement = (element) => {
     return element instanceof HTMLElement;
   };
   /**
@@ -2269,11 +2709,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const getParent = (element, errorMessage) => {
-    const {
-      parentElement
-    } = element;
+    const { parentElement } = element;
     if (!parentElement) {
-      throw new Error(errorMessage || 'Element does no have parent element');
+      throw new Error(errorMessage || "Element does no have parent element");
     }
     return parentElement;
   };
@@ -2285,8 +2723,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @returns True if `error` has message.
    */
-  const isErrorWithMessage = error => {
-    return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string';
+  const isErrorWithMessage = (error) => {
+    return (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string"
+    );
   };
   /**
    * Converts `maybeError` to error object with message.
@@ -2296,7 +2739,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Error object with defined `message` property.
    */
 
-  const toErrorWithMessage = maybeError => {
+  const toErrorWithMessage = (maybeError) => {
     if (isErrorWithMessage(maybeError)) {
       return maybeError;
     }
@@ -2317,18 +2760,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Message of `error`.
    */
 
-  const getErrorMessage = error => {
+  const getErrorMessage = (error) => {
     return toErrorWithMessage(error).message;
   };
   const logger = {
     /**
      * Safe console.error version.
      */
-    error: typeof console !== 'undefined' && console.error && console.error.bind ? console.error.bind(window.console) : console.error,
+    error:
+      typeof console !== "undefined" && console.error && console.error.bind
+        ? console.error.bind(window.console)
+        : console.error,
     /**
      * Safe console.info version.
      */
-    info: typeof console !== 'undefined' && console.info && console.info.bind ? console.info.bind(window.console) : console.info
+    info:
+      typeof console !== "undefined" && console.info && console.info.bind
+        ? console.info.bind(window.console)
+        : console.info,
   };
 
   /**
@@ -2374,11 +2823,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Regular expression converted from pattern `str`.
    */
 
-  const toRegExp = str => {
+  const toRegExp = (str) => {
     if (str.startsWith(SLASH) && str.endsWith(SLASH)) {
       return new RegExp(str.slice(1, -1));
     }
-    const escaped = str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return new RegExp(escaped);
   };
   /**
@@ -2390,14 +2839,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns String representation of `value`.
    */
 
-  const convertTypeIntoString = value => {
+  const convertTypeIntoString = (value) => {
     let output;
     switch (value) {
       case undefined:
-        output = 'undefined';
+        output = "undefined";
         break;
       case null:
-        output = 'null';
+        output = "null";
         break;
       default:
         output = value.toString();
@@ -2413,23 +2862,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Its own type representation of string-type `value`.
    */
 
-  const convertTypeFromString = value => {
+  const convertTypeFromString = (value) => {
     const numValue = Number(value);
     let output;
     if (!Number.isNaN(numValue)) {
       output = numValue;
     } else {
       switch (value) {
-        case 'undefined':
+        case "undefined":
           output = undefined;
           break;
-        case 'null':
+        case "null":
           output = null;
           break;
-        case 'true':
+        case "true":
           output = true;
           break;
-        case 'false':
+        case "false":
           output = false;
           break;
         default:
@@ -2448,9 +2897,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns False only for Internet Explorer.
    */
 
-  const isUserAgentSupported = userAgent => {
+  const isUserAgentSupported = (userAgent) => {
     // do not support Internet Explorer
-    if (userAgent.includes('MSIE') || userAgent.includes('Trident/')) {
+    if (userAgent.includes("MSIE") || userAgent.includes("Trident/")) {
       return false;
     }
     return true;
@@ -2473,12 +2922,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const CSS_PROPERTY = {
-    BACKGROUND: 'background',
-    BACKGROUND_IMAGE: 'background-image',
-    CONTENT: 'content',
-    OPACITY: 'opacity'
+    BACKGROUND: "background",
+    BACKGROUND_IMAGE: "background-image",
+    CONTENT: "content",
+    OPACITY: "opacity",
   };
-  const REGEXP_ANY_SYMBOL = '.*';
+  const REGEXP_ANY_SYMBOL = ".*";
   const REGEXP_WITH_FLAGS_REGEXP = /^\s*\/.*\/[gmisuy]*\s*$/;
 
   /**
@@ -2494,8 +2943,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @returns String with no quotes for content value.
    */
-  const removeContentQuotes = str => {
-    return str.replace(/^(["'])([\s\S]*)\1$/, '$2');
+  const removeContentQuotes = (str) => {
+    return str.replace(/^(["'])([\s\S]*)\1$/, "$2");
   };
   /**
    * Adds quotes for specified background url value.
@@ -2513,7 +2962,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns String with unified quotes for background url value.
    */
 
-  const addUrlPropertyQuotes = str => {
+  const addUrlPropertyQuotes = (str) => {
     if (!str.includes('url("')) {
       const re = /url\((.*?)\)/g;
       return str.replace(re, 'url("$1")');
@@ -2525,13 +2974,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const addUrlQuotesTo = {
-    regexpArg: str => {
+    regexpArg: (str) => {
       // e.g. /^url\\([a-z]{4}:[a-z]{5}/
       // or /^url\\(data\\:\\image\\/gif;base64.+/
       const re = /(\^)?url(\\)?\\\((\w|\[\w)/g;
       return str.replace(re, '$1url$2\\(\\"?$3');
     },
-    noneRegexpArg: addUrlPropertyQuotes
+    noneRegexpArg: addUrlPropertyQuotes,
   };
   /**
    * Escapes regular expression string.
@@ -2543,12 +2992,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Escaped regular expression string.
    */
 
-  const escapeRegExp = str => {
+  const escapeRegExp = (str) => {
     // should be escaped . * + ? ^ $ { } ( ) | [ ] / \
     // except of * | ^
-    const specials = ['.', '+', '?', '$', '{', '}', '(', ')', '[', ']', '\\', '/'];
-    const specialsRegex = new RegExp(`[${specials.join('\\')}]`, 'g');
-    return str.replace(specialsRegex, '\\$&');
+    const specials = [
+      ".",
+      "+",
+      "?",
+      "$",
+      "{",
+      "}",
+      "(",
+      ")",
+      "[",
+      "]",
+      "\\",
+      "/",
+    ];
+    const specialsRegex = new RegExp(`[${specials.join("\\")}]`, "g");
+    return str.replace(specialsRegex, "\\$&");
   };
   /**
    * Converts :matches-css() arg property value match to regexp.
@@ -2558,7 +3020,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Arg of :matches-css() converted to regular expression.
    */
 
-  const convertStyleMatchValueToRegexp = rawValue => {
+  const convertStyleMatchValueToRegexp = (rawValue) => {
     let value;
     if (rawValue.startsWith(SLASH) && rawValue.endsWith(SLASH)) {
       // For regex patterns double quotes `"` and backslashes `\` should be escaped
@@ -2568,12 +3030,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       // For non-regex patterns parentheses `(` `)` and square brackets `[` `]`
       // should be unescaped, because their escaping in filter rules is required
       value = addUrlQuotesTo.noneRegexpArg(rawValue);
-      value = value.replace(/\\([\\()[\]"])/g, '$1');
+      value = value.replace(/\\([\\()[\]"])/g, "$1");
       value = escapeRegExp(value); // e.g. div:matches-css(background-image: url(data:*))
 
       value = replaceAll(value, ASTERISK, REGEXP_ANY_SYMBOL);
     }
-    return new RegExp(value, 'i');
+    return new RegExp(value, "i");
   };
   /**
    * Makes some properties values compatible.
@@ -2585,7 +3047,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const normalizePropertyValue = (propertyName, propertyValue) => {
-    let normalized = '';
+    let normalized = "";
     switch (propertyName) {
       case CSS_PROPERTY.BACKGROUND:
       case CSS_PROPERTY.BACKGROUND_IMAGE:
@@ -2598,7 +3060,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         break;
       case CSS_PROPERTY.OPACITY:
         // https://bugs.webkit.org/show_bug.cgi?id=93445
-        normalized = isSafariBrowser ? (Math.round(parseFloat(propertyValue) * 100) / 100).toString() : propertyValue;
+        normalized = isSafariBrowser
+          ? (Math.round(parseFloat(propertyValue) * 100) / 100).toString()
+          : propertyValue;
         break;
       default:
         normalized = propertyValue;
@@ -2616,7 +3080,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns String containing the value of a specified CSS property.
    */
 
-  const getComputedStylePropertyValue = (domElement, propertyName, regularPseudoElement) => {
+  const getComputedStylePropertyValue = (
+    domElement,
+    propertyName,
+    regularPseudoElement,
+  ) => {
     const style = window.getComputedStyle(domElement, regularPseudoElement);
     const propertyValue = style.getPropertyValue(propertyName);
     return normalizePropertyValue(propertyName, propertyValue);
@@ -2645,7 +3113,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return {
       name,
-      value
+      value,
     };
   };
 
@@ -2661,10 +3129,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid `rawArg`.
    */
   const parseStyleMatchArg = (pseudoName, rawArg) => {
-    const {
-      name,
-      value
-    } = getPseudoArgData(rawArg, COMMA);
+    const { name, value } = getPseudoArgData(rawArg, COMMA);
     let regularPseudoElement = name;
     let styleMatchArg = value; // check whether the string part before the separator is valid regular pseudo-element,
     // otherwise `regularPseudoElement` is null, and `styleMatchArg` is rawArg
@@ -2674,7 +3139,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       styleMatchArg = rawArg;
     }
     if (!styleMatchArg) {
-      throw new Error(`Required style property argument part is missing in :${pseudoName}() arg: '${rawArg}'`);
+      throw new Error(
+        `Required style property argument part is missing in :${pseudoName}() arg: '${rawArg}'`,
+      );
     } // if regularPseudoElement is not `null`
 
     if (regularPseudoElement) {
@@ -2685,7 +3152,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return {
       regularPseudoElement,
-      styleMatchArg
+      styleMatchArg,
     };
   };
   /**
@@ -2697,31 +3164,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid pseudo-class arg.
    */
 
-  const isStyleMatched = argsData => {
-    const {
+  const isStyleMatched = (argsData) => {
+    const { pseudoName, pseudoArg, domElement } = argsData;
+    const { regularPseudoElement, styleMatchArg } = parseStyleMatchArg(
       pseudoName,
       pseudoArg,
-      domElement
-    } = argsData;
-    const {
-      regularPseudoElement,
-      styleMatchArg
-    } = parseStyleMatchArg(pseudoName, pseudoArg);
-    const {
-      name: matchName,
-      value: matchValue
-    } = getPseudoArgData(styleMatchArg, COLON);
+    );
+    const { name: matchName, value: matchValue } = getPseudoArgData(
+      styleMatchArg,
+      COLON,
+    );
     if (!matchName || !matchValue) {
-      throw new Error(`Required property name or value is missing in :${pseudoName}() arg: '${styleMatchArg}'`);
+      throw new Error(
+        `Required property name or value is missing in :${pseudoName}() arg: '${styleMatchArg}'`,
+      );
     }
     let valueRegexp;
     try {
       valueRegexp = convertStyleMatchValueToRegexp(matchValue);
     } catch (e) {
       logger.error(getErrorMessage(e));
-      throw new Error(`Invalid argument of :${pseudoName}() pseudo-class: '${styleMatchArg}'`);
+      throw new Error(
+        `Invalid argument of :${pseudoName}() pseudo-class: '${styleMatchArg}'`,
+      );
     }
-    const value = getComputedStylePropertyValue(domElement, matchName, regularPseudoElement);
+    const value = getComputedStylePropertyValue(
+      domElement,
+      matchName,
+      regularPseudoElement,
+    );
     return valueRegexp && valueRegexp.test(value);
   };
   /**
@@ -2732,7 +3203,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if 'matches' pseudo-class string arg is valid.
    */
 
-  const validateStrMatcherArg = arg => {
+  const validateStrMatcherArg = (arg) => {
     if (arg.includes(SLASH)) {
       return false;
     }
@@ -2752,18 +3223,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const getValidMatcherArg = function (rawArg) {
-    let isWildcardAllowed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    let isWildcardAllowed =
+      arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
     // if rawArg is missing for pseudo-class
     // e.g. :matches-attr()
     // error will be thrown before getValidMatcherArg() is called:
     // name or arg is missing in AbsolutePseudoClass
     let arg;
-    if (rawArg.length > 1 && rawArg.startsWith(DOUBLE_QUOTE) && rawArg.endsWith(DOUBLE_QUOTE)) {
+    if (
+      rawArg.length > 1 &&
+      rawArg.startsWith(DOUBLE_QUOTE) &&
+      rawArg.endsWith(DOUBLE_QUOTE)
+    ) {
       rawArg = rawArg.slice(1, -1);
     }
-    if (rawArg === '') {
+    if (rawArg === "") {
       // e.g. :matches-property("")
-      throw new Error('Argument should be specified. Empty arg is invalid.');
+      throw new Error("Argument should be specified. Empty arg is invalid.");
     }
     if (rawArg.startsWith(SLASH) && rawArg.endsWith(SLASH)) {
       // e.g. :matches-property("//")
@@ -2798,16 +3274,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if attribute name is missing in pseudo-class arg.
    */
   const getRawMatchingData = (pseudoName, pseudoArg) => {
-    const {
-      name: rawName,
-      value: rawValue
-    } = getPseudoArgData(pseudoArg, EQUAL_SIGN);
+    const { name: rawName, value: rawValue } = getPseudoArgData(
+      pseudoArg,
+      EQUAL_SIGN,
+    );
     if (!rawName) {
-      throw new Error(`Required attribute name is missing in :${pseudoName} arg: ${pseudoArg}`);
+      throw new Error(
+        `Required attribute name is missing in :${pseudoName} arg: ${pseudoArg}`,
+      );
     }
     return {
       rawName,
-      rawValue
+      rawValue,
     };
   };
   /**
@@ -2819,21 +3297,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid arg of pseudo-class.
    */
 
-  const isAttributeMatched = argsData => {
-    const {
-      pseudoName,
-      pseudoArg,
-      domElement
-    } = argsData;
+  const isAttributeMatched = (argsData) => {
+    const { pseudoName, pseudoArg, domElement } = argsData;
     const elementAttributes = domElement.attributes; // no match if dom element has no attributes
 
     if (elementAttributes.length === 0) {
       return false;
     }
-    const {
-      rawName: rawAttrName,
-      rawValue: rawAttrValue
-    } = getRawMatchingData(pseudoName, pseudoArg);
+    const { rawName: rawAttrName, rawValue: rawAttrValue } = getRawMatchingData(
+      pseudoName,
+      pseudoArg,
+    );
     let attrNameMatch;
     try {
       attrNameMatch = getValidMatcherArg(rawAttrName);
@@ -2849,7 +3323,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!attr) {
         break;
       }
-      const isNameMatched = attrNameMatch instanceof RegExp ? attrNameMatch.test(attr.name) : attrNameMatch === attr.name;
+      const isNameMatched =
+        attrNameMatch instanceof RegExp
+          ? attrNameMatch.test(attr.name)
+          : attrNameMatch === attr.name;
       if (!rawAttrValue) {
         // for rules with no attribute value specified
         // e.g. :matches-attr("/regex/") or :matches-attr("attr-name")
@@ -2863,7 +3340,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           logger.error(errorMessage);
           throw new SyntaxError(errorMessage);
         }
-        const isValueMatched = attrValueMatch instanceof RegExp ? attrValueMatch.test(attr.value) : attrValueMatch === attr.value;
+        const isValueMatched =
+          attrValueMatch instanceof RegExp
+            ? attrValueMatch.test(attr.value)
+            : attrValueMatch === attr.value;
         isMatched = isNameMatched && isValueMatched;
       }
       i += 1;
@@ -2879,18 +3359,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid chain.
    */
 
-  const parseRawPropChain = input => {
-    if (input.length > 1 && input.startsWith(DOUBLE_QUOTE) && input.endsWith(DOUBLE_QUOTE)) {
+  const parseRawPropChain = (input) => {
+    if (
+      input.length > 1 &&
+      input.startsWith(DOUBLE_QUOTE) &&
+      input.endsWith(DOUBLE_QUOTE)
+    ) {
       input = input.slice(1, -1);
     }
     const chainChunks = input.split(DOT);
     const chainPatterns = [];
-    let patternBuffer = '';
+    let patternBuffer = "";
     let isRegexpPattern = false;
     let i = 0;
     while (i < chainChunks.length) {
-      const chunk = getItemByIndex(chainChunks, i, `Invalid pseudo-class arg: '${input}'`);
-      if (chunk.startsWith(SLASH) && chunk.endsWith(SLASH) && chunk.length > 2) {
+      const chunk = getItemByIndex(
+        chainChunks,
+        i,
+        `Invalid pseudo-class arg: '${input}'`,
+      );
+      if (
+        chunk.startsWith(SLASH) &&
+        chunk.endsWith(SLASH) &&
+        chunk.length > 2
+      ) {
         // regexp pattern with no dot in it, e.g. /propName/
         chainPatterns.push(chunk);
       } else if (chunk.startsWith(SLASH)) {
@@ -2903,7 +3395,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
         patternBuffer += `.${chunk}`;
         chainPatterns.push(patternBuffer);
-        patternBuffer = '';
+        patternBuffer = "";
       } else {
         // if there are few dots in regexp pattern
         // so chunk might be in the middle of it
@@ -2919,17 +3411,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (patternBuffer.length > 0) {
       throw new Error(`Invalid regexp property pattern '${input}'`);
     }
-    const chainMatchPatterns = chainPatterns.map(pattern => {
+    const chainMatchPatterns = chainPatterns.map((pattern) => {
       if (pattern.length === 0) {
         // e.g. '.prop.id' or 'nested..test'
-        throw new Error(`Empty pattern '${pattern}' is invalid in chain '${input}'`);
+        throw new Error(
+          `Empty pattern '${pattern}' is invalid in chain '${input}'`,
+        );
       }
       let validPattern;
       try {
         validPattern = getValidMatcherArg(pattern, true);
       } catch (e) {
         logger.error(getErrorMessage(e));
-        throw new Error(`Invalid property pattern '${pattern}' in property chain '${input}'`);
+        throw new Error(
+          `Invalid property pattern '${pattern}' in property chain '${input}'`,
+        );
       }
       return validPattern;
     });
@@ -2946,7 +3442,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of parsed data — representation of `base`-related `chain`.
    */
   const filterRootsByRegexpChain = function (base, chain) {
-    let output = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+    let output =
+      arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
     const tempProp = getFirst(chain);
     if (chain.length === 1) {
       let key;
@@ -2956,14 +3453,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             output.push({
               base,
               prop: key,
-              value: base[key]
+              value: base[key],
             });
           }
         } else if (tempProp === key) {
           output.push({
             base,
             prop: tempProp,
-            value: base[key]
+            value: base[key],
           });
         }
       }
@@ -2980,15 +3477,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           baseKeys.push(key);
         }
       }
-      baseKeys.forEach(key => {
+      baseKeys.forEach((key) => {
         var _Object$getOwnPropert;
-        const item = (_Object$getOwnPropert = Object.getOwnPropertyDescriptor(base, key)) === null || _Object$getOwnPropert === void 0 ? void 0 : _Object$getOwnPropert.value;
+        const item =
+          (_Object$getOwnPropert = Object.getOwnPropertyDescriptor(
+            base,
+            key,
+          )) === null || _Object$getOwnPropert === void 0
+            ? void 0
+            : _Object$getOwnPropert.value;
         filterRootsByRegexpChain(item, nextProp, output);
       });
     }
-    if (base && typeof tempProp === 'string') {
+    if (base && typeof tempProp === "string") {
       var _Object$getOwnPropert2;
-      const nextBase = (_Object$getOwnPropert2 = Object.getOwnPropertyDescriptor(base, tempProp)) === null || _Object$getOwnPropert2 === void 0 ? void 0 : _Object$getOwnPropert2.value;
+      const nextBase =
+        (_Object$getOwnPropert2 = Object.getOwnPropertyDescriptor(
+          base,
+          tempProp,
+        )) === null || _Object$getOwnPropert2 === void 0
+          ? void 0
+          : _Object$getOwnPropert2.value;
       chain = chain.slice(1);
       if (nextBase !== undefined) {
         filterRootsByRegexpChain(nextBase, chain, output);
@@ -3005,20 +3514,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid prop in chain.
    */
 
-  const isPropertyMatched = argsData => {
-    const {
-      pseudoName,
-      pseudoArg,
-      domElement
-    } = argsData;
-    const {
-      rawName: rawPropertyName,
-      rawValue: rawPropertyValue
-    } = getRawMatchingData(pseudoName, pseudoArg); // chained property name cannot include '/' or '.'
+  const isPropertyMatched = (argsData) => {
+    const { pseudoName, pseudoArg, domElement } = argsData;
+    const { rawName: rawPropertyName, rawValue: rawPropertyValue } =
+      getRawMatchingData(pseudoName, pseudoArg); // chained property name cannot include '/' or '.'
     // so regex prop names with such escaped characters are invalid
 
-    if (rawPropertyName.includes('\\/') || rawPropertyName.includes('\\.')) {
-      throw new Error(`Invalid :${pseudoName} name pattern: ${rawPropertyName}`);
+    if (rawPropertyName.includes("\\/") || rawPropertyName.includes("\\.")) {
+      throw new Error(
+        `Invalid :${pseudoName} name pattern: ${rawPropertyName}`,
+      );
     }
     let propChainMatches;
     try {
@@ -3045,12 +3550,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (propValueMatch) {
         for (let i = 0; i < ownerObjArr.length; i += 1) {
           var _ownerObjArr$i;
-          const realValue = (_ownerObjArr$i = ownerObjArr[i]) === null || _ownerObjArr$i === void 0 ? void 0 : _ownerObjArr$i.value;
+          const realValue =
+            (_ownerObjArr$i = ownerObjArr[i]) === null ||
+            _ownerObjArr$i === void 0
+              ? void 0
+              : _ownerObjArr$i.value;
           if (propValueMatch instanceof RegExp) {
             isMatched = propValueMatch.test(convertTypeIntoString(realValue));
           } else {
             // handle 'null' and 'undefined' property values set as string
-            if (realValue === 'null' || realValue === 'undefined') {
+            if (realValue === "null" || realValue === "undefined") {
               isMatched = propValueMatch === realValue;
               break;
             }
@@ -3073,30 +3582,34 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid arg of pseudo-class.
    */
 
-  const isTextMatched = argsData => {
-    const {
-      pseudoName,
-      pseudoArg,
-      domElement
-    } = argsData;
+  const isTextMatched = (argsData) => {
+    const { pseudoName, pseudoArg, domElement } = argsData;
     const textContent = getNodeTextContent(domElement);
     let isTextContentMatched;
     let pseudoArgToMatch = pseudoArg;
-    if (pseudoArgToMatch.startsWith(SLASH) && REGEXP_WITH_FLAGS_REGEXP.test(pseudoArgToMatch)) {
+    if (
+      pseudoArgToMatch.startsWith(SLASH) &&
+      REGEXP_WITH_FLAGS_REGEXP.test(pseudoArgToMatch)
+    ) {
       // regexp arg
-      const flagsIndex = pseudoArgToMatch.lastIndexOf('/');
+      const flagsIndex = pseudoArgToMatch.lastIndexOf("/");
       const flagsStr = pseudoArgToMatch.substring(flagsIndex + 1);
-      pseudoArgToMatch = pseudoArgToMatch.substring(0, flagsIndex + 1).slice(1, -1).replace(/\\([\\"])/g, '$1');
+      pseudoArgToMatch = pseudoArgToMatch
+        .substring(0, flagsIndex + 1)
+        .slice(1, -1)
+        .replace(/\\([\\"])/g, "$1");
       let regex;
       try {
         regex = new RegExp(pseudoArgToMatch, flagsStr);
       } catch (e) {
-        throw new Error(`Invalid argument of :${pseudoName}() pseudo-class: ${pseudoArg}`);
+        throw new Error(
+          `Invalid argument of :${pseudoName}() pseudo-class: ${pseudoArg}`,
+        );
       }
       isTextContentMatched = regex.test(textContent);
     } else {
       // none-regexp arg
-      pseudoArgToMatch = pseudoArgToMatch.replace(/\\([\\()[\]"])/g, '$1');
+      pseudoArgToMatch = pseudoArgToMatch.replace(/\\([\\()[\]"])/g, "$1");
       isTextContentMatched = textContent.includes(pseudoArgToMatch);
     }
     return isTextContentMatched;
@@ -3114,7 +3627,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const getValidNumberAncestorArg = (rawArg, pseudoName) => {
     const deep = Number(rawArg);
     if (Number.isNaN(deep) || deep < 1 || deep >= 256) {
-      throw new Error(`Invalid argument of :${pseudoName} pseudo-class: '${rawArg}'`);
+      throw new Error(
+        `Invalid argument of :${pseudoName} pseudo-class: '${rawArg}'`,
+      );
     }
     return deep;
   };
@@ -3135,7 +3650,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     while (i < nth) {
       ancestor = domElement.parentElement;
       if (!ancestor) {
-        throw new Error(`Out of DOM: Argument of :${pseudoName}() pseudo-class is too big — '${nth}'.`);
+        throw new Error(
+          `Out of DOM: Argument of :${pseudoName}() pseudo-class is too big — '${nth}'.`,
+        );
       }
       domElement = ancestor;
       i += 1;
@@ -3150,7 +3667,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if standard CSS selector is valid.
    */
 
-  const validateStandardSelector = selector => {
+  const validateStandardSelector = (selector) => {
     let isValid;
     try {
       document.querySelectorAll(selector);
@@ -3219,9 +3736,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         argsData = {
           pseudoName,
           pseudoArg,
-          domElement
+          domElement,
         };
-        errorMessage = getAbsolutePseudoError('text content', pseudoName, pseudoArg);
+        errorMessage = getAbsolutePseudoError(
+          "text content",
+          pseudoName,
+          pseudoArg,
+        );
         break;
       case MATCHES_CSS_PSEUDO:
       case MATCHES_CSS_AFTER_PSEUDO:
@@ -3230,27 +3751,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         argsData = {
           pseudoName,
           pseudoArg,
-          domElement
+          domElement,
         };
-        errorMessage = getAbsolutePseudoError('style', pseudoName, pseudoArg);
+        errorMessage = getAbsolutePseudoError("style", pseudoName, pseudoArg);
         break;
       case MATCHES_ATTR_PSEUDO_CLASS_MARKER:
         callback = isAttributeMatched;
         argsData = {
           domElement,
           pseudoName,
-          pseudoArg
+          pseudoArg,
         };
-        errorMessage = getAbsolutePseudoError('attributes', pseudoName, pseudoArg);
+        errorMessage = getAbsolutePseudoError(
+          "attributes",
+          pseudoName,
+          pseudoArg,
+        );
         break;
       case MATCHES_PROPERTY_PSEUDO_CLASS_MARKER:
         callback = isPropertyMatched;
         argsData = {
           domElement,
           pseudoName,
-          pseudoArg
+          pseudoArg,
         };
-        errorMessage = getAbsolutePseudoError('properties', pseudoName, pseudoArg);
+        errorMessage = getAbsolutePseudoError(
+          "properties",
+          pseudoName,
+          pseudoArg,
+        );
         break;
       default:
         throw new Error(`Unknown absolute pseudo-class :${pseudoName}()`);
@@ -3269,15 +3798,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     nthAncestor: (domElements, rawPseudoArg, pseudoName) => {
       const deep = getValidNumberAncestorArg(rawPseudoArg, pseudoName);
-      const ancestors = domElements.map(domElement => {
-        let ancestor = null;
-        try {
-          ancestor = getNthAncestor(domElement, deep, pseudoName);
-        } catch (e) {
-          logger.error(getErrorMessage(e));
-        }
-        return ancestor;
-      }).filter(isHtmlElement);
+      const ancestors = domElements
+        .map((domElement) => {
+          let ancestor = null;
+          try {
+            ancestor = getNthAncestor(domElement, deep, pseudoName);
+          } catch (e) {
+            logger.error(getErrorMessage(e));
+          }
+          return ancestor;
+        })
+        .filter(isHtmlElement);
       return ancestors;
     },
     /**
@@ -3289,14 +3820,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      * @returns Array of DOM elements matched by xpath expression.
      */
     xpath: (domElements, rawPseudoArg) => {
-      const foundElements = domElements.map(domElement => {
+      const foundElements = domElements.map((domElement) => {
         const result = [];
         let xpathResult;
         try {
-          xpathResult = document.evaluate(rawPseudoArg, domElement, null, window.XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+          xpathResult = document.evaluate(
+            rawPseudoArg,
+            domElement,
+            null,
+            window.XPathResult.UNORDERED_NODE_ITERATOR_TYPE,
+            null,
+          );
         } catch (e) {
           logger.error(getErrorMessage(e));
-          throw new Error(`Invalid argument of :xpath() pseudo-class: '${rawPseudoArg}'`);
+          throw new Error(
+            `Invalid argument of :xpath() pseudo-class: '${rawPseudoArg}'`,
+          );
         }
         let node = xpathResult.iterateNext();
         while (node) {
@@ -3320,19 +3859,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     upward: (domElements, rawPseudoArg) => {
       if (!validateStandardSelector(rawPseudoArg)) {
-        throw new Error(`Invalid argument of :upward pseudo-class: '${rawPseudoArg}'`);
+        throw new Error(
+          `Invalid argument of :upward pseudo-class: '${rawPseudoArg}'`,
+        );
       }
-      const closestAncestors = domElements.map(domElement => {
-        // closest to parent element should be found
-        // otherwise `.base:upward(.base)` will return itself too, not only ancestor
-        const parent = domElement.parentElement;
-        if (!parent) {
-          return null;
-        }
-        return parent.closest(rawPseudoArg);
-      }).filter(isHtmlElement);
+      const closestAncestors = domElements
+        .map((domElement) => {
+          // closest to parent element should be found
+          // otherwise `.base:upward(.base)` will return itself too, not only ancestor
+          const parent = domElement.parentElement;
+          if (!parent) {
+            return null;
+          }
+          return parent.closest(rawPseudoArg);
+        })
+        .filter(isHtmlElement);
       return closestAncestors;
-    }
+    },
   };
 
   /**
@@ -3370,7 +3913,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Ast RegularSelector node.
    */
   const getFirstInnerRegularChild = (selectorNode, pseudoName) => {
-    return getFirstRegularChild(selectorNode.children, `RegularSelector is missing for :${pseudoName}() pseudo-class`);
+    return getFirstRegularChild(
+      selectorNode.children,
+      `RegularSelector is missing for :${pseudoName}() pseudo-class`,
+    );
   }; // TODO: fix for <forgiving-relative-selector-list>
   // https://github.com/AdguardTeam/ExtendedCss/issues/154
 
@@ -3383,65 +3929,75 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if **all selectors** from argsData.relativeSelectorList is **matched** for argsData.element.
    */
 
-  const hasRelativesBySelectorList = argsData => {
-    const {
-      element,
-      relativeSelectorList,
-      pseudoName
-    } = argsData;
+  const hasRelativesBySelectorList = (argsData) => {
+    const { element, relativeSelectorList, pseudoName } = argsData;
     return relativeSelectorList.children // Array.every() is used here as each Selector node from SelectorList should exist on page
-    .every(selectorNode => {
-      // selectorList.children always starts with regular selector as any selector generally
-      const relativeRegularSelector = getFirstInnerRegularChild(selectorNode, pseudoName);
-      let specifiedSelector = '';
-      let rootElement = null;
-      const regularSelector = getNodeValue(relativeRegularSelector);
-      if (regularSelector.startsWith(NEXT_SIBLING_COMBINATOR) || regularSelector.startsWith(SUBSEQUENT_SIBLING_COMBINATOR)) {
-        /**
-         * For matching the element by "element:has(+ next-sibling)" and "element:has(~ sibling)"
-         * we check whether the element's parentElement has specific direct child combination,
-         * e.g. 'h1:has(+ .share)' -> `h1Node.parentElement.querySelectorAll(':scope > h1 + .share')`.
-         *
-         * @see {@link https://www.w3.org/TR/selectors-4/#relational}
-         */
-        rootElement = element.parentElement;
-        const elementSelectorText = getElementSelectorDesc(element);
-        specifiedSelector = `${scopeDirectChildren}${elementSelectorText}${regularSelector}`;
-      } else if (regularSelector === ASTERISK) {
-        /**
-         * :scope specification is needed for proper descendants selection
-         * as native element.querySelectorAll() does not select exact element descendants
-         * e.g. 'a:has(> img)' -> `aNode.querySelectorAll(':scope > img')`.
-         *
-         * For 'any selector' as arg of relative simplicity should be set for all inner elements
-         * e.g. 'div:has(*)' -> `divNode.querySelectorAll(':scope *')`
-         * which means empty div with no child element.
-         */
-        rootElement = element;
-        specifiedSelector = `${scopeAnyChildren}${ASTERISK}`;
-      } else {
-        /**
-         * As it described above, inner elements should be found using `:scope` pseudo-class
-         * e.g. 'a:has(> img)' -> `aNode.querySelectorAll(':scope > img')`
-         * OR '.block(div > span)' -> `blockClassNode.querySelectorAll(':scope div > span')`.
-         */
-        specifiedSelector = `${scopeAnyChildren}${regularSelector}`;
-        rootElement = element;
-      }
-      if (!rootElement) {
-        throw new Error(`Selection by :${pseudoName}() pseudo-class is not possible`);
-      }
-      let relativeElements;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        relativeElements = getElementsForSelectorNode(selectorNode, rootElement, specifiedSelector);
-      } catch (e) {
-        logger.error(getErrorMessage(e)); // fail for invalid selector
+      .every((selectorNode) => {
+        // selectorList.children always starts with regular selector as any selector generally
+        const relativeRegularSelector = getFirstInnerRegularChild(
+          selectorNode,
+          pseudoName,
+        );
+        let specifiedSelector = "";
+        let rootElement = null;
+        const regularSelector = getNodeValue(relativeRegularSelector);
+        if (
+          regularSelector.startsWith(NEXT_SIBLING_COMBINATOR) ||
+          regularSelector.startsWith(SUBSEQUENT_SIBLING_COMBINATOR)
+        ) {
+          /**
+           * For matching the element by "element:has(+ next-sibling)" and "element:has(~ sibling)"
+           * we check whether the element's parentElement has specific direct child combination,
+           * e.g. 'h1:has(+ .share)' -> `h1Node.parentElement.querySelectorAll(':scope > h1 + .share')`.
+           *
+           * @see {@link https://www.w3.org/TR/selectors-4/#relational}
+           */
+          rootElement = element.parentElement;
+          const elementSelectorText = getElementSelectorDesc(element);
+          specifiedSelector = `${scopeDirectChildren}${elementSelectorText}${regularSelector}`;
+        } else if (regularSelector === ASTERISK) {
+          /**
+           * :scope specification is needed for proper descendants selection
+           * as native element.querySelectorAll() does not select exact element descendants
+           * e.g. 'a:has(> img)' -> `aNode.querySelectorAll(':scope > img')`.
+           *
+           * For 'any selector' as arg of relative simplicity should be set for all inner elements
+           * e.g. 'div:has(*)' -> `divNode.querySelectorAll(':scope *')`
+           * which means empty div with no child element.
+           */
+          rootElement = element;
+          specifiedSelector = `${scopeAnyChildren}${ASTERISK}`;
+        } else {
+          /**
+           * As it described above, inner elements should be found using `:scope` pseudo-class
+           * e.g. 'a:has(> img)' -> `aNode.querySelectorAll(':scope > img')`
+           * OR '.block(div > span)' -> `blockClassNode.querySelectorAll(':scope div > span')`.
+           */
+          specifiedSelector = `${scopeAnyChildren}${regularSelector}`;
+          rootElement = element;
+        }
+        if (!rootElement) {
+          throw new Error(
+            `Selection by :${pseudoName}() pseudo-class is not possible`,
+          );
+        }
+        let relativeElements;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-use-before-define
+          relativeElements = getElementsForSelectorNode(
+            selectorNode,
+            rootElement,
+            specifiedSelector,
+          );
+        } catch (e) {
+          logger.error(getErrorMessage(e)); // fail for invalid selector
 
-        throw new Error(`Invalid selector for :${pseudoName}() pseudo-class: '${regularSelector}'`);
-      }
-      return relativeElements.length > 0;
-    });
+          throw new Error(
+            `Invalid selector for :${pseudoName}() pseudo-class: '${regularSelector}'`,
+          );
+        }
+        return relativeElements.length > 0;
+      });
   };
   /**
    * Checks whether the element is an any element specified by pseudo-class arg.
@@ -3452,42 +4008,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if **any selector** from argsData.relativeSelectorList is **matched** for argsData.element.
    */
 
-  const isAnyElementBySelectorList = argsData => {
-    const {
-      element,
-      relativeSelectorList,
-      pseudoName
-    } = argsData;
+  const isAnyElementBySelectorList = (argsData) => {
+    const { element, relativeSelectorList, pseudoName } = argsData;
     return relativeSelectorList.children // Array.some() is used here as any selector from selector list should exist on page
-    .some(selectorNode => {
-      // selectorList.children always starts with regular selector
-      const relativeRegularSelector = getFirstInnerRegularChild(selectorNode, pseudoName);
-      /**
-       * For checking the element by 'div:is(.banner)'
-       * we check whether the element's parentElement has any specific direct child.
-       */
+      .some((selectorNode) => {
+        // selectorList.children always starts with regular selector
+        const relativeRegularSelector = getFirstInnerRegularChild(
+          selectorNode,
+          pseudoName,
+        );
+        /**
+         * For checking the element by 'div:is(.banner)'
+         * we check whether the element's parentElement has any specific direct child.
+         */
 
-      const rootElement = getParent(element, `Selection by :${pseudoName}() pseudo-class is not possible`);
-      /**
-       * So we calculate the element "description" by it's tagname and attributes for targeting
-       * and use it to specify the selection
-       * e.g. `div:is(.banner)` --> `divNode.parentElement.querySelectorAll(':scope > .banner')`.
-       */
+        const rootElement = getParent(
+          element,
+          `Selection by :${pseudoName}() pseudo-class is not possible`,
+        );
+        /**
+         * So we calculate the element "description" by it's tagname and attributes for targeting
+         * and use it to specify the selection
+         * e.g. `div:is(.banner)` --> `divNode.parentElement.querySelectorAll(':scope > .banner')`.
+         */
 
-      const specifiedSelector = `${scopeDirectChildren}${getNodeValue(relativeRegularSelector)}`;
-      let anyElements;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        anyElements = getElementsForSelectorNode(selectorNode, rootElement, specifiedSelector);
-      } catch (e) {
-        // do not fail on invalid selectors for :is()
-        return false;
-      } // TODO: figure out how to handle complex selectors with extended pseudo-classes
-      // (check readme - extended-css-is-limitations)
-      // because `element` and `anyElements` may be from different DOM levels
+        const specifiedSelector = `${scopeDirectChildren}${getNodeValue(relativeRegularSelector)}`;
+        let anyElements;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-use-before-define
+          anyElements = getElementsForSelectorNode(
+            selectorNode,
+            rootElement,
+            specifiedSelector,
+          );
+        } catch (e) {
+          // do not fail on invalid selectors for :is()
+          return false;
+        } // TODO: figure out how to handle complex selectors with extended pseudo-classes
+        // (check readme - extended-css-is-limitations)
+        // because `element` and `anyElements` may be from different DOM levels
 
-      return anyElements.includes(element);
-    });
+        return anyElements.includes(element);
+      });
   };
   /**
    * Checks whether the element is not an element specified by pseudo-class arg.
@@ -3498,44 +4060,52 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if **any selector** from argsData.relativeSelectorList is **not matched** for argsData.element.
    */
 
-  const notElementBySelectorList = argsData => {
-    const {
-      element,
-      relativeSelectorList,
-      pseudoName
-    } = argsData;
+  const notElementBySelectorList = (argsData) => {
+    const { element, relativeSelectorList, pseudoName } = argsData;
     return relativeSelectorList.children // Array.every() is used here as element should not be selected by any selector from selector list
-    .every(selectorNode => {
-      // selectorList.children always starts with regular selector
-      const relativeRegularSelector = getFirstInnerRegularChild(selectorNode, pseudoName);
-      /**
-       * For checking the element by 'div:not([data="content"])
-       * we check whether the element's parentElement has any specific direct child.
-       */
+      .every((selectorNode) => {
+        // selectorList.children always starts with regular selector
+        const relativeRegularSelector = getFirstInnerRegularChild(
+          selectorNode,
+          pseudoName,
+        );
+        /**
+         * For checking the element by 'div:not([data="content"])
+         * we check whether the element's parentElement has any specific direct child.
+         */
 
-      const rootElement = getParent(element, `Selection by :${pseudoName}() pseudo-class is not possible`);
-      /**
-       * So we calculate the element "description" by it's tagname and attributes for targeting
-       * and use it to specify the selection
-       * e.g. `div:not(.banner)` --> `divNode.parentElement.querySelectorAll(':scope > .banner')`.
-       */
+        const rootElement = getParent(
+          element,
+          `Selection by :${pseudoName}() pseudo-class is not possible`,
+        );
+        /**
+         * So we calculate the element "description" by it's tagname and attributes for targeting
+         * and use it to specify the selection
+         * e.g. `div:not(.banner)` --> `divNode.parentElement.querySelectorAll(':scope > .banner')`.
+         */
 
-      const specifiedSelector = `${scopeDirectChildren}${getNodeValue(relativeRegularSelector)}`;
-      let anyElements;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        anyElements = getElementsForSelectorNode(selectorNode, rootElement, specifiedSelector);
-      } catch (e) {
-        // fail on invalid selectors for :not()
-        logger.error(getErrorMessage(e)); // eslint-disable-next-line max-len
+        const specifiedSelector = `${scopeDirectChildren}${getNodeValue(relativeRegularSelector)}`;
+        let anyElements;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-use-before-define
+          anyElements = getElementsForSelectorNode(
+            selectorNode,
+            rootElement,
+            specifiedSelector,
+          );
+        } catch (e) {
+          // fail on invalid selectors for :not()
+          logger.error(getErrorMessage(e)); // eslint-disable-next-line max-len
 
-        throw new Error(`Invalid selector for :${pseudoName}() pseudo-class: '${getNodeValue(relativeRegularSelector)}'`);
-      } // TODO: figure out how to handle up-looking pseudo-classes inside :not()
-      // (check readme - extended-css-not-limitations)
-      // because `element` and `anyElements` may be from different DOM levels
+          throw new Error(
+            `Invalid selector for :${pseudoName}() pseudo-class: '${getNodeValue(relativeRegularSelector)}'`,
+          );
+        } // TODO: figure out how to handle up-looking pseudo-classes inside :not()
+        // (check readme - extended-css-not-limitations)
+        // because `element` and `anyElements` may be from different DOM levels
 
-      return !anyElements.includes(element);
-    });
+        return !anyElements.includes(element);
+      });
   };
   /**
    * Selects dom elements by value of RegularSelector.
@@ -3548,13 +4118,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if RegularSelector node value is an invalid selector.
    */
 
-  const getByRegularSelector = (regularSelectorNode, root, specifiedSelector) => {
-    const selectorText = specifiedSelector ? specifiedSelector : getNodeValue(regularSelectorNode);
+  const getByRegularSelector = (
+    regularSelectorNode,
+    root,
+    specifiedSelector,
+  ) => {
+    const selectorText = specifiedSelector
+      ? specifiedSelector
+      : getNodeValue(regularSelectorNode);
     let selectedElements = [];
     try {
       selectedElements = Array.from(root.querySelectorAll(selectorText));
     } catch (e) {
-      throw new Error(`Error: unable to select by '${selectorText}' — ${getErrorMessage(e)}`);
+      throw new Error(
+        `Error: unable to select by '${selectorText}' — ${getErrorMessage(e)}`,
+      );
     }
     return selectedElements;
   };
@@ -3575,58 +4153,86 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const pseudoName = getNodeName(extendedPseudoClassNode);
     if (isAbsolutePseudoClass(pseudoName)) {
       // absolute extended pseudo-classes should have an argument
-      const absolutePseudoArg = getNodeValue(extendedPseudoClassNode, `Missing arg for :${pseudoName}() pseudo-class`);
+      const absolutePseudoArg = getNodeValue(
+        extendedPseudoClassNode,
+        `Missing arg for :${pseudoName}() pseudo-class`,
+      );
       if (pseudoName === NTH_ANCESTOR_PSEUDO_CLASS_MARKER) {
         // :nth-ancestor()
-        foundElements = findByAbsolutePseudoPseudo.nthAncestor(domElements, absolutePseudoArg, pseudoName);
+        foundElements = findByAbsolutePseudoPseudo.nthAncestor(
+          domElements,
+          absolutePseudoArg,
+          pseudoName,
+        );
       } else if (pseudoName === XPATH_PSEUDO_CLASS_MARKER) {
         // :xpath()
         try {
           document.createExpression(absolutePseudoArg, null);
         } catch (e) {
-          throw new Error(`Invalid argument of :${pseudoName}() pseudo-class: '${absolutePseudoArg}'`);
+          throw new Error(
+            `Invalid argument of :${pseudoName}() pseudo-class: '${absolutePseudoArg}'`,
+          );
         }
-        foundElements = findByAbsolutePseudoPseudo.xpath(domElements, absolutePseudoArg);
+        foundElements = findByAbsolutePseudoPseudo.xpath(
+          domElements,
+          absolutePseudoArg,
+        );
       } else if (pseudoName === UPWARD_PSEUDO_CLASS_MARKER) {
         // :upward()
         if (Number.isNaN(Number(absolutePseudoArg))) {
           // so arg is selector, not a number
-          foundElements = findByAbsolutePseudoPseudo.upward(domElements, absolutePseudoArg);
+          foundElements = findByAbsolutePseudoPseudo.upward(
+            domElements,
+            absolutePseudoArg,
+          );
         } else {
-          foundElements = findByAbsolutePseudoPseudo.nthAncestor(domElements, absolutePseudoArg, pseudoName);
+          foundElements = findByAbsolutePseudoPseudo.nthAncestor(
+            domElements,
+            absolutePseudoArg,
+            pseudoName,
+          );
         }
       } else {
         // all other absolute extended pseudo-classes
         // e.g. contains, matches-attr, etc.
-        foundElements = domElements.filter(element => {
-          return isMatchedByAbsolutePseudo(element, pseudoName, absolutePseudoArg);
+        foundElements = domElements.filter((element) => {
+          return isMatchedByAbsolutePseudo(
+            element,
+            pseudoName,
+            absolutePseudoArg,
+          );
         });
       }
     } else if (isRelativePseudoClass(pseudoName)) {
-      const relativeSelectorList = getRelativeSelectorListNode(extendedPseudoClassNode);
+      const relativeSelectorList = getRelativeSelectorListNode(
+        extendedPseudoClassNode,
+      );
       let relativePredicate;
       switch (pseudoName) {
         case HAS_PSEUDO_CLASS_MARKER:
         case ABP_HAS_PSEUDO_CLASS_MARKER:
-          relativePredicate = element => hasRelativesBySelectorList({
-            element,
-            relativeSelectorList,
-            pseudoName
-          });
+          relativePredicate = (element) =>
+            hasRelativesBySelectorList({
+              element,
+              relativeSelectorList,
+              pseudoName,
+            });
           break;
         case IS_PSEUDO_CLASS_MARKER:
-          relativePredicate = element => isAnyElementBySelectorList({
-            element,
-            relativeSelectorList,
-            pseudoName
-          });
+          relativePredicate = (element) =>
+            isAnyElementBySelectorList({
+              element,
+              relativeSelectorList,
+              pseudoName,
+            });
           break;
         case NOT_PSEUDO_CLASS_MARKER:
-          relativePredicate = element => notElementBySelectorList({
-            element,
-            relativeSelectorList,
-            pseudoName
-          });
+          relativePredicate = (element) =>
+            notElementBySelectorList({
+              element,
+              relativeSelectorList,
+              pseudoName,
+            });
           break;
         default:
           throw new Error(`Unknown relative pseudo-class: '${pseudoName}'`);
@@ -3654,14 +4260,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const value = getNodeValue(regularSelectorNode);
     if (value.startsWith(CHILD_COMBINATOR)) {
       // e.g. div:has(> img) > .banner
-      foundElements = domElements.map(root => {
+      foundElements = domElements.map((root) => {
         const specifiedSelector = `${SCOPE_CSS_PSEUDO_CLASS}${value}`;
-        return getByRegularSelector(regularSelectorNode, root, specifiedSelector);
+        return getByRegularSelector(
+          regularSelectorNode,
+          root,
+          specifiedSelector,
+        );
       });
-    } else if (value.startsWith(NEXT_SIBLING_COMBINATOR) || value.startsWith(SUBSEQUENT_SIBLING_COMBINATOR)) {
+    } else if (
+      value.startsWith(NEXT_SIBLING_COMBINATOR) ||
+      value.startsWith(SUBSEQUENT_SIBLING_COMBINATOR)
+    ) {
       // e.g. div:has(> img) + .banner
       // or   div:has(> img) ~ .banner
-      foundElements = domElements.map(element => {
+      foundElements = domElements.map((element) => {
         const rootElement = element.parentElement;
         if (!rootElement) {
           // do not throw error if there in no parent for element
@@ -3670,15 +4283,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         const elementSelectorText = getElementSelectorDesc(element);
         const specifiedSelector = `${scopeDirectChildren}${elementSelectorText}${value}`;
-        const selected = getByRegularSelector(regularSelectorNode, rootElement, specifiedSelector);
+        const selected = getByRegularSelector(
+          regularSelectorNode,
+          rootElement,
+          specifiedSelector,
+        );
         return selected;
       });
     } else {
       // space-separated regular selector after extended one
       // e.g. div:has(> img) .banner
-      foundElements = domElements.map(root => {
+      foundElements = domElements.map((root) => {
         const specifiedSelector = `${scopeAnyChildren}${getNodeValue(regularSelectorNode)}`;
-        return getByRegularSelector(regularSelectorNode, root, specifiedSelector);
+        return getByRegularSelector(
+          regularSelectorNode,
+          root,
+          specifiedSelector,
+        );
       });
     } // foundElements should be flattened
     // as getByRegularSelector() returns elements array, and Array.map() collects them to array
@@ -3705,19 +4326,37 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if there is no selectorNodeChild.
    */
 
-  const getElementsForSelectorNode = (selectorNode, root, specifiedSelector) => {
+  const getElementsForSelectorNode = (
+    selectorNode,
+    root,
+    specifiedSelector,
+  ) => {
     let selectedElements = [];
     let i = 0;
     while (i < selectorNode.children.length) {
-      const selectorNodeChild = getItemByIndex(selectorNode.children, i, 'selectorNodeChild should be specified');
+      const selectorNodeChild = getItemByIndex(
+        selectorNode.children,
+        i,
+        "selectorNodeChild should be specified",
+      );
       if (i === 0) {
         // any selector always starts with regular selector
-        selectedElements = getByRegularSelector(selectorNodeChild, root, specifiedSelector);
+        selectedElements = getByRegularSelector(
+          selectorNodeChild,
+          root,
+          specifiedSelector,
+        );
       } else if (isExtendedSelectorNode(selectorNodeChild)) {
         // filter previously selected elements by next selector nodes
-        selectedElements = getByExtendedSelector(selectedElements, selectorNodeChild);
+        selectedElements = getByExtendedSelector(
+          selectedElements,
+          selectorNodeChild,
+        );
       } else if (isRegularSelectorNode(selectorNodeChild)) {
-        selectedElements = getByFollowingRegularSelector(selectedElements, selectorNodeChild);
+        selectedElements = getByFollowingRegularSelector(
+          selectedElements,
+          selectorNodeChild,
+        );
       }
       i += 1;
     }
@@ -3734,11 +4373,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const selectElementsByAst = function (ast) {
-    let doc = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : document;
+    let doc =
+      arguments.length > 1 && arguments[1] !== undefined
+        ? arguments[1]
+        : document;
     const selectedElements = []; // ast root is SelectorList node;
     // it has Selector nodes as children which should be processed separately
 
-    ast.children.forEach(selectorNode => {
+    ast.children.forEach((selectorNode) => {
       selectedElements.push(...getElementsForSelectorNode(selectorNode, doc));
     }); // selectedElements should be flattened as it is array of arrays with elements
 
@@ -3827,15 +4469,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @returns Object converted from `entries`.
    */
-  const getObjectFromEntries = entries => {
+  const getObjectFromEntries = (entries) => {
     const object = {};
-    entries.forEach(el => {
+    entries.forEach((el) => {
       const [key, value] = el;
       object[key] = value;
     });
     return object;
   };
-  const DEBUG_PSEUDO_PROPERTY_KEY = 'debug';
+  const DEBUG_PSEUDO_PROPERTY_KEY = "debug";
   /**
    * Checks the presence of :remove() pseudo-class and validates it while parsing the selector part of css rule.
    *
@@ -3845,7 +4487,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid :remove() position.
    */
 
-  const parseRemoveSelector = rawSelector => {
+  const parseRemoveSelector = (rawSelector) => {
     /**
      * No error will be thrown on invalid selector as it will be validated later
      * so it's better to explicitly specify 'any' selector for :remove() pseudo-class by '*',
@@ -3861,16 +4503,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const firstIndex = rawSelector.indexOf(VALID_REMOVE_MARKER);
     if (firstIndex === 0) {
       // e.g. ':remove()'
-      throw new Error(`${REMOVE_ERROR_PREFIX.NO_TARGET_SELECTOR}: '${rawSelector}'`);
+      throw new Error(
+        `${REMOVE_ERROR_PREFIX.NO_TARGET_SELECTOR}: '${rawSelector}'`,
+      );
     } else if (firstIndex > 0) {
       if (firstIndex !== rawSelector.lastIndexOf(VALID_REMOVE_MARKER)) {
         // rule with more than one :remove() pseudo-class is invalid
         // e.g. '.block:remove() > .banner:remove()'
-        throw new Error(`${REMOVE_ERROR_PREFIX.MULTIPLE_USAGE}: '${rawSelector}'`);
+        throw new Error(
+          `${REMOVE_ERROR_PREFIX.MULTIPLE_USAGE}: '${rawSelector}'`,
+        );
       } else if (firstIndex + VALID_REMOVE_MARKER.length < rawSelector.length) {
         // remove pseudo-class should be last in the rule
         // e.g. '.block:remove():upward(2)'
-        throw new Error(`${REMOVE_ERROR_PREFIX.INVALID_POSITION}: '${rawSelector}'`);
+        throw new Error(
+          `${REMOVE_ERROR_PREFIX.INVALID_POSITION}: '${rawSelector}'`,
+        );
       } else {
         // valid :remove() pseudo-class position
         selector = rawSelector.substring(0, firstIndex);
@@ -3879,18 +4527,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     } else if (rawSelector.includes(INVALID_REMOVE_MARKER)) {
       // it is not valid if ':remove()' is absent in rule but just ':remove(' is present
       // e.g. 'div:remove(0)'
-      throw new Error(`${REMOVE_ERROR_PREFIX.INVALID_REMOVE}: '${rawSelector}'`);
+      throw new Error(
+        `${REMOVE_ERROR_PREFIX.INVALID_REMOVE}: '${rawSelector}'`,
+      );
     } else {
       // there is no :remove() pseudo-class in rule
       selector = rawSelector;
     }
-    const stylesOfSelector = shouldRemove ? [{
-      property: REMOVE_PSEUDO_MARKER,
-      value: PSEUDO_PROPERTY_POSITIVE_VALUE
-    }] : [];
+    const stylesOfSelector = shouldRemove
+      ? [
+          {
+            property: REMOVE_PSEUDO_MARKER,
+            value: PSEUDO_PROPERTY_POSITIVE_VALUE,
+          },
+        ]
+      : [];
     return {
       selector,
-      stylesOfSelector
+      stylesOfSelector,
     };
   };
   /**
@@ -3932,7 +4586,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       success,
       selector,
       ast,
-      stylesOfSelector
+      stylesOfSelector,
     };
   };
   /**
@@ -3956,11 +4610,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const saveToRawResults = (rawResults, rawRuleData) => {
-    const {
-      selector,
-      ast,
-      rawStyles
-    } = rawRuleData;
+    const { selector, ast, rawStyles } = rawRuleData;
     if (!rawStyles) {
       throw new Error(`No style declaration for selector: '${selector}'`);
     }
@@ -3971,7 +4621,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!storedRuleData) {
       rawResults.set(selector, {
         ast,
-        styles: rawStyles
+        styles: rawStyles,
       });
     } else {
       storedRuleData.styles.push(...rawStyles);
@@ -3986,9 +4636,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns True if there is 'remove' property with 'true' value in `styles`.
    */
 
-  const isRemoveSetInStyles = styles => {
-    return styles.some(s => {
-      return s.property === REMOVE_PSEUDO_MARKER && s.value === PSEUDO_PROPERTY_POSITIVE_VALUE;
+  const isRemoveSetInStyles = (styles) => {
+    return styles.some((s) => {
+      return (
+        s.property === REMOVE_PSEUDO_MARKER &&
+        s.value === PSEUDO_PROPERTY_POSITIVE_VALUE
+      );
     });
   };
   /**
@@ -4000,11 +4653,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * or `undefined` if the property is not found.
    */
 
-  const getDebugStyleValue = styles => {
-    const debugStyle = styles.find(s => {
+  const getDebugStyleValue = (styles) => {
+    const debugStyle = styles.find((s) => {
       return s.property === DEBUG_PSEUDO_PROPERTY_KEY;
     });
-    return debugStyle === null || debugStyle === void 0 ? void 0 : debugStyle.value;
+    return debugStyle === null || debugStyle === void 0
+      ? void 0
+      : debugStyle.value;
   };
   /**
    * Prepares final RuleData.
@@ -4016,12 +4671,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error if rawRuleData.ast or rawRuleData.rawStyles not defined.
    */
 
-  const prepareRuleData = rawRuleData => {
-    const {
-      selector,
-      ast,
-      rawStyles
-    } = rawRuleData;
+  const prepareRuleData = (rawRuleData) => {
+    const { selector, ast, rawStyles } = rawRuleData;
     if (!ast) {
       throw new Error(`AST should be parsed for selector: '${selector}'`);
     }
@@ -4030,24 +4681,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     const ruleData = {
       selector,
-      ast
+      ast,
     };
     const debugValue = getDebugStyleValue(rawStyles);
     const shouldRemove = isRemoveSetInStyles(rawStyles);
     let styles = rawStyles;
     if (debugValue) {
       // get rid of 'debug' from styles
-      styles = rawStyles.filter(s => s.property !== DEBUG_PSEUDO_PROPERTY_KEY); // and set it as separate property only if its value is valid
+      styles = rawStyles.filter(
+        (s) => s.property !== DEBUG_PSEUDO_PROPERTY_KEY,
+      ); // and set it as separate property only if its value is valid
       // which is 'true' or 'global'
 
-      if (debugValue === PSEUDO_PROPERTY_POSITIVE_VALUE || debugValue === DEBUG_PSEUDO_PROPERTY_GLOBAL_VALUE) {
+      if (
+        debugValue === PSEUDO_PROPERTY_POSITIVE_VALUE ||
+        debugValue === DEBUG_PSEUDO_PROPERTY_GLOBAL_VALUE
+      ) {
         ruleData.debug = debugValue;
       }
     }
     if (shouldRemove) {
       // no other styles are needed to apply if 'remove' is set
       ruleData.style = {
-        [REMOVE_PSEUDO_MARKER]: PSEUDO_PROPERTY_POSITIVE_VALUE
+        [REMOVE_PSEUDO_MARKER]: PSEUDO_PROPERTY_POSITIVE_VALUE,
       };
       /**
        * 'content' property is needed for ExtCssConfiguration.beforeStyleApplied().
@@ -4055,7 +4711,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
        * @see {@link BeforeStyleAppliedCallback}
        */
 
-      const contentStyle = styles.find(s => s.property === CONTENT_CSS_PROPERTY);
+      const contentStyle = styles.find(
+        (s) => s.property === CONTENT_CSS_PROPERTY,
+      );
       if (contentStyle) {
         ruleData.style[CONTENT_CSS_PROPERTY] = contentStyle.value;
       }
@@ -4063,11 +4721,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       // otherwise all styles should be applied.
       // every style property will be unique because of their converting into object
       if (styles.length > 0) {
-        const stylesAsEntries = styles.map(style => {
-          const {
-            property,
-            value
-          } = style;
+        const stylesAsEntries = styles.map((style) => {
+          const { property, value } = style;
           return [property, value];
         });
         const preparedStyleData = getObjectFromEntries(stylesAsEntries);
@@ -4085,19 +4740,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Parsed ExtendedCss rule data.
    */
 
-  const combineRulesData = rawResults => {
+  const combineRulesData = (rawResults) => {
     const results = [];
     rawResults.forEach((value, key) => {
       const selector = key;
-      const {
-        ast,
-        styles: rawStyles
-      } = value;
-      results.push(prepareRuleData({
-        selector,
-        ast,
-        rawStyles
-      }));
+      const { ast, styles: rawStyles } = value;
+      results.push(
+        prepareRuleData({
+          selector,
+          ast,
+          rawStyles,
+        }),
+      );
     });
     return results;
   };
@@ -4111,7 +4765,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of tokens supported for style declaration block.
    */
 
-  const tokenizeStyleBlock = rawStyle => {
+  const tokenizeStyleBlock = (rawStyle) => {
     const styleDeclaration = rawStyle.trim();
     return tokenize(styleDeclaration, SUPPORTED_STYLE_DECLARATION_MARKS);
   };
@@ -4124,8 +4778,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const DECLARATION_PART = {
-    PROPERTY: 'property',
-    VALUE: 'value'
+    PROPERTY: "property",
+    VALUE: "value",
   };
 
   /**
@@ -4135,8 +4789,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @returns True if style value has already opened quotes.
    */
-  const isValueQuotesOpen = context => {
-    return context.bufferValue !== '' && context.valueQuoteMark !== null;
+  const isValueQuotesOpen = (context) => {
+    return context.bufferValue !== "" && context.valueQuoteMark !== null;
   };
   /**
    * Saves parsed property and value to collection of parsed styles.
@@ -4145,14 +4799,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param context Style block parser context.
    */
 
-  const collectStyle = context => {
+  const collectStyle = (context) => {
     context.styles.push({
       property: context.bufferProperty.trim(),
-      value: context.bufferValue.trim()
+      value: context.bufferValue.trim(),
     }); // reset buffers
 
-    context.bufferProperty = '';
-    context.bufferValue = '';
+    context.bufferProperty = "";
+    context.bufferValue = "";
   };
   /**
    * Handles token which is supposed to be a part of style **property**.
@@ -4165,14 +4819,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const processPropertyToken = (context, styleBlock, token) => {
-    const {
-      value: tokenValue
-    } = token;
+    const { value: tokenValue } = token;
     switch (token.type) {
       case TOKEN_TYPE.WORD:
         if (context.bufferProperty.length > 0) {
           // e.g. 'padding top: 0;' - current tokenValue is 'top' which is not valid
-          throw new Error(`Invalid style property in style block: '${styleBlock}'`);
+          throw new Error(
+            `Invalid style property in style block: '${styleBlock}'`,
+          );
         }
         context.bufferProperty += tokenValue;
         break;
@@ -4181,20 +4835,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (tokenValue === COLON) {
           if (context.bufferProperty.trim().length === 0) {
             // e.g. such style block: '{ : none; }'
-            throw new Error(`Missing style property before ':' in style block: '${styleBlock}'`);
+            throw new Error(
+              `Missing style property before ':' in style block: '${styleBlock}'`,
+            );
           } // the property successfully collected
 
           context.bufferProperty = context.bufferProperty.trim(); // prepare for value collecting
 
           context.processing = DECLARATION_PART.VALUE; // the property buffer shall be reset after the value is successfully collected
-        } else if (WHITE_SPACE_CHARACTERS.includes(tokenValue)) ;else {
+        } else if (WHITE_SPACE_CHARACTERS.includes(tokenValue));
+        else {
           // if after the property there is anything other than ':' except whitespace, this is a parse error
           // https://www.w3.org/TR/css-syntax-3/#consume-declaration
-          throw new Error(`Invalid style declaration in style block: '${styleBlock}'`);
+          throw new Error(
+            `Invalid style declaration in style block: '${styleBlock}'`,
+          );
         }
         break;
       default:
-        throw new Error(`Unsupported style property character: '${tokenValue}' in style block: '${styleBlock}'`);
+        throw new Error(
+          `Unsupported style property character: '${tokenValue}' in style block: '${styleBlock}'`,
+        );
     }
   };
   /**
@@ -4208,9 +4869,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const processValueToken = (context, styleBlock, token) => {
-    const {
-      value: tokenValue
-    } = token;
+    const { value: tokenValue } = token;
     if (token.type === TOKEN_TYPE.WORD) {
       // simply collect to buffer
       context.bufferValue += tokenValue;
@@ -4224,7 +4883,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           // parser is here        ↑
           if (!isValueQuotesOpen(context)) {
             // eslint-disable-next-line max-len
-            throw new Error(`Invalid style value for property '${context.bufferProperty}' in style block: '${styleBlock}'`);
+            throw new Error(
+              `Invalid style value for property '${context.bufferProperty}' in style block: '${styleBlock}'`,
+            );
           } // collect the colon inside quotes
           // e.g. 'content: "test:123"'
           // parser is here      ↑
@@ -4250,9 +4911,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           if (context.valueQuoteMark === null) {
             // save the opening quote mark for later comparison
             context.valueQuoteMark = tokenValue;
-          } else if (!context.bufferValue.endsWith(BACKSLASH) // otherwise a quote appeared in the value earlier,
-          // and non-escaped quote should be checked whether it is a closing quote
-          && context.valueQuoteMark === tokenValue) {
+          } else if (
+            !context.bufferValue.endsWith(BACKSLASH) && // otherwise a quote appeared in the value earlier,
+            // and non-escaped quote should be checked whether it is a closing quote
+            context.valueQuoteMark === tokenValue
+          ) {
             context.valueQuoteMark = null;
           } // always save the quote to the buffer
           // but after the context.bufferValue is checked for BACKSLASH above
@@ -4264,7 +4927,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         case BACKSLASH:
           if (!isValueQuotesOpen(context)) {
             // eslint-disable-next-line max-len
-            throw new Error(`Invalid style value for property '${context.bufferProperty}' in style block: '${styleBlock}'`);
+            throw new Error(
+              `Invalid style value for property '${context.bufferProperty}' in style block: '${styleBlock}'`,
+            );
           } // collect the backslash inside quotes
           // e.g. ' content: "\"" '
           // parser is here   ↑
@@ -4301,16 +4966,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @throws An error on invalid style block.
    */
 
-  const parseStyleBlock = rawStyleBlock => {
+  const parseStyleBlock = (rawStyleBlock) => {
     const styleBlock = rawStyleBlock.trim();
     const tokens = tokenizeStyleBlock(styleBlock);
     const context = {
       // style declaration parsing always starts with 'property'
       processing: DECLARATION_PART.PROPERTY,
       styles: [],
-      bufferProperty: '',
-      bufferValue: '',
-      valueQuoteMark: null
+      bufferProperty: "",
+      bufferValue: "",
+      valueQuoteMark: null,
     };
     let i = 0;
     while (i < tokens.length) {
@@ -4323,14 +4988,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       } else if (context.processing === DECLARATION_PART.VALUE) {
         processValueToken(context, styleBlock, token);
       } else {
-        throw new Error('Style declaration parsing failed');
+        throw new Error("Style declaration parsing failed");
       }
       i += 1;
     } // unbalanced value quotes
     // e.g. 'content: "test} '
 
     if (isValueQuotesOpen(context)) {
-      throw new Error(`Unbalanced style declaration quotes in style block: '${styleBlock}'`);
+      throw new Error(
+        `Unbalanced style declaration quotes in style block: '${styleBlock}'`,
+      );
     } // collected property and value have not been saved to styles;
     // it is possible for style block with no semicolon at the end
     // e.g. such style block: '{ display: none }'
@@ -4341,7 +5008,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         //   '{ display:  }'
         //   '{ remove }'
         // eslint-disable-next-line max-len
-        throw new Error(`Missing style value for property '${context.bufferProperty}' in style block '${styleBlock}'`);
+        throw new Error(
+          `Missing style value for property '${context.bufferProperty}' in style block '${styleBlock}'`,
+        );
       }
       collectStyle(context);
     } // rule with empty style block
@@ -4361,7 +5030,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of left curly bracket indexes.
    */
 
-  const getLeftCurlyBracketIndexes = cssRule => {
+  const getLeftCurlyBracketIndexes = (cssRule) => {
     const indexes = [];
     for (let i = 0; i < cssRule.length; i += 1) {
       if (cssRule[i] === BRACKET.CURLY.LEFT) {
@@ -4395,7 +5064,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const parseRule = (rawCssRule, extCssDoc) => {
     var _rawRuleData$selector;
     const cssRule = rawCssRule.trim();
-    if (cssRule.includes(`${SLASH}${ASTERISK}`) && cssRule.includes(`${ASTERISK}${SLASH}`)) {
+    if (
+      cssRule.includes(`${SLASH}${ASTERISK}`) &&
+      cssRule.includes(`${ASTERISK}${SLASH}`)
+    ) {
       throw new Error(STYLE_ERROR_PREFIX.NO_COMMENT);
     }
     const leftCurlyBracketIndexes = getLeftCurlyBracketIndexes(cssRule); // rule with style block but no selector
@@ -4406,13 +5078,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     let selectorData; // if rule has `{` but there is no `}`
 
-    if (leftCurlyBracketIndexes.length > 0 && !cssRule.includes(BRACKET.CURLY.RIGHT)) {
-      throw new Error(`${STYLE_ERROR_PREFIX.NO_STYLE} OR ${STYLE_ERROR_PREFIX.UNCLOSED_STYLE}`);
+    if (
+      leftCurlyBracketIndexes.length > 0 &&
+      !cssRule.includes(BRACKET.CURLY.RIGHT)
+    ) {
+      throw new Error(
+        `${STYLE_ERROR_PREFIX.NO_STYLE} OR ${STYLE_ERROR_PREFIX.UNCLOSED_STYLE}`,
+      );
     }
     if (
-    // if rule has no `{`
-    leftCurlyBracketIndexes.length === 0 // or `}`
-    || !cssRule.includes(BRACKET.CURLY.RIGHT)) {
+      // if rule has no `{`
+      leftCurlyBracketIndexes.length === 0 || // or `}`
+      !cssRule.includes(BRACKET.CURLY.RIGHT)
+    ) {
       try {
         // the whole css rule considered as "selector part"
         // which may contain :remove() pseudo-class
@@ -4426,17 +5104,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           // but also it can be just selector with no styles
           // e.g. 'div'
           // which should not be considered as valid css rule
-          if (((_selectorData$stylesO = selectorData.stylesOfSelector) === null || _selectorData$stylesO === void 0 ? void 0 : _selectorData$stylesO.length) === 0) {
+          if (
+            ((_selectorData$stylesO = selectorData.stylesOfSelector) === null ||
+            _selectorData$stylesO === void 0
+              ? void 0
+              : _selectorData$stylesO.length) === 0
+          ) {
             throw new Error(STYLE_ERROR_PREFIX.NO_STYLE_OR_REMOVE);
           }
           return {
             selector: selectorData.selector.trim(),
             ast: selectorData.ast,
-            rawStyles: selectorData.stylesOfSelector
+            rawStyles: selectorData.stylesOfSelector,
           };
         } else {
           // not valid selector
-          throw new Error('Invalid selector');
+          throw new Error("Invalid selector");
         }
       } catch (e) {
         throw new Error(getErrorMessage(e));
@@ -4445,13 +5128,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     let selectorBuffer;
     let styleBlockBuffer;
     const rawRuleData = {
-      selector: ''
+      selector: "",
     }; // css rule should be parsed from its end
 
     for (let i = leftCurlyBracketIndexes.length - 1; i > -1; i -= 1) {
       const index = leftCurlyBracketIndexes[i];
       if (!index) {
-        throw new Error(`Impossible to continue, no '{' to process for rule: '${cssRule}'`);
+        throw new Error(
+          `Impossible to continue, no '{' to process for rule: '${cssRule}'`,
+        );
       } // selector is before `{`, style block is after it
 
       selectorBuffer = cssRule.slice(0, index); // skip curly brackets
@@ -4468,7 +5153,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         // TODO: add cache for style block parsing
 
         const parsedStyles = parseStyleBlock(styleBlockBuffer);
-        (_rawRuleData$rawStyle = rawRuleData.rawStyles) === null || _rawRuleData$rawStyle === void 0 ? void 0 : _rawRuleData$rawStyle.push(...parsedStyles); // stop rule parsing
+        (_rawRuleData$rawStyle = rawRuleData.rawStyles) === null ||
+        _rawRuleData$rawStyle === void 0
+          ? void 0
+          : _rawRuleData$rawStyle.push(...parsedStyles); // stop rule parsing
 
         break;
       } else {
@@ -4477,9 +5165,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         continue;
       }
     }
-    if (((_rawRuleData$selector = rawRuleData.selector) === null || _rawRuleData$selector === void 0 ? void 0 : _rawRuleData$selector.length) === 0) {
+    if (
+      ((_rawRuleData$selector = rawRuleData.selector) === null ||
+      _rawRuleData$selector === void 0
+        ? void 0
+        : _rawRuleData$selector.length) === 0
+    ) {
       // skip the rule as selector
-      throw new Error('Selector in not valid');
+      throw new Error("Selector in not valid");
     }
     return rawRuleData;
   };
@@ -4498,8 +5191,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const rawResults = createRawResultsMap();
     const warnings = []; // trim all rules and find unique ones
 
-    const uniqueRules = [...new Set(rawCssRules.map(r => r.trim()))];
-    uniqueRules.forEach(rule => {
+    const uniqueRules = [...new Set(rawCssRules.map((r) => r.trim()))];
+    uniqueRules.forEach((rule) => {
       try {
         saveToRawResults(rawResults, parseRule(rule, extCssDoc));
       } catch (e) {
@@ -4510,7 +5203,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }); // log info about skipped invalid rules
 
     if (warnings.length > 0) {
-      logger.info(`Invalid rules:\n  ${warnings.join('\n  ')}`);
+      logger.info(`Invalid rules:\n  ${warnings.join("\n  ")}`);
     }
     return combineRulesData(rawResults);
   };
@@ -4526,9 +5219,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @param context Stylesheet parser context.
    */
-  const restoreRuleAcc = context => {
+  const restoreRuleAcc = (context) => {
     context.rawRuleData = {
-      selector: ''
+      selector: "",
     };
   };
   /**
@@ -4556,10 +5249,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (context.nextIndex === -1) {
       if (selector === removeSelectorData.selector) {
         // rule should have style or pseudo-class :remove()
-        throw new Error(`${STYLE_ERROR_PREFIX.NO_STYLE_OR_REMOVE}: '${context.cssToParse}'`);
+        throw new Error(
+          `${STYLE_ERROR_PREFIX.NO_STYLE_OR_REMOVE}: '${context.cssToParse}'`,
+        );
       } // stop parsing as there is no style declaration and selector parsed fine
 
-      context.cssToParse = '';
+      context.cssToParse = "";
     }
     let stylesOfSelector = [];
     let success = false;
@@ -4583,7 +5278,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       success,
       selector,
       ast,
-      stylesOfSelector
+      stylesOfSelector,
     };
   };
   /**
@@ -4601,24 +5296,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     REGEXP_DECLARATION_DIVIDER.lastIndex = context.nextIndex;
     let match = REGEXP_DECLARATION_DIVIDER.exec(context.cssToParse);
     if (match === null) {
-      throw new Error(`${STYLE_ERROR_PREFIX.INVALID_STYLE}: '${context.cssToParse}'`);
+      throw new Error(
+        `${STYLE_ERROR_PREFIX.INVALID_STYLE}: '${context.cssToParse}'`,
+      );
     }
     let matchPos = match.index;
     let matched = match[0];
     if (matched === BRACKET.CURLY.RIGHT) {
-      const declarationChunk = context.cssToParse.slice(context.nextIndex, matchPos);
+      const declarationChunk = context.cssToParse.slice(
+        context.nextIndex,
+        matchPos,
+      );
       if (declarationChunk.trim().length === 0) {
         // empty style declaration
         // e.g. 'div { }'
         if (styles.length === 0) {
-          throw new Error(`${STYLE_ERROR_PREFIX.NO_STYLE}: '${context.cssToParse}'`);
+          throw new Error(
+            `${STYLE_ERROR_PREFIX.NO_STYLE}: '${context.cssToParse}'`,
+          );
         } // else valid style parsed before it
         // e.g. '{ display: none; }' -- position is after ';'
       } else {
         // closing curly bracket '}' is matched before colon ':'
         // trimmed declarationChunk is not a space, between ';' and '}',
         // e.g. 'visible }' in style '{ display: none; visible }' after part before ';' is parsed
-        throw new Error(`${STYLE_ERROR_PREFIX.INVALID_STYLE}: '${context.cssToParse}'`);
+        throw new Error(
+          `${STYLE_ERROR_PREFIX.INVALID_STYLE}: '${context.cssToParse}'`,
+        );
       }
       return matchPos;
     }
@@ -4628,22 +5332,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       REGEXP_DECLARATION_END.lastIndex = colonIndex;
       match = REGEXP_DECLARATION_END.exec(context.cssToParse);
       if (match === null) {
-        throw new Error(`${STYLE_ERROR_PREFIX.UNCLOSED_STYLE}: '${context.cssToParse}'`);
+        throw new Error(
+          `${STYLE_ERROR_PREFIX.UNCLOSED_STYLE}: '${context.cssToParse}'`,
+        );
       }
       matchPos = match.index;
       matched = match[0]; // Populates the `styleMap` key-value map.
 
-      const property = context.cssToParse.slice(context.nextIndex, colonIndex).trim();
+      const property = context.cssToParse
+        .slice(context.nextIndex, colonIndex)
+        .trim();
       if (property.length === 0) {
-        throw new Error(`${STYLE_ERROR_PREFIX.NO_PROPERTY}: '${context.cssToParse}'`);
+        throw new Error(
+          `${STYLE_ERROR_PREFIX.NO_PROPERTY}: '${context.cssToParse}'`,
+        );
       }
       const value = context.cssToParse.slice(colonIndex + 1, matchPos).trim();
       if (value.length === 0) {
-        throw new Error(`${STYLE_ERROR_PREFIX.NO_VALUE}: '${context.cssToParse}'`);
+        throw new Error(
+          `${STYLE_ERROR_PREFIX.NO_VALUE}: '${context.cssToParse}'`,
+        );
       }
       styles.push({
         property,
-        value
+        value,
       }); // finish style parsing if '}' is found
       // e.g. '{ display: none }' -- no ';' at the end of declaration
 
@@ -4665,14 +5377,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Array of style data objects.
    */
 
-  const parseNextStyle = context => {
+  const parseNextStyle = (context) => {
     const styles = [];
     const styleEndPos = parseUntilClosingBracket(context, styles); // find next rule after the style declaration
 
     REGEXP_NON_WHITESPACE.lastIndex = styleEndPos + 1;
     const match = REGEXP_NON_WHITESPACE.exec(context.cssToParse);
     if (match === null) {
-      context.cssToParse = '';
+      context.cssToParse = "";
       return styles;
     }
     const matchPos = match.index; // cut out matched style declaration for previous selector
@@ -4700,8 +5412,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
   const parseStylesheet = (rawStylesheet, extCssDoc) => {
     const stylesheet = rawStylesheet.trim();
-    if (stylesheet.includes(`${SLASH}${ASTERISK}`) && stylesheet.includes(`${ASTERISK}${SLASH}`)) {
-      throw new Error(`${STYLE_ERROR_PREFIX.NO_COMMENT} in stylesheet: '${stylesheet}'`);
+    if (
+      stylesheet.includes(`${SLASH}${ASTERISK}`) &&
+      stylesheet.includes(`${ASTERISK}${SLASH}`)
+    ) {
+      throw new Error(
+        `${STYLE_ERROR_PREFIX.NO_COMMENT} in stylesheet: '${stylesheet}'`,
+      );
     }
     const context = {
       // any stylesheet should start with selector
@@ -4711,11 +5428,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       // init value of cssToParse
       cssToParse: stylesheet,
       // buffer for collecting selector part
-      selectorBuffer: '',
+      selectorBuffer: "",
       // accumulator for rules
       rawRuleData: {
-        selector: ''
-      }
+        selector: "",
+      },
     };
     const rawResults = createRawResultsMap();
     let selectorData; // context.cssToParse is going to be cropped while its parsing
@@ -4728,7 +5445,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         // e.g. '{ display: none; }'
 
         if (context.selectorBuffer.length === 0 && context.nextIndex === 0) {
-          throw new Error(`${STYLE_ERROR_PREFIX.NO_SELECTOR}: '${context.cssToParse}'`);
+          throw new Error(
+            `${STYLE_ERROR_PREFIX.NO_SELECTOR}: '${context.cssToParse}'`,
+          );
         }
         if (context.nextIndex === -1) {
           // no style declaration in rule
@@ -4737,7 +5456,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         } else {
           // collect string parts before opening curly bracket
           // until valid selector collected
-          context.selectorBuffer += context.cssToParse.slice(0, context.nextIndex);
+          context.selectorBuffer += context.cssToParse.slice(
+            0,
+            context.nextIndex,
+          );
         }
         selectorData = parseSelectorPart(context, extCssDoc);
         if (selectorData.success) {
@@ -4754,7 +5476,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           } else {
             // skip the opening curly bracket at the start of style declaration part
             context.nextIndex = 1;
-            context.selectorBuffer = '';
+            context.selectorBuffer = "";
           }
         } else {
           // if selector was not successfully parsed parseSelectorPart(), continue stylesheet parsing:
@@ -4770,7 +5492,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         const parsedStyles = parseNextStyle(context); // styles can be parsed from selector part if it has :remove() pseudo-class
         // e.g. '.banner:remove() { debug: true; }'
 
-        (_context$rawRuleData$ = context.rawRuleData.rawStyles) === null || _context$rawRuleData$ === void 0 ? void 0 : _context$rawRuleData$.push(...parsedStyles); // save rule data to results
+        (_context$rawRuleData$ = context.rawRuleData.rawStyles) === null ||
+        _context$rawRuleData$ === void 0
+          ? void 0
+          : _context$rawRuleData$.push(...parsedStyles); // save rule data to results
 
         saveToRawResults(rawResults, context.rawRuleData);
         context.nextIndex = 0; // clean up ruleContext
@@ -4790,8 +5515,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @returns True if `arg` is number and not NaN.
    */
-  const isNumber = arg => {
-    return typeof arg === 'number' && !Number.isNaN(arg);
+  const isNumber = (arg) => {
+    return typeof arg === "number" && !Number.isNaN(arg);
   };
 
   /**
@@ -4833,9 +5558,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      *
      * 2. If {@link lastRunTime} is set, we need to check the time elapsed time since the last call. If it is
      * less than {@link ThrottleWrapper.THROTTLE_DELAY_MS}, we schedule the function execution after the remaining time.
-     * 
-     * Otherwise, we execute the function asynchronously to ensure that it is executed 
-     * in the correct order with respect to DOM events, by deferring its execution until after 
+     *
+     * Otherwise, we execute the function asynchronously to ensure that it is executed
+     * in the correct order with respect to DOM events, by deferring its execution until after
      * those tasks have completed.
      */
 
@@ -4847,7 +5572,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (isNumber(this.lastRunTime)) {
         const elapsedTime = performance.now() - this.lastRunTime;
         if (elapsedTime < ThrottleWrapper.THROTTLE_DELAY_MS) {
-          this.timerId = window.setTimeout(this.executeCallback, ThrottleWrapper.THROTTLE_DELAY_MS - elapsedTime);
+          this.timerId = window.setTimeout(
+            this.executeCallback,
+            ThrottleWrapper.THROTTLE_DELAY_MS - elapsedTime,
+          );
           return;
         }
       }
@@ -4862,15 +5590,32 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   }
   _defineProperty(ThrottleWrapper, "THROTTLE_DELAY_MS", 150);
   const LAST_EVENT_TIMEOUT_MS = 10;
-  const IGNORED_EVENTS = ['mouseover', 'mouseleave', 'mouseenter', 'mouseout'];
+  const IGNORED_EVENTS = ["mouseover", "mouseleave", "mouseenter", "mouseout"];
   const SUPPORTED_EVENTS = [
-  // keyboard events
-  'keydown', 'keypress', 'keyup',
-  // mouse events
-  'auxclick', 'click', 'contextmenu', 'dblclick', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseover', 'mouseout', 'mouseup', 'pointerlockchange', 'pointerlockerror', 'select', 'wheel']; // 'wheel' event makes scrolling in Safari twitchy
+    // keyboard events
+    "keydown",
+    "keypress",
+    "keyup",
+    // mouse events
+    "auxclick",
+    "click",
+    "contextmenu",
+    "dblclick",
+    "mousedown",
+    "mouseenter",
+    "mouseleave",
+    "mousemove",
+    "mouseover",
+    "mouseout",
+    "mouseup",
+    "pointerlockchange",
+    "pointerlockerror",
+    "select",
+    "wheel",
+  ]; // 'wheel' event makes scrolling in Safari twitchy
   // https://github.com/AdguardTeam/ExtendedCss/issues/120
 
-  const SAFARI_PROBLEMATIC_EVENTS = ['wheel'];
+  const SAFARI_PROBLEMATIC_EVENTS = ["wheel"];
   /**
    * We use EventTracker to track the event that is likely to cause the mutation.
    * The problem is that we cannot use `window.event` directly from the mutation observer call
@@ -4889,9 +5634,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return Date.now() - this.lastEventTime;
       });
-      this.trackedEvents = isSafariBrowser ? SUPPORTED_EVENTS.filter(event => !SAFARI_PROBLEMATIC_EVENTS.includes(event)) : SUPPORTED_EVENTS;
-      this.trackedEvents.forEach(eventName => {
-        document.documentElement.addEventListener(eventName, this.trackEvent, true);
+      this.trackedEvents = isSafariBrowser
+        ? SUPPORTED_EVENTS.filter(
+            (event) => !SAFARI_PROBLEMATIC_EVENTS.includes(event),
+          )
+        : SUPPORTED_EVENTS;
+      this.trackedEvents.forEach((eventName) => {
+        document.documentElement.addEventListener(
+          eventName,
+          this.trackEvent,
+          true,
+        );
       });
     }
     /**
@@ -4913,15 +5666,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     isIgnoredEventType() {
       const lastEventType = this.getLastEventType();
       const sinceLastEventTime = this.getTimeSinceLastEvent();
-      return !!lastEventType && IGNORED_EVENTS.includes(lastEventType) && !!sinceLastEventTime && sinceLastEventTime < LAST_EVENT_TIMEOUT_MS;
+      return (
+        !!lastEventType &&
+        IGNORED_EVENTS.includes(lastEventType) &&
+        !!sinceLastEventTime &&
+        sinceLastEventTime < LAST_EVENT_TIMEOUT_MS
+      );
     }
     /**
      * Stops event tracking by removing event listener.
      */
 
     stopTracking() {
-      this.trackedEvents.forEach(eventName => {
-        document.documentElement.removeEventListener(eventName, this.trackEvent, true);
+      this.trackedEvents.forEach((eventName) => {
+        document.documentElement.removeEventListener(
+          eventName,
+          this.trackEvent,
+          true,
+        );
       });
     }
   }
@@ -4937,11 +5699,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
   function shouldIgnoreMutations(mutations) {
     // ignore if all mutations are about attributes changes
-    return !mutations.some(m => m.type !== 'attributes');
+    return !mutations.some((m) => m.type !== "attributes");
   }
   /**
    * Adds new {@link context.domMutationObserver} instance and connect it to document.
-   * 
+   *
    * @param context ExtendedCss context.
    */
 
@@ -4951,12 +5713,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     } // enable dynamically added elements handling
 
     context.isDomObserved = true;
-    context.domMutationObserver = new natives.MutationObserver(mutations => {
+    context.domMutationObserver = new natives.MutationObserver((mutations) => {
       if (!mutations || mutations.length === 0) {
         return;
       }
       const eventTracker = new EventTracker();
-      if (eventTracker.isIgnoredEventType() && shouldIgnoreMutations(mutations)) {
+      if (
+        eventTracker.isIgnoredEventType() &&
+        shouldIgnoreMutations(mutations)
+      ) {
         return;
       } // save instance of EventTracker to context
       // for removing its event listeners on disconnectDocument() while mainDisconnect()
@@ -4968,12 +5733,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['id', 'class']
+      attributeFilter: ["id", "class"],
     });
   }
   /**
    * Disconnect from {@link context.domMutationObserver}.
-   * 
+   *
    * @param context ExtendedCss context.
    */
 
@@ -5000,16 +5765,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const removeElement = (context, affectedElement) => {
-    const {
-      node
-    } = affectedElement;
+    const { node } = affectedElement;
     affectedElement.removed = true;
     const elementSelector = getElementSelectorPath(node); // check if the element has been already removed earlier
 
-    const elementRemovalsCounter = context.removalsStatistic[elementSelector] || 0; // if removals attempts happened more than specified we do not try to remove node again
+    const elementRemovalsCounter =
+      context.removalsStatistic[elementSelector] || 0; // if removals attempts happened more than specified we do not try to remove node again
 
     if (elementRemovalsCounter > MAX_STYLE_PROTECTION_COUNT) {
-      logger.error(`ExtendedCss: infinite loop protection for selector: '${elementSelector}'`);
+      logger.error(
+        `ExtendedCss: infinite loop protection for selector: '${elementSelector}'`,
+      );
       return;
     }
     if (node.parentElement) {
@@ -5028,22 +5794,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!(node instanceof HTMLElement)) {
       return;
     }
-    Object.keys(style).forEach(prop => {
+    Object.keys(style).forEach((prop) => {
       // Apply this style only to existing properties
       // We cannot use hasOwnProperty here (does not work in FF)
-      if (typeof node.style.getPropertyValue(prop.toString()) !== 'undefined') {
+      if (typeof node.style.getPropertyValue(prop.toString()) !== "undefined") {
         let value = style[prop];
         if (!value) {
           return;
         } // do not apply 'content' style given by tsurlfilter
         // which is needed only for BeforeStyleAppliedCallback
 
-        if (prop === CONTENT_CSS_PROPERTY && value.match(CONTENT_ATTR_PREFIX_REGEXP)) {
+        if (
+          prop === CONTENT_CSS_PROPERTY &&
+          value.match(CONTENT_ATTR_PREFIX_REGEXP)
+        ) {
           return;
         } // First we should remove !important attribute (or it won't be applied')
 
-        value = removeSuffix(value.trim(), '!important').trim();
-        node.style.setProperty(prop, value, 'important');
+        value = removeSuffix(value.trim(), "!important").trim();
+        node.style.setProperty(prop, value, "important");
       }
     });
   };
@@ -5057,8 +5826,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * or `rules` is not an array.
    */
 
-  const isIAffectedElement = affectedElement => {
-    return 'node' in affectedElement && 'rules' in affectedElement && affectedElement.rules instanceof Array;
+  const isIAffectedElement = (affectedElement) => {
+    return (
+      "node" in affectedElement &&
+      "rules" in affectedElement &&
+      affectedElement.rules instanceof Array
+    );
   };
   /**
    * Checks the required properties of `affectedElement`
@@ -5071,8 +5844,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * or `rules` is not an array.
    */
 
-  const isAffectedElement = affectedElement => {
-    return 'node' in affectedElement && 'originalStyle' in affectedElement && 'rules' in affectedElement && affectedElement.rules instanceof Array;
+  const isAffectedElement = (affectedElement) => {
+    return (
+      "node" in affectedElement &&
+      "originalStyle" in affectedElement &&
+      "rules" in affectedElement &&
+      affectedElement.rules instanceof Array
+    );
   };
   /**
    * Applies style to the specified DOM node.
@@ -5091,25 +5869,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     let affectedElement;
     if (context.beforeStyleApplied) {
       if (!isIAffectedElement(rawAffectedElement)) {
-        throw new Error("Returned IAffectedElement should have 'node' and 'rules' properties");
+        throw new Error(
+          "Returned IAffectedElement should have 'node' and 'rules' properties",
+        );
       }
       affectedElement = context.beforeStyleApplied(rawAffectedElement);
       if (!affectedElement) {
-        throw new Error("Callback 'beforeStyleApplied' should return IAffectedElement");
+        throw new Error(
+          "Callback 'beforeStyleApplied' should return IAffectedElement",
+        );
       }
     } else {
       affectedElement = rawAffectedElement;
     }
     if (!isAffectedElement(affectedElement)) {
-      throw new Error("Returned IAffectedElement should have 'node' and 'rules' properties");
+      throw new Error(
+        "Returned IAffectedElement should have 'node' and 'rules' properties",
+      );
     }
-    const {
-      node,
-      rules
-    } = affectedElement;
+    const { node, rules } = affectedElement;
     for (let i = 0; i < rules.length; i += 1) {
       const rule = rules[i];
-      const selector = rule === null || rule === void 0 ? void 0 : rule.selector;
+      const selector =
+        rule === null || rule === void 0 ? void 0 : rule.selector;
       const style = rule === null || rule === void 0 ? void 0 : rule.style;
       const debug = rule === null || rule === void 0 ? void 0 : rule.debug; // rule may not have style to apply
       // e.g. 'div:has(> a) { debug: true }' -> means no style to apply, and enable debug mode
@@ -5122,7 +5904,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         setStyleToElement(node, style);
       } else if (!debug) {
         // but rule should not have both style and debug properties
-        throw new Error(`No style declaration in rule for selector: '${selector}'`);
+        throw new Error(
+          `No style declaration in rule for selector: '${selector}'`,
+        );
       }
     }
   };
@@ -5132,7 +5916,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param affectedElement Affected element.
    */
 
-  const revertStyle = affectedElement => {
+  const revertStyle = (affectedElement) => {
     if (affectedElement.protectionObserver) {
       affectedElement.protectionObserver.disconnect();
     }
@@ -5163,7 +5947,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     constructor(protectionCallback) {
       this.styleProtectionCount = 0;
-      this.observer = new natives.MutationObserver(mutations => {
+      this.observer = new natives.MutationObserver((mutations) => {
         if (!mutations.length) {
           return;
         }
@@ -5183,7 +5967,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (this.styleProtectionCount < MAX_STYLE_PROTECTION_COUNT) {
         this.observer.observe(target, options);
       } else {
-        logger.error('ExtendedCss: infinite loop protection for style');
+        logger.error("ExtendedCss: infinite loop protection for style");
       }
     }
     /**
@@ -5198,7 +5982,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const PROTECTION_OBSERVER_OPTIONS = {
     attributes: true,
     attributeOldValue: true,
-    attributeFilter: ['style']
+    attributeFilter: ["style"],
   };
   /**
    * Creates MutationObserver protection callback.
@@ -5208,16 +5992,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Callback for styles protection.
    */
 
-  const createProtectionCallback = styles => {
+  const createProtectionCallback = (styles) => {
     const protectionCallback = (mutations, extObserver) => {
       if (!mutations[0]) {
         return;
       }
-      const {
-        target
-      } = mutations[0];
+      const { target } = mutations[0];
       extObserver.disconnect();
-      styles.forEach(style => {
+      styles.forEach((style) => {
         setStyleToElement(target, style);
       });
       extObserver.observe(target, PROTECTION_OBSERVER_OPTIONS);
@@ -5237,10 +6019,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null;
     }
     const styles = [];
-    rules.forEach(ruleData => {
-      const {
-        style
-      } = ruleData; // some rules might have only debug property in style declaration
+    rules.forEach((ruleData) => {
+      const { style } = ruleData; // some rules might have only debug property in style declaration
       // e.g. 'div:has(> a) { debug: true }' -> parsed to boolean `ruleData.debug`
       // so no style is fine, and here we should collect only valid styles to protect
 
@@ -5248,7 +6028,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         styles.push(style);
       }
     });
-    const protectionObserver = new ExtMutationObserver(createProtectionCallback(styles));
+    const protectionObserver = new ExtMutationObserver(
+      createProtectionCallback(styles),
+    );
     protectionObserver.observe(node, PROTECTION_OBSERVER_OPTIONS);
     return protectionObserver;
   };
@@ -5281,7 +6063,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       this.timingsSum += elapsedTimeMs;
       this.meanTiming = this.timingsSum / this.appliesCount;
       this.squaredSum += elapsedTimeMs * elapsedTimeMs;
-      this.standardDeviation = Math.sqrt(this.squaredSum / this.appliesCount - Math.pow(this.meanTiming, 2));
+      this.standardDeviation = Math.sqrt(
+        this.squaredSum / this.appliesCount - Math.pow(this.meanTiming, 2),
+      );
     }
   }
 
@@ -5292,7 +6076,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @returns Fine-looking timestamps.
    */
-  const beautifyTimingNumber = timestamp => {
+  const beautifyTimingNumber = (timestamp) => {
     return Number(timestamp.toFixed(STATS_DECIMAL_DIGITS_COUNT));
   };
   /**
@@ -5303,13 +6087,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns Fine-looking timing stats.
    */
 
-  const beautifyTimings = rawTimings => {
+  const beautifyTimings = (rawTimings) => {
     return {
-      appliesTimings: rawTimings.appliesTimings.map(t => beautifyTimingNumber(t)),
+      appliesTimings: rawTimings.appliesTimings.map((t) =>
+        beautifyTimingNumber(t),
+      ),
       appliesCount: beautifyTimingNumber(rawTimings.appliesCount),
       timingsSum: beautifyTimingNumber(rawTimings.timingsSum),
       meanTiming: beautifyTimingNumber(rawTimings.meanTiming),
-      standardDeviation: beautifyTimingNumber(rawTimings.standardDeviation)
+      standardDeviation: beautifyTimingNumber(rawTimings.standardDeviation),
     };
   };
   /**
@@ -5318,32 +6104,32 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param context ExtendedCss context.
    */
 
-  const printTimingInfo = context => {
+  const printTimingInfo = (context) => {
     if (context.areTimingsPrinted) {
       return;
     }
     context.areTimingsPrinted = true;
     const timingsLogData = {};
-    context.parsedRules.forEach(ruleData => {
+    context.parsedRules.forEach((ruleData) => {
       if (ruleData.timingStats) {
-        const {
-          selector,
-          style,
-          debug,
-          matchedElements
-        } = ruleData; // style declaration for some rules is parsed to debug property and no style to apply
+        const { selector, style, debug, matchedElements } = ruleData; // style declaration for some rules is parsed to debug property and no style to apply
         // e.g. 'div:has(> a) { debug: true }'
 
         if (!style && !debug) {
-          throw new Error(`Rule should have style declaration for selector: '${selector}'`);
+          throw new Error(
+            `Rule should have style declaration for selector: '${selector}'`,
+          );
         }
         const selectorData = {
           selectorParsed: selector,
-          timings: beautifyTimings(ruleData.timingStats)
+          timings: beautifyTimings(ruleData.timingStats),
         }; // `ruleData.style` may contain `remove` pseudo-property
         // and make logs look better
 
-        if (style && style[REMOVE_PSEUDO_MARKER] === PSEUDO_PROPERTY_POSITIVE_VALUE) {
+        if (
+          style &&
+          style[REMOVE_PSEUDO_MARKER] === PSEUDO_PROPERTY_POSITIVE_VALUE
+        ) {
           selectorData.removed = true; // no matchedElements for such case as they are removed after ExtendedCss applied
         } else {
           selectorData.styleApplied = style || null;
@@ -5356,7 +6142,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return;
     } // add location.href to the message to distinguish frames
 
-    logger.info('[ExtendedCss] Timings in milliseconds for %o:\n%o', window.location.href, timingsLogData);
+    logger.info(
+      "[ExtendedCss] Timings in milliseconds for %o:\n%o",
+      window.location.href,
+      timingsLogData,
+    );
   };
 
   /**
@@ -5368,7 +6158,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
 
   const findAffectedElement = (affElements, domNode) => {
-    return affElements.find(affEl => affEl.node === domNode);
+    return affElements.find((affEl) => affEl.node === domNode);
   };
   /**
    * Applies specified rule and returns list of elements affected.
@@ -5389,9 +6179,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (isDebuggingMode) {
       startTime = performance.now();
     }
-    const {
-      ast
-    } = ruleData;
+    const { ast } = ruleData;
     const nodes = []; // selector can be successfully parser into ast with no error
     // but its applying by native Document.querySelectorAll() still may throw an error
     // e.g. 'div[..banner]'
@@ -5404,7 +6192,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logger.error(getErrorMessage(e));
       }
     }
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       let affectedElement = findAffectedElement(context.affectedElements, node);
       if (affectedElement) {
         affectedElement.rules.push(ruleData);
@@ -5419,7 +6207,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           // rule to be applied
           originalStyle,
           // original node style
-          protectionObserver: null // style attribute observer
+          protectionObserver: null, // style attribute observer
         };
         applyStyle(context, affectedElement);
         context.affectedElements.push(affectedElement);
@@ -5440,13 +6228,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param context ExtendedCss context.
    */
 
-  const applyRules = context => {
+  const applyRules = (context) => {
     const newSelectedElements = []; // some rules could make call - selector.querySelectorAll() temporarily to change node id attribute
     // this caused MutationObserver to call recursively
     // https://github.com/AdguardTeam/ExtendedCss/issues/81
 
     disconnectDocument(context);
-    context.parsedRules.forEach(ruleData => {
+    context.parsedRules.forEach((ruleData) => {
       const nodes = applyRule(context, ruleData);
       Array.prototype.push.apply(newSelectedElements, nodes); // save matched elements to ruleData as linked to applied rule
       // only for debugging purposes
@@ -5471,7 +6259,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         // Add style protection observer
         // Protect "style" attribute from changes
         if (!affectedElement.protectionObserver) {
-          affectedElement.protectionObserver = protectStyleAttribute(affectedElement.node, affectedElement.rules);
+          affectedElement.protectionObserver = protectStyleAttribute(
+            affectedElement.node,
+            affectedElement.rules,
+          );
         }
       }
       affLength -= 1;
@@ -5507,9 +6298,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     constructor(configuration) {
       if (!configuration) {
-        throw new Error('ExtendedCss configuration should be provided.');
+        throw new Error("ExtendedCss configuration should be provided.");
       }
-      this.applyRulesCallbackListener = this.applyRulesCallbackListener.bind(this);
+      this.applyRulesCallbackListener =
+        this.applyRulesCallbackListener.bind(this);
       this.context = {
         beforeStyleApplied: configuration.beforeStyleApplied,
         debug: false,
@@ -5517,16 +6309,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         isDomObserved: false,
         removalsStatistic: {},
         parsedRules: [],
-        scheduler: new ThrottleWrapper(this.applyRulesCallbackListener)
+        scheduler: new ThrottleWrapper(this.applyRulesCallbackListener),
       }; // TODO: throw an error instead of logging and handle it in related products.
 
       if (!isBrowserSupported()) {
-        logger.error('Browser is not supported by ExtendedCss');
+        logger.error("Browser is not supported by ExtendedCss");
         return;
       } // at least 'styleSheet' or 'cssRules' should be provided
 
       if (!configuration.styleSheet && !configuration.cssRules) {
-        throw new Error("ExtendedCss configuration should have 'styleSheet' or 'cssRules' defined.");
+        throw new Error(
+          "ExtendedCss configuration should have 'styleSheet' or 'cssRules' defined.",
+        );
       } // 'styleSheet' and 'cssRules' are optional
       // and both can be provided at the same time
       // so both should be parsed and applied in such case
@@ -5534,28 +6328,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (configuration.styleSheet) {
         // stylesheet parsing can fail on some invalid selectors
         try {
-          this.context.parsedRules.push(...parseStylesheet(configuration.styleSheet, extCssDocument));
+          this.context.parsedRules.push(
+            ...parseStylesheet(configuration.styleSheet, extCssDocument),
+          );
         } catch (e) {
           // eslint-disable-next-line max-len
-          throw new Error(`Pass the rules as configuration.cssRules since configuration.styleSheet cannot be parsed because of: '${getErrorMessage(e)}'`);
+          throw new Error(
+            `Pass the rules as configuration.cssRules since configuration.styleSheet cannot be parsed because of: '${getErrorMessage(e)}'`,
+          );
         }
       }
       if (configuration.cssRules) {
-        this.context.parsedRules.push(...parseRules(configuration.cssRules, extCssDocument));
+        this.context.parsedRules.push(
+          ...parseRules(configuration.cssRules, extCssDocument),
+        );
       } // true if set in configuration
       // or any rule in styleSheet has `debug: global`
 
-      this.context.debug = configuration.debug || this.context.parsedRules.some(ruleData => {
-        return ruleData.debug === DEBUG_PSEUDO_PROPERTY_GLOBAL_VALUE;
-      });
-      if (this.context.beforeStyleApplied && typeof this.context.beforeStyleApplied !== 'function') {
+      this.context.debug =
+        configuration.debug ||
+        this.context.parsedRules.some((ruleData) => {
+          return ruleData.debug === DEBUG_PSEUDO_PROPERTY_GLOBAL_VALUE;
+        });
+      if (
+        this.context.beforeStyleApplied &&
+        typeof this.context.beforeStyleApplied !== "function"
+      ) {
         // eslint-disable-next-line max-len
-        throw new Error(`Invalid configuration. Type of 'beforeStyleApplied' should be a function, received: '${typeof this.context.beforeStyleApplied}'`);
+        throw new Error(
+          `Invalid configuration. Type of 'beforeStyleApplied' should be a function, received: '${typeof this.context.beforeStyleApplied}'`,
+        );
       }
     }
     /**
      * Invokes {@link applyRules} function with current app context.
-     * 
+     *
      * This method is bound to the class instance in the constructor because it is called
      * in {@link ThrottleWrapper} and on the DOMContentLoaded event.
      */
@@ -5586,8 +6393,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
     apply() {
       applyRules(this.context);
-      if (document.readyState !== 'complete') {
-        document.addEventListener('DOMContentLoaded', this.applyRulesCallbackListener, false);
+      if (document.readyState !== "complete") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          this.applyRulesCallbackListener,
+          false,
+        );
       }
     }
     /**
@@ -5596,10 +6407,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
     dispose() {
       disconnectDocument(this.context);
-      this.context.affectedElements.forEach(el => {
+      this.context.affectedElements.forEach((el) => {
         revertStyle(el);
       });
-      document.removeEventListener('DOMContentLoaded', this.applyRulesCallbackListener, false);
+      document.removeEventListener(
+        "DOMContentLoaded",
+        this.applyRulesCallbackListener,
+        false,
+      );
     }
     /**
      * Exposed for testing purposes only.
@@ -5622,9 +6437,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
 
     static query(selector) {
-      let noTiming = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-      if (typeof selector !== 'string') {
-        throw new Error('Selector should be defined as a string.');
+      let noTiming =
+        arguments.length > 1 && arguments[1] !== undefined
+          ? arguments[1]
+          : true;
+      if (typeof selector !== "string") {
+        throw new Error("Selector should be defined as a string.");
       }
       const start = performance.now();
       try {
@@ -5632,7 +6450,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       } finally {
         const end = performance.now();
         if (!noTiming) {
-          logger.info(`[ExtendedCss] Elapsed: ${Math.round((end - start) * 1000)} μs.`);
+          logger.info(
+            `[ExtendedCss] Elapsed: ${Math.round((end - start) * 1000)} μs.`,
+          );
         }
       }
     }
@@ -5649,20 +6469,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         // ExtendedCss in general supports :remove() in selector
         // but ExtendedCss.query() does not support it as it should be parsed by stylesheet parser.
         // so for validation we have to handle selectors with `:remove()` in it
-        const {
-          selector
-        } = parseRemoveSelector(inputSelector);
+        const { selector } = parseRemoveSelector(inputSelector);
         ExtendedCss.query(selector);
         return {
           ok: true,
-          error: null
+          error: null,
         };
       } catch (e) {
         // not valid input `selector` should be logged eventually
         const error = `Error: Invalid selector: '${inputSelector}' -- ${getErrorMessage(e)}`;
         return {
           ok: false,
-          error
+          error,
         };
       }
     }
@@ -21732,11 +22550,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   
   var getScriptletFunction = name => scriptletsMap[name];
   function passSourceAndProps(source, code) {
-    var redirect = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+    var redirect =
+      arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     var sourceString = JSON.stringify(source);
-    var argsString = source.args ? `[${source.args.map(function (arg) {
-      return JSON.stringify(arg);
-    })}]` : undefined;
+    var argsString = source.args
+      ? `[${source.args.map(function (arg) {
+          return JSON.stringify(arg);
+        })}]`
+      : undefined;
     var params = argsString ? `${sourceString}, ${argsString}` : sourceString;
     if (redirect) {
       return `(function(source, args){\n${code}\n})(${params});`;
@@ -21749,15 +22570,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   function getScriptletCode$1(source) {
     var scriptletFunction = getScriptletFunction(source.name);
     if (typeof scriptletFunction !== "function") {
-      throw new Error(`Error: cannot invoke scriptlet with name: '${source.name}'`);
+      throw new Error(
+        `Error: cannot invoke scriptlet with name: '${source.name}'`,
+      );
     }
     var scriptletFunctionString = scriptletFunction.toString();
-    var result = source.engine === "corelibs" || source.engine === "test" ? wrapInNonameFunc(scriptletFunctionString) : passSourceAndProps(source, scriptletFunctionString);
+    var result =
+      source.engine === "corelibs" || source.engine === "test"
+        ? wrapInNonameFunc(scriptletFunctionString)
+        : passSourceAndProps(source, scriptletFunctionString);
     return result;
   }
   var scriptlets = {
     invoke: getScriptletCode$1,
-    getScriptletFunction: getScriptletFunction
+    getScriptletFunction: getScriptletFunction,
   };
 
   /*
@@ -21778,9 +22604,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   var LoggingLevel;
   (function (LoggingLevel) {
-    LoggingLevel[LoggingLevel["Debug"] = 2] = "Debug";
-    LoggingLevel[LoggingLevel["Info"] = 1] = "Info";
-    LoggingLevel[LoggingLevel["Error"] = 0] = "Error";
+    LoggingLevel[(LoggingLevel["Debug"] = 2)] = "Debug";
+    LoggingLevel[(LoggingLevel["Info"] = 1)] = "Info";
+    LoggingLevel[(LoggingLevel["Error"] = 0)] = "Error";
   })(LoggingLevel || (LoggingLevel = {}));
   const getTimestamp = () => `[${new Date().toISOString()}]`;
   /**
@@ -21794,7 +22620,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      * @param level Logging level.
      */
     constructor(prefix, level) {
-      _defineProperty2(this, "prefix", '[Safari Extension]');
+      _defineProperty2(this, "prefix", "[Safari Extension]");
       _defineProperty2(this, "loggingLevel", LoggingLevel.Info);
       this.prefix = prefix;
       this.loggingLevel = level;
@@ -21807,7 +22633,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     debug() {
       if (this.loggingLevel >= LoggingLevel.Debug) {
-        for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        for (
+          var _len3 = arguments.length, args = new Array(_len3), _key3 = 0;
+          _key3 < _len3;
+          _key3++
+        ) {
           args[_key3] = arguments[_key3];
         }
         console.debug(getTimestamp(), this.prefix, ...args);
@@ -21815,7 +22645,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     info() {
       if (this.loggingLevel >= LoggingLevel.Info) {
-        for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        for (
+          var _len4 = arguments.length, args = new Array(_len4), _key4 = 0;
+          _key4 < _len4;
+          _key4++
+        ) {
           args[_key4] = arguments[_key4];
         }
         console.info(getTimestamp(), this.prefix, ...args);
@@ -21823,7 +22657,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     error() {
       if (this.loggingLevel >= LoggingLevel.Error) {
-        for (var _len5 = arguments.length, args = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+        for (
+          var _len5 = arguments.length, args = new Array(_len5), _key5 = 0;
+          _key5 < _len5;
+          _key5++
+        ) {
           args[_key5] = arguments[_key5];
         }
         console.error(getTimestamp(), this.prefix, ...args);
@@ -21878,7 +22716,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @param logger to use.
    */
-  const setLogger = logger => {
+  const setLogger = (logger) => {
     internalLogger = logger;
   };
   /**
@@ -21895,17 +22733,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   /**
    * Name of the engine used to run scriptlets.
    */
-  const SCRIPTLET_ENGINE_NAME = 'safari-extension';
+  const SCRIPTLET_ENGINE_NAME = "safari-extension";
   /**
    * Makes sure that we're dealing with CSS rules (selector + style)
    *
    * @param css Array of CSS selectors (for hiding elements) or full CSS rules.
    * @returns Array of CSS rules.
    */
-  const toCSSRules = css => {
-    return css.map(s => s.trim()).filter(s => s.length > 0).map(s => {
-      return s.at(-1) !== '}' ? `${s} {display:none!important;}` : s;
-    });
+  const toCSSRules = (css) => {
+    return css
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .map((s) => {
+        return s.at(-1) !== "}" ? `${s} {display:none!important;}` : s;
+      });
   };
 
   /**
@@ -21917,9 +22758,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param {string} code String of scripts to be executed.
    * @returns {boolean} Returns true if code was executed, otherwise returns false.
    */
-  const executeScriptsViaTextContent = code => {
-    const scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
+  const executeScriptsViaTextContent = (code) => {
+    const scriptTag = document.createElement("script");
+    scriptTag.setAttribute("type", "text/javascript");
     scriptTag.textContent = code;
     const parent = document.head || document.documentElement;
     parent.appendChild(scriptTag);
@@ -21936,12 +22777,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param {string} code String of scripts to be executed
    * @returns {boolean} Returns true if code was executed, otherwise returns false.
    */
-  const executeScriptsViaBlob = code => {
+  const executeScriptsViaBlob = (code) => {
     const blob = new Blob([code], {
-      type: 'text/javascript'
+      type: "text/javascript",
     });
     const url = URL.createObjectURL(blob);
-    const scriptTag = document.createElement('script');
+    const scriptTag = document.createElement("script");
     scriptTag.src = url;
     const parent = document.head || document.documentElement;
     parent.appendChild(scriptTag);
@@ -21959,16 +22800,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param {string[]} scripts Array of scripts to execute.
    */
   const executeScripts = function () {
-    let scripts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-    scripts.unshift('( function () { try {');
+    let scripts =
+      arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+    scripts.unshift("( function () { try {");
     // we use this script detect if the script was applied,
     // if the script tag was removed, then it means that code was applied, otherwise no
-    scripts.push(';document.currentScript.remove();');
-    scripts.push("} catch (ex) { console.error('Error executing AG js: ' + ex); } })();");
-    const code = scripts.join('\r\n');
+    scripts.push(";document.currentScript.remove();");
+    scripts.push(
+      "} catch (ex) { console.error('Error executing AG js: ' + ex); } })();",
+    );
+    const code = scripts.join("\r\n");
     if (!executeScriptsViaTextContent(code)) {
       if (!executeScriptsViaBlob(code)) {
-        log$1.error('Failed to execute scripts');
+        log$1.error("Failed to execute scripts");
       }
     }
   };
@@ -21978,23 +22822,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *
    * @param {HTMLElement} protectStyleEl protected style element.
    */
-  const protectStyleElementContent = protectStyleEl => {
-    const {
-      MutationObserver
-    } = window;
+  const protectStyleElementContent = (protectStyleEl) => {
+    const { MutationObserver } = window;
     if (!MutationObserver) {
       return;
     }
     // Observer, which observe protectStyleEl inner changes, without deleting
     // styleEl.
-    const innerObserver = new MutationObserver(mutations => {
+    const innerObserver = new MutationObserver((mutations) => {
       for (let i = 0; i < mutations.length; i += 1) {
         const m = mutations[i];
-        if (protectStyleEl.hasAttribute('mod') && protectStyleEl.getAttribute('mod') === 'inner') {
-          protectStyleEl.removeAttribute('mod');
+        if (
+          protectStyleEl.hasAttribute("mod") &&
+          protectStyleEl.getAttribute("mod") === "inner"
+        ) {
+          protectStyleEl.removeAttribute("mod");
           break;
         }
-        protectStyleEl.setAttribute('mod', 'inner');
+        protectStyleEl.setAttribute("mod", "inner");
         let isProtectStyleElModified = false;
         // There are two mutually exclusive situations:
         //
@@ -22011,7 +22856,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           protectStyleEl.textContent = m.oldValue;
         }
         if (!isProtectStyleElModified) {
-          protectStyleEl.removeAttribute('mod');
+          protectStyleEl.removeAttribute("mod");
         }
       }
     });
@@ -22019,7 +22864,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       childList: true,
       characterData: true,
       subtree: true,
-      characterDataOldValue: true
+      characterDataOldValue: true,
     });
   };
   /**
@@ -22036,13 +22881,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         name: scriptlet.name,
         args: scriptlet.args,
         version: version,
-        verbose
+        verbose,
       };
       return scriptlets.invoke(scriptletSource);
     } catch (e) {
-      log$1.error('Failed to get scriptlet code', scriptlet.name, e);
+      log$1.error("Failed to get scriptlet code", scriptlet.name, e);
     }
-    return '';
+    return "";
   };
   // Disable class-methods-use-this rule for the following code since it needs
   // to implement particular interface.
@@ -22071,7 +22916,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      * @param verbose Whether to log verbose output.
      */
     applyConfiguration(configuration) {
-      let verbose = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      let verbose =
+        arguments.length > 1 && arguments[1] !== undefined
+          ? arguments[1]
+          : false;
       this.insertCss(configuration.css);
       this.insertExtendedCss(configuration.extendedCss);
       this.runScriptlets(configuration.scriptlets, verbose);
@@ -22087,8 +22935,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       try {
-        const styleElement = document.createElement('style');
-        styleElement.setAttribute('type', 'text/css');
+        const styleElement = document.createElement("style");
+        styleElement.setAttribute("type", "text/css");
         (document.head || document.documentElement).appendChild(styleElement);
         if (styleElement.sheet) {
           const cssRules = toCSSRules(css);
@@ -22098,7 +22946,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         protectStyleElementContent(styleElement);
       } catch (e) {
-        log$1.error('Failed to insert CSS', e);
+        log$1.error("Failed to insert CSS", e);
       }
     }
     /**
@@ -22113,11 +22961,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       try {
         const cssRules = toCSSRules(extendedCss);
         const extCss = new ExtendedCss({
-          cssRules
+          cssRules,
         });
         extCss.apply();
       } catch (e) {
-        log$1.error('Failed to insert extended CSS', e);
+        log$1.error("Failed to insert extended CSS", e);
       }
     }
     /**
@@ -22149,7 +22997,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!scriptlets || !scriptlets.length) {
         return;
       }
-      const getCode = scriptlet => getScriptletCode(scriptlet, verbose);
+      const getCode = (scriptlet) => getScriptletCode(scriptlet, verbose);
       const scripts = scriptlets.map(getCode);
       executeScripts(scripts);
     }
@@ -22173,137 +23021,957 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *         (or removes) the interceptors.
    */
   function setupDelayedEventDispatcher() {
-    let timeoutMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
+    let timeoutMs =
+      arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
     const interceptors = [];
-    const events = [{
-      name: 'DOMContentLoaded',
-      options: {
-        bubbles: true,
-        cancelable: false
+    const events = [
+      {
+        name: "DOMContentLoaded",
+        options: {
+          bubbles: true,
+          cancelable: false,
+        },
+        target: document,
       },
-      target: document
-    }, {
-      name: 'load',
-      options: {
-        bubbles: false,
-        cancelable: false
+      {
+        name: "load",
+        options: {
+          bubbles: false,
+          cancelable: false,
+        },
+        target: window,
       },
-      target: window
-    }];
-    events.forEach(ev => {
+    ];
+    events.forEach((ev) => {
       const interceptor = {
         name: ev.name,
         options: ev.options,
         intercepted: false,
         target: ev.target,
-        listener: event => {
+        listener: (event) => {
           // Prevent immediate propagation.
           event.stopImmediatePropagation();
           interceptor.intercepted = true;
-          log$1.debug('Event has been intercepted:', ev.name);
-        }
+          log$1.debug("Event has been intercepted:", ev.name);
+        },
       };
       interceptors.push(interceptor);
       interceptor.target.addEventListener(ev.name, interceptor.listener, {
-        capture: true
+        capture: true,
       });
     });
     let dispatched = false;
-    const dispatchEvents = trigger => {
+    const dispatchEvents = (trigger) => {
       if (dispatched) {
         // The events were already dispatched, do nothing.
         return;
       }
       dispatched = true;
-      interceptors.forEach(interceptor => {
+      interceptors.forEach((interceptor) => {
         // Remove the interceptor listener.
-        interceptor.target.removeEventListener(interceptor.name, interceptor.listener, {
-          capture: true
-        });
+        interceptor.target.removeEventListener(
+          interceptor.name,
+          interceptor.listener,
+          {
+            capture: true,
+          },
+        );
         if (interceptor.intercepted) {
           // If intercepted, dispatch the event manually so downstream listeners eventually receive it.
           const newEvent = new Event(interceptor.name, interceptor.options);
           interceptor.target.dispatchEvent(newEvent);
-          const targetName = interceptor.target === document ? 'document' : 'window';
-          log$1.debug(`${interceptor.name} event re-dispatched due to ${trigger} on ${targetName}.`);
+          const targetName =
+            interceptor.target === document ? "document" : "window";
+          log$1.debug(
+            `${interceptor.name} event re-dispatched due to ${trigger} on ${targetName}.`,
+          );
         } else {
-          log$1.debug(`Interceptor for ${interceptor.name} removed due to ${trigger}.`);
+          log$1.debug(
+            `Interceptor for ${interceptor.name} removed due to ${trigger}.`,
+          );
         }
       });
     };
     // Set a timer to automatically dispatch the events after the timeout.
     const timer = setTimeout(() => {
-      dispatchEvents('timeout');
+      dispatchEvents("timeout");
     }, timeoutMs);
     // Return a function to cancel the timer and dispatch events immediately.
     return () => {
       clearTimeout(timer);
-      dispatchEvents('response received');
+      dispatchEvents("response received");
     };
   }
 
   /**
-   * @file Defines message interface.
-   */
-  /**
-   * Represents a type of message.
-   */
-  var MessageType;
-  (function (MessageType) {
-    MessageType["InitContentScript"] = "InitContentScript";
-  })(MessageType || (MessageType = {}));
-
-  /**
-   * @file Content script for the WebExtension.
+   * @file App extension content script.
    *
-   * This script runs in the context of a frame, and it's responsible for:
-   * - Notifying the background script that the frame is available.
-   * - Exposing content script to other scripts in the ISOLATED world, so that
-   *   they were used by scripts injected by `browser.scripting.executeScript`.
-   * - Delaying page load events to give time to injected scripts to initialize.
+   * The script initializes content script functionality by listening
+   * for messages from the Safari extension. It uses a delayed dispatcher
+   * to handle DOM events and sends a rule request message to the extension.
    */
   // Initialize the logger to be used by the `@adguard/safari-extension`.
   // Change logging level to Debug if you need to see more details.
-  const wBlockLogger = new ConsoleLogger('[wBlock Scripts]', LoggingLevel.Error);
+  const wBlockLogger = new ConsoleLogger("[wBlock Extension]", LoggingLevel.Error);
   setLogger(wBlockLogger);
+  wBlockLogger.debug("Content script is starting...");
   // Initialize the delayed event dispatcher. This may intercept DOMContentLoaded
   // and load events. The delay of 1000ms is used as a buffer to capture critical
   // initial events while waiting for the rules response.
   const cancelDelayedDispatchAndDispatch = setupDelayedEventDispatcher(1000);
+  // Generate a pseudo-unique request ID for properly tracing the response to the
+  // request that was sent by this instance of a SFSafariContentScript.
+  // We will only accept responses to this specific request.
+  const requestId = Math.random().toString(36);
+  // Track when the request to the background was made.
+  const startTime = Date.now();
   /**
-   * Main entry point function for the content script.
+   * Callback function to handle response messages from the Safari extension.
    *
-   * This function:
-   * 1. Exposes `adguard.contentScript` to other scripts in the ISOLATED world.
-   * 2. Notifies the background page of the page that is loading. Background page
-   *    will handle this event and insert necessary CSS and JS to this frame.
-   * 3. When the background page responds, cancels any delayed events and flushes
-   *    captured events.
+   * This function processes the rules response message:
+   * - If a configuration payload is received, it instantiates and runs the
+   *   ContentScript.
+   * - It logs the elapsed time between the request and the response for
+   *   performance monitoring.
+   * - It toggles verbose logging based on the configuration included in
+   *   the response.
+   * - It cancels any pending delayed event dispatch logic to allow the page's
+   *   natural event flow.
+   *
+   * @param event SafariExtensionMessageEvent - The message event from the
+   * extension.
    */
-  const main = async () => {
-    // First of all, make sure that the content script is exposed to the
-    // scripts that will be called by background script.
-    window.adguard = {
-      contentScript: new ContentScript()
-    };
-    const message = {
-      type: MessageType.InitContentScript
-    };
-    // Send the message to the background script and await the response.
-    const response = await browser.runtime.sendMessage(message);
-    // If the background page returned payload with configuration, it means
-    // that it cannot apply it on its own and commands the content script
-    // to do that.
-    if (response !== null && response !== void 0 && response.payload) {
-      const configuration = response.payload;
-      window.adguard.contentScript.applyConfiguration(configuration);
+  const handleMessage = (event) => {
+    wBlockLogger.debug("Received message: ", event);
+
+    // Handle zapper messages separately
+    if (event.name === "zapperController") {
+      handleZapperMessage(event.name, event.message);
+      return;
     }
-    // After processing, cancel any pending delayed event dispatch and process
-    // any queued events immediately.
+
+    // Cast the received event message to our expected
+    // RequestRulesResponseMessage type.
+    const message = event.message;
+    if (
+      (message === null || message === void 0 ? void 0 : message.requestId) !==
+      requestId
+    ) {
+      wBlockLogger.debug(
+        "Received response for a different request ID: ",
+        message === null || message === void 0 ? void 0 : message.requestId,
+      );
+      return;
+    }
+    // If the configuration payload exists, run the ContentScript with it.
+    if (message !== null && message !== void 0 && message.payload) {
+      const configuration = message.payload;
+      new ContentScript().applyConfiguration(configuration);
+    }
+    // Cancel the pending delayed event dispatch and process any queued events.
     cancelDelayedDispatchAndDispatch();
+    const elapsed = Date.now() - startTime;
+    wBlockLogger.debug("Finished processing response, elapsed time: ", elapsed);
   };
-  // Execute the main function and catch any runtime errors.
-  main().catch(error => {
-    wBlockLogger.error('Error in content script: ', error);
-  });
-})(browser);
+  /**
+   * Returns the top-level URL of the current page or null if we're not
+   * in an iframe.
+   *
+   * @returns {string | null} The top-level URL or null if we're not in an iframe.
+   */
+  function getTopUrl() {
+    try {
+      if (window.top === window.self) {
+        return null;
+      }
+      if (!window.top) {
+        // window.top cannot be null under normal circumstances so assume
+        // we're in an iframe.
+        return "https://third-party-domain.com/";
+      }
+      return window.top.location.href;
+    } catch (ex) {
+      wBlockLogger.error("Failed to get top URL: ", ex);
+      // Return a random third-party domain as this error signals us
+      // that we're in a third-party frame.
+      return "https://third-party-domain.com/";
+    }
+  }
+  /**
+   * Returns URL of the current page. If we're in an about:blank iframe, handles
+   * it and returns the URL of the top page.
+   *
+   * @returns {string} The URL of the current page.
+   */
+  function getUrl() {
+    let url = window.location.href;
+    const topUrl = getTopUrl();
+    if (!url.startsWith("http") && topUrl) {
+      // Handle the case of non-HTTP iframes, i.e. frames created by JS.
+      // For instance, frames can be created as 'about:blank' or 'data:text/html'
+      url = topUrl;
+    }
+    return url;
+  }
+  // Prepare the message to request configuration rules for the current page.
+  const message = {
+    requestId,
+    url: getUrl(),
+    topUrl: getTopUrl(),
+  };
+  // Dispatch the "requestRules" message to the Safari extension.
+  safari.extension.dispatchMessage("requestRules", message);
+  // Register the event listener for incoming messages from the extension.
+  safari.self.addEventListener("message", handleMessage);
+
+  // Load persistent zapper rules for this site
+  function loadPersistentZapperRules() {
+    wBlockLogger.info(
+      "Loading persistent zapper rules for hostname:",
+      location.hostname,
+    );
+
+    const tryLoadRules = (attemptCount = 0) => {
+      if (safari && safari.extension) {
+        safari.extension.dispatchMessage("zapperController", {
+          action: "loadRules",
+          hostname: location.hostname,
+        });
+        wBlockLogger.info(
+          "Dispatched loadRules message for persistent zapper rules (attempt",
+          attemptCount + 1,
+          ")",
+        );
+      } else {
+        wBlockLogger.info(
+          "Safari extension not available for persistent zapper rules, attempt",
+          attemptCount + 1,
+        );
+        // Retry up to 5 times with increasing delays
+        if (attemptCount < 5) {
+          setTimeout(
+            () => tryLoadRules(attemptCount + 1),
+            (attemptCount + 1) * 200,
+          );
+        }
+      }
+    };
+
+    tryLoadRules();
+  }
+
+  // Automatically load persistent zapper rules on page load
+  // Try loading immediately
+  loadPersistentZapperRules();
+
+  // Also try again after DOM content loaded
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(loadPersistentZapperRules, 100);
+    });
+  } else {
+    // DOM is already ready, try again with delay
+    setTimeout(loadPersistentZapperRules, 100);
+  }
+
+  // Final attempt after page fully loads
+  if (document.readyState !== "complete") {
+    window.addEventListener("load", () => {
+      setTimeout(loadPersistentZapperRules, 200);
+    });
+  }
+
+  // Apply zapper rules to the page (for persistent blocking)
+  function applyZapperRules(rules) {
+    const normalizedRules = Array.from(
+      new Set(
+        (rules || [])
+          .map((selector) => String(selector || "").trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (normalizedRules.length === 0) {
+      const styleElement = document.getElementById(
+        "wblock-persistent-zapper-rules",
+      );
+      if (styleElement) {
+        styleElement.textContent = "";
+      }
+      wBlockLogger.info("applyZapperRules: No rules to apply");
+      return;
+    }
+
+    wBlockLogger.info(
+      "Applying",
+      normalizedRules.length,
+      "persistent zapper rules:",
+      normalizedRules,
+    );
+
+    const applyRulesToDOM = () => {
+      let styleElement = document.getElementById(
+        "wblock-persistent-zapper-rules",
+      );
+      if (!styleElement) {
+        styleElement = document.createElement("style");
+        styleElement.id = "wblock-persistent-zapper-rules";
+        styleElement.type = "text/css";
+
+        if (document.head) {
+          document.head.appendChild(styleElement);
+        } else if (document.documentElement) {
+          document.documentElement.appendChild(styleElement);
+        } else {
+          wBlockLogger.info(
+            "Warning: Could not find head or documentElement to append style",
+          );
+          return;
+        }
+        wBlockLogger.info("Created new persistent style element");
+      }
+
+      const cssRules = normalizedRules
+        .map((selector) => `${selector} { display: none !important; }`)
+        .join("\n");
+      styleElement.textContent = cssRules;
+
+      wBlockLogger.info(
+        `Applied ${normalizedRules.length} persistent zapper rules for ${location.hostname}`,
+      );
+      wBlockLogger.info("CSS rules applied:", cssRules);
+    };
+
+    if (document.head || document.documentElement) {
+      applyRulesToDOM();
+    } else {
+      const checkReady = () => {
+        if (document.head || document.documentElement) {
+          applyRulesToDOM();
+        } else {
+          setTimeout(checkReady, 10);
+        }
+      };
+      checkReady();
+    }
+  }
+
+  // Element Zapper Integration (CSP-safe: no inline script injection)
+  const ZAPPER_UI_STYLE_ID = "wblock-zapper-ui-style";
+  const ZAPPER_UI_ROOT_ID = "wblock-zapper-root";
+  const ZAPPER_HIGHLIGHT_ID = "wblock-zapper-highlight";
+  const ZAPPER_TOAST_ID = "wblock-zapper-toast";
+  const MAX_ZAPPER_RULES_PER_SITE = 200;
+  let zapperInstance = null;
+
+  function requestPersistentZapperRules() {
+    if (!(safari && safari.extension)) return;
+    safari.extension.dispatchMessage("zapperController", {
+      action: "loadRules",
+      hostname: location.hostname,
+    });
+  }
+
+  function sendZapperRuleMessage(action, selector) {
+    if (!(safari && safari.extension)) return;
+    const payload = {
+      action,
+      hostname: location.hostname,
+    };
+    if (selector) {
+      payload.selector = selector;
+    }
+    safari.extension.dispatchMessage("zapperController", payload);
+  }
+
+  function createZapperController() {
+    const state = {
+      active: false,
+      rules: [],
+      lastAddedSelector: null,
+      lastPickAt: 0,
+      cleanupFns: [],
+      ui: {
+        root: null,
+        highlight: null,
+        toast: null,
+        statusText: null,
+        undoButton: null,
+      },
+    };
+
+    function ensureStyleElement(id) {
+      let style = document.getElementById(id);
+      if (!style) {
+        style = document.createElement("style");
+        style.id = id;
+        (document.documentElement || document).appendChild(style);
+      }
+      return style;
+    }
+
+    function normalizeRules(rules) {
+      return Array.from(
+        new Set(
+          (rules || [])
+            .map((rule) => String(rule || "").trim())
+            .filter(Boolean),
+        ),
+      ).slice(0, MAX_ZAPPER_RULES_PER_SITE);
+    }
+
+    function cssEscape(value) {
+      try {
+        if (window.CSS && typeof window.CSS.escape === "function") {
+          return window.CSS.escape(value);
+        }
+      } catch {}
+      return String(value).replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+    }
+
+    function isUniqueSelector(selector) {
+      try {
+        return document.querySelectorAll(selector).length === 1;
+      } catch {
+        return false;
+      }
+    }
+
+    function selectorForElement(element) {
+      if (!(element instanceof Element)) return null;
+      if (element === document.documentElement || element === document.body) {
+        return null;
+      }
+      if (element.id) {
+        const idSelector = `#${cssEscape(element.id)}`;
+        if (isUniqueSelector(idSelector)) return idSelector;
+      }
+
+      const tag = element.tagName.toLowerCase();
+      const classes = Array.from(element.classList || [])
+        .filter(Boolean)
+        .slice(0, 3);
+      if (classes.length > 0) {
+        const classSelector = `${tag}${classes
+          .map((className) => `.${cssEscape(className)}`)
+          .join("")}`;
+        if (isUniqueSelector(classSelector)) return classSelector;
+      }
+
+      const segments = [];
+      let current = element;
+      let depth = 0;
+      while (
+        current &&
+        current instanceof Element &&
+        current !== document.documentElement &&
+        depth < 12
+      ) {
+        const currentTag = current.tagName.toLowerCase();
+        let segment = currentTag;
+
+        if (current.id) {
+          const idCandidate = `${currentTag}#${cssEscape(current.id)}`;
+          if (isUniqueSelector(idCandidate)) return idCandidate;
+        }
+
+        const currentClasses = Array.from(current.classList || [])
+          .filter(Boolean)
+          .slice(0, 1);
+        if (currentClasses.length) {
+          segment += `.${cssEscape(currentClasses[0])}`;
+        }
+
+        const parent = current.parentElement;
+        if (parent) {
+          const siblingsOfType = Array.from(parent.children).filter(
+            (child) => child.tagName === current.tagName,
+          );
+          if (siblingsOfType.length > 1) {
+            const index = siblingsOfType.indexOf(current) + 1;
+            segment += `:nth-of-type(${index})`;
+          }
+        }
+
+        segments.unshift(segment);
+        const candidatePath = segments.join(" > ");
+        if (isUniqueSelector(candidatePath)) return candidatePath;
+
+        current = current.parentElement;
+        depth += 1;
+      }
+
+      return segments.join(" > ") || null;
+    }
+
+    function isValidCssSelector(selector) {
+      try {
+        document.createDocumentFragment().querySelector(selector);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function parseManualRuleInput(input) {
+      const raw = String(input || "").trim();
+      if (!raw) {
+        return { selector: "", error: "Enter a CSS selector." };
+      }
+
+      let selector = raw;
+      if (raw.includes("{")) {
+        const openIndex = raw.indexOf("{");
+        const closeIndex = raw.lastIndexOf("}");
+        if (closeIndex <= openIndex) {
+          return { selector: "", error: "CSS rule syntax is invalid." };
+        }
+        if (raw.slice(closeIndex + 1).trim().length > 0) {
+          return { selector: "", error: "CSS rule syntax is invalid." };
+        }
+        selector = raw.slice(0, openIndex).trim();
+      } else if (raw.includes("}")) {
+        return { selector: "", error: "CSS rule syntax is invalid." };
+      }
+
+      if (!selector) {
+        return { selector: "", error: "Enter a CSS selector." };
+      }
+      if (selector.length > 512) {
+        return { selector: "", error: "Selector is too long." };
+      }
+      if (!isValidCssSelector(selector)) {
+        return { selector: "", error: "Selector syntax is invalid." };
+      }
+
+      return { selector, error: "" };
+    }
+
+    function applyLocalRules(rules) {
+      state.rules = normalizeRules(rules);
+      applyZapperRules(state.rules);
+    }
+
+    function shouldIgnoreTarget(target) {
+      if (!(target instanceof Element)) return false;
+      if (target.id === ZAPPER_UI_STYLE_ID) return true;
+      return Boolean(target.closest && target.closest(`#${ZAPPER_UI_ROOT_ID}`));
+    }
+
+    function ensureUi() {
+      if (state.ui.root) return;
+
+      const uiStyle = ensureStyleElement(ZAPPER_UI_STYLE_ID);
+      uiStyle.textContent = `
+        #${ZAPPER_UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; pointer-events: none; }
+        #${ZAPPER_UI_ROOT_ID} .wblock-bar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 14px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.82); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); pointer-events: auto; }
+        #${ZAPPER_UI_ROOT_ID} .wblock-status { font-size: 12px; line-height: 1.2; flex: 1; min-width: 0; }
+        #${ZAPPER_UI_ROOT_ID} .wblock-actions { display: flex; gap: 8px; }
+        #${ZAPPER_UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; padding: 8px 10px; min-height: 30px; line-height: 1; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.14); cursor: pointer; }
+        #${ZAPPER_UI_ROOT_ID} button:disabled { opacity: 0.5; cursor: default; }
+        #${ZAPPER_HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
+        #${ZAPPER_TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
+        #${ZAPPER_TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 10px 12px; border-radius: 12px; background: rgba(20, 20, 22, 0.84); color: #fff; font-size: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
+      `.trim();
+
+      const root = document.createElement("div");
+      root.id = ZAPPER_UI_ROOT_ID;
+      root.setAttribute("role", "dialog");
+      root.setAttribute("aria-label", "wBlock Element Zapper");
+
+      const bar = document.createElement("div");
+      bar.className = "wblock-bar";
+
+      const statusText = document.createElement("div");
+      statusText.className = "wblock-status";
+      statusText.textContent = "Element Zapper: Click an element to hide it.";
+
+      const actions = document.createElement("div");
+      actions.className = "wblock-actions";
+
+      const undoButton = document.createElement("button");
+      undoButton.type = "button";
+      undoButton.textContent = "Undo";
+      undoButton.disabled = true;
+      undoButton.addEventListener("click", (event) => {
+        interceptEvent(event);
+        undoLastZap();
+      });
+
+      const manualButton = document.createElement("button");
+      manualButton.type = "button";
+      manualButton.textContent = "Add Rule";
+      manualButton.addEventListener("click", (event) => {
+        interceptEvent(event);
+        addManualRuleFromPrompt();
+      });
+
+      const doneButton = document.createElement("button");
+      doneButton.type = "button";
+      doneButton.textContent = "Done";
+      doneButton.addEventListener("click", (event) => {
+        interceptEvent(event);
+        deactivate({ removeUi: true });
+      });
+
+      actions.appendChild(undoButton);
+      actions.appendChild(manualButton);
+      actions.appendChild(doneButton);
+      bar.appendChild(statusText);
+      bar.appendChild(actions);
+      root.appendChild(bar);
+
+      const highlight = document.createElement("div");
+      highlight.id = ZAPPER_HIGHLIGHT_ID;
+      highlight.style.display = "none";
+
+      const toast = document.createElement("div");
+      toast.id = ZAPPER_TOAST_ID;
+      const toastInner = document.createElement("div");
+      toastInner.className = "wblock-toast-inner";
+      toast.appendChild(toastInner);
+
+      state.ui.root = root;
+      state.ui.highlight = highlight;
+      state.ui.toast = toast;
+      state.ui.statusText = statusText;
+      state.ui.undoButton = undoButton;
+
+      (document.documentElement || document).appendChild(highlight);
+      (document.documentElement || document).appendChild(toast);
+      (document.documentElement || document).appendChild(root);
+    }
+
+    function showToast(message) {
+      ensureUi();
+      const toast = state.ui.toast;
+      if (!toast) return;
+      const inner = toast.querySelector(".wblock-toast-inner");
+      if (inner) {
+        inner.textContent = message;
+      }
+      toast.style.display = "flex";
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toast.style.display = "none";
+      }, 1500);
+    }
+
+    function setHighlightForElement(element) {
+      ensureUi();
+      const highlight = state.ui.highlight;
+      if (!highlight) return;
+      if (!(element instanceof Element) || shouldIgnoreTarget(element)) {
+        highlight.style.display = "none";
+        return;
+      }
+      const rect = element.getBoundingClientRect();
+      if (!rect || rect.width <= 0 || rect.height <= 0) {
+        highlight.style.display = "none";
+        return;
+      }
+      highlight.style.display = "block";
+      highlight.style.top = `${Math.max(0, rect.top)}px`;
+      highlight.style.left = `${Math.max(0, rect.left)}px`;
+      highlight.style.width = `${Math.max(0, rect.width)}px`;
+      highlight.style.height = `${Math.max(0, rect.height)}px`;
+    }
+
+    function clearHighlight() {
+      if (state.ui.highlight) {
+        state.ui.highlight.style.display = "none";
+      }
+    }
+
+    function getPointFromEvent(event) {
+      if (
+        event &&
+        typeof event.clientX === "number" &&
+        typeof event.clientY === "number"
+      ) {
+        return { x: event.clientX, y: event.clientY };
+      }
+      return null;
+    }
+
+    function elementFromEvent(event) {
+      const point = getPointFromEvent(event);
+      if (!point) return null;
+      try {
+        return document.elementFromPoint(point.x, point.y);
+      } catch {
+        return null;
+      }
+    }
+
+    function addCleanup(cleanupFn) {
+      state.cleanupFns.push(cleanupFn);
+    }
+
+    function clearCleanup() {
+      const cleanups = state.cleanupFns.slice();
+      state.cleanupFns = [];
+      for (const cleanupFn of cleanups) {
+        try {
+          cleanupFn();
+        } catch {}
+      }
+    }
+
+    function teardownUi() {
+      clearTimeout(showToast._timer);
+
+      const root = state.ui.root;
+      const highlight = state.ui.highlight;
+      const toast = state.ui.toast;
+
+      try {
+        if (root && root.parentNode) root.parentNode.removeChild(root);
+        if (highlight && highlight.parentNode) {
+          highlight.parentNode.removeChild(highlight);
+        }
+        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+      } catch {}
+
+      try {
+        const uiStyle = document.getElementById(ZAPPER_UI_STYLE_ID);
+        if (uiStyle && uiStyle.parentNode) {
+          uiStyle.parentNode.removeChild(uiStyle);
+        }
+      } catch {}
+
+      state.ui.root = null;
+      state.ui.highlight = null;
+      state.ui.toast = null;
+      state.ui.statusText = null;
+      state.ui.undoButton = null;
+    }
+
+    function interceptEvent(event) {
+      if (!event) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") {
+        event.stopImmediatePropagation();
+      }
+    }
+
+    function addSelectorRule(selector, options = {}) {
+      const normalized = String(selector || "").trim();
+      if (!normalized) return;
+
+      if (state.rules.includes(normalized)) {
+        showToast(options.manual ? "Rule already exists." : "Already hidden.");
+        return;
+      }
+
+      applyLocalRules(state.rules.concat([normalized]));
+      state.lastAddedSelector = normalized;
+      if (state.ui.undoButton) {
+        state.ui.undoButton.disabled = false;
+      }
+
+      sendZapperRuleMessage("saveRule", normalized);
+      showToast(
+        options.manual
+          ? "Rule saved for this site."
+          : "Hidden. Rule saved for this site.",
+      );
+    }
+
+    function removeSelectorRule(selector) {
+      const normalized = String(selector || "").trim();
+      if (!normalized || !state.rules.includes(normalized)) return;
+      applyLocalRules(state.rules.filter((rule) => rule !== normalized));
+      sendZapperRuleMessage("removeRule", normalized);
+    }
+
+    function undoLastZap() {
+      if (!state.lastAddedSelector) return;
+      const selectorToRemove = state.lastAddedSelector;
+      state.lastAddedSelector = null;
+      removeSelectorRule(selectorToRemove);
+      if (state.ui.undoButton) {
+        state.ui.undoButton.disabled = true;
+      }
+      showToast("Undone.");
+    }
+
+    function addManualRuleFromPrompt() {
+      const rawInput = window.prompt("Enter CSS selector for this site");
+      if (rawInput === null) return;
+
+      const parsed = parseManualRuleInput(rawInput);
+      if (parsed.error) {
+        showToast(parsed.error);
+        return;
+      }
+
+      addSelectorRule(parsed.selector, { manual: true });
+    }
+
+    function activate() {
+      if (state.active) return;
+      ensureUi();
+      state.active = true;
+      state.lastAddedSelector = null;
+      state.lastPickAt = 0;
+      if (state.ui.undoButton) {
+        state.ui.undoButton.disabled = true;
+      }
+      if (state.ui.statusText) {
+        state.ui.statusText.textContent =
+          "Element Zapper: Click an element to hide it.";
+      }
+      requestPersistentZapperRules();
+      showToast("Element Zapper enabled.");
+
+      const onMove = (event) => {
+        if (!state.active) return;
+        if (
+          state.ui.root &&
+          event &&
+          event.target &&
+          state.ui.root.contains(event.target)
+        ) {
+          return;
+        }
+        const element = elementFromEvent(event);
+        if (!element || shouldIgnoreTarget(element)) return;
+        setHighlightForElement(element);
+      };
+
+      const pickFromEvent = (event) => {
+        if (!state.active) return;
+        if (
+          state.ui.root &&
+          event &&
+          event.target &&
+          state.ui.root.contains(event.target)
+        ) {
+          return;
+        }
+        const now = Date.now();
+        if (now - state.lastPickAt < 120) return;
+
+        const element = elementFromEvent(event);
+        if (!element || shouldIgnoreTarget(element)) return;
+
+        interceptEvent(event);
+        state.lastPickAt = now;
+
+        const selector = selectorForElement(element);
+        if (!selector) {
+          showToast("Unable to create a rule for that element.");
+          return;
+        }
+
+        addSelectorRule(selector);
+      };
+
+      const onClick = (event) => {
+        if (!state.active) return;
+        if (
+          state.ui.root &&
+          event &&
+          event.target &&
+          state.ui.root.contains(event.target)
+        ) {
+          return;
+        }
+        interceptEvent(event);
+
+        const now = Date.now();
+        if (now - state.lastPickAt < 350) return;
+        pickFromEvent(event);
+      };
+
+      const onKeyDown = (event) => {
+        if (!state.active || !event) return;
+
+        if (event.key === "Escape") {
+          interceptEvent(event);
+          deactivate({ removeUi: true });
+          return;
+        }
+
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          (event.key === "z" || event.key === "Z")
+        ) {
+          interceptEvent(event);
+          undoLastZap();
+        }
+      };
+
+      const moveEvent = "PointerEvent" in window ? "pointermove" : "mousemove";
+      const downEvent = "PointerEvent" in window ? "pointerdown" : "mousedown";
+
+      document.addEventListener(moveEvent, onMove, true);
+      document.addEventListener(downEvent, pickFromEvent, true);
+      document.addEventListener("click", onClick, true);
+      document.addEventListener("keydown", onKeyDown, true);
+
+      addCleanup(() => document.removeEventListener(moveEvent, onMove, true));
+      addCleanup(() => document.removeEventListener(downEvent, pickFromEvent, true));
+      addCleanup(() => document.removeEventListener("click", onClick, true));
+      addCleanup(() => document.removeEventListener("keydown", onKeyDown, true));
+    }
+
+    function deactivate(options = {}) {
+      const removeUi = Boolean(options.removeUi);
+      if (!state.active && !removeUi) return;
+      state.active = false;
+      clearCleanup();
+      clearHighlight();
+      if (removeUi) {
+        teardownUi();
+        return;
+      }
+      showToast("Element Zapper disabled.");
+      if (state.ui.statusText) {
+        state.ui.statusText.textContent = "Element Zapper: Off";
+      }
+    }
+
+    function applyCustomRules(rules) {
+      applyLocalRules(rules);
+    }
+
+    return {
+      activate,
+      deactivate,
+      applyCustomRules,
+    };
+  }
+
+  function loadElementZapper() {
+    if (!zapperInstance) {
+      zapperInstance = createZapperController();
+      window.wBlockZapperInstance = zapperInstance;
+    }
+    zapperInstance.activate();
+    return zapperInstance;
+  }
+
+  // Handle zapper activation and state messages from Safari extension host.
+  function handleZapperMessage(messageName, userInfo) {
+    if (messageName !== "zapperController") return;
+    const action = userInfo?.action;
+
+    switch (action) {
+      case "activateZapper":
+        loadElementZapper();
+        break;
+      case "loadRulesResponse": {
+        const rules = Array.isArray(userInfo?.rules) ? userInfo.rules : [];
+        wBlockLogger.info("Received loadRulesResponse with rules:", rules);
+        applyZapperRules(rules);
+        if (zapperInstance && zapperInstance.applyCustomRules) {
+          zapperInstance.applyCustomRules(rules);
+        }
+        break;
+      }
+    }
+  }
+})();
