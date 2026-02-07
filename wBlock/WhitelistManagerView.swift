@@ -10,6 +10,7 @@ struct WhitelistManagerView: View {
     @State private var isSelectionMode: Bool = false
     @State private var selectedDomains: Set<String> = []
     @FocusState private var isTextFieldFocused: Bool
+    private let dataManager = ProtobufDataManager.shared
 
     var body: some View {
         ScrollView {
@@ -163,20 +164,22 @@ struct WhitelistManagerView: View {
     // MARK: - Logic Methods
 
     private func loadWhitelistedDomains() {
-        let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-        whitelistedDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
+        Task { @MainActor in
+            await dataManager.waitUntilLoaded()
+            whitelistedDomains = dataManager.disabledSites
+        }
     }
 
     private func addDomain() {
-        let trimmed = newDomain.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = normalizeDomain(newDomain)
         guard !trimmed.isEmpty else { return }
         guard isValidDomain(trimmed) else { return }
 
         isAddingDomain = true
 
         Task { @MainActor in
-            let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-            let currentDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
+            await dataManager.waitUntilLoaded()
+            let currentDomains = dataManager.disabledSites
 
             guard !currentDomains.contains(trimmed) else {
                 isAddingDomain = false
@@ -184,7 +187,7 @@ struct WhitelistManagerView: View {
             }
 
             let updatedDomains = currentDomains + [trimmed]
-            userDefaults.set(updatedDomains, forKey: "disabledSites")
+            await dataManager.setWhitelistedDomains(updatedDomains)
             whitelistedDomains = updatedDomains
             newDomain = ""
             isAddingDomain = false
@@ -194,10 +197,11 @@ struct WhitelistManagerView: View {
 
     private func removeDomain(_ domain: String) {
         Task { @MainActor in
-            let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-            let currentDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
-            let updatedDomains = currentDomains.filter { $0 != domain }
-            userDefaults.set(updatedDomains, forKey: "disabledSites")
+            await dataManager.waitUntilLoaded()
+            let normalized = normalizeDomain(domain)
+            let currentDomains = dataManager.disabledSites
+            let updatedDomains = currentDomains.filter { normalizeDomain($0) != normalized }
+            await dataManager.setWhitelistedDomains(updatedDomains)
             whitelistedDomains = updatedDomains
         }
     }
@@ -205,6 +209,18 @@ struct WhitelistManagerView: View {
     private func isValidDomain(_ domain: String) -> Bool {
         let domainRegex = #"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"#
         return domain.range(of: domainRegex, options: .regularExpression) != nil
+    }
+
+    private func normalizeDomain(_ domain: String) -> String {
+        var normalized = domain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if normalized.hasPrefix("*.") {
+            normalized = String(normalized.dropFirst(2))
+        } else if normalized.hasPrefix("*") {
+            normalized = String(normalized.dropFirst(1))
+        }
+
+        return normalized.trimmingCharacters(in: CharacterSet(charactersIn: "."))
     }
 
     private func toggleSelectionMode() {
@@ -226,10 +242,11 @@ struct WhitelistManagerView: View {
 
     private func deleteSelectedDomains() {
         Task { @MainActor in
-            let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-            let currentDomains = userDefaults.stringArray(forKey: "disabledSites") ?? []
-            let updatedDomains = currentDomains.filter { !selectedDomains.contains($0) }
-            userDefaults.set(updatedDomains, forKey: "disabledSites")
+            await dataManager.waitUntilLoaded()
+            let normalizedSelections = Set(selectedDomains.map { normalizeDomain($0) })
+            let currentDomains = dataManager.disabledSites
+            let updatedDomains = currentDomains.filter { !normalizedSelections.contains(normalizeDomain($0)) }
+            await dataManager.setWhitelistedDomains(updatedDomains)
             whitelistedDomains = updatedDomains
             selectedDomains.removeAll()
             isSelectionMode = false

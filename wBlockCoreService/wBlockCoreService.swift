@@ -147,11 +147,11 @@ public enum ContentBlockerService {
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
     ///   - targetRulesFilename: Target filename for the rules file.
-    ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
+    ///   - disabledSites: Optional list of disabled sites. If nil, no disabled-site overrides are injected.
     /// - Returns: A tuple containing the number of Safari content blocker rules generated 
     ///           and the advanced rules text (if any).
     public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+        let sitesToUse = disabledSites ?? []
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             os_log(.error, "Failed to access App Group container for %@", targetRulesFilename)
@@ -213,7 +213,7 @@ public enum ContentBlockerService {
         targetRulesFilename: String,
         disabledSites: [String]? = nil
     ) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+        let sitesToUse = disabledSites ?? []
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             os_log(.error, "Failed to access App Group container for %@", targetRulesFilename)
@@ -271,10 +271,10 @@ public enum ContentBlockerService {
     /// - Parameters:
     ///   - groupIdentifier: Group ID to use for the shared container
     ///   - targetRulesFilename: Target filename for the rules file
-    ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
+    ///   - disabledSites: Optional list of disabled sites. If nil, no disabled-site overrides are injected.
     /// - Returns: A tuple containing the number of Safari content blocker rules and advanced rules text
     public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+        let sitesToUse = disabledSites ?? []
         
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             os_log(.error, "Failed to access App Group container for fast update")
@@ -317,15 +317,6 @@ public enum ContentBlockerService {
         return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
     }
     
-    /// Retrieves the list of sites where wBlock is disabled.
-    ///
-    /// - Parameter groupIdentifier: The app group identifier for shared storage.
-    /// - Returns: Array of disabled site hostnames.
-    private static func getDisabledSites(groupIdentifier: String) -> [String] {
-        let defaults = UserDefaults(suiteName: groupIdentifier)
-        return defaults?.stringArray(forKey: "disabledSites") ?? []
-    }
-
     private static func baseRulesFilename(for targetRulesFilename: String) -> String {
         if targetRulesFilename.lowercased().hasSuffix(".json") {
             let stem = targetRulesFilename.dropLast(5)
@@ -414,12 +405,10 @@ public enum ContentBlockerService {
             return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\"}}"
         }
 
-        let escapedBase = escapeForJSONString(baseDomain)
-        let escapedWildcard = escapeForJSONString("*.\(baseDomain)")
+        let escapedWildcard = escapeForJSONString("*\(baseDomain)")
 
-        // Include both the apex domain and its subdomains so disabling "example.com"
-        // immediately bypasses blocking on both example.com and www.example.com.
-        return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedBase)\",\"\(escapedWildcard)\"]}}"
+        // Safari expects domain filters in if-domain as "*example.com" (apex + subdomains).
+        return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedWildcard)\"]}}"
     }
     
     /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.

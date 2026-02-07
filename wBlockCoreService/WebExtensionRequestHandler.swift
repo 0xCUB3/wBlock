@@ -16,11 +16,18 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
+    private static func normalizeHost(_ host: String) -> String {
+        host
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+    }
+
     private static func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
-        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalizedHost = normalizeHost(host)
         if normalizedHost.isEmpty { return false }
         for site in disabledSites {
-            let disabled = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let disabled = normalizeHost(site)
             if disabled.isEmpty { continue }
             if normalizedHost == disabled { return true }
             if normalizedHost.hasSuffix("." + disabled) { return true }
@@ -295,7 +302,7 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
-        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let host = normalizeHost((message["host"] as? String) ?? "")
         if host.isEmpty {
             let response = createResponse(with: ["disabled": false])
             context.completeRequest(returningItems: [response])
@@ -312,7 +319,7 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleSetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
-        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let host = normalizeHost((message["host"] as? String) ?? "")
         let disabled = message["disabled"] as? Bool ?? false
 
         guard !host.isEmpty else {
@@ -329,9 +336,9 @@ public enum WebExtensionRequestHandler {
                 if !list.contains(host) { list.append(host) }
             } else {
                 // If a parent domain is disabled, remove it as well so the current host is active.
-                let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                let normalizedHost = normalizeHost(host)
                 list.removeAll { entry in
-                    let normalizedEntry = entry.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    let normalizedEntry = normalizeHost(entry)
                     if normalizedEntry.isEmpty { return true }
                     if normalizedEntry == normalizedHost { return true }
                     return normalizedHost.hasSuffix("." + normalizedEntry)

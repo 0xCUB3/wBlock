@@ -10,6 +10,32 @@ internal import SwiftProtobuf
 
 // MARK: - Filter List Management
 extension ProtobufDataManager {
+    private func normalizeDomain(_ domain: String) -> String {
+        var normalized = domain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if normalized.hasPrefix("*.") {
+            normalized = String(normalized.dropFirst(2))
+        } else if normalized.hasPrefix("*") {
+            normalized = String(normalized.dropFirst(1))
+        }
+
+        return normalized.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+    }
+
+    private func normalizeDomains(_ domains: [String]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+
+        for domain in domains {
+            let normalized = normalizeDomain(domain)
+            guard !normalized.isEmpty, !seen.contains(normalized) else { continue }
+            seen.insert(normalized)
+            result.append(normalized)
+        }
+
+        return result
+    }
+
     public func updateFilterLists(_ filterLists: [FilterList]) async {
         var updatedData = await latestAppDataSnapshot()
         updatedData.filterLists = filterLists.map { filter in
@@ -335,8 +361,11 @@ extension ProtobufDataManager {
     
     public func addWhitelistedDomain(_ domain: String) async {
         var updatedData = appData
-        if !updatedData.whitelist.disabledSites.contains(domain) {
-            updatedData.whitelist.disabledSites.append(domain)
+        let normalizedDomain = normalizeDomain(domain)
+        guard !normalizedDomain.isEmpty else { return }
+
+        if !updatedData.whitelist.disabledSites.contains(normalizedDomain) {
+            updatedData.whitelist.disabledSites.append(normalizedDomain)
             updatedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             await MainActor.run {
@@ -348,7 +377,10 @@ extension ProtobufDataManager {
     
     public func removeWhitelistedDomain(_ domain: String) async {
         var updatedData = appData
-        updatedData.whitelist.disabledSites.removeAll { $0 == domain }
+        let normalizedDomain = normalizeDomain(domain)
+        updatedData.whitelist.disabledSites.removeAll {
+            normalizeDomain($0) == normalizedDomain
+        }
         updatedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
         
         await MainActor.run {
@@ -359,7 +391,7 @@ extension ProtobufDataManager {
     
     public func setWhitelistedDomains(_ domains: [String]) async {
         var updatedData = appData
-        updatedData.whitelist.disabledSites = domains
+        updatedData.whitelist.disabledSites = normalizeDomains(domains)
         updatedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
         
         await MainActor.run {

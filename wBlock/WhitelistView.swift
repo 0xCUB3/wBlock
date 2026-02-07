@@ -77,32 +77,41 @@ struct WhitelistView: View {
     }
 }
 
+@MainActor
 class WhitelistViewModel: ObservableObject {
     @Published var whitelistedDomains: [String] = []
-    private let userDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
-    private let disabledSitesKey = "disabledSites"
+    private let dataManager = ProtobufDataManager.shared
 
     func loadWhitelistedDomains() {
-        whitelistedDomains = userDefaults.stringArray(forKey: disabledSitesKey) ?? []
+        Task { @MainActor in
+            await dataManager.waitUntilLoaded()
+            whitelistedDomains = dataManager.disabledSites
+        }
     }
 
     func addDomain(_ domain: String) -> Result<Void, Error> {
-        guard !domain.isEmpty else { return .failure(WhitelistError.emptyDomain) }
-        guard isValidDomain(domain) else {
+        let normalized = normalizeDomain(domain)
+        guard !normalized.isEmpty else { return .failure(WhitelistError.emptyDomain) }
+        guard isValidDomain(normalized) else {
             return .failure(WhitelistError.invalidDomain)
         }
-        if !whitelistedDomains.contains(domain) {
-            let updated = whitelistedDomains + [domain]
+        if !whitelistedDomains.contains(normalized) {
+            let updated = whitelistedDomains + [normalized]
             whitelistedDomains = updated
-            userDefaults.set(updated, forKey: disabledSitesKey)
+            Task { @MainActor in
+                await dataManager.setWhitelistedDomains(updated)
+            }
         }
         return .success(())
     }
     
     func removeDomain(_ domain: String) {
-        let updated = whitelistedDomains.filter { $0 != domain }
+        let normalized = normalizeDomain(domain)
+        let updated = whitelistedDomains.filter { normalizeDomain($0) != normalized }
         whitelistedDomains = updated
-        userDefaults.set(updated, forKey: disabledSitesKey)
+        Task { @MainActor in
+            await dataManager.setWhitelistedDomains(updated)
+        }
     }
 }
 
@@ -121,11 +130,22 @@ enum WhitelistError: LocalizedError {
 }
 
 extension WhitelistViewModel {
+    private func normalizeDomain(_ domain: String) -> String {
+        var normalized = domain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if normalized.hasPrefix("*.") {
+            normalized = String(normalized.dropFirst(2))
+        } else if normalized.hasPrefix("*") {
+            normalized = String(normalized.dropFirst(1))
+        }
+
+        return normalized.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+    }
+
     private func isValidDomain(_ domain: String) -> Bool {
         // Enhanced check for domain format
         let domainRegex = #"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"#
         return domain.range(of: domainRegex, options: .regularExpression) != nil
     }
 }
-
 

@@ -9,7 +9,15 @@ const NATIVE_HOST_ID = 'application.id';
 const CACHE_CLEAR_ACTION = 'wblock:clearCache';
 const REFRESH_BADGE_ACTION = 'wblock:refreshBadgeCounter';
 const MANUAL_BADGE_COLOR = '#1f6fff';
-const MANUAL_BADGE_ERROR_PATTERNS = ['blocked', 'denied', 'by_client'];
+const MANUAL_BADGE_ERROR_PATTERNS = [
+  'blocked',
+  'denied',
+  'by_client',
+  'content blocker',
+  'contentblocker',
+  'policy',
+];
+const MANUAL_BADGE_IGNORED_ERROR_PATTERNS = ['abort', 'cancel'];
 
 let isMacPlatform = false;
 const blockedCountByTab = new Map();
@@ -68,6 +76,9 @@ async function refreshBadgeCounterState() {
 function shouldCountBlockedRequest(errorString) {
   const normalized = String(errorString || '').toLowerCase();
   if (!normalized) {
+    return false;
+  }
+  if (MANUAL_BADGE_IGNORED_ERROR_PATTERNS.some((pattern) => normalized.includes(pattern))) {
     return false;
   }
   return MANUAL_BADGE_ERROR_PATTERNS.some((pattern) => normalized.includes(pattern));

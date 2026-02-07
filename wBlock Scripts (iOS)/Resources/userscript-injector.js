@@ -84,9 +84,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         getPreferredChunkSize() {
-            // Safari App Extensions can have smaller message size limits than WebExtensions.
-            const isSafariAppExtension = typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage;
-            return isSafariAppExtension ? (32 * 1024) : (256 * 1024); // bytes (before base64)
+            // Keep chunks conservative to avoid Safari native-message payload limits.
+            return 32 * 1024; // bytes (before base64)
         }
 
         base64ToBytes(base64) {
@@ -330,11 +329,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);
                 } else if (injectInto === 'auto') {
-                    // Try page context first, fall back to content if CSP blocks
-                    if (!this.tryInjectInPageContext(fullScript)) {
-                        wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${fullScript.name}`);
-                        this.injectInContentContext(fullScript);
-                    }
+                    // Prefer page context in MV3 to avoid unsafe-eval restrictions in extension worlds.
+                    this.injectInPageContext(fullScript);
                 } else {
                     // Default: page context
                     this.injectInPageContext(fullScript);
@@ -350,11 +346,22 @@ if (window.wBlockUserscriptInjectorHasRun) {
         // Page context injection (default behavior - via <script> tag)
         injectInPageContext(script) {
             const scriptElement = document.createElement('script');
+            const nonce = this.getPageScriptNonce();
+            if (nonce) {
+                scriptElement.setAttribute('nonce', nonce);
+                scriptElement.nonce = nonce;
+            }
             scriptElement.textContent = this.wrapUserScript(script, 'page');
             scriptElement.setAttribute('data-userscript', script.name);
             scriptElement.setAttribute('type', 'text/javascript');
             (document.head || document.documentElement).appendChild(scriptElement);
             wBlockLog(`[wBlock] Injected ${script.name} in page context via <script> tag`);
+        }
+
+        getPageScriptNonce() {
+            const withNonce = document.querySelector('script[nonce]');
+            if (!withNonce) return '';
+            return withNonce.nonce || withNonce.getAttribute('nonce') || '';
         }
 
         // Try page context, return false if CSP blocks
