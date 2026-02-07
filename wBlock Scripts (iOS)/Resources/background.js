@@ -79,11 +79,11 @@ function allowRulesForHost(hostKey, baseRuleId) {
 let dynamicRulesUpdateQueue = Promise.resolve();
 
 async function safeUpdateDynamicRules(updateOptions) {
-  if (!dnr?.updateDynamicRules) return;
+  if (!dnr?.updateDynamicRules) return false;
   const run = async () => {
     try {
       await dnr.updateDynamicRules(updateOptions);
-      return;
+      return true;
     } catch (err) {
       // Some implementations error if asked to remove unknown ids.
       try {
@@ -95,11 +95,13 @@ async function safeUpdateDynamicRules(updateOptions) {
         if (Array.isArray(updateOptions.addRules) && updateOptions.addRules.length) retry.addRules = updateOptions.addRules;
         if (retry.removeRuleIds || retry.addRules) {
           await dnr.updateDynamicRules(retry);
+          return true;
         }
       } catch {
         // Ignore; we will surface issues in the popup if needed later.
       }
     }
+    return false;
   };
 
   const next = dynamicRulesUpdateQueue.then(run, run);
@@ -157,18 +159,28 @@ async function applyCoreDynamicRules(rules) {
 
   // Remove old core rules first (chunked to avoid per-call limits).
   const REMOVE_CHUNK = 5000;
+  let ok = true;
   for (let i = 0; i < removeRuleIds.length; i += REMOVE_CHUNK) {
-    await safeUpdateDynamicRules({ removeRuleIds: removeRuleIds.slice(i, i + REMOVE_CHUNK) });
+    ok = (await safeUpdateDynamicRules({ removeRuleIds: removeRuleIds.slice(i, i + REMOVE_CHUNK) })) && ok;
   }
 
   // Add new core rules (chunked to avoid per-call limits).
   const ADD_CHUNK = 2000;
   for (let i = 0; i < rules.length; i += ADD_CHUNK) {
-    await safeUpdateDynamicRules({ addRules: rules.slice(i, i + ADD_CHUNK) });
+    ok = (await safeUpdateDynamicRules({ addRules: rules.slice(i, i + ADD_CHUNK) })) && ok;
   }
 
-  // Prefer dynamic core once installed to avoid double-counting.
-  await disableStaticBaseRuleset();
+  // Verify we actually have dynamic core rules before disabling the bundled ruleset.
+  const afterIds = await getExistingCoreDynamicRuleIds().catch(() => []);
+  if (ok && afterIds.length > 0) {
+    // Prefer dynamic core once installed to avoid double-counting.
+    await disableStaticBaseRuleset();
+    return true;
+  }
+
+  // Keep static base enabled as a fallback.
+  await enableStaticBaseRuleset();
+  return false;
 }
 
 async function loadJson(url) {
@@ -222,8 +234,10 @@ async function maybeUpdateCoreRulesFromRemote() {
   if (!Array.isArray(rules) || rules.length === 0) return;
 
   try {
-    await applyCoreDynamicRules(rules);
-    await webext.storage.local.set({ [STORAGE_KEYS.corePackAppliedAt]: latestAt });
+    const ok = await applyCoreDynamicRules(rules);
+    if (ok) {
+      await webext.storage.local.set({ [STORAGE_KEYS.corePackAppliedAt]: latestAt });
+    }
   } catch {
     // ignore
   }
@@ -339,8 +353,8 @@ async function ensureBadgeCountEnabled() {
   }
 }
 
-webext.runtime.onInstalled.addListener(() => {
-  ensureBadgeCountEnabled();
+webext.runtime.onInstalled.addListener(async () => {
+  await ensureBadgeCountEnabled();
 
   // Keep update checks wired even if we don't implement packs yet.
   try {
@@ -349,17 +363,17 @@ webext.runtime.onInstalled.addListener(() => {
     // ignore
   }
 
-  ensureCoreRules();
+  await ensureCoreRules();
 });
 
-webext.runtime.onStartup?.addListener(() => {
-  ensureBadgeCountEnabled();
-  ensureCoreRules();
+webext.runtime.onStartup?.addListener(async () => {
+  await ensureBadgeCountEnabled();
+  await ensureCoreRules();
 });
 
-webext.alarms?.onAlarm?.addListener((alarm) => {
+webext.alarms?.onAlarm?.addListener(async (alarm) => {
   if (!alarm || alarm.name !== 'wblock:updates') return;
-  ensureCoreRules();
+  await ensureCoreRules();
 });
 
 webext.runtime.onMessage.addListener(async (message, sender) => {
@@ -395,5 +409,5 @@ webext.runtime.onMessage.addListener(async (message, sender) => {
 });
 
 // Run once on initial load as well (service worker may not fire onStartup on iOS).
-ensureBadgeCountEnabled();
-ensureCoreRules();
+void ensureBadgeCountEnabled();
+void ensureCoreRules();
