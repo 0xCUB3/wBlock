@@ -387,11 +387,18 @@ async function handleMessage(request) {
   return {};
 }
 
-browser.runtime.onMessage.addListener((request) => {
-  return handleMessage(request).catch((error) => {
-    console.error('[wBlock] background bridge error:', error);
-    return { error: String(error && error.message ? error.message : error) };
-  });
+browser.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  // Safari's WebExtension runtime does not reliably await a returned Promise here.
+  // Use `sendResponse` + `return true` so popup callers can `await sendMessage()`
+  // and perform follow-up actions (like reloading) only after native state is applied.
+  handleMessage(request)
+    .then((response) => sendResponse(response))
+    .catch((error) => {
+      console.error('[wBlock] background bridge error:', error);
+      sendResponse({ error: String(error && error.message ? error.message : error) });
+    });
+
+  return true;
 });
 
 if (browser.tabs && browser.tabs.onActivated) {

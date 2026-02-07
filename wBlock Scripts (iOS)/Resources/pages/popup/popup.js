@@ -6,19 +6,11 @@ const NATIVE_HOST_ACTIONS = {
 
 const state = {
     tabId: null,
+    tabUrl: '',
     host: '',
     rules: [],
     rulesExpanded: false,
 };
-
-// Safari content blocker reloads can take a beat to become effective.
-// Without a short delay, the immediate page reload may still use the old rules,
-// forcing users to reload twice to see the whitelist change.
-const APPLY_DISABLED_SITE_DELAY_MS = 650;
-
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function setError(message) {
     const el = document.getElementById('error');
@@ -108,14 +100,23 @@ async function removeZapperRule(host, selector) {
     });
 }
 
-async function reloadActiveTab(tabId) {
+async function reloadActiveTab(tabId, tabUrl) {
     if (!tabId) return;
-    try {
-        // Best-effort: some browsers support bypassCache, Safari may ignore it.
-        await browser.tabs.reload(tabId, { bypassCache: true });
-    } catch {
-        await browser.tabs.reload(tabId);
+    const url = typeof tabUrl === 'string' ? tabUrl : '';
+
+    // In Safari, `tabs.reload()` can behave like a soft refresh. Navigating to the current
+    // URL is a closer match to "reload from origin" behavior and applies updated blockers
+    // more reliably after toggling per-site disable.
+    if (/^https?:\/\//i.test(url)) {
+        try {
+            await browser.tabs.update(tabId, { url });
+            return;
+        } catch (error) {
+            console.warn('[wBlock] Failed to hard-navigate tab, falling back to reload:', error);
+        }
     }
+
+    await browser.tabs.reload(tabId);
 }
 
 async function notifyZapperRulesChanged(tabId) {
@@ -187,6 +188,7 @@ async function refreshState() {
     const host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
 
     state.tabId = tab && tab.id ? tab.id : null;
+    state.tabUrl = tab && tab.url ? String(tab.url) : '';
     state.host = host;
 
     if (hostEl) hostEl.textContent = host || '—';
@@ -232,8 +234,11 @@ async function handleToggleDisabled(event) {
 
         await setSiteDisabledState(state.host, disabled);
         await sendNative('wblock:clearCache');
-        await sleep(APPLY_DISABLED_SITE_DELAY_MS);
-        await reloadActiveTab(state.tabId);
+        const tab = await getActiveTab();
+        await reloadActiveTab(
+            state.tabId,
+            tab && tab.id === state.tabId ? tab.url : state.tabUrl
+        );
 
         setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');
     } catch (error) {
