@@ -85,6 +85,7 @@ class WhitelistViewModel: ObservableObject {
     func loadWhitelistedDomains() {
         Task { @MainActor in
             await dataManager.waitUntilLoaded()
+            _ = await dataManager.refreshFromDiskIfModified()
             whitelistedDomains = dataManager.disabledSites
         }
     }
@@ -99,6 +100,7 @@ class WhitelistViewModel: ObservableObject {
             let updated = whitelistedDomains + [normalized]
             whitelistedDomains = updated
             Task { @MainActor in
+                _ = await dataManager.refreshFromDiskIfModified()
                 await dataManager.setWhitelistedDomains(updated)
             }
         }
@@ -110,6 +112,7 @@ class WhitelistViewModel: ObservableObject {
         let updated = whitelistedDomains.filter { normalizeDomain($0) != normalized }
         whitelistedDomains = updated
         Task { @MainActor in
+            _ = await dataManager.refreshFromDiskIfModified()
             await dataManager.setWhitelistedDomains(updated)
         }
     }
@@ -148,4 +151,3 @@ extension WhitelistViewModel {
         return domain.range(of: domainRegex, options: .regularExpression) != nil
     }
 }
-

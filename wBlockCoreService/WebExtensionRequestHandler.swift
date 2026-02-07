@@ -16,6 +16,61 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
+    @MainActor
+    private static func syncSharedState() async {
+        // Safari App Extensions historically relied on `loadData()` as a hot-reload mechanism.
+        // This avoids subtle cross-process staleness issues (e.g. coarse filesystem timestamps)
+        // when the main app and extension update the shared protobuf file in quick succession.
+        await ProtobufDataManager.shared.loadData()
+    }
+
+    private static func payloadDictionary(from message: [String: Any?]) -> [String: Any] {
+        if let payload = message["payload"] as? [String: Any] {
+            return payload
+        }
+        if let payload = message["payload"] as? [String: Any?] {
+            var normalized: [String: Any] = [:]
+            normalized.reserveCapacity(payload.count)
+            for (key, value) in payload {
+                if let value {
+                    normalized[key] = value
+                }
+            }
+            return normalized
+        }
+        return [:]
+    }
+
+    private static func messageString(_ key: String, from message: [String: Any?]) -> String? {
+        if let direct = message[key] as? String {
+            return direct
+        }
+        if let nested = payloadDictionary(from: message)[key] as? String {
+            return nested
+        }
+        return nil
+    }
+
+    private static func messageBool(_ key: String, from message: [String: Any?], defaultValue: Bool = false) -> Bool {
+        if let direct = message[key] as? Bool {
+            return direct
+        }
+        if let nested = payloadDictionary(from: message)[key] as? Bool {
+            return nested
+        }
+        return defaultValue
+    }
+
+    private static func messageInt(_ key: String, from message: [String: Any?], defaultValue: Int = 0) -> Int {
+        if let direct = message[key] as? Int {
+            return direct
+        }
+        if let nested = payloadDictionary(from: message)[key] as? Int {
+            return nested
+        }
+        return defaultValue
+    }
+
     private static func normalizeHost(_ host: String) -> String {
         host
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -133,12 +188,17 @@ public enum WebExtensionRequestHandler {
             }
         }
 
-        let payload = message?["payload"] as? [String: Any] ?? [:]
+        let payload: [String: Any]
+        if let incomingMessage = message {
+            payload = payloadDictionary(from: incomingMessage)
+        } else {
+            payload = [:]
+        }
         if let urlString = payload["url"] as? String {
             if let url = URL(string: urlString) {
                 // Respect per-site disable immediately for both content blockers and scripts.
                 Task { @MainActor in
-                    await ProtobufDataManager.shared.waitUntilLoaded()
+                    await syncSharedState()
                     let disabledSites = ProtobufDataManager.shared.disabledSites
                     let disabled = isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
 
@@ -302,7 +362,7 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
-        let host = normalizeHost((message["host"] as? String) ?? "")
+        let host = normalizeHost(messageString("host", from: message) ?? "")
         if host.isEmpty {
             let response = createResponse(with: ["disabled": false])
             context.completeRequest(returningItems: [response])
@@ -310,7 +370,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
+            await syncSharedState()
             let disabledSites = ProtobufDataManager.shared.disabledSites
             let disabled = isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled])
@@ -319,8 +379,8 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleSetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
-        let host = normalizeHost((message["host"] as? String) ?? "")
-        let disabled = message["disabled"] as? Bool ?? false
+        let host = normalizeHost(messageString("host", from: message) ?? "")
+        let disabled = messageBool("disabled", from: message)
 
         guard !host.isEmpty else {
             let response = createResponse(with: ["disabled": false, "error": "Missing host"])
@@ -329,7 +389,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
+            await syncSharedState()
 
             var list = ProtobufDataManager.shared.disabledSites
             if disabled {
@@ -346,6 +406,7 @@ public enum WebExtensionRequestHandler {
             }
 
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
+            await ProtobufDataManager.shared.saveDataImmediately()
 
             // Apply the change immediately by fast-updating the existing blocker JSON
             // and reloading each content blocker target for the current platform.
@@ -373,7 +434,7 @@ public enum WebExtensionRequestHandler {
 
     private static func handleGetBadgeCounterState(context: NSExtensionContext) {
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
+            await syncSharedState()
             let enabled = ProtobufDataManager.shared.isBadgeCounterEnabled
             let response = createResponse(with: ["enabled": enabled])
             context.completeRequest(returningItems: [response])
@@ -382,14 +443,14 @@ public enum WebExtensionRequestHandler {
 
     /// Returns enabled userscripts for a URL, but without inlining potentially huge `content`/`resources`.
     private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
-        guard let urlString = message["url"] as? String else {
+        guard let urlString = messageString("url", from: message) else {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
+            await syncSharedState()
             if let url = URL(string: urlString) {
                 let disabledSites = ProtobufDataManager.shared.disabledSites
                 if isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
@@ -400,7 +461,7 @@ public enum WebExtensionRequestHandler {
             }
 
             let userScriptManager = UserScriptManager.shared
-            await userScriptManager.waitUntilReady()
+            await userScriptManager.reloadFromPersistentStore()
             let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
 
             let userScriptDescriptors: [[String: Any]] = userScripts.map { script in
@@ -432,14 +493,14 @@ public enum WebExtensionRequestHandler {
         context: NSExtensionContext,
         kind: UserScriptChunkKind
     ) {
-        guard let scriptIdString = message["scriptId"] as? String, let scriptId = UUID(uuidString: scriptIdString) else {
+        guard let scriptIdString = messageString("scriptId", from: message), let scriptId = UUID(uuidString: scriptIdString) else {
             let response = createResponse(with: ["error": "Missing or invalid scriptId"])
             context.completeRequest(returningItems: [response])
             return
         }
 
-        let chunkIndex = message["chunkIndex"] as? Int ?? 0
-        let chunkSize = message["chunkSize"] as? Int ?? 256 * 1024
+        let chunkIndex = messageInt("chunkIndex", from: message, defaultValue: 0)
+        let chunkSize = messageInt("chunkSize", from: message, defaultValue: 256 * 1024)
 
         if chunkIndex < 0 || chunkSize <= 0 {
             let response = createResponse(with: ["error": "Invalid chunkIndex/chunkSize"])
@@ -452,7 +513,7 @@ public enum WebExtensionRequestHandler {
         case .content:
             resourceName = nil
         case .resource:
-            resourceName = message["resourceName"] as? String
+            resourceName = messageString("resourceName", from: message)
             if resourceName == nil || resourceName?.isEmpty == true {
                 let response = createResponse(with: ["error": "Missing resourceName"])
                 context.completeRequest(returningItems: [response])
@@ -463,7 +524,14 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             let manager = UserScriptManager.shared
             await manager.waitUntilReady()
-            guard let script = manager.userScript(withId: scriptId) else {
+
+            var script = manager.userScript(withId: scriptId)
+            if script == nil {
+                await manager.reloadFromPersistentStore()
+                script = manager.userScript(withId: scriptId)
+            }
+
+            guard let script else {
                 let response = createResponse(with: ["error": "Userscript not found"])
                 context.completeRequest(returningItems: [response])
                 return

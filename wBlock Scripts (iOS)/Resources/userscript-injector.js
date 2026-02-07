@@ -59,12 +59,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         }
 
+        normalizeNativeResponse(response) {
+            if (!response || typeof response !== 'object') {
+                return response || {};
+            }
+            if (response.payload && typeof response.payload === 'object') {
+                return response.payload;
+            }
+            if (response.message && typeof response.message === 'object') {
+                return response.message;
+            }
+            return response;
+        }
+
         async sendNativeRequest(action, payload = {}) {
             const requestId = payload.requestId || this.generateRequestId(action);
             const messagePayload = { ...payload, requestId };
 
             if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
-                return await browser.runtime.sendMessage({ action, ...messagePayload });
+                const response = await browser.runtime.sendMessage({ action, ...messagePayload });
+                return this.normalizeNativeResponse(response);
             }
 
             if (typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage) {
@@ -240,7 +254,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         const pending = this.pendingNativeRequests.get(requestId);
                         this.pendingNativeRequests.delete(requestId);
                         if (pending && pending.timeoutId) clearTimeout(pending.timeoutId);
-                        pending.resolve(event.message);
+                        pending.resolve(this.normalizeNativeResponse(event.message));
                         return;
                     }
                     let scriptsToInject = null;
@@ -329,8 +343,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);
                 } else if (injectInto === 'auto') {
-                    // Prefer page context in MV3 to avoid unsafe-eval restrictions in extension worlds.
-                    this.injectInPageContext(fullScript);
+                    // Try page context first, fall back to content if CSP blocks.
+                    // This mirrors the legacy wBlock Advanced behavior and is required on sites
+                    // that block inline <script> injection via CSP.
+                    if (!this.tryInjectInPageContext(fullScript)) {
+                        wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${fullScript.name}`);
+                        this.injectInContentContext(fullScript);
+                    }
                 } else {
                     // Default: page context
                     this.injectInPageContext(fullScript);

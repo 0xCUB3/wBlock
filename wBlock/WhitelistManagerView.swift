@@ -166,6 +166,7 @@ struct WhitelistManagerView: View {
     private func loadWhitelistedDomains() {
         Task { @MainActor in
             await dataManager.waitUntilLoaded()
+            _ = await dataManager.refreshFromDiskIfModified()
             whitelistedDomains = dataManager.disabledSites
         }
     }
@@ -179,6 +180,7 @@ struct WhitelistManagerView: View {
 
         Task { @MainActor in
             await dataManager.waitUntilLoaded()
+            _ = await dataManager.refreshFromDiskIfModified()
             let currentDomains = dataManager.disabledSites
 
             guard !currentDomains.contains(trimmed) else {
@@ -198,6 +200,7 @@ struct WhitelistManagerView: View {
     private func removeDomain(_ domain: String) {
         Task { @MainActor in
             await dataManager.waitUntilLoaded()
+            _ = await dataManager.refreshFromDiskIfModified()
             let normalized = normalizeDomain(domain)
             let currentDomains = dataManager.disabledSites
             let updatedDomains = currentDomains.filter { normalizeDomain($0) != normalized }
@@ -243,6 +246,7 @@ struct WhitelistManagerView: View {
     private func deleteSelectedDomains() {
         Task { @MainActor in
             await dataManager.waitUntilLoaded()
+            _ = await dataManager.refreshFromDiskIfModified()
             let normalizedSelections = Set(selectedDomains.map { normalizeDomain($0) })
             let currentDomains = dataManager.disabledSites
             let updatedDomains = currentDomains.filter { !normalizedSelections.contains(normalizeDomain($0)) }

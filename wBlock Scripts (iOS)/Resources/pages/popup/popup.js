@@ -11,6 +11,15 @@ const state = {
     rulesExpanded: false,
 };
 
+// Safari content blocker reloads can take a beat to become effective.
+// Without a short delay, the immediate page reload may still use the old rules,
+// forcing users to reload twice to see the whitelist change.
+const APPLY_DISABLED_SITE_DELAY_MS = 650;
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function setError(message) {
     const el = document.getElementById('error');
     if (!el) return;
@@ -101,7 +110,12 @@ async function removeZapperRule(host, selector) {
 
 async function reloadActiveTab(tabId) {
     if (!tabId) return;
-    await browser.tabs.reload(tabId);
+    try {
+        // Best-effort: some browsers support bypassCache, Safari may ignore it.
+        await browser.tabs.reload(tabId, { bypassCache: true });
+    } catch {
+        await browser.tabs.reload(tabId);
+    }
 }
 
 async function notifyZapperRulesChanged(tabId) {
@@ -218,6 +232,7 @@ async function handleToggleDisabled(event) {
 
         await setSiteDisabledState(state.host, disabled);
         await sendNative('wblock:clearCache');
+        await sleep(APPLY_DISABLED_SITE_DELAY_MS);
         await reloadActiveTab(state.tabId);
 
         setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');

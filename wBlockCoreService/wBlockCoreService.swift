@@ -392,23 +392,11 @@ public enum ContentBlockerService {
     }
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
-        let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        var baseDomain = trimmedSite
-        if baseDomain.hasPrefix("*.") {
-            baseDomain = String(baseDomain.dropFirst(2))
-        } else if baseDomain.hasPrefix("*") {
-            baseDomain = String(baseDomain.dropFirst(1))
-        }
-        baseDomain = baseDomain.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+        let escapedDomain = escapeForJSONString(wildcardDomain)
 
-        guard !baseDomain.isEmpty else {
-            return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\"}}"
-        }
-
-        let escapedWildcard = escapeForJSONString("*\(baseDomain)")
-
-        // Safari expects domain filters in if-domain as "*example.com" (apex + subdomains).
-        return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedWildcard)\"]}}"
+        return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedDomain)\"]}}"
     }
     
     /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.

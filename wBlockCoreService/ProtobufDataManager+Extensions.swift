@@ -371,7 +371,7 @@ extension ProtobufDataManager {
             await MainActor.run {
                 appData = updatedData
             }
-            await saveData()
+            await saveDataImmediately()
         }
     }
     
@@ -386,7 +386,7 @@ extension ProtobufDataManager {
         await MainActor.run {
             appData = updatedData
         }
-        await saveData()
+        await saveDataImmediately()
     }
     
     public func setWhitelistedDomains(_ domains: [String]) async {
@@ -397,7 +397,7 @@ extension ProtobufDataManager {
         await MainActor.run {
             appData = updatedData
         }
-        await saveData()
+        await saveDataImmediately()
     }
     
     // MARK: - App Settings

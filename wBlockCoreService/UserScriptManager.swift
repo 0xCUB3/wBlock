@@ -344,6 +344,14 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    /// Refreshes userscripts from persisted protobuf state so extension requests
+    /// can observe changes made by other processes without restart.
+    public func reloadFromPersistentStore() async {
+        await dataManager.waitUntilLoaded()
+        _ = await dataManager.refreshFromDiskIfModified()
+        await syncFromDataManager()
+    }
+
     private func syncFromDataManager() async {
         let newUserScripts = dataManager.getUserScripts()
         logger.info("🔄 Syncing userscripts from data manager: \(newUserScripts.count) scripts")
