@@ -18,11 +18,19 @@
         "type": "module",
         "persistent": false
     },
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "base",
+                "enabled": true,
+                "path": "rulesets/base.json"
+            }
+        ]
+    },
     "content_scripts": [
         {
             "js": [
-                "zapper-content.js",
-                "content.js"
+                "zapper-content.js"
             ],
             "matches": [
                 "<all_urls>"
@@ -53,11 +61,16 @@
             "512": "assets/images/icon-512.png"
         }
     },
+    "host_permissions": [
+        "<all_urls>"
+    ],
     "permissions": [
-        "<all_urls>",
-        "nativeMessaging",
+        "activeTab",
+        "alarms",
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess",
         "storage",
-        "unlimitedStorage",
-        "scripting"
+        "tabs",
+        "unlimitedStorage"
     ]
 }

@@ -1,4 +1,3 @@
-const NATIVE_HOST_ID = 'application.id';
 const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 
 function setError(message) {
@@ -139,7 +138,7 @@ function renderZapperRules(rules) {
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
-        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+        const response = await browser.runtime.sendMessage({
             action: 'getSiteDisabledState',
             host,
         });
@@ -150,22 +149,15 @@ async function getSiteDisabledState(host) {
     }
 }
 
-async function setSiteDisabledState(host, disabled) {
+async function setSiteDisabledState(host, disabled, tab) {
     if (!host) return;
-    await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+    await browser.runtime.sendMessage({
         action: 'setSiteDisabledState',
         host,
         disabled: Boolean(disabled),
+        tabId: tab && typeof tab.id === 'number' ? tab.id : undefined,
+        url: tab && typeof tab.url === 'string' ? tab.url : undefined,
     });
-}
-
-async function reloadActiveTab(tabId) {
-    if (!tabId) return;
-    try {
-        await browser.tabs.reload(tabId);
-    } catch (error) {
-        console.warn('[wBlock] Failed to reload tab:', error);
-    }
 }
 
 async function refreshUi() {
@@ -249,14 +241,9 @@ async function refreshUi() {
                 disableToggle.disabled = true;
                 const next = disableToggle.checked;
                 setStatus(next ? 'Disabling…' : 'Enabling…', 'neutral');
-                await setSiteDisabledState(host, next);
-                try {
-                    await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
-                } catch (error) {
-                    console.warn('[wBlock] Failed to clear configuration cache:', error);
-                }
+                await setSiteDisabledState(host, next, tab);
                 setStatus(next ? 'Disabled' : 'Active', next ? 'disabled' : 'active');
-                await reloadActiveTab(tab.id);
+                window.close();
             } catch (error) {
                 console.error('[wBlock] Failed to update disabled state:', error);
                 setError('Failed to update site setting.');

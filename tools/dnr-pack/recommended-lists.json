@@ -1,0 +1,51 @@
+{
+  "variant": "recommended",
+  "platform": "safari",
+  "lists": [
+    {
+      "name": "AdGuard Base Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt"
+    },
+    {
+      "name": "AdGuard Tracking Protection Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt"
+    },
+    {
+      "name": "EasyPrivacy",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt"
+    },
+    {
+      "name": "Online Security Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt"
+    },
+    {
+      "name": "d3Host List by d3ward",
+      "url": "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock"
+    },
+    {
+      "name": "AdGuard Cookie Notices",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt"
+    },
+    {
+      "name": "AdGuard Popups",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt"
+    },
+    {
+      "name": "AdGuard Mobile App Banners",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt"
+    },
+    {
+      "name": "AdGuard Other Annoyances",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt"
+    },
+    {
+      "name": "AdGuard Widgets",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt"
+    },
+    {
+      "name": "Anti-Adblock List",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt"
+    }
+  ]
+}
+
