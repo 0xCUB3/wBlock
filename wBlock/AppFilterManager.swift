@@ -54,16 +54,9 @@ class AppFilterManager: ObservableObject {
     // New ViewModel-based progress tracking
     @Published var applyProgressViewModel = ApplyChangesViewModel()
 
-    // Legacy progress tracking (kept for backward compatibility)
-    @Published var sourceRulesCount: Int = 0
-    @Published var conversionStageDescription: String = ""
-    @Published var currentFilterName: String = ""
-    @Published var processedFiltersCount: Int = 0
-    @Published var totalFiltersCount: Int = 0
-    @Published var isInConversionPhase: Bool = false
-    @Published var isInSavingPhase: Bool = false
-    @Published var isInEnginePhase: Bool = false
-    @Published var isInReloadPhase: Bool = false
+    // Internal counters used for apply-run summary/progress math.
+    private var sourceRulesCount: Int = 0
+    private var processedFiltersCount: Int = 0
     @Published var currentPlatform: Platform
 
     // Dependencies
@@ -132,14 +125,7 @@ class AppFilterManager: ObservableObject {
         lastFastUpdateTime = "N/A"
         fastUpdateCount = 0
         sourceRulesCount = 0
-        conversionStageDescription = ""
-        currentFilterName = ""
         processedFiltersCount = 0
-        totalFiltersCount = 0
-        isInConversionPhase = false
-        isInSavingPhase = false
-        isInEnginePhase = false
-        isInReloadPhase = false
 
         filterLists = []
         customFilterLists = []
@@ -459,11 +445,6 @@ class AppFilterManager: ObservableObject {
             ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
 
-        // Fast update each target's JSON files without full conversion
-        await MainActor.run {
-            self.conversionStageDescription = "Fast updating ignore rules..."
-        }
-
         // Capture disabled sites on MainActor
         let disabledSites = dataManager.disabledSites
 
@@ -477,11 +458,6 @@ class AppFilterManager: ObservableObject {
                 )
             }
         }.value
-
-        // Now reload content blockers
-        await MainActor.run {
-            self.conversionStageDescription = "Reloading extensions..."
-        }
 
         let overallReloadStartTime = Date()
         var successCount = 0
@@ -511,7 +487,6 @@ class AppFilterManager: ObservableObject {
             self.lastFastUpdateTime = reloadTime
             self.fastUpdateCount += 1
             self.isLoading = false
-            self.conversionStageDescription = ""
 
             if successCount == platformTargets.count {
                 self.statusDescription =
@@ -956,7 +931,6 @@ class AppFilterManager: ObservableObject {
         let totalFiltersCount = platformTargets.count
         await MainActor.run {
             self.sourceRulesCount = allSelectedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
-            self.totalFiltersCount = totalFiltersCount
 
             // Update ViewModel
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
@@ -980,7 +954,6 @@ class AppFilterManager: ObservableObject {
 
         await MainActor.run {
             self.processedFiltersCount = 0  // Use this to track processed targets for progress
-            self.isInConversionPhase = true
 
             // Update ViewModel phase
             self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
@@ -1006,12 +979,7 @@ class AppFilterManager: ObservableObject {
             let conversionStart = Date()
 
             await MainActor.run {
-                self.currentFilterName = blockerName
-                self.conversionStageDescription = "Converting \(blockerName)…"
-                self.isInSavingPhase = true
-
-                // Batched ViewModel update - single call with all data
-                self.applyProgressViewModel.updateStageDescription(self.conversionStageDescription)
+                self.applyProgressViewModel.updateStageDescription("Converting \(blockerName)…")
             }
 
             // Yield to prevent main thread starvation on iOS
@@ -1026,10 +994,6 @@ class AppFilterManager: ObservableObject {
                     groupIdentifier: GroupIdentifier.shared.value
                 )
             }.value
-
-            await MainActor.run {
-                self.isInSavingPhase = false
-            }
 
             let ruleCountForThisTarget = conversionResult.safariRulesCount
 
@@ -1091,7 +1055,6 @@ class AppFilterManager: ObservableObject {
             overallSafariRulesApplied += ruleCountForThisTarget
         }
         await MainActor.run {
-            self.isInConversionPhase = false
             self.lastRuleCount = overallSafariRulesApplied
             self.lastConversionTime = String(
                 format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
@@ -1120,8 +1083,6 @@ class AppFilterManager: ObservableObject {
 
         // Reloading phase - reload all content blockers FIRST before building advanced engine
         await MainActor.run {
-            self.conversionStageDescription = "Reloading Safari extensions..."
-            self.isInReloadPhase = true
             self.processedFiltersCount = 0
 
             // Update ViewModel - starting reload phase
@@ -1138,7 +1099,6 @@ class AppFilterManager: ObservableObject {
 
         // Log reload summary
         await MainActor.run {
-            self.isInReloadPhase = false
             self.lastReloadTime = String(
                 format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
         }
@@ -1186,8 +1146,7 @@ class AppFilterManager: ObservableObject {
 
         if !advancedRulesByTarget.isEmpty {
             await MainActor.run {
-                self.conversionStageDescription = "Building combined filter engine..."
-                self.isInEnginePhase = true
+                self.applyProgressViewModel.updateStageDescription("Building combined filter engine...")
             }
 
             // Run engine building on background thread
@@ -1207,9 +1166,6 @@ class AppFilterManager: ObservableObject {
                 )
             }.value
 
-            await MainActor.run {
-                self.isInEnginePhase = false
-            }
         } else {
             await ConcurrentLogManager.shared.debug(
                 .filterApply, "No advanced rules found, clearing filter engine", metadata: [:])
@@ -1230,14 +1186,12 @@ class AppFilterManager: ObservableObject {
         let hasErrorValue = await MainActor.run { self.hasError }
         if allReloadsSuccessful && !hasErrorValue {
             await MainActor.run {
-                self.conversionStageDescription = "Process completed successfully!"
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
                 self.hasUnappliedChanges = false
             }
         } else if !hasErrorValue {  // Implies reload issue was the only problem
             await MainActor.run {
-                self.conversionStageDescription = "Conversion completed with reload issues"
                 self.statusDescription =
                     "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
             }
@@ -1306,14 +1260,7 @@ class AppFilterManager: ObservableObject {
         applyProgressViewModel.updateProgress(0)
 
         sourceRulesCount = 0
-        conversionStageDescription = ""
-        currentFilterName = ""
         processedFiltersCount = 0
-        totalFiltersCount = 0
-        isInConversionPhase = false
-        isInSavingPhase = false
-        isInEnginePhase = false
-        isInReloadPhase = false
     }
 
     @MainActor
