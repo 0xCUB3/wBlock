@@ -162,8 +162,8 @@ public enum ContentBlockerService {
         let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
-        let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
-        let baseHashFilename = baseRulesHashFilename(for: targetRulesFilename)
+        let baseCountFilename = "\(baseFilename).count"
+        let baseHashFilename = "\(baseFilename).sha256"
         let advancedFilename = ContentBlockerIncrementalCache.baseAdvancedRulesFilename(
             for: targetRulesFilename
         )
@@ -223,8 +223,8 @@ public enum ContentBlockerService {
         }
 
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
-        let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
-        let baseHashFilename = baseRulesHashFilename(for: targetRulesFilename)
+        let baseCountFilename = "\(baseFilename).count"
+        let baseHashFilename = "\(baseFilename).sha256"
         let advancedFilename = ContentBlockerIncrementalCache.baseAdvancedRulesFilename(
             for: targetRulesFilename
         )
@@ -286,7 +286,7 @@ public enum ContentBlockerService {
         }
         
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
-        let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
+        let baseCountFilename = "\(baseFilename).count"
 
         // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
         let baseURL = containerURL.appendingPathComponent(baseFilename)
@@ -328,14 +328,6 @@ public enum ContentBlockerService {
     private static func getDisabledSites(groupIdentifier: String) -> [String] {
         let defaults = UserDefaults(suiteName: groupIdentifier)
         return defaults?.stringArray(forKey: "disabledSites") ?? []
-    }
-
-    private static func baseRulesCountFilename(for targetRulesFilename: String) -> String {
-        "\(ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)).count"
-    }
-
-    private static func baseRulesHashFilename(for targetRulesFilename: String) -> String {
-        "\(ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)).sha256"
     }
 
     private struct DerivedBaseRules {

@@ -16,16 +16,11 @@ class FilterListLoader {
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
     ]
 
-    func filename(for filter: FilterList) -> String {
-        if filter.isCustom {
-            return "custom-\(filter.id.uuidString).txt"
-        }
-        return "\(filter.name).txt"
-    }
-
     func localFileURL(for filter: FilterList) -> URL? {
         guard let containerURL = getSharedContainerURL() else { return nil }
-        return containerURL.appendingPathComponent(filename(for: filter))
+        return containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: filter)
+        )
     }
 
     /// Migrates legacy custom filter filenames (`<name>.txt`) to the current ID-based filename.
@@ -33,7 +28,9 @@ class FilterListLoader {
         guard filter.isCustom else { return }
         guard let containerURL = getSharedContainerURL() else { return }
 
-        let newURL = containerURL.appendingPathComponent(filename(for: filter))
+        let newURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: filter)
+        )
         let oldURL = containerURL.appendingPathComponent("\(filter.name).txt")
 
         guard !FileManager.default.fileExists(atPath: newURL.path),

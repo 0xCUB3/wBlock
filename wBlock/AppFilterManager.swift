@@ -1670,7 +1670,9 @@ class AppFilterManager: ObservableObject {
         saveFilterListsSync()
 
         if let containerURL = loader.getSharedContainerURL() {
-            let idFileURL = containerURL.appendingPathComponent(loader.filename(for: filter))
+            let idFileURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.localFilename(for: filter)
+            )
             try? FileManager.default.removeItem(at: idFileURL)
             // Clean up any legacy name-based file.
             let legacyFileURL = containerURL.appendingPathComponent("\(filter.name).txt")

@@ -472,9 +472,9 @@ final class FilterListUpdater: @unchecked Sendable {
                 return false
             }
 
-            let fileURL =
-                loader.localFileURL(for: filter)
-                ?? containerURL.appendingPathComponent(loader.filename(for: filter))
+            let fileURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.localFilename(for: filter)
+            )
             try? content.write(to: fileURL, atomically: true, encoding: .utf8)
 
             return true
