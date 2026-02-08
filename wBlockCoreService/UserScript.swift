@@ -43,7 +43,7 @@ public struct UserScript: Identifiable, Codable, Hashable {
     
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {
-        return !content.isEmpty && content != ""
+        !content.isEmpty
     }
     
     public init(id: UUID = UUID(), name: String, url: URL? = nil, content: String = "") {
@@ -66,15 +66,17 @@ public struct UserScript: Identifiable, Codable, Hashable {
     }()
 
     private static func cachedRegex(
-        for pattern: String,
-        cache: NSCache<NSString, NSRegularExpression>
+        for originalPattern: String,
+        cache: NSCache<NSString, NSRegularExpression>,
+        buildRegexPattern: (String) -> String
     ) -> NSRegularExpression? {
-        let key = pattern as NSString
+        let key = originalPattern as NSString
         if let cached = cache.object(forKey: key) {
             return cached
         }
 
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        let regexPattern = buildRegexPattern(originalPattern)
+        guard let regex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
             return nil
         }
         cache.setObject(regex, forKey: key)
@@ -188,69 +190,68 @@ public struct UserScript: Identifiable, Codable, Hashable {
     /// Check if userscript matches a given URL
     public func matches(url: String) -> Bool {
         guard URL(string: url) != nil else { return false }
+        let urlRange = NSRange(location: 0, length: url.utf16.count)
 
-        let isIncludedByMatch = matches.contains { matchesPattern(pattern: $0, url: url) }
-        let isIncludedByInclude = includes.contains { matchesIncludePattern(pattern: $0, url: url) }
+        let isIncludedByMatch = matches.contains {
+            matchesPattern(pattern: $0, url: url, urlRange: urlRange)
+        }
+        let isIncludedByInclude = includes.contains {
+            matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange)
+        }
         let isIncluded = isIncludedByMatch || isIncludedByInclude
 
         guard isIncluded else { return false }
 
-        if excludeMatches.contains(where: { matchesPattern(pattern: $0, url: url) }) {
+        if excludeMatches.contains(where: { matchesPattern(pattern: $0, url: url, urlRange: urlRange) }) {
             return false
         }
 
-        if excludes.contains(where: { matchesIncludePattern(pattern: $0, url: url) }) {
+        if excludes.contains(where: { matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange) }) {
             return false
         }
 
         return true
     }
     
-    private func matchesPattern(pattern: String, url: String) -> Bool {
+    private func matchesPattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
         // Handle @match patterns which follow a specific format: <scheme>://<host><path>
         // Examples: 
         // "*://*.youtube.com/*" should match "https://www.youtube.com/watch?v=..."
         // "https://example.com/*" should match "https://example.com/path"
-        
-        // Validate URL format
-        guard URL(string: url) != nil else {
+
+        guard let regex = Self.cachedRegex(
+            for: pattern,
+            cache: Self.matchRegexCache,
+            buildRegexPattern: { sourcePattern in
+                // Convert userscript @match wildcard semantics to a concrete regex once per source pattern.
+                var regexPattern = NSRegularExpression.escapedPattern(for: sourcePattern)
+                regexPattern = regexPattern.replacingOccurrences(of: "\\*:\\/\\/", with: "(https?|ftp)://")
+                regexPattern = regexPattern.replacingOccurrences(of: "\\*\\.", with: "([^/]*\\.)?")
+                regexPattern = regexPattern.replacingOccurrences(of: "\\/\\*", with: "/.*")
+                regexPattern = regexPattern.replacingOccurrences(of: "\\*", with: ".*")
+                return "^\(regexPattern)$"
+            }
+        ) else {
             return false
         }
-        
-        // Simple and robust pattern matching approach
-        // Convert the userscript @match pattern to a regex pattern
-        var regexPattern = NSRegularExpression.escapedPattern(for: pattern)
-        
-        // Now selectively unescape the wildcards we want to handle
-        regexPattern = regexPattern.replacingOccurrences(of: "\\*:\\/\\/", with: "(https?|ftp)://")
-        regexPattern = regexPattern.replacingOccurrences(of: "\\*\\.", with: "([^/]*\\.)?")
-        regexPattern = regexPattern.replacingOccurrences(of: "\\/\\*", with: "/.*")
-        regexPattern = regexPattern.replacingOccurrences(of: "\\*", with: ".*")
-        
-        // Anchor the pattern to match the entire URL
-        regexPattern = "^" + regexPattern + "$"
-        
-        guard let regex = Self.cachedRegex(for: regexPattern, cache: Self.matchRegexCache) else {
-            return false
-        }
-        let range = NSRange(location: 0, length: url.utf16.count)
-        return regex.firstMatch(in: url, options: [], range: range) != nil
+        return regex.firstMatch(in: url, options: [], range: urlRange) != nil
     }
     
-    private func matchesIncludePattern(pattern: String, url: String) -> Bool {
-        guard URL(string: url) != nil else { return false }
-
-        // Escape first, then restore wildcard semantics.
-        var regexPattern = NSRegularExpression.escapedPattern(for: pattern)
-        regexPattern = regexPattern.replacingOccurrences(of: "\\*", with: ".*")
-        regexPattern = regexPattern.replacingOccurrences(of: "\\?", with: ".")
-        regexPattern = "^" + regexPattern + "$"
-
-        guard let regex = Self.cachedRegex(for: regexPattern, cache: Self.includeRegexCache) else {
+    private func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
+        guard let regex = Self.cachedRegex(
+            for: pattern,
+            cache: Self.includeRegexCache,
+            buildRegexPattern: { sourcePattern in
+                // Escape first, then restore wildcard semantics.
+                var regexPattern = NSRegularExpression.escapedPattern(for: sourcePattern)
+                regexPattern = regexPattern.replacingOccurrences(of: "\\*", with: ".*")
+                regexPattern = regexPattern.replacingOccurrences(of: "\\?", with: ".")
+                return "^\(regexPattern)$"
+            }
+        ) else {
             return false
         }
-        let range = NSRange(location: 0, length: url.utf16.count)
-        return regex.firstMatch(in: url, options: [], range: range) != nil
+        return regex.firstMatch(in: url, options: [], range: urlRange) != nil
     }
     
     /// Returns a formatted string for the last updated date

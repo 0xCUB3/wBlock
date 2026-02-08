@@ -694,23 +694,78 @@ public actor SharedAutoUpdateManager {
         return "\(filter.name).txt"
     }
 
-    private func readFilterDataForConversion(_ filter: FilterList, containerURL: URL) -> Data? {
+    @discardableResult
+    private func streamFilterDataForConversion(
+        _ filter: FilterList,
+        containerURL: URL,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data
+    ) -> Bool {
         let primaryURL = containerURL.appendingPathComponent(localFilename(for: filter))
-        if let content = try? Data(contentsOf: primaryURL) {
-            return content
+        if appendFileContentsToCombinedStream(
+            sourceURL: primaryURL,
+            destinationHandle: destinationHandle,
+            hasher: &hasher,
+            newlineData: newlineData
+        ) {
+            return true
         }
 
         // Backward compatibility: legacy custom filters were stored as "<name>.txt".
-        guard filter.isCustom else { return nil }
+        guard filter.isCustom else { return false }
         let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-        guard let legacyContent = try? Data(contentsOf: legacyURL) else { return nil }
+        guard appendFileContentsToCombinedStream(
+            sourceURL: legacyURL,
+            destinationHandle: destinationHandle,
+            hasher: &hasher,
+            newlineData: newlineData
+        ) else {
+            return false
+        }
 
         // Best-effort migration to the stable ID-based filename.
         if !FileManager.default.fileExists(atPath: primaryURL.path),
            FileManager.default.fileExists(atPath: legacyURL.path) {
             try? FileManager.default.moveItem(at: legacyURL, to: primaryURL)
         }
-        return legacyContent
+        return true
+    }
+
+    @discardableResult
+    private func appendFileContentsToCombinedStream(
+        sourceURL: URL,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data,
+        chunkSize: Int = 64 * 1024
+    ) -> Bool {
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else { return false }
+
+        do {
+            let sourceHandle = try FileHandle(forReadingFrom: sourceURL)
+            defer { try? sourceHandle.close() }
+
+            while true {
+                let chunk = try sourceHandle.read(upToCount: chunkSize) ?? Data()
+                if chunk.isEmpty { break }
+                hasher.update(data: chunk)
+                try destinationHandle.write(contentsOf: chunk)
+            }
+
+            hasher.update(data: newlineData)
+            try destinationHandle.write(contentsOf: newlineData)
+            return true
+        } catch {
+            os_log(
+                "Failed to stream filter data from %{public}@ – %{public}@",
+                log: log,
+                type: .error,
+                sourceURL.lastPathComponent,
+                error.localizedDescription
+            )
+            return false
+        }
     }
 
     private func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 6) async -> Bool {
@@ -820,18 +875,17 @@ public actor SharedAutoUpdateManager {
             FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
             let newlineData = Data("\n".utf8)
             var hasher = SHA256()
+            let fileHandle = try FileHandle(forWritingTo: tempURL)
+            defer { try? fileHandle.close() }
 
-            if let fileHandle = try? FileHandle(forWritingTo: tempURL) {
-                defer { try? fileHandle.close() }
-
-                for f in filtersForTarget {
-                    if let data = readFilterDataForConversion(f, containerURL: containerURL) {
-                        hasher.update(data: data)
-                        try? fileHandle.write(contentsOf: data)
-                        hasher.update(data: newlineData)
-                        try? fileHandle.write(contentsOf: newlineData)
-                    }
-                }
+            for f in filtersForTarget {
+                _ = streamFilterDataForConversion(
+                    f,
+                    containerURL: containerURL,
+                    destinationHandle: fileHandle,
+                    hasher: &hasher,
+                    newlineData: newlineData
+                )
             }
 
             let digest = hasher.finalize()

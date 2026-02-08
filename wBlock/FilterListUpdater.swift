@@ -171,7 +171,7 @@ final class FilterListUpdater: @unchecked Sendable {
     func parseMetadata(from content: String) -> (
         title: String?, description: String?, version: String?
     ) {
-        let rawMetadata = FilterListMetadataParser.parse(from: content)
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 120)
 
         let title =
             rawMetadata.title
@@ -310,12 +310,17 @@ final class FilterListUpdater: @unchecked Sendable {
             throw URLError(.badServerResponse)
         }
 
-        guard let onlineContent = String(data: data, encoding: .utf8) else {
-            throw URLError(.cannotDecodeContentData)
+        if let localURL = loader.localFileURL(for: filter),
+           let localData = try? Data(contentsOf: localURL) {
+            return data != localData
         }
 
-        if let localContent = loader.readLocalFilterContent(filter) {
-            return onlineContent != localContent
+        if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
+            // Backward compatibility: legacy custom filters were stored as "<name>.txt".
+            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            if let legacyData = try? Data(contentsOf: legacyURL) {
+                return data != legacyData
+            }
         }
 
         // If we do not have a local copy yet, treat it as needing an update
@@ -326,24 +331,30 @@ final class FilterListUpdater: @unchecked Sendable {
     private func isValidFilterContent(_ content: String) -> Bool {
         // Check for DDoS protection pages by looking at the structure, not keywords
         // (filter lists legitimately contain rules with "ddos-guard" etc.)
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmedContent = String(content.prefix(2048)).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if trimmedContent.hasPrefix("<!doctype html") || trimmedContent.hasPrefix("<html") {
             // This is an HTML page, not a filter list - likely a DDoS protection/challenge page
             return false
         }
 
-        let lines = content.components(separatedBy: .newlines)
         var ruleCount = 0
         var hasComments = false
+        var scannedLines = 0
 
-        for line in lines.prefix(100) {
+        content.enumerateLines { line, stop in
+            if scannedLines >= 100 {
+                stop = true
+                return
+            }
+            scannedLines += 1
+
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
 
             // Only lines starting with "!" are comments in AdGuard filter syntax
             // Lines starting with "#", "##", "###" etc. are valid CSS selector rules
             if trimmed.hasPrefix("!") {
                 hasComments = true
-                continue
+                return
             }
 
             if !trimmed.isEmpty && !trimmed.hasPrefix("[") {
@@ -620,27 +631,54 @@ final class FilterListUpdater: @unchecked Sendable {
     func updateSelectedScripts(
         _ selectedScripts: [UserScript], progressCallback: @escaping (Float) -> Void
     ) async -> [UserScript] {
+        guard !selectedScripts.isEmpty else {
+            progressCallback(1.0)
+            return []
+        }
+
         let totalSteps = Float(selectedScripts.count)
+        #if os(macOS)
+        let maxConcurrent = 4
+        #else
+        let maxConcurrent = 3
+        #endif
+
         var completedSteps: Float = 0
         var updatedScripts: [UserScript] = []
+        var iterator = selectedScripts.makeIterator()
 
-        for script in selectedScripts {
-            let (updatedScript, success) = await fetchAndProcessScript(script)
-            if success, let updated = updatedScript {
-                updatedScripts.append(updated)
-                await ConcurrentLogManager.shared.info(
-                    .userScript, "Successfully updated script", metadata: ["script": script.name])
-
-                // Update the script in the userScriptManager
-                if let manager = userScriptManager {
-                    await manager.updateUserScript(updated)
+        await withTaskGroup(of: (UserScript, UserScript?, Bool).self) { group in
+            func startNext() {
+                guard let script = iterator.next() else { return }
+                group.addTask {
+                    let (updatedScript, success) = await self.fetchAndProcessScript(script)
+                    return (script, updatedScript, success)
                 }
-            } else {
-                await ConcurrentLogManager.shared.error(
-                    .userScript, "Failed to update script", metadata: ["script": script.name])
             }
-            completedSteps += 1
-            progressCallback(completedSteps / totalSteps)
+
+            for _ in 0..<min(maxConcurrent, selectedScripts.count) {
+                startNext()
+            }
+
+            while let (script, updatedScript, success) = await group.next() {
+                if success, let updated = updatedScript {
+                    updatedScripts.append(updated)
+                    await ConcurrentLogManager.shared.info(
+                        .userScript, "Successfully updated script", metadata: ["script": script.name])
+
+                    // Update the script in the userScriptManager
+                    if let manager = userScriptManager {
+                        await manager.updateUserScript(updated)
+                    }
+                } else {
+                    await ConcurrentLogManager.shared.error(
+                        .userScript, "Failed to update script", metadata: ["script": script.name])
+                }
+
+                completedSteps += 1
+                progressCallback(completedSteps / totalSteps)
+                startNext()
+            }
         }
 
         return updatedScripts

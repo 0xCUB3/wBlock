@@ -1851,20 +1851,22 @@ class AppFilterManager: ObservableObject {
             for filter in filters {
                 let fileURL = containerURL.appendingPathComponent(Self.localFilename(for: filter))
                 if FileManager.default.fileExists(atPath: fileURL.path) {
-                    if let data = try? Data(contentsOf: fileURL) {
-                        hasher.update(data: data)
-                        try fileHandle.write(contentsOf: data)
-                        hasher.update(data: newlineData)
-                        try fileHandle.write(contentsOf: newlineData)
-                    }
+                    try Self.appendFileContentsToCombinedStream(
+                        sourceURL: fileURL,
+                        destinationHandle: fileHandle,
+                        hasher: &hasher,
+                        newlineData: newlineData
+                    )
                 } else if filter.isCustom {
                     // Backward compatibility: legacy custom filters were stored as "<name>.txt".
                     let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-                    if let data = try? Data(contentsOf: legacyURL) {
-                        hasher.update(data: data)
-                        try fileHandle.write(contentsOf: data)
-                        hasher.update(data: newlineData)
-                        try fileHandle.write(contentsOf: newlineData)
+                    if FileManager.default.fileExists(atPath: legacyURL.path) {
+                        try Self.appendFileContentsToCombinedStream(
+                            sourceURL: legacyURL,
+                            destinationHandle: fileHandle,
+                            hasher: &hasher,
+                            newlineData: newlineData
+                        )
                     }
                 }
             }
@@ -1888,6 +1890,27 @@ class AppFilterManager: ObservableObject {
             }
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
+    }
+
+    nonisolated private static func appendFileContentsToCombinedStream(
+        sourceURL: URL,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data,
+        chunkSize: Int = 64 * 1024
+    ) throws {
+        let sourceHandle = try FileHandle(forReadingFrom: sourceURL)
+        defer { try? sourceHandle.close() }
+
+        while true {
+            let chunk = try sourceHandle.read(upToCount: chunkSize) ?? Data()
+            if chunk.isEmpty { break }
+            hasher.update(data: chunk)
+            try destinationHandle.write(contentsOf: chunk)
+        }
+
+        hasher.update(data: newlineData)
+        try destinationHandle.write(contentsOf: newlineData)
     }
 
     nonisolated private static func localFilename(for filter: FilterList) -> String {

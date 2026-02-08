@@ -31,7 +31,11 @@ public enum UserScriptImportError: LocalizedError {
 
 @MainActor
 public class UserScriptManager: ObservableObject {
-    @Published public var userScripts: [UserScript] = []
+    @Published public var userScripts: [UserScript] = [] {
+        didSet {
+            rebuildUserScriptIndex()
+        }
+    }
     @Published public var isLoading: Bool = false
     @Published public var statusDescription: String = "Ready."
     @Published public var hasError: Bool = false
@@ -52,6 +56,7 @@ public class UserScriptManager: ObservableObject {
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
     private var initialLoadTask: Task<Void, Never>?
+    private var userScriptIndexByID: [UUID: Int] = [:]
 
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
@@ -62,8 +67,33 @@ public class UserScriptManager: ObservableObject {
         return URLSession(configuration: config)
     }()
 
+    private func rebuildUserScriptIndex() {
+        var newIndex: [UUID: Int] = [:]
+        newIndex.reserveCapacity(userScripts.count)
+        for (index, script) in userScripts.enumerated() {
+            newIndex[script.id] = index
+        }
+        userScriptIndexByID = newIndex
+    }
+
+    private func indexOfUserScript(withId id: UUID) -> Int? {
+        if let cachedIndex = userScriptIndexByID[id],
+            userScripts.indices.contains(cachedIndex),
+            userScripts[cachedIndex].id == id
+        {
+            return cachedIndex
+        }
+
+        guard let scannedIndex = userScripts.firstIndex(where: { $0.id == id }) else {
+            return nil
+        }
+        userScriptIndexByID[id] = scannedIndex
+        return scannedIndex
+    }
+
     public func userScript(withId id: UUID) -> UserScript? {
-        userScripts.first(where: { $0.id == id })
+        guard let index = indexOfUserScript(withId: id) else { return nil }
+        return userScripts[index]
     }
 
     private func extractResourceURL(forResourceName name: String, from userScriptContent: String) -> String? {
@@ -93,7 +123,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func ensureResourceContent(forScriptId scriptId: UUID, resourceName: String) async -> String? {
-        guard let index = self.userScripts.firstIndex(where: { $0.id == scriptId }) else {
+        guard let index = indexOfUserScript(withId: scriptId) else {
             return nil
         }
 
