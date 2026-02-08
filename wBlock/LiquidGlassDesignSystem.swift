@@ -131,6 +131,83 @@ struct LiquidGlassCard<Content: View>: View {
     }
 }
 
+#if os(macOS)
+struct ToolbarSearchField: View {
+    @Binding var text: String
+    @Binding var isExpanded: Bool
+    var prompt: String = "Search"
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        Group {
+            if isExpanded {
+                HStack(spacing: 6) {
+                    TextField(prompt, text: $text)
+                        .textFieldStyle(.plain)
+                        .focused($isFocused)
+                        .onExitCommand { collapse() }
+
+                    if !text.isEmpty {
+                        Button { text = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.tertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.leading, 8)
+                .frame(width: 220)
+                .transition(.blurReplace)
+                .task {
+                    try? await Task.sleep(for: .milliseconds(350))
+                    isFocused = true
+                }
+            } else {
+                Button {
+                    isExpanded = true
+                } label: {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
+                .transition(.blurReplace)
+            }
+        }
+        .animation(.smooth(duration: 0.3), value: isExpanded)
+        .onChange(of: isFocused) { _, focused in
+            if !focused && isExpanded {
+                collapse()
+            }
+        }
+    }
+
+    private func collapse() {
+        text = ""
+        isExpanded = false
+    }
+}
+#endif
+
+struct SearchMinimizeBehavior: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            applyMinimize(content)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+
+    #if os(iOS)
+    @available(iOS 26.0, *)
+    private func applyMinimize(_ content: Content) -> some View {
+        content.searchToolbarBehavior(.minimize)
+    }
+    #endif
+}
+
 struct LiquidGlassButtonStyle: ButtonStyle {
     let tint: Color?
     let cornerRadius: CGFloat

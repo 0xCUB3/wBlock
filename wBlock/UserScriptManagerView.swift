@@ -28,7 +28,7 @@ struct UserScriptManagerView: View {
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
-    @State private var isSearchActive = false
+    @State private var showSearch = false
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
@@ -41,16 +41,22 @@ struct UserScriptManagerView: View {
         scripts.filter(\.isEnabled).count
     }
 
-    private var displayedScripts: [UserScript] {
-        let base = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return base }
+    private var trimmedSearchText: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
-        return base.filter { script in
-            script.name.localizedCaseInsensitiveContains(query)
-                || script.description.localizedCaseInsensitiveContains(query)
-                || (script.url?.absoluteString.localizedCaseInsensitiveContains(query) ?? false)
-                || (script.updateURL?.localizedCaseInsensitiveContains(query) ?? false)
+    private var displayedScripts: [UserScript] {
+        let filteredByEnabled = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
+        guard !trimmedSearchText.isEmpty else {
+            return filteredByEnabled
+        }
+
+        return filteredByEnabled.filter { script in
+            script.name.localizedCaseInsensitiveContains(trimmedSearchText)
+                || script.description.localizedCaseInsensitiveContains(trimmedSearchText)
+                || (script.url?.absoluteString.localizedCaseInsensitiveContains(trimmedSearchText)
+                    ?? false)
+                || (script.updateURL?.localizedCaseInsensitiveContains(trimmedSearchText) ?? false)
         }
     }
 
@@ -63,6 +69,9 @@ struct UserScriptManagerView: View {
                 // Scripts list
                 if scripts.isEmpty {
                     emptyStateView
+                        .padding(.top, 40)
+                } else if displayedScripts.isEmpty {
+                    noSearchResultsView
                         .padding(.top, 40)
                 } else {
                     scriptsListView
@@ -105,57 +114,57 @@ struct UserScriptManagerView: View {
         #if os(iOS)
         .padding(.horizontal, 16)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                HStack {
-                    ToolbarSearchControl(
-                        text: $searchText,
-                        isActive: $isSearchActive,
-                        placeholder: "Search scripts"
-                    )
-
-                    if !isSearchActive {
-                        if !scripts.filter(\.isDownloaded).isEmpty {
-                            Button {
-                                refreshAllUserScripts()
-                            } label: {
-                                Image(systemName: "arrow.down.circle")
-                            }
-                            .disabled(isRefreshing)
-                        }
-                        Button {
-                            showingAddScriptSheet = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        Button {
-                            showOnlyEnabled.toggle()
-                            ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                        } label: {
-                            Image(systemName: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        }
+            ToolbarItemGroup(placement: .primaryAction) {
+                if #unavailable(iOS 26.0) {
+                    Button {
+                        showSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
                     }
+                }
+                if !scripts.filter(\.isDownloaded).isEmpty {
+                    Button {
+                        refreshAllUserScripts()
+                    } label: {
+                        Image(systemName: "arrow.down.circle")
+                    }
+                    .disabled(isRefreshing)
+                }
+                Button {
+                    showingAddScriptSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                Button {
+                    showOnlyEnabled.toggle()
+                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                } label: {
+                    Image(
+                        systemName: showOnlyEnabled
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle")
                 }
             }
         }
         #elseif os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
-                ToolbarSearchControl(
+                ToolbarSearchField(
                     text: $searchText,
-                    isActive: $isSearchActive,
-                    placeholder: "Search scripts"
+                    isExpanded: $showSearch,
+                    prompt: "Search scripts"
                 )
 
-                if !scripts.filter(\.isDownloaded).isEmpty {
-                    Button {
-                        refreshAllUserScripts()
-                    } label: {
-                        Label("Check for Updates", systemImage: "arrow.down.circle")
+                if !showSearch {
+                    if !scripts.filter(\.isDownloaded).isEmpty {
+                        Button {
+                            refreshAllUserScripts()
+                        } label: {
+                            Label("Check for Updates", systemImage: "arrow.down.circle")
+                        }
+                        .disabled(isRefreshing)
                     }
-                    .disabled(isRefreshing)
-                }
 
-                if !isSearchActive {
                     Button {
                         showingAddScriptSheet = true
                     } label: {
@@ -166,11 +175,23 @@ struct UserScriptManagerView: View {
                         showOnlyEnabled.toggle()
                         ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
                     } label: {
-                        Label("Show Enabled Only", systemImage: showOnlyEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        Label(
+                            "Show Enabled Only",
+                            systemImage: showOnlyEnabled
+                                ? "line.3.horizontal.decrease.circle.fill"
+                                : "line.3.horizontal.decrease.circle")
                     }
                 }
             }
         }
+        #endif
+        #if os(iOS)
+        .searchable(
+            text: $searchText,
+            isPresented: $showSearch,
+            prompt: "Search scripts"
+        )
+        .modifier(SearchMinimizeBehavior())
         #endif
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
@@ -546,6 +567,18 @@ struct UserScriptManagerView: View {
         }
         .frame(maxWidth: .infinity)
     }
+
+    private var noSearchResultsView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 36))
+                .foregroundColor(.secondary.opacity(0.7))
+            Text("No matching userscripts")
+                .font(.headline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
 }
 
 // MARK: - UserScriptInfoSidebar Subviews
@@ -909,26 +942,12 @@ struct AddUserScriptView: View {
     @FocusState private var urlFieldFocused: Bool
 
     var body: some View {
-        SheetContainer {
-            SheetHeader(title: "Add Userscript", isLoading: isAdding) {
-                dismiss()
-            }
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    entryCard
-                    requirementsCard
-                }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
-            }
-
-            SheetBottomToolbar {
-                cancelButton
-                Spacer()
-                addButton
-            }
+        Group {
+            #if os(iOS)
+            iosBody
+            #elseif os(macOS)
+            macosBody
+            #endif
         }
         .interactiveDismissDisabled(isAdding)
         .onAppear {
@@ -951,6 +970,127 @@ struct AddUserScriptView: View {
 
     // MARK: - UI Sections
 
+    #if os(iOS)
+    private var iosBody: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("https://example.com/script.user.js", text: $urlInput)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.URL)
+                        .submitLabel(.done)
+                        .focused($urlFieldFocused)
+                        .onSubmit {
+                            if canSubmit {
+                                submit()
+                            } else {
+                                urlFieldFocused = false
+                            }
+                        }
+
+                    Button {
+                        pasteFromClipboard()
+                    } label: {
+                        Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
+                    }
+
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            urlInput = ""
+                        }
+                    } label: {
+                        Label("Clear URL", systemImage: "xmark.circle")
+                    }
+                    .disabled(urlInput.isEmpty)
+                } header: {
+                    Text("Script URL")
+                } footer: {
+                    validationMessage
+                }
+
+                Section {
+                    Button {
+                        showingFileImporter = true
+                        fileImportError = nil
+                    } label: {
+                        Label("Choose File…", systemImage: "tray.and.arrow.down")
+                    }
+                    .disabled(isAdding)
+                } header: {
+                    Text("Import File")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
+                            .foregroundStyle(.secondary)
+                        if let fileImportError {
+                            Text(fileImportError)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                }
+
+                Section {
+                    Label("Starts with https://", systemImage: "link")
+                        .foregroundStyle(.secondary)
+                    Label("Ends with .user.js", systemImage: "doc.text")
+                        .foregroundStyle(.secondary)
+                    Label("Hosted on a trusted source", systemImage: "checkmark.shield")
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Requirements")
+                }
+            }
+            .navigationTitle("Add Userscript")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .disabled(isAdding)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(action: submit) {
+                        if isAdding {
+                            ProgressView()
+                        } else {
+                            Text("Add Script")
+                        }
+                    }
+                    .disabled(!canSubmit)
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+    #endif
+
+    #if os(macOS)
+    private var macosBody: some View {
+        SheetContainer {
+            SheetHeader(title: "Add Userscript", isLoading: isAdding) {
+                dismiss()
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    entryCard
+                    requirementsCard
+                }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+
+            SheetBottomToolbar {
+                cancelButton
+                Spacer()
+                addButton
+            }
+        }
+    }
+    #endif
+
     private var entryCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -969,7 +1109,15 @@ struct AddUserScriptView: View {
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
                     #endif
+                    .submitLabel(.done)
                     .focused($urlFieldFocused)
+                    .onSubmit {
+                        if canSubmit {
+                            submit()
+                        } else {
+                            urlFieldFocused = false
+                        }
+                    }
 
                 HStack(spacing: 12) {
                     Button {

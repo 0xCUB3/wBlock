@@ -25,7 +25,7 @@ struct ContentView: View {
     @State private var showingAddFilterSheet = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @State private var filterSearchText = ""
-    @State private var isFilterSearchActive = false
+    @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
@@ -100,67 +100,6 @@ struct ContentView: View {
 
     var body: some View {
         #if os(iOS)
-            if #available(iOS 18.0, *) {
-                TabView {
-                    Tab("Filters", systemImage: "list.bullet.rectangle") {
-                        filtersView
-                    }
-                    Tab("Userscripts", systemImage: "doc.text.fill") {
-                        userscriptsView
-                    }
-                    Tab("Settings", systemImage: "gear") {
-                        settingsView
-                    }
-                }
-                .modifier(
-                    ContentModifiers(
-                        filterManager: filterManager,
-                        userScriptManager: userScriptManager,
-                        dataManager: dataManager,
-                        showingAddFilterSheet: $showingAddFilterSheet,
-                        scenePhase: scenePhase
-                    ))
-                .sheet(item: $editingCustomFilter) { filter in
-                    if isInlineUserList(filter) {
-                        EditUserListView(filterManager: filterManager, filter: filter)
-                    } else {
-                        EditCustomFilterNameView(filterManager: filterManager, filter: filter)
-                    }
-                }
-            } else {
-                // iOS 17 fallback
-                TabView {
-                    filtersView
-                        .tabItem {
-                            Label("Filters", systemImage: "list.bullet.rectangle")
-                        }
-                    userscriptsView
-                        .tabItem {
-                            Label("Userscripts", systemImage: "doc.text.fill")
-                        }
-                    settingsView
-                        .tabItem {
-                            Label("Settings", systemImage: "gear")
-                        }
-                }
-                .modifier(
-                    ContentModifiers(
-                        filterManager: filterManager,
-                        userScriptManager: userScriptManager,
-                        dataManager: dataManager,
-                        showingAddFilterSheet: $showingAddFilterSheet,
-                        scenePhase: scenePhase
-                    ))
-                .sheet(item: $editingCustomFilter) { filter in
-                    if isInlineUserList(filter) {
-                        EditUserListView(filterManager: filterManager, filter: filter)
-                    } else {
-                        EditCustomFilterNameView(filterManager: filterManager, filter: filter)
-                    }
-                }
-            }
-        #elseif os(macOS)
-            // Use same liquid glass bottom tab bar as iOS
             TabView {
                 filtersView
                     .tabItem {
@@ -170,7 +109,37 @@ struct ContentView: View {
                     .tabItem {
                         Label("Userscripts", systemImage: "doc.text.fill")
                     }
-                SettingsView(filterManager: filterManager)
+                settingsView
+                    .tabItem {
+                        Label("Settings", systemImage: "gear")
+                    }
+            }
+            .modifier(
+                ContentModifiers(
+                    filterManager: filterManager,
+                    userScriptManager: userScriptManager,
+                    dataManager: dataManager,
+                    showingAddFilterSheet: $showingAddFilterSheet,
+                    scenePhase: scenePhase
+                ))
+            .sheet(item: $editingCustomFilter) { filter in
+                if isInlineUserList(filter) {
+                    EditUserListView(filterManager: filterManager, filter: filter)
+                } else {
+                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                }
+            }
+        #elseif os(macOS)
+            TabView {
+                filtersView
+                    .tabItem {
+                        Label("Filters", systemImage: "list.bullet.rectangle")
+                    }
+                userscriptsView
+                    .tabItem {
+                        Label("Userscripts", systemImage: "doc.text.fill")
+                    }
+                settingsView
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
@@ -220,7 +189,7 @@ struct ContentView: View {
                 }
                 .padding(.vertical)
             }
-            #if os(iOS)
+        #if os(iOS)
                 .padding(.horizontal, 16)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -234,34 +203,39 @@ struct ContentView: View {
                         }
                         .disabled(filterManager.isLoading || enabledListsCount == 0)
                     }
-                    ToolbarItem(placement: .primaryAction) {
-                        HStack {
-                            ToolbarSearchControl(
-                                text: $filterSearchText,
-                                isActive: $isFilterSearchActive,
-                                placeholder: "Search filters"
-                            )
-
-                            if !isFilterSearchActive {
-                                Button {
-                                    showingAddFilterSheet = true
-                                } label: {
-                                    Image(systemName: "plus")
-                                }
-                                Button {
-                                    showOnlyEnabledLists.toggle()
-                                } label: {
-                                    Image(
-                                        systemName: showOnlyEnabledLists
-                                            ? "line.3.horizontal.decrease.circle.fill"
-                                            : "line.3.horizontal.decrease.circle")
-                                }
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        if #unavailable(iOS 26.0) {
+                            Button {
+                                showFilterSearch = true
+                            } label: {
+                                Image(systemName: "magnifyingglass")
                             }
+                        }
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        Button {
+                            showOnlyEnabledLists.toggle()
+                        } label: {
+                            Image(
+                                systemName: showOnlyEnabledLists
+                                    ? "line.3.horizontal.decrease.circle.fill"
+                                    : "line.3.horizontal.decrease.circle")
                         }
                     }
                 }
             #endif
         }
+        #if os(iOS)
+            .searchable(
+                text: $filterSearchText,
+                isPresented: $showFilterSearch,
+                prompt: "Search filters"
+            )
+            .modifier(SearchMinimizeBehavior())
+        #endif
         #if os(macOS)
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
@@ -269,22 +243,22 @@ struct ContentView: View {
             )
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
-                    ToolbarSearchControl(
+                    ToolbarSearchField(
                         text: $filterSearchText,
-                        isActive: $isFilterSearchActive,
-                        placeholder: "Search filters"
+                        isExpanded: $showFilterSearch,
+                        prompt: "Search filters"
                     )
 
-                    Button {
-                        Task {
-                            await filterManager.checkAndEnableFilters(forceReload: true)
+                    if !showFilterSearch {
+                        Button {
+                            Task {
+                                await filterManager.checkAndEnableFilters(forceReload: true)
+                            }
+                        } label: {
+                            Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                         }
-                    } label: {
-                        Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .disabled(filterManager.isLoading || enabledListsCount == 0)
+                        .disabled(filterManager.isLoading || enabledListsCount == 0)
 
-                    if !isFilterSearchActive {
                         Button {
                             showingAddFilterSheet = true
                         } label: {
@@ -788,6 +762,7 @@ struct AddFilterListView: View {
     @State private var pastedRules: String = ""
     @State private var userListTitle: String = ""
     @State private var userListDescription: String = ""
+    @State private var selectedCategory: FilterListCategory = .custom
 
     private enum AddMode: String, CaseIterable, Identifiable {
         case url = "URL"
@@ -799,27 +774,44 @@ struct AddFilterListView: View {
 
     @State private var addMode: AddMode = .url
 
+    private var addableCategories: [FilterListCategory] {
+        let remainingCategories = FilterListCategory.allCases.filter { category in
+            category != .all && category != .custom
+        }
+        return [.custom] + remainingCategories
+    }
+
     private var validationState: ValidationState {
         validationState(for: urlInput)
     }
 
-	var body: some View {
-	    Group {
-	        #if os(iOS)
-	            NavigationStack {
-	                addTabs
-	                    .navigationTitle("Add Filter List")
-	                    .navigationBarTitleDisplayMode(.inline)
-	                    .toolbar {
-	                        ToolbarItem(placement: .cancellationAction) {
-	                            Button("Cancel") { dismiss() }
-	                                .disabled(isSaving)
-	                        }
-	                    }
-	            }
-	            .interactiveDismissDisabled(isSaving)
-	            .presentationDetents([.large])
-	            .presentationDragIndicator(.visible)
+		var body: some View {
+		    Group {
+		        #if os(iOS)
+		            NavigationStack {
+		                addTabs
+		                    .navigationTitle("Add Filter List")
+		                    .navigationBarTitleDisplayMode(.inline)
+		                    .toolbar {
+		                        ToolbarItem(placement: .cancellationAction) {
+		                            Button("Cancel") { dismiss() }
+		                                .disabled(isSaving)
+		                        }
+		                        ToolbarItem(placement: .confirmationAction) {
+		                            Button(action: submit) {
+		                                if isSaving {
+		                                    ProgressView()
+		                                } else {
+		                                    Text(addButtonTitle)
+		                                }
+		                            }
+		                            .disabled(!canSubmit || isSaving)
+		                        }
+		                    }
+		            }
+		            .interactiveDismissDisabled(isSaving)
+		            .presentationDetents([.large])
+		            .presentationDragIndicator(.visible)
 	        #elseif os(macOS)
 	            macosBody
 	        #endif
@@ -984,6 +976,19 @@ struct AddFilterListView: View {
 	                        .autocorrectionDisabled()
 	                }
 
+	                VStack(alignment: .leading, spacing: 6) {
+	                    Text("Category")
+	                        .font(.caption)
+	                        .foregroundStyle(.secondary)
+
+	                    Picker("Category", selection: $selectedCategory) {
+	                        ForEach(addableCategories) { category in
+	                            Text(category.rawValue).tag(category)
+	                        }
+	                    }
+	                    .pickerStyle(.menu)
+	                }
+
 	                urlFooterMessage
 	            }
 	            .padding(16)
@@ -1063,16 +1068,22 @@ struct AddFilterListView: View {
 	        }
 	    }
 
-	    private var urlTab: some View {
-	        Form {
-	            Section {
-	                TextField("https://example.com/filter.txt", text: $urlInput)
-	                    .accessibilityLabel("URL")
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.never)
-	                        .keyboardType(.URL)
-	                        .submitLabel(.done)
-	                    #endif
+		    private var urlTab: some View {
+		        Form {
+		            Section {
+		                TextField(
+		                    text: $urlInput,
+		                    prompt: Text(verbatim: "https://example.com/filter.txt")
+		                        .foregroundStyle(.secondary)
+		                ) {
+		                    Text("URL")
+		                }
+		                .accessibilityLabel("URL")
+		                    #if os(iOS)
+		                        .textInputAutocapitalization(.never)
+		                        .keyboardType(.URL)
+		                        .submitLabel(.done)
+		                    #endif
 	                    .focused($urlFieldIsFocused)
 	                    .onSubmit {
 	                        if canSubmit {
@@ -1086,70 +1097,58 @@ struct AddFilterListView: View {
 	                    #if os(iOS)
 	                        .textInputAutocapitalization(.words)
 	                    #endif
-	            } footer: {
-	                urlFooterMessage
-	            }
 
-	            Section {
-	                Button("Add URL") { submit() }
-	                    .disabled(!canSubmit)
-	            }
-	        }
-	    }
-
-	    private var pasteTab: some View {
-	        Form {
-	            Section {
-	                TextField("Title", text: $userListTitle)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.words)
-	                    #endif
-	                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
-	            }
-
-	            Section("Rules") {
-	                TextEditor(text: $pastedRules)
-	                    .font(.system(.body, design: .monospaced))
-	                    .frame(minHeight: 220)
-	            }
-
-	            Section {
-	                Button("Add Rules") { submit() }
-	                    .disabled(!canSubmit)
-	            }
-	        }
-	    }
-
-	    private var fileTab: some View {
-	        Form {
-	            Section {
-	                TextField("Title", text: $userListTitle)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.words)
-	                    #endif
-	                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
-	            }
-
-	            Section {
-	                Button {
-	                    submit()
-	                } label: {
-	                    Label("Choose File…", systemImage: "doc")
+	                Picker("Category", selection: $selectedCategory) {
+	                    ForEach(addableCategories) { category in
+	                        Text(category.rawValue).tag(category)
+	                    }
 	                }
-	                .disabled(!canSubmit)
+	                .pickerStyle(.menu)
+		            } footer: {
+		                urlFooterMessage
+		            }
+		        }
+		    }
+
+		    private var pasteTab: some View {
+		        Form {
+		            Section {
+		                TextField("Title", text: $userListTitle)
+		                    #if os(iOS)
+	                        .textInputAutocapitalization(.words)
+	                    #endif
+	                    .autocorrectionDisabled()
+	                TextField("Description", text: $userListDescription)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.sentences)
+	                    #endif
+	                    .autocorrectionDisabled()
 	            }
-	        }
-	    }
+
+		            Section("Rules") {
+		                TextEditor(text: $pastedRules)
+		                    .font(.system(.body, design: .monospaced))
+		                    .frame(minHeight: 220)
+		            }
+		        }
+		    }
+
+		    private var fileTab: some View {
+		        Form {
+		            Section {
+		                TextField("Title", text: $userListTitle)
+		                    #if os(iOS)
+	                        .textInputAutocapitalization(.words)
+	                    #endif
+	                    .autocorrectionDisabled()
+	                TextField("Description", text: $userListDescription)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.sentences)
+		                    #endif
+		                    .autocorrectionDisabled()
+		            }
+		        }
+		    }
 
 	    // MARK: - Footer
 	    private var urlFooterMessage: some View {
@@ -1199,7 +1198,7 @@ struct AddFilterListView: View {
                 filterManager.addFilterList(
                     name: finalName,
                     urlString: url.absoluteString,
-                    category: .custom
+                    category: selectedCategory
                 )
                 isSaving = false
                 dismiss()
