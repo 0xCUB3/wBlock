@@ -325,11 +325,11 @@ public class UserScriptManager: ObservableObject {
             guard let self else { return }
             await dataManager.waitUntilLoaded()
             // Load existing scripts
-            self.userScripts = dataManager.getUserScripts()
+            self.userScripts = dataManager.getUserScripts(includePersistedContent: true)
             logger.info("🔧 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
 
             // Initial setup (folders, defaults, downloads)
-            self.setup()
+            await self.setup()
 
             // Observe dataManager for userscript changes only (not all appData changes)
             dataManager.$appData
@@ -697,10 +697,10 @@ public class UserScriptManager: ObservableObject {
         removeUserScriptResourcesFile(userScript)
     }
 
-    private func setup() {
+    private func setup() async {
         logger.info("🔧 Setting up UserScriptManager...")
         checkAndCreateUserScriptsFolder()
-        loadUserScripts()
+        await loadUserScripts()
         logger.info("✅ UserScriptManager initialized with \(self.userScripts.count) userscript(s)")
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
     }
@@ -762,10 +762,24 @@ public class UserScriptManager: ObservableObject {
         return url
     }
 
-    private func loadUserScripts() {
+    private func loadUserScripts() async {
         logger.info("📖 Loading userscripts from ProtobufDataManager...")
-        userScripts = dataManager.getUserScripts()
+        userScripts = dataManager.getUserScripts(includePersistedContent: true)
         logger.info("📖 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
+
+        let embeddedMigration = migrateEmbeddedProtobufContentToFilesIfNeeded()
+        if embeddedMigration.embeddedCount > 0 {
+            if embeddedMigration.failedCount == 0 {
+                let cleared = await dataManager.clearEmbeddedUserScriptContentIfPresent()
+                if cleared {
+                    logger.info(
+                        "🧹 Cleared embedded userscript content from protobuf after file migration (\(embeddedMigration.embeddedCount) scripts)")
+                }
+            } else {
+                logger.error(
+                    "⚠️ Kept embedded userscript content in protobuf for safety. Failed to migrate \(embeddedMigration.failedCount) scripts to file storage.")
+            }
+        }
 
         // Check if this is the first time setup
         hasCompletedInitialSetup = UserDefaults.standard.bool(forKey: initialSetupCompletedKey)
@@ -800,6 +814,35 @@ public class UserScriptManager: ObservableObject {
                 }
             }
         }
+    }
+
+    private func migrateEmbeddedProtobufContentToFilesIfNeeded() -> (
+        embeddedCount: Int, failedCount: Int
+    ) {
+        var embeddedCount = 0
+        var failedCount = 0
+
+        for script in userScripts {
+            guard !script.content.isEmpty else { continue }
+            embeddedCount += 1
+
+            if userScriptFileExists(script) {
+                continue
+            }
+
+            if !writeUserScriptContent(script) {
+                failedCount += 1
+                logger.error(
+                    "❌ Failed migrating embedded userscript content to file for \(script.name)")
+            }
+        }
+
+        if embeddedCount > 0 {
+            logger.info(
+                "📦 Detected \(embeddedCount) userscripts with embedded protobuf content; migrated \(embeddedCount - failedCount) to file-backed storage.")
+        }
+
+        return (embeddedCount: embeddedCount, failedCount: failedCount)
     }
 
     private func checkAndAddMissingDefaultScripts() {
@@ -1851,7 +1894,9 @@ public class UserScriptManager: ObservableObject {
         userScripts.removeAll()
 
         // Re-run setup as if it's the first time
-        setup()
+        Task { @MainActor in
+            await self.setup()
+        }
 
         logger.info("🧪 Fresh install simulation complete")
     }

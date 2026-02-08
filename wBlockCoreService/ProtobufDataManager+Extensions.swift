@@ -215,7 +215,7 @@ extension ProtobufDataManager {
     }
     
     // MARK: - Userscripts
-    public func getUserScripts() -> [UserScript] {
+    public func getUserScripts(includePersistedContent: Bool = false) -> [UserScript] {
         return appData.userScripts.map { protoData in
             let rawURLString = protoData.url.trimmingCharacters(in: .whitespacesAndNewlines)
             let parsedURL = rawURLString.isEmpty ? nil : URL(string: rawURLString)
@@ -228,7 +228,7 @@ extension ProtobufDataManager {
                 id: UUID(uuidString: protoData.id) ?? UUID(),
                 name: protoData.name,
                 url: parsedURL,
-                content: protoData.content
+                content: includePersistedContent ? protoData.content : ""
             )
             script.isEnabled = protoData.isEnabled
             script.description = protoData.description_p
@@ -268,7 +268,7 @@ extension ProtobufDataManager {
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
-            protoUserScript.content = userScript.content
+            protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             updatedData.userScripts[index] = protoUserScript
@@ -292,7 +292,7 @@ extension ProtobufDataManager {
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
-            protoUserScript.content = userScript.content
+            protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             updatedData.userScripts.append(protoUserScript)
@@ -586,7 +586,7 @@ extension ProtobufDataManager {
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
-            protoUserScript.content = userScript.content
+            protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             updatedData.userScripts.append(protoUserScript)
@@ -596,6 +596,27 @@ extension ProtobufDataManager {
             appData = updatedData
         }
         await saveData()
+    }
+
+    /// Drops legacy embedded userscript source bodies from protobuf once they have
+    /// been migrated to file-backed storage.
+    @discardableResult
+    public func clearEmbeddedUserScriptContentIfPresent() async -> Bool {
+        var updatedData = await latestAppDataSnapshot()
+        var didChange = false
+
+        for index in updatedData.userScripts.indices {
+            if !updatedData.userScripts[index].content.isEmpty {
+                updatedData.userScripts[index].content = ""
+                didChange = true
+            }
+        }
+
+        guard didChange else { return false }
+
+        appData = updatedData
+        await saveData()
+        return true
     }
 
     // MARK: - Excluded Default UserScript URLs
