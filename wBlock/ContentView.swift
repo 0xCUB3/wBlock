@@ -306,13 +306,6 @@ struct ContentView: View {
 
     private var statsCardsView: some View {
         HStack(spacing: 12) {
-            StatCard(
-                title: "Enabled Lists",
-                value: "\(enabledListsCount)",
-                icon: "list.bullet.rectangle",
-                pillColor: .clear,
-                valueColor: .primary
-            )
             #if os(iOS)
                 Button {
                     filterManager.showRuleLimitWarning()
@@ -362,6 +355,13 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
             #endif
+            StatCard(
+                title: "Enabled Lists",
+                value: "\(enabledListsCount)",
+                icon: "list.bullet.rectangle",
+                pillColor: .clear,
+                valueColor: .primary
+            )
         }
         .padding(.horizontal)
     }
@@ -442,16 +442,19 @@ struct ContentView: View {
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
                     Text("(\(sourceCount.formatted()) source rules)")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 } else if filter.sourceRuleCount == nil {
                     // Filter not yet downloaded or count not calculated
                     Text("(pending)")
                         .font(.caption)
                         .foregroundColor(.secondary.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if !filter.description.isEmpty {
@@ -459,6 +462,7 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let limitReason = filter.limitExceededReason {
@@ -468,6 +472,7 @@ struct ContentView: View {
                         Text(limitReason)
                             .font(.caption2)
                             .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .foregroundColor(.orange)
                     .padding(.vertical, 4)
@@ -521,9 +526,6 @@ struct ContentView: View {
         }
         .padding(16)
         .id(filter.id)
-        #if os(iOS)
-            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
-        #endif
         .contentShape(.interaction, Rectangle())
         .contextMenu {
             if filter.isCustom {
