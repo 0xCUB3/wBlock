@@ -254,14 +254,14 @@ public enum ContentBlockerIncrementalCache {
         return containerURL.appendingPathComponent("\(targetRulesFilename).incremental-state.json")
     }
 
-    private static func localFilename(for filter: FilterList) -> String {
+    public static func localFilename(for filter: FilterList) -> String {
         if filter.isCustom {
             return "custom-\(filter.id.uuidString).txt"
         }
         return "\(filter.name).txt"
     }
 
-    private static func baseRulesFilename(for targetRulesFilename: String) -> String {
+    public static func baseRulesFilename(for targetRulesFilename: String) -> String {
         if targetRulesFilename.lowercased().hasSuffix(".json") {
             let stem = targetRulesFilename.dropLast(5)
             return "\(stem).base.json"
@@ -269,7 +269,7 @@ public enum ContentBlockerIncrementalCache {
         return "\(targetRulesFilename).base"
     }
 
-    private static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
+    public static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
         "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
     }
 }

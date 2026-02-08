@@ -644,7 +644,9 @@ public actor SharedAutoUpdateManager {
             let responseLastModified = http.value(forHTTPHeaderField: "Last-Modified")
             let hasValidatorUpdates = responseEtag != nil || responseLastModified != nil
 
-            let localURL = containerURL.appendingPathComponent(localFilename(for: filter))
+            let localURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.localFilename(for: filter)
+            )
             if FileManager.default.fileExists(atPath: localURL.path),
                let localData = try? Data(contentsOf: localURL),
                localData == data {
@@ -715,13 +717,6 @@ public actor SharedAutoUpdateManager {
         return true
     }
 
-    private func localFilename(for filter: FilterList) -> String {
-        if filter.isCustom {
-            return "custom-\(filter.id.uuidString).txt"
-        }
-        return "\(filter.name).txt"
-    }
-
     @discardableResult
     private func streamFilterDataForConversion(
         _ filter: FilterList,
@@ -730,7 +725,9 @@ public actor SharedAutoUpdateManager {
         hasher: inout SHA256,
         newlineData: Data
     ) -> Bool {
-        let primaryURL = containerURL.appendingPathComponent(localFilename(for: filter))
+        let primaryURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: filter)
+        )
         if appendFileContentsToCombinedStream(
             sourceURL: primaryURL,
             destinationHandle: destinationHandle,
@@ -1127,20 +1124,10 @@ public actor SharedAutoUpdateManager {
         return (title: title, description: description, version: version)
     }
 
-    private func baseRulesFilename(for targetRulesFilename: String) -> String {
-        if targetRulesFilename.lowercased().hasSuffix(".json") {
-            let stem = targetRulesFilename.dropLast(5)
-            return "\(stem).base.json"
-        }
-        return "\(targetRulesFilename).base"
-    }
-
-    private func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
-        "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
-    }
-
     private func loadCachedAdvancedRules(for target: ContentBlockerTargetInfo, containerURL: URL) -> String? {
-        let url = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: target.rulesFilename))
+        let url = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename)
+        )
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return try? String(contentsOf: url, encoding: .utf8)
     }

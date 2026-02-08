@@ -1873,7 +1873,9 @@ class AppFilterManager: ObservableObject {
 
             // Stream each filter file directly to temp file
             for filter in filters {
-                let fileURL = containerURL.appendingPathComponent(Self.localFilename(for: filter))
+                let fileURL = containerURL.appendingPathComponent(
+                    ContentBlockerIncrementalCache.localFilename(for: filter)
+                )
                 if FileManager.default.fileExists(atPath: fileURL.path) {
                     try Self.appendFileContentsToCombinedStream(
                         sourceURL: fileURL,
@@ -2032,13 +2034,6 @@ class AppFilterManager: ObservableObject {
 
         hasher.update(data: newlineData)
         try destinationHandle.write(contentsOf: newlineData)
-    }
-
-    nonisolated private static func localFilename(for filter: FilterList) -> String {
-        if filter.isCustom {
-            return "custom-\(filter.id.uuidString).txt"
-        }
-        return "\(filter.name).txt"
     }
 
     private func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo], totalCount: Int) async -> ReloadPhaseSummary {

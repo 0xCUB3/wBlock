@@ -161,10 +161,12 @@ public enum ContentBlockerService {
         let digest = SHA256.hash(data: Data(rules.utf8))
         let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-        let baseFilename = baseRulesFilename(for: targetRulesFilename)
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
         let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
         let baseHashFilename = baseRulesHashFilename(for: targetRulesFilename)
-        let advancedFilename = baseAdvancedRulesFilename(for: targetRulesFilename)
+        let advancedFilename = ContentBlockerIncrementalCache.baseAdvancedRulesFilename(
+            for: targetRulesFilename
+        )
 
         let baseURL = containerURL.appendingPathComponent(baseFilename)
         let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
@@ -220,10 +222,12 @@ public enum ContentBlockerService {
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
 
-        let baseFilename = baseRulesFilename(for: targetRulesFilename)
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
         let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
         let baseHashFilename = baseRulesHashFilename(for: targetRulesFilename)
-        let advancedFilename = baseAdvancedRulesFilename(for: targetRulesFilename)
+        let advancedFilename = ContentBlockerIncrementalCache.baseAdvancedRulesFilename(
+            for: targetRulesFilename
+        )
 
         let baseURL = containerURL.appendingPathComponent(baseFilename)
         let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
@@ -281,7 +285,7 @@ public enum ContentBlockerService {
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
         
-        let baseFilename = baseRulesFilename(for: targetRulesFilename)
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
         let baseCountFilename = baseRulesCountFilename(for: targetRulesFilename)
 
         // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
@@ -326,24 +330,12 @@ public enum ContentBlockerService {
         return defaults?.stringArray(forKey: "disabledSites") ?? []
     }
 
-    private static func baseRulesFilename(for targetRulesFilename: String) -> String {
-        if targetRulesFilename.lowercased().hasSuffix(".json") {
-            let stem = targetRulesFilename.dropLast(5)
-            return "\(stem).base.json"
-        }
-        return "\(targetRulesFilename).base"
-    }
-
     private static func baseRulesCountFilename(for targetRulesFilename: String) -> String {
-        "\(baseRulesFilename(for: targetRulesFilename)).count"
+        "\(ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)).count"
     }
 
     private static func baseRulesHashFilename(for targetRulesFilename: String) -> String {
-        "\(baseRulesFilename(for: targetRulesFilename)).sha256"
-    }
-
-    private static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
-        "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
+        "\(ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)).sha256"
     }
 
     private struct DerivedBaseRules {
