@@ -52,6 +52,34 @@ public struct UserScript: Identifiable, Codable, Hashable {
         self.url = url
         self.content = content
     }
+
+    private static let matchRegexCache: NSCache<NSString, NSRegularExpression> = {
+        let cache = NSCache<NSString, NSRegularExpression>()
+        cache.countLimit = 512
+        return cache
+    }()
+
+    private static let includeRegexCache: NSCache<NSString, NSRegularExpression> = {
+        let cache = NSCache<NSString, NSRegularExpression>()
+        cache.countLimit = 512
+        return cache
+    }()
+
+    private static func cachedRegex(
+        for pattern: String,
+        cache: NSCache<NSString, NSRegularExpression>
+    ) -> NSRegularExpression? {
+        let key = pattern as NSString
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return nil
+        }
+        cache.setObject(regex, forKey: key)
+        return regex
+    }
     
     /// Remove emojis from a string
     private func removeEmojis(from string: String) -> String {
@@ -63,10 +91,25 @@ public struct UserScript: Identifiable, Codable, Hashable {
 
     /// Extract metadata from userscript content
     public mutating func parseMetadata() {
-        let lines = content.components(separatedBy: .newlines)
+        // Reset metadata-backed fields so repeated parsing stays idempotent.
+        description = ""
+        version = ""
+        matches.removeAll(keepingCapacity: true)
+        excludeMatches.removeAll(keepingCapacity: true)
+        includes.removeAll(keepingCapacity: true)
+        excludes.removeAll(keepingCapacity: true)
+        runAt = "document-end"
+        injectInto = "auto"
+        grant.removeAll(keepingCapacity: true)
+        require.removeAll(keepingCapacity: true)
+        resource.removeAll(keepingCapacity: true)
+        noframes = false
+        updateURL = nil
+        downloadURL = nil
+
         var inMetadataBlock = false
 
-        for line in lines {
+        for line in content.split(whereSeparator: \.isNewline) {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
 
             if trimmedLine.hasPrefix("// ==UserScript==") {
@@ -79,15 +122,24 @@ public struct UserScript: Identifiable, Codable, Hashable {
             }
 
             if inMetadataBlock && trimmedLine.hasPrefix("// @") {
-                let components = trimmedLine.dropFirst(3).components(separatedBy: " ")
-                guard components.count >= 2 else { continue }
+                let metadataLine = trimmedLine.dropFirst(3).trimmingCharacters(in: .whitespaces)
+                guard !metadataLine.isEmpty else { continue }
 
-                let key = String(components[0])
-                let value = components.dropFirst().joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                let components = metadataLine.split(
+                    separator: " ", maxSplits: 1, omittingEmptySubsequences: true
+                )
+                guard let keyComponent = components.first else { continue }
+
+                let key = String(keyComponent)
+                let value =
+                    components.count > 1
+                    ? String(components[1]).trimmingCharacters(in: .whitespaces) : ""
 
                 switch key {
                 case "@name":
-                    self.name = removeEmojis(from: value)
+                    if !value.isEmpty {
+                        self.name = removeEmojis(from: value)
+                    }
                 case "@description":
                     self.description = removeEmojis(from: value)
                 case "@version":
@@ -123,9 +175,9 @@ public struct UserScript: Identifiable, Codable, Hashable {
                 case "@noframes":
                     self.noframes = true
                 case "@updateURL":
-                    self.updateURL = value
+                    self.updateURL = value.isEmpty ? nil : value
                 case "@downloadURL":
-                    self.downloadURL = value
+                    self.downloadURL = value.isEmpty ? nil : value
                 default:
                     break
                 }
@@ -178,14 +230,11 @@ public struct UserScript: Identifiable, Codable, Hashable {
         // Anchor the pattern to match the entire URL
         regexPattern = "^" + regexPattern + "$"
         
-        do {
-            let regex = try NSRegularExpression(pattern: regexPattern, options: [])
-            let range = NSRange(location: 0, length: url.utf16.count)
-            return regex.firstMatch(in: url, options: [], range: range) != nil
-        } catch {
-            print("🚨 Regex compilation failed for pattern: \(pattern), regex: \(regexPattern), error: \(error)")
+        guard let regex = Self.cachedRegex(for: regexPattern, cache: Self.matchRegexCache) else {
             return false
         }
+        let range = NSRange(location: 0, length: url.utf16.count)
+        return regex.firstMatch(in: url, options: [], range: range) != nil
     }
     
     private func matchesIncludePattern(pattern: String, url: String) -> Bool {
@@ -197,14 +246,11 @@ public struct UserScript: Identifiable, Codable, Hashable {
         regexPattern = regexPattern.replacingOccurrences(of: "\\?", with: ".")
         regexPattern = "^" + regexPattern + "$"
 
-        do {
-            let regex = try NSRegularExpression(pattern: regexPattern, options: [])
-            let range = NSRange(location: 0, length: url.utf16.count)
-            return regex.firstMatch(in: url, options: [], range: range) != nil
-        } catch {
-            print("🚨 Regex compilation failed for include pattern: \(pattern), regex: \(regexPattern), error: \(error)")
+        guard let regex = Self.cachedRegex(for: regexPattern, cache: Self.includeRegexCache) else {
             return false
         }
+        let range = NSRange(location: 0, length: url.utf16.count)
+        return regex.firstMatch(in: url, options: [], range: range) != nil
     }
     
     /// Returns a formatted string for the last updated date

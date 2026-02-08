@@ -227,10 +227,37 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setAutoUpdateIsRunning(_ value: Bool) async {
+        let nowTimestamp = Int64(Date().timeIntervalSince1970)
+
+        if appData.autoUpdate.isRunning == value {
+            if value {
+                appData.autoUpdate.runningSinceTimestamp = nowTimestamp
+                await saveData()
+            } else if appData.autoUpdate.runningSinceTimestamp != 0 {
+                appData.autoUpdate.runningSinceTimestamp = 0
+                await saveData()
+            }
+            return
+        }
+
         var updatedData = await latestAppDataSnapshot()
         updatedData.autoUpdate.isRunning = value
-        updatedData.autoUpdate.runningSinceTimestamp = value ? Int64(Date().timeIntervalSince1970) : 0
+        updatedData.autoUpdate.runningSinceTimestamp = value ? nowTimestamp : 0
         appData = updatedData
+        await saveData()
+    }
+
+    /// Refreshes the running timestamp without re-writing unrelated auto-update fields.
+    /// Used by heartbeat paths to avoid heavier state mutations.
+    @MainActor
+    public func refreshAutoUpdateRunningTimestamp(minimumIntervalSeconds: Int64 = 45) async {
+        guard appData.autoUpdate.isRunning else { return }
+        let nowTimestamp = Int64(Date().timeIntervalSince1970)
+        let previous = appData.autoUpdate.runningSinceTimestamp
+        if previous > 0 && (nowTimestamp - previous) < minimumIntervalSeconds {
+            return
+        }
+        appData.autoUpdate.runningSinceTimestamp = nowTimestamp
         await saveData()
     }
 
@@ -246,14 +273,7 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setFilterEtag(_ uuid: String, etag: String?) async {
-        var updatedData = await latestAppDataSnapshot()
-        if let etag = etag {
-            updatedData.autoUpdate.filterEtags[uuid] = etag
-        } else {
-            updatedData.autoUpdate.filterEtags.removeValue(forKey: uuid)
-        }
-        appData = updatedData
-        await saveData()
+        await setFilterValidators(uuid, etag: etag, lastModified: nil, updateLastModified: false)
     }
 
     /// Get Last-Modified header for a specific filter UUID
@@ -263,11 +283,59 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setFilterLastModified(_ uuid: String, lastModified: String?) async {
+        await setFilterValidators(uuid, etag: nil, lastModified: lastModified, updateETag: false)
+    }
+
+    /// Sets both ETag and Last-Modified validators for a filter in a single write.
+    @MainActor
+    public func setFilterValidators(_ uuid: String, etag: String?, lastModified: String?) async {
+        await setFilterValidators(uuid, etag: etag, lastModified: lastModified, updateETag: true, updateLastModified: true)
+    }
+
+    /// Batch-updates validators for multiple filters with one persisted write.
+    @MainActor
+    public func setFilterValidators(_ updates: [String: (etag: String?, lastModified: String?)]) async {
+        guard !updates.isEmpty else { return }
         var updatedData = await latestAppDataSnapshot()
-        if let lastModified = lastModified {
-            updatedData.autoUpdate.filterLastModified[uuid] = lastModified
-        } else {
-            updatedData.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+        for (uuid, update) in updates {
+            if let etag = update.etag {
+                updatedData.autoUpdate.filterEtags[uuid] = etag
+            } else {
+                updatedData.autoUpdate.filterEtags.removeValue(forKey: uuid)
+            }
+
+            if let lastModified = update.lastModified {
+                updatedData.autoUpdate.filterLastModified[uuid] = lastModified
+            } else {
+                updatedData.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+            }
+        }
+        appData = updatedData
+        await saveData()
+    }
+
+    @MainActor
+    private func setFilterValidators(
+        _ uuid: String,
+        etag: String?,
+        lastModified: String?,
+        updateETag: Bool = true,
+        updateLastModified: Bool = true
+    ) async {
+        var updatedData = await latestAppDataSnapshot()
+        if updateETag {
+            if let etag = etag {
+                updatedData.autoUpdate.filterEtags[uuid] = etag
+            } else {
+                updatedData.autoUpdate.filterEtags.removeValue(forKey: uuid)
+            }
+        }
+        if updateLastModified {
+            if let lastModified = lastModified {
+                updatedData.autoUpdate.filterLastModified[uuid] = lastModified
+            } else {
+                updatedData.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+            }
         }
         appData = updatedData
         await saveData()
@@ -481,6 +549,12 @@ public class ProtobufDataManager: ObservableObject {
                 logger.error("❌ Failed to create data directory: \(error)")
             }
         }
+    }
+
+    /// Returns the protobuf data directory in the shared app group container.
+    /// Exposed for filesystem observation in clients that need cross-process change detection.
+    public func protobufDataDirectoryURL() -> URL? {
+        getDataDirectoryURL()
     }
     
     private func getDataDirectoryURL() -> URL {

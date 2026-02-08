@@ -52,6 +52,12 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         return getOrCreateUserScriptManager()
     }
 
+    @MainActor
+    private func refreshSharedDataIfNeeded() async {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
+    }
+
     /// Handles incoming messages from a web page.
     ///
     /// This method is invoked when the content script dispatches a message.
@@ -91,8 +97,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             os_log(.info, "SafariExtensionHandler: Processing requestRules for URL: %@", urlString)
 
             Task {
-                // Reload data to ensure we have the latest
-                await ProtobufDataManager.shared.loadData()
+                await refreshSharedDataIfNeeded()
                 let disabled = await ProtobufDataManager.shared.disabledSites
                 
                 // Convert the string into a URL. If valid, attempt to look up its
@@ -194,8 +199,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
             os_log(.info, "SafariExtensionHandler: Processing %@ for URL: %@", responseMessageName, urlString)
 
             Task {
-                // Reload data to ensure we have the latest
-                await ProtobufDataManager.shared.loadData()
+                await refreshSharedDataIfNeeded()
                 let disabled = await ProtobufDataManager.shared.disabledSites
 
                 // Check if site is disabled before processing userscripts
@@ -493,8 +497,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
         validationHandler: @escaping ((Bool, String) -> Void)
     ) {
         Task {
-            // Reload data from disk to get latest settings (hot reload)
-            await ProtobufDataManager.shared.loadData()
+            await refreshSharedDataIfNeeded()
 
             // Check if badge counter is enabled (read from Protobuf)
             let isBadgeCounterEnabled = await ProtobufDataManager.shared.isBadgeCounterEnabled

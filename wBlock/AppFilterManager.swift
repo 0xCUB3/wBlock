@@ -7,6 +7,7 @@
 
 import Combine
 import CryptoKit
+import Darwin
 import SafariServices
 import SwiftUI
 import wBlockCoreService
@@ -73,7 +74,13 @@ class AppFilterManager: ObservableObject {
 
     // Per-site disable tracking
     private var lastKnownDisabledSites: [String] = []
-    private var disabledSitesCheckTimer: Timer?
+    private var disabledSitesDirectoryMonitor: DispatchSourceFileSystemObject?
+    private var disabledSitesDirectoryFileDescriptor: CInt = -1
+    private var pendingDisabledSitesCheckTask: Task<Void, Never>?
+    private let disabledSitesMonitorQueue = DispatchQueue(
+        label: "skula.wBlock.disabled-sites-monitor",
+        qos: .utility
+    )
 
     var customFilterLists: [FilterList] = []
 
@@ -261,18 +268,64 @@ class AppFilterManager: ObservableObject {
 
     /// Sets up an observer to automatically rebuild content blockers when disabled sites change
     private func setupDisabledSitesObserver() {
-        // Store the last known disabled sites to detect changes
+        // Store the last known disabled sites to detect changes.
         lastKnownDisabledSites = dataManager.disabledSites
 
-        // Use a timer to periodically check for changes in disabled sites
-        // This is more reliable than protobuf data notifications across app groups
-        // Poll every 5 seconds to reduce main thread load during scrolling
-        disabledSitesCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) {
-            [weak self] _ in
-            Task { @MainActor in
-                await self?.checkForDisabledSitesChanges()
+        disabledSitesDirectoryMonitor?.cancel()
+        disabledSitesDirectoryMonitor = nil
+        pendingDisabledSitesCheckTask?.cancel()
+        pendingDisabledSitesCheckTask = nil
+
+        guard let directoryURL = dataManager.protobufDataDirectoryURL() else {
+            Task {
+                await ConcurrentLogManager.shared.warning(
+                    .whitelist,
+                    "Disabled sites monitor unavailable (no protobuf data directory)",
+                    metadata: [:]
+                )
+            }
+            return
+        }
+
+        let descriptor = open(directoryURL.path, O_EVTONLY)
+        guard descriptor >= 0 else {
+            Task {
+                await ConcurrentLogManager.shared.warning(
+                    .whitelist,
+                    "Failed to start disabled sites monitor",
+                    metadata: ["directory": directoryURL.path]
+                )
+            }
+            return
+        }
+
+        disabledSitesDirectoryFileDescriptor = descriptor
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: [.write, .rename, .delete, .attrib, .extend],
+            queue: disabledSitesMonitorQueue
+        )
+
+        source.setEventHandler { [weak self] in
+            guard let self else { return }
+            self.pendingDisabledSitesCheckTask?.cancel()
+            self.pendingDisabledSitesCheckTask = Task {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                await self.checkForDisabledSitesChanges()
             }
         }
+
+        source.setCancelHandler { [weak self] in
+            guard let self else { return }
+            if self.disabledSitesDirectoryFileDescriptor >= 0 {
+                close(self.disabledSitesDirectoryFileDescriptor)
+                self.disabledSitesDirectoryFileDescriptor = -1
+            }
+        }
+
+        disabledSitesDirectoryMonitor = source
+        source.resume()
     }
 
     /// Checks for changes in disabled sites and triggers fast rebuild if needed
@@ -301,9 +354,15 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    /// Clean up timer when the object is deallocated
+    /// Clean up disabled-sites monitor resources when the object is deallocated.
     deinit {
-        disabledSitesCheckTimer?.invalidate()
+        pendingDisabledSitesCheckTask?.cancel()
+        disabledSitesDirectoryMonitor?.cancel()
+        disabledSitesDirectoryMonitor = nil
+        if disabledSitesDirectoryFileDescriptor >= 0 {
+            close(disabledSitesDirectoryFileDescriptor)
+            disabledSitesDirectoryFileDescriptor = -1
+        }
     }
 
     // MARK: - Migration
@@ -897,33 +956,14 @@ class AppFilterManager: ObservableObject {
 
         let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
 
-        // Distribute all selected filter lists across available blocker slots by least-filled estimate.
-        var filtersByTargetInfo: [ContentBlockerTargetInfo: [FilterList]] = Dictionary(
-            uniqueKeysWithValues: platformTargets.map { ($0, []) }
+        let filtersByTargetInfo = ContentBlockerMappingService.distribute(
+            selectedFilters: allSelectedFilters,
+            across: platformTargets
         )
-        var estimatedSourceRulesByTarget: [ContentBlockerTargetInfo: Int] = Dictionary(
-            uniqueKeysWithValues: platformTargets.map { ($0, 0) }
-        )
-
-        let sortedFilters = allSelectedFilters.sorted { lhs, rhs in
-            let lhsCount = lhs.sourceRuleCount ?? 0
-            let rhsCount = rhs.sourceRuleCount ?? 0
-            if lhsCount != rhsCount { return lhsCount > rhsCount }
-            return lhs.id.uuidString < rhs.id.uuidString
-        }
-
-        for filter in sortedFilters {
-            guard let destination = platformTargets.min(by: {
-                (estimatedSourceRulesByTarget[$0] ?? 0) < (estimatedSourceRulesByTarget[$1] ?? 0)
-            }) else { break }
-
-            filtersByTargetInfo[destination, default: []].append(filter)
-            estimatedSourceRulesByTarget[destination, default: 0] += filter.sourceRuleCount ?? 0
-        }
 
         let totalFiltersCount = platformTargets.count
         await MainActor.run {
-            self.sourceRulesCount = sortedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
+            self.sourceRulesCount = allSelectedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
             self.totalFiltersCount = totalFiltersCount
 
             // Update ViewModel

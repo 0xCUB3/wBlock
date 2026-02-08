@@ -237,23 +237,7 @@ public class UserScriptManager: ObservableObject {
 
     /// Creates a request with browser-like headers for gitflic.ru to bypass DDoS protection
     private func createGitflicRequest(for url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.setValue(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
-            forHTTPHeaderField: "User-Agent")
-        request.setValue("text/plain,*/*", forHTTPHeaderField: "Accept")
-        request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
-        request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
-        request.setValue("gitflic.ru", forHTTPHeaderField: "Host")
-        request.setValue("https://gitflic.ru", forHTTPHeaderField: "Referer")
-        request.setValue("same-origin", forHTTPHeaderField: "Sec-Fetch-Site")
-        request.setValue("navigate", forHTTPHeaderField: "Sec-Fetch-Mode")
-        request.setValue("document", forHTTPHeaderField: "Sec-Fetch-Dest")
-        request.setValue("?1", forHTTPHeaderField: "Sec-Fetch-User")
-        request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
-        request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
-        request.timeoutInterval = 30
-        return request
+        NetworkRequestFactory.makeGitflicRequest(url: url, timeout: 30)
     }
 
     /// Checks if content is a DDoS protection page instead of actual content
@@ -1763,36 +1747,14 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func getEnabledUserScriptsForURL(_ url: String) -> [UserScript] {
-        logger.info("🎯 Getting enabled userscripts for URL: \(url)")
-        logger.info("🎯 Total userscripts: \(self.userScripts.count)")
-
         let enabledScripts = userScripts.filter { $0.isEnabled }
-        logger.info("🎯 Enabled userscripts: \(enabledScripts.count)")
-
-        for script in enabledScripts {
-            logger.info("🎯 Checking script: \(script.name)")
-            logger.info("🎯   - Matches: \(script.matches)")
-            logger.info("🎯   - Includes: \(script.includes)")
-            logger.info("🎯   - Excludes: \(script.excludes)")
-            logger.info("🎯   - ExcludeMatches: \(script.excludeMatches)")
-
-            let matches = script.matches(url: url)
-            logger.info("🎯   - Does it match? \(matches)")
-            if !matches && script.matches.count > 0 {
-                // Add detailed debugging for failed matches
-                logger.info("🔍 Debugging match failure for pattern: \(script.matches[0])")
-                for pattern in script.matches {
-                    logger.info("🔍   Testing pattern '\(pattern)' against '\(url)'")
-                }
-            }
-        }
-
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
-        logger.info("🎯 Final matching scripts: \(matchingScripts.count)")
 
-        for script in matchingScripts {
-            logger.info("✅ Matched script: \(script.name)")
-        }
+        #if DEBUG
+        logger.debug(
+            "🎯 Userscript match summary for URL \(url, privacy: .public): enabled=\(enabledScripts.count), matched=\(matchingScripts.count)"
+        )
+        #endif
 
         return matchingScripts
     }

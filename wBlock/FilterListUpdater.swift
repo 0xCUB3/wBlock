@@ -171,66 +171,30 @@ final class FilterListUpdater: @unchecked Sendable {
     func parseMetadata(from content: String) -> (
         title: String?, description: String?, version: String?
     ) {
-        var title: String?
-        var description: String?
-        var version: String?
+        let rawMetadata = FilterListMetadataParser.parse(from: content)
 
-        let regexPatterns = [
-            "Title": "^!\\s*Title\\s*:?\\s*(.*)$",
-            "Description": "^!\\s*Description\\s*:?\\s*(.*)$",
-            "Version": "^!\\s*(?:version|last modified|updated)\\s*:?\\s*(.*)$",
-        ]
+        let title =
+            rawMetadata.title
+            .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
+        let description =
+            rawMetadata.description
+            .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
+        let normalizedVersion =
+            rawMetadata.version
+            .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
 
-        let lines = content.components(separatedBy: .newlines)
-        for line in lines {
-            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-
-            for (key, pattern) in regexPatterns {
-                if let regex = try? NSRegularExpression(
-                    pattern: pattern, options: [.caseInsensitive]),
-                    let match = regex.firstMatch(
-                        in: trimmedLine, options: [],
-                        range: NSRange(location: 0, length: trimmedLine.utf16.count)),
-                    match.numberOfRanges > 1,
-                    let range = Range(match.range(at: 1), in: trimmedLine)
-                {
-                    // Raw metadata capture
-                    let value = String(trimmedLine[range]).trimmingCharacters(in: .whitespaces)
-
-                    // Clean up forward slashes
-                    let cleanValue = value.replacingOccurrences(of: "/", with: " & ")
-
-                    // Sanitize flagged terminology
-                    let sanitizedValue = sanitizeMetadata(cleanValue)
-
-                    switch key {
-                    case "Title":
-                        title = sanitizedValue
-                    case "Description":
-                        description = sanitizedValue
-                    case "Version":
-                        // Filter out placeholder values like %timestamp% or similar build-time variables
-                        if sanitizedValue.contains("%")
-                            && (sanitizedValue.contains("timestamp")
-                                || sanitizedValue.contains("date"))
-                        {
-                            version = nil
-                        } else {
-                            version = sanitizedValue
-                        }
-                    default:
-                        break
-                    }
-                }
-            }
-
-            // Break early if all metadata are found
-            if title != nil, description != nil, version != nil {
-                break
-            }
+        let version: String?
+        if let normalizedVersion,
+            normalizedVersion.contains("%")
+                && (normalizedVersion.contains("timestamp")
+                    || normalizedVersion.contains("date"))
+        {
+            version = nil
+        } else {
+            version = normalizedVersion
         }
 
-        return (title, description, version)
+        return (title: title, description: description, version: version)
     }
 
     func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
@@ -402,39 +366,20 @@ final class FilterListUpdater: @unchecked Sendable {
             // Special handling for GitFlic URLs which may be blocked by Cloudflare
             let (data, response): (Data, URLResponse)
             if filter.url.host?.contains("gitflic.ru") == true {
-                var request = URLRequest(url: filter.url)
-                request.cachePolicy = .reloadIgnoringLocalCacheData
-                if let etag = validators.etag, !etag.isEmpty {
-                    request.setValue(etag, forHTTPHeaderField: "If-None-Match")
-                }
-                if let lastModified = validators.lastModified, !lastModified.isEmpty {
-                    request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
-                }
-                // Try to mimic a more complete browser request
-                request.setValue(
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
-                    forHTTPHeaderField: "User-Agent")
-                request.setValue("text/plain,*/*", forHTTPHeaderField: "Accept")
-                request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
-                request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
-                request.setValue("gitflic.ru", forHTTPHeaderField: "Host")
-                request.setValue("https://gitflic.ru", forHTTPHeaderField: "Referer")
-                request.setValue("same-origin", forHTTPHeaderField: "Sec-Fetch-Site")
-                request.setValue("navigate", forHTTPHeaderField: "Sec-Fetch-Mode")
-                request.setValue("document", forHTTPHeaderField: "Sec-Fetch-Dest")
-                request.setValue("?1", forHTTPHeaderField: "Sec-Fetch-User")
-                request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
-                request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
-                request.timeoutInterval = 30
+                let request = NetworkRequestFactory.makeGitflicRequest(
+                    url: filter.url,
+                    etag: validators.etag,
+                    lastModified: validators.lastModified,
+                    timeout: 30
+                )
                 (data, response) = try await urlSession.data(for: request)
             } else {
-                var request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
-                if let etag = validators.etag, !etag.isEmpty {
-                    request.setValue(etag, forHTTPHeaderField: "If-None-Match")
-                }
-                if let lastModified = validators.lastModified, !lastModified.isEmpty {
-                    request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
-                }
+                let request = NetworkRequestFactory.makeConditionalRequest(
+                    url: filter.url,
+                    etag: validators.etag,
+                    lastModified: validators.lastModified,
+                    timeout: 30
+                )
                 (data, response) = try await urlSession.data(for: request)
             }
 
@@ -492,11 +437,12 @@ final class FilterListUpdater: @unchecked Sendable {
             updatedFilter.serverLastModified = responseLastModified
             
             // Persist validators so update checks can be lightweight across app launches.
-            if let responseEtag {
-                await ProtobufDataManager.shared.setFilterEtag(uuid, etag: responseEtag)
-            }
-            if let responseLastModified {
-                await ProtobufDataManager.shared.setFilterLastModified(uuid, lastModified: responseLastModified)
+            if responseEtag != nil || responseLastModified != nil {
+                await ProtobufDataManager.shared.setFilterValidators(
+                    uuid,
+                    etag: responseEtag,
+                    lastModified: responseLastModified
+                )
             }
 
             let finalFilter = updatedFilter
@@ -533,22 +479,48 @@ final class FilterListUpdater: @unchecked Sendable {
     func updateSelectedFilters(
         _ selectedFilters: [FilterList], progressCallback: @escaping (Float) -> Void
     ) async -> [FilterList] {
-        let totalSteps = Float(selectedFilters.count)
-        var completedSteps: Float = 0
-        var updatedFilters: [FilterList] = []
+        guard !selectedFilters.isEmpty else {
+            progressCallback(1.0)
+            return []
+        }
 
-        for filter in selectedFilters {
-            let success = await fetchAndProcessFilter(filter)
-            if success {
-                updatedFilters.append(filter)
-                await ConcurrentLogManager.shared.info(
-                    .filterUpdate, "Successfully updated filter", metadata: ["filter": filter.name])
-            } else {
-                await ConcurrentLogManager.shared.error(
-                    .filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
+        let totalSteps = Float(selectedFilters.count)
+        #if os(macOS)
+        let maxConcurrent = 4
+        #else
+        let maxConcurrent = 3
+        #endif
+
+        var updatedFilters: [FilterList] = []
+        var completedSteps: Float = 0
+        var iterator = selectedFilters.makeIterator()
+
+        await withTaskGroup(of: (FilterList, Bool).self) { group in
+            func startNext() {
+                guard let filter = iterator.next() else { return }
+                group.addTask {
+                    let success = await self.fetchAndProcessFilter(filter)
+                    return (filter, success)
+                }
             }
-            completedSteps += 1
-            progressCallback(completedSteps / totalSteps)
+
+            for _ in 0..<min(maxConcurrent, selectedFilters.count) {
+                startNext()
+            }
+
+            while let (filter, success) = await group.next() {
+                if success {
+                    updatedFilters.append(filter)
+                    await ConcurrentLogManager.shared.info(
+                        .filterUpdate, "Successfully updated filter", metadata: ["filter": filter.name])
+                } else {
+                    await ConcurrentLogManager.shared.error(
+                        .filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
+                }
+                completedSteps += 1
+                progressCallback(completedSteps / totalSteps)
+                startNext()
+            }
         }
 
         return updatedFilters

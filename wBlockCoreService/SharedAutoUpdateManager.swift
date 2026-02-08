@@ -370,7 +370,7 @@ public actor SharedAutoUpdateManager {
                 try? await Task.sleep(nanoseconds: 60_000_000_000)  // 60s
                 if Task.isCancelled { break }
                 // Refresh the running timestamp so long conversions aren't considered "stuck".
-                await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
+                await ProtobufDataManager.shared.refreshAutoUpdateRunningTimestamp()
             }
         }
         defer { heartbeatTask.cancel() }
@@ -536,7 +536,8 @@ public actor SharedAutoUpdateManager {
 
     private enum FilterFetchOutcome {
         case noChange
-        case updated(FilterList)
+        case noChangeWithValidators(uuid: String, etag: String?, lastModified: String?)
+        case updated(filter: FilterList, validators: (etag: String?, lastModified: String?))
         case error(filterName: String, error: Error)
     }
 
@@ -547,6 +548,7 @@ public actor SharedAutoUpdateManager {
 
         var updatedFilters: [FilterList] = []
         var hadErrors = false
+        var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
 
         await withTaskGroup(of: FilterFetchOutcome.self) { group in
             for filter in filters {
@@ -557,8 +559,13 @@ public actor SharedAutoUpdateManager {
                 switch outcome {
                 case .noChange:
                     break
-                case .updated(let filter):
+                case .noChangeWithValidators(let uuid, let etag, let lastModified):
+                    validatorUpdates[uuid] = (etag: etag, lastModified: lastModified)
+                case .updated(let filter, let validators):
                     updatedFilters.append(filter)
+                    if validators.etag != nil || validators.lastModified != nil {
+                        validatorUpdates[filter.id.uuidString] = validators
+                    }
                 case .error(let filterName, let error):
                     hadErrors = true
                     os_log(
@@ -570,6 +577,10 @@ public actor SharedAutoUpdateManager {
                     )
                 }
             }
+        }
+
+        if !validatorUpdates.isEmpty {
+            await ProtobufDataManager.shared.setFilterValidators(validatorUpdates)
         }
 
         return UpdateFetchResult(updatedFilters: updatedFilters, hadErrors: hadErrors)
@@ -601,18 +612,21 @@ public actor SharedAutoUpdateManager {
                 return .error(filterName: filter.name, error: URLError(.cannotParseResponse))
             }
 
-            // Store validators (only for valid filter content).
-            if let newEtag = http.value(forHTTPHeaderField: "ETag") {
-                await ProtobufDataManager.shared.setFilterEtag(uuid, etag: newEtag)
-            }
-            if let newLM = http.value(forHTTPHeaderField: "Last-Modified") {
-                await ProtobufDataManager.shared.setFilterLastModified(uuid, lastModified: newLM)
-            }
+            let responseEtag = http.value(forHTTPHeaderField: "ETag")
+            let responseLastModified = http.value(forHTTPHeaderField: "Last-Modified")
+            let hasValidatorUpdates = responseEtag != nil || responseLastModified != nil
 
             let localURL = containerURL.appendingPathComponent(localFilename(for: filter))
             if FileManager.default.fileExists(atPath: localURL.path),
                let localData = try? Data(contentsOf: localURL),
                localData == data {
+                if hasValidatorUpdates {
+                    return .noChangeWithValidators(
+                        uuid: uuid,
+                        etag: responseEtag,
+                        lastModified: responseLastModified
+                    )
+                }
                 return .noChange
             }
 
@@ -635,31 +649,31 @@ public actor SharedAutoUpdateManager {
             if let version = meta.version, !version.isEmpty { updated.version = version }
             if let desc = meta.description, !desc.isEmpty { updated.description = desc }
             updated.sourceRuleCount = ruleCount
-            return .updated(updated)
+            return .updated(
+                filter: updated,
+                validators: (etag: responseEtag, lastModified: responseLastModified)
+            )
         } catch {
             return .error(filterName: filter.name, error: error)
         }
     }
 
     private func makeConditionalRequest(for filter: FilterList, etag: String?, lastModified: String?) -> URLRequest {
-        var request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
-        if let etag { request.addValue(etag, forHTTPHeaderField: "If-None-Match") }
-        if let lastModified { request.addValue(lastModified, forHTTPHeaderField: "If-Modified-Since") }
-
-        // Some providers (notably GitFlic) can return HTML challenge pages unless the request looks browser-like.
         if filter.url.host?.contains("gitflic.ru") == true {
-            request.setValue(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
-                forHTTPHeaderField: "User-Agent"
+            return NetworkRequestFactory.makeGitflicRequest(
+                url: filter.url,
+                etag: etag,
+                lastModified: lastModified,
+                timeout: 30
             )
-            request.setValue("text/plain,*/*", forHTTPHeaderField: "Accept")
-            request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
-            request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
-            request.setValue("https://gitflic.ru", forHTTPHeaderField: "Referer")
-            request.timeoutInterval = 30
         }
 
-        return request
+        return NetworkRequestFactory.makeConditionalRequest(
+            url: filter.url,
+            etag: etag,
+            lastModified: lastModified,
+            timeout: 20
+        )
     }
 
     private func looksLikeFilterList(data: Data) -> Bool {
@@ -792,29 +806,10 @@ public actor SharedAutoUpdateManager {
         // Get disabled sites for injection
         let disabledSites = await getDisabledSites()
 
-        // Distribute all selected filter lists across available blocker slots by least-filled estimate.
-        var filtersByTarget: [ContentBlockerTargetInfo: [FilterList]] = Dictionary(
-            uniqueKeysWithValues: targets.map { ($0, []) }
+        let filtersByTarget = ContentBlockerMappingService.distribute(
+            selectedFilters: selectedFilters,
+            across: targets
         )
-        var estimatedSourceRulesByTarget: [ContentBlockerTargetInfo: Int] = Dictionary(
-            uniqueKeysWithValues: targets.map { ($0, 0) }
-        )
-
-        let sortedFilters = selectedFilters.sorted { lhs, rhs in
-            let lhsCount = lhs.sourceRuleCount ?? 0
-            let rhsCount = rhs.sourceRuleCount ?? 0
-            if lhsCount != rhsCount { return lhsCount > rhsCount }
-            return lhs.id.uuidString < rhs.id.uuidString
-        }
-
-        for filter in sortedFilters {
-            guard let destination = targets.min(by: {
-                (estimatedSourceRulesByTarget[$0] ?? 0) < (estimatedSourceRulesByTarget[$1] ?? 0)
-            }) else { break }
-
-            filtersByTarget[destination, default: []].append(filter)
-            estimatedSourceRulesByTarget[destination, default: 0] += filter.sourceRuleCount ?? 0
-        }
 
         for target in targets {
             // Rebuild combined raw rules for this target from assigned filters (streaming + hashed).
@@ -924,38 +919,22 @@ public actor SharedAutoUpdateManager {
     }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
-        var title: String?; var description: String?; var version: String?
-        let patterns: [String: String] = [
-            "Title": "^!\\s*Title\\s*:?\\s*(.*)$",
-            "Description": "^!\\s*Description\\s*:?\\s*(.*)$",
-            "Version": "^!\\s*(?:version|last modified|updated)\\s*:?\\s*(.*)$"
-        ]
-        for line in content.split(separator: "\n").prefix(80) { // Scan only first 80 lines
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            for (key, pattern) in patterns {
-                if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
-                   let match = regex.firstMatch(in: trimmed, options: [], range: NSRange(location: 0, length: trimmed.utf16.count)),
-                   match.numberOfRanges > 1,
-                   let range = Range(match.range(at: 1), in: trimmed) {
-                    let raw = String(trimmed[range]).trimmingCharacters(in: .whitespaces)
-                    let clean = raw.replacingOccurrences(of: "/", with: " & ")
-                    switch key {
-                    case "Title": title = clean
-                    case "Description": description = clean
-                    case "Version":
-                        // Filter out placeholder values like %timestamp% or similar build-time variables
-                        if clean.contains("%") && (clean.lowercased().contains("timestamp") || clean.lowercased().contains("date")) {
-                            version = nil
-                        } else {
-                            version = clean
-                        }
-                    default: break
-                    }
-                }
-            }
-            if title != nil, description != nil, version != nil { break }
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
+        let title = rawMetadata.title?.replacingOccurrences(of: "/", with: " & ")
+        let description = rawMetadata.description?.replacingOccurrences(of: "/", with: " & ")
+
+        let normalizedVersion = rawMetadata.version?.replacingOccurrences(of: "/", with: " & ")
+        let version: String?
+        if let normalizedVersion,
+           normalizedVersion.contains("%"),
+           (normalizedVersion.lowercased().contains("timestamp")
+                || normalizedVersion.lowercased().contains("date")) {
+            version = nil
+        } else {
+            version = normalizedVersion
         }
-        return (title, description, version)
+
+        return (title: title, description: description, version: version)
     }
 
     private func baseRulesFilename(for targetRulesFilename: String) -> String {
