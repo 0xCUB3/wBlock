@@ -49,7 +49,6 @@ public class UserScriptManager: ObservableObject {
     @Published public var hasCompletedInitialSetup = false
     @Published public private(set) var isReady = false
 
-    private let userScriptsKey = "userScripts"
     private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
     private let sharedContainerIdentifier = "group.skula.wBlock"
     private let dataManager = ProtobufDataManager.shared
@@ -578,57 +577,6 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    /// Compares two scripts to determine which one to keep during duplicate removal
-    /// Returns true if current script should be kept, false if existing script should be kept
-    private func compareScriptsForDuplicateRemoval(current: UserScript, existing: UserScript)
-        -> Bool
-    {
-        // HIGHEST PRIORITY: Prefer enabled scripts over disabled ones
-        // This prevents user-enabled scripts from being replaced by disabled defaults
-        if current.isEnabled && !existing.isEnabled {
-            logger.info(
-                "🔄 Keeping enabled script '\(current.name)' over disabled '\(existing.name)'")
-            return true
-        }
-        if !current.isEnabled && existing.isEnabled {
-            logger.info(
-                "🔄 Keeping enabled script '\(existing.name)' over disabled '\(current.name)'")
-            return false
-        }
-
-        // Prefer scripts with content over empty ones
-        if current.isDownloaded && !existing.isDownloaded {
-            return true
-        }
-        if !current.isDownloaded && existing.isDownloaded {
-            return false
-        }
-
-        // If both have lastUpdated dates, prefer the more recent one
-        if let currentDate = current.lastUpdated, let existingDate = existing.lastUpdated {
-            return currentDate > existingDate
-        }
-
-        // Prefer the one with a lastUpdated date
-        if current.lastUpdated != nil && existing.lastUpdated == nil {
-            return true
-        }
-        if current.lastUpdated == nil && existing.lastUpdated != nil {
-            return false
-        }
-
-        // Prefer remote scripts (with URL) over local ones
-        if current.url != nil && existing.url == nil {
-            return true
-        }
-        if current.url == nil && existing.url != nil {
-            return false
-        }
-
-        // If all else is equal, keep the current one (later in the array)
-        return true
-    }
-
     /// Checks for duplicates and presents confirmation dialog to user
     private func checkForDuplicatesAndAskForConfirmation() {
         let duplicatePairs = detectDuplicateUserScripts()
@@ -705,7 +653,6 @@ public class UserScriptManager: ObservableObject {
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
     }
 
-    /// Returns the directory URL for storing userscripts, using the shared app group container if available, otherwise falling back to Application Support.
     // MARK: - Scripts Directory Locations
     /// URL for group container scripts directory, if available
     private var groupScriptsDirectoryURL: URL? {
@@ -718,18 +665,6 @@ public class UserScriptManager: ObservableObject {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("wBlock").appendingPathComponent("userscripts")
     }
-    /// Returns appropriate scripts directory, preferring group container
-    private func getUserScriptsDirectoryURL() -> URL? {
-        if let groupURL = groupScriptsDirectoryURL {
-            return groupURL
-        }
-        if let fallbackURL = fallbackScriptsDirectoryURL {
-            return fallbackURL
-        }
-        logger.error("❌ Failed to determine userscripts directory")
-        return nil
-    }
-
     private func checkAndCreateUserScriptsFolder() {
         // Ensure both group and fallback directories exist
         [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach {
@@ -748,18 +683,6 @@ public class UserScriptManager: ObservableObject {
                 logger.info("✅ Userscripts directory already exists at: \(dirURL.path)")
             }
         }
-    }
-
-    private func getSharedContainerURL() -> URL? {
-        let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)
-        if let url = url {
-            logger.info("📁 Shared container URL: \(url.path)")
-        } else {
-            logger.error(
-                "❌ Failed to get shared container URL for: \(self.sharedContainerIdentifier)")
-        }
-        return url
     }
 
     private func loadUserScripts() async {
@@ -956,24 +879,6 @@ public class UserScriptManager: ObservableObject {
                 await persistUserScriptsNow()
                 logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
             }
-        }
-    }
-
-    private func downloadDefaultUserScripts() async {
-        logger.info("📥 Starting background download of default userscripts...")
-
-        for i in 0..<userScripts.count {
-            let script = userScripts[i]
-
-            // Only download if it's a default script and not yet downloaded
-            if script.isEnabled && !script.isLocal && script.content.isEmpty, let url = script.url {
-                await downloadUserScriptInBackground(at: i, from: url)
-            }
-        }
-
-        await MainActor.run {
-            logger.info("✅ Finished downloading default userscripts")
-            statusDescription = "Default userscripts checked"
         }
     }
 
@@ -1899,12 +1804,6 @@ public class UserScriptManager: ObservableObject {
         }
 
         logger.info("🧪 Fresh install simulation complete")
-    }
-
-    /// Force duplicate detection for testing/debugging
-    public func forceDuplicateDetection() {
-        logger.info("🧪 Force duplicate detection requested")
-        checkForDuplicatesAndAskForConfirmation()
     }
 
 }

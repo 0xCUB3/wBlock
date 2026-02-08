@@ -1317,13 +1317,6 @@ struct AddFilterListView: View {
         })
     }
 
-    private var namePlaceholder: String {
-        if case .valid(let url) = validationState {
-            return defaultName(for: url)
-        }
-        return "Custom name"
-    }
-
     private enum ValidationState: Equatable {
         case idle
         case invalid

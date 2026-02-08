@@ -217,10 +217,6 @@ struct ApplyChangesProgressView: View {
         return "—"
     }
 
-    private var activePhase: ApplyChangesPhase? {
-        viewModel.state.phases.first(where: { $0.status == .active })?.phase
-    }
-
     private func subProgress(for phase: ApplyChangesPhase, status: ApplyChangesPhaseStatus) -> PhaseRow.SubProgress? {
         switch phase {
         case .converting:

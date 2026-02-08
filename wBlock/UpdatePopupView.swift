@@ -36,10 +36,6 @@ struct UpdatePopupView: View {
         Int(round(filterManager.progress * 100))
     }
     
-    private var hasScriptUpdates: Bool {
-        return !scriptsWithUpdates.isEmpty
-    }
-    
     var body: some View {
         SheetContainer {
             VStack(spacing: 0) {
