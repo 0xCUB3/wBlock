@@ -7,6 +7,7 @@
 
 import Dispatch
 import Foundation
+import CryptoKit
 
 public enum FilterListMetadataParser {
     private static let titleRegex = try! NSRegularExpression(
@@ -121,6 +122,155 @@ public enum NetworkRequestFactory {
         request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
         request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
         return request
+    }
+}
+
+public enum ContentBlockerIncrementalCache {
+    private struct State: Codable {
+        var inputSignature: String
+        var updatedAt: Int64
+    }
+
+    public static func computeInputSignature(
+        filters: [FilterList],
+        groupIdentifier: String
+    ) -> String? {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return nil
+        }
+
+        var canonical = "count=\(filters.count)\n"
+        canonical.reserveCapacity(filters.count * 64)
+
+        for filter in filters {
+            let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
+            canonical.append("\(filter.id.uuidString)|\(fileMarker)\n")
+        }
+
+        let digest = SHA256.hash(data: Data(canonical.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    public static func loadInputSignature(
+        targetRulesFilename: String,
+        groupIdentifier: String
+    ) -> String? {
+        guard
+            let url = stateFileURL(targetRulesFilename: targetRulesFilename, groupIdentifier: groupIdentifier),
+            let data = try? Data(contentsOf: url),
+            let state = try? JSONDecoder().decode(State.self, from: data)
+        else {
+            return nil
+        }
+        return state.inputSignature
+    }
+
+    public static func saveInputSignature(
+        _ signature: String,
+        targetRulesFilename: String,
+        groupIdentifier: String
+    ) {
+        guard let url = stateFileURL(
+            targetRulesFilename: targetRulesFilename,
+            groupIdentifier: groupIdentifier
+        ) else {
+            return
+        }
+
+        let state = State(
+            inputSignature: signature,
+            updatedAt: Int64(Date().timeIntervalSince1970)
+        )
+
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
+    public static func hasBaseRulesCache(
+        targetRulesFilename: String,
+        groupIdentifier: String
+    ) -> Bool {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return false
+        }
+        let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
+        return FileManager.default.fileExists(atPath: baseURL.path)
+    }
+
+    public static func loadCachedAdvancedRules(
+        targetRulesFilename: String,
+        groupIdentifier: String
+    ) -> String? {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return nil
+        }
+        let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
+        guard FileManager.default.fileExists(atPath: advancedURL.path) else { return nil }
+        return try? String(contentsOf: advancedURL, encoding: .utf8)
+    }
+
+    private static func localFileFingerprint(for filter: FilterList, containerURL: URL) -> String {
+        let primaryURL = containerURL.appendingPathComponent(localFilename(for: filter))
+        if let fingerprint = fileFingerprint(at: primaryURL) {
+            return "p|\(fingerprint)"
+        }
+
+        guard filter.isCustom else { return "missing" }
+        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        if let fingerprint = fileFingerprint(at: legacyURL) {
+            return "l|\(fingerprint)"
+        }
+
+        return "missing"
+    }
+
+    private static func fileFingerprint(at url: URL) -> String? {
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path) else {
+            return nil
+        }
+
+        let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+        let modDate = (attrs[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        let modMicros = Int64(modDate * 1_000_000)
+        return "\(size)|\(modMicros)"
+    }
+
+    private static func stateFileURL(
+        targetRulesFilename: String,
+        groupIdentifier: String
+    ) -> URL? {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return nil
+        }
+        return containerURL.appendingPathComponent("\(targetRulesFilename).incremental-state.json")
+    }
+
+    private static func localFilename(for filter: FilterList) -> String {
+        if filter.isCustom {
+            return "custom-\(filter.id.uuidString).txt"
+        }
+        return "\(filter.name).txt"
+    }
+
+    private static func baseRulesFilename(for targetRulesFilename: String) -> String {
+        if targetRulesFilename.lowercased().hasSuffix(".json") {
+            let stem = targetRulesFilename.dropLast(5)
+            return "\(stem).base.json"
+        }
+        return "\(targetRulesFilename).base"
+    }
+
+    private static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
     }
 }
 

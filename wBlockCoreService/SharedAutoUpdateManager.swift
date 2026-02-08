@@ -867,39 +867,84 @@ public actor SharedAutoUpdateManager {
         )
 
         for target in targets {
-            // Rebuild combined raw rules for this target from assigned filters (streaming + hashed).
             let filtersForTarget = filtersByTarget[target] ?? []
-            let tempURL = containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
-            defer { try? FileManager.default.removeItem(at: tempURL) }
-
-            FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
-            let newlineData = Data("\n".utf8)
-            var hasher = SHA256()
-            let fileHandle = try FileHandle(forWritingTo: tempURL)
-            defer { try? fileHandle.close() }
-
-            for f in filtersForTarget {
-                _ = streamFilterDataForConversion(
-                    f,
-                    containerURL: containerURL,
-                    destinationHandle: fileHandle,
-                    hasher: &hasher,
-                    newlineData: newlineData
-                )
-            }
-
-            let digest = hasher.finalize()
-            let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
-
-            let conversion = ContentBlockerService.convertFilterFromFile(
-                rulesFileURL: tempURL,
-                rulesSHA256Hex: rulesSHA256Hex,
-                groupIdentifier: GroupIdentifier.shared.value,
-                targetRulesFilename: target.rulesFilename,
-                disabledSites: disabledSites
+            let rulesFilename = target.rulesFilename
+            let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
+                filters: filtersForTarget,
+                groupIdentifier: GroupIdentifier.shared.value
+            )
+            let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
+                targetRulesFilename: rulesFilename,
+                groupIdentifier: GroupIdentifier.shared.value
             )
 
-            if let adv = conversion.advancedRulesText, !adv.isEmpty {
+            let canReuseCachedConversion =
+                currentSignature != nil
+                && currentSignature == storedSignature
+                && ContentBlockerIncrementalCache.hasBaseRulesCache(
+                    targetRulesFilename: rulesFilename,
+                    groupIdentifier: GroupIdentifier.shared.value
+                )
+
+            let conversion: (safariRulesCount: Int, advancedRulesText: String?)
+            if canReuseCachedConversion {
+                conversion = ContentBlockerService.fastUpdateDisabledSites(
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: rulesFilename,
+                    disabledSites: disabledSites
+                )
+                appendSharedLog("Incremental cache hit for \(target.displayName)")
+            } else {
+                // Rebuild combined raw rules for this target from assigned filters (streaming + hashed).
+                let tempURL = containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
+                defer { try? FileManager.default.removeItem(at: tempURL) }
+
+                FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
+                let newlineData = Data("\n".utf8)
+                var hasher = SHA256()
+                let fileHandle = try FileHandle(forWritingTo: tempURL)
+                defer { try? fileHandle.close() }
+
+                for f in filtersForTarget {
+                    _ = streamFilterDataForConversion(
+                        f,
+                        containerURL: containerURL,
+                        destinationHandle: fileHandle,
+                        hasher: &hasher,
+                        newlineData: newlineData
+                    )
+                }
+
+                let digest = hasher.finalize()
+                let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
+
+                conversion = ContentBlockerService.convertFilterFromFile(
+                    rulesFileURL: tempURL,
+                    rulesSHA256Hex: rulesSHA256Hex,
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: rulesFilename,
+                    disabledSites: disabledSites
+                )
+
+                if let currentSignature {
+                    ContentBlockerIncrementalCache.saveInputSignature(
+                        currentSignature,
+                        targetRulesFilename: rulesFilename,
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }
+            }
+
+            let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
+                targetRulesFilename: rulesFilename,
+                groupIdentifier: GroupIdentifier.shared.value
+            )?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let advancedRulesText = conversion.advancedRulesText?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            if let adv = (advancedRulesText?.isEmpty == false ? advancedRulesText : cachedAdvancedRules),
+                !adv.isEmpty
+            {
                 advancedRulesSnippets.append(adv)
             }
 

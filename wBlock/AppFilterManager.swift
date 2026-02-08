@@ -1023,9 +1023,9 @@ class AppFilterManager: ObservableObject {
             // Yield to prevent main thread starvation on iOS
             await Task.yield()
 
-            // Efficiently combine rules from multiple files without loading all into memory at once
+            // Reuse cached conversion output when assigned filter inputs are unchanged.
             let conversionResult = await Task.detached {
-                Self.convertFiltersMemoryEfficient(
+                Self.convertOrReuseTargetRules(
                     filters: filters,
                     targetInfo: targetInfo,
                     disabledSites: disabledSites,
@@ -1057,6 +1057,7 @@ class AppFilterManager: ObservableObject {
                     "filterCount": "\(filters.count)",
                     "safariRules": "\(ruleCountForThisTarget)",
                     "advancedRules": "\(advancedCount)",
+                    "reusedCache": conversionResult.reusedCachedBase ? "true" : "false",
                 ]
             )
 
@@ -1890,6 +1891,76 @@ class AppFilterManager: ObservableObject {
             }
             return (safariRulesCount: 0, advancedRulesText: nil)
         }
+    }
+
+    private struct TargetConversionOutcome {
+        let safariRulesCount: Int
+        let advancedRulesText: String?
+        let reusedCachedBase: Bool
+    }
+
+    nonisolated private static func convertOrReuseTargetRules(
+        filters: [FilterList],
+        targetInfo: ContentBlockerTargetInfo,
+        disabledSites: [String],
+        groupIdentifier: String
+    ) -> TargetConversionOutcome {
+        let rulesFilename = targetInfo.rulesFilename
+        let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
+            filters: filters,
+            groupIdentifier: groupIdentifier
+        )
+        let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
+            targetRulesFilename: rulesFilename,
+            groupIdentifier: groupIdentifier
+        )
+
+        if let currentSignature,
+            currentSignature == storedSignature,
+            ContentBlockerIncrementalCache.hasBaseRulesCache(
+                targetRulesFilename: rulesFilename,
+                groupIdentifier: groupIdentifier
+            )
+        {
+            let fastUpdate = ContentBlockerService.fastUpdateDisabledSites(
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: rulesFilename,
+                disabledSites: disabledSites
+            )
+            let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
+                targetRulesFilename: rulesFilename,
+                groupIdentifier: groupIdentifier
+            )
+            let trimmedAdvanced = cachedAdvancedRules?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            return TargetConversionOutcome(
+                safariRulesCount: fastUpdate.safariRulesCount,
+                advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
+                reusedCachedBase: true
+            )
+        }
+
+        let conversion = convertFiltersMemoryEfficient(
+            filters: filters,
+            targetInfo: targetInfo,
+            disabledSites: disabledSites,
+            groupIdentifier: groupIdentifier
+        )
+
+        if let currentSignature {
+            ContentBlockerIncrementalCache.saveInputSignature(
+                currentSignature,
+                targetRulesFilename: rulesFilename,
+                groupIdentifier: groupIdentifier
+            )
+        }
+
+        return TargetConversionOutcome(
+            safariRulesCount: conversion.safariRulesCount,
+            advancedRulesText: conversion.advancedRulesText,
+            reusedCachedBase: false
+        )
     }
 
     nonisolated private static func appendFileContentsToCombinedStream(
