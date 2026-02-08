@@ -83,6 +83,32 @@ public actor SharedAutoUpdateManager {
         case contentBlockerReloadFailed(identifier: String)
     }
 
+    private struct ReloadAttemptResult {
+        let success: Bool
+        let attempts: Int
+        let durationMs: Int
+    }
+
+    private struct RebuildTargetMetrics {
+        let targetName: String
+        let cacheHit: Bool
+        let conversionMs: Int
+        let reloadMs: Int
+        let reloadAttempts: Int
+        let safariRules: Int
+    }
+
+    private struct RebuildAndReloadSummary {
+        let targetCount: Int
+        let cacheHits: Int
+        let cacheMisses: Int
+        let safariRulesTotal: Int
+        let conversionDurationMs: Int
+        let reloadDurationMs: Int
+        let totalReloadAttempts: Int
+        let slowestTarget: String
+    }
+
     // MARK: - Protobuf Data Access Helpers
 
     private func getDataManager() async -> ProtobufDataManager {
@@ -175,7 +201,7 @@ public actor SharedAutoUpdateManager {
 
         // Cache miss - recompute from protobuf
         // Check for and clear stale running flags
-        await checkAndClearStaleRunningFlag()
+        _ = await checkAndClearStaleRunningFlag()
 
         let interval = await getAutoUpdateIntervalHours()
         let nowTimestamp = now.timeIntervalSince1970
@@ -380,7 +406,9 @@ public actor SharedAutoUpdateManager {
         await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
         // Persist the running flag + check timestamp immediately so other processes don't start overlapping runs.
         await ProtobufDataManager.shared.saveDataImmediately()
-        appendSharedLog("Auto-update started (trigger: \(trigger), forced: \(shouldForce))")
+        appendSharedLog(
+            "Auto-update started: trigger=\(trigger), forced=\(shouldForce), intervalHours=\(String(format: "%.1f", interval))"
+        )
 
         // Use do-catch to ensure cleanup always runs
         do {
@@ -390,15 +418,16 @@ public actor SharedAutoUpdateManager {
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
-                    appendSharedLog("Auto-updated userscripts: \(scriptsResult.updated)")
-                } else if scriptsResult.failed > 0 {
-                    appendSharedLog("Userscript auto-update errors: \(scriptsResult.failed)")
                 }
 
                 let completionTime = Date().timeIntervalSince1970
                 let nextEligibleTime = completionTime + interval * 3600
                 await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                 invalidateStatusCache()
+
+                appendSharedLog(
+                    "Auto-update skipped: no selected filters, userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(Int(interval * 3600)))"
+                )
 
                 // Still record check time even though no filters selected
                 // Clear running flag before return
@@ -418,39 +447,38 @@ public actor SharedAutoUpdateManager {
             guard !updatedFilterSet.isEmpty else {
                 // If this run was forced (BG task / silent push) or outputs are missing, do a
                 // lightweight reload to keep Safari in sync even when no filter bodies changed.
+                var reloadStatus = "skipped"
                 if shouldForce || contentBlockerOutputsNeedRepair() {
                     let reloaded = await reloadExistingContentBlockers()
-                    appendSharedLog(
-                        reloaded
-                            ? "Reloaded content blockers (no filter changes)"
-                            : "Failed to reload content blockers (no filter changes)"
-                    )
+                    reloadStatus = reloaded ? "ok" : "failed"
                 }
 
                 let completionTime = Date().timeIntervalSince1970
+                let nextCheckInSeconds: Int
                 if hadErrors {
                     // Don't treat network errors as "up to date" – retry sooner.
                     let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
                     let nextEligibleTime = completionTime + retryDelaySeconds
                     await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                     invalidateStatusCache()
-                    appendSharedLog("Update check had errors - scheduling retry")
+                    nextCheckInSeconds = Int(retryDelaySeconds)
                 } else {
                     // No updates found - still update schedule since check was successful
-                    let nextEligibleTime = completionTime + interval * 3600
+                    let scheduledSeconds = Int(interval * 3600)
+                    let nextEligibleTime = completionTime + Double(scheduledSeconds)
                     await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                     invalidateStatusCache()
-                    appendSharedLog("No updates found - filters are up to date")
+                    nextCheckInSeconds = scheduledSeconds
                 }
 
                 // Auto-update enabled userscripts during the same schedule window.
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
-                    appendSharedLog("Auto-updated userscripts: \(scriptsResult.updated)")
-                } else if scriptsResult.failed > 0 {
-                    appendSharedLog("Userscript auto-update errors: \(scriptsResult.failed)")
                 }
+                appendSharedLog(
+                    "No filter updates: checkErrors=\(hadErrors), reload=\(reloadStatus), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(nextCheckInSeconds))"
+                )
 
                 // Clear running flag before return
                 await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
@@ -463,7 +491,7 @@ public actor SharedAutoUpdateManager {
             }
 
             os_log("Found %d filter updates — applying", log: log, type: .info, updatedFilterSet.count)
-            appendSharedLog("Updated filters: \(updatedFilterSet.map { $0.name }.joined(separator: ", "))")
+            let updatedPreview = updatedFilterSet.prefix(3).map(\.name).joined(separator: ", ")
 
             // Merge updated filters back into full list model
             var merged = allFilters
@@ -477,30 +505,30 @@ public actor SharedAutoUpdateManager {
             await saveFilterListsToProtobuf(merged)
 
             // Re-convert & reload content blockers. (Rule distribution is slot-based, so updates can affect any target.)
-            try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected })
+            let rebuildSummary = try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected })
 
             // Auto-update enabled userscripts during the same schedule window.
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
-            if scriptsResult.updated > 0 {
-                appendSharedLog("Auto-updated userscripts: \(scriptsResult.updated)")
-            } else if scriptsResult.failed > 0 {
-                appendSharedLog("Userscript auto-update errors: \(scriptsResult.failed)")
-            }
 
             // Record successful update and schedule next
             let successTime = Date().timeIntervalSince1970
             await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
             var nextEligibleTime = successTime + interval * 3600
+            let nextCheckInSeconds: Int
             if hadErrors {
                 // Some filters failed to check; retry sooner than the normal interval.
                 let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
                 nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
-                appendSharedLog("Partial update errors - scheduling earlier retry")
+                nextCheckInSeconds = Int(retryDelaySeconds)
+            } else {
+                nextCheckInSeconds = Int(interval * 3600)
             }
             await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             invalidateStatusCache()
 
-            appendSharedLog("Auto-update complete")
+            appendSharedLog(
+                "Applied \(updatedFilterSet.count) update(s): \(updatedPreview)\(updatedFilterSet.count > 3 ? ", ..." : "") | targets=\(rebuildSummary.targetCount), cache \(rebuildSummary.cacheHits)/\(rebuildSummary.cacheMisses), rules=\(rebuildSummary.safariRulesTotal), convert=\(formatDurationMs(rebuildSummary.conversionDurationMs)), reload=\(formatDurationMs(rebuildSummary.reloadDurationMs)), reloadAttempts=\(rebuildSummary.totalReloadAttempts), slowest=\(rebuildSummary.slowestTarget), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), checkErrors=\(hadErrors), nextCheckIn=\(formatDurationSeconds(nextCheckInSeconds))"
+            )
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("Auto-update failed: \(error.localizedDescription)")
@@ -768,11 +796,19 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 6) async -> Bool {
+    private func reloadContentBlockerWithRetryWithMetrics(
+        identifier: String,
+        maxRetries: Int = 6
+    ) async -> ReloadAttemptResult {
+        let start = Date()
         for attempt in 1...maxRetries {
             let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
             if case .success = result {
-                return true
+                return ReloadAttemptResult(
+                    success: true,
+                    attempts: attempt,
+                    durationMs: Int(Date().timeIntervalSince(start) * 1000)
+                )
             }
 
             if attempt < maxRetries {
@@ -782,8 +818,11 @@ public actor SharedAutoUpdateManager {
             }
         }
 
-        appendSharedLog("Content blocker reload failed: \(identifier)")
-        return false
+        return ReloadAttemptResult(
+            success: false,
+            attempts: maxRetries,
+            durationMs: Int(Date().timeIntervalSince(start) * 1000)
+        )
     }
 
     private func contentBlockerOutputsNeedRepair() -> Bool {
@@ -816,13 +855,18 @@ public actor SharedAutoUpdateManager {
 
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
         var allReloaded = true
+        var failedTargets: [String] = []
         var advancedRulesSnippets: [String] = []
 
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
 
         for target in targets {
-            let reloaded = await reloadContentBlockerWithRetry(identifier: target.bundleIdentifier)
+            let reloadResult = await reloadContentBlockerWithRetryWithMetrics(identifier: target.bundleIdentifier)
+            let reloaded = reloadResult.success
             allReloaded = allReloaded && reloaded
+            if !reloaded {
+                failedTargets.append(target.displayName)
+            }
             if let containerURL,
                let adv = loadCachedAdvancedRules(for: target, containerURL: containerURL),
                !adv.isEmpty {
@@ -839,11 +883,17 @@ public actor SharedAutoUpdateManager {
             ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
         }
 
+        if !failedTargets.isEmpty {
+            appendSharedLog(
+                "Reload failures while reusing existing outputs: \(failedTargets.prefix(3).joined(separator: ", "))"
+            )
+        }
+
         return allReloaded
     }
 
     // MARK: - Conversion & Reload
-    private func rebuildAndReload(selectedFilters: [FilterList]) async throws {
+    private func rebuildAndReload(selectedFilters: [FilterList]) async throws -> RebuildAndReloadSummary {
         // Build rules per target using same slot-based mapping logic as the main app.
         #if os(iOS)
         let detectedPlatform: Platform = .iOS
@@ -865,10 +915,12 @@ public actor SharedAutoUpdateManager {
             selectedFilters: selectedFilters,
             across: targets
         )
+        var targetMetrics: [RebuildTargetMetrics] = []
 
         for target in targets {
             let filtersForTarget = filtersByTarget[target] ?? []
             let rulesFilename = target.rulesFilename
+            let conversionStart = Date()
             let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
                 filters: filtersForTarget,
                 groupIdentifier: GroupIdentifier.shared.value
@@ -887,14 +939,16 @@ public actor SharedAutoUpdateManager {
                 )
 
             let conversion: (safariRulesCount: Int, advancedRulesText: String?)
+            let usedCache: Bool
             if canReuseCachedConversion {
+                usedCache = true
                 conversion = ContentBlockerService.fastUpdateDisabledSites(
                     groupIdentifier: GroupIdentifier.shared.value,
                     targetRulesFilename: rulesFilename,
                     disabledSites: disabledSites
                 )
-                appendSharedLog("Incremental cache hit for \(target.displayName)")
             } else {
+                usedCache = false
                 // Rebuild combined raw rules for this target from assigned filters (streaming + hashed).
                 let tempURL = containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
                 defer { try? FileManager.default.removeItem(at: tempURL) }
@@ -934,6 +988,7 @@ public actor SharedAutoUpdateManager {
                     )
                 }
             }
+            let conversionDurationMs = Int(Date().timeIntervalSince(conversionStart) * 1000)
 
             let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
                 targetRulesFilename: rulesFilename,
@@ -948,8 +1003,21 @@ public actor SharedAutoUpdateManager {
                 advancedRulesSnippets.append(adv)
             }
 
-            let reloaded = await reloadContentBlockerWithRetry(identifier: target.bundleIdentifier)
-            if !reloaded {
+            let reloadResult = await reloadContentBlockerWithRetryWithMetrics(identifier: target.bundleIdentifier)
+            let targetMetric = RebuildTargetMetrics(
+                targetName: target.displayName,
+                cacheHit: usedCache,
+                conversionMs: conversionDurationMs,
+                reloadMs: reloadResult.durationMs,
+                reloadAttempts: reloadResult.attempts,
+                safariRules: conversion.safariRulesCount
+            )
+            targetMetrics.append(targetMetric)
+
+            if !reloadResult.success {
+                appendSharedLog(
+                    "Rebuild failed reloading \(target.displayName) after \(reloadResult.attempts) attempt(s)"
+                )
                 throw AutoUpdateError.contentBlockerReloadFailed(identifier: target.bundleIdentifier)
             }
         }
@@ -962,6 +1030,29 @@ public actor SharedAutoUpdateManager {
         } else {
             ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
         }
+
+        let cacheHits = targetMetrics.filter { $0.cacheHit }.count
+        let conversionDurationMs = targetMetrics.reduce(0) { $0 + $1.conversionMs }
+        let reloadDurationMs = targetMetrics.reduce(0) { $0 + $1.reloadMs }
+        let totalReloadAttempts = targetMetrics.reduce(0) { $0 + $1.reloadAttempts }
+        let safariRulesTotal = targetMetrics.reduce(0) { $0 + $1.safariRules }
+        let slowestTarget = targetMetrics.max(by: {
+            ($0.conversionMs + $0.reloadMs) < ($1.conversionMs + $1.reloadMs)
+        }).map {
+            let totalMs = $0.conversionMs + $0.reloadMs
+            return "\($0.targetName)@\(formatDurationMs(totalMs))"
+        } ?? "n/a"
+
+        return RebuildAndReloadSummary(
+            targetCount: targetMetrics.count,
+            cacheHits: cacheHits,
+            cacheMisses: max(0, targetMetrics.count - cacheHits),
+            safariRulesTotal: safariRulesTotal,
+            conversionDurationMs: conversionDurationMs,
+            reloadDurationMs: reloadDurationMs,
+            totalReloadAttempts: totalReloadAttempts,
+            slowestTarget: slowestTarget
+        )
     }
 
     // MARK: - Helpers
@@ -1052,6 +1143,23 @@ public actor SharedAutoUpdateManager {
         let url = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: target.rulesFilename))
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return try? String(contentsOf: url, encoding: .utf8)
+    }
+
+    private func formatDurationMs(_ ms: Int) -> String {
+        if ms < 1000 {
+            return "\(ms)ms"
+        }
+        return String(format: "%.2fs", Double(ms) / 1000.0)
+    }
+
+    private func formatDurationSeconds(_ seconds: Int) -> String {
+        if seconds < 60 {
+            return "\(seconds)s"
+        }
+        if seconds < 3600 {
+            return String(format: "%.1fm", Double(seconds) / 60.0)
+        }
+        return String(format: "%.1fh", Double(seconds) / 3600.0)
     }
 
     // MARK: - Shared Log (File-Based for Extensions)

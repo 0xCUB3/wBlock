@@ -784,45 +784,37 @@ class AppFilterManager: ObservableObject {
     /// Attempts to reload a content blocker with up to 5 retry attempts
     /// Returns true if successful, false if all attempts failed
     private func reloadContentBlockerWithRetry(targetInfo: ContentBlockerTargetInfo) async -> Bool {
-        let maxRetries = 5
         let blockerName = targetInfo.displayName
+        let reloadResult = await Self.reloadWithRetry(
+            identifier: targetInfo.bundleIdentifier,
+            maxRetries: 5
+        )
 
-        for attempt in 1...maxRetries {
-            let result = await ContentBlockerService.reloadContentBlocker(
-                withIdentifier: targetInfo.bundleIdentifier)
-            if case .success = result {
-                if attempt > 1 {
-                    await ConcurrentLogManager.shared.info(
-                        .filterApply, "Content blocker reloaded successfully after retry",
-                        metadata: ["blocker": blockerName, "attempt": "\(attempt)"])
-                }
-                return true
-            } else if case .failure(let error) = result {
-                if attempt == 1 || attempt == maxRetries {
-                    await ConcurrentLogManager.shared.error(
-                        .filterApply,
-                        attempt == maxRetries
-                            ? "Content blocker reload failed after all attempts"
-                            : "Content blocker reload failed",
-                        metadata: [
-                            "blocker": blockerName, "attempt": "\(attempt)",
-                            "maxRetries": "\(maxRetries)", "error": error.localizedDescription,
-                        ])
-                }
-
-                if attempt < maxRetries {
-                    let delayMs = attempt * 200
-                    if attempt >= 2 {
-                        await MainActor.run {
-                            self.conversionStageDescription =
-                                "Retrying \(blockerName) (attempt \(attempt + 1))..."
-                        }
-                    }
-                    try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000))
-                }
+        if reloadResult.success {
+            if reloadResult.attempts > 1 {
+                await ConcurrentLogManager.shared.info(
+                    .filterApply,
+                    "Content blocker reloaded after retry",
+                    metadata: [
+                        "blocker": blockerName,
+                        "attempts": "\(reloadResult.attempts)",
+                        "durationMs": "\(reloadResult.durationMs)",
+                    ]
+                )
             }
+            return true
         }
 
+        await ConcurrentLogManager.shared.error(
+            .filterApply,
+            "Content blocker reload failed after retries",
+            metadata: [
+                "blocker": blockerName,
+                "attempts": "\(reloadResult.attempts)",
+                "maxRetries": "5",
+                "durationMs": "\(reloadResult.durationMs)",
+            ]
+        )
         return false
     }
 
@@ -984,6 +976,7 @@ class AppFilterManager: ObservableObject {
 
         var overallSafariRulesApplied = 0
         let overallConversionStartTime = Date()
+        var conversionMetrics: [TargetConversionMetrics] = []
 
         await MainActor.run {
             self.processedFiltersCount = 0  // Use this to track processed targets for progress
@@ -1010,6 +1003,7 @@ class AppFilterManager: ObservableObject {
         for targetInfo in platformTargets {
             let filters = filtersByTargetInfo[targetInfo] ?? []
             let blockerName = targetInfo.displayName
+            let conversionStart = Date()
 
             await MainActor.run {
                 self.currentFilterName = blockerName
@@ -1050,15 +1044,15 @@ class AppFilterManager: ObservableObject {
                 ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count
                 : 0
 
-            await ConcurrentLogManager.shared.info(
-                .filterApply, "Converted blocker rules",
-                metadata: [
-                    "blocker": blockerName,
-                    "filterCount": "\(filters.count)",
-                    "safariRules": "\(ruleCountForThisTarget)",
-                    "advancedRules": "\(advancedCount)",
-                    "reusedCache": conversionResult.reusedCachedBase ? "true" : "false",
-                ]
+            conversionMetrics.append(
+                TargetConversionMetrics(
+                    blockerName: blockerName,
+                    filterCount: filters.count,
+                    safariRules: ruleCountForThisTarget,
+                    advancedRules: advancedCount,
+                    reusedCachedBase: conversionResult.reusedCachedBase,
+                    durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
+                )
             )
 
             await MainActor.run {
@@ -1108,10 +1102,20 @@ class AppFilterManager: ObservableObject {
             self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
         }
         await ConcurrentLogManager.shared.info(
-            .filterApply, "All conversions finished",
+            .filterApply, "Conversion phase summary",
             metadata: [
-                "totalRules": "\(overallSafariRulesApplied)",
+                "targets": "\(conversionMetrics.count)",
+                "assignedFilters": "\(conversionMetrics.reduce(0) { $0 + $1.filterCount })",
+                "cacheHits": "\(conversionMetrics.filter { $0.reusedCachedBase }.count)",
+                "cacheMisses": "\(conversionMetrics.filter { !$0.reusedCachedBase }.count)",
+                "totalRules": "\(conversionMetrics.reduce(0) { $0 + $1.safariRules })",
+                "advancedRules": "\(conversionMetrics.reduce(0) { $0 + $1.advancedRules })",
                 "conversionTime": await MainActor.run { self.lastConversionTime },
+                "avgTargetMs": conversionMetrics.isEmpty
+                    ? "0"
+                    : "\(conversionMetrics.reduce(0) { $0 + $1.durationMs } / conversionMetrics.count)",
+                "slowestTarget": conversionMetrics.max(by: { $0.durationMs < $1.durationMs })
+                    .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
             ])
 
         // Reloading phase - reload all content blockers FIRST before building advanced engine
@@ -1129,7 +1133,8 @@ class AppFilterManager: ObservableObject {
         }
 
         let overallReloadStartTime = Date()
-        let allReloadsSuccessful = await reloadContentBlockersInParallel(platformTargets, totalCount: totalFiltersCount)
+        let reloadSummary = await reloadContentBlockersInParallel(platformTargets, totalCount: totalFiltersCount)
+        let allReloadsSuccessful = reloadSummary.allSuccessful
 
         // Log reload summary
         await MainActor.run {
@@ -1138,15 +1143,33 @@ class AppFilterManager: ObservableObject {
                 format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
         }
 
+        let failedReloads = reloadSummary.metrics.filter { !$0.success }
+        let retriedReloads = reloadSummary.metrics.filter { $0.attempts > 1 }
+        let totalReloadAttempts = reloadSummary.metrics.reduce(0) { $0 + $1.attempts }
+        let reloadMetadata: [String: String] = [
+            "targets": "\(reloadSummary.metrics.count)",
+            "failedTargets": "\(failedReloads.count)",
+            "retriedTargets": "\(retriedReloads.count)",
+            "totalAttempts": "\(totalReloadAttempts)",
+            "avgAttempts": reloadSummary.metrics.isEmpty ? "0" : String(
+                format: "%.2f",
+                Double(totalReloadAttempts) / Double(reloadSummary.metrics.count)
+            ),
+            "reloadTime": await MainActor.run { self.lastReloadTime },
+            "slowestTarget": reloadSummary.metrics.max(by: { $0.durationMs < $1.durationMs })
+                .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
+            "failedNames": failedReloads.prefix(3).map(\.blockerName).joined(separator: ","),
+        ]
+
         if allReloadsSuccessful {
             await ConcurrentLogManager.shared.info(
-                .filterApply, "All content blocker reloads completed successfully",
-                metadata: ["reloadTime": await MainActor.run { self.lastReloadTime }])
+                .filterApply, "Reload phase summary",
+                metadata: reloadMetadata)
         } else {
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
-                "Some content blocker reloads failed after retries, continuing with advanced rules processing",
-                metadata: [:])
+                "Reload phase had failures; continuing with advanced rules processing",
+                metadata: reloadMetadata)
         }
 
         // Small delay before building advanced engine to let system recover from reloads
@@ -1899,6 +1922,33 @@ class AppFilterManager: ObservableObject {
         let reusedCachedBase: Bool
     }
 
+    private struct TargetConversionMetrics {
+        let blockerName: String
+        let filterCount: Int
+        let safariRules: Int
+        let advancedRules: Int
+        let reusedCachedBase: Bool
+        let durationMs: Int
+    }
+
+    private struct ReloadAttemptResult {
+        let success: Bool
+        let attempts: Int
+        let durationMs: Int
+    }
+
+    private struct TargetReloadMetrics {
+        let blockerName: String
+        let success: Bool
+        let attempts: Int
+        let durationMs: Int
+    }
+
+    private struct ReloadPhaseSummary {
+        let allSuccessful: Bool
+        let metrics: [TargetReloadMetrics]
+    }
+
     nonisolated private static func convertOrReuseTargetRules(
         filters: [FilterList],
         targetInfo: ContentBlockerTargetInfo,
@@ -1991,24 +2041,27 @@ class AppFilterManager: ObservableObject {
         return "\(filter.name).txt"
     }
 
-    private func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo], totalCount: Int) async -> Bool {
+    private func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo], totalCount: Int) async -> ReloadPhaseSummary {
         #if os(macOS)
         let maxConcurrent = 3
         #else
         let maxConcurrent = 2
         #endif
         var allSuccessful = true
+        var metrics: [TargetReloadMetrics] = []
 
         var iterator = targets.makeIterator()
 
-        await withTaskGroup(of: (ContentBlockerTargetInfo, Bool).self) { group in
+        await withTaskGroup(of: (ContentBlockerTargetInfo, ReloadAttemptResult).self) { group in
             func startNext() {
                 guard let target = iterator.next() else { return }
-                let name = target.displayName
 
                 group.addTask {
-                    let ok = await Self.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 5)
-                    return (target, ok)
+                    let reloadResult = await Self.reloadWithRetry(
+                        identifier: target.bundleIdentifier,
+                        maxRetries: 5
+                    )
+                    return (target, reloadResult)
                 }
             }
 
@@ -2016,7 +2069,7 @@ class AppFilterManager: ObservableObject {
                 startNext()
             }
 
-            while let (target, ok) = await group.next() {
+            while let (target, reloadResult) = await group.next() {
                 let name = target.displayName
 
                 await MainActor.run {
@@ -2028,7 +2081,7 @@ class AppFilterManager: ObservableObject {
                         0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
                     self.applyProgressViewModel.updateProgress(self.progress)
 
-                    if !ok {
+                    if !reloadResult.success {
                         if !self.hasError {
                             self.statusDescription = "Failed to reload \(name)."
                         }
@@ -2036,19 +2089,35 @@ class AppFilterManager: ObservableObject {
                     }
                 }
 
-                allSuccessful = allSuccessful && ok
+                metrics.append(
+                    TargetReloadMetrics(
+                        blockerName: name,
+                        success: reloadResult.success,
+                        attempts: reloadResult.attempts,
+                        durationMs: reloadResult.durationMs
+                    )
+                )
+                allSuccessful = allSuccessful && reloadResult.success
                 startNext()
             }
         }
 
-        return allSuccessful
+        return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
     }
 
-    nonisolated private static func reloadWithRetry(identifier: String, maxRetries: Int) async -> Bool {
+    nonisolated private static func reloadWithRetry(
+        identifier: String,
+        maxRetries: Int
+    ) async -> ReloadAttemptResult {
+        let start = Date()
         for attempt in 1...maxRetries {
             let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
             if case .success = result {
-                return true
+                return ReloadAttemptResult(
+                    success: true,
+                    attempts: attempt,
+                    durationMs: Int(Date().timeIntervalSince(start) * 1000)
+                )
             }
 
             if attempt < maxRetries {
@@ -2057,6 +2126,10 @@ class AppFilterManager: ObservableObject {
                 try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
             }
         }
-        return false
+        return ReloadAttemptResult(
+            success: false,
+            attempts: maxRetries,
+            durationMs: Int(Date().timeIntervalSince(start) * 1000)
+        )
     }
 }
