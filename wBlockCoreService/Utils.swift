@@ -126,6 +126,10 @@ public enum NetworkRequestFactory {
 }
 
 public enum ContentBlockerIncrementalCache {
+    // Bump when signature inputs/schema change so stale per-target signatures
+    // do not suppress needed rebuilds.
+    private static let inputSignatureSchemaVersion = "2"
+
     private struct State: Codable {
         var inputSignature: String
         var updatedAt: Int64
@@ -141,7 +145,7 @@ public enum ContentBlockerIncrementalCache {
             return nil
         }
 
-        var canonical = "count=\(filters.count)\n"
+        var canonical = "schema=\(inputSignatureSchemaVersion)\ncount=\(filters.count)\n"
         canonical.reserveCapacity(filters.count * 64)
 
         for filter in filters {

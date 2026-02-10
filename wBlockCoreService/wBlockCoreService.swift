@@ -16,6 +16,45 @@ import os.log
 /// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
 /// and manage content blocker extensions.
 public enum ContentBlockerService {
+    /// Version marker for built-in compatibility rules that are appended to
+    /// every conversion. Bump this when changing `embeddedCompatibilityRules`
+    /// so cached base JSON gets invalidated.
+    private static let embeddedCompatibilityRulesVersion = "1"
+
+    /// Minimal built-in rules that improve blocking of common dynamic ad script
+    /// patterns and dynamic ad containers across filter sets.
+    private static let embeddedCompatibilityRules = """
+/js/widget/ads.js$script
+/js/pagead.js$script
+/widget/pagead.js$script
+##.adbox.banner_ads.adsbox
+"""
+
+    private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
+        let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedExtraRules.isEmpty else { return rawRules }
+
+        let trimmedBaseRules = rawRules.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedBaseRules.isEmpty else { return trimmedExtraRules }
+
+        return rawRules + "\n" + trimmedExtraRules
+    }
+
+    private static func compatibilityRulesFingerprintHex() -> String {
+        let payload = "\(embeddedCompatibilityRulesVersion)\n\(embeddedCompatibilityRules)"
+        let digest = SHA256.hash(data: Data(payload.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Derives an effective conversion hash from the caller-provided rules hash
+    /// plus built-in compatibility-rules fingerprint so cache keys are invalidated
+    /// when embedded compatibility rules change.
+    private static func effectiveRulesHashHex(baseRulesHashHex: String) -> String {
+        let fingerprint = compatibilityRulesFingerprintHex()
+        let material = "\(baseRulesHashHex)|\(fingerprint)"
+        let digest = SHA256.hash(data: Data(material.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
 
     /// Reads the default filter file contents from the main bundle.
     ///
@@ -159,7 +198,8 @@ public enum ContentBlockerService {
         }
 
         let digest = SHA256.hash(data: Data(rules.utf8))
-        let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
+        let baseRulesHashHex = digest.map { String(format: "%02x", $0) }.joined()
+        let rulesSHA256Hex = effectiveRulesHashHex(baseRulesHashHex: baseRulesHashHex)
 
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
         let baseCountFilename = "\(baseFilename).count"
@@ -193,7 +233,8 @@ public enum ContentBlockerService {
             return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
         }
 
-        let result = convertRules(rules: rules)
+        let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
+        let result = convertRules(rules: effectiveRules)
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -216,6 +257,7 @@ public enum ContentBlockerService {
         disabledSites: [String]? = nil
     ) -> (safariRulesCount: Int, advancedRulesText: String?) {
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+        let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             os_log(.error, "Failed to access App Group container for %@", targetRulesFilename)
@@ -236,7 +278,7 @@ public enum ContentBlockerService {
 
         if let cachedHash = try? String(contentsOf: baseHashURL, encoding: .utf8)
             .trimmingCharacters(in: .whitespacesAndNewlines),
-            cachedHash == rulesSHA256Hex,
+            cachedHash == effectiveRulesHash,
             FileManager.default.fileExists(atPath: baseURL.path),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
         {
@@ -256,11 +298,12 @@ public enum ContentBlockerService {
 
         // Cache miss: read rules file and run conversion.
         let combinedRules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
-        let result = convertRules(rules: combinedRules)
+        let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
+        let result = convertRules(rules: effectiveRules)
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
-        saveBlockerListFile(contents: rulesSHA256Hex, groupIdentifier: groupIdentifier, filename: baseHashFilename)
+        saveBlockerListFile(contents: effectiveRulesHash, groupIdentifier: groupIdentifier, filename: baseHashFilename)
         saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
 
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
