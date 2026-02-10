@@ -62,6 +62,25 @@ class AppDelegate: NSObject {
     #endif
 }
 
+#if os(iOS)
+private actor BGTaskCompletionState {
+    private var didComplete = false
+
+    func claimCompletion() -> Bool {
+        guard !didComplete else { return false }
+        didComplete = true
+        return true
+    }
+}
+#endif
+
+#if os(iOS)
+private enum ForcedBackgroundUpdateResult {
+    case completed
+    case timedOut
+}
+#endif
+
 // MARK: - Shared helper for schedule log formatting (platform-agnostic)
 fileprivate func scheduleMessage(from status: SharedAutoUpdateManager.AutoUpdateStatus) -> String {
     let formatter: DateFormatter = {
@@ -309,10 +328,14 @@ extension AppDelegate: UIApplicationDelegate {
         // Silent pushes may launch the app in the background without constructing SwiftUI scenes,
         // meaning `filterManager` may be nil. Use SharedAutoUpdateManager so pushes always work.
         Task {
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
-                trigger: "SilentPush(iOS)", force: true)
-            completionHandler(.newData)
+            let updateResult = await runForcedAutoUpdateWithTimeout(trigger: "SilentPush(iOS)")
+            switch updateResult {
+            case .completed:
+                completionHandler(.newData)
+            case .timedOut:
+                os_log("Silent push auto-update timed out before completion handler deadline", type: .error)
+                completionHandler(.failed)
+            }
         }
     }
     
@@ -356,11 +379,38 @@ extension AppDelegate: UIApplicationDelegate {
     // MARK: - Background Task Management
     
     private func registerBackgroundTasks() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
-            self.handleBackgroundFilterUpdate(task: task as! BGAppRefreshTask)
+        let refreshRegistered = BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
+            guard let refreshTask = task as? BGAppRefreshTask else {
+                os_log(
+                    "Unexpected BGTask type for %{public}@ (%{public}@)",
+                    type: .error,
+                    self.backgroundTaskIdentifier,
+                    String(describing: type(of: task))
+                )
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleBackgroundFilterUpdate(task: refreshTask)
         }
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundProcessingIdentifier, using: nil) { task in
-            self.handleBackgroundProcessingUpdate(task: task as! BGProcessingTask)
+        if !refreshRegistered {
+            os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundTaskIdentifier)
+        }
+
+        let processingRegistered = BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundProcessingIdentifier, using: nil) { task in
+            guard let processingTask = task as? BGProcessingTask else {
+                os_log(
+                    "Unexpected BGTask type for %{public}@ (%{public}@)",
+                    type: .error,
+                    self.backgroundProcessingIdentifier,
+                    String(describing: type(of: task))
+                )
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleBackgroundProcessingUpdate(task: processingTask)
+        }
+        if !processingRegistered {
+            os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundProcessingIdentifier)
         }
     }
 
@@ -424,11 +474,30 @@ extension AppDelegate: UIApplicationDelegate {
     
     private func handleBackgroundFilterUpdate(task: BGAppRefreshTask) {
         os_log("Background filter update task started", type: .info)
+        let completionState = BGTaskCompletionState()
+        let updateTask = Task { [weak self] in
+            // Always force update since background tasks are precious and rare
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGAppRefreshTask", force: true)
 
-        var taskCompleted = false
+            // Double-check expiration didn't occur while we were running
+            // The flag might have been cleared by expirationHandler, which is fine
+            if await completionState.claimCompletion() {
+                os_log("Background filter update completed successfully", type: .info)
+                task.setTaskCompleted(success: true)
+                guard let self else { return }
+
+                // Schedule next occurrence after success
+                await MainActor.run {
+                    self.scheduleBackgroundFilterUpdate()
+                    self.scheduleBackgroundProcessingUpdate()
+                }
+            }
+        }
 
         task.expirationHandler = {
             os_log("Background filter update task expired - clearing running flag", type: .default)
+            updateTask.cancel()
 
             // CRITICAL: Clear the protobuf-backed running flag to prevent stuck state.
             // This runs even if the async Task is still executing.
@@ -438,32 +507,14 @@ extension AppDelegate: UIApplicationDelegate {
                 await ProtobufDataManager.shared.saveDataImmediately()
             }
 
-            if !taskCompleted {
-                taskCompleted = true
+            Task { [weak self] in
+                guard await completionState.claimCompletion() else { return }
                 task.setTaskCompleted(success: false)
+                guard let self else { return }
+
                 // Schedule next attempt sooner due to failure
-                Task { @MainActor in
-                    self.scheduleBackgroundFilterUpdate()
-                }
-            }
-        }
-
-        Task {
-            // Always force update since background tasks are precious and rare
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGAppRefreshTask", force: true)
-
-            // Double-check expiration didn't occur while we were running
-            // The flag might have been cleared by expirationHandler, which is fine
-            if !taskCompleted {
-                taskCompleted = true
-                os_log("Background filter update completed successfully", type: .info)
-                task.setTaskCompleted(success: true)
-
-                // Schedule next occurrence after success
                 await MainActor.run {
                     self.scheduleBackgroundFilterUpdate()
-                    self.scheduleBackgroundProcessingUpdate()
                 }
             }
         }
@@ -471,11 +522,30 @@ extension AppDelegate: UIApplicationDelegate {
 
     private func handleBackgroundProcessingUpdate(task: BGProcessingTask) {
         os_log("Background processing update task started", type: .info)
+        let completionState = BGTaskCompletionState()
+        let updateTask = Task { [weak self] in
+            // Force update for processing tasks as well
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGProcessingTask", force: true)
 
-        var taskCompleted = false
+            // Double-check expiration didn't occur while we were running
+            // The flag might have been cleared by expirationHandler, which is fine
+            if await completionState.claimCompletion() {
+                os_log("Background processing update task finished successfully", type: .info)
+                task.setTaskCompleted(success: true)
+                guard let self else { return }
+
+                // Schedule next occurrence after success
+                await MainActor.run {
+                    self.scheduleBackgroundFilterUpdate()
+                    self.scheduleBackgroundProcessingUpdate()
+                }
+            }
+        }
 
         task.expirationHandler = {
             os_log("Background processing update task expired - clearing running flag", type: .default)
+            updateTask.cancel()
 
             // CRITICAL: Clear the protobuf-backed running flag to prevent stuck state.
             // This runs even if the async Task is still executing.
@@ -485,34 +555,37 @@ extension AppDelegate: UIApplicationDelegate {
                 await ProtobufDataManager.shared.saveDataImmediately()
             }
 
-            if !taskCompleted {
-                taskCompleted = true
+            Task { [weak self] in
+                guard await completionState.claimCompletion() else { return }
                 task.setTaskCompleted(success: false)
+                guard let self else { return }
+
                 // Schedule next attempt
-                Task { @MainActor in
+                await MainActor.run {
                     self.scheduleBackgroundProcessingUpdate()
                 }
             }
         }
+    }
 
-        Task {
-            // Force update for processing tasks as well
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGProcessingTask", force: true)
-
-            // Double-check expiration didn't occur while we were running
-            // The flag might have been cleared by expirationHandler, which is fine
-            if !taskCompleted {
-                taskCompleted = true
-                os_log("Background processing update task finished successfully", type: .info)
-                task.setTaskCompleted(success: true)
-
-                // Schedule next occurrence after success
-                await MainActor.run {
-                    self.scheduleBackgroundFilterUpdate()
-                    self.scheduleBackgroundProcessingUpdate()
-                }
+    private func runForcedAutoUpdateWithTimeout(
+        trigger: String,
+        timeoutSeconds: UInt64 = 25
+    ) async -> ForcedBackgroundUpdateResult {
+        await withTaskGroup(of: ForcedBackgroundUpdateResult.self) { group in
+            group.addTask {
+                await SharedAutoUpdateManager.shared.forceNextUpdate()
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+                return .completed
             }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: timeoutSeconds * 1_000_000_000)
+                return .timedOut
+            }
+
+            let result = await group.next() ?? .timedOut
+            group.cancelAll()
+            return result
         }
     }
 
