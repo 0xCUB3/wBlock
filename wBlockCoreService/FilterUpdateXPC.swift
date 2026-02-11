@@ -26,28 +26,53 @@ public final class FilterUpdateClient {
     /// If the service is missing or fails to respond within the timeout, returns false.
     public func updateFilters(timeout seconds: TimeInterval = 2.0) async -> Bool {
         let log = OSLog(subsystem: "wBlockCoreService", category: "FilterUpdateXPC")
+        guard seconds.isFinite, seconds >= 0 else {
+            os_log("Invalid XPC timeout: %.2fs", log: log, type: .error, seconds)
+            return false
+        }
+
+        let timeoutNanoseconds = if seconds == 0 {
+            UInt64.zero
+        } else {
+            min(UInt64.max, UInt64((seconds * 1_000_000_000).rounded()))
+        }
 
         return await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
             let connection = NSXPCConnection(serviceName: serviceName)
             connection.remoteObjectInterface = NSXPCInterface(with: FilterUpdateProtocol.self)
-
+            let stateLock = NSLock()
             var finished = false
 
+            func markFinished() -> Bool {
+                stateLock.lock()
+                defer { stateLock.unlock() }
+                if finished {
+                    return false
+                }
+                finished = true
+                return true
+            }
+
             connection.invalidationHandler = {
-                if !finished { os_log("XPC connection invalidated", log: log, type: .error) }
+                if markFinished() {
+                    os_log("XPC connection invalidated", log: log, type: .error)
+                    cont.resume(returning: false)
+                }
             }
             connection.interruptionHandler = {
-                if !finished { os_log("XPC connection interrupted", log: log, type: .error) }
+                if markFinished() {
+                    os_log("XPC connection interrupted", log: log, type: .error)
+                    cont.resume(returning: false)
+                }
             }
 
             connection.resume()
 
             // Timeout guard
             Task { [weak connection] in
-                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-                if !finished {
+                try? await Task.sleep(nanoseconds: timeoutNanoseconds)
+                if markFinished() {
                     os_log("XPC request timed out after %.2fs", log: log, type: .error, seconds)
-                    finished = true
                     connection?.invalidate()
                     cont.resume(returning: false)
                 }
@@ -55,15 +80,15 @@ public final class FilterUpdateClient {
 
             guard let proxy = connection.remoteObjectProxy as? FilterUpdateProtocol else {
                 os_log("Failed to obtain remoteObjectProxy for XPC service", log: log, type: .error)
-                finished = true
-                connection.invalidate()
-                cont.resume(returning: false)
+                if markFinished() {
+                    connection.invalidate()
+                    cont.resume(returning: false)
+                }
                 return
             }
 
             proxy.updateFilters { success in
-                if !finished {
-                    finished = true
+                if markFinished() {
                     connection.invalidate()
                     cont.resume(returning: success)
                 }
@@ -72,4 +97,3 @@ public final class FilterUpdateClient {
     }
 }
 #endif
-
