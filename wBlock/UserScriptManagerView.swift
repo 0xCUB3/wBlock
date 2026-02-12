@@ -938,8 +938,16 @@ struct AddUserScriptView: View {
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var showingFileImporter = false
+    @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
     @FocusState private var urlFieldFocused: Bool
+
+    private enum AddMode: String, CaseIterable, Identifiable {
+        case url = "URL"
+        case file = "File"
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         Group {
@@ -951,7 +959,10 @@ struct AddUserScriptView: View {
         }
         .interactiveDismissDisabled(isAdding)
         .onAppear {
-            urlFieldFocused = true
+            urlFieldFocused = addMode == .url
+        }
+        .onChange(of: addMode) { _, newValue in
+            urlFieldFocused = newValue == .url
         }
         .onChange(of: urlInput) { _, newValue in
             validateInput(newValue)
@@ -968,100 +979,99 @@ struct AddUserScriptView: View {
         }
     }
 
-    // MARK: - UI Sections
-
     #if os(iOS)
     private var iosBody: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("https://example.com/script.user.js", text: $urlInput)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .keyboardType(.URL)
-                        .submitLabel(.done)
-                        .focused($urlFieldFocused)
-                        .onSubmit {
-                            if canSubmit {
-                                submit()
+            addTabs
+                .navigationTitle("Add Userscript")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                            .disabled(isAdding)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(action: submit) {
+                            if isAdding {
+                                ProgressView()
                             } else {
-                                urlFieldFocused = false
+                                Text(addButtonTitle)
                             }
                         }
-
-                    Button {
-                        pasteFromClipboard()
-                    } label: {
-                        Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
-                    }
-
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            urlInput = ""
-                        }
-                    } label: {
-                        Label("Clear URL", systemImage: "xmark.circle")
-                    }
-                    .disabled(urlInput.isEmpty)
-                } header: {
-                    Text("Script URL")
-                } footer: {
-                    validationMessage
-                }
-
-                Section {
-                    Button {
-                        showingFileImporter = true
-                        fileImportError = nil
-                    } label: {
-                        Label("Choose File…", systemImage: "tray.and.arrow.down")
-                    }
-                    .disabled(isAdding)
-                } header: {
-                    Text("Import File")
-                } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
-                            .foregroundStyle(.secondary)
-                        if let fileImportError {
-                            Text(fileImportError)
-                                .foregroundStyle(.orange)
-                        }
+                        .disabled(!canSubmit || isAdding)
                     }
                 }
-
-                Section {
-                    Label("Starts with https://", systemImage: "link")
-                        .foregroundStyle(.secondary)
-                    Label("Ends with .user.js", systemImage: "doc.text")
-                        .foregroundStyle(.secondary)
-                    Label("Hosted on a trusted source", systemImage: "checkmark.shield")
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("Requirements")
-                }
-            }
-            .navigationTitle("Add Userscript")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .disabled(isAdding)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(action: submit) {
-                        if isAdding {
-                            ProgressView()
-                        } else {
-                            Text("Add Script")
-                        }
-                    }
-                    .disabled(!canSubmit)
-                }
-            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+    }
+
+    private var addTabs: some View {
+        TabView(selection: $addMode) {
+            urlTab
+                .tag(AddMode.url)
+                .tabItem { Label("URL", systemImage: "link") }
+
+            fileTab
+                .tag(AddMode.file)
+                .tabItem { Label("File", systemImage: "doc") }
+        }
+    }
+
+    private var urlTab: some View {
+        Form {
+            Section {
+                HStack(spacing: 10) {
+                    TextField(
+                        text: $urlInput,
+                        prompt: Text(verbatim: "https://example.com/script.user.js")
+                            .foregroundStyle(.secondary)
+                    ) {
+                        Text("Script URL")
+                    }
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                    .submitLabel(.done)
+                    .focused($urlFieldFocused)
+                    .onSubmit {
+                        if canSubmit {
+                            submit()
+                        } else {
+                            urlFieldFocused = false
+                        }
+                    }
+
+                    compactPasteButton
+                }
+            } footer: {
+                validationMessage
+            }
+
+            Section {
+                requirementsDisclosure
+            }
+        }
+    }
+
+    private var fileTab: some View {
+        Form {
+            Section {
+                Button {
+                    showingFileImporter = true
+                    fileImportError = nil
+                } label: {
+                    Label("Choose File…", systemImage: "tray.and.arrow.down")
+                }
+                .disabled(isAdding)
+            } footer: {
+                fileImportMessage
+            }
+
+            Section {
+                requirementsDisclosure
+            }
+        }
     }
     #endif
 
@@ -1073,8 +1083,9 @@ struct AddUserScriptView: View {
             }
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    entryCard
+                VStack(alignment: .leading, spacing: 16) {
+                    modePickerCard
+                    macosModeContent
                     requirementsCard
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
@@ -1083,91 +1094,140 @@ struct AddUserScriptView: View {
             }
 
             SheetBottomToolbar {
-                cancelButton
                 Spacer()
                 addButton
             }
         }
+        .frame(minWidth: 560, minHeight: 500)
     }
-    #endif
 
-    private var entryCard: some View {
+    private var modePickerCard: some View {
+        HStack(spacing: 10) {
+            Text("Add Mode")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: $addMode) {
+                ForEach(AddMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .animation(.easeInOut(duration: 0.15), value: addMode)
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    @ViewBuilder
+    private var macosModeContent: some View {
+        switch addMode {
+        case .url:
+            macosURLCard
+        case .file:
+            macosFileCard
+        }
+    }
+
+    private var macosURLCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Script URL")
-                    .font(.headline)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text("Paste the direct .user.js link. wBlock will download and install it for you.")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             VStack(spacing: 8) {
-                TextField("https://example.com/script.user.js", text: $urlInput)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    #endif
-                    .submitLabel(.done)
-                    .focused($urlFieldFocused)
-                    .onSubmit {
-                        if canSubmit {
-                            submit()
-                        } else {
-                            urlFieldFocused = false
+                HStack(spacing: 10) {
+                    TextField("https://example.com/script.user.js", text: $urlInput)
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .focused($urlFieldFocused)
+                        .onSubmit {
+                            if canSubmit {
+                                submit()
+                            } else {
+                                urlFieldFocused = false
+                            }
                         }
-                    }
 
-                HStack(spacing: 12) {
-                    Button {
-                        pasteFromClipboard()
-                    } label: {
-                        Label("Paste", systemImage: "doc.on.clipboard")
-                    }
-                    .buttonStyle(.bordered)
+                    compactPasteButton
+                }
 
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            urlInput = ""
-                        }
-                    } label: {
-                        Label("Clear", systemImage: "xmark.circle")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(urlInput.isEmpty)
-
+                HStack {
                     Spacer()
-
                     validationBadge
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Button {
-                    showingFileImporter = true
-                    fileImportError = nil
-                } label: {
-                    Label("Import from File", systemImage: "tray.and.arrow.down")
-                }
-                .buttonStyle(.bordered)
-                .disabled(isAdding)
-
-                Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if let fileImportError {
-                    Text(fileImportError)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
                 }
             }
 
             validationMessage
         }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private var macosFileCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Import File")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
+                showingFileImporter = true
+                fileImportError = nil
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "tray.and.arrow.down")
+                    Text("Choose File…")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isAdding)
+
+            if let fileImportError {
+                Text(fileImportError)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+    #endif
+
+    private var addButtonTitle: String {
+        switch addMode {
+        case .url:
+            return "Add"
+        case .file:
+            return "Import"
+        }
     }
 
     private var requirementsCard: some View {
@@ -1193,6 +1253,47 @@ struct AddUserScriptView: View {
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var fileImportMessage: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
+                .foregroundStyle(.secondary)
+            if let fileImportError {
+                Text(fileImportError)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .font(.footnote)
+    }
+
+    private var requirementsDisclosure: some View {
+        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
+            VStack(alignment: .leading, spacing: 8) {
+                requirementRow(icon: "link", text: "Starts with https://")
+                requirementRow(icon: "doc.text", text: "Ends with .user.js")
+                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
+            }
+            .padding(.top, 8)
+        } label: {
+            Label("Requirements", systemImage: "info.circle")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var compactPasteButton: some View {
+        Button {
+            pasteFromClipboard()
+        } label: {
+            Image(systemName: "doc.on.clipboard")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .background(Color.secondary.opacity(0.14), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isAdding)
+        .accessibilityLabel("Paste from Clipboard")
     }
 
     private var validationBadge: some View {
@@ -1225,7 +1326,7 @@ struct AddUserScriptView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             case .valid:
-                Text("Looks good! Tap Add Script to continue.")
+                Text("Looks good! Tap Add to continue.")
                     .font(.caption)
                     .foregroundStyle(.green)
             }
@@ -1243,15 +1344,6 @@ struct AddUserScriptView: View {
         }
     }
 
-    private var cancelButton: some View {
-        Button("Cancel") {
-            dismiss()
-        }
-        .secondaryActionButtonStyle()
-        .disabled(isAdding)
-        .keyboardShortcut(.cancelAction)
-    }
-
     private var addButton: some View {
         Button(action: submit) {
             HStack(spacing: 8) {
@@ -1259,39 +1351,47 @@ struct AddUserScriptView: View {
                     ProgressView()
                         .scaleEffect(0.9)
                 }
-                Text(isAdding ? "Adding…" : "Add Script")
+                Text(isAdding ? "Adding…" : addButtonTitle)
                     .fontWeight(.semibold)
             }
         }
         .primaryActionButtonStyle()
-        .disabled(!canSubmit)
+        .disabled(!canSubmit || isAdding)
         .keyboardShortcut(.defaultAction)
     }
 
-    // MARK: - Submission
-
     private var canSubmit: Bool {
-        switch validationState {
-        case .valid: return !isAdding
-        default: return false
+        if isAdding { return false }
+        switch addMode {
+        case .url:
+            if case .valid = validationState { return true }
+            return false
+        case .file:
+            return true
         }
     }
 
     private func submit() {
-        guard case .valid(let url) = validationState else { return }
+        switch addMode {
+        case .url:
+            guard case .valid(let url) = validationState else { return }
 
-        isAdding = true
+            isAdding = true
 
-        Task(priority: .userInitiated) {
-            await ConcurrentLogManager.shared.info(.userScript, "Adding new userscript from URL", metadata: ["url": url.absoluteString])
-            await userScriptManager.addUserScript(from: url)
-            await ConcurrentLogManager.shared.info(.userScript, "Successfully added userscript from URL", metadata: ["url": url.absoluteString])
+            Task(priority: .userInitiated) {
+                await ConcurrentLogManager.shared.info(.userScript, "Adding new userscript from URL", metadata: ["url": url.absoluteString])
+                await userScriptManager.addUserScript(from: url)
+                await ConcurrentLogManager.shared.info(.userScript, "Successfully added userscript from URL", metadata: ["url": url.absoluteString])
 
-            await MainActor.run {
-                isAdding = false
-                onScriptAdded()
-                dismiss()
+                await MainActor.run {
+                    isAdding = false
+                    onScriptAdded()
+                    dismiss()
+                }
             }
+        case .file:
+            fileImportError = nil
+            showingFileImporter = true
         }
     }
 
@@ -1299,7 +1399,7 @@ struct AddUserScriptView: View {
         var types: [UTType] = []
 
         types.append(UTType.javaScript)
-        
+
         // Add fallback for .js extension
         if let jsExt = UTType(filenameExtension: "js") {
             types.append(jsExt)
@@ -1339,8 +1439,6 @@ struct AddUserScriptView: View {
         }
     }
 
-    // MARK: - Validation & Utilities
-
     private func validateInput(_ newValue: String) {
         let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -1375,12 +1473,9 @@ struct AddUserScriptView: View {
         #endif
     }
 
-    // MARK: - Types
-
     private enum ValidationState: Equatable {
         case idle
         case invalid(String)
         case valid(URL)
     }
-
 }
