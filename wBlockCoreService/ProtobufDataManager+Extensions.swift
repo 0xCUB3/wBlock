@@ -25,7 +25,7 @@ extension ProtobufDataManager {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = filter.isCustom
+            protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             return protoFilterList
         }
         await MainActor.run {
@@ -130,7 +130,7 @@ extension ProtobufDataManager {
     public func getFilterLists() -> [FilterList] {
         return appData.filterLists.map { protoData in
             let category = mapProtoToFilterListCategory(protoData.category)
-            let isCustom = protoData.isCustom || category == .custom
+            let isCustom = normalizedCustomStatus(for: protoData, category: category)
 
             return FilterList(
                 id: UUID(uuidString: protoData.id) ?? UUID(),
@@ -161,6 +161,7 @@ extension ProtobufDataManager {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
+            protoFilterList.isCustom = shouldPersistCustomFlag(for: filterList)
             
             updatedData.filterLists[index] = protoFilterList
         } else {
@@ -177,7 +178,7 @@ extension ProtobufDataManager {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = filterList.isCustom
+            protoFilterList.isCustom = shouldPersistCustomFlag(for: filterList)
             
             updatedData.filterLists.append(protoFilterList)
         }
@@ -482,6 +483,52 @@ extension ProtobufDataManager {
     }
     
     // MARK: - Helper Methods
+    private func normalizedCustomStatus(
+        for protoData: Wblock_Data_FilterListData,
+        category: FilterListCategory? = nil
+    ) -> Bool {
+        if protoData.isCustom {
+            return true
+        }
+
+        let resolvedCategory = category ?? mapProtoToFilterListCategory(protoData.category)
+        if resolvedCategory == .custom {
+            return true
+        }
+
+        if isInlineUserListURL(protoData.url) {
+            return true
+        }
+
+        return hasLegacyCustomDescription(protoData.description_p)
+    }
+
+    private func shouldPersistCustomFlag(for filter: FilterList) -> Bool {
+        if filter.isCustom || filter.category == .custom {
+            return true
+        }
+
+        if isInlineUserListURL(filter.url.absoluteString) {
+            return true
+        }
+
+        return hasLegacyCustomDescription(filter.description)
+    }
+
+    private func isInlineUserListURL(_ urlString: String) -> Bool {
+        guard let url = URL(string: urlString) else { return false }
+        return url.scheme?.lowercased() == "wblock"
+            && url.host?.lowercased() == "userlist"
+    }
+
+    private func hasLegacyCustomDescription(_ description: String) -> Bool {
+        let normalized = description.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized == "user-added filter list."
+            || normalized == "user-added filter list"
+            || normalized == "user list."
+            || normalized == "user list"
+    }
+
     private func mapProtoToFilterListCategory(_ protoCategory: Wblock_Data_FilterListCategory) -> FilterListCategory {
         switch protoCategory {
         case .all: return .all
@@ -514,15 +561,17 @@ extension ProtobufDataManager {
     }
     
     public func getCustomFilterLists() -> [FilterList] {
-        return appData.filterLists.filter { $0.isCustom }.map { protoData in
+        return appData.filterLists.compactMap { protoData in
             let category = mapProtoToFilterListCategory(protoData.category)
+            let isCustom = normalizedCustomStatus(for: protoData, category: category)
+            guard isCustom else { return nil }
 
             return FilterList(
                 id: UUID(uuidString: protoData.id) ?? UUID(),
                 name: protoData.name,
                 url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
                 category: category,
-                isCustom: true,
+                isCustom: isCustom,
                 isSelected: protoData.isSelected,
                 description: protoData.description_p,
                 version: protoData.version,
@@ -535,7 +584,9 @@ extension ProtobufDataManager {
         var updatedData = await latestAppDataSnapshot()
         
         // Remove existing custom filter lists
-        updatedData.filterLists.removeAll { $0.isCustom }
+        updatedData.filterLists.removeAll { protoData in
+            normalizedCustomStatus(for: protoData)
+        }
         
         // Add updated custom filter lists
         for filterList in customFilterLists {
@@ -551,7 +602,7 @@ extension ProtobufDataManager {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = true
+            protoFilterList.isCustom = shouldPersistCustomFlag(for: filterList)
             
             updatedData.filterLists.append(protoFilterList)
         }

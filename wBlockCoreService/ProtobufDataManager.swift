@@ -971,6 +971,8 @@ public class ProtobufDataManager: ObservableObject {
            let filterLists = try? JSONDecoder().decode([LegacyFilterList].self, from: data) {
             
             for filterList in filterLists {
+                let inferredIsCustom = inferLegacyCustomStatus(for: filterList)
+
                 var protoFilterList = Wblock_Data_FilterListData()
                 protoFilterList.id = filterList.id.uuidString
                 protoFilterList.name = filterList.name
@@ -980,12 +982,12 @@ public class ProtobufDataManager: ObservableObject {
                 protoFilterList.description_p = filterList.description
                 protoFilterList.version = filterList.version
                 if let sourceRuleCount = filterList.sourceRuleCount {
-                protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-            }
+                    protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
+                }
                 protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-                protoFilterList.isCustom = false
-                
-                appData.filterLists.append(protoFilterList)
+                protoFilterList.isCustom = inferredIsCustom
+
+                appendOrMergeMigratedFilterList(protoFilterList, to: &appData)
             }
         }
         
@@ -1003,14 +1005,51 @@ public class ProtobufDataManager: ObservableObject {
                 protoFilterList.description_p = filterList.description
                 protoFilterList.version = filterList.version
                 if let sourceRuleCount = filterList.sourceRuleCount {
-                protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-            }
+                    protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
+                }
                 protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
                 protoFilterList.isCustom = true
-                
-                appData.filterLists.append(protoFilterList)
+
+                appendOrMergeMigratedFilterList(protoFilterList, to: &appData)
             }
         }
+    }
+
+    private func appendOrMergeMigratedFilterList(
+        _ protoFilterList: Wblock_Data_FilterListData,
+        to appData: inout Wblock_Data_AppData
+    ) {
+        if let existingIndex = appData.filterLists.firstIndex(where: { $0.id == protoFilterList.id }) {
+            if protoFilterList.isCustom {
+                appData.filterLists[existingIndex].isCustom = true
+            }
+            return
+        }
+
+        appData.filterLists.append(protoFilterList)
+    }
+
+    private func inferLegacyCustomStatus(for filterList: LegacyFilterList) -> Bool {
+        if filterList.isCustom == true || filterList.category == .custom {
+            return true
+        }
+
+        if isInlineUserListURL(filterList.url) {
+            return true
+        }
+
+        let normalizedDescription = filterList.description
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return normalizedDescription == "user-added filter list."
+            || normalizedDescription == "user-added filter list"
+            || normalizedDescription == "user list."
+            || normalizedDescription == "user list"
+    }
+
+    private func isInlineUserListURL(_ url: URL) -> Bool {
+        url.scheme?.lowercased() == "wblock"
+            && url.host?.lowercased() == "userlist"
     }
     
     private func migrateUserScripts(from userDefaults: UserDefaults, to appData: inout Wblock_Data_AppData) async {
@@ -1069,6 +1108,7 @@ private struct LegacyFilterList: Codable {
     var description: String
     var version: String
     var sourceRuleCount: Int?
+    var isCustom: Bool?
 }
 
 private enum LegacyFilterListCategory: String, Codable, CaseIterable {
