@@ -1318,7 +1318,7 @@ struct AddUserScriptView: View {
         Group {
             switch validationState {
             case .idle:
-                Text("We’ll fetch the script and enable it automatically.")
+                Text("wBlock will fetch and enable the script automatically.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             case .invalid(let message):
