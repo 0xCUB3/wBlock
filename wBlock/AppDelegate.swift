@@ -288,30 +288,6 @@ extension AppDelegate: UIApplicationDelegate {
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "Launch")
         }
-
-        // Opportunistic update on app launch
-        // Note: maybeRunAutoUpdate includes staleness check to clear stuck flags
-        Task {
-            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-
-            // Force update if significantly overdue (>1 hour past scheduled time)
-            let oneHourInSeconds: TimeInterval = 3600
-            let isSignificantlyOverdue = if let remaining = status.remaining {
-                remaining == 0 && status.scheduledAt != nil && Date().timeIntervalSince(status.scheduledAt!) > oneHourInSeconds
-            } else {
-                false
-            }
-
-            if isSignificantlyOverdue && !status.isRunning {
-                os_log("App launch: update significantly overdue (>1h) - forcing update", type: .info)
-                await SharedAutoUpdateManager.shared.forceNextUpdate()
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch", force: true)
-            } else {
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
-            }
-
-            await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
-        }
         return true
     }
 
@@ -339,22 +315,23 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
     
-    func applicationWillEnterForeground(_ application: UIApplication) {
-        // Check if update is overdue when returning to foreground
-        // Note: nextScheduleStatus checks and clears stale running flags automatically
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Run opportunistic updates only when app is active (not during background launches).
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
             let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
 
             // If overdue or due soon, force update
             if status.isOverdue || (isDueSoon && !status.isRunning) {
-                os_log("App entering foreground with overdue/due update - forcing update", type: .info)
+                os_log("App became active with overdue/due update - forcing update", type: .info)
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground", force: true)
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive", force: true)
             } else {
                 // Normal opportunistic update
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "EnterForeground")
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
             }
+
+            await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
         }
     }
     

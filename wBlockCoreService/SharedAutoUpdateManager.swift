@@ -4,10 +4,10 @@
 //
 //  Created by Alexander Skula on 8/22/25.
 //
-//  This lightweight manager runs inside extension processes (Safari WebExtension /
-//  SFSafariExtensionHandler) to opportunistically check for filter list updates
-//  using the shared App Group. When updates are detected it performs a minimal
-//  conversion + reload cycle without needing the full UI "applyChanges" flow.
+//  This manager coordinates auto-update checks and rebuilds using the shared
+//  App Group state. Heavy conversion/reload work is intentionally run from the
+//  app / background task contexts (not extension processes) to avoid
+//  RunningBoard termination while extensions are being suspended.
 //  It is heavily throttled (default every 6 hours) and designed to minimize
 //  data & energy usage:
 //    * Conditional requests via If-None-Match / If-Modified-Since when possible
@@ -15,8 +15,8 @@
 //    * Only performs full conversion if at least one filter actually changed
 //
 //  NOTE: This intentionally duplicates a subset of logic from AppFilterManager /
-//  FilterListUpdater to avoid pulling SwiftUI / app-layer dependencies into
-//  extensions. Keep this file pure Foundation + wBlockCoreService.
+//  FilterListUpdater to avoid pulling SwiftUI / app-layer dependencies into the
+//  shared service layer. Keep this file pure Foundation + wBlockCoreService.
 
 import Foundation
 import CryptoKit
@@ -65,6 +65,14 @@ public actor SharedAutoUpdateManager {
     private let defaultIntervalHours: Double = 6
 
     private let log = OSLog(subsystem: "wBlockCoreService", category: "SharedAutoUpdate")
+    private static let isAppExtensionProcess: Bool = {
+        let mainBundle = Bundle.main
+        if mainBundle.bundleURL.pathExtension == "appex" {
+            return true
+        }
+        return mainBundle.object(forInfoDictionaryKey: "NSExtension") != nil
+    }()
+    private var hasLoggedExtensionSafeModeNotice = false
 
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
@@ -77,6 +85,13 @@ public actor SharedAutoUpdateManager {
     }()
 
     private init() {}
+
+    @inline(__always)
+    private func throwIfCancelled() throws {
+        if Task.isCancelled {
+            throw CancellationError()
+        }
+    }
 
     private enum AutoUpdateError: Error {
         case sharedContainerUnavailable
@@ -92,6 +107,8 @@ public actor SharedAutoUpdateManager {
     private struct RebuildTargetMetrics {
         let targetName: String
         let cacheHit: Bool
+        let inputWriteMs: Int
+        let inputBytes: Int64
         let conversionMs: Int
         let reloadMs: Int
         let reloadAttempts: Int
@@ -103,9 +120,12 @@ public actor SharedAutoUpdateManager {
         let cacheHits: Int
         let cacheMisses: Int
         let safariRulesTotal: Int
+        let inputWriteDurationMs: Int
+        let inputBytesTotal: Int64
         let conversionDurationMs: Int
         let reloadDurationMs: Int
         let totalReloadAttempts: Int
+        let slowestWriteTarget: String
         let slowestTarget: String
     }
 
@@ -335,6 +355,27 @@ public actor SharedAutoUpdateManager {
     // MARK: - Core Logic
     private func runIfNeeded(trigger: String, force: Bool = false) async {
         await ProtobufDataManager.shared.waitUntilLoaded()
+
+        if Self.isAppExtensionProcess {
+            if !hasLoggedExtensionSafeModeNotice {
+                os_log(
+                    "Skipping auto-update run in app extension process (trigger: %{public}@)",
+                    log: log,
+                    type: .info,
+                    trigger
+                )
+                appendSharedLog(
+                    "Auto-update safe mode: skipped work inside extension. Updates run when the app is active or via background tasks."
+                )
+                hasLoggedExtensionSafeModeNotice = true
+            }
+            return
+        }
+
+        if Task.isCancelled {
+            return
+        }
+
         let now = Date().timeIntervalSince1970
 
         // Respect enable flag
@@ -412,7 +453,9 @@ public actor SharedAutoUpdateManager {
 
         // Use do-catch to ensure cleanup always runs
         do {
+            try throwIfCancelled()
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
+            try throwIfCancelled()
             guard !selectedFilters.isEmpty else {
                 // Still auto-update enabled userscripts even if no filters are selected.
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
@@ -440,7 +483,9 @@ public actor SharedAutoUpdateManager {
                 return
             }
 
+            try throwIfCancelled()
             let updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
+            try throwIfCancelled()
             let updatedFilterSet = updateResult.updatedFilters
             let hadErrors = updateResult.hadErrors
 
@@ -449,6 +494,7 @@ public actor SharedAutoUpdateManager {
                 // lightweight reload to keep Safari in sync even when no filter bodies changed.
                 var reloadStatus = "skipped"
                 if shouldForce || contentBlockerOutputsNeedRepair() {
+                    try throwIfCancelled()
                     let reloaded = await reloadExistingContentBlockers()
                     reloadStatus = reloaded ? "ok" : "failed"
                 }
@@ -505,7 +551,9 @@ public actor SharedAutoUpdateManager {
             await saveFilterListsToProtobuf(merged)
 
             // Re-convert & reload content blockers. (Rule distribution is slot-based, so updates can affect any target.)
+            try throwIfCancelled()
             let rebuildSummary = try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected })
+            try throwIfCancelled()
 
             // Auto-update enabled userscripts during the same schedule window.
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
@@ -527,8 +575,17 @@ public actor SharedAutoUpdateManager {
             invalidateStatusCache()
 
             appendSharedLog(
-                "Applied \(updatedFilterSet.count) update(s): \(updatedPreview)\(updatedFilterSet.count > 3 ? ", ..." : "") | targets=\(rebuildSummary.targetCount), cache \(rebuildSummary.cacheHits)/\(rebuildSummary.cacheMisses), rules=\(rebuildSummary.safariRulesTotal), convert=\(formatDurationMs(rebuildSummary.conversionDurationMs)), reload=\(formatDurationMs(rebuildSummary.reloadDurationMs)), reloadAttempts=\(rebuildSummary.totalReloadAttempts), slowest=\(rebuildSummary.slowestTarget), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), checkErrors=\(hadErrors), nextCheckIn=\(formatDurationSeconds(nextCheckInSeconds))"
+                "Applied \(updatedFilterSet.count) filter update(s): \(updatedPreview)\(updatedFilterSet.count > 3 ? ", ..." : "")."
             )
+            appendSharedLog(
+                "Rebuild summary: targets \(rebuildSummary.targetCount), cache \(rebuildSummary.cacheHits)/\(rebuildSummary.cacheMisses), rules \(rebuildSummary.safariRulesTotal), input \(formatBytes(rebuildSummary.inputBytesTotal)) written in \(formatDurationMs(rebuildSummary.inputWriteDurationMs)), conversion \(formatDurationMs(rebuildSummary.conversionDurationMs)), reload \(formatDurationMs(rebuildSummary.reloadDurationMs)), slowest write \(rebuildSummary.slowestWriteTarget), slowest rebuild \(rebuildSummary.slowestTarget), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), next check in \(formatDurationSeconds(nextCheckInSeconds))."
+            )
+            if hadErrors {
+                appendSharedLog("Some filter checks failed; using a shorter retry interval.")
+            }
+        } catch is CancellationError {
+            os_log("Auto-update cancelled (trigger: %{public}@)", log: log, type: .info, trigger)
+            appendSharedLog("Auto-update cancelled: trigger=\(trigger)")
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("Auto-update failed: \(error.localizedDescription)")
@@ -570,6 +627,8 @@ public actor SharedAutoUpdateManager {
     }
 
     private func checkAndFetchUpdates(filters: [FilterList]) async throws -> UpdateFetchResult {
+        try Task.checkCancellation()
+
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
         }
@@ -584,6 +643,11 @@ public actor SharedAutoUpdateManager {
             }
 
             for await outcome in group {
+                if Task.isCancelled {
+                    group.cancelAll()
+                    break
+                }
+
                 switch outcome {
                 case .noChange:
                     break
@@ -606,6 +670,8 @@ public actor SharedAutoUpdateManager {
                 }
             }
         }
+
+        try Task.checkCancellation()
 
         if !validatorUpdates.isEmpty {
             await ProtobufDataManager.shared.setFilterValidators(validatorUpdates)
@@ -799,6 +865,14 @@ public actor SharedAutoUpdateManager {
     ) async -> ReloadAttemptResult {
         let start = Date()
         for attempt in 1...maxRetries {
+            if Task.isCancelled {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: max(0, attempt - 1),
+                    durationMs: Int(Date().timeIntervalSince(start) * 1000)
+                )
+            }
+
             let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
             if case .success = result {
                 return ReloadAttemptResult(
@@ -858,6 +932,10 @@ public actor SharedAutoUpdateManager {
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
 
         for target in targets {
+            if Task.isCancelled {
+                return false
+            }
+
             let reloadResult = await reloadContentBlockerWithRetryWithMetrics(identifier: target.bundleIdentifier)
             let reloaded = reloadResult.success
             allReloaded = allReloaded && reloaded
@@ -891,6 +969,8 @@ public actor SharedAutoUpdateManager {
 
     // MARK: - Conversion & Reload
     private func rebuildAndReload(selectedFilters: [FilterList]) async throws -> RebuildAndReloadSummary {
+        try Task.checkCancellation()
+
         // Build rules per target using same slot-based mapping logic as the main app.
         #if os(iOS)
         let detectedPlatform: Platform = .iOS
@@ -915,9 +995,13 @@ public actor SharedAutoUpdateManager {
         var targetMetrics: [RebuildTargetMetrics] = []
 
         for target in targets {
+            try Task.checkCancellation()
+
             let filtersForTarget = filtersByTarget[target] ?? []
             let rulesFilename = target.rulesFilename
             let conversionStart = Date()
+            var inputWriteDurationMs = 0
+            var inputBytes: Int64 = 0
             let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
                 filters: filtersForTarget,
                 groupIdentifier: GroupIdentifier.shared.value
@@ -955,8 +1039,10 @@ public actor SharedAutoUpdateManager {
                 var hasher = SHA256()
                 let fileHandle = try FileHandle(forWritingTo: tempURL)
                 defer { try? fileHandle.close() }
+                let inputWriteStart = Date()
 
                 for f in filtersForTarget {
+                    try Task.checkCancellation()
                     _ = streamFilterDataForConversion(
                         f,
                         containerURL: containerURL,
@@ -965,6 +1051,8 @@ public actor SharedAutoUpdateManager {
                         newlineData: newlineData
                     )
                 }
+                inputWriteDurationMs = Int(Date().timeIntervalSince(inputWriteStart) * 1000)
+                inputBytes = fileSizeBytes(at: tempURL)
 
                 let digest = hasher.finalize()
                 let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
@@ -1004,6 +1092,8 @@ public actor SharedAutoUpdateManager {
             let targetMetric = RebuildTargetMetrics(
                 targetName: target.displayName,
                 cacheHit: usedCache,
+                inputWriteMs: inputWriteDurationMs,
+                inputBytes: inputBytes,
                 conversionMs: conversionDurationMs,
                 reloadMs: reloadResult.durationMs,
                 reloadAttempts: reloadResult.attempts,
@@ -1019,6 +1109,8 @@ public actor SharedAutoUpdateManager {
             }
         }
 
+        try Task.checkCancellation()
+
         if !advancedRulesSnippets.isEmpty {
             ContentBlockerService.buildCombinedFilterEngine(
                 combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
@@ -1029,10 +1121,16 @@ public actor SharedAutoUpdateManager {
         }
 
         let cacheHits = targetMetrics.filter { $0.cacheHit }.count
+        let inputWriteDurationMs = targetMetrics.reduce(0) { $0 + $1.inputWriteMs }
+        let inputBytesTotal = targetMetrics.reduce(Int64(0)) { $0 + $1.inputBytes }
         let conversionDurationMs = targetMetrics.reduce(0) { $0 + $1.conversionMs }
         let reloadDurationMs = targetMetrics.reduce(0) { $0 + $1.reloadMs }
         let totalReloadAttempts = targetMetrics.reduce(0) { $0 + $1.reloadAttempts }
         let safariRulesTotal = targetMetrics.reduce(0) { $0 + $1.safariRules }
+        let slowestWriteTarget = targetMetrics
+            .filter { $0.inputWriteMs > 0 }
+            .max(by: { $0.inputWriteMs < $1.inputWriteMs })
+            .map { "\($0.targetName)@\(formatDurationMs($0.inputWriteMs))" } ?? "n/a"
         let slowestTarget = targetMetrics.max(by: {
             ($0.conversionMs + $0.reloadMs) < ($1.conversionMs + $1.reloadMs)
         }).map {
@@ -1045,9 +1143,12 @@ public actor SharedAutoUpdateManager {
             cacheHits: cacheHits,
             cacheMisses: max(0, targetMetrics.count - cacheHits),
             safariRulesTotal: safariRulesTotal,
+            inputWriteDurationMs: inputWriteDurationMs,
+            inputBytesTotal: inputBytesTotal,
             conversionDurationMs: conversionDurationMs,
             reloadDurationMs: reloadDurationMs,
             totalReloadAttempts: totalReloadAttempts,
+            slowestWriteTarget: slowestWriteTarget,
             slowestTarget: slowestTarget
         )
     }
@@ -1147,6 +1248,24 @@ public actor SharedAutoUpdateManager {
             return String(format: "%.1fm", Double(seconds) / 60.0)
         }
         return String(format: "%.1fh", Double(seconds) / 3600.0)
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        if bytes < 1024 {
+            return "\(bytes) B"
+        }
+        if bytes < 1024 * 1024 {
+            return String(format: "%.1f KB", Double(bytes) / 1024.0)
+        }
+        return String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
+    }
+
+    private func fileSizeBytes(at url: URL) -> Int64 {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = attrs[.size] as? NSNumber else {
+            return 0
+        }
+        return size.int64Value
     }
 
     // MARK: - Shared Log (File-Based for Extensions)
