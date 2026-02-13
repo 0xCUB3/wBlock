@@ -318,7 +318,10 @@ struct LogEntryRow: View {
                     Text(entry.level.emoji)
                         .font(.caption)
                     if entry.count > 1 {
-                        Text("×\(entry.count)")
+                        Text(String.localizedStringWithFormat(
+                            NSLocalizedString("×%d", comment: "Collapsed duplicate log entry count"),
+                            entry.count
+                        ))
                             .font(.system(size: 9))
                             .foregroundColor(.secondary)
                     }
