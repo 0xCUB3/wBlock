@@ -3,7 +3,7 @@
 "Checking for Updates" = "Se verifică actualizările";
 "Already done this? Just check the boxes above." = "Ai făcut deja asta? Bifează doar căsuțele de mai sus.";
 "Search logs" = "Caută în jurnale";
-"FilterUpdate" = "FilterUpdate";
+"FilterUpdate" = "Actualizare filtre";
 "Experimental" = "Experimental";
 "Next: \\(compactStatusLine)" = "Următorul: \\(compactStatusLine)";
 "wBlock Version" = "Versiune wBlock";
@@ -179,7 +179,7 @@
 "N/A" = "N/A";
 "Import Failed" = "Importul a eșuat";
 "Manage Whitelist" = "Gestionează lista albă";
-"FilterApply" = "FilterApply";
+"FilterApply" = "Aplicare filtre";
 "Every %d hours" = "La fiecare %d ore";
 "Update & Apply" = "Actualizează și aplică";
 "Looks good! Tap Add to continue." = "Arată bine! Atinge Adaugă pentru a continua.";
@@ -238,7 +238,7 @@
 "No matching userscripts" = "Niciun script utilizator potrivit";
 "Description" = "Descriere";
 "2." = "2.";
-"AutoUpdate" = "AutoUpdate";
+"AutoUpdate" = "Actualizare automată";
 "Script URL" = "URL script";
 "Review your choices and apply settings." = "Revizuiește opțiunile și aplică setările.";
 "Local Import" = "Import local";

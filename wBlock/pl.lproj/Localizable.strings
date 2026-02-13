@@ -3,7 +3,7 @@
 "Checking for Updates" = "Sprawdzanie aktualizacji";
 "Already done this? Just check the boxes above." = "Już to zrobione? Po prostu zaznacz pola powyżej.";
 "Search logs" = "Szukaj w logach";
-"FilterUpdate" = "FilterUpdate";
+"FilterUpdate" = "Aktualizacja filtrów";
 "Experimental" = "Eksperymentalne";
 "Next: \\(compactStatusLine)" = "Dalej: \\(compactStatusLine)";
 "wBlock Version" = "Wersja wBlock";
@@ -179,7 +179,7 @@
 "N/A" = "N/A";
 "Import Failed" = "Import nie powiódł się";
 "Manage Whitelist" = "Zarządzaj białą listą";
-"FilterApply" = "FilterApply";
+"FilterApply" = "Stosowanie filtrów";
 "Every %d hours" = "Co %d godzin";
 "Update & Apply" = "Aktualizuj i zastosuj";
 "Looks good! Tap Add to continue." = "Wygląda dobrze! Stuknij Dodaj, aby kontynuować.";
@@ -238,7 +238,7 @@
 "No matching userscripts" = "Brak pasujących skryptów użytkownika";
 "Description" = "Opis";
 "2." = "2.";
-"AutoUpdate" = "AutoUpdate";
+"AutoUpdate" = "Automatyczna aktualizacja";
 "Script URL" = "URL skryptu";
 "Review your choices and apply settings." = "Przejrzyj wybory i zastosuj ustawienia.";
 "Local Import" = "Import lokalny";
