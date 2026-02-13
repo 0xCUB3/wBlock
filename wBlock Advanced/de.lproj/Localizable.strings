@@ -71,7 +71,7 @@
 "\\(index + 1)." = "\\(index + 1).";
 "Reloading Extensions" = "Erweiterungen neu laden";
 "Filters" = "Filter";
-"Clear" = "Klar";
+"Clear" = "Löschen";
 "Info" = "Info";
 "Filters Auto-Disabled" = "Filter automatisch deaktiviert";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisieren Sie Ihre Filterauswahl, benutzerdefinierten Listen, Benutzerskripte und Whitelists geräteübergreifend.";
@@ -86,7 +86,7 @@
 "Sync settings across devices" = "Synchronisieren Sie Einstellungen geräteübergreifend";
 "1h" = "1h";
 "Warning" = "Warnung";
-"Annoyances" = "Ärgernisse";
+"Annoyances" = "Belästigungen";
 "Requirements" = "Anforderungen";
 "Userscripts: %@" = "Benutzerskripte: %@";
 "in %@ (%@)" = "in %@ (%@)";
