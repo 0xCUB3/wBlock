@@ -19,6 +19,7 @@ from deep_translator import GoogleTranslator
 PLACEHOLDER_PATTERNS = [
     re.compile(r"%\d+\$[@df]"),
     re.compile(r"%[@df]"),
+    re.compile(r"\\\((?:[^)\\]|\\.)+\)"),
 ]
 PROTECTED_TERMS = ["wBlock", "Safari", "iCloud", "YouTube", "AdGuard", "URL"]
 KEY_LINE_PATTERN = re.compile(r'^"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)";$')
@@ -30,8 +31,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lang", required=True, help="Translator language, e.g. zh-CN")
     parser.add_argument(
         "--root",
-        default="/Users/skula/Documents/wBlock",
-        help="Repository root (defaults to current workspace path).",
+        default=str(Path(__file__).resolve().parent.parent),
+        help="Repository root (defaults to the script's parent workspace directory).",
     )
     parser.add_argument("--chunk-size", type=int, default=35)
     return parser.parse_args()
@@ -48,20 +49,12 @@ def load_keys(en_file: Path) -> list[str]:
             continue
         key = match.group(1).encode("utf-8").decode("unicode_escape")
         keys.append(key)
-    # Keep order and uniqueness
-    seen = set()
-    ordered: list[str] = []
-    for key in keys:
-        if key not in seen:
-            seen.add(key)
-            ordered.append(key)
-    return ordered
+    # Keep order and uniqueness.
+    return list(dict.fromkeys(keys))
 
 
 def should_translate(text: str) -> bool:
     if text.startswith("http://") or text.startswith("https://"):
-        return False
-    if "\\(" in text:
         return False
     return True
 
@@ -130,7 +123,8 @@ def translate_keys(keys: list[str], target_lang: str, chunk_size: int) -> dict[s
             translated_payload = translator.translate_batch(source_payload)
             if translated_payload is None or len(translated_payload) != len(source_payload):
                 translated_payload = source_payload
-        except Exception:
+        except Exception as error:
+            print(f"translation error in chunk {chunk_idx}: {error}", flush=True)
             translated_payload = source_payload
 
         for (original_key, _, token_map), translated in zip(chunk, translated_payload):

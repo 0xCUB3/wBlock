@@ -348,26 +348,14 @@ extension SettingsView {
     private func intervalDescription(hours: Double) -> String {
         if hours.truncatingRemainder(dividingBy: 24) == 0 {
             let days = Int(hours / 24)
-            if days == 1 {
-                return String(localized: "Every 1 day")
-            }
-            return String.localizedStringWithFormat(
-                NSLocalizedString("Every %d days", comment: "Auto-update interval"),
-                days
-            )
+            return localizedIntervalCount("Every %d days", count: days)
         }
 
         if hours >= 24 {
             let days = Int(hours / 24)
             let remainingHours = Int(hours) % 24
             if remainingHours == 0 {
-                if days == 1 {
-                    return String(localized: "Every 1 day")
-                }
-                return String.localizedStringWithFormat(
-                    NSLocalizedString("Every %d days", comment: "Auto-update interval"),
-                    days
-                )
+                return localizedIntervalCount("Every %d days", count: days)
             }
             return String.localizedStringWithFormat(
                 NSLocalizedString("Every %dd %dh", comment: "Auto-update interval"),
@@ -376,12 +364,13 @@ extension SettingsView {
             )
         }
 
-        if Int(hours) == 1 {
-            return String(localized: "Every 1 hour")
-        }
-        return String.localizedStringWithFormat(
-            NSLocalizedString("Every %d hours", comment: "Auto-update interval"),
-            Int(hours)
+        return localizedIntervalCount("Every %d hours", count: Int(hours))
+    }
+
+    private func localizedIntervalCount(_ key: String, count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString(key, comment: "Auto-update interval"),
+            count
         )
     }
 
