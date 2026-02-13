@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "wBlock Scripts",
+    "description": "The display name for the extension."
+  },
+  "extension_description": {
+    "message": "阻止最烦人的广告和跟踪方法，包括 YouTube。",
+    "description": "Description of what the extension does."
+  }
+}

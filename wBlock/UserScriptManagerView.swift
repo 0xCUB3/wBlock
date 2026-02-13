@@ -922,7 +922,7 @@ struct Badge: View {
     let text: String
     let color: Color
     var body: some View {
-        Text(text).font(.caption2).fontWeight(.medium)
+        Text(LocalizedStringKey(text)).font(.caption2).fontWeight(.medium)
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(color.opacity(0.15)).foregroundColor(color).cornerRadius(4)
     }
@@ -995,7 +995,7 @@ struct AddUserScriptView: View {
                             if isAdding {
                                 ProgressView()
                             } else {
-                                Text(addButtonTitle)
+                                Text(LocalizedStringKey(addButtonTitle))
                             }
                         }
                         .disabled(!canSubmit || isAdding)
@@ -1109,7 +1109,7 @@ struct AddUserScriptView: View {
 
             Picker("", selection: $addMode) {
                 ForEach(AddMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(LocalizedStringKey(mode.rawValue)).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -1338,7 +1338,7 @@ struct AddUserScriptView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(.secondary)
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -1351,7 +1351,7 @@ struct AddUserScriptView: View {
                     ProgressView()
                         .scaleEffect(0.9)
                 }
-                Text(isAdding ? "Adding…" : addButtonTitle)
+                Text(LocalizedStringKey(isAdding ? "Adding…" : addButtonTitle))
                     .fontWeight(.semibold)
             }
         }
@@ -1454,7 +1454,7 @@ struct AddUserScriptView: View {
               !host.isEmpty,
               trimmed.lowercased().hasSuffix(".user.js"),
               let url = components.url else {
-            validationState = .invalid("Provide a valid https:// link ending in .user.js")
+            validationState = .invalid(String(localized: "Provide a valid https:// link ending in .user.js"))
             return
         }
 

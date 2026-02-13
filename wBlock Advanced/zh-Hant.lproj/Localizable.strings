@@ -1,0 +1,349 @@
+"Sync" = "åæ­¥";
+"Security" = "å®å
+¨";
+"Checking for Updates" = "æª¢æ¥æ´æ°";
+"Already done this? Just check the boxes above." = "å·²ç¶éæ¨£åäºåï¼åªéé¸ä¸­ä¸é¢çæ¡å³å¯ã";
+"Search logs" = "æå°æ¥èª";
+"FilterUpdate" = "éæ¿¾å¨æ´æ°";
+"Experimental" = "å¯¦é©æ§ç";
+"Next: \\(compactStatusLine)" = "Next: \\(compactStatusLine)";
+"wBlock Version" = "wBlock çæ¬";
+"Userscript" = "ä½¿ç¨è
+è
+³æ¬";
+"Welcome to wBlock!" = "æ­¡è¿ä¾å°wBlockï¼";
+"Trust: \\(trust.capitalized)" = "Trust: \\(trust.capitalized)";
+"Add userscripts to customize your browsing experience" = "æ°å¢ä½¿ç¨è
+è
+³æ¬ä¾å®¢è£½åæ¨ççè¦½é«é©";
+"Country or region" = "åå®¶æå°å";
+"Never checked" = "å¾æªæª¢æ¥é";
+"Apply & Finish" = "ç³è«ä¸¦å®æ";
+"No script updates" = "æ²æè
+³æ¬æ´æ°";
+"Restart" = "éæ°åå";
+"%@%" = "%@%";
+"Script Content" = "è
+³æ¬å
+§å®¹";
+"Showing preview (%@) of %@))" = "é¡¯ç¤º %@)) çé è¦½ (%@)";
+"Applied Rules" = "æç¨è¦å";
+"Export" = "åºå£";
+"Required for YouTube ad blocking and much more" = "YouTube å»£åææªç­æé";
+"Ready" = "æºåå¥½";
+"Every 1 hour" = "æ¯1å°æä¸æ¬¡";
+"%@)%" = "%@)%";
+"Next: %@" = "ä¸ä¸é ï¼%@";
+"Filter Apply" = "ç¯©é¸ æç¨";
+"All" = "å
+¨é¨";
+"Blocked: 0" = "已屏蔽：0";
+"Checked %@ ago" = "%@ åæª¢æ¥é";
+"Blocking Level: %@" = "é»æ­¢ç­ç´ï¼%@";
+"Remove Older Versions" = "åªé¤èçæ¬";
+"Reminder notifications" = "æééç¥";
+"UserScript" = "ä½¿ç¨è
+è
+³æ¬";
+"Add Filter List" = "æ°å¢éæ¿¾å¨åè¡¨";
+"last updated %@" = "æå¾æ´æ°%@";
+"Recommended" = "åå°æ¨å´ç";
+"\\(progressPercentage)%" = "\\(progressPercentage)%";
+"Import File" = "å°å
+¥æä»¶";
+"Edit User List" = "ç·¨è¼¯ä½¿ç¨è
+åè¡¨";
+"Community options" = "ç¤¾åé¸é 
+";
+"Version %@" = "çæ¬ %@";
+"Edit Name" = "ç·¨è¼¯å§å";
+"This may take a while" = "éå¯è½éè¦ä¸æ®µæé";
+"soon" = "å¾å¿«";
+"Custom" = "é¢¨ä¿";
+"Filter Auto-Update" = "éæ¿¾å¨èªåæ´æ°";
+"Size:" = "å°ºå¯¸ï¼";
+"Country: %@" = "åå®¶ï¼%@";
+"%@ entries" = "%@ æ¢ç®";
+"Enter Domain" = "è¼¸å
+¥ç¶²ååç¨±";
+"Source URL" = "ä¾æº URL";
+"Not selected" = "æªé¸æ";
+"If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "å¦ææ¨éé wBlock ä¸¦é²è¡æªå¥ç¨çæ´æ¹ï¼æåå°ç¼åºè¼è¼çæç¤ºï¼éæ¨£å°±ä¸æå¿è¨ä»»ä½å
+§å®¹ã";
+"%@." = "%@ã";
+"None" = "æ²æä»»ä½";
+"This script hasn't been downloaded yet." = "è©²è
+³æ¬å°æªä¸è¼ã";
+"OK" = "å¥½ç";
+"These lists are community-maintained. Enable them if you still see regional ads." = "éäºæ¸
+å®ç±ç¤¾åç¶­è­·ãå¦ææ¨ä»ç¶çå°ååå»£åï¼è«åç¨å®åã";
+"iCloud Sync" = "iCloud åæ­¥";
+"Auto-Update Filters" = "èªåæ´æ°éæ¿¾å¨";
+"This will reset all filters, userscripts, and preferences." = "éå°éç½®ææéæ¿¾å¨ãç¨æ¶è
+³æ¬åé¦é¸é 
+ã";
+"We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "æåå¨ iCloud (%@) ä¸­ç¼ç¾äºç¾æç wBlock é
+ç½®ãæ¨å¯ä»¥è·³éå
+¥è·ä¸¦ä½¿ç¨å®ã";
+"View Content" = "æ¥çå
+§å®¹";
+"Regional filters" = "ååéæ¿¾å¨";
+"A filter list with this URL already exists in wBlock." = "å¸¶ææ­¤ URL çç¯©é¸å¨æ¸
+å®å·²å­å¨æ¼ wBlock ä¸­ã";
+"Search filters" = "æå°éæ¿¾å¨";
+"URL requirements" = "URL è¦æ±";
+"\\(index + 1)." = "\\(index + 1).";
+"Reloading Extensions" = "éæ°å è¼æ´å
+
+åè½";
+"Filters" = "éæ¿¾å¨";
+"Clear" = "æ¸
+é¤";
+"Info" = "è³è¨";
+"Filters Auto-Disabled" = "éæ¿¾å¨èªååç¨";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "è·¨è£ç½®åæ­¥æ¨çç¯©é¸å¨é¸æãèªè¨æ¸
+å®ãä½¿ç¨è
+è
+³æ¬åç½åå®ã";
+"https://example.com/filter.txt" = "https://example.com/filter.txt";
+"File" = "æä»¶";
+"Scripts" = "è
+³æ¬";
+"The \\(bypassScript.name) userscript requires the \\(filterName)" = "The \\(bypassScript.name) userscript requires the \\(filterName)";
+"Foreign" = "å¤åç";
+"Minimal" = "æå°";
+"Whitelist" = "ç½åå®";
+"Next" = "ä¸ä¸å";
+"Sync settings across devices" = "è·¨è£ç½®åæ­¥è¨­å®";
+"1h" = "1å°æ";
+"Warning" = "è­¦å";
+"Annoyances" = "ç
+©æ±";
+"Requirements" = "è¦æ±";
+"Userscripts: %@" = "ä½¿ç¨è
+è
+³æ¬ï¼%@";
+"in %@ (%@)" = "å¨ %@ (%@) ä¸­";
+"Filter name" = "éæ¿¾å¨åç¨±";
+"Every %d days" = "æ¯ %d å¤©";
+"Continue" = "ç¹¼çº";
+"Update" = "æ´æ°";
+"Trace" = "çè·¡";
+"Tap to review userscript guidelines." = "é»æå¯æ¥çä½¿ç¨è
+è
+³æ¬æåã";
+"Languages: \\(languageSummary)" = "Languages: \\(languageSummary)";
+"About" = "éæ¼";
+"Provide a valid https:// link ending in .user.js" = "æä¾ä»¥ .user.js çµå°¾çææ https:// éæ¥";
+"Enter a valid http(s) URL to a .txt, .list, or .json filter." = "å¨ .txtã.list æ .json ç¯©é¸å¨ä¸­è¼¸å
+¥ææç http(s) URLã";
+"You have unapplied filter changes in wBlock. Tap to apply them now!" = "æ¨å¨ wBlock ä¸­ææªå¥ç¨çç¯©é¸å¨è®æ´ãç«å³é»ææç¨å®åï¼";
+"Restart Onboarding?" = "éæ°ååå
+¥è·ï¼";
+"All Categories" = "ææé¡å¥";
+"System" = "ç³»çµ±";
+"You can always add regional filters later from Settings." = "æ¨ä»¥å¾é¨æå¯ä»¥å¾ãè¨­å®ãæ°å¢ååéæ¿¾å¨ã";
+"Enabled" = "åç¨";
+"\\(filteredEntries.count) entries" = "\\(filteredEntries.count) entries";
+"Disabled" = "æ®éäººå£«";
+"Whitelisted Domains" = "ç½åå®å";
+"It will be enabled automatically." = "å®å°èªååç¨ã";
+"Debug" = "åµé¯";
+"Next: Loading…" = "下一頁： 載入中...";
+"Multipurpose" = "å¤ç¨é";
+"Description (optional)" = "èªªæï¼å¯é¸ï¼";
+"Full content loaded" = "å®æ´å
+§å®¹å·²å è¼";
+"%@ %@" = "%@ %@";
+"Apply Changes" = "æç¨ç¨å¼è®æ´";
+"We don't have regional filters for %@." = "æåæ²æéå° %@ çååéæ¿¾å¨ã";
+"Error" = "é¯èª¤";
+"Updated %d script" = "æ´æ°äº %d è
+³æ¬";
+"Settings" = "è¨­å®";
+"Title" = "æ¨é¡";
+"No updates available" = "ç¡å¯ç¨æ´æ°";
+"We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "æåå¨ iCloud ä¸­ç¼ç¾äºç¾æç wBlock é
+ç½®ãæ¨å¯ä»¥è·³éå
+¥è·ä¸¦ä½¿ç¨å®ã";
+"example.com" = "example.com";
+"Add Domain" = "æ°å¢åå";
+"Regional filters: %@" = "ååéæ¿¾å¨ï¼%@";
+"Done" = "å®ç¢";
+"Use iCloud Setup" = "ä½¿ç¨ iCloud è¨­å®";
+"Tell us where you browse so we can enable the right regional filters." = "åè¨´æåæ¨çè¦½çä½ç½®ï¼ä»¥ä¾¿æååç¨æ­£ç¢ºçååéæ¿¾å¨ã";
+"Updated %d scripts" = "æ´æ°äº %d è
+³æ¬";
+"Delete Selected" = "åªé¤æé¸å
+§å®¹";
+"File Information" = "æä»¶è¨æ¯";
+"Search scripts" = "æå°è
+³æ¬";
+"Remove" = "æ¶é¤";
+"No Updates Found" = "æªæ¾å°æ´æ°";
+"Applied" = "æç¨";
+"7d" = "7å¤©";
+"Critical Setup Required" = "éè¦ééµè¨­ç½®";
+"No Whitelisted Domains" = "æ²æåå
+¥ç½åå®çåå";
+"Paste" = "è²¼ä¸";
+"Cancel" = "åæ¶";
+"URL" = "URL";
+"Large file - scrolling may be slow" = "æä»¶å¤§ - æ»¾åå¯è½æå¾æ
+¢";
+"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "å¿
+é åç¨ wBlock é²éä¸¦å°å
+¶è¨­å®çºãå§çµå
+è¨±å¨ææç¶²ç«ä¸ãæè½å°é YouTube å»£åã";
+"Privacy" = "é±ç§";
+"Rules" = "è¦å";
+"Enabled Lists" = "åç¨åè¡¨";
+"Paste from Clipboard" = "å¾åªè²¼ç°¿è²¼ä¸";
+"No Userscripts" = "ç¡ç¨æ¶è
+³æ¬";
+"Userscripts" = "ä½¿ç¨è
+è
+³æ¬";
+"URL Patterns (\\(script.matches.count))" = "URL Patterns (\\(script.matches.count))";
+"Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "é¸ææ¨æ³è¦åç¨çä»»ä½ä½¿ç¨è
+è
+³æ¬ãéäºæ·»å äºé¡å¤çåè½æä¿®å¾©ãæ¨ç¨å¾å¯ä»¥é¨æå¨è¨­å®ä¸­æ·»å æ´å¤å
+§å®¹ã";
+"Updating Scripts" = "æ´æ°è
+³æ¬";
+"(%@) source rules)" = "(%@) ä¾æºè¦åï¼";
+"We don't have language data for %@. Try enabling filters manually if you see regional ads." = "æåæ²æ %@ çèªè¨è³æãå¦ææ¨çå°ååæ§å»£åï¼è«åè©¦æååç¨éæ¿¾å¨ã";
+"Psst! You forgot something!" = "åï¼ä½ å¿äºä»éº¼ï¼";
+"Version \\(filter.version)" = "Version \\(filter.version)";
+"Check for Updates" = "æª¢æ¥æ´æ°";
+"Enable all 5 Content Blocker extensions" = "åç¨ææ 5 åå
+§å®¹ææªå¨æ´å±";
+"Title (optional)" = "æ¨é¡ï¼å¯é¸ï¼";
+"Display" = "å±ç¤º";
+"We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.";
+"Danger Zone" = "å±éªå";
+"Save" = "ç¯ç";
+"Auto Update" = "èªåæ´æ°";
+"That name is already used by another filter list." = "è©²åç¨±å·²è¢«å¦ä¸åéæ¿¾å¨æ¸
+å®ä½¿ç¨ã";
+"No Content Available" = "æ²æå¯ç¨å
+§å®¹";
+"For complete ad blocking" = "å¾¹åºææªå»£å";
+"The %@ userscript requires the %@" = "%@ ä½¿ç¨è
+è
+³æ¬éè¦ %@";
+"Every %dd %dh" = "æ¯ %dd %dh";
+"User List" = "ä½¿ç¨è
+åè¡¨";
+"All Levels" = "ææç­ç´";
+"Downloading and applying filter lists…" = "下載並套用過濾器清單...";
+"Last: Never" = "æå¾ï¼å¾ä¾æ²æ";
+"That title is already used by another filter list." = "è©²æ¨é¡å·²è¢«å¦ä¸åéæ¿¾å¨æ¸
+å®ä½¿ç¨ã";
+"N/A" = "ä¸é©ç¨";
+"Import Failed" = "å°å
+¥å¤±æ";
+"Manage Whitelist" = "ç®¡çç½åå®";
+"FilterApply" = "ç¯©é¸æç¨";
+"Every %d hours" = "æ¯ %d å°æ";
+"Update & Apply" = "æ´æ°ä¸¦å¥ç¨";
+"Looks good! Tap Add to continue." = "çèµ·ä¾ä¸é¯ï¼é»ææ°å¢ä»¥ç¹¼çºã";
+"Filters applied successfully." = "éæ¿¾å¨æç¨æåã";
+"Not Downloaded" = "æªä¸è¼";
+"(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) source rules)";
+"Default filters for balanced blocking and compatibility." = "ç¨æ¼å¹³è¡¡é»æ­¢åç¸å®¹æ§çé è¨­éæ¿¾å¨ã";
+"Network" = "ç¶²è·¯";
+"\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
+"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "å¿
+é å¨ææç¶²ç«ä¸åç¨ wBlock è
+³æ¬ä¸¦å°å
+¶è¨­å®çºãå
+è¨±ãæè½é»æ­¢ YouTube å»£åã";
+"Blocked: 1" = "Blocked: 1";
+"Checked %@" = "å·²æª¢æ¥ %@";
+"Actions" = "è¡å";
+"Delete Added List" = "åªé¤å·²æ°å¢åè¡¨";
+"Filter Update" = "éæ¿¾å¨æ´æ°";
+"https://example.com/script.user.js" = "https://example.com/script.user.js";
+"Only AdGuard Base filter. Lightest protection, best compatibility." = "å
+ AdGuard åºæ¬éæ¿¾å¨ãæè¼çä¿è­·ï¼æå¥½çç¸å®¹æ§ã";
+"(pending)" = "ï¼å¾
+è¾¦çï¼";
+"Continue Setup" = "ç¹¼çºè¨­å®";
+"Progress" = "é²æ­¥";
+"Logs" = "ç´é";
+"Preparing %d extension" = "æºå %d æ´å±";
+"Add Userscript" = "æ°å¢ä½¿ç¨è
+è
+³æ¬";
+"URL Patterns (%@)" = "URL æ¨¡å¼ (%@)";
+"Copy URL" = "è¤è£½ URL";
+"Trust: %@" = "ä¿¡ä»»ï¼%@";
+"Logs will appear here as the app runs" = "æç¨ç¨å¼éè¡ææ¥èªå°é¡¯ç¤ºå¨æ­¤è";
+"Downloaded %d updates" = "å·²ä¸è¼ %d æ´æ°";
+"Setup Instructions" = "è¨­å®èªªæ";
+"Every 1 day" = "æ¯ 1 å¤©ä¸æ¬¡";
+"Reading Files" = "è®åæä»¶";
+"Show blocked item count in toolbar" = "å¨å·¥å
+·åä¸­é¡¯ç¤ºè¢«å°éçé 
+ç®è¨æ¸";
+"View Logs" = "æ¥çæ¥èª";
+"Duplicate Userscripts Found" = "ç¼ç¾éè¤çä½¿ç¨è
+è
+³æ¬";
+"No logs found" = "æ²ææ¾å°æ¥èª";
+"Converting Rules" = "è½æè¦å";
+"Paste the direct .user.js link. wBlock will download and install it for you." = "è²¼ä¸ç´æ¥ .user.js é£çµã wBlock å°çºæ¨ä¸è¼ä¸¦å®è£å®ã";
+"Waiting" = "ç­å¾
+";
+"Back" = "å¾é";
+"\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
+"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "æ¯æ´ .user.js æ .js æªæ¡ãæ¬æ©å°å
+¥ä¸æèªåæ´æ°ï¼éæ°å°å
+¥æ¿æã";
+"Category" = "é¡å¥";
+"Open Safari Settings" = "éå Safari è¨­å®";
+"Search" = "æå°";
+"Ads" = "å»£å";
+"Choose your preferred blocking level. You can adjust enabled filters later." = "é¸ææ¨é¦é¸çé»æ­¢ç­ç´ãæ¨å¯ä»¥ç¨å¾èª¿æ´åç¨çç¯©é¸å¨ã";
+"Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))";
+"Checked just now" = "ååæª¢æ¥é";
+"wBlock will fetch and enable the script automatically." = "wBlock å°èªååå¾ä¸¦åç¨è
+³æ¬ã";
+"Add domains to disable ad blocking on specific sites" = "æ°å¢ç¶²åä»¥åç¨ç¹å®ç¶²ç«ä¸çå»£åææª";
+"1." = "1.";
+"Add Mode" = "æ°å¢æ¨¡å¼";
+"Keep All" = "å
+¨é¨ä¿ç";
+"Languages: %@" = "èªè¨ï¼%@";
+"Saving & Building" = "å²èèå»ºè¨­";
+"No matching userscripts" = "æ²æå¹é
+çç¨æ¶è
+³æ¬";
+"Description" = "æè¿°";
+"2." = "2.";
+"AutoUpdate" = "èªåæ´æ°";
+"Script URL" = "è
+³æ¬ URL";
+"Review your choices and apply settings." = "æª¢æ¥æ¨çé¸æä¸¦å¥ç¨è¨­å®ã";
+"Local Import" = "æ¬å°é²å£";
+"Send me reminders about unapplied changes" = "åæç¼éæéæªæç¨æ´æ¹çæé";
+"Version \\(script.version)" = "Version \\(script.version)";
+"Syncing iCloud configuration…" = "正在同步 iCloud 配置...";
+"Sync Now" = "ç«å³åæ­¥";
+"Skip for now" = "æ«æè·³é";
+"Preparing %d extensions" = "æºå %d æ´å±";
+"Add Filter" = "æ°å¢éæ¿¾å¨";
+"Invalid" = "ç¡æç";
+"Waiting for activity" = "ç­å¾
+æ´»å";
+"Name" = "å§å";
+"Startup" = "åå";
+"Active" = "積極的";
+"Summary" = "æ¦æ¬";
+"Blocked: %d" = "已阻止：%d";
+"Only community-maintained lists are available for %@. Enable them if you're comfortable." = "å
+ç¤¾åç¶­è­·çæ¸
+å®å¯ç¨æ¼ %@ãå¦ææ¨é¡æï¼è«åç¨å®åã";
+"Remove from Whitelist" = "å¾ç½åå®ä¸­åªé¤";
+"Downloaded %d update" = "å·²ä¸è¼ %d æ´æ°";

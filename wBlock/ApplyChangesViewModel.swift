@@ -20,12 +20,12 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .updating: return "Checking for Updates"
-        case .scripts: return "Updating Scripts"
-        case .reading: return "Reading Files"
-        case .converting: return "Converting Rules"
-        case .saving: return "Saving & Building"
-        case .reloading: return "Reloading Extensions"
+        case .updating: return String(localized: "Checking for Updates")
+        case .scripts: return String(localized: "Updating Scripts")
+        case .reading: return String(localized: "Reading Files")
+        case .converting: return String(localized: "Converting Rules")
+        case .saving: return String(localized: "Saving & Building")
+        case .reloading: return String(localized: "Reloading Extensions")
         }
     }
 
@@ -209,7 +209,7 @@ class ApplyChangesViewModel: ObservableObject {
         if let statusMessage, !statusMessage.isEmpty {
             state.statusMessage = statusMessage
         } else if state.statusMessage.isEmpty || state.statusMessage.lowercased().contains("reloading") {
-            state.statusMessage = "Filters applied successfully."
+            state.statusMessage = String(localized: "Filters applied successfully.")
         }
     }
 

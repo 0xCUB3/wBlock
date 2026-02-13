@@ -165,23 +165,50 @@ struct ApplyChangesProgressView: View {
             if step.status == .complete {
                 let count = viewModel.state.updatesFound
                 if count > 0 {
-                    return "Downloaded \(count) update\(count == 1 ? "" : "s")"
+                    if count == 1 {
+                        return String.localizedStringWithFormat(
+                            NSLocalizedString("Downloaded %d update", comment: "Apply changes detail"),
+                            count
+                        )
+                    }
+                    return String.localizedStringWithFormat(
+                        NSLocalizedString("Downloaded %d updates", comment: "Apply changes detail"),
+                        count
+                    )
                 }
-                return "No updates available"
+                return String(localized: "No updates available")
             }
             return nil
         case .scripts:
             if step.status == .complete {
                 let count = viewModel.state.scriptsUpdatedCount
                 if count > 0 {
-                    return "Updated \(count) script\(count == 1 ? "" : "s")"
+                    if count == 1 {
+                        return String.localizedStringWithFormat(
+                            NSLocalizedString("Updated %d script", comment: "Apply changes detail"),
+                            count
+                        )
+                    }
+                    return String.localizedStringWithFormat(
+                        NSLocalizedString("Updated %d scripts", comment: "Apply changes detail"),
+                        count
+                    )
                 }
-                return "No script updates"
+                return String(localized: "No script updates")
             }
             return nil
         case .reading:
             guard viewModel.state.totalCount > 0 else { return nil }
-            return "Preparing \(viewModel.state.totalCount) extension\(viewModel.state.totalCount == 1 ? "" : "s")"
+            if viewModel.state.totalCount == 1 {
+                return String.localizedStringWithFormat(
+                    NSLocalizedString("Preparing %d extension", comment: "Apply changes detail"),
+                    viewModel.state.totalCount
+                )
+            }
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Preparing %d extensions", comment: "Apply changes detail"),
+                viewModel.state.totalCount
+            )
         case .converting:
             guard step.status == .active else { return nil }
             guard !viewModel.state.currentFilterName.isEmpty else { return nil }
@@ -197,14 +224,14 @@ struct ApplyChangesProgressView: View {
 
     private var headerTitle: String {
         if viewModel.state.isComplete {
-            return "Applied"
+            return String(localized: "Applied")
         }
         return ""
     }
 
     private var headerSubtitle: String {
         if viewModel.state.isComplete {
-            return "Filters applied successfully."
+            return String(localized: "Filters applied successfully.")
         }
         return ""
     }

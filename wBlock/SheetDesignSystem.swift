@@ -40,7 +40,7 @@ struct SheetHeader: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.title2)
                 .fontWeight(.semibold)
             Spacer()
@@ -147,11 +147,11 @@ struct EmptyStateView: View {
                 .foregroundColor(.secondary.opacity(0.6))
 
             VStack(spacing: 8) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.title2)
                     .fontWeight(.medium)
 
-                Text(description)
+                Text(LocalizedStringKey(description))
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -161,7 +161,7 @@ struct EmptyStateView: View {
                 Button {
                     action()
                 } label: {
-                    Label(actionTitle, systemImage: "plus")
+                    Label(LocalizedStringKey(actionTitle), systemImage: "plus")
                         .font(.body)
                         .fontWeight(.medium)
                 }
@@ -207,7 +207,7 @@ struct ProgressViewWithStatus: View {
             .padding(.horizontal)
 
             if let description = description {
-                Text(description)
+                Text(LocalizedStringKey(description))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)

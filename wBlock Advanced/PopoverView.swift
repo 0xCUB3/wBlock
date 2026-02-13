@@ -154,7 +154,7 @@ struct PopoverView: View {
                     Text("wBlock")
                         .font(.system(size: 14, weight: .bold))
                     Spacer()
-                    Text(viewModel.isDisabled ? "Disabled" : "Active")
+                    Text(LocalizedStringKey(viewModel.isDisabled ? "Disabled" : "Active"))
                         .font(.system(size: 11, weight: .semibold))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -186,11 +186,14 @@ struct PopoverView: View {
     private var blockedCountText: String {
         switch viewModel.blockedCount {
         case 0:
-            return "Blocked: 0"
+            return String(localized: "Blocked: 0")
         case 1:
-            return "Blocked: 1"
+            return String(localized: "Blocked: 1")
         default:
-            return "Blocked: \(viewModel.blockedCount)"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Blocked: %d", comment: "Blocked request count"),
+                viewModel.blockedCount
+            )
         }
     }
 }

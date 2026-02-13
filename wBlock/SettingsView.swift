@@ -8,8 +8,8 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private let minimumAutoUpdateIntervalHours: Double = 1
     private let maximumAutoUpdateIntervalHours: Double = 24 * 7
-    @State private var nextScheduleLine = "Next: Loading…"
-    @State private var lastUpdateLine = "Last: Never"
+    @State private var nextScheduleLine = String(localized: "Next: Loading…")
+    @State private var lastUpdateLine = String(localized: "Last: Never")
     @State private var isOverdue = false
     @State private var timer: Timer?
     @State private var showingRestartConfirmation = false
@@ -30,7 +30,7 @@ struct SettingsView: View {
 
     private var compactStatusLine: String {
         if isOverdue {
-            return "Waiting for activity"
+            return String(localized: "Waiting for activity")
         }
         return nextScheduleLine
     }
@@ -293,7 +293,7 @@ struct SettingsView: View {
         title: String, @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.headline)
                 .foregroundColor(.primary)
                 .padding(.horizontal, 4)
@@ -339,7 +339,7 @@ extension SettingsView {
             UserScriptManager.shared.simulateFreshInstall()
             await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
             await MainActor.run {
-                nextScheduleLine = "Next: Loading…"
+                nextScheduleLine = String(localized: "Next: Loading…")
             }
             await updateScheduleLine()
         }
@@ -348,56 +348,82 @@ extension SettingsView {
     private func intervalDescription(hours: Double) -> String {
         if hours.truncatingRemainder(dividingBy: 24) == 0 {
             let days = Int(hours / 24)
-            return days == 1 ? "Every 1 day" : "Every \(days) days"
+            if days == 1 {
+                return String(localized: "Every 1 day")
+            }
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Every %d days", comment: "Auto-update interval"),
+                days
+            )
         }
 
         if hours >= 24 {
             let days = Int(hours / 24)
             let remainingHours = Int(hours) % 24
             if remainingHours == 0 {
-                return days == 1 ? "Every 1 day" : "Every \(days) days"
+                if days == 1 {
+                    return String(localized: "Every 1 day")
+                }
+                return String.localizedStringWithFormat(
+                    NSLocalizedString("Every %d days", comment: "Auto-update interval"),
+                    days
+                )
             }
-            return "Every \(days)d \(remainingHours)h"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Every %dd %dh", comment: "Auto-update interval"),
+                days,
+                remainingHours
+            )
         }
 
-        return Int(hours) == 1 ? "Every 1 hour" : "Every \(Int(hours)) hours"
+        if Int(hours) == 1 {
+            return String(localized: "Every 1 hour")
+        }
+        return String.localizedStringWithFormat(
+            NSLocalizedString("Every %d hours", comment: "Auto-update interval"),
+            Int(hours)
+        )
     }
 
     private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool)
         -> String
     {
         guard let scheduledAt, let remaining else {
-            return "Waiting"
+            return String(localized: "Waiting")
         }
 
         if isOverdue || remaining <= 0 {
-            return "Waiting for activity"
+            return String(localized: "Waiting for activity")
         }
 
         let componentsFormatter = DateComponentsFormatter()
         componentsFormatter.allowedUnits = [.day, .hour, .minute]
         componentsFormatter.unitsStyle = .short
         componentsFormatter.maximumUnitCount = 2
-        let relative = componentsFormatter.string(from: remaining) ?? "soon"
+        let relative = componentsFormatter.string(from: remaining) ?? String(localized: "soon")
 
         let timeFormatter = DateFormatter()
         timeFormatter.dateStyle = .none
         timeFormatter.timeStyle = .short
         let timeString = timeFormatter.string(from: scheduledAt)
 
-        return "in \(relative) (\(timeString))"
+        return String.localizedStringWithFormat(
+            NSLocalizedString("in %@ (%@)", comment: "Relative schedule"),
+            relative,
+            timeString
+        )
     }
 
     private func formatLastUpdate(date: Date?) -> String {
         guard let date else {
-            return "Never checked"
+            return String(localized: "Never checked")
         }
 
         let now = Date()
         let interval = now.timeIntervalSince(date)
 
         if interval < 60 {
-            return "Checked just now"
+            return String(localized: "Checked just now")
         }
 
         let componentsFormatter = DateComponentsFormatter()
@@ -405,20 +431,26 @@ extension SettingsView {
         componentsFormatter.unitsStyle = .short
         componentsFormatter.maximumUnitCount = 1
         if let relative = componentsFormatter.string(from: interval) {
-            return "Checked \(relative) ago"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Checked %@ ago", comment: "Last update relative time"),
+                relative
+            )
         }
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
         dateFormatter.timeStyle = .short
-        return "Checked \(dateFormatter.string(from: date))"
+        return String.localizedStringWithFormat(
+            NSLocalizedString("Checked %@", comment: "Last update date"),
+            dateFormatter.string(from: date)
+        )
     }
 
     private func updateScheduleLine(shouldTriggerOverdue: Bool = true) async {
         guard autoUpdateEnabled else {
             await MainActor.run {
-                nextScheduleLine = "Disabled"
-                lastUpdateLine = "N/A"
+                nextScheduleLine = String(localized: "Disabled")
+                lastUpdateLine = String(localized: "N/A")
                 isOverdue = false
             }
             return
