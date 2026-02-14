@@ -48,6 +48,7 @@ public class UserScriptManager: ObservableObject {
     @Published public var pendingDuplicatesToRemove: [UserScript] = []
     @Published public var hasCompletedInitialSetup = false
     @Published public private(set) var isReady = false
+    @Published public private(set) var isPrefetchingDefaultMetadata = false
 
     private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
     private let sharedContainerIdentifier = "group.skula.wBlock"
@@ -56,6 +57,7 @@ public class UserScriptManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var initialLoadTask: Task<Void, Never>?
     private var userScriptIndexByID: [UUID: Int] = [:]
+    private var metadataPrefetchTask: Task<Void, Never>?
 
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
@@ -649,6 +651,7 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔧 Setting up UserScriptManager...")
         checkAndCreateUserScriptsFolder()
         await loadUserScripts()
+        prefetchDefaultUserScriptMetadataIfNeeded()
         logger.info("✅ UserScriptManager initialized with \(self.userScripts.count) userscript(s)")
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
     }
@@ -878,6 +881,95 @@ public class UserScriptManager: ObservableObject {
             Task { @MainActor in
                 await persistUserScriptsNow()
                 logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
+            }
+        }
+    }
+
+    private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {
+        guard !userScript.isLocal else { return false }
+        guard isDefaultUserScript(userScript) else { return false }
+
+        let normalizedDescription = userScript.description
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        return normalizedDescription.isEmpty
+            || normalizedDescription == "default userscript"
+            || normalizedDescription == "default userscript - downloading..."
+            || normalizedDescription == "ready to enable"
+    }
+
+    public func prefetchDefaultUserScriptMetadataIfNeeded() {
+        guard metadataPrefetchTask == nil else { return }
+
+        let candidateIDs = userScripts
+            .filter { shouldPrefetchMetadata(for: $0) }
+            .map(\.id)
+
+        guard !candidateIDs.isEmpty else { return }
+
+        metadataPrefetchTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            self.isPrefetchingDefaultMetadata = true
+            defer {
+                self.isPrefetchingDefaultMetadata = false
+                self.metadataPrefetchTask = nil
+            }
+
+            var hasMetadataUpdates = false
+
+            for scriptID in candidateIDs {
+                guard let index = self.indexOfUserScript(withId: scriptID) else { continue }
+                guard self.userScripts.indices.contains(index) else { continue }
+
+                let currentScript = self.userScripts[index]
+                guard self.shouldPrefetchMetadata(for: currentScript) else { continue }
+                guard let scriptURL = currentScript.url else { continue }
+
+                do {
+                    let data: Data
+                    if scriptURL.host?.contains("gitflic") == true {
+                        let request = self.createGitflicRequest(for: scriptURL)
+                        let (responseData, _) = try await self.urlSession.data(for: request)
+                        data = responseData
+                    } else {
+                        let (responseData, _) = try await self.urlSession.data(from: scriptURL)
+                        data = responseData
+                    }
+
+                    guard let content = String(data: data, encoding: .utf8), !content.isEmpty else {
+                        continue
+                    }
+                    guard !self.isDDoSProtectionPage(content) else { continue }
+
+                    var parsed = UserScript(name: currentScript.name, url: scriptURL, content: content)
+                    parsed.parseMetadata()
+
+                    let parsedDescription = parsed.description.trimmingCharacters(
+                        in: .whitespacesAndNewlines)
+                    let parsedVersion = parsed.version.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    if !parsedDescription.isEmpty
+                        && self.userScripts[index].description != parsedDescription
+                    {
+                        self.userScripts[index].description = parsedDescription
+                        hasMetadataUpdates = true
+                    }
+
+                    if !parsedVersion.isEmpty && self.userScripts[index].version != parsedVersion {
+                        self.userScripts[index].version = parsedVersion
+                        hasMetadataUpdates = true
+                    }
+                } catch {
+                    self.logger.error(
+                        "❌ Failed prefetching metadata for default userscript \(currentScript.name): \(error)"
+                    )
+                }
+            }
+
+            if hasMetadataUpdates {
+                await self.persistUserScriptsNow()
             }
         }
     }

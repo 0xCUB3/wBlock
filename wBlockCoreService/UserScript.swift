@@ -128,16 +128,24 @@ public struct UserScript: Identifiable, Codable, Hashable {
                 guard !metadataLine.isEmpty else { continue }
 
                 let components = metadataLine.split(
-                    separator: " ", maxSplits: 1, omittingEmptySubsequences: true
+                    maxSplits: 1,
+                    omittingEmptySubsequences: true,
+                    whereSeparator: { $0.isWhitespace }
                 )
                 guard let keyComponent = components.first else { continue }
 
                 let key = String(keyComponent)
+                let normalizedKey = key.lowercased()
+                let directive = normalizedKey.split(
+                    separator: ":",
+                    maxSplits: 1,
+                    omittingEmptySubsequences: true
+                ).first.map(String.init) ?? normalizedKey
                 let value =
                     components.count > 1
                     ? String(components[1]).trimmingCharacters(in: .whitespaces) : ""
 
-                switch key {
+                switch directive {
                 case "@name":
                     if !value.isEmpty {
                         self.name = removeEmojis(from: value)

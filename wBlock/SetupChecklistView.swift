@@ -32,8 +32,6 @@ struct SetupChecklistView: View {
                 // Main content
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        warningBanner
-
                         checklistItems
 
                         Text("Already done this? Just check the boxes above.")
@@ -64,6 +62,9 @@ struct SetupChecklistView: View {
         .onAppear {
             loadCurrentState()
         }
+#if os(macOS)
+        .frame(minWidth: 560, idealWidth: 620, minHeight: 420, idealHeight: 460)
+#endif
     }
 
     // MARK: - Header
@@ -90,29 +91,6 @@ struct SetupChecklistView: View {
         .padding(.horizontal, SheetDesign.headerHorizontalPadding)
         .padding(.top, SheetDesign.headerTopPadding)
         .padding(.bottom, 12)
-    }
-
-    // MARK: - Warning Banner
-
-    private var warningBanner: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-                .font(.title3)
-                .symbolRenderingMode(.multicolor)
-
-            VStack(alignment: .leading, spacing: 4) {
-                #if os(macOS)
-                Text("wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads.")
-                    .font(.subheadline)
-                #else
-                Text("wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads.")
-                    .font(.subheadline)
-                #endif
-            }
-        }
-        .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Checklist Items

@@ -11,7 +11,17 @@ struct OnboardingView: View {
         var id: String { rawValue }
     }
 
+    enum OnboardingStep: Int, CaseIterable, Identifiable {
+        case protection
+        case region
+        case userscripts
+        case sync
+
+        var id: Int { rawValue }
+    }
+
     @StateObject private var dataManager: ProtobufDataManager
+    @StateObject private var userScriptManager = UserScriptManager.shared
     
     private var hasCompletedOnboarding: Bool {
         dataManager.hasCompletedOnboarding
@@ -33,7 +43,7 @@ struct OnboardingView: View {
         }
     }
     @State private var selectedUserscripts: Set<String> = []
-    @State private var step: Int = 0
+    @State private var step: OnboardingStep = .protection
     @State private var isApplying: Bool = false
     @State private var applyProgress: Float = 0.0
     @State private var selectedCountryCode: String
@@ -48,6 +58,7 @@ struct OnboardingView: View {
     @State private var remoteConfigUpdatedAtText: String?
     @State private var showRemoteConfigPrompt: Bool = false
     @State private var isAdoptingRemoteConfig: Bool = false
+    @State private var hasSeededUserscriptSelection = false
 #if os(iOS)
     @State private var wantsReminderNotifications: Bool = true
 #endif
@@ -256,17 +267,46 @@ struct OnboardingView: View {
     private let sharedDefaults: UserDefaults
     @Environment(\.dismiss) private var dismiss
 
-    // Use the real default userscripts from UserScriptManager
-    var defaultUserScripts: [(id: String, name: String, description: String)] {
-        UserScriptManager.shared.userScripts.map { script in
-            (id: script.id.uuidString, name: script.name, description: script.description.isEmpty ? script.url?.absoluteString ?? "" : script.description)
-        }
+    struct OnboardingUserScriptItem: Identifiable {
+        let id: String
+        let name: String
+        let description: String
+        let version: String
+        let sourceHost: String?
+    }
+
+    private let userscriptDescriptionFallbacksByName: [String: String] = [
+        "return youtube dislike":
+            "Return of the YouTube Dislike.",
+        "bypass paywalls clean":
+            "Bypass paywalls of news sites.",
+        "youtube classic":
+            "Reverts YouTube to its classic design and behavior.",
+        "adguard extra":
+            "Handles advanced anti-adblock cases that filter rules miss."
+    ]
+
+    private var defaultUserScripts: [OnboardingUserScriptItem] {
+        userScriptManager.userScripts
+            .filter { userScriptManager.isDefaultUserScript($0) }
+            .map { script in
+                OnboardingUserScriptItem(
+                    id: script.id.uuidString,
+                    name: script.name,
+                    description: resolvedUserscriptDescription(for: script),
+                    version: script.version.trimmingCharacters(in: .whitespacesAndNewlines),
+                    sourceHost: script.url?.host
+                )
+            }
     }
 
     // Helper to get the Bypass Paywalls userscript and filter list names
     var bypassPaywallsScript: (id: String, name: String)? {
-        UserScriptManager.shared.userScripts.first(where: { $0.name.localizedCaseInsensitiveContains("bypass paywalls") })
-            .map { ($0.id.uuidString, $0.name) }
+        userScriptManager.userScripts.first(where: {
+            userScriptManager.isDefaultUserScript($0)
+                && $0.name.localizedCaseInsensitiveContains("bypass paywalls")
+        })
+        .map { ($0.id.uuidString, $0.name) }
     }
     var bypassPaywallsFilterName: String? {
         let candidates = [
@@ -279,99 +319,88 @@ struct OnboardingView: View {
         })?.name
     }
 
-    private var selectedCountryDescription: String {
-        guard !selectedCountryCode.isEmpty else { return String(localized: "Not selected") }
-        return countryName(for: selectedCountryCode)
-    }
-
-    private var selectedBlockingLevelDisplayName: String {
-        switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "minimal":
-            return String(localized: "Minimal")
-        case "recommended":
-            return String(localized: "Recommended")
-        default:
-            return selectedBlockingLevel
-        }
-    }
-
-    private var selectedRegionalFiltersSummary: String {
-        selectedRegionalFilterNames.isEmpty
-            ? String(localized: "None")
-            : selectedRegionalFilterNames.joined(separator: ", ")
-    }
-
-    private var selectedUserscriptsSummary: String {
-        selectedUserscripts.isEmpty
-            ? String(localized: "None")
-            : selectedUserscripts.compactMap { id in
-                defaultUserScripts.first(where: { $0.id == id })?.name
-            }.joined(separator: ", ")
-    }
-
-    private var selectedRegionalFilterNames: [String] {
-        let selection = selectedRegionalFilters
-        return filterManager.filterLists
-            .filter { selection.contains($0.id) }
-            .map { $0.name }
-            .sorted()
-    }
-
     var body: some View {
-        VStack {
+        VStack(alignment: .leading, spacing: 16) {
             if isApplying {
-                OnboardingDownloadView(progress: applyProgress, isSyncingFromICloud: isAdoptingRemoteConfig)
+                OnboardingDownloadView(
+                    progress: applyProgress,
+                    isSyncingFromICloud: isAdoptingRemoteConfig
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
-                if step == 0 {
-                    blockingLevelStep
-                } else if step == 1 {
-                    regionStep
-                } else if step == 2 {
-                    userscriptStep
-                } else if step == 3 {
-                    summaryStep
+                onboardingHeader
+
+                ScrollView {
+                    stepContent
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 2)
                 }
+
+                onboardingFooter
             }
         }
-    .padding()
-#if os(macOS)
-    .frame(minWidth: 350, maxWidth: 500, minHeight: 350, maxHeight: 600)
-#endif
-#if os(iOS)
-    .background(
-        Color(.systemBackground)
-        .ignoresSafeArea()
-    )
-#endif
-    .onAppear {
-        updateRegionalRecommendations(for: selectedCountryCode)
-        probeForExistingICloudSetupIfNeeded()
-    }
-    .onChange(of: selectedCountryCode) { newValue in
-        let sanitized = newValue.uppercased()
-        sharedDefaults.set(sanitized, forKey: Self.selectedCountryDefaultsKey)
-        hasManuallyEditedRegionalSelection = false
-        updateRegionalRecommendations(for: sanitized)
-    }
-    .onChange(of: filterManager.filterLists) { _ in
-        updateRegionalRecommendations(for: selectedCountryCode)
-    }
-    .confirmationDialog(
-        "Use existing iCloud setup?",
-        isPresented: $showRemoteConfigPrompt,
-        titleVisibility: .visible
-    ) {
-        Button("Use iCloud Setup") {
-            Task { await adoptRemoteICloudSetup() }
+        .padding()
+    #if os(macOS)
+        .frame(minWidth: 520, maxWidth: 680, minHeight: 560, maxHeight: 760)
+    #endif
+    #if os(iOS)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    Color(.systemBackground),
+                    Color.accentColor.opacity(0.07)
+                ],
+                startPoint: .top,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        )
+    #endif
+        .onAppear {
+            updateRegionalRecommendations(for: selectedCountryCode)
+            probeForExistingICloudSetupIfNeeded()
+            userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
+            seedSelectedUserscriptsIfNeeded()
         }
-        Button("Continue Setup", role: .cancel) {}
-    } message: {
-        if let remoteConfigUpdatedAtText {
-            Text("We found an existing wBlock configuration in iCloud (\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.")
-        } else {
-            Text("We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead.")
+        .task {
+            await userScriptManager.waitUntilReady()
+            seedSelectedUserscriptsIfNeeded()
+            userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
         }
-    }
+        .onChange(of: selectedCountryCode) { newValue in
+            let sanitized = newValue.uppercased()
+            sharedDefaults.set(sanitized, forKey: Self.selectedCountryDefaultsKey)
+            hasManuallyEditedRegionalSelection = false
+            updateRegionalRecommendations(for: sanitized)
+        }
+        .onChange(of: filterManager.filterLists) { _ in
+            updateRegionalRecommendations(for: selectedCountryCode)
+        }
+        .onChange(of: userScriptManager.userScripts) { _ in
+            seedSelectedUserscriptsIfNeeded()
+        }
+        .onChange(of: step) { _, newStep in
+            if newStep == .protection {
+                probeForExistingICloudSetupIfNeeded()
+            }
+        }
+        .confirmationDialog(
+            "Use existing iCloud setup?",
+            isPresented: $showRemoteConfigPrompt,
+            titleVisibility: .visible
+        ) {
+            Button("Use iCloud Setup") {
+                Task { await adoptRemoteICloudSetup() }
+            }
+            Button("Continue Setup", role: .cancel) {}
+        } message: {
+            if let remoteConfigUpdatedAtText {
+                Text("We found an existing wBlock configuration in iCloud (\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.")
+            } else {
+                Text("We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead.")
+            }
+        }
     }
 
     struct OnboardingDownloadView: View {
@@ -408,182 +437,253 @@ struct OnboardingView: View {
         }
     }
     
-    var blockingLevelStep: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Welcome to wBlock!")
-                .font(.title)
-                .bold()
-            Text("Choose your preferred blocking level. You can adjust enabled filters later.")
-                .font(.subheadline)
-            ForEach(BlockingLevel.allCases) { level in
-                Button(action: {
-                    setSelectedBlockingLevel(level.rawValue)
-                }) {
-                    HStack {
-                        Image(
-                            systemName: selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                                == level.rawValue.lowercased()
-                                ? "largecircle.fill.circle" : "circle")
-                            .symbolRenderingMode(.hierarchical)
-                        VStack(alignment: .leading) {
-                            Text(LocalizedStringKey(level.rawValue))
-                                .font(.headline)
-                            Text(blockingLevelDescription(level))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+    private var onboardingHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "shield.lefthalf.filled")
+                    .font(.title2)
+                    .foregroundStyle(.blue)
+                    .symbolRenderingMode(.hierarchical)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Set up wBlock")
+                        .font(.title2.bold())
                 }
-                .buttonStyle(.plain)
-            }
-            Spacer()
-            HStack {
+
                 Spacer()
-                Button("Next") { step += 1 }
-                    .disabled(selectedBlockingLevel.isEmpty)
+
+                Text("\(step.rawValue + 1)/\(OnboardingStep.allCases.count)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+        }
+    }
+
+    @ViewBuilder
+    private var stepContent: some View {
+        switch step {
+        case .protection:
+            blockingLevelStep
+        case .region:
+            regionStep
+        case .userscripts:
+            userscriptStep
+        case .sync:
+            syncStep
+        }
+    }
+
+    private var onboardingFooter: some View {
+        HStack(spacing: 12) {
+            if step != .protection {
+                Button("Back") {
+                    retreatToPreviousStep()
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Spacer()
+
+            Button(step == .sync ? "Apply & Finish" : "Next") {
+                if step == .sync {
+                    Task {
+                        await applySettings()
+                    }
+                } else {
+                    advanceToNextStep()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(
+                step == .protection
+                    && selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            )
+            .keyboardShortcut(.defaultAction)
+        }
+    }
+
+    private func advanceToNextStep() {
+        guard let next = OnboardingStep(rawValue: step.rawValue + 1) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            step = next
+        }
+    }
+
+    private func retreatToPreviousStep() {
+        guard let previous = OnboardingStep(rawValue: step.rawValue - 1) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            step = previous
+        }
+    }
+
+    private var blockingLevelStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(BlockingLevel.allCases) { level in
+                blockingLevelCard(for: level)
             }
         }
     }
-    
+
+    private func blockingLevelCard(for level: BlockingLevel) -> some View {
+        let isSelected =
+            selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            == level.rawValue.lowercased()
+
+        return Button {
+            setSelectedBlockingLevel(level.rawValue)
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .font(.title3)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(LocalizedStringKey(level.rawValue))
+                            .font(.headline)
+                    }
+
+                    Text(blockingLevelDescription(level))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .buttonStyle(.plain)
+        .liquidGlassCompat(
+            cornerRadius: 16,
+            material: isSelected ? .thickMaterial : .regularMaterial
+        )
+    }
+
     func blockingLevelDescription(_ level: BlockingLevel) -> String {
         switch level {
         case .minimal:
-            return String(localized: "Only AdGuard Base filter. Lightest protection, best compatibility.")
+            return String(localized: "Base filter only.")
         case .recommended:
-            return String(localized: "Default filters for balanced blocking and compatibility.")
+            return String(localized: "Balanced defaults.")
         }
     }
-    
-    var regionStep: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Regional filters")
-                        .font(.title2)
-                        .bold()
-                    Text("Tell us where you browse so we can enable the right regional filters.")
-                        .font(.subheadline)
 
-                    Picker("Country or region", selection: $selectedCountryCode) {
-                        Text("Skip for now").tag("")
-                        ForEach(Self.countryOptions) { option in
-                            Text(option.name).tag(option.code)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    if let message = regionInfoMessage {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if !recommendedRegionalFilters.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Recommended")
-                                .font(.headline)
-                            ForEach(recommendedRegionalFilters) { filter in
-                                regionalToggle(for: filter, expandsCommunity: false)
-                            }
-                        }
-                    }
-
-                    if !optionalRegionalFilters.isEmpty {
-                        DisclosureGroup(isExpanded: $isCommunityExpanded) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("These lists are community-maintained. Enable them if you still see regional ads.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                ForEach(optionalRegionalFilters) { filter in
-                                    regionalToggle(for: filter, expandsCommunity: false)
-                                }
-                            }
-                            .padding(.leading, 4)
-                        } label: {
-                            Text("Community options")
-                                .font(.headline)
-                        }
+    private var regionStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Country or region", selection: $selectedCountryCode) {
+                    Text("Skip for now").tag("")
+                    ForEach(Self.countryOptions) { option in
+                        Text(option.name).tag(option.code)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 8)
+                .pickerStyle(.menu)
+            }
+            .padding(14)
+            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+
+            if let message = regionInfoMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
             }
 
-            HStack {
-                Button("Back") { step -= 1 }
-                Spacer()
-                Button("Next") { step += 1 }
+            if !recommendedRegionalFilters.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Recommended")
+                        .font(.headline)
+                    ForEach(recommendedRegionalFilters) { filter in
+                        regionalToggle(for: filter, expandsCommunity: false)
+                    }
+                }
+            }
+
+            if !optionalRegionalFilters.isEmpty {
+                DisclosureGroup(isExpanded: $isCommunityExpanded) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(optionalRegionalFilters) { filter in
+                            regionalToggle(for: filter, expandsCommunity: false)
+                        }
+                    }
+                    .padding(.top, 8)
+                } label: {
+                    Text("Community options")
+                        .font(.headline)
+                }
+                .padding(14)
+                .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
             }
         }
     }
 
     private func regionalToggle(for filter: FilterList, expandsCommunity: Bool = true) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(filter.name)
-                    .font(.headline)
-                if !filter.description.isEmpty {
-                    Text(filter.description)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                let languageSummary = resolvedLanguages(for: filter).map { $0.uppercased() }.sorted().joined(separator: ", ")
-                if !languageSummary.isEmpty {
-                    Text("Languages: \(languageSummary)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                if let trust = resolvedTrustLevel(for: filter) {
-                    Text("Trust: \(trust.capitalized)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            Spacer()
-            Toggle("", isOn: Binding(
-                get: { selectedRegionalFilters.contains(filter.id) },
-                set: { isOn in
-                    if isOn {
-                        selectedRegionalFilters.insert(filter.id)
-                    } else {
-                        selectedRegionalFilters.remove(filter.id)
-                    }
-                    hasManuallyEditedRegionalSelection = true
-                    if expandsCommunity {
-                        isCommunityExpanded = true
-                    }
-                }
-            ))
-            .labelsHidden()
-            .toggleStyle(.switch)
-        }
-    }
+        let isSelected = selectedRegionalFilters.contains(filter.id)
 
-    var userscriptStep: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Userscripts")
-                .font(.title2)
-                .bold()
-            Text("Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later.")
-                .font(.subheadline)
-            ForEach(defaultUserScripts, id: \.id) { script in
-                Toggle(isOn: Binding(
-                    get: { selectedUserscripts.contains(script.id) },
-                    set: { isOn in
-                        if isOn { selectedUserscripts.insert(script.id) }
-                        else { selectedUserscripts.remove(script.id) }
-                    }
-                )) {
-                    VStack(alignment: .leading) {
-                        Text(script.name)
-                        Text(script.description)
+        return Button {
+            if isSelected {
+                selectedRegionalFilters.remove(filter.id)
+            } else {
+                selectedRegionalFilters.insert(filter.id)
+            }
+            hasManuallyEditedRegionalSelection = true
+            if expandsCommunity {
+                isCommunityExpanded = true
+            }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .font(.title3)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(filter.name)
+                        .font(.headline)
+
+                    if !filter.description.isEmpty {
+                        Text(filter.description)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
                 }
+
+                Spacer(minLength: 0)
             }
-            // Show a note if Bypass Paywalls userscript is selected
-            if let bypassScript = bypassPaywallsScript, selectedUserscripts.contains(bypassScript.id), let filterName = bypassPaywallsFilterName {
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .buttonStyle(.plain)
+        .liquidGlassCompat(
+            cornerRadius: 16,
+            material: isSelected ? .thickMaterial : .regularMaterial
+        )
+    }
+
+    private var userscriptStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if defaultUserScripts.isEmpty {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.85)
+                    Text("Loading userscripts…")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(14)
+                .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+            } else {
+                ForEach(defaultUserScripts) { script in
+                    userscriptCard(for: script)
+                }
+            }
+
+            if let bypassScript = bypassPaywallsScript,
+                selectedUserscripts.contains(bypassScript.id),
+                let filterName = bypassPaywallsFilterName
+            {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.yellow)
@@ -593,64 +693,100 @@ struct OnboardingView: View {
                         Text("The \(bypassScript.name) userscript requires the \(filterName)")
                             .font(.caption)
                             .foregroundColor(.orange)
-                        Text("It will be enabled automatically.")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
                     }
                 }
-            }
-            Spacer()
-            HStack {
-                Button("Back") { step -= 1 }
-                Spacer()
-                Button("Next") { step += 1 }
+                .padding(12)
+                .liquidGlassCompat(cornerRadius: 14, material: .regularMaterial)
             }
         }
     }
-    
-    var summaryStep: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Summary")
-                .font(.title2)
-                .bold()
-            Text("Review your choices and apply settings.")
+
+    private var syncStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Sync your filter selections, custom lists, userscripts, and whitelist across devices.")
                 .font(.subheadline)
-            Divider()
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("Blocking Level: %@", comment: "Onboarding summary row"),
-                    selectedBlockingLevelDisplayName))
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("Country: %@", comment: "Onboarding summary row"),
-                    selectedCountryDescription))
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("Regional filters: %@", comment: "Onboarding summary row"),
-                    selectedRegionalFiltersSummary))
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("Userscripts: %@", comment: "Onboarding summary row"),
-                    selectedUserscriptsSummary))
+                .foregroundStyle(.secondary)
 
             cloudSyncCard
 
 #if os(iOS)
+            Divider()
             reminderCard
 #endif
-
-            Spacer()
-            HStack {
-                Button("Back") { step -= 1 }
-                Spacer()
-                Button("Apply & Finish") {
-                    Task {
-                        await applySettings()
-                    }
-                }
-                .keyboardShortcut(.defaultAction)
-            }
         }
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func userscriptCard(for script: OnboardingUserScriptItem) -> some View {
+        let isSelected = selectedUserscripts.contains(script.id)
+
+        return Button {
+            if isSelected {
+                selectedUserscripts.remove(script.id)
+            } else {
+                selectedUserscripts.insert(script.id)
+            }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .font(.title3)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(script.name)
+                        .font(.headline)
+                    Text(script.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .buttonStyle(.plain)
+        .liquidGlassCompat(
+            cornerRadius: 16,
+            material: isSelected ? .thickMaterial : .regularMaterial
+        )
+    }
+
+    private func resolvedUserscriptDescription(for script: UserScript) -> String {
+        let trimmedDescription = script.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedDescription = trimmedDescription.lowercased()
+
+        let isPlaceholder =
+            normalizedDescription.isEmpty
+            || normalizedDescription == "default userscript"
+            || normalizedDescription == "default userscript - downloading..."
+            || normalizedDescription == "ready to enable"
+
+        guard isPlaceholder else { return trimmedDescription }
+
+        if userScriptManager.isPrefetchingDefaultMetadata {
+            return String(localized: "Loading metadata…")
+        }
+
+        if let fallback = userscriptDescriptionFallbacksByName[script.name.lowercased()] {
+            return fallback
+        }
+
+        return String(localized: "No description provided by the script metadata.")
+    }
+
+    private func seedSelectedUserscriptsIfNeeded() {
+        guard !hasSeededUserscriptSelection else { return }
+
+        let defaultScripts = userScriptManager.userScripts.filter {
+            userScriptManager.isDefaultUserScript($0)
+        }
+        guard !defaultScripts.isEmpty else { return }
+
+        selectedUserscripts = Set(defaultScripts.filter(\.isEnabled).map { $0.id.uuidString })
+        hasSeededUserscriptSelection = true
     }
     
     func applySettings() async {
@@ -711,10 +847,10 @@ struct OnboardingView: View {
         // 2. Enable/disable userscripts based on onboarding selection
         let selectedScriptIDs = Set(selectedUserscripts.compactMap { UUID(uuidString: $0) })
         // Single, deterministic batch apply
-        await UserScriptManager.shared.setEnabledScripts(withIDs: selectedScriptIDs)
+        await userScriptManager.setEnabledScripts(withIDs: selectedScriptIDs)
         
         // 2.5. Mark userscript initial setup as complete
-        UserScriptManager.shared.markInitialSetupComplete()
+        userScriptManager.markInitialSetupComplete()
 
         // 3. Download and install enabled filter lists
         isApplying = true
@@ -737,7 +873,7 @@ struct OnboardingView: View {
     private func probeForExistingICloudSetupIfNeeded() {
         guard !hasProbedRemoteConfig else { return }
         guard !hasCompletedOnboarding else { return }
-        guard step == 0 else { return }
+        guard step == .protection else { return }
         guard !isApplying else { return }
 
         hasProbedRemoteConfig = true
@@ -870,21 +1006,17 @@ struct OnboardingView: View {
     private var cloudSyncCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("iCloud Sync")
-                        .font(.headline)
-                    Text("Sync your filter selections, custom lists, userscripts, and whitelist across devices.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("iCloud Sync")
+                    .font(.headline)
             } icon: {
                 Image(systemName: "icloud")
                     .foregroundStyle(.blue)
             }
 
-            Toggle("Sync settings across devices", isOn: $wantsCloudSync)
+            Toggle("Sync across devices", isOn: $wantsCloudSync)
                 .toggleStyle(.switch)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
@@ -893,21 +1025,17 @@ struct OnboardingView: View {
     private var reminderCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Reminder notifications")
-                        .font(.headline)
-                    Text("If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("Reminders")
+                    .font(.headline)
             } icon: {
                 Image(systemName: "bell.badge")
                     .foregroundStyle(.yellow)
             }
 
-            Toggle("Send me reminders about unapplied changes", isOn: $wantsReminderNotifications)
+            Toggle("Notify me", isOn: $wantsReminderNotifications)
                 .toggleStyle(.switch)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
