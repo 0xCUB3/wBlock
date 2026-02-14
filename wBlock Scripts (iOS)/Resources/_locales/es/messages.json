@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "wBlock Scripts",
+    "description": "The display name for the extension."
+  },
+  "extension_description": {
+    "message": "Bloquea los anuncios y métodos de seguimiento más molestos, incluido YouTube.",
+    "description": "Description of what the extension does."
+  }
+}

@@ -165,23 +165,23 @@ struct ApplyChangesProgressView: View {
             if step.status == .complete {
                 let count = viewModel.state.updatesFound
                 if count > 0 {
-                    return "Downloaded \(count) update\(count == 1 ? "" : "s")"
+                    return localizedCountDetail("Downloaded %d updates", count: count)
                 }
-                return "No updates available"
+                return String(localized: "No updates available")
             }
             return nil
         case .scripts:
             if step.status == .complete {
                 let count = viewModel.state.scriptsUpdatedCount
                 if count > 0 {
-                    return "Updated \(count) script\(count == 1 ? "" : "s")"
+                    return localizedCountDetail("Updated %d scripts", count: count)
                 }
-                return "No script updates"
+                return String(localized: "No script updates")
             }
             return nil
         case .reading:
             guard viewModel.state.totalCount > 0 else { return nil }
-            return "Preparing \(viewModel.state.totalCount) extension\(viewModel.state.totalCount == 1 ? "" : "s")"
+            return localizedCountDetail("Preparing %d extensions", count: viewModel.state.totalCount)
         case .converting:
             guard step.status == .active else { return nil }
             guard !viewModel.state.currentFilterName.isEmpty else { return nil }
@@ -195,16 +195,23 @@ struct ApplyChangesProgressView: View {
         }
     }
 
+    private func localizedCountDetail(_ key: String, count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString(key, comment: "Apply changes detail"),
+            count
+        )
+    }
+
     private var headerTitle: String {
         if viewModel.state.isComplete {
-            return "Applied"
+            return String(localized: "Applied")
         }
         return ""
     }
 
     private var headerSubtitle: String {
         if viewModel.state.isComplete {
-            return "Filters applied successfully."
+            return String(localized: "Filters applied successfully.")
         }
         return ""
     }

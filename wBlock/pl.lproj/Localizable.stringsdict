@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Downloaded %d updates</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Pobrano %d aktualizację</string>
+			<key>other</key>
+			<string>Pobrano %d aktualizacji</string>
+			<key>few</key>
+			<string>Pobrano %d aktualizacje</string>
+			<key>many</key>
+			<string>Pobrano %d aktualizacji</string>
+		</dict>
+	</dict>
+	<key>Updated %d scripts</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Zaktualizowano %d skrypt</string>
+			<key>other</key>
+			<string>Zaktualizowano %d skryptów</string>
+			<key>few</key>
+			<string>Zaktualizowano %d skrypty</string>
+			<key>many</key>
+			<string>Zaktualizowano %d skryptów</string>
+		</dict>
+	</dict>
+	<key>Preparing %d extensions</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Przygotowywanie %d rozszerzenia</string>
+			<key>other</key>
+			<string>Przygotowywanie %d rozszerzeń</string>
+			<key>few</key>
+			<string>Przygotowywanie %d rozszerzeń</string>
+			<key>many</key>
+			<string>Przygotowywanie %d rozszerzeń</string>
+		</dict>
+	</dict>
+	<key>Every %d days</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Co %d dzień</string>
+			<key>other</key>
+			<string>Co %d dni</string>
+			<key>few</key>
+			<string>Co %d dni</string>
+			<key>many</key>
+			<string>Co %d dni</string>
+		</dict>
+	</dict>
+	<key>Every %d hours</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Co %d godzinę</string>
+			<key>other</key>
+			<string>Co %d godzin</string>
+			<key>few</key>
+			<string>Co %d godziny</string>
+			<key>many</key>
+			<string>Co %d godzin</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

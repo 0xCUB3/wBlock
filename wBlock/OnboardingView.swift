@@ -280,8 +280,33 @@ struct OnboardingView: View {
     }
 
     private var selectedCountryDescription: String {
-        guard !selectedCountryCode.isEmpty else { return "Not selected" }
+        guard !selectedCountryCode.isEmpty else { return String(localized: "Not selected") }
         return countryName(for: selectedCountryCode)
+    }
+
+    private var selectedBlockingLevelDisplayName: String {
+        switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "minimal":
+            return String(localized: "Minimal")
+        case "recommended":
+            return String(localized: "Recommended")
+        default:
+            return selectedBlockingLevel
+        }
+    }
+
+    private var selectedRegionalFiltersSummary: String {
+        selectedRegionalFilterNames.isEmpty
+            ? String(localized: "None")
+            : selectedRegionalFilterNames.joined(separator: ", ")
+    }
+
+    private var selectedUserscriptsSummary: String {
+        selectedUserscripts.isEmpty
+            ? String(localized: "None")
+            : selectedUserscripts.compactMap { id in
+                defaultUserScripts.first(where: { $0.id == id })?.name
+            }.joined(separator: ", ")
     }
 
     private var selectedRegionalFilterNames: [String] {
@@ -373,11 +398,13 @@ struct OnboardingView: View {
         }
 
         private var primaryText: String {
-            isSyncingFromICloud ? "Syncing iCloud configuration…" : "Downloading and applying filter lists…"
+            isSyncingFromICloud
+                ? String(localized: "Syncing iCloud configuration…")
+                : String(localized: "Downloading and applying filter lists…")
         }
 
         private var secondaryText: String {
-            "This may take a while"
+            String(localized: "This may take a while")
         }
     }
     
@@ -393,10 +420,13 @@ struct OnboardingView: View {
                     setSelectedBlockingLevel(level.rawValue)
                 }) {
                     HStack {
-                        Image(systemName: selectedBlockingLevel == level.rawValue ? "largecircle.fill.circle" : "circle")
+                        Image(
+                            systemName: selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                                == level.rawValue.lowercased()
+                                ? "largecircle.fill.circle" : "circle")
                             .symbolRenderingMode(.hierarchical)
                         VStack(alignment: .leading) {
-                            Text(level.rawValue)
+                            Text(LocalizedStringKey(level.rawValue))
                                 .font(.headline)
                             Text(blockingLevelDescription(level))
                                 .font(.caption)
@@ -418,9 +448,9 @@ struct OnboardingView: View {
     func blockingLevelDescription(_ level: BlockingLevel) -> String {
         switch level {
         case .minimal:
-            return "Only AdGuard Base filter. Lightest protection, best compatibility."
+            return String(localized: "Only AdGuard Base filter. Lightest protection, best compatibility.")
         case .recommended:
-            return "Default filters for balanced blocking and compatibility."
+            return String(localized: "Default filters for balanced blocking and compatibility.")
         }
     }
     
@@ -586,10 +616,22 @@ struct OnboardingView: View {
             Text("Review your choices and apply settings.")
                 .font(.subheadline)
             Divider()
-            Text("Blocking Level: \(selectedBlockingLevel)")
-            Text("Country: \(selectedCountryDescription)")
-            Text("Regional filters: \(selectedRegionalFilterNames.isEmpty ? "None" : selectedRegionalFilterNames.joined(separator: ", "))")
-            Text("Userscripts: \(selectedUserscripts.isEmpty ? "None" : selectedUserscripts.compactMap { id in defaultUserScripts.first(where: { $0.id == id })?.name }.joined(separator: ", "))")
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Blocking Level: %@", comment: "Onboarding summary row"),
+                    selectedBlockingLevelDisplayName))
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Country: %@", comment: "Onboarding summary row"),
+                    selectedCountryDescription))
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Regional filters: %@", comment: "Onboarding summary row"),
+                    selectedRegionalFiltersSummary))
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Userscripts: %@", comment: "Onboarding summary row"),
+                    selectedUserscriptsSummary))
 
             cloudSyncCard
 
@@ -614,12 +656,12 @@ struct OnboardingView: View {
     func applySettings() async {
         // 1. Set filter selection based on chosen blocking level
         var updatedFilters = filterManager.filterLists
-        switch BlockingLevel(rawValue: selectedBlockingLevel) ?? .recommended {
-        case .minimal:
+        switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "minimal":
             for i in updatedFilters.indices {
                 updatedFilters[i].isSelected = updatedFilters[i].name == "AdGuard Base Filter"
             }
-        case .recommended:
+        default:
             // Disable all filters first
             for i in updatedFilters.indices {
                 updatedFilters[i].isSelected = false
@@ -709,7 +751,10 @@ struct OnboardingView: View {
                 let formatter = RelativeDateTimeFormatter()
                 formatter.unitsStyle = .short
                 let date = Date(timeIntervalSince1970: updatedAt)
-                remoteConfigUpdatedAtText = "last updated \(formatter.localizedString(for: date, relativeTo: Date()))"
+                remoteConfigUpdatedAtText = String.localizedStringWithFormat(
+                    NSLocalizedString("last updated %@", comment: "Remote config update timestamp"),
+                    formatter.localizedString(for: date, relativeTo: Date())
+                )
             } else {
                 remoteConfigUpdatedAtText = nil
             }
@@ -751,7 +796,7 @@ struct OnboardingView: View {
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
-            regionInfoMessage = "You can always add regional filters later from Settings."
+            regionInfoMessage = String(localized: "You can always add regional filters later from Settings.")
             return
         }
 
@@ -762,7 +807,10 @@ struct OnboardingView: View {
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
-            regionInfoMessage = "We don't have language data for \(countryName(for: normalizedCode)). Try enabling filters manually if you see regional ads."
+            regionInfoMessage = String.localizedStringWithFormat(
+                NSLocalizedString("We don't have language data for %@. Try enabling filters manually if you see regional ads.", comment: "Regional recommendation hint"),
+                countryName(for: normalizedCode)
+            )
             return
         }
 
@@ -779,7 +827,10 @@ struct OnboardingView: View {
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
-            regionInfoMessage = "We don't have regional filters for \(countryName(for: normalizedCode))."
+            regionInfoMessage = String.localizedStringWithFormat(
+                NSLocalizedString("We don't have regional filters for %@.", comment: "Regional recommendation hint"),
+                countryName(for: normalizedCode)
+            )
             return
         }
 
@@ -809,7 +860,10 @@ struct OnboardingView: View {
         if !primary.isEmpty {
             regionInfoMessage = nil
         } else {
-            regionInfoMessage = "Only community-maintained lists are available for \(countryName(for: normalizedCode)). Enable them if you're comfortable."
+            regionInfoMessage = String.localizedStringWithFormat(
+                NSLocalizedString("Only community-maintained lists are available for %@. Enable them if you're comfortable.", comment: "Regional recommendation hint"),
+                countryName(for: normalizedCode)
+            )
         }
     }
 

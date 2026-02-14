@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "wBlock Scripts",
+    "description": "The display name for the extension."
+  },
+  "extension_description": {
+    "message": "YouTube などの最も厄介な広告や追跡方法をブロックします。",
+    "description": "Description of what the extension does."
+  }
+}

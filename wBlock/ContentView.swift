@@ -370,7 +370,7 @@ struct ContentView: View {
     {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(category.rawValue)
+                Text(category.localizedName)
                     .font(.headline)
                     .foregroundColor(.primary)
 
@@ -402,7 +402,7 @@ struct ContentView: View {
                 }
             } label: {
                 HStack {
-                    Text(FilterListCategory.foreign.rawValue)
+                    Text(FilterListCategory.foreign.localizedName)
                         .font(.headline)
                         .foregroundColor(.primary)
 
@@ -729,8 +729,8 @@ struct ContentModifiers: ViewModifier {
     #if os(iOS)
         private func scheduleNotification(delay: TimeInterval = 1.0) {
             let content = UNMutableNotificationContent()
-            content.title = "Psst! You forgot something!"
-            content.body = "You have unapplied filter changes in wBlock. Tap to apply them now!"
+            content.title = String(localized: "Psst! You forgot something!")
+            content.body = String(localized: "You have unapplied filter changes in wBlock. Tap to apply them now!")
             content.sound = .default
             content.userInfo = ["action_type": "apply_wblock_changes"]
 
@@ -804,7 +804,7 @@ struct AddFilterListView: View {
 		                                if isSaving {
 		                                    ProgressView()
 		                                } else {
-		                                    Text(addButtonTitle)
+		                                    Text(LocalizedStringKey(addButtonTitle))
 		                                }
 		                            }
 		                            .disabled(!canSubmit || isSaving)
@@ -905,7 +905,7 @@ struct AddFilterListView: View {
 	                        ProgressView()
 	                            .scaleEffect(0.9)
 	                    }
-	                    Text(isSaving ? "Adding…" : addButtonTitle)
+	                    Text(LocalizedStringKey(isSaving ? "Adding…" : addButtonTitle))
 	                        .fontWeight(.semibold)
 	                }
 	            }
@@ -922,7 +922,7 @@ struct AddFilterListView: View {
 
 	                Picker("", selection: $addMode) {
 	                    ForEach(AddMode.allCases) { mode in
-	                        Text(mode.rawValue).tag(mode)
+	                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
 	                    }
 	                }
 	                .pickerStyle(.segmented)
@@ -985,7 +985,7 @@ struct AddFilterListView: View {
 
 	                    Picker("Category", selection: $selectedCategory) {
 	                        ForEach(addableCategories) { category in
-	                            Text(category.rawValue).tag(category)
+	                            Text(category.localizedName).tag(category)
 	                        }
 	                    }
 	                    .pickerStyle(.menu)
@@ -1102,7 +1102,7 @@ struct AddFilterListView: View {
 
 	                Picker("Category", selection: $selectedCategory) {
 	                    ForEach(addableCategories) { category in
-	                        Text(category.rawValue).tag(category)
+	                        Text(category.localizedName).tag(category)
 	                    }
 	                }
 	                .pickerStyle(.menu)

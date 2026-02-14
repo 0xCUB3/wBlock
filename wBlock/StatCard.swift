@@ -25,7 +25,7 @@ struct StatCard: View {
                 .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text({
+                Text(LocalizedStringKey({
                     #if os(iOS)
                     switch title {
                     case "Enabled Lists": "Enabled"
@@ -35,7 +35,7 @@ struct StatCard: View {
                     #else
                     title
                     #endif
-                }())
+                }()))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 

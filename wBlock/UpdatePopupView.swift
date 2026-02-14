@@ -140,7 +140,7 @@ struct UpdatePopupView: View {
                             } header: {
                                 // Category header with toggle for all items in category
                                 HStack {
-                                    Text(category.rawValue)
+                                    Text(category.localizedName)
                                         .font(.headline)
                                     Spacer()
                                     Toggle("", isOn: Binding(

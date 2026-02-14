@@ -56,7 +56,7 @@ struct PopoverView: View {
                 Divider()
 
                 DisclosureGroup(
-                    "Blocked requests (\(viewModel.blockedRequests.count))",
+                    blockedRequestsTitle,
                     isExpanded: $viewModel.showingBlockedRequests
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -89,7 +89,7 @@ struct PopoverView: View {
                 }
 
                 DisclosureGroup(
-                    "Zapper rules (\(viewModel.zapperRules.count))",
+                    zapperRulesTitle,
                     isExpanded: $viewModel.showingZapperRules
                 ) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -100,7 +100,7 @@ struct PopoverView: View {
                         } else {
                             ForEach(viewModel.zapperRules, id: \.self) { rule in
                                 HStack(spacing: 8) {
-                                    Text(rule.isEmpty ? "(empty rule)" : rule)
+                                    Text(rule.isEmpty ? String(localized: "(empty rule)") : rule)
                                         .font(.system(size: 11))
                                         .lineLimit(1)
                                         .truncationMode(.middle)
@@ -154,7 +154,7 @@ struct PopoverView: View {
                     Text("wBlock")
                         .font(.system(size: 14, weight: .bold))
                     Spacer()
-                    Text(viewModel.isDisabled ? "Disabled" : "Active")
+                    Text(LocalizedStringKey(viewModel.isDisabled ? "Disabled" : "Active"))
                         .font(.system(size: 11, weight: .semibold))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -186,12 +186,29 @@ struct PopoverView: View {
     private var blockedCountText: String {
         switch viewModel.blockedCount {
         case 0:
-            return "Blocked: 0"
+            return String(localized: "Blocked: 0")
         case 1:
-            return "Blocked: 1"
+            return String(localized: "Blocked: 1")
         default:
-            return "Blocked: \(viewModel.blockedCount)"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Blocked: %d", comment: "Blocked request count"),
+                viewModel.blockedCount
+            )
         }
+    }
+
+    private var blockedRequestsTitle: String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("Blocked requests (%d)", comment: "Blocked requests disclosure title"),
+            viewModel.blockedRequests.count
+        )
+    }
+
+    private var zapperRulesTitle: String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("Zapper rules (%d)", comment: "Element zapper rules disclosure title"),
+            viewModel.zapperRules.count
+        )
     }
 }
 

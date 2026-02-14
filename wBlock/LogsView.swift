@@ -168,7 +168,7 @@ struct LogsView: View {
                             selectedLevel = level
                         } label: {
                             HStack {
-                                Text("\(level.emoji) \(level.rawValue.capitalized)")
+                                Text("\(level.emoji) \(level.localizedName)")
                                 if selectedLevel == level {
                                     Image(systemName: "checkmark")
                                 }
@@ -179,7 +179,7 @@ struct LogsView: View {
                     HStack(spacing: 4) {
                         if let level = selectedLevel {
                             Text(level.emoji)
-                            Text(level.rawValue.capitalized)
+                            Text(level.localizedName)
                         } else {
                             Text("All Levels")
                         }
@@ -203,7 +203,7 @@ struct LogsView: View {
                             selectedCategory = category
                         } label: {
                             HStack {
-                                Text(category.rawValue)
+                                Text(category.localizedName)
                                 if selectedCategory == category {
                                     Image(systemName: "checkmark")
                                 }
@@ -213,7 +213,7 @@ struct LogsView: View {
                 } label: {
                     HStack(spacing: 4) {
                         if let category = selectedCategory {
-                            Text(category.rawValue)
+                            Text(category.localizedName)
                         } else {
                             Text("All Categories")
                         }
@@ -318,7 +318,10 @@ struct LogEntryRow: View {
                     Text(entry.level.emoji)
                         .font(.caption)
                     if entry.count > 1 {
-                        Text("×\(entry.count)")
+                        Text(String.localizedStringWithFormat(
+                            NSLocalizedString("×%d", comment: "Collapsed duplicate log entry count"),
+                            entry.count
+                        ))
                             .font(.system(size: 9))
                             .foregroundColor(.secondary)
                     }
@@ -333,7 +336,7 @@ struct LogEntryRow: View {
                             .font(.system(.caption, design: .monospaced))
                             .foregroundColor(.secondary)
 
-                        Text(entry.category.rawValue)
+                        Text(entry.category.localizedName)
                             .font(.caption)
                             .fontWeight(.medium)
                             .foregroundColor(levelColor)

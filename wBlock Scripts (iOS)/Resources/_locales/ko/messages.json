@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "wBlock Scripts",
+    "description": "The display name for the extension."
+  },
+  "extension_description": {
+    "message": "YouTube를 포함하여 가장 성가신 광고 및 추적 방법을 차단합니다.",
+    "description": "Description of what the extension does."
+  }
+}
