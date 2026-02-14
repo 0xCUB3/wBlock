@@ -278,6 +278,9 @@ extension AppDelegate: UIApplicationDelegate {
         // Request silent push capability (no UI notifications) and register
         UNUserNotificationCenter.current().requestAuthorization(options: []) { _, _ in }
         application.registerForRemoteNotifications()
+        // Request legacy background fetch as an additional fallback on devices where BGTask
+        // launches are infrequent.
+        application.setMinimumBackgroundFetchInterval(UIApplication.backgroundFetchIntervalMinimum)
         
         // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
@@ -289,6 +292,30 @@ extension AppDelegate: UIApplicationDelegate {
             await rescheduleBackgroundTasks(reason: "Launch")
         }
         return true
+    }
+
+    /// Legacy background fetch fallback for devices that rarely receive BGTaskScheduler wakeups.
+    /// Reuses the timeout-guarded forced update path to avoid long-running background execution.
+    func application(_ application: UIApplication,
+                     performFetchWithCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        os_log("Legacy background fetch triggered", type: .info)
+
+        Task {
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            guard ProtobufDataManager.shared.autoUpdateEnabled else {
+                completionHandler(.noData)
+                return
+            }
+
+            let updateResult = await runForcedAutoUpdateWithTimeout(trigger: "BackgroundFetch(iOS)")
+            switch updateResult {
+            case .completed:
+                completionHandler(.newData)
+            case .timedOut:
+                os_log("Legacy background fetch timed out before completion handler deadline", type: .error)
+                completionHandler(.failed)
+            }
+        }
     }
 
     /// Handle incoming silent pushes to update filter lists in background
