@@ -565,7 +565,6 @@ struct ContentModifiers: ViewModifier {
 
     // Use explicit @State for sheet presentation to avoid computed binding issues
     @State private var showOnboardingSheet = false
-    @State private var showSetupChecklistSheet = false
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
 
@@ -662,21 +661,10 @@ struct ContentModifiers: ViewModifier {
             // React to hasCompletedOnboarding changes
             .onChange(of: dataManager.hasCompletedOnboarding) { oldValue, newValue in
                 if newValue && !oldValue {
-                    // Onboarding was just completed, hide onboarding and maybe show setup
                     showOnboardingSheet = false
-                    if !dataManager.hasCompletedCriticalSetup {
-                        showSetupChecklistSheet = true
-                    }
                 } else if !newValue && oldValue {
                     // Onboarding was reset (e.g., from Settings), show onboarding again
-                    showSetupChecklistSheet = false
                     showOnboardingSheet = true
-                }
-            }
-            // Only react to hasCompletedCriticalSetup becoming true
-            .onChange(of: dataManager.hasCompletedCriticalSetup) { oldValue, newValue in
-                if newValue && !oldValue {
-                    showSetupChecklistSheet = false
                 }
             }
             #if os(iOS)
@@ -688,8 +676,6 @@ struct ContentModifiers: ViewModifier {
                 .onReceive(
                     NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)
                 ) { _ in
-                    print("Received applyWBlockChangesNotification in ContentView.")
-                    print("Triggering applyChanges from notification observer.")
                     filterManager.showingApplyProgressSheet = true
                     Task {
                         await filterManager.checkAndEnableFilters(forceReload: true)
@@ -698,15 +684,9 @@ struct ContentModifiers: ViewModifier {
                 .fullScreenCover(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
                 }
-                .fullScreenCover(isPresented: $showSetupChecklistSheet) {
-                    SetupChecklistView()
-                }
             #elseif os(macOS)
                 .sheet(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
-                }
-                .sheet(isPresented: $showSetupChecklistSheet) {
-                    SetupChecklistView()
                 }
             #endif
     }
@@ -714,15 +694,8 @@ struct ContentModifiers: ViewModifier {
     /// Determines which sheet (if any) should be shown on initial app load.
     /// Called only once after initial data load completes.
     private func updateSheetPresentation() {
-        // Priority 1: Show onboarding if not completed
         if !dataManager.hasCompletedOnboarding {
             showOnboardingSheet = true
-            return
-        }
-
-        // Priority 2: Show setup checklist if onboarding is done but critical setup isn't
-        if !dataManager.hasCompletedCriticalSetup {
-            showSetupChecklistSheet = true
         }
     }
 
@@ -738,13 +711,7 @@ struct ContentModifiers: ViewModifier {
             let request = UNNotificationRequest(
                 identifier: UUID().uuidString, content: content, trigger: trigger)
 
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("Error scheduling notification: \(error.localizedDescription)")
-                } else {
-                    print("Notification scheduled successfully.")
-                }
-            }
+            UNUserNotificationCenter.current().add(request) { _ in }
         }
     #endif
 }

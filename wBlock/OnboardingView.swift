@@ -2,6 +2,9 @@ import SwiftUI
 import wBlockCoreService
 #if os(iOS)
 import UserNotifications
+import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 struct OnboardingView: View {
@@ -16,6 +19,7 @@ struct OnboardingView: View {
         case region
         case userscripts
         case sync
+        case setup
 
         var id: Int { rawValue }
     }
@@ -44,8 +48,6 @@ struct OnboardingView: View {
     }
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .protection
-    @State private var isApplying: Bool = false
-    @State private var applyProgress: Float = 0.0
     @State private var selectedCountryCode: String
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
@@ -62,6 +64,8 @@ struct OnboardingView: View {
 #if os(iOS)
     @State private var wantsReminderNotifications: Bool = true
 #endif
+    @State private var hasEnabledContentBlockers = false
+    @State private var hasEnabledAdvanced = false
 
     let filterManager: AppFilterManager
     
@@ -321,27 +325,19 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if isApplying {
-                OnboardingDownloadView(
-                    progress: applyProgress,
-                    isSyncingFromICloud: isAdoptingRemoteConfig
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            } else {
-                onboardingHeader
+            onboardingHeader
 
-                ScrollView {
-                    stepContent
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 2)
-                }
-
-                onboardingFooter
+            ScrollView {
+                stepContent
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 2)
             }
+
+            onboardingFooter
         }
         .padding()
     #if os(macOS)
-        .frame(minWidth: 520, maxWidth: 680, minHeight: 560, maxHeight: 760)
+        .frame(minWidth: 440, maxWidth: 540, minHeight: 620, maxHeight: 820)
     #endif
     #if os(iOS)
         .background(
@@ -403,40 +399,6 @@ struct OnboardingView: View {
         }
     }
 
-    struct OnboardingDownloadView: View {
-        let progress: Float
-        let isSyncingFromICloud: Bool
-        var body: some View {
-            VStack(spacing: 24) {
-                if progress > 0 {
-                    ProgressView(value: progress)
-                        .progressViewStyle(.linear)
-                        .frame(maxWidth: 300)
-                } else {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                }
-                VStack(spacing: 4) {
-                    Text(primaryText)
-                        .multilineTextAlignment(.center)
-                    Text(secondaryText)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-
-        private var primaryText: String {
-            isSyncingFromICloud
-                ? String(localized: "Syncing iCloud configuration…")
-                : String(localized: "Downloading and applying filter lists…")
-        }
-
-        private var secondaryText: String {
-            String(localized: "This may take a while")
-        }
-    }
-    
     private var onboardingHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
@@ -471,6 +433,8 @@ struct OnboardingView: View {
             userscriptStep
         case .sync:
             syncStep
+        case .setup:
+            setupStep
         }
     }
 
@@ -485,8 +449,8 @@ struct OnboardingView: View {
 
             Spacer()
 
-            Button(step == .sync ? "Apply & Finish" : "Next") {
-                if step == .sync {
+            Button(step == .setup ? "Apply & Finish" : "Next") {
+                if step == .setup {
                     Task {
                         await applySettings()
                     }
@@ -495,11 +459,19 @@ struct OnboardingView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(
-                step == .protection
-                    && selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            )
+            .disabled(footerButtonDisabled)
             .keyboardShortcut(.defaultAction)
+        }
+    }
+
+    private var footerButtonDisabled: Bool {
+        switch step {
+        case .protection:
+            return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .setup:
+            return !hasEnabledContentBlockers || !hasEnabledAdvanced
+        default:
+            return false
         }
     }
 
@@ -718,6 +690,138 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var setupStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Enable the Safari extensions so wBlock can block ads.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Setup Instructions")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        openSafariExtensionsSettings()
+                    } label: {
+                        Label("Open Safari Settings", systemImage: "gear")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text("1.")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .frame(width: 20, alignment: .trailing)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            #if os(macOS)
+                            Text("Safari → Settings → Extensions")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text("Enable all 5 Content Blocker extensions")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            #else
+                            Text("Settings → Apps → Safari → Extensions")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text("Enable all 5 Content Blocker extensions")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            #endif
+                        }
+
+                        Spacer()
+
+                        Toggle("", isOn: $hasEnabledContentBlockers)
+                            .labelsHidden()
+                    }
+
+                    Divider()
+                        .padding(.leading, 30)
+
+                    HStack(alignment: .top, spacing: 10) {
+                        Text("2.")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .frame(width: 20, alignment: .trailing)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            #if os(macOS)
+                            Text("Enable 'wBlock Advanced' → Always Allow on Every Website")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text("Required for YouTube ad blocking and much more")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            #else
+                            Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text("Required for YouTube ad blocking and much more")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            #endif
+                        }
+
+                        Spacer()
+
+                        Toggle("", isOn: $hasEnabledAdvanced)
+                            .labelsHidden()
+                    }
+                }
+            }
+            .padding(14)
+            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+
+            Text("Already done this? Just check the boxes above.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private func openSafariExtensionsSettings() {
+        #if os(macOS)
+        let runningApps = NSWorkspace.shared.runningApplications
+        if let safariApp = runningApps.first(where: { $0.bundleIdentifier == "com.apple.Safari" }) {
+            safariApp.activate()
+            let script = """
+            tell application "Safari"
+                activate
+            end tell
+            tell application "System Events"
+                tell process "Safari"
+                    click menu item "Settings…" of menu "Safari" of menu bar 1
+                end tell
+            end tell
+            """
+            if let appleScript = NSAppleScript(source: script) {
+                var error: NSDictionary?
+                appleScript.executeAndReturnError(&error)
+                if error != nil {
+                    safariApp.activate()
+                }
+            }
+        } else {
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Safari.app"))
+        }
+        #else
+        if let url = URL(string: "App-prefs:SAFARI&path=EXTENSIONS") {
+            UIApplication.shared.open(url)
+        } else if let url = URL(string: "App-prefs:") {
+            UIApplication.shared.open(url)
+        }
+        #endif
+    }
+
     private func userscriptCard(for script: OnboardingUserScriptItem) -> some View {
         let isSelected = selectedUserscripts.contains(script.id)
 
@@ -755,6 +859,11 @@ struct OnboardingView: View {
     }
 
     private func resolvedUserscriptDescription(for script: UserScript) -> String {
+        // Prefer curated fallback descriptions for known scripts
+        if let fallback = userscriptDescriptionFallbacksByName[script.name.lowercased()] {
+            return fallback
+        }
+
         let trimmedDescription = script.description.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedDescription = trimmedDescription.lowercased()
 
@@ -768,10 +877,6 @@ struct OnboardingView: View {
 
         if userScriptManager.isPrefetchingDefaultMetadata {
             return String(localized: "Loading metadata…")
-        }
-
-        if let fallback = userscriptDescriptionFallbacksByName[script.name.lowercased()] {
-            return fallback
         }
 
         return String(localized: "No description provided by the script metadata.")
@@ -852,29 +957,27 @@ struct OnboardingView: View {
         // 2.5. Mark userscript initial setup as complete
         userScriptManager.markInitialSetupComplete()
 
-        // 3. Download and install enabled filter lists
-        isApplying = true
-        let enabledFilters = filterManager.filterLists.filter { $0.isSelected }
-        Task { @MainActor in
-            await filterManager.downloadAndApplyFilters(filters: enabledFilters, progress: { progress in
-                applyProgress = progress
-            })
-            isApplying = false
-            CloudSyncManager.shared.setEnabled(wantsCloudSync)
-            setHasCompletedOnboarding(true)
+        // 3. Save setup checklist state
+        await dataManager.setHasEnabledContentBlockers(hasEnabledContentBlockers)
+        await dataManager.setHasEnabledPlatformExtension(hasEnabledAdvanced)
+        await dataManager.setHasSetAllWebsitesPermission(hasEnabledAdvanced)
+
+        // 4. Set sync and mark onboarding complete
+        CloudSyncManager.shared.setEnabled(wantsCloudSync)
+        setHasCompletedOnboarding(true)
 #if os(iOS)
-            await requestNotificationPermissionIfNeeded()
+        await requestNotificationPermissionIfNeeded()
 #endif
-            dismiss()
-            filterManager.showingApplyProgressSheet = true
-        }
+
+        // 5. Dismiss onboarding and let the main view handle download + apply
+        dismiss()
+        filterManager.checkAndEnableFilters(forceReload: true)
     }
 
     private func probeForExistingICloudSetupIfNeeded() {
         guard !hasProbedRemoteConfig else { return }
         guard !hasCompletedOnboarding else { return }
         guard step == .protection else { return }
-        guard !isApplying else { return }
 
         hasProbedRemoteConfig = true
 
@@ -906,8 +1009,6 @@ struct OnboardingView: View {
         defer { isAdoptingRemoteConfig = false }
 
         wantsCloudSync = true
-        applyProgress = 0
-        isApplying = true
 
         filterManager.showingApplyProgressSheet = true
         CloudSyncManager.shared.setEnabled(true, startSync: false)
@@ -915,8 +1016,6 @@ struct OnboardingView: View {
         let applied = await CloudSyncManager.shared.downloadAndApplyLatestRemoteConfig(
             trigger: "Onboarding-AdoptRemote"
         )
-
-        isApplying = false
 
         guard applied else { return }
         setHasCompletedOnboarding(true)

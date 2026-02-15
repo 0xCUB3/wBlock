@@ -616,7 +616,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let userInfo = response.notification.request.content.userInfo
 
         if let actionType = userInfo["action_type"] as? String, actionType == "apply_wblock_changes" {
-            print("Apply changes notification tapped. Posting internal notification.")
             if filterManager != nil {
                 NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
             } else {

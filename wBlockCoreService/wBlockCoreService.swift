@@ -631,8 +631,7 @@ extension ContentBlockerService {
     ) -> Data? {
         // 1. Prepare data from strings
         guard let contentBlockerData = safariRulesJSON.data(using: .utf8) else {
-            // In theory, this cannot happen.
-            fatalError("Failed to convert string to bytes")
+            return nil
         }
         let advancedData = advancedRulesText?.data(using: .utf8)
 

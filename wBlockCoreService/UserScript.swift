@@ -109,6 +109,14 @@ public struct UserScript: Identifiable, Codable, Hashable {
         updateURL = nil
         downloadURL = nil
 
+        // Resolve the user's preferred language code for locale-aware metadata.
+        let preferredLang = Locale.current.language.languageCode?.identifier.lowercased() ?? "en"
+
+        var nameByLocale: [String: String] = [:]    // locale → name
+        var descByLocale: [String: String] = [:]    // locale → description
+        var bareName: String?
+        var bareDescription: String?
+
         var inMetadataBlock = false
 
         for line in content.split(whereSeparator: \.isNewline) {
@@ -141,6 +149,11 @@ public struct UserScript: Identifiable, Codable, Hashable {
                     maxSplits: 1,
                     omittingEmptySubsequences: true
                 ).first.map(String.init) ?? normalizedKey
+                // Extract locale suffix (e.g. "en" from "@name:en")
+                let localeSuffix: String? = {
+                    let parts = normalizedKey.split(separator: ":", maxSplits: 1)
+                    return parts.count > 1 ? String(parts[1]) : nil
+                }()
                 let value =
                     components.count > 1
                     ? String(components[1]).trimmingCharacters(in: .whitespaces) : ""
@@ -148,10 +161,20 @@ public struct UserScript: Identifiable, Codable, Hashable {
                 switch directive {
                 case "@name":
                     if !value.isEmpty {
-                        self.name = removeEmojis(from: value)
+                        let cleaned = removeEmojis(from: value)
+                        if let locale = localeSuffix {
+                            nameByLocale[locale] = cleaned
+                        } else {
+                            bareName = cleaned
+                        }
                     }
                 case "@description":
-                    self.description = removeEmojis(from: value)
+                    let cleaned = removeEmojis(from: value)
+                    if let locale = localeSuffix {
+                        descByLocale[locale] = cleaned
+                    } else {
+                        bareDescription = cleaned
+                    }
                 case "@version":
                     self.version = value
                 case "@match":
@@ -193,6 +216,18 @@ public struct UserScript: Identifiable, Codable, Hashable {
                 }
             }
         }
+
+        // Resolve locale-aware @name: prefer user locale, then "en", then bare.
+        self.name = nameByLocale[preferredLang]
+            ?? nameByLocale["en"]
+            ?? bareName
+            ?? self.name
+
+        // Resolve locale-aware @description: prefer user locale, then "en", then bare.
+        self.description = descByLocale[preferredLang]
+            ?? descByLocale["en"]
+            ?? bareDescription
+            ?? self.description
     }
     
     /// Check if userscript matches a given URL
