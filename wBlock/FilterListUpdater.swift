@@ -254,32 +254,36 @@ final class FilterListUpdater: @unchecked Sendable {
                 throw URLError(.badServerResponse)
             }
 
-            switch httpResponse.statusCode {
-            case 304:
-                return false
-            case 200:
-                guard looksLikeFilterListData(data) else {
-                    await ConcurrentLogManager.shared.debug(
-                        .filterUpdate, "Skipping update signal due to non-filter response body",
-                        metadata: ["filter": filter.name]
-                    )
-                    return false
-                }
+            let localData = localDataForComparison(filter: filter)
+            let responseStatus = FilterUpdateResponseClassifier.classify(
+                statusCode: httpResponse.statusCode,
+                responseData: data,
+                localData: localData
+            )
 
-                let changed = hasDifferentLocalContent(remoteData: data, filter: filter)
-                if !changed {
-                    let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
-                    let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
-                    if responseEtag != nil || responseLastModified != nil {
-                        await ProtobufDataManager.shared.setFilterValidators(
-                            filter.id.uuidString,
-                            etag: responseEtag,
-                            lastModified: responseLastModified
-                        )
-                    }
+            switch responseStatus {
+            case .notModified:
+                return false
+            case .updatedContent:
+                return true
+            case .unchangedContent:
+                let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
+                let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+                if responseEtag != nil || responseLastModified != nil {
+                    await ProtobufDataManager.shared.setFilterValidators(
+                        filter.id.uuidString,
+                        etag: responseEtag,
+                        lastModified: responseLastModified
+                    )
                 }
-                return changed
-            default:
+                return false
+            case .invalidContent:
+                await ConcurrentLogManager.shared.debug(
+                    .filterUpdate, "Skipping update signal due to non-filter response body",
+                    metadata: ["filter": filter.name]
+                )
+                return false
+            case .unexpectedStatus:
                 throw URLError(.badServerResponse)
             }
         } catch {
@@ -299,44 +303,46 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    private func hasDifferentLocalContent(remoteData: Data, filter: FilterList) -> Bool {
+    private func localDataForComparison(filter: FilterList) -> Data? {
         if let localURL = loader.localFileURL(for: filter),
            let localData = try? Data(contentsOf: localURL) {
-            return remoteData != localData
+            return localData
         }
 
         if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
             // Backward compatibility: legacy custom filters were stored as "<name>.txt".
             let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
             if let legacyData = try? Data(contentsOf: legacyURL) {
-                return remoteData != legacyData
+                return legacyData
             }
         }
 
-        // If we do not have a local copy yet, treat it as needing an update.
-        return true
-    }
-
-    private func looksLikeFilterListData(_ data: Data) -> Bool {
-        guard !data.isEmpty else { return false }
-        let prefix = data.prefix(2048)
-        guard let text = String(data: prefix, encoding: .utf8) else { return false }
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return !trimmed.hasPrefix("<!doctype html") && !trimmed.hasPrefix("<html")
+        return nil
     }
 
     /// Downloads remote content and compares it against the locally cached version
     private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
         let request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
         let (data, response) = try await urlSession.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
 
-        guard looksLikeFilterListData(data) else {
+        let localData = localDataForComparison(filter: filter)
+        let responseStatus = FilterUpdateResponseClassifier.classify(
+            statusCode: httpResponse.statusCode,
+            responseData: data,
+            localData: localData
+        )
+
+        switch responseStatus {
+        case .updatedContent:
+            return true
+        case .notModified, .unchangedContent, .invalidContent:
             return false
+        case .unexpectedStatus:
+            throw URLError(.badServerResponse)
         }
-        return hasDifferentLocalContent(remoteData: data, filter: filter)
     }
 
     /// Validates if content appears to be a valid filter list

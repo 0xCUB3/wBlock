@@ -693,19 +693,6 @@ public actor SharedAutoUpdateManager {
                 return .error(filterName: filter.name, error: URLError(.badServerResponse))
             }
 
-            if http.statusCode == 304 {
-                return .noChange
-            }
-
-            guard http.statusCode == 200 else {
-                return .error(filterName: filter.name, error: URLError(.badServerResponse))
-            }
-
-            guard looksLikeFilterList(data: data) else {
-                // Don't overwrite the on-disk list with HTML challenge pages or other garbage.
-                return .error(filterName: filter.name, error: URLError(.cannotParseResponse))
-            }
-
             let responseEtag = http.value(forHTTPHeaderField: "ETag")
             let responseLastModified = http.value(forHTTPHeaderField: "Last-Modified")
             let hasValidatorUpdates = responseEtag != nil || responseLastModified != nil
@@ -713,17 +700,31 @@ public actor SharedAutoUpdateManager {
             let localURL = containerURL.appendingPathComponent(
                 ContentBlockerIncrementalCache.localFilename(for: filter)
             )
-            if FileManager.default.fileExists(atPath: localURL.path),
-               let localData = try? Data(contentsOf: localURL),
-               localData == data {
-                if hasValidatorUpdates {
-                    return .noChangeWithValidators(
+            let localData = localDataForComparison(filter: filter, containerURL: containerURL)
+            let responseStatus = FilterUpdateResponseClassifier.classify(
+                statusCode: http.statusCode,
+                responseData: data,
+                localData: localData
+            )
+
+            switch responseStatus {
+            case .notModified:
+                return .noChange
+            case .unchangedContent:
+                return hasValidatorUpdates
+                    ? .noChangeWithValidators(
                         uuid: uuid,
                         etag: responseEtag,
                         lastModified: responseLastModified
                     )
-                }
-                return .noChange
+                    : .noChange
+            case .invalidContent:
+                // Don't overwrite the on-disk list with HTML challenge pages or other garbage.
+                return .error(filterName: filter.name, error: URLError(.cannotParseResponse))
+            case .unexpectedStatus:
+                return .error(filterName: filter.name, error: URLError(.badServerResponse))
+            case .updatedContent:
+                break
             }
 
             do {
@@ -772,15 +773,17 @@ public actor SharedAutoUpdateManager {
         )
     }
 
-    private func looksLikeFilterList(data: Data) -> Bool {
-        guard !data.isEmpty else { return false }
-        let prefix = data.prefix(2048)
-        guard let text = String(data: prefix, encoding: .utf8) else { return false }
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if trimmed.hasPrefix("<!doctype html") || trimmed.hasPrefix("<html") {
-            return false
+    private func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {
+        let localURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: filter)
+        )
+        if let localData = try? Data(contentsOf: localURL) {
+            return localData
         }
-        return true
+
+        guard filter.isCustom else { return nil }
+        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        return try? Data(contentsOf: legacyURL)
     }
 
     @discardableResult
