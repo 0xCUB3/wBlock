@@ -477,96 +477,72 @@ extension AppDelegate: UIApplicationDelegate {
     }
     
     private func handleBackgroundFilterUpdate(task: BGAppRefreshTask) {
-        os_log("Background filter update task started", type: .info)
-        let completionState = BGTaskCompletionState()
-        let updateTask = Task { [weak self] in
-            // Always force update since background tasks are precious and rare
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGAppRefreshTask", force: true)
-
-            // Double-check expiration didn't occur while we were running
-            // The flag might have been cleared by expirationHandler, which is fine
-            if await completionState.claimCompletion() {
-                os_log("Background filter update completed successfully", type: .info)
-                task.setTaskCompleted(success: true)
-                guard let self else { return }
-
-                // Schedule next occurrence after success
-                await MainActor.run {
-                    self.scheduleBackgroundFilterUpdate()
-                    self.scheduleBackgroundProcessingUpdate()
-                }
+        handleForcedBackgroundTask(
+            task: task,
+            taskLabel: "Background filter update task",
+            trigger: "BGAppRefreshTask",
+            onSuccess: { delegate in
+                delegate.scheduleBackgroundFilterUpdate()
+                delegate.scheduleBackgroundProcessingUpdate()
+            },
+            onExpiration: { delegate in
+                // Schedule next attempt sooner due to failure.
+                delegate.scheduleBackgroundFilterUpdate()
             }
-        }
-
-        task.expirationHandler = {
-            os_log("Background filter update task expired - clearing running flag", type: .default)
-            updateTask.cancel()
-
-            // CRITICAL: Clear the protobuf-backed running flag to prevent stuck state.
-            // This runs even if the async Task is still executing.
-            Task { @MainActor in
-                await ProtobufDataManager.shared.waitUntilLoaded()
-                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                await ProtobufDataManager.shared.saveDataImmediately()
-            }
-
-            Task { [weak self] in
-                guard await completionState.claimCompletion() else { return }
-                task.setTaskCompleted(success: false)
-                guard let self else { return }
-
-                // Schedule next attempt sooner due to failure
-                await MainActor.run {
-                    self.scheduleBackgroundFilterUpdate()
-                }
-            }
-        }
+        )
     }
 
     private func handleBackgroundProcessingUpdate(task: BGProcessingTask) {
-        os_log("Background processing update task started", type: .info)
+        handleForcedBackgroundTask(
+            task: task,
+            taskLabel: "Background processing update task",
+            trigger: "BGProcessingTask",
+            onSuccess: { delegate in
+                delegate.scheduleBackgroundFilterUpdate()
+                delegate.scheduleBackgroundProcessingUpdate()
+            },
+            onExpiration: { delegate in
+                delegate.scheduleBackgroundProcessingUpdate()
+            }
+        )
+    }
+
+    private func handleForcedBackgroundTask(
+        task: BGTask,
+        taskLabel: String,
+        trigger: String,
+        onSuccess: @escaping @MainActor (AppDelegate) -> Void,
+        onExpiration: @escaping @MainActor (AppDelegate) -> Void
+    ) {
+        os_log("%{public}@ started", type: .info, taskLabel)
         let completionState = BGTaskCompletionState()
         let updateTask = Task { [weak self] in
-            // Force update for processing tasks as well
             await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BGProcessingTask", force: true)
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
 
-            // Double-check expiration didn't occur while we were running
-            // The flag might have been cleared by expirationHandler, which is fine
-            if await completionState.claimCompletion() {
-                os_log("Background processing update task finished successfully", type: .info)
-                task.setTaskCompleted(success: true)
-                guard let self else { return }
-
-                // Schedule next occurrence after success
-                await MainActor.run {
-                    self.scheduleBackgroundFilterUpdate()
-                    self.scheduleBackgroundProcessingUpdate()
-                }
+            guard await completionState.claimCompletion() else { return }
+            os_log("%{public}@ completed successfully", type: .info, taskLabel)
+            task.setTaskCompleted(success: true)
+            guard let self else { return }
+            await MainActor.run {
+                onSuccess(self)
             }
         }
 
         task.expirationHandler = {
-            os_log("Background processing update task expired - clearing running flag", type: .default)
+            os_log("%{public}@ expired - clearing running flag", type: .default, taskLabel)
             updateTask.cancel()
 
-            // CRITICAL: Clear the protobuf-backed running flag to prevent stuck state.
-            // This runs even if the async Task is still executing.
-            Task { @MainActor in
-                await ProtobufDataManager.shared.waitUntilLoaded()
-                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                await ProtobufDataManager.shared.saveDataImmediately()
+            Task {
+                await self.clearAutoUpdateRunningFlag()
             }
 
             Task { [weak self] in
                 guard await completionState.claimCompletion() else { return }
                 task.setTaskCompleted(success: false)
                 guard let self else { return }
-
-                // Schedule next attempt
                 await MainActor.run {
-                    self.scheduleBackgroundProcessingUpdate()
+                    onExpiration(self)
                 }
             }
         }
@@ -576,7 +552,7 @@ extension AppDelegate: UIApplicationDelegate {
         trigger: String,
         timeoutSeconds: UInt64 = 25
     ) async -> ForcedBackgroundUpdateResult {
-        await withTaskGroup(of: ForcedBackgroundUpdateResult.self) { group in
+        let result = await withTaskGroup(of: ForcedBackgroundUpdateResult.self) { group in
             group.addTask {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
@@ -591,6 +567,26 @@ extension AppDelegate: UIApplicationDelegate {
             group.cancelAll()
             return result
         }
+
+        switch result {
+        case .completed:
+            return .completed
+        case .timedOut:
+            os_log(
+                "Forced auto-update timed out (%{public}@); clearing running flag and forcing retry",
+                type: .error,
+                trigger
+            )
+            await clearAutoUpdateRunningFlag()
+            await SharedAutoUpdateManager.shared.forceNextUpdate()
+            return .timedOut
+        }
+    }
+
+    private func clearAutoUpdateRunningFlag() async {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+        await ProtobufDataManager.shared.saveDataImmediately()
     }
 
     /// Re-schedules BGTaskScheduler requests using the protobuf-backed settings once loaded.
