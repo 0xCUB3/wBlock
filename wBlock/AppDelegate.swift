@@ -62,6 +62,13 @@ class AppDelegate: NSObject {
     #endif
 }
 
+private extension AppDelegate {
+    func runForcedAutoUpdate(trigger: String) async {
+        await SharedAutoUpdateManager.shared.forceNextUpdate()
+        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+    }
+}
+
 #if os(iOS)
 private actor BGTaskCompletionState {
     private var didComplete = false
@@ -185,8 +192,7 @@ extension AppDelegate: NSApplicationDelegate {
 
             if isSignificantlyOverdue && !status.isRunning {
                 os_log("App launch: update significantly overdue (>1h) - forcing update", type: .info)
-                await SharedAutoUpdateManager.shared.forceNextUpdate()
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch", force: true)
+                await runForcedAutoUpdate(trigger: "AppLaunch")
             } else {
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
             }
@@ -203,8 +209,7 @@ extension AppDelegate: NSApplicationDelegate {
 
             // If overdue or due soon, force update
             if status.isOverdue || (isDueSoon && !status.isRunning) {
-                await SharedAutoUpdateManager.shared.forceNextUpdate()
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive", force: true)
+                await runForcedAutoUpdate(trigger: "BecomeActive")
             } else {
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
             }
@@ -248,8 +253,7 @@ extension AppDelegate: NSApplicationDelegate {
 
         // Force update if overdue
         if status.isOverdue && !status.isRunning {
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+            await runForcedAutoUpdate(trigger: trigger)
         } else {
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
         }
@@ -262,9 +266,7 @@ extension AppDelegate: NSApplicationDelegate {
         Task {
             // Silent pushes may arrive when the UI hasn't been created; use the shared auto-update
             // path so this works even with no AppFilterManager instance.
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
-                trigger: "SilentPush(macOS)", force: true)
+            await runForcedAutoUpdate(trigger: "SilentPush(macOS)")
         }
     }
 }
@@ -351,8 +353,7 @@ extension AppDelegate: UIApplicationDelegate {
             // If overdue or due soon, force update
             if status.isOverdue || (isDueSoon && !status.isRunning) {
                 os_log("App became active with overdue/due update - forcing update", type: .info)
-                await SharedAutoUpdateManager.shared.forceNextUpdate()
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive", force: true)
+                await runForcedAutoUpdate(trigger: "BecomeActive")
             } else {
                 // Normal opportunistic update
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
@@ -516,14 +517,12 @@ extension AppDelegate: UIApplicationDelegate {
     ) {
         os_log("%{public}@ started", type: .info, taskLabel)
         let completionState = BGTaskCompletionState()
-        let updateTask = Task { [weak self] in
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+        let updateTask = Task {
+            await self.runForcedAutoUpdate(trigger: trigger)
 
             guard await completionState.claimCompletion() else { return }
             os_log("%{public}@ completed successfully", type: .info, taskLabel)
             task.setTaskCompleted(success: true)
-            guard let self else { return }
             await MainActor.run {
                 onSuccess(self)
             }
@@ -554,8 +553,7 @@ extension AppDelegate: UIApplicationDelegate {
     ) async -> ForcedBackgroundUpdateResult {
         let result = await withTaskGroup(of: ForcedBackgroundUpdateResult.self) { group in
             group.addTask {
-                await SharedAutoUpdateManager.shared.forceNextUpdate()
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+                await self.runForcedAutoUpdate(trigger: trigger)
                 return .completed
             }
             group.addTask {
