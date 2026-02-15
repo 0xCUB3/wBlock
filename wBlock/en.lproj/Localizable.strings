@@ -251,6 +251,8 @@
 "Add Filter" = "Add Filter";
 "Invalid" = "Invalid";
 "Waiting for activity" = "Waiting for activity";
+"Waiting for iOS background wake or app open" = "Waiting for iOS background wake or app open";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "iOS background refresh is best-effort; checks may run later than scheduled.";
 "Name" = "Name";
 "Startup" = "Startup";
 "Active" = "Active";

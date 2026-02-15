@@ -246,10 +246,38 @@ public actor ConcurrentLogManager {
         // Parse and add auto-update logs
         let lines = content.split(separator: "\n").map(String.init)
         for line in lines {
-            log(.debug, .autoUpdate, line)
+            if let telemetry = parseTelemetryLine(line) {
+                let event = telemetry["event"] ?? "unknown"
+                log(.info, .autoUpdate, "Telemetry: \(event)", metadata: telemetry)
+            } else {
+                log(.debug, .autoUpdate, line)
+            }
         }
 
         // Clear file after ingestion
         try? FileManager.default.removeItem(at: url)
+    }
+
+    private func parseTelemetryLine(_ line: String) -> [String: String]? {
+        let body: String
+        if let bracketEnd = line.firstIndex(of: "]") {
+            let afterTimestamp = line.index(after: bracketEnd)
+            body = String(line[afterTimestamp...]).trimmingCharacters(in: .whitespaces)
+        } else {
+            body = line
+        }
+
+        guard body.hasPrefix("telemetry ") else { return nil }
+        let payload = body.dropFirst("telemetry ".count)
+        var metadata: [String: String] = [:]
+
+        for token in payload.split(separator: " ") {
+            guard let separator = token.firstIndex(of: "=") else { continue }
+            let key = String(token[..<separator])
+            let value = String(token[token.index(after: separator)...])
+            metadata[key] = value.replacingOccurrences(of: "_", with: " ")
+        }
+
+        return metadata.isEmpty ? nil : metadata
     }
 }

@@ -30,7 +30,7 @@ struct SettingsView: View {
 
     private var compactStatusLine: String {
         if isOverdue {
-            return String(localized: "Waiting for activity")
+            return String(localized: "Waiting for iOS background wake or app open")
         }
         return nextScheduleLine
     }
@@ -187,6 +187,12 @@ struct SettingsView: View {
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
                                         }
+                                        #if os(iOS)
+                                            Text("iOS background refresh is best-effort; checks may run later than scheduled.")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        #endif
                                     }
                                     .padding(16)
                                 }
@@ -382,7 +388,7 @@ extension SettingsView {
         }
 
         if isOverdue || remaining <= 0 {
-            return String(localized: "Waiting for activity")
+            return String(localized: "Waiting for iOS background wake or app open")
         }
 
         let componentsFormatter = DateComponentsFormatter()
