@@ -67,6 +67,12 @@ private extension AppDelegate {
         await SharedAutoUpdateManager.shared.forceNextUpdate()
         await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
     }
+
+    @MainActor
+    func configuredAutoUpdateIntervalHours(defaultValue: Double = 6.0, minimum: Double = 1.0) -> Double {
+        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
+        return max(storedInterval > 0 ? storedInterval : defaultValue, minimum)
+    }
 }
 
 #if os(iOS)
@@ -224,8 +230,7 @@ extension AppDelegate: NSApplicationDelegate {
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
-        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
-        let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
+        let intervalHours = configuredAutoUpdateIntervalHours()
         
         let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
         scheduler.repeats = true
@@ -423,8 +428,7 @@ extension AppDelegate: UIApplicationDelegate {
     private func scheduleBackgroundFilterUpdate() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
         // Use protobuf-backed interval (legacy UserDefaults may be stale). Fall back to 6h if unset.
-        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
-        let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
+        let intervalHours = configuredAutoUpdateIntervalHours()
         // Schedule for 75% of interval to account for iOS's discretionary nature
         let delaySeconds = min(max(intervalHours * appRefreshScheduleDelayFactor, minAppRefreshDelayHours), maxAppRefreshDelayHours) * 60 * 60
         request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
@@ -454,8 +458,7 @@ extension AppDelegate: UIApplicationDelegate {
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = false // Don't require power - be more aggressive
         // Schedule processing task for full interval (less critical than app refresh)
-        let storedInterval = ProtobufDataManager.shared.autoUpdateIntervalHours
-        let intervalHours = max(storedInterval > 0 ? storedInterval : 6.0, 1.0)
+        let intervalHours = configuredAutoUpdateIntervalHours()
         let delaySeconds = min(max(intervalHours, minProcessingDelayHours), maxProcessingDelayHours) * 60 * 60
         request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
         do {
