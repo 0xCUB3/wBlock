@@ -222,7 +222,9 @@ final class FilterListUpdater: @unchecked Sendable {
         return filtersWithUpdates
     }
 
-    /// Checks if a filter has an update by comparing lightweight metadata before falling back to full downloads
+    /// Checks if a filter has an update.
+    /// Uses conditional GET + local byte comparison so unstable validators
+    /// (ETag/Last-Modified churn) do not create false-positive update counts.
     func hasUpdate(for filter: FilterList) async -> Bool {
         if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
             // Local / inline user lists don't have remote updates.
@@ -230,65 +232,60 @@ final class FilterListUpdater: @unchecked Sendable {
         }
         do {
             let validators = await storedValidators(for: filter)
-            var headRequest = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
-            headRequest.httpMethod = "HEAD"
-
-            if let etag = validators.etag, !etag.isEmpty {
-                headRequest.setValue(etag, forHTTPHeaderField: "If-None-Match")
+            let request: URLRequest
+            if filter.url.host?.contains("gitflic.ru") == true {
+                request = NetworkRequestFactory.makeGitflicRequest(
+                    url: filter.url,
+                    etag: validators.etag,
+                    lastModified: validators.lastModified,
+                    timeout: 30
+                )
+            } else {
+                request = NetworkRequestFactory.makeConditionalRequest(
+                    url: filter.url,
+                    etag: validators.etag,
+                    lastModified: validators.lastModified,
+                    timeout: 20
+                )
             }
 
-            if let lastModified = validators.lastModified, !lastModified.isEmpty {
-                headRequest.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+            let (data, response) = try await urlSession.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw URLError(.badServerResponse)
             }
 
-            let (_, response) = try await urlSession.data(for: headRequest)
-
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case 304:
+            switch httpResponse.statusCode {
+            case 304:
+                return false
+            case 200:
+                guard looksLikeFilterListData(data) else {
+                    await ConcurrentLogManager.shared.debug(
+                        .filterUpdate, "Skipping update signal due to non-filter response body",
+                        metadata: ["filter": filter.name]
+                    )
                     return false
-                case 200:
-                    let remoteETag = httpResponse.value(forHTTPHeaderField: "ETag")
-                    let remoteLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
-                    
-                    if let remoteETag,
-                       let localETag = validators.etag,
-                       !localETag.isEmpty
-                    {
-                        let changed = remoteETag != localETag
-                        if changed {
-                            await ConcurrentLogManager.shared.debug(
-                                .filterUpdate, "Filter update available (ETag changed)",
-                                metadata: ["filter": filter.name]
-                            )
-                        }
-                        return changed
-                    }
-                    
-                    if let remoteLastModified,
-                       let localLastModified = validators.lastModified,
-                       !localLastModified.isEmpty
-                    {
-                        let changed = remoteLastModified != localLastModified
-                        if changed {
-                            await ConcurrentLogManager.shared.debug(
-                                .filterUpdate, "Filter update available (Last-Modified changed)",
-                                metadata: ["filter": filter.name]
-                            )
-                        }
-                        return changed
-                    }
-                    
-                    // No validators available; confirm by inspecting content when needed
-                    return try await compareRemoteToLocal(filter: filter)
-                default:
-                    break
                 }
+
+                let changed = hasDifferentLocalContent(remoteData: data, filter: filter)
+                if !changed {
+                    let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
+                    let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+                    if responseEtag != nil || responseLastModified != nil {
+                        await ProtobufDataManager.shared.setFilterValidators(
+                            filter.id.uuidString,
+                            etag: responseEtag,
+                            lastModified: responseLastModified
+                        )
+                    }
+                }
+                return changed
+            default:
+                throw URLError(.badServerResponse)
             }
         } catch {
-            // Some providers reject HEAD or conditional requests; fall back to a direct comparison
+            // Some providers reject conditional requests; fall back to a direct comparison.
             await ConcurrentLogManager.shared.debug(
-                .filterUpdate, "HEAD check failed, falling back to full comparison",
+                .filterUpdate, "Conditional check failed, falling back to full comparison",
                 metadata: ["filter": filter.name, "error": error.localizedDescription])
         }
 
@@ -302,6 +299,32 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
+    private func hasDifferentLocalContent(remoteData: Data, filter: FilterList) -> Bool {
+        if let localURL = loader.localFileURL(for: filter),
+           let localData = try? Data(contentsOf: localURL) {
+            return remoteData != localData
+        }
+
+        if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
+            // Backward compatibility: legacy custom filters were stored as "<name>.txt".
+            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            if let legacyData = try? Data(contentsOf: legacyURL) {
+                return remoteData != legacyData
+            }
+        }
+
+        // If we do not have a local copy yet, treat it as needing an update.
+        return true
+    }
+
+    private func looksLikeFilterListData(_ data: Data) -> Bool {
+        guard !data.isEmpty else { return false }
+        let prefix = data.prefix(2048)
+        guard let text = String(data: prefix, encoding: .utf8) else { return false }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return !trimmed.hasPrefix("<!doctype html") && !trimmed.hasPrefix("<html")
+    }
+
     /// Downloads remote content and compares it against the locally cached version
     private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
         let request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
@@ -310,21 +333,10 @@ final class FilterListUpdater: @unchecked Sendable {
             throw URLError(.badServerResponse)
         }
 
-        if let localURL = loader.localFileURL(for: filter),
-           let localData = try? Data(contentsOf: localURL) {
-            return data != localData
+        guard looksLikeFilterListData(data) else {
+            return false
         }
-
-        if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
-            // Backward compatibility: legacy custom filters were stored as "<name>.txt".
-            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            if let legacyData = try? Data(contentsOf: legacyURL) {
-                return data != legacyData
-            }
-        }
-
-        // If we do not have a local copy yet, treat it as needing an update
-        return true
+        return hasDifferentLocalContent(remoteData: data, filter: filter)
     }
 
     /// Validates if content appears to be a valid filter list
