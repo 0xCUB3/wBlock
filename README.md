@@ -33,8 +33,8 @@
 <br>
 
 <p align="center">
-A Safari content blocker for macOS, iOS, and iPadOS utilizing declarative content blocking rules.<br>
-Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 compression.
+A Safari content blocker for macOS, iOS, and iPadOS.<br>
+750,000 rules across 5 extensions, Protocol Buffer storage, LZ4 compression, iCloud sync.
 </p>
 
 <br>
@@ -54,38 +54,36 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 <tr>
 <td width="50%" valign="top">
 
-### Performance Architecture
-- **750,000 rule capacity** utilizing 5 Safari content blocking extensions per platform (150k rules each)
-- **~40 MB RAM footprint** at idle via Safari's native content blocking API
-- **Protocol Buffers serialization** with LZ4 compression for filter storage
-- **Off-thread I/O operations** with streaming serialization to minimize main thread blocking
-- **HTTP conditional requests** (If-Modified-Since/ETag) for efficient filter update detection
+### Performance
+- **750,000 rule capacity** across 5 Safari content blocking extensions per platform (150k each)
+- **~40 MB RAM** at idle — Safari's native content blocking API runs rules out-of-process
+- **Protocol Buffers + LZ4** for filter storage; streaming I/O keeps memory low during compilation
+- **HTTP conditional requests** (If-Modified-Since/ETag) so updates only download what changed
+- **iCloud sync** for filter selections, custom lists, userscripts, and whitelist across devices
 
-### Content Modification
-- **Element Zapper** (macOS, iOS, iPadOS, visionOS) generates persistent CSS selectors for manual element removal
-- **Userscript engine** implements Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
-- **Custom filter list ingestion** supports AdGuard-syntax blocklists via URL import
-- **Category-based filter organization** with per-list toggle and automatic rule distribution
-- **Filter list validation** with automatic disabling on Safari's 150k rule limit per extension
+### Content modification
+- **Element Zapper** (macOS, iOS, iPadOS, visionOS) — visually select and hide page elements in Safari
+- **Userscript engine** with Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
+- **Custom filter lists** via URL, paste, or file import — supports any AdGuard-syntax blocklist
+- **Toolbar search** for quickly finding filters and userscripts
+- **Automatic rule distribution** across all 5 content blocker slots for maximum coverage
 
 </td>
 <td width="50%" valign="top">
 
-### Blocking Capabilities
-- **Network request blocking** via declarative content blocking rules (advertisements, trackers)
-- **Cookie and local storage filtering** through Safari content blocker rule actions
+### Blocking
+- **Network request blocking** — ads, trackers, cookie banners, annoyances
 - **CSS injection** for cosmetic filtering and element hiding
-- **Script blocking** for unwanted software and JavaScript execution
-- **Pop-up and redirect prevention** using Safari content blocking patterns
+- **Script blocking** for unwanted JavaScript
+- **Pop-up and redirect prevention**
 
-### Configuration & Management
-- **Configurable auto-update intervals** from 1 hour to 7 days with background refresh
-- **Per-site blocking controls** through Safari's content blocker enable/disable API
-- **Safari toolbar popover logger** (macOS) shows recent blocked requests per page
-- **Whitelist management** for trusted domains with Safari extension state persistence
-- **Regional filter support** with preset lists for language-specific content blocking
-- **Filter compilation monitoring** with real-time rule count and compilation status
-- **Background update notifications** (optional) for filter list refresh events
+### Configuration
+- **Auto-updates** from every hour to every 7 days, or manual — with background refresh on iOS
+- **Per-site controls** — disable blocking on specific sites from the Safari toolbar
+- **Blocked request logger** (macOS) — see what's being blocked on each page
+- **Whitelist** for trusted domains
+- **Regional filters** with auto-detection based on your locale
+- **Homebrew cask** for macOS: `brew tap 0xcub3/wblock https://github.com/0xCUB3/wBlock && brew install --cask wblock`
 
 </td>
 </tr>
@@ -177,7 +175,7 @@ Supports 750,000 rules across 5 extensions with Protocol Buffer storage and LZ4 
 
 ## Support Development
 
-wBlock is free and open-source software. Financial contributions support ongoing development and maintenance:
+wBlock is free and open source. If you want to support the project:
 
 <br>
 
@@ -208,7 +206,7 @@ Check out our <a href="Adblock_Comparison.md">comparison guide</a> vs uBlock Ori
 <details>
 <summary><b>Can I use my own filter lists?</b></summary>
 <br>
-Yes! wBlock supports any AdGuard-compatible filter list. Add the URL in Custom Filter Lists.
+Yes. You can add any AdGuard-compatible filter list by URL, paste rules directly, or import from a file.
 </details>
 
 <details>
