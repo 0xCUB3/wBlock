@@ -369,10 +369,12 @@ public actor SharedAutoUpdateManager {
                 )
                 hasLoggedExtensionSafeModeNotice = true
             }
+            appendSkipTelemetry(trigger: trigger, reason: "extension_safe_mode")
             return
         }
 
         if Task.isCancelled {
+            appendSkipTelemetry(trigger: trigger, reason: "task_cancelled_preflight")
             return
         }
 
@@ -381,6 +383,7 @@ public actor SharedAutoUpdateManager {
         // Respect enable flag
         let enabled = await getAutoUpdateEnabled()
         if !enabled {
+            appendSkipTelemetry(trigger: trigger, reason: "auto_update_disabled")
             return
         }
 
@@ -394,6 +397,7 @@ public actor SharedAutoUpdateManager {
         let isRunning = await getAutoUpdateIsRunning()
         if isRunning {
             os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
+            appendSkipTelemetry(trigger: trigger, reason: "already_running")
             return
         }
 
@@ -410,6 +414,12 @@ public actor SharedAutoUpdateManager {
             if nextEligibleInt64 > 0 {
                 let nextEligible = TimeInterval(nextEligibleInt64)
                 if now < nextEligible {
+                    let remainingSeconds = Int(max(0, nextEligible - now))
+                    appendSkipTelemetry(
+                        trigger: trigger,
+                        reason: "throttled_not_eligible",
+                        extra: ["remaining_seconds": "\(remainingSeconds)"]
+                    )
                     return // Still inside jittered window
                 }
             } else {
@@ -418,6 +428,12 @@ public actor SharedAutoUpdateManager {
                 if lastCheckInt64 > 0 {
                     let lastCheck = TimeInterval(lastCheckInt64)
                     if now - lastCheck < interval * 3600 {
+                        let remainingSeconds = Int(max(0, interval * 3600 - (now - lastCheck)))
+                        appendSkipTelemetry(
+                            trigger: trigger,
+                            reason: "throttled_legacy_interval",
+                            extra: ["remaining_seconds": "\(remainingSeconds)"]
+                        )
                         return
                     }
                 }
@@ -450,6 +466,14 @@ public actor SharedAutoUpdateManager {
         appendSharedLog(
             "Auto-update started: trigger=\(trigger), forced=\(shouldForce), intervalHours=\(String(format: "%.1f", interval))"
         )
+        appendTelemetry(
+            "run_start",
+            fields: [
+                "trigger": trigger,
+                "forced": shouldForce ? "true" : "false",
+                "interval_hours": String(format: "%.1f", interval)
+            ]
+        )
 
         // Use do-catch to ensure cleanup always runs
         do {
@@ -470,6 +494,22 @@ public actor SharedAutoUpdateManager {
 
                 appendSharedLog(
                     "Auto-update skipped: no selected filters, userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(Int(interval * 3600)))"
+                )
+                let durationMs = Int((completionTime - startTimestamp) * 1000)
+                appendTelemetry(
+                    "run_result",
+                    fields: [
+                        "trigger": trigger,
+                        "result": "no_selected_filters",
+                        "forced": shouldForce ? "true" : "false",
+                        "checked_filters": "0",
+                        "updated_filters": "0",
+                        "error_count": "0",
+                        "scripts_updated": "\(scriptsResult.updated)",
+                        "scripts_failed": "\(scriptsResult.failed)",
+                        "next_check_seconds": "\(Int(interval * 3600))",
+                        "duration_ms": "\(durationMs)"
+                    ]
                 )
 
                 // Still record check time even though no filters selected
@@ -524,6 +564,23 @@ public actor SharedAutoUpdateManager {
                 }
                 appendSharedLog(
                     "No filter updates: checkErrors=\(hadErrors), reload=\(reloadStatus), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(nextCheckInSeconds))"
+                )
+                let durationMs = Int((completionTime - startTimestamp) * 1000)
+                appendTelemetry(
+                    "run_result",
+                    fields: [
+                        "trigger": trigger,
+                        "result": "no_filter_updates",
+                        "forced": shouldForce ? "true" : "false",
+                        "checked_filters": "\(updateResult.checkedCount)",
+                        "updated_filters": "0",
+                        "error_count": "\(updateResult.errorCount)",
+                        "reload_status": reloadStatus,
+                        "scripts_updated": "\(scriptsResult.updated)",
+                        "scripts_failed": "\(scriptsResult.failed)",
+                        "next_check_seconds": "\(nextCheckInSeconds)",
+                        "duration_ms": "\(durationMs)"
+                    ]
                 )
 
                 // Clear running flag before return
@@ -583,12 +640,46 @@ public actor SharedAutoUpdateManager {
             if hadErrors {
                 appendSharedLog("Some filter checks failed; using a shorter retry interval.")
             }
+            appendTelemetry(
+                "run_result",
+                fields: [
+                    "trigger": trigger,
+                    "result": "applied_updates",
+                    "forced": shouldForce ? "true" : "false",
+                    "checked_filters": "\(updateResult.checkedCount)",
+                    "updated_filters": "\(updatedFilterSet.count)",
+                    "error_count": "\(updateResult.errorCount)",
+                    "scripts_updated": "\(scriptsResult.updated)",
+                    "scripts_failed": "\(scriptsResult.failed)",
+                    "next_check_seconds": "\(nextCheckInSeconds)",
+                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                ]
+            )
         } catch is CancellationError {
             os_log("Auto-update cancelled (trigger: %{public}@)", log: log, type: .info, trigger)
             appendSharedLog("Auto-update cancelled: trigger=\(trigger)")
+            appendTelemetry(
+                "run_result",
+                fields: [
+                    "trigger": trigger,
+                    "result": "cancelled",
+                    "forced": shouldForce ? "true" : "false",
+                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                ]
+            )
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("Auto-update failed: \(error.localizedDescription)")
+            appendTelemetry(
+                "run_result",
+                fields: [
+                    "trigger": trigger,
+                    "result": "failed",
+                    "forced": shouldForce ? "true" : "false",
+                    "error": String(describing: error),
+                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                ]
+            )
         }
 
         // ALWAYS clear running flag after completion (success or failure)
@@ -617,6 +708,8 @@ public actor SharedAutoUpdateManager {
     private struct UpdateFetchResult {
         var updatedFilters: [FilterList]
         var hadErrors: Bool
+        var errorCount: Int
+        var checkedCount: Int
     }
 
     private enum FilterFetchOutcome {
@@ -635,6 +728,7 @@ public actor SharedAutoUpdateManager {
 
         var updatedFilters: [FilterList] = []
         var hadErrors = false
+        var errorCount = 0
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
 
         await withTaskGroup(of: FilterFetchOutcome.self) { group in
@@ -660,6 +754,7 @@ public actor SharedAutoUpdateManager {
                     }
                 case .error(let filterName, let error):
                     hadErrors = true
+                    errorCount += 1
                     os_log(
                         "Update fetch error for %{public}@ – %{public}@",
                         log: log,
@@ -677,7 +772,12 @@ public actor SharedAutoUpdateManager {
             await ProtobufDataManager.shared.setFilterValidators(validatorUpdates)
         }
 
-        return UpdateFetchResult(updatedFilters: updatedFilters, hadErrors: hadErrors)
+        return UpdateFetchResult(
+            updatedFilters: updatedFilters,
+            hadErrors: hadErrors,
+            errorCount: errorCount,
+            checkedCount: filters.count
+        )
     }
 
     private func fetchIfUpdated(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
@@ -1292,6 +1392,25 @@ public actor SharedAutoUpdateManager {
                 try? data.write(to: logURL)
             }
         }
+    }
+
+    private func appendTelemetry(_ event: String, fields: [String: String]) {
+        let merged = fields.merging(["event": event]) { current, _ in current }
+        let payload = merged
+            .map { key, value in
+                let normalized = value.replacingOccurrences(of: " ", with: "_")
+                return "\(key)=\(normalized)"
+            }
+            .sorted()
+            .joined(separator: " ")
+        appendSharedLog("telemetry \(payload)")
+    }
+
+    private func appendSkipTelemetry(trigger: String, reason: String, extra: [String: String] = [:]) {
+        var fields = extra
+        fields["trigger"] = trigger
+        fields["reason"] = reason
+        appendTelemetry("run_skip", fields: fields)
     }
 
     // Removed runtime heuristic; compile-time selection is sufficient.

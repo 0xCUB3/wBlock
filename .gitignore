@@ -5,3 +5,4 @@ build/
 *.xcuserstate
 **/xcuserdata/
 DerivedData/
+scripts/.mock_filter_server.log
