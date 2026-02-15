@@ -62,9 +62,9 @@
     Fixed filter row long-press text clipping and corrected stat display order.
 -   **Filter Refresh Validators (`3fd1410`)**
     Fixed filter refresh to use persisted validators instead of stale in-memory state.
--   **Production Crash Safety (uncommitted)**
+-   **Production Crash Safety (`dad8fc8`)**
     Replaced a `fatalError` in the ZIP archive builder with graceful error handling, and removed unguarded `print()` statements from production code.
--   **Locale-Aware Userscript Metadata (uncommitted)**
+-   **Locale-Aware Userscript Metadata (`dad8fc8`)**
     The userscript metadata parser now respects locale-specific `@description:en` and `@name:en` fields, fixing non-English descriptions showing for scripts like AdGuard Extra.
 ---
 ### UI/UX Improvements
