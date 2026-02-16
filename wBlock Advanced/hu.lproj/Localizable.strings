@@ -169,7 +169,7 @@
 "That name is already used by another filter list." = "Ezt a nevet már használja egy másik szűrőlista.";
 "No Content Available" = "Nincs elérhető tartalom";
 "For complete ad blocking" = "Teljes hirdetésblokkoláshoz";
-"The %@ userscript requires the %@" = "A(z) %@ felhasználói szkripthez szükséges ez: %@";
+"The %@ userscript requires the %@" = "%@ felhasználói szkripthez szükséges ez: %@";
 "Every %dd %dh" = "Minden %dd %dh";
 "User List" = "Felhasználói lista";
 "All Levels" = "Összes szint";

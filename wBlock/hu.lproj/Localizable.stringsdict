@@ -45,9 +45,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Preparing %d extension</string>
+			<string>%d bővítmény előkészítése</string>
 			<key>other</key>
-			<string>Preparing %d extensions</string>
+			<string>%d bővítmény előkészítése</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
