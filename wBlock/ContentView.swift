@@ -199,7 +199,7 @@ struct ContentView: View {
                                 await filterManager.checkAndEnableFilters(forceReload: true)
                             }
                         } label: {
-                            Image(systemName: "checkmark.circle")
+                            Image(systemName: "checkmark.shield")
                         }
                         .disabled(filterManager.isLoading)
                     }
@@ -255,7 +255,7 @@ struct ContentView: View {
                                 await filterManager.checkAndEnableFilters(forceReload: true)
                             }
                         } label: {
-                            Label("Apply Changes", systemImage: "checkmark.circle")
+                            Label("Apply Changes", systemImage: "checkmark.shield")
                         }
                         .disabled(filterManager.isLoading)
 
@@ -291,7 +291,7 @@ struct ContentView: View {
                                     await filterManager.checkAndEnableFilters(forceReload: true)
                                 }
                             } label: {
-                                Image(systemName: "checkmark.circle")
+                                Image(systemName: "checkmark.shield")
                             }
                             .disabled(filterManager.isLoading)
                         }
