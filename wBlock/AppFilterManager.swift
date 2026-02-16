@@ -917,6 +917,9 @@ class AppFilterManager: ObservableObject {
                 self.showingApplyProgressSheet = false
                 self.hasUnappliedChanges = false
                 self.lastRuleCount = 0
+                self.ruleCountsByExtension.removeAll()
+                self.extensionsApproachingLimit.removeAll()
+                self.saveRuleCounts()
             }
             return
         }

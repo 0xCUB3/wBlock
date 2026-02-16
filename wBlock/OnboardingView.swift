@@ -48,7 +48,7 @@ struct OnboardingView: View {
     }
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .protection
-    @State private var selectedCountryCode: String
+    @State private var selectedLanguages: Set<String>
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
     @State private var optionalRegionalFilters: [FilterList] = []
@@ -69,177 +69,11 @@ struct OnboardingView: View {
 
     let filterManager: AppFilterManager
     
-    private static let selectedCountryDefaultsKey = "onboardingSelectedCountryCode"
+    private static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
     #if os(iOS)
     private static let reminderPreferenceKey = "onboardingWantsReminderNotifications"
     #endif
     private static let cloudSyncEnabledDefaultsKey = "cloudSyncEnabled"
-    private static let fallbackLocale = Locale(identifier: "en_US")
-    private static let manualCountryLanguageOverrides: [String: [String]] = [
-        // North America
-        "US": ["en"],
-        "CA": ["en", "fr"],
-        "MX": ["es"],
-        "PR": ["es", "en"],
-        "DO": ["es"],
-        "GT": ["es"],
-        "HN": ["es"],
-        "NI": ["es"],
-        "CR": ["es"],
-        "PA": ["es"],
-        "CU": ["es"],
-        "SV": ["es"],
-        // South America
-        "AR": ["es"],
-        "CL": ["es"],
-        "CO": ["es"],
-        "PE": ["es"],
-        "VE": ["es"],
-        "EC": ["es"],
-        "BO": ["es", "qu"],
-        "PY": ["es", "gn"],
-        "UY": ["es"],
-        "BR": ["pt"],
-        // Europe
-        "GB": ["en"],
-        "IE": ["en"],
-        "FR": ["fr"],
-        "BE": ["fr", "nl", "de"],
-        "LU": ["fr", "de"],
-        "DE": ["de"],
-        "AT": ["de"],
-        "CH": ["de", "fr", "it"],
-        "IT": ["it"],
-        "ES": ["es", "ca", "eu", "gl"],
-        "PT": ["pt"],
-        "NL": ["nl"],
-        "DK": ["da"],
-        "NO": ["no"],
-        "SE": ["sv"],
-        "FI": ["fi", "sv"],
-        "IS": ["is"],
-        "EE": ["et"],
-        "LV": ["lv"],
-        "LT": ["lt"],
-        "PL": ["pl"],
-        "CZ": ["cs"],
-        "SK": ["sk"],
-        "HU": ["hu"],
-        "SI": ["sl"],
-        "HR": ["hr"],
-        "RS": ["sr"],
-        "BA": ["bs", "hr", "sr"],
-        "ME": ["sr"],
-        "MK": ["mk"],
-        "BG": ["bg"],
-        "RO": ["ro"],
-        "MD": ["ro"],
-        "GR": ["el"],
-        "CY": ["el", "tr"],
-        "UA": ["uk"],
-        "BY": ["be", "ru"],
-        "RU": ["ru"],
-        // Middle East & Africa
-        "IL": ["he"],
-        "TR": ["tr"],
-        "IR": ["fa"],
-        "AE": ["ar"],
-        "SA": ["ar"],
-        "MA": ["ar"],
-        "TN": ["ar"],
-        "DZ": ["ar"],
-        "EG": ["ar"],
-        "QA": ["ar"],
-        "KW": ["ar"],
-        "BH": ["ar"],
-        "OM": ["ar"],
-        "JO": ["ar"],
-        "LB": ["ar"],
-        // Asia-Pacific
-        "CN": ["zh"],
-        "TW": ["zh"],
-        "HK": ["zh"],
-        "MO": ["zh"],
-        "SG": ["zh", "en"],
-        "JP": ["ja"],
-        "KR": ["ko"],
-        "TH": ["th"],
-        "VN": ["vi"],
-        "PH": ["tl", "en"],
-        "ID": ["id"],
-        "MY": ["ms", "en"],
-        "IN": ["hi", "en"],
-        "PK": ["ur", "en"],
-        "NP": ["ne"],
-        "LK": ["si", "ta"],
-        "BD": ["bn"],
-        "KH": ["km"],
-        "LA": ["lo"],
-        "MM": ["my"],
-        "MN": ["mn"],
-        "KZ": ["kk", "ru"],
-        "KG": ["ky", "ru"],
-        "TJ": ["tg", "ru"],
-        "UZ": ["uz"],
-        "AZ": ["az"],
-        // Oceania
-        "AU": ["en"],
-        "NZ": ["en"],
-        "FJ": ["en"],
-        "PG": ["en"],
-        // Africa (selected)
-        "ZA": ["en", "af"],
-        "NG": ["en"],
-        "KE": ["en", "sw"],
-        "UG": ["en", "sw"],
-        "TZ": ["sw", "en"],
-        "GH": ["en"],
-        "CM": ["fr", "en"],
-        "SN": ["fr"],
-        "CI": ["fr"],
-        "BJ": ["fr"],
-        "BF": ["fr"],
-        "NE": ["fr"],
-        "ML": ["fr"],
-        "GN": ["fr"],
-        "RW": ["rw", "en", "fr"],
-        "LY": ["ar"],
-        "ET": ["am"],
-        "SD": ["ar"],
-    ]
-
-    // Computed lazily on background queue to avoid main thread freeze
-    private static let fallbackLanguagesByCountry: [String: Set<String>] = buildLanguagesByCountry()
-    private static let countryOptions: [CountryOption] = {
-        let current = Locale.current
-        return Locale.isoRegionCodes.compactMap { code -> CountryOption? in
-            let localizedName = current.localizedString(forRegionCode: code) ?? fallbackLocale.localizedString(forRegionCode: code)
-            guard let name = localizedName else { return nil }
-            return CountryOption(code: code, name: name)
-        }
-        .sorted { $0.name < $1.name }
-    }()
-
-    struct CountryOption: Identifiable {
-        let code: String
-        let name: String
-        var id: String { code }
-    }
-
-    private static func buildLanguagesByCountry() -> [String: Set<String>] {
-        let languageKey = NSLocale.Key.languageCode.rawValue
-        let countryKey = NSLocale.Key.countryCode.rawValue
-        var mapping: [String: Set<String>] = [:]
-        for identifier in Locale.availableIdentifiers {
-            let components = Locale.components(fromIdentifier: identifier)
-            guard let country = components[countryKey]?.uppercased(),
-                  !country.isEmpty,
-                  let language = components[languageKey]?.lowercased(),
-                  !language.isEmpty else { continue }
-            mapping[country, default: []].insert(language)
-        }
-        return mapping
-    }
 
     // Helper to look up canonical filter metadata from filterManager instead of loading separately
     private func foreignFilterMetadata(for url: String) -> FilterList? {
@@ -250,14 +84,19 @@ struct OnboardingView: View {
         self.filterManager = filterManager
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         self.sharedDefaults = defaults
-        let storedCountry = defaults.string(forKey: Self.selectedCountryDefaultsKey) ?? ""
-        let localeCountry = Locale.current.regionCode ?? ""
-        let sanitizedStored = storedCountry.uppercased()
-        let sanitizedLocale = localeCountry.uppercased()
         _dataManager = StateObject(wrappedValue: ProtobufDataManager.shared)
-        let initialCandidate = sanitizedStored.isEmpty ? sanitizedLocale : sanitizedStored
-        let resolvedCountry = Self.countryOptions.contains(where: { $0.code == initialCandidate }) ? initialCandidate : ""
-        _selectedCountryCode = State(initialValue: resolvedCountry)
+
+        let stored = defaults.stringArray(forKey: Self.selectedLanguagesDefaultsKey)
+        if let stored, !stored.isEmpty {
+            _selectedLanguages = State(initialValue: Set(stored))
+        } else {
+            // Auto-detect from system preferred languages
+            let systemLangs = Locale.preferredLanguages.compactMap {
+                Locale(identifier: $0).language.languageCode?.identifier.lowercased()
+            }
+            _selectedLanguages = State(initialValue: Set(systemLangs))
+        }
+
         _selectedRegionalFilters = State(initialValue: [])
         _recommendedRegionalFilters = State(initialValue: [])
         _optionalRegionalFilters = State(initialValue: [])
@@ -354,7 +193,7 @@ struct OnboardingView: View {
         )
     #endif
         .onAppear {
-            updateRegionalRecommendations(for: selectedCountryCode)
+            updateRegionalRecommendations(for: selectedLanguages)
             probeForExistingICloudSetupIfNeeded()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             seedSelectedUserscriptsIfNeeded()
@@ -364,14 +203,13 @@ struct OnboardingView: View {
             seedSelectedUserscriptsIfNeeded()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
         }
-        .onChange(of: selectedCountryCode) { newValue in
-            let sanitized = newValue.uppercased()
-            sharedDefaults.set(sanitized, forKey: Self.selectedCountryDefaultsKey)
+        .onChange(of: selectedLanguages) { _, newValue in
+            sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
             hasManuallyEditedRegionalSelection = false
-            updateRegionalRecommendations(for: sanitized)
+            updateRegionalRecommendations(for: newValue)
         }
         .onChange(of: filterManager.filterLists) { _ in
-            updateRegionalRecommendations(for: selectedCountryCode)
+            updateRegionalRecommendations(for: selectedLanguages)
         }
         .onChange(of: userScriptManager.userScripts) { _ in
             seedSelectedUserscriptsIfNeeded()
@@ -542,19 +380,68 @@ struct OnboardingView: View {
         }
     }
 
+    private struct LanguageOption: Identifiable {
+        let code: String
+        let name: String
+        let flag: String
+        var id: String { code }
+    }
+
+    private var availableFilterLanguages: [LanguageOption] {
+        var seen = Set<String>()
+        var result: [LanguageOption] = []
+        for filter in filterManager.filterLists where filter.category == .foreign {
+            for lang in filter.languages {
+                let lc = lang.lowercased()
+                guard seen.insert(lc).inserted else { continue }
+                let name = Locale.current.localizedString(forLanguageCode: lc) ?? lc
+                let flag = FilterList.languageToFlag[lc] ?? ""
+                result.append(LanguageOption(code: lc, name: name, flag: flag))
+            }
+        }
+        return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private func languageToggle(for lang: LanguageOption) -> some View {
+        let isOn = selectedLanguages.contains(lang.code)
+        return Button {
+            if isOn {
+                selectedLanguages.remove(lang.code)
+            } else {
+                selectedLanguages.insert(lang.code)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                if !lang.flag.isEmpty {
+                    Text(lang.flag)
+                }
+                Text(lang.name)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                if isOn {
+                    Image(systemName: "checkmark")
+                        .font(.caption.bold())
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .font(.subheadline)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .liquidGlassCompat(
+            cornerRadius: 10,
+            material: isOn ? .thickMaterial : .regularMaterial
+        )
+    }
+
     private var regionStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Country or region", selection: $selectedCountryCode) {
-                    Text("Skip for now").tag("")
-                    ForEach(Self.countryOptions) { option in
-                        Text(option.name).tag(option.code)
-                    }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(availableFilterLanguages) { lang in
+                    languageToggle(for: lang)
                 }
-                .pickerStyle(.menu)
             }
-            .padding(14)
-            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
 
             if let message = regionInfoMessage {
                 Text(message)
@@ -942,7 +829,7 @@ struct OnboardingView: View {
                 }
             }
         }
-        sharedDefaults.set(selectedCountryCode.uppercased(), forKey: Self.selectedCountryDefaultsKey)
+        sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)
 #if os(iOS)
     sharedDefaults.set(wantsReminderNotifications, forKey: Self.reminderPreferenceKey)
 #endif
@@ -1022,10 +909,9 @@ struct OnboardingView: View {
         dismiss()
     }
 
-    private func updateRegionalRecommendations(for countryCode: String) {
+    private func updateRegionalRecommendations(for languages: Set<String>) {
         guard !filterManager.filterLists.isEmpty else { return }
-        let normalizedCode = countryCode.uppercased()
-        guard !normalizedCode.isEmpty else {
+        guard !languages.isEmpty else {
             recommendedRegionalFilters = []
             optionalRegionalFilters = []
             if !hasManuallyEditedRegionalSelection {
@@ -1035,24 +921,10 @@ struct OnboardingView: View {
             return
         }
 
-        let languageMatches = languagesForCountry(normalizedCode)
-        guard !languageMatches.isEmpty else {
-            recommendedRegionalFilters = []
-            optionalRegionalFilters = []
-            if !hasManuallyEditedRegionalSelection {
-                selectedRegionalFilters.removeAll()
-            }
-            regionInfoMessage = String.localizedStringWithFormat(
-                NSLocalizedString("We don't have language data for %@. Try enabling filters manually if you see regional ads.", comment: "Regional recommendation hint"),
-                countryName(for: normalizedCode)
-            )
-            return
-        }
-
         let foreignFilters = filterManager.filterLists.filter { $0.category == .foreign }
         let matchingFilters = foreignFilters.compactMap { filter -> FilterList? in
             let filterLanguages = resolvedLanguages(for: filter)
-            guard !filterLanguages.isEmpty && !filterLanguages.isDisjoint(with: languageMatches) else { return nil }
+            guard !filterLanguages.isEmpty && !filterLanguages.isDisjoint(with: languages) else { return nil }
             return filter
         }
 
@@ -1062,10 +934,7 @@ struct OnboardingView: View {
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
-            regionInfoMessage = String.localizedStringWithFormat(
-                NSLocalizedString("We don't have regional filters for %@.", comment: "Regional recommendation hint"),
-                countryName(for: normalizedCode)
-            )
+            regionInfoMessage = nil
             return
         }
 
@@ -1095,10 +964,7 @@ struct OnboardingView: View {
         if !primary.isEmpty {
             regionInfoMessage = nil
         } else {
-            regionInfoMessage = String.localizedStringWithFormat(
-                NSLocalizedString("Only community-maintained lists are available for %@. Enable them if you're comfortable.", comment: "Regional recommendation hint"),
-                countryName(for: normalizedCode)
-            )
+            regionInfoMessage = String(localized: "Only community-maintained lists available. Enable them if you're comfortable.")
         }
     }
 
@@ -1164,21 +1030,6 @@ struct OnboardingView: View {
         }
     }
 #endif
-
-    private func languagesForCountry(_ code: String) -> Set<String> {
-        let normalized = code.uppercased()
-        if let manual = Self.manualCountryLanguageOverrides[normalized] {
-            return Set(manual.map { $0.lowercased() })
-        }
-        let baseLanguages = Self.fallbackLanguagesByCountry[normalized] ?? []
-        return Set(baseLanguages.map { $0.lowercased() })
-    }
-
-    private func countryName(for code: String) -> String {
-        let normalized = code.uppercased()
-        let current = Locale.current.localizedString(forRegionCode: normalized)
-        return current ?? Self.fallbackLocale.localizedString(forRegionCode: normalized) ?? normalized
-    }
 
     private func resolvedLanguages(for filter: FilterList) -> Set<String> {
         if !filter.languages.isEmpty {

@@ -199,9 +199,9 @@ struct ContentView: View {
                                 await filterManager.checkAndEnableFilters(forceReload: true)
                             }
                         } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Image(systemName: "checkmark.circle")
                         }
-                        .disabled(filterManager.isLoading || enabledListsCount == 0)
+                        .disabled(filterManager.isLoading)
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
                         if #unavailable(iOS 26.0) {
@@ -255,9 +255,9 @@ struct ContentView: View {
                                 await filterManager.checkAndEnableFilters(forceReload: true)
                             }
                         } label: {
-                            Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
+                            Label("Apply Changes", systemImage: "checkmark.circle")
                         }
-                        .disabled(filterManager.isLoading || enabledListsCount == 0)
+                        .disabled(filterManager.isLoading)
 
                         Button {
                             showingAddFilterSheet = true
@@ -291,9 +291,9 @@ struct ContentView: View {
                                     await filterManager.checkAndEnableFilters(forceReload: true)
                                 }
                             } label: {
-                                Image(systemName: "arrow.triangle.2.circlepath")
+                                Image(systemName: "checkmark.circle")
                             }
-                            .disabled(filterManager.isLoading || enabledListsCount == 0)
+                            .disabled(filterManager.isLoading)
                         }
                     }
                 #endif
@@ -438,11 +438,16 @@ struct ContentView: View {
     private func filterRowView(filter: FilterList) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(filter.name)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    if let flags = filter.flagEmojis {
+                        Text(flags)
+                    }
+                    Text(filter.name)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.body)
 
                 if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
                     Text("(\(sourceCount.formatted()) source rules)")
