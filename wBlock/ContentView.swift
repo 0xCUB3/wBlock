@@ -1168,11 +1168,13 @@ struct AddFilterListView: View {
             guard case .valid(let url) = validationState else { return }
             isSaving = true
             Task { @MainActor in
-                let finalName = trimmedCustomName.isEmpty ? defaultName(for: url) : trimmedCustomName
+                let userProvidedName = !trimmedCustomName.isEmpty
+                let finalName = userProvidedName ? trimmedCustomName : defaultName(for: url)
                 filterManager.addFilterList(
                     name: finalName,
                     urlString: url.absoluteString,
-                    category: selectedCategory
+                    category: selectedCategory,
+                    hasUserProvidedName: userProvidedName
                 )
                 isSaving = false
                 dismiss()

@@ -23,6 +23,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var etag: String? = nil
     public var serverLastModified: String? = nil
     public var limitExceededReason: String? = nil // Reason why filter was auto-disabled due to rule limits
+    public var hasUserProvidedName: Bool = false
 
     public init(id: UUID = UUID(),
                 name: String,
@@ -38,7 +39,8 @@ public struct FilterList: Identifiable, Codable, Hashable {
                 trustLevel: String? = nil,
                 etag: String? = nil,
                 serverLastModified: String? = nil,
-                limitExceededReason: String? = nil) {
+                limitExceededReason: String? = nil,
+                hasUserProvidedName: Bool = false) {
         self.id = id
         self.name = name
         self.url = url
@@ -54,6 +56,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.etag = etag
         self.serverLastModified = serverLastModified
         self.limitExceededReason = limitExceededReason
+        self.hasUserProvidedName = hasUserProvidedName
     }
     
     /// Maps ISO 639-1 language codes to their primary region's flag emoji

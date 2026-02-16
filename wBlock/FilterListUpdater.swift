@@ -452,6 +452,9 @@ final class FilterListUpdater: @unchecked Sendable {
 
             let metadata = parseMetadata(from: content)
             var updatedFilter = filter
+            if filter.isCustom, !filter.hasUserProvidedName, let title = metadata.title, !title.isEmpty {
+                updatedFilter.name = title
+            }
             updatedFilter.version = metadata.version ?? "Unknown"
             if let description = metadata.description, !description.isEmpty {
                 updatedFilter.description = description

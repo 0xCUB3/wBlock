@@ -1413,7 +1413,7 @@ class AppFilterManager: ObservableObject {
     }
 
     // MARK: - List Management
-    func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom) {
+    func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom, hasUserProvidedName: Bool = false) {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines))
         else {
             statusDescription = "Invalid URL provided: \(urlString)"
@@ -1450,7 +1450,8 @@ class AppFilterManager: ObservableObject {
             isCustom: true,
             isSelected: true,
             description: "User-added filter list.",
-            sourceRuleCount: nil)
+            sourceRuleCount: nil,
+            hasUserProvidedName: hasUserProvidedName)
         addCustomFilterList(newFilter)
     }
 
@@ -1563,13 +1564,16 @@ class AppFilterManager: ObservableObject {
             Task {
                 let success = await filterUpdater.fetchAndProcessFilter(newFilterToAdd)
                 if success {
+                    let currentName = await MainActor.run {
+                        self.filterLists.first(where: { $0.id == newFilterToAdd.id })?.name ?? newFilterToAdd.name
+                    }
                     await ConcurrentLogManager.shared.info(
                         .filterUpdate, "Successfully downloaded custom filter",
-                        metadata: ["filter": newFilterToAdd.name])
+                        metadata: ["filter": currentName])
                     await MainActor.run {
                         self.hasUnappliedChanges = true
                         self.statusDescription =
-                            "✅ Filter '\(newFilterToAdd.name)' added successfully. Apply changes to enable it."
+                            "✅ Filter '\(currentName)' added successfully. Apply changes to enable it."
                         self.hasError = false
                     }
                     saveFilterListsSync()
@@ -1665,8 +1669,10 @@ class AppFilterManager: ObservableObject {
         }
 
         filterLists[index].name = trimmed
+        filterLists[index].hasUserProvidedName = true
         if let customIndex = customFilterLists.firstIndex(where: { $0.id == id }) {
             customFilterLists[customIndex].name = trimmed
+            customFilterLists[customIndex].hasUserProvidedName = true
         }
         saveFilterListsSync()
 
