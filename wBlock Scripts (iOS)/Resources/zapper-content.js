@@ -171,8 +171,10 @@
 
     const uiStyle = ensureStyleElement(UI_STYLE_ID);
     uiStyle.textContent = `
-      #${UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; }
-      #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+      #${UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; touch-action: none; }
+      #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); cursor: grab; }
+      #${UI_ROOT_ID} .wblock-bar.wblock-dragging { cursor: grabbing; }
+      #${UI_ROOT_ID} .wblock-drag-hint { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); margin: 0 auto 6px; }
       #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; }
       #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 10px; }
       #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -184,7 +186,7 @@
         #${UI_ROOT_ID} .wblock-actions button { flex: 1; min-height: 44px; }
       }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
-      #${TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: calc(94px + env(safe-area-inset-bottom)); z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
+      #${TOAST_ID} { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
       #${TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 12px 14px; border-radius: 12px; background: rgba(20, 20, 22, 0.82); color: #fff; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
     `.trim();
 
@@ -192,6 +194,9 @@
     root.id = UI_ROOT_ID;
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', 'wBlock Element Zapper');
+
+    const dragHint = document.createElement('div');
+    dragHint.className = 'wblock-drag-hint';
 
     const bar = document.createElement('div');
     bar.className = 'wblock-bar';
@@ -256,6 +261,7 @@
     actions.appendChild(doneButton);
     bar.appendChild(status);
     bar.appendChild(actions);
+    root.appendChild(dragHint);
     root.appendChild(bar);
 
     const highlight = document.createElement('div');
@@ -276,8 +282,66 @@
     state.ui.manualButton = manualButton;
     state.ui.doneButton = doneButton;
 
+    // --- Drag-to-move logic ---
+    let dragStartY = 0;
+    let rootStartBottom = 0;
+    let isDragging = false;
+
+    function startDrag(clientY) {
+      isDragging = true;
+      dragStartY = clientY;
+      const computed = parseFloat(getComputedStyle(root).bottom) || 12;
+      rootStartBottom = computed;
+      bar.classList.add('wblock-dragging');
+    }
+
+    function moveDrag(clientY) {
+      if (!isDragging) return;
+      const delta = dragStartY - clientY;
+      const maxBottom = window.innerHeight - root.offsetHeight - 4;
+      const newBottom = Math.max(4, Math.min(maxBottom, rootStartBottom + delta));
+      root.style.bottom = `${newBottom}px`;
+    }
+
+    function endDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+      bar.classList.remove('wblock-dragging');
+    }
+
+    const onBarPointerDown = (e) => {
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+      startDrag(e.clientY);
+    };
+    const onBarTouchStart = (e) => {
+      if (e.target.closest('button')) return;
+      if (e.touches.length !== 1) return;
+      startDrag(e.touches[0].clientY);
+    };
+    const onDocPointerMove = (e) => { if (isDragging) { e.preventDefault(); moveDrag(e.clientY); } };
+    const onDocTouchMove = (e) => { if (isDragging && e.touches[0]) { e.preventDefault(); moveDrag(e.touches[0].clientY); } };
+    const onDocPointerUp = () => endDrag();
+    const onDocTouchEnd = () => endDrag();
+
+    bar.addEventListener('pointerdown', onBarPointerDown);
+    bar.addEventListener('touchstart', onBarTouchStart, { passive: false });
+    document.addEventListener('pointermove', onDocPointerMove, { passive: false });
+    document.addEventListener('touchmove', onDocTouchMove, { passive: false });
+    document.addEventListener('pointerup', onDocPointerUp);
+    document.addEventListener('touchend', onDocTouchEnd);
+
+    state.cleanupFns.push(
+      () => bar.removeEventListener('pointerdown', onBarPointerDown),
+      () => bar.removeEventListener('touchstart', onBarTouchStart, { passive: false }),
+      () => document.removeEventListener('pointermove', onDocPointerMove, { passive: false }),
+      () => document.removeEventListener('touchmove', onDocTouchMove, { passive: false }),
+      () => document.removeEventListener('pointerup', onDocPointerUp),
+      () => document.removeEventListener('touchend', onDocTouchEnd),
+    );
+
+    root.appendChild(toast);
     (document.documentElement || document).appendChild(highlight);
-    (document.documentElement || document).appendChild(toast);
     (document.documentElement || document).appendChild(root);
   }
 
