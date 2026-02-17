@@ -194,7 +194,7 @@
         #${UI_ROOT_ID} .wblock-actions { width: 100%; }
         #${UI_ROOT_ID} .wblock-actions button { flex-grow: 1; min-height: 44px; }
       }
-      #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
+      #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
       #${TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 12px 14px; border-radius: 12px; background: rgba(20, 20, 22, 0.82); color: #fff; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
     `.trim();
@@ -693,6 +693,9 @@
     state.lastPickAt = 0;
     state.candidateElement = null;
     state.traversalPath = [];
+    state.lastPointerX = -1;
+    state.lastPointerY = -1;
+    state.isScrolling = false;
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
     if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
@@ -703,6 +706,11 @@
       if (!state.active) return;
       if (state.candidateElement) return;
       if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
+      const point = getPointFromEvent(event);
+      if (point) {
+        state.lastPointerX = point.x;
+        state.lastPointerY = point.y;
+      }
       const el = elementFromEvent(event);
       if (!el || shouldIgnoreTarget(el)) return;
       setHighlightForElement(el);
@@ -710,6 +718,7 @@
 
     const pickFromEvent = (event) => {
       if (!state.active) return;
+      if (state.isScrolling) return;
       if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
       const now = Date.now();
       if (now - state.lastPickAt < 120) return;
@@ -782,6 +791,31 @@
     addCleanup(() => document.removeEventListener('click', onClick, true));
     addCleanup(() => document.removeEventListener('touchstart', pickFromEvent, touchOptions));
     addCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
+
+    let scrollTimer = 0;
+    const onScroll = () => {
+      if (!state.active) return;
+      state.isScrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => { state.isScrolling = false; }, 150);
+      if (state.candidateElement) {
+        setHighlightForElement(state.candidateElement);
+      } else if (state.lastPointerX >= 0 && state.lastPointerY >= 0) {
+        try {
+          const el = document.elementFromPoint(state.lastPointerX, state.lastPointerY);
+          if (el && !shouldIgnoreTarget(el)) {
+            setHighlightForElement(el);
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    addCleanup(() => {
+      window.removeEventListener('scroll', onScroll, true);
+      clearTimeout(scrollTimer);
+      state.isScrolling = false;
+    });
   }
 
   function deactivateZapper(options = {}) {
