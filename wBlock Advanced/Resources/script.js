@@ -23967,6 +23967,9 @@ function _toPrimitive(t, r) {
       state.lastPickAt = 0;
       state.candidateElement = null;
       state.traversalPath = [];
+      state.lastPointerX = -1;
+      state.lastPointerY = -1;
+      state.isScrolling = false;
       if (state.ui.undoButton) {
         state.ui.undoButton.disabled = true;
       }
@@ -23990,6 +23993,11 @@ function _toPrimitive(t, r) {
         ) {
           return;
         }
+        const point = getPointFromEvent(event);
+        if (point) {
+          state.lastPointerX = point.x;
+          state.lastPointerY = point.y;
+        }
         const element = elementFromEvent(event);
         if (!element || shouldIgnoreTarget(element)) return;
         setHighlightForElement(element);
@@ -23997,6 +24005,7 @@ function _toPrimitive(t, r) {
 
       const pickFromEvent = (event) => {
         if (!state.active) return;
+        if (state.isScrolling) return;
         if (
           state.ui.root &&
           event &&
@@ -24084,15 +24093,30 @@ function _toPrimitive(t, r) {
       addCleanup(() => document.removeEventListener("click", onClick, true));
       addCleanup(() => document.removeEventListener("keydown", onKeyDown, true));
 
+      let scrollTimer = 0;
       const onScroll = () => {
         if (!state.active) return;
+        state.isScrolling = true;
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => { state.isScrolling = false; }, 150);
         if (state.candidateElement) {
           setHighlightForElement(state.candidateElement);
+        } else if (state.lastPointerX >= 0 && state.lastPointerY >= 0) {
+          try {
+            const el = document.elementFromPoint(state.lastPointerX, state.lastPointerY);
+            if (el && !shouldIgnoreTarget(el)) {
+              setHighlightForElement(el);
+            }
+          } catch {}
         }
       };
 
       window.addEventListener("scroll", onScroll, { capture: true, passive: true });
-      addCleanup(() => window.removeEventListener("scroll", onScroll, true));
+      addCleanup(() => {
+        window.removeEventListener("scroll", onScroll, true);
+        clearTimeout(scrollTimer);
+        state.isScrolling = false;
+      });
     }
 
     function deactivate(options = {}) {
