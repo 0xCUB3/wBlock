@@ -436,6 +436,11 @@
       highlight.style.display = 'none';
       return;
     }
+    if (rect.bottom <= 0 || rect.top >= window.innerHeight ||
+        rect.right <= 0 || rect.left >= window.innerWidth) {
+      highlight.style.display = 'none';
+      return;
+    }
     highlight.style.display = 'block';
     highlight.style.top = `${Math.max(0, rect.top)}px`;
     highlight.style.left = `${Math.max(0, rect.left)}px`;
