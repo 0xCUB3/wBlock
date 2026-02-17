@@ -345,42 +345,80 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    /// Validates if content appears to be a valid filter list
+    /// Validates if content appears to be a valid filter list.
+    /// Two checks: (a) reject HTML challenge pages, (b) require at least one meaningful
+    /// non-empty, non-bracket line within the first 100 lines.
+    /// Comments (!), directives (!#include, !#if, etc.), and actual rules all count as meaningful.
     private func isValidFilterContent(_ content: String) -> Bool {
-        // Check for DDoS protection pages by looking at the structure, not keywords
-        // (filter lists legitimately contain rules with "ddos-guard" etc.)
-        let trimmedContent = String(content.prefix(2048)).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if trimmedContent.hasPrefix("<!doctype html") || trimmedContent.hasPrefix("<html") {
-            // This is an HTML page, not a filter list - likely a DDoS protection/challenge page
+        // Fast-path: reject HTML challenge/protection pages
+        let prefix = String(content.prefix(2048))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        if prefix.hasPrefix("<!doctype html") || prefix.hasPrefix("<html") {
             return false
         }
 
-        var ruleCount = 0
-        var hasComments = false
+        // A filter list must have at least one meaningful non-empty line in the first 100 lines.
+        // Meaningful = not empty, not a [header] bracket line.
+        // Comments (!) and directives (!#include, !#if, etc.) all count as meaningful.
         var scannedLines = 0
+        var meaningfulLineCount = 0
 
         content.enumerateLines { line, stop in
-            if scannedLines >= 100 {
-                stop = true
-                return
-            }
+            if scannedLines >= 100 { stop = true; return }
             scannedLines += 1
 
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty && !trimmed.hasPrefix("[") {
+                meaningfulLineCount += 1
+            }
+            if meaningfulLineCount >= 1 { stop = true }
+        }
 
-            // Only lines starting with "!" are comments in AdGuard filter syntax
-            // Lines starting with "#", "##", "###" etc. are valid CSS selector rules
-            if trimmed.hasPrefix("!") {
-                hasComments = true
-                return
+        return meaningfulLineCount >= 1
+    }
+
+    /// Known directives that are preserved in saved content (for Phase 2/3 processing).
+    /// All other !# directives are stripped before saving.
+    private static let knownDirectivePrefixes: [String] = [
+        "!#include",
+        "!#if",
+        "!#else",
+        "!#endif",
+    ]
+
+    /// Strips unknown !# directives from downloaded filter content.
+    /// Known directives (!#include, !#if, !#else, !#endif) are preserved for Phase 2/3.
+    /// Unknown directives (e.g. !#safari_cb_affinity, !#diff-path) are removed and logged.
+    private func stripUnknownDirectives(from content: String) async -> String {
+        var result: [String] = []
+
+        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lineStr = String(line)
+
+            // Only process lines starting with "!#"
+            guard trimmed.hasPrefix("!#") else {
+                result.append(lineStr)
+                continue
             }
 
-            if !trimmed.isEmpty && !trimmed.hasPrefix("[") {
-                ruleCount += 1
+            // Check if this is a known directive
+            let isKnown = Self.knownDirectivePrefixes.contains(where: { trimmed.hasPrefix($0) })
+            if isKnown {
+                result.append(lineStr)
+            } else {
+                // Strip unknown directive and log at debug level
+                await ConcurrentLogManager.shared.debug(
+                    .filterUpdate,
+                    "Stripped unknown directive",
+                    metadata: ["directive": String(trimmed.prefix(60))]
+                )
+                // Do NOT append — line is stripped from output
             }
         }
 
-        return ruleCount >= 3 || (hasComments && ruleCount >= 1)
+        return result.joined(separator: "\n")
     }
 
     /// Fetches, processes, and saves a filter list
@@ -443,14 +481,18 @@ final class FilterListUpdater: @unchecked Sendable {
                 return false
             }
 
-            guard isValidFilterContent(content) else {
+            // Strip unknown !# directives before validation and saving.
+            // Known directives (!#include, !#if, !#else, !#endif) are preserved for Phase 2/3.
+            let processedContent = await stripUnknownDirectives(from: content)
+
+            guard isValidFilterContent(processedContent) else {
                 await ConcurrentLogManager.shared.error(
                     .network, "Downloaded content does not appear to be a valid filter list",
-                    metadata: ["filter": filter.name, "contentLength": "\(content.count)"])
+                    metadata: ["filter": filter.name, "contentLength": "\(processedContent.count)"])
                 return false
             }
 
-            let metadata = parseMetadata(from: content)
+            let metadata = parseMetadata(from: processedContent)
             var updatedFilter = filter
             if filter.isCustom, !filter.hasUserProvidedName, let title = metadata.title, !title.isEmpty {
                 updatedFilter.name = title
@@ -459,7 +501,7 @@ final class FilterListUpdater: @unchecked Sendable {
             if let description = metadata.description, !description.isEmpty {
                 updatedFilter.description = description
             }
-            updatedFilter.sourceRuleCount = countRulesInContent(content: content)
+            updatedFilter.sourceRuleCount = countRulesInContent(content: processedContent)
             updatedFilter.lastUpdated = Date()
             
             let uuid = filter.id.uuidString
@@ -496,7 +538,7 @@ final class FilterListUpdater: @unchecked Sendable {
             let fileURL = containerURL.appendingPathComponent(
                 ContentBlockerIncrementalCache.localFilename(for: filter)
             )
-            try? content.write(to: fileURL, atomically: true, encoding: .utf8)
+            try? processedContent.write(to: fileURL, atomically: true, encoding: .utf8)
 
             return true
         } catch {
