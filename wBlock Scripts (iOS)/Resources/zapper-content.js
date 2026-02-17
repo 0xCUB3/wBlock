@@ -21,6 +21,8 @@
     rules: [],
     lastAddedSelector: null,
     lastPickAt: 0,
+    candidateElement: null,
+    traversalPath: [],
     cleanupFns: [],
     ui: {
       root: null,
@@ -30,6 +32,11 @@
       undoButton: null,
       manualButton: null,
       doneButton: null,
+      parentButton: null,
+      childButton: null,
+      hideButton: null,
+      navGroup: null,
+      defaultGroup: null,
     },
   };
 
@@ -175,15 +182,17 @@
       #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); cursor: grab; }
       #${UI_ROOT_ID} .wblock-bar.wblock-dragging { cursor: grabbing; }
       #${UI_ROOT_ID} .wblock-drag-hint { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); margin: 0 auto 6px; }
-      #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; }
+      #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 10px; }
-      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0; }
       #${UI_ROOT_ID} button:disabled { opacity: 0.5; }
+      #${UI_ROOT_ID} .wblock-nav { display: none; gap: 10px; }
+      #${UI_ROOT_ID} .wblock-nav.wblock-active { display: flex; }
       @media (max-width: 430px) {
         #${UI_ROOT_ID} .wblock-bar { flex-direction: column; align-items: stretch; }
         #${UI_ROOT_ID} .wblock-status { font-size: 14px; }
         #${UI_ROOT_ID} .wblock-actions { width: 100%; }
-        #${UI_ROOT_ID} .wblock-actions button { flex: 1; min-height: 44px; }
+        #${UI_ROOT_ID} .wblock-actions button { flex-grow: 1; min-height: 44px; }
       }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
       #${TOAST_ID} { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
@@ -256,8 +265,59 @@
     doneButton.addEventListener('pointerup', onDone, true);
     doneButton.addEventListener('touchend', onDone, { passive: false });
 
-    actions.appendChild(undoButton);
-    actions.appendChild(manualButton);
+    const defaultGroup = document.createElement('span');
+    defaultGroup.className = 'wblock-default';
+    defaultGroup.style.display = 'flex';
+    defaultGroup.style.gap = '10px';
+    defaultGroup.appendChild(undoButton);
+    defaultGroup.appendChild(manualButton);
+
+    const navGroup = document.createElement('span');
+    navGroup.className = 'wblock-nav';
+
+    const parentButton = document.createElement('button');
+    parentButton.type = 'button';
+    parentButton.textContent = '\u25B2';
+    parentButton.title = 'Select parent element';
+    parentButton.disabled = true;
+    const onParent = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
+      navigateParent();
+    };
+    parentButton.addEventListener('click', onParent);
+    parentButton.addEventListener('pointerup', onParent, true);
+    parentButton.addEventListener('touchend', onParent, { passive: false });
+
+    const childButton = document.createElement('button');
+    childButton.type = 'button';
+    childButton.textContent = '\u25BC';
+    childButton.title = 'Select child element';
+    childButton.disabled = true;
+    const onChild = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
+      navigateChild();
+    };
+    childButton.addEventListener('click', onChild);
+    childButton.addEventListener('pointerup', onChild, true);
+    childButton.addEventListener('touchend', onChild, { passive: false });
+
+    const hideButton = document.createElement('button');
+    hideButton.type = 'button';
+    hideButton.textContent = '\u2713 Hide';
+    const onHide = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
+      confirmHide();
+    };
+    hideButton.addEventListener('click', onHide);
+    hideButton.addEventListener('pointerup', onHide, true);
+    hideButton.addEventListener('touchend', onHide, { passive: false });
+
+    navGroup.appendChild(parentButton);
+    navGroup.appendChild(childButton);
+    navGroup.appendChild(hideButton);
+
+    actions.appendChild(defaultGroup);
+    actions.appendChild(navGroup);
     actions.appendChild(doneButton);
     bar.appendChild(status);
     bar.appendChild(actions);
@@ -281,6 +341,11 @@
     state.ui.undoButton = undoButton;
     state.ui.manualButton = manualButton;
     state.ui.doneButton = doneButton;
+    state.ui.parentButton = parentButton;
+    state.ui.childButton = childButton;
+    state.ui.hideButton = hideButton;
+    state.ui.navGroup = navGroup;
+    state.ui.defaultGroup = defaultGroup;
 
     // --- Drag-to-move logic ---
     let dragStartY = 0;
@@ -525,6 +590,11 @@
     state.ui.undoButton = null;
     state.ui.manualButton = null;
     state.ui.doneButton = null;
+    state.ui.parentButton = null;
+    state.ui.childButton = null;
+    state.ui.hideButton = null;
+    state.ui.navGroup = null;
+    state.ui.defaultGroup = null;
   }
 
   function clearCleanup() {
@@ -546,18 +616,92 @@
     }
   }
 
+  function elementLabel(el) {
+    if (!el || !(el instanceof Element)) return '';
+    const tag = el.tagName.toLowerCase();
+    if (el.id) return `<${tag}#${el.id}>`;
+    const cls = Array.from(el.classList || []).filter(Boolean).slice(0, 2).join('.');
+    return cls ? `<${tag}.${cls}>` : `<${tag}>`;
+  }
+
+  function enterRefineMode(element) {
+    state.candidateElement = element;
+    state.traversalPath = [];
+    setHighlightForElement(element);
+    if (state.ui.navGroup) state.ui.navGroup.classList.add('wblock-active');
+    if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'none';
+    updateRefineStatus();
+  }
+
+  function exitRefineMode() {
+    state.candidateElement = null;
+    state.traversalPath = [];
+    clearHighlight();
+    if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
+    if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
+    if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
+  }
+
+  function updateRefineStatus() {
+    const el = state.candidateElement;
+    if (!el) return;
+    const label = elementLabel(el);
+    if (state.ui.statusText) state.ui.statusText.textContent = `${label} — ▲▼ to adjust, ✓ to hide`;
+    const parent = el.parentElement;
+    const atTop = !parent || parent === document.body || parent === document.documentElement;
+    if (state.ui.parentButton) state.ui.parentButton.disabled = atTop;
+    if (state.ui.childButton) state.ui.childButton.disabled = state.traversalPath.length === 0;
+  }
+
+  function navigateParent() {
+    const candidate = state.candidateElement;
+    if (!candidate) return;
+    const parent = candidate.parentElement;
+    if (!parent || parent === document.body || parent === document.documentElement) return;
+    state.traversalPath.push(candidate);
+    state.candidateElement = parent;
+    setHighlightForElement(parent);
+    updateRefineStatus();
+  }
+
+  function navigateChild() {
+    if (state.traversalPath.length === 0) return;
+    const child = state.traversalPath.pop();
+    state.candidateElement = child;
+    setHighlightForElement(child);
+    updateRefineStatus();
+  }
+
+  function confirmHide() {
+    const el = state.candidateElement;
+    if (!el) return;
+    const selector = selectorForElement(el);
+    if (!selector) {
+      showToast('Unable to create a rule for that element.');
+      exitRefineMode();
+      return;
+    }
+    exitRefineMode();
+    addSelectorRule(selector).catch(() => {});
+  }
+
   function activateZapper() {
     if (state.active) return;
     ensureUi();
     state.active = true;
     state.lastAddedSelector = null;
     state.lastPickAt = 0;
+    state.candidateElement = null;
+    state.traversalPath = [];
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
+    if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
+    if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
     if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
     showToast('Element Zapper enabled.');
 
     const onMove = (event) => {
       if (!state.active) return;
+      if (state.candidateElement) return;
       if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
       const el = elementFromEvent(event);
       if (!el || shouldIgnoreTarget(el)) return;
@@ -573,12 +717,7 @@
       if (!el || shouldIgnoreTarget(el)) return;
       interceptEvent(event);
       state.lastPickAt = now;
-      const selector = selectorForElement(el);
-      if (!selector) {
-        showToast('Unable to create a rule for that element.');
-        return;
-      }
-      addSelectorRule(selector).catch(() => {});
+      enterRefineMode(el);
     };
 
     // Prevent navigation/actions that fire on click (e.g. <a href=...>) while
@@ -589,8 +728,6 @@
       if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
       interceptEvent(event);
 
-      // If we didn't get a down/touch event (some pages / input types),
-      // fall back to treating this click as a pick action.
       const now = Date.now();
       if (now - state.lastPickAt < 350) return;
       pickFromEvent(event);
@@ -601,7 +738,26 @@
       if (!event) return;
       if (event.key === 'Escape') {
         interceptEvent(event);
-        deactivateZapper();
+        if (state.candidateElement) {
+          exitRefineMode();
+        } else {
+          deactivateZapper();
+        }
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        interceptEvent(event);
+        navigateParent();
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        interceptEvent(event);
+        navigateChild();
+        return;
+      }
+      if (event.key === 'Enter' && state.candidateElement) {
+        interceptEvent(event);
+        confirmHide();
         return;
       }
       if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'Z')) {
@@ -632,6 +788,8 @@
     const removeUi = Boolean(options.removeUi);
     if (!state.active && !removeUi) return;
     state.active = false;
+    state.candidateElement = null;
+    state.traversalPath = [];
     clearCleanup();
     clearHighlight();
     if (removeUi) {

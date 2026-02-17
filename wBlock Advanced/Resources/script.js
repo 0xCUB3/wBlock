@@ -23390,6 +23390,8 @@ function _toPrimitive(t, r) {
       rules: [],
       lastAddedSelector: null,
       lastPickAt: 0,
+      candidateElement: null,
+      traversalPath: [],
       cleanupFns: [],
       ui: {
         root: null,
@@ -23397,6 +23399,11 @@ function _toPrimitive(t, r) {
         toast: null,
         statusText: null,
         undoButton: null,
+        parentButton: null,
+        childButton: null,
+        hideButton: null,
+        navGroup: null,
+        defaultGroup: null,
       },
     };
 
@@ -23565,10 +23572,12 @@ function _toPrimitive(t, r) {
       uiStyle.textContent = `
         #${ZAPPER_UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; pointer-events: none; }
         #${ZAPPER_UI_ROOT_ID} .wblock-bar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 14px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.82); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); pointer-events: auto; }
-        #${ZAPPER_UI_ROOT_ID} .wblock-status { font-size: 12px; line-height: 1.2; flex: 1; min-width: 0; }
+        #${ZAPPER_UI_ROOT_ID} .wblock-status { font-size: 12px; line-height: 1.2; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #${ZAPPER_UI_ROOT_ID} .wblock-actions { display: flex; gap: 8px; }
-        #${ZAPPER_UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; padding: 8px 10px; min-height: 30px; line-height: 1; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.14); cursor: pointer; }
+        #${ZAPPER_UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; padding: 8px 10px; min-height: 30px; line-height: 1; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.14); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
         #${ZAPPER_UI_ROOT_ID} button:disabled { opacity: 0.5; cursor: default; }
+        #${ZAPPER_UI_ROOT_ID} .wblock-nav { display: none; gap: 8px; }
+        #${ZAPPER_UI_ROOT_ID} .wblock-nav.wblock-active { display: flex; }
         #${ZAPPER_HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
         #${ZAPPER_TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
         #${ZAPPER_TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 10px 12px; border-radius: 12px; background: rgba(20, 20, 22, 0.84); color: #fff; font-size: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
@@ -23614,8 +23623,50 @@ function _toPrimitive(t, r) {
         deactivate({ removeUi: true });
       });
 
-      actions.appendChild(undoButton);
-      actions.appendChild(manualButton);
+      const defaultGroup = document.createElement("span");
+      defaultGroup.className = "wblock-default";
+      defaultGroup.style.display = "flex";
+      defaultGroup.style.gap = "8px";
+      defaultGroup.appendChild(undoButton);
+      defaultGroup.appendChild(manualButton);
+
+      const navGroup = document.createElement("span");
+      navGroup.className = "wblock-nav";
+
+      const parentButton = document.createElement("button");
+      parentButton.type = "button";
+      parentButton.textContent = "\u25B2";
+      parentButton.title = "Select parent element";
+      parentButton.disabled = true;
+      parentButton.addEventListener("click", (event) => {
+        interceptEvent(event);
+        navigateParent();
+      });
+
+      const childButton = document.createElement("button");
+      childButton.type = "button";
+      childButton.textContent = "\u25BC";
+      childButton.title = "Select child element";
+      childButton.disabled = true;
+      childButton.addEventListener("click", (event) => {
+        interceptEvent(event);
+        navigateChild();
+      });
+
+      const hideButton = document.createElement("button");
+      hideButton.type = "button";
+      hideButton.textContent = "\u2713 Hide";
+      hideButton.addEventListener("click", (event) => {
+        interceptEvent(event);
+        confirmHide();
+      });
+
+      navGroup.appendChild(parentButton);
+      navGroup.appendChild(childButton);
+      navGroup.appendChild(hideButton);
+
+      actions.appendChild(defaultGroup);
+      actions.appendChild(navGroup);
       actions.appendChild(doneButton);
       bar.appendChild(statusText);
       bar.appendChild(actions);
@@ -23636,6 +23687,11 @@ function _toPrimitive(t, r) {
       state.ui.toast = toast;
       state.ui.statusText = statusText;
       state.ui.undoButton = undoButton;
+      state.ui.parentButton = parentButton;
+      state.ui.childButton = childButton;
+      state.ui.hideButton = hideButton;
+      state.ui.navGroup = navGroup;
+      state.ui.defaultGroup = defaultGroup;
 
       (document.documentElement || document).appendChild(highlight);
       (document.documentElement || document).appendChild(toast);
@@ -23745,6 +23801,11 @@ function _toPrimitive(t, r) {
       state.ui.toast = null;
       state.ui.statusText = null;
       state.ui.undoButton = null;
+      state.ui.parentButton = null;
+      state.ui.childButton = null;
+      state.ui.hideButton = null;
+      state.ui.navGroup = null;
+      state.ui.defaultGroup = null;
     }
 
     function interceptEvent(event) {
@@ -23810,15 +23871,107 @@ function _toPrimitive(t, r) {
       addSelectorRule(parsed.selector, { manual: true });
     }
 
+    function elementLabel(el) {
+      if (!el || !(el instanceof Element)) return "";
+      const tag = el.tagName.toLowerCase();
+      if (el.id) return `<${tag}#${el.id}>`;
+      const cls = Array.from(el.classList || [])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(".");
+      return cls ? `<${tag}.${cls}>` : `<${tag}>`;
+    }
+
+    function enterRefineMode(element) {
+      state.candidateElement = element;
+      state.traversalPath = [];
+      setHighlightForElement(element);
+      if (state.ui.navGroup) state.ui.navGroup.classList.add("wblock-active");
+      if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = "none";
+      updateRefineStatus();
+    }
+
+    function exitRefineMode() {
+      state.candidateElement = null;
+      state.traversalPath = [];
+      clearHighlight();
+      if (state.ui.navGroup) state.ui.navGroup.classList.remove("wblock-active");
+      if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = "flex";
+      if (state.ui.statusText) {
+        state.ui.statusText.textContent =
+          "Element Zapper: Click an element to hide it.";
+      }
+    }
+
+    function updateRefineStatus() {
+      const el = state.candidateElement;
+      if (!el) return;
+      const label = elementLabel(el);
+      if (state.ui.statusText) {
+        state.ui.statusText.textContent = `${label} \u2014 \u25B2\u25BC to adjust, \u2713 to hide`;
+      }
+      const parent = el.parentElement;
+      const atTop =
+        !parent ||
+        parent === document.body ||
+        parent === document.documentElement;
+      if (state.ui.parentButton) state.ui.parentButton.disabled = atTop;
+      if (state.ui.childButton) {
+        state.ui.childButton.disabled = state.traversalPath.length === 0;
+      }
+    }
+
+    function navigateParent() {
+      const candidate = state.candidateElement;
+      if (!candidate) return;
+      const parent = candidate.parentElement;
+      if (
+        !parent ||
+        parent === document.body ||
+        parent === document.documentElement
+      ) {
+        return;
+      }
+      state.traversalPath.push(candidate);
+      state.candidateElement = parent;
+      setHighlightForElement(parent);
+      updateRefineStatus();
+    }
+
+    function navigateChild() {
+      if (state.traversalPath.length === 0) return;
+      const child = state.traversalPath.pop();
+      state.candidateElement = child;
+      setHighlightForElement(child);
+      updateRefineStatus();
+    }
+
+    function confirmHide() {
+      const el = state.candidateElement;
+      if (!el) return;
+      const selector = selectorForElement(el);
+      if (!selector) {
+        showToast("Unable to create a rule for that element.");
+        exitRefineMode();
+        return;
+      }
+      exitRefineMode();
+      addSelectorRule(selector);
+    }
+
     function activate() {
       if (state.active) return;
       ensureUi();
       state.active = true;
       state.lastAddedSelector = null;
       state.lastPickAt = 0;
+      state.candidateElement = null;
+      state.traversalPath = [];
       if (state.ui.undoButton) {
         state.ui.undoButton.disabled = true;
       }
+      if (state.ui.navGroup) state.ui.navGroup.classList.remove("wblock-active");
+      if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = "flex";
       if (state.ui.statusText) {
         state.ui.statusText.textContent =
           "Element Zapper: Click an element to hide it.";
@@ -23828,6 +23981,7 @@ function _toPrimitive(t, r) {
 
       const onMove = (event) => {
         if (!state.active) return;
+        if (state.candidateElement) return;
         if (
           state.ui.root &&
           event &&
@@ -23859,14 +24013,7 @@ function _toPrimitive(t, r) {
 
         interceptEvent(event);
         state.lastPickAt = now;
-
-        const selector = selectorForElement(element);
-        if (!selector) {
-          showToast("Unable to create a rule for that element.");
-          return;
-        }
-
-        addSelectorRule(selector);
+        enterRefineMode(element);
       };
 
       const onClick = (event) => {
@@ -23891,7 +24038,27 @@ function _toPrimitive(t, r) {
 
         if (event.key === "Escape") {
           interceptEvent(event);
-          deactivate({ removeUi: true });
+          if (state.candidateElement) {
+            exitRefineMode();
+          } else {
+            deactivate({ removeUi: true });
+          }
+          return;
+        }
+
+        if (event.key === "ArrowUp") {
+          interceptEvent(event);
+          navigateParent();
+          return;
+        }
+        if (event.key === "ArrowDown") {
+          interceptEvent(event);
+          navigateChild();
+          return;
+        }
+        if (event.key === "Enter" && state.candidateElement) {
+          interceptEvent(event);
+          confirmHide();
           return;
         }
 
@@ -23922,6 +24089,8 @@ function _toPrimitive(t, r) {
       const removeUi = Boolean(options.removeUi);
       if (!state.active && !removeUi) return;
       state.active = false;
+      state.candidateElement = null;
+      state.traversalPath = [];
       clearCleanup();
       clearHighlight();
       if (removeUi) {
