@@ -452,21 +452,28 @@
 			);
 			target = C1A2873C2E73617D00F5B43D /* FilterUpdateService */;
 		};
-			C1A41C3A2DE0897D0056F63D /* Exceptions for "wBlock" folder in "wBlock" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-					Protos/wblock_data.proto,
-				);
-				target = C1A41C2C2DE0897C0056F63D /* wBlock */;
-			};
-			C1A41C472DE089C50056F63D /* Exceptions for "wBlockCoreService" folder in "wBlockCoreService" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					DataModels.proto,
-				);
-				target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
-			};
+		C1A41C3A2DE0897D0056F63D /* Exceptions for "wBlock" folder in "wBlock" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Protos/wblock_data.proto,
+			);
+			target = C1A41C2C2DE0897C0056F63D /* wBlock */;
+		};
+		C1A41C472DE089C50056F63D /* Exceptions for "wBlockCoreService" folder in "wBlockCoreService" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				DataModels.proto,
+			);
+			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
+		};
+		C1A41C6E2DE08AD30056F63D /* Exceptions for "wBlock Ads" folder in "wBlock Ads" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1A41C682DE08AD30056F63D /* wBlock Ads */;
+		};
 		C1A41CD22DE08CAB0056F63D /* Exceptions for "wBlock Scripts (iOS)" folder in "wBlock Scripts iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -474,46 +481,39 @@
 			);
 			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
 		};
-			C1A41CED2DE08CC90056F63D /* Exceptions for "wBlock Advanced" folder in "wBlock Advanced" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-				);
-				target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
-			};
-			C1A41C6E2DE08AD30056F63D /* Exceptions for "wBlock Ads" folder in "wBlock Ads" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-				);
-				target = C1A41C682DE08AD30056F63D /* wBlock Ads */;
-			};
-			C1F16BF22DE354C30031E7EF /* Exceptions for "wBlock Security" folder in "wBlock Security" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-				);
-				target = C1F16BEE2DE354C30031E7EF /* wBlock Security */;
-			};
-			C1F16C062DE354E40031E7EF /* Exceptions for "wBlock Privacy" folder in "wBlock Privacy" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-				);
-				target = C1F16C022DE354E40031E7EF /* wBlock Privacy */;
-			};
-			C1F16C1A2DE354FB0031E7EF /* Exceptions for "wBlock Foreign" folder in "wBlock Foreign" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-				);
-				target = C1F16C162DE354FB0031E7EF /* wBlock Foreign */;
-			};
-			C1F16C3A2DE355150031E7EF /* Exceptions for "wBlock Custom" folder in "wBlock Custom" target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Info.plist,
-				);
+		C1A41CED2DE08CC90056F63D /* Exceptions for "wBlock Advanced" folder in "wBlock Advanced" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
+		};
+		C1F16BF22DE354C30031E7EF /* Exceptions for "wBlock Security" folder in "wBlock Security" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1F16BEE2DE354C30031E7EF /* wBlock Security */;
+		};
+		C1F16C062DE354E40031E7EF /* Exceptions for "wBlock Privacy" folder in "wBlock Privacy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1F16C022DE354E40031E7EF /* wBlock Privacy */;
+		};
+		C1F16C1A2DE354FB0031E7EF /* Exceptions for "wBlock Foreign" folder in "wBlock Foreign" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1F16C162DE354FB0031E7EF /* wBlock Foreign */;
+		};
+		C1F16C3A2DE355150031E7EF /* Exceptions for "wBlock Custom" folder in "wBlock Custom" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
 			target = C1F16C2A2DE355150031E7EF /* wBlock Custom */;
 		};
 		C1F16C5E2DE3557D0031E7EF /* Exceptions for "wBlock Security (iOS)" folder in "wBlock Security iOS" target */ = {
@@ -564,22 +564,22 @@
 			path = wBlock;
 			sourceTree = "<group>";
 		};
-			C1A41C462DE089C50056F63D /* wBlockCoreService */ = {
-				isa = PBXFileSystemSynchronizedRootGroup;
-				exceptions = (
-					C1A41C472DE089C50056F63D /* Exceptions for "wBlockCoreService" folder in "wBlockCoreService" target */,
-				);
-				path = wBlockCoreService;
-				sourceTree = "<group>";
-			};
-			C1A41C6D2DE08AD30056F63D /* wBlock Ads */ = {
-				isa = PBXFileSystemSynchronizedRootGroup;
-				exceptions = (
-					C1A41C6E2DE08AD30056F63D /* Exceptions for "wBlock Ads" folder in "wBlock Ads" target */,
-				);
-				path = "wBlock Ads";
-				sourceTree = "<group>";
-			};
+		C1A41C462DE089C50056F63D /* wBlockCoreService */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1A41C472DE089C50056F63D /* Exceptions for "wBlockCoreService" folder in "wBlockCoreService" target */,
+			);
+			path = wBlockCoreService;
+			sourceTree = "<group>";
+		};
+		C1A41C6D2DE08AD30056F63D /* wBlock Ads */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1A41C6E2DE08AD30056F63D /* Exceptions for "wBlock Ads" folder in "wBlock Ads" target */,
+			);
+			path = "wBlock Ads";
+			sourceTree = "<group>";
+		};
 		C1A41C812DE08BDA0056F63D /* wBlock Ads (iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -609,30 +609,30 @@
 			path = "wBlock Advanced";
 			sourceTree = "<group>";
 		};
-			C1F16BF12DE354C30031E7EF /* wBlock Security */ = {
-				isa = PBXFileSystemSynchronizedRootGroup;
-				exceptions = (
-					C1F16BF22DE354C30031E7EF /* Exceptions for "wBlock Security" folder in "wBlock Security" target */,
-				);
-				path = "wBlock Security";
-				sourceTree = "<group>";
-			};
-			C1F16C052DE354E40031E7EF /* wBlock Privacy */ = {
-				isa = PBXFileSystemSynchronizedRootGroup;
-				exceptions = (
-					C1F16C062DE354E40031E7EF /* Exceptions for "wBlock Privacy" folder in "wBlock Privacy" target */,
-				);
-				path = "wBlock Privacy";
-				sourceTree = "<group>";
-			};
-			C1F16C192DE354FB0031E7EF /* wBlock Foreign */ = {
-				isa = PBXFileSystemSynchronizedRootGroup;
-				exceptions = (
-					C1F16C1A2DE354FB0031E7EF /* Exceptions for "wBlock Foreign" folder in "wBlock Foreign" target */,
-				);
-				path = "wBlock Foreign";
-				sourceTree = "<group>";
-			};
+		C1F16BF12DE354C30031E7EF /* wBlock Security */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1F16BF22DE354C30031E7EF /* Exceptions for "wBlock Security" folder in "wBlock Security" target */,
+			);
+			path = "wBlock Security";
+			sourceTree = "<group>";
+		};
+		C1F16C052DE354E40031E7EF /* wBlock Privacy */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1F16C062DE354E40031E7EF /* Exceptions for "wBlock Privacy" folder in "wBlock Privacy" target */,
+			);
+			path = "wBlock Privacy";
+			sourceTree = "<group>";
+		};
+		C1F16C192DE354FB0031E7EF /* wBlock Foreign */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1F16C1A2DE354FB0031E7EF /* Exceptions for "wBlock Foreign" folder in "wBlock Foreign" target */,
+			);
+			path = "wBlock Foreign";
+			sourceTree = "<group>";
+		};
 		C1F16C2D2DE355150031E7EF /* wBlock Custom */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -851,9 +851,9 @@
 		C10F7D172EF5DD3100D9801F /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-					C1F16C052DE354E40031E7EF /* wBlock Privacy */,
-					C1F16C402DE355670031E7EF /* wBlock Privacy (iOS) */,
-				);
+				C1F16C052DE354E40031E7EF /* wBlock Privacy */,
+				C1F16C402DE355670031E7EF /* wBlock Privacy (iOS) */,
+			);
 			name = "Recovered References";
 			sourceTree = "<group>";
 		};
@@ -1177,13 +1177,13 @@
 			);
 			dependencies = (
 			);
-				fileSystemSynchronizedGroups = (
-					C1F16C052DE354E40031E7EF /* wBlock Privacy */,
-				);
+			fileSystemSynchronizedGroups = (
+				C1F16C052DE354E40031E7EF /* wBlock Privacy */,
+			);
 			name = "wBlock Privacy";
 			packageProductDependencies = (
 			);
-				productName = "wBlock Privacy";
+			productName = "wBlock Privacy";
 			productReference = C1F16C032DE354E40031E7EF /* wBlock Privacy.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
@@ -1445,6 +1445,21 @@
 			knownRegions = (
 				en,
 				Base,
+				hu,
+				ar,
+				pl,
+				el,
+				"zh-Hans",
+				ru,
+				ja,
+				"pt-BR",
+				es,
+				it,
+				fr,
+				de,
+				ko,
+				ro,
+				"zh-Hant",
 			);
 			mainGroup = C1A41C242DE0897C0056F63D;
 			minimizedProjectReferenceProxies = 1;
@@ -2517,17 +2532,17 @@
 			};
 			name = Release;
 		};
-			C1A41C782DE08AD30056F63D /* Debug */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
+		C1A41C782DE08AD30056F63D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_FILE = "wBlock Ads/Info.plist";
+				INFOPLIST_FILE = "wBlock Ads/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 1";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2547,17 +2562,17 @@
 			};
 			name = Debug;
 		};
-			C1A41C792DE08AD30056F63D /* Release */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
+		C1A41C792DE08AD30056F63D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_FILE = "wBlock Ads/Info.plist";
+				INFOPLIST_FILE = "wBlock Ads/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 1";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2869,10 +2884,10 @@
 			};
 			name = Release;
 		};
-			C1F16C102DE354E40031E7EF /* Debug */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					CODE_SIGN_ENTITLEMENTS = "wBlock Privacy/wBlock_Privacy.entitlements";
+		C1F16C102DE354E40031E7EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy/wBlock_Privacy.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2881,7 +2896,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_FILE = "wBlock Privacy/Info.plist";
+				INFOPLIST_FILE = "wBlock Privacy/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2901,10 +2916,10 @@
 			};
 			name = Debug;
 		};
-			C1F16C112DE354E40031E7EF /* Release */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					CODE_SIGN_ENTITLEMENTS = "wBlock Privacy/wBlock_Privacy.entitlements";
+		C1F16C112DE354E40031E7EF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy/wBlock_Privacy.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2913,7 +2928,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_FILE = "wBlock Privacy/Info.plist";
+				INFOPLIST_FILE = "wBlock Privacy/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
