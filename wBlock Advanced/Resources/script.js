@@ -23578,7 +23578,7 @@ function _toPrimitive(t, r) {
         #${ZAPPER_UI_ROOT_ID} button:disabled { opacity: 0.5; cursor: default; }
         #${ZAPPER_UI_ROOT_ID} .wblock-nav { display: none; gap: 8px; }
         #${ZAPPER_UI_ROOT_ID} .wblock-nav.wblock-active { display: flex; }
-        #${ZAPPER_HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; }
+        #${ZAPPER_HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; transform: translate3d(0,0,0); }
         #${ZAPPER_TOAST_ID} { position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
         #${ZAPPER_TOAST_ID} .wblock-toast-inner { max-width: 520px; padding: 10px 12px; border-radius: 12px; background: rgba(20, 20, 22, 0.84); color: #fff; font-size: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); text-align: center; }
       `.trim();
@@ -24083,6 +24083,16 @@ function _toPrimitive(t, r) {
       addCleanup(() => document.removeEventListener(downEvent, pickFromEvent, true));
       addCleanup(() => document.removeEventListener("click", onClick, true));
       addCleanup(() => document.removeEventListener("keydown", onKeyDown, true));
+
+      const onScroll = () => {
+        if (!state.active) return;
+        if (state.candidateElement) {
+          setHighlightForElement(state.candidateElement);
+        }
+      };
+
+      window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+      addCleanup(() => window.removeEventListener("scroll", onScroll, true));
     }
 
     function deactivate(options = {}) {
