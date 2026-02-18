@@ -832,14 +832,29 @@ public actor SharedAutoUpdateManager {
                 return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
             }
 
+            // PREP-07: Strip unknown !# directives before preprocessing.
+            let processedContent = stripUnknownDirectives(from: rawContent)
+
+            // OBSV-02: Measure pre-expansion rule count.
+            let rawCount = countRulesInData(data: Data(processedContent.utf8))
+
             // Preprocess: expand !#include directives and evaluate !#if conditionals.
             // Skip for built-in optimized lists — already pre-expanded.
             let finalContent: String
             if filter.isOptimizedBuiltin {
-                finalContent = rawContent
+                finalContent = processedContent
             } else {
-                finalContent = await FilterPreprocessor().preprocess(
-                    content: rawContent,
+                let filterName = filter.name
+                let preprocessor = FilterPreprocessor(
+                    onFetchError: { subURL, statusCode in
+                        let statusStr = statusCode.map { "\($0)" } ?? "network error"
+                        await self.appendSharedLog(
+                            "!#include fetch failed: filter=\(filterName), subURL=\(subURL.absoluteString), status=\(statusStr)"
+                        )
+                    }
+                )
+                finalContent = await preprocessor.preprocess(
+                    content: processedContent,
                     listURL: filter.url
                 )
             }
@@ -862,6 +877,7 @@ public actor SharedAutoUpdateManager {
             if let version = meta.version, !version.isEmpty { updated.version = version }
             if let desc = meta.description, !desc.isEmpty { updated.description = desc }
             updated.sourceRuleCount = ruleCount
+            updated.rawSourceRuleCount = rawCount
             return .updated(
                 filter: updated,
                 validators: (etag: responseEtag, lastModified: responseLastModified)
