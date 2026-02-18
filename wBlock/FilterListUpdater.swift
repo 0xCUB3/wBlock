@@ -485,6 +485,9 @@ final class FilterListUpdater: @unchecked Sendable {
             // Known directives (!#include, !#if, !#else, !#endif) are preserved for Phase 2/3.
             let processedContent = await stripUnknownDirectives(from: content)
 
+            // Measure the pre-expansion rule count (before !#include resolution).
+            let rawCount = countRulesInContent(content: processedContent)
+
             // Preprocess: expand !#include directives and evaluate !#if conditionals.
             // Skip for built-in optimized lists — they are already pre-expanded.
             let preprocessed: String
@@ -529,6 +532,7 @@ final class FilterListUpdater: @unchecked Sendable {
                 updatedFilter.description = description
             }
             updatedFilter.sourceRuleCount = countRulesInContent(content: preprocessed)
+            updatedFilter.rawSourceRuleCount = rawCount
             updatedFilter.lastUpdated = Date()
             
             let uuid = filter.id.uuidString

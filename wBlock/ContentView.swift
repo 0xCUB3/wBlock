@@ -449,8 +449,17 @@ struct ContentView: View {
                 }
                 .font(.body)
 
-                if let sourceCount = filter.sourceRuleCount, sourceCount > 0 {
-                    Text("(\(sourceCount.formatted()) source rules)")
+                if let rawCount = filter.rawSourceRuleCount,
+                   let expandedCount = filter.sourceRuleCount,
+                   rawCount != expandedCount {
+                    // Both counts available and different — show expansion
+                    Text("(\(rawCount.formatted()) source \u{2192} \(expandedCount.formatted()) expanded rules)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let count = filter.sourceRuleCount, count > 0 {
+                    // Single count (no expansion, counts match, or rawSourceRuleCount is nil after restart)
+                    Text("(\(count.formatted()) rules)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
