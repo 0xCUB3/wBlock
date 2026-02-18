@@ -1344,6 +1344,30 @@ public actor SharedAutoUpdateManager {
         return (title: title, description: description, version: version)
     }
 
+    // MARK: - Directive Stripping (PREP-07)
+    // Known directives are preserved; all other !# lines are silently stripped.
+    private static let knownDirectivePrefixes: [String] = [
+        "!#include", "!#if", "!#else", "!#endif",
+    ]
+
+    private func stripUnknownDirectives(from content: String) -> String {
+        var result: [String] = []
+        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lineStr = String(line)
+            guard trimmed.hasPrefix("!#") else {
+                result.append(lineStr)
+                continue
+            }
+            let isKnown = Self.knownDirectivePrefixes.contains(where: { trimmed.hasPrefix($0) })
+            if isKnown {
+                result.append(lineStr)
+            }
+            // Unknown directive: silently omitted (PREP-07)
+        }
+        return result.joined(separator: "\n")
+    }
+
     private func loadCachedAdvancedRules(for target: ContentBlockerTargetInfo, containerURL: URL) -> String? {
         let url = containerURL.appendingPathComponent(
             ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename)
