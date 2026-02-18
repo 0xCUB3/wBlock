@@ -827,20 +827,36 @@ public actor SharedAutoUpdateManager {
                 break
             }
 
+            // Decode raw data for preprocessing
+            guard let rawContent = String(data: data, encoding: .utf8) else {
+                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
+            }
+
+            // Preprocess: expand !#include directives and evaluate !#if conditionals.
+            // Skip for built-in optimized lists — already pre-expanded.
+            let finalContent: String
+            if filter.isOptimizedBuiltin {
+                finalContent = rawContent
+            } else {
+                finalContent = await FilterPreprocessor().preprocess(
+                    content: rawContent,
+                    listURL: filter.url
+                )
+            }
+
+            guard let finalData = finalContent.data(using: .utf8) else {
+                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
+            }
+
             do {
-                try data.write(to: localURL, options: .atomic)
+                try finalData.write(to: localURL, options: .atomic)
             } catch {
                 return .error(filterName: filter.name, error: error)
             }
 
-            // Only parse the beginning for metadata, not the entire content.
-            guard let content = String(data: data.prefix(8192), encoding: .utf8) else {
-                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
-            }
-            let meta = parseMetadata(from: content)
+            let meta = parseMetadata(from: String(finalContent.prefix(8192)))
 
-            // Count rules efficiently without loading full content into memory.
-            let ruleCount = countRulesInData(data: data)
+            let ruleCount = countRulesInData(data: finalData)
 
             var updated = filter
             if let version = meta.version, !version.isEmpty { updated.version = version }
