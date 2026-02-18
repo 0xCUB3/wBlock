@@ -30,7 +30,12 @@ import Foundation
 /// return an empty array — the caller's other lines are preserved (degraded-continue policy).
 public actor IncludeResolver {
 
+    /// Called when a sub-list fetch fails. Parameters: the sub-list URL that failed, and the
+    /// HTTP status code (`nil` for network errors like timeout or DNS failure).
+    public typealias FetchErrorHandler = @Sendable (URL, Int?) async -> Void
+
     private let urlSession: URLSession
+    private let onFetchError: FetchErrorHandler?
 
     /// Maximum recursion depth for nested `!#include` directives (PREP-04).
     public static let maxDepth = 5
@@ -39,10 +44,14 @@ public actor IncludeResolver {
 
     /// Creates an `IncludeResolver`.
     ///
-    /// - Parameter urlSession: Custom session for testing. When `nil` (default), a session
-    ///   with a 15-second request timeout is created — shorter than the parent list's 30s
-    ///   timeout to prevent timeout stacking across 5 recursion levels (Research Pitfall 4).
-    public init(urlSession: URLSession? = nil) {
+    /// - Parameters:
+    ///   - urlSession: Custom session for testing. When `nil` (default), a session
+    ///     with a 15-second request timeout is created — shorter than the parent list's 30s
+    ///     timeout to prevent timeout stacking across 5 recursion levels (Research Pitfall 4).
+    ///   - onFetchError: Optional closure invoked when a sub-list fetch fails (HTTP error or
+    ///     network error). Receives the failed URL and the HTTP status code (nil for network errors).
+    ///     Default `nil` preserves all existing call-sites unchanged (OBSV-01).
+    public init(urlSession: URLSession? = nil, onFetchError: FetchErrorHandler? = nil) {
         if let urlSession {
             self.urlSession = urlSession
         } else {
@@ -51,6 +60,7 @@ public actor IncludeResolver {
             config.timeoutIntervalForResource = 60
             self.urlSession = URLSession(configuration: config)
         }
+        self.onFetchError = onFetchError
     }
 
     // MARK: - Public API
@@ -147,6 +157,9 @@ public actor IncludeResolver {
             guard let http = response as? HTTPURLResponse,
                   http.statusCode == 200,
                   let content = String(data: data, encoding: .utf8) else {
+                // HTTP error path: report status code (nil if response isn't HTTP)
+                let statusCode = (response as? HTTPURLResponse)?.statusCode
+                await onFetchError?(subURL, statusCode)
                 return []
             }
 
@@ -166,7 +179,8 @@ public actor IncludeResolver {
                 depth: depth + 1
             )
         } catch {
-            // Network or system error — degraded-continue
+            // Network or system error (timeout, DNS, etc.) — nil status code, degraded-continue
+            await onFetchError?(subURL, nil)
             return []
         }
     }

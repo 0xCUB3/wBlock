@@ -37,10 +37,13 @@ public actor FilterPreprocessor {
 
     /// Creates a `FilterPreprocessor`.
     ///
-    /// - Parameter urlSession: Custom URLSession for testing. When `nil` (default),
-    ///   `IncludeResolver` creates a session with a 15-second timeout.
-    public init(urlSession: URLSession? = nil) {
-        self.resolver = IncludeResolver(urlSession: urlSession)
+    /// - Parameters:
+    ///   - urlSession: Custom URLSession for testing. When `nil` (default),
+    ///     `IncludeResolver` creates a session with a 15-second timeout.
+    ///   - onFetchError: Optional closure invoked when a sub-list fetch fails. Forwarded to
+    ///     `IncludeResolver`. Default `nil` preserves all existing call-sites unchanged (OBSV-01).
+    public init(urlSession: URLSession? = nil, onFetchError: IncludeResolver.FetchErrorHandler? = nil) {
+        self.resolver = IncludeResolver(urlSession: urlSession, onFetchError: onFetchError)
     }
 
     // MARK: - Public API
