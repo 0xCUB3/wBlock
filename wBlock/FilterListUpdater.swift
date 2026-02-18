@@ -485,14 +485,26 @@ final class FilterListUpdater: @unchecked Sendable {
             // Known directives (!#include, !#if, !#else, !#endif) are preserved for Phase 2/3.
             let processedContent = await stripUnknownDirectives(from: content)
 
-            guard isValidFilterContent(processedContent) else {
+            // Preprocess: expand !#include directives and evaluate !#if conditionals.
+            // Skip for built-in optimized lists — they are already pre-expanded.
+            let preprocessed: String
+            if filter.isOptimizedBuiltin {
+                preprocessed = processedContent
+            } else {
+                preprocessed = await FilterPreprocessor().preprocess(
+                    content: processedContent,
+                    listURL: filter.url
+                )
+            }
+
+            guard isValidFilterContent(preprocessed) else {
                 await ConcurrentLogManager.shared.error(
                     .network, "Downloaded content does not appear to be a valid filter list",
-                    metadata: ["filter": filter.name, "contentLength": "\(processedContent.count)"])
+                    metadata: ["filter": filter.name, "contentLength": "\(preprocessed.count)"])
                 return false
             }
 
-            let metadata = parseMetadata(from: processedContent)
+            let metadata = parseMetadata(from: preprocessed)
             var updatedFilter = filter
             if filter.isCustom, !filter.hasUserProvidedName, let title = metadata.title, !title.isEmpty {
                 updatedFilter.name = title
@@ -501,7 +513,7 @@ final class FilterListUpdater: @unchecked Sendable {
             if let description = metadata.description, !description.isEmpty {
                 updatedFilter.description = description
             }
-            updatedFilter.sourceRuleCount = countRulesInContent(content: processedContent)
+            updatedFilter.sourceRuleCount = countRulesInContent(content: preprocessed)
             updatedFilter.lastUpdated = Date()
             
             let uuid = filter.id.uuidString
@@ -538,7 +550,7 @@ final class FilterListUpdater: @unchecked Sendable {
             let fileURL = containerURL.appendingPathComponent(
                 ContentBlockerIncrementalCache.localFilename(for: filter)
             )
-            try? processedContent.write(to: fileURL, atomically: true, encoding: .utf8)
+            try? preprocessed.write(to: fileURL, atomically: true, encoding: .utf8)
 
             return true
         } catch {
