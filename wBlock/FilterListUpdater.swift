@@ -491,7 +491,22 @@ final class FilterListUpdater: @unchecked Sendable {
             if filter.isOptimizedBuiltin {
                 preprocessed = processedContent
             } else {
-                preprocessed = await FilterPreprocessor().preprocess(
+                let filterName = filter.name
+                let preprocessor = FilterPreprocessor(
+                    onFetchError: { subURL, statusCode in
+                        let statusStr = statusCode.map { "\($0)" } ?? "network error"
+                        await ConcurrentLogManager.shared.warning(
+                            .filterUpdate,
+                            "!#include fetch failed",
+                            metadata: [
+                                "filter": filterName,
+                                "subURL": subURL.absoluteString,
+                                "status": statusStr,
+                            ]
+                        )
+                    }
+                )
+                preprocessed = await preprocessor.preprocess(
                     content: processedContent,
                     listURL: filter.url
                 )
