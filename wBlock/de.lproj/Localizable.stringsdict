@@ -61,7 +61,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Jeden 1 Tag</string>
+			<string>Jeden Tag</string>
 			<key>other</key>
 			<string>Alle %d Tage</string>
 		</dict>
@@ -77,7 +77,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Alle 1 Stunde</string>
+			<string>Jede Stunde</string>
 			<key>other</key>
 			<string>Alle %d Stunden</string>
 		</dict>
