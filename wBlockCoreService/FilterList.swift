@@ -17,6 +17,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var description: String = ""
     public var version: String = ""
     public var sourceRuleCount: Int?
+    public var rawSourceRuleCount: Int?  // Pre-expansion count (NOT persisted; in-memory only)
     public var lastUpdated: Date?
     public var languages: [String] = []
     public var trustLevel: String? = nil
@@ -24,6 +25,13 @@ public struct FilterList: Identifiable, Codable, Hashable {
     public var serverLastModified: String? = nil
     public var limitExceededReason: String? = nil // Reason why filter was auto-disabled due to rule limits
     public var hasUserProvidedName: Bool = false
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, url, category, isCustom, isSelected, description,
+             version, sourceRuleCount, lastUpdated, languages, trustLevel,
+             etag, serverLastModified, limitExceededReason, hasUserProvidedName
+        // rawSourceRuleCount intentionally excluded — in-memory only, not persisted
+    }
 
     public init(id: UUID = UUID(),
                 name: String,
@@ -34,6 +42,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
                 description: String = "",
                 version: String = "",
                 sourceRuleCount: Int? = nil,
+                rawSourceRuleCount: Int? = nil,
                 lastUpdated: Date? = nil,
                 languages: [String] = [],
                 trustLevel: String? = nil,
@@ -50,6 +59,7 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.description = description
         self.version = version
         self.sourceRuleCount = sourceRuleCount
+        self.rawSourceRuleCount = rawSourceRuleCount
         self.lastUpdated = lastUpdated
         self.languages = languages
         self.trustLevel = trustLevel
