@@ -46,11 +46,16 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
 
       - name: Build DMG
-        env:
-          SIGNING_IDENTITY: "Developer ID Application: Alexander Skula (DNP7DGUB7B)"
-          DEVELOPMENT_TEAM_ID: DNP7DGUB7B
         run: |
           bash scripts/build-dmg.sh
+
+      - name: Verify Gatekeeper assessment
+        run: |
+          set -euo pipefail
+          app_path="build/homebrew/export/wBlock.app"
+          echo "Running spctl assessment on ${app_path}..."
+          spctl --assess --type execute -v "${app_path}"
+          echo "Gatekeeper assessment passed"
 
       - name: Notarize + staple DMG
         env:
