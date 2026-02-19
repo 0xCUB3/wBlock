@@ -38,7 +38,7 @@ See: `.planning/milestones/v1.1-ROADMAP.md` for full details.
 **Milestone Goal:** Fix DMG code signing so the Homebrew/direct-download release works on macOS Tahoe, improve the notarization pipeline, and add proper version pinning to the Homebrew cask.
 
 - [x] **Phase 10: Build and Entitlements** — Switch to `xcodebuild archive` + `exportArchive`, fix two pre-existing entitlements bugs, gate CI on Gatekeeper assessment (completed 2026-02-19)
-- [x] **Phase 11: Notarization Pipeline** — Resolve `aps-environment`/iCloud entitlements for Developer ID, install provisioning profiles in CI, add observability and validation steps (completed 2026-02-19)
+- [x] **Phase 11: Notarization Pipeline** — Add notarytool log fetch on failure, stapler validate, keychain cleanup; revert to manual codesign + notarize approach (completed 2026-02-19)
 - [ ] **Phase 12: Homebrew Cask** — Versioned DMG output, versioned cask with real SHA256 and livecheck, CI auto-update on each tag push
 
 ## Phase Details
@@ -71,7 +71,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 11-01-PLAN.md -- Add provisioning profile install, notarytool log fetch, stapler validate, and keychain cleanup to CI
+- [x] 11-01-PLAN.md -- Add notarytool log fetch, stapler validate, keychain cleanup; fix CI signing approach
 
 ### Phase 12: Homebrew Cask
 **Goal**: A versioned Homebrew cask where `brew install wblock`, `brew upgrade wblock`, `brew audit --cask wblock`, and `brew livecheck wblock` all pass, with CI keeping the cask current on every tag push
@@ -102,5 +102,5 @@ Plans:
 | 8. Data Layer | v1.1 | 1/1 | Complete | 2026-02-19 |
 | 9. Settings UI and Rule Management | v1.1 | 1/1 | Complete | 2026-02-19 |
 | 10. Build and Entitlements | v1.2 | Complete    | 2026-02-19 | 2026-02-19 |
-| 11. Notarization Pipeline | 1/1 | Complete   | 2026-02-19 | - |
+| 11. Notarization Pipeline | v1.2 | 1/1 | Complete | 2026-02-19 |
 | 12. Homebrew Cask | v1.2 | 0/? | Not started | - |
