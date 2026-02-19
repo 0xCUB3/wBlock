@@ -106,6 +106,26 @@ struct SettingsView: View {
                             }
                             .buttonStyle(.plain)
                             .padding(16)
+
+                            Divider()
+                                .padding(.leading, 16)
+
+                            NavigationLink {
+                                ZapperRuleManagerView()
+                            } label: {
+                                HStack {
+                                    Text("Manage Element Zapper Rules")
+                                        .font(.body)
+                                    Spacer()
+                                    Image(systemName: "wand.and.stars")
+                                        .foregroundColor(.secondary)
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .padding(16)
                         }
 
                         settingsSectionView(title: "Filter Auto-Update") {
