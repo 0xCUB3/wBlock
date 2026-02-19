@@ -19,7 +19,9 @@ The main settings screen shows your enabled filter lists with toggle switches. E
 
 <img width="318" height="326" alt="CleanShot 2025-08-20 at 18 18 11" src="https://github.com/user-attachments/assets/3bf5b7ed-a0d6-49e1-b729-a32033fff59c" />
 
-What sets wBlock apart is the advanced features. The element zapper works as expected (though it is still a work in progress): point, click, BAM! Gone. The userscript support is a nice touch, letting you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, you have Return YouTube Dislike and Bypass Paywalls Clean, but you can add almost any script you want!
+What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, you have Return YouTube Dislike and Bypass Paywalls Clean, but you can add almost any script you want!
+
+Other recent additions include iCloud sync for filter selections, custom lists, userscripts, and whitelist across all your devices; configurable auto-updates from every hour to every 7 days with HTTP conditional requests to minimize bandwidth; a filter preprocessor that handles AdGuard's `!#include` directives; and auto-detection of custom filter list titles from `! Title` metadata.
 
 The app is developed just by [me](https://github.com/0xCUB3), though a few people have contributed changes. If you want power-user features in a native interface, wBlock is a breath of fresh air.
 
@@ -93,7 +95,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 | iOS Support             | ✅      | ✅          | ✅               | ❌<sup>20</sup>               |
 | RAM Usage (MB)          | 40MB<sup>6</sup>                  | 120MB<sup>6</sup>   | 50MB<sup>6</sup>     | ~100MB<sup>6</sup>     |
 | Total Rule Capacity     | 750,000 <sup>7</sup> | N/A                 | 900,000 macOS / 300,000 iOS | 1,050,000 macOS |
-| GitHub Stars            | 1,400                              | 2,600                | N/A                   | 1,100                |
+| GitHub Stars            | 2,300                              | 2,600                | N/A                   | 1,200                |
 | Open Source             | ✅                                 | ✅                    | ❌                    | ✅                    |
 | License<sup>18</sup>    | GPL-3.0                           | GPL-3.0              | Proprietary           | GPL-3.0              |
 | Primary Language<sup>19</sup>        | Swift                | JavaScript   | Swift          | TypeScript/Swift   |
@@ -106,17 +108,17 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 | Dynamic Filtering<sup>12</sup>       | ✅                                 | ❌ MV3 limited        | ❌                    | ✅                   |
 | YouTube Ad Blocking     | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Script Injection<sup>13</sup>        | ✅                                 | ✅                   | ❌                    | ✅                   |
-| Filter List Updates     | Automatic              | Extension updates only | Semi-automatic (≈2×/week)| Automatic (real-time with Pro)            |
+| Filter List Updates     | Automatic (1h-7d configurable) | Extension updates only | Semi-automatic (≈2×/week)| Automatic (real-time with Pro)            |
 | Userscripts Support<sup>14</sup>     | ✅                                 | ❌                   | ❌                    | ❌ (Mac app only)<sup>15</sup>   |
 | User Interface          | SwiftUI – extensive               | JS – Popup/web panel | SwiftUI – minimal     | Sciter – extensive |
 | Customization Level     | High                              | Medium               | None                  | High                 |
 | Setup Complexity        | Easy                              | Easy                 | Very Easy             | Moderate             |
-| Multi-Device Sync       | ❌                                 | ❌                   | ✅ Universal purchase  | ❌                   |
+| Multi-Device Sync       | ✅ iCloud                          | ❌                   | ✅ Universal purchase  | ❌                   |
 | [AdBlock Tester](https://adblock-tester.com) Score<sup>16</sup>    | 100/100                             | 100/100               | 96/100                | 94/100               |
 | Cost                    | Free                              | Free                 | $4.99 one-time        | Free (Pro available)                 |
 | Subscription Model      | ❌                                 | ❌                   | ❌                    | ❌                   |
 | Active Development      | ✅                                 | ✅                   | ✅                    | ✅                   |
-| Community Size          | Growing (1.4k stars)              | Large (cross-browser)| Small/Independent     | Large (35M users)    |
+| Community Size          | Growing (2.3k stars)              | Large (cross-browser)| Small/Independent     | Large (35M users)    |
 | Per-Site Disable        | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Whitelist Management    | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Logging/Debugging       | ✅                                 | ❌                   | ❌                    | ✅                   |
@@ -131,7 +133,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 <sup>3</sup> **Wipr 2:** Closed-source, paid, lightweight, Safari-only ad blocker.  
 <sup>4</sup> **AdGuard Mini:** Formerly AdGuard for Safari; major Dec 2025 rework with Sciter UI framework, 5x faster filter conversion, and Pro features.
 
-<sup>5</sup> ~~**TestFlight only**~~: Not anymore! It's on the App Store now: https://apps.apple.com/app/wblock/id6746388723
+<sup>5</sup> **App Store**: https://apps.apple.com/app/wblock/id6746388723
 
 <sup>6</sup> **RAM Usage Measurement**:
 Numbers were measured on a 2023 M2 Pro MacBook Pro 14" with 16GB RAM, 5 tabs open, only one ad blocker active. Actual memory usage can **vary widely** based on hardware, browser version, tab contents, number of active extensions, and enabled filter lists. Lower-spec Macs and iOS devices will observe different numbers. AdGuard Mini's estimate reflects the migration from Electron to Sciter (which uses 5-7x less RAM).
@@ -155,8 +157,8 @@ Where and how filtering rules/lists are stored:
 - SQLite + JSON: Lightweight database (efficient for large sets), preferred by AdGuard.  
 - Unknown: Wipr is closed source.
 
-<sup>11</sup> **Element Zapper**:  
-Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. Absent in Wipr, which is more designed to be simple and don't-touch. 
+<sup>11</sup> **Element Zapper**:
+Lets users click and instantly hide page elements (ads, overlays, popups) in real time, no filter editing required. wBlock's element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation. Absent in Wipr, which is more designed to be simple and don't-touch.
 
 <sup>12</sup> **Dynamic Filtering**:
 Advanced feature letting users interactively allow/block domains/scripts/network requests per-site (similar to uMatrix and original uBlock Origin dynamic filtering). Rare with Safari content blockers, available only via [clever workarounds](#How-wBlock-Achieves-Dynamic-Filtering-in-Safari) in wBlock/AdGuard Mini.
