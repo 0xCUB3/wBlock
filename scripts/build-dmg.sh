@@ -9,9 +9,15 @@ CONFIGURATION="Release"
 OUT_DIR="${ROOT_DIR}/build/homebrew"
 DERIVED_DATA="${OUT_DIR}/DerivedData"
 APP_PATH="${DERIVED_DATA}/Build/Products/${CONFIGURATION}/wBlock.app"
-DMG_PATH="${OUT_DIR}/wBlock.dmg"
 
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
+VERSION="${VERSION:-}"
+if [[ -n "${VERSION}" ]]; then
+  DMG_NAME="wBlock-${VERSION}.dmg"
+else
+  DMG_NAME="wBlock.dmg"
+fi
+DMG_PATH="${OUT_DIR}/${DMG_NAME}"
 
 mkdir -p "${OUT_DIR}"
 rm -f "${DMG_PATH}"
