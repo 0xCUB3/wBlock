@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ameshkov/swift-psl",
       "state" : {
-        "revision" : "5270efa9ce2a14274a2fef52d08b58aa9c98a8df",
-        "version" : "1.1.27"
+        "revision" : "4b108e8fb46f6233099b9aa0f14bb5508856584e",
+        "version" : "1.1.118"
       }
     },
     {
