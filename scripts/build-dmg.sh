@@ -19,16 +19,18 @@ rm -rf "${EXPORT_PATH}"
 
 echo "Archiving ${SCHEME} (${CONFIGURATION})…"
 
-# Archive without code signing — exportArchive handles signing with
-# Developer ID Application cert and auto-managed provisioning profiles
+# Archive with ad-hoc signing to embed hardened runtime flag without
+# needing a real certificate or provisioning profiles. exportArchive
+# will re-sign with Developer ID Application.
 xcodebuild archive \
   -project "${PROJECT_PATH}" \
   -scheme "${SCHEME}" \
   -configuration Release \
   -destination "platform=macOS" \
   -archivePath "${ARCHIVE_PATH}" \
-  CODE_SIGNING_REQUIRED=NO \
-  CODE_SIGNING_ALLOWED=NO
+  CODE_SIGN_STYLE=Manual \
+  "CODE_SIGN_IDENTITY=-" \
+  ENABLE_HARDENED_RUNTIME=YES
 
 if [[ ! -d "${ARCHIVE_PATH}" ]]; then
   echo "Expected archive not found at: ${ARCHIVE_PATH}" >&2
