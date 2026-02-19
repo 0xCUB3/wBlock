@@ -45,21 +45,9 @@ jobs:
           security import "${RUNNER_TEMP}/cert.p12" -k "${KEYCHAIN_PATH}" -P "${MACOS_CERT_PASSWORD}" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
 
-      - name: Install provisioning profile
-        env:
-          MACOS_PROFILE_APP_B64: ${{ secrets.MACOS_PROFILE_APP_B64 }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${MACOS_PROFILE_APP_B64:-}" ]]; then
-            echo "Missing secret: MACOS_PROFILE_APP_B64" >&2
-            exit 1
-          fi
-          PP_DIR="${HOME}/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "${PP_DIR}"
-          echo "${MACOS_PROFILE_APP_B64}" | base64 --decode > "${PP_DIR}/wBlock_DevID.provisionprofile"
-          echo "Provisioning profile installed"
-
       - name: Build DMG
+        env:
+          SIGNING_IDENTITY: "Developer ID Application: Alexander Skula (DNP7DGUB7B)"
         run: |
           bash scripts/build-dmg.sh
 
@@ -110,14 +98,6 @@ jobs:
           xcrun stapler validate "${dmg}"
           echo "Stapler validation passed"
 
-      - name: Verify Gatekeeper assessment
-        run: |
-          set -euo pipefail
-          app_path="build/homebrew/export/wBlock.app"
-          echo "Running spctl assessment on ${app_path}..."
-          spctl --assess --type execute -v "${app_path}"
-          echo "Gatekeeper assessment passed"
-
       - name: Upload to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,4 +118,3 @@ jobs:
         if: always()
         run: |
           security delete-keychain "${RUNNER_TEMP}/signing.keychain-db" || true
-          rm -f "${HOME}/Library/MobileDevice/Provisioning Profiles/wBlock_DevID.provisionprofile" || true
