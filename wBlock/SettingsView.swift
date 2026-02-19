@@ -87,27 +87,25 @@ struct SettingsView: View {
                             .buttonStyle(.plain)
                             .padding(16)
 
-                            #if os(macOS)
-                                Divider()
-                                    .padding(.leading, 16)
+                            Divider()
+                                .padding(.leading, 16)
 
-                                NavigationLink {
-                                    WhitelistManagerView(filterManager: filterManager)
-                                } label: {
-                                    HStack {
-                                        Text("Manage Whitelist")
-                                            .font(.body)
-                                        Spacer()
-                                        Image(systemName: "list.bullet.indent")
-                                            .foregroundColor(.secondary)
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
+                            NavigationLink {
+                                WhitelistManagerView(filterManager: filterManager)
+                            } label: {
+                                HStack {
+                                    Text("Manage Whitelist")
+                                        .font(.body)
+                                    Spacer()
+                                    Image(systemName: "list.bullet.indent")
+                                        .foregroundColor(.secondary)
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
                                 }
-                                .buttonStyle(.plain)
-                                .padding(16)
-                            #endif
+                            }
+                            .buttonStyle(.plain)
+                            .padding(16)
                         }
 
                         settingsSectionView(title: "Filter Auto-Update") {

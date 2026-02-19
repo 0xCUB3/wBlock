@@ -1,4 +1,3 @@
-#if os(macOS)
 import SwiftUI
 import wBlockCoreService
 
@@ -236,4 +235,3 @@ struct WhitelistManagerView: View {
         }
     }
 }
-#endif
