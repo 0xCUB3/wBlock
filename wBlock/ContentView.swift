@@ -312,12 +312,14 @@ struct ContentView: View {
                 } label: {
                     StatCard(
                         title: "Rules",
-                        value: hasAppliedFilters
-                            ? appliedSafariRulesCount.formatted()
-                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
+                        value: enabledListsCount == 0
+                            ? "0"
+                            : (hasAppliedFilters
+                                ? appliedSafariRulesCount.formatted()
+                                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
                         icon: "shield.lefthalf.filled",
                         pillColor: .clear,
-                        valueColor: hasAppliedFilters ? .primary : .secondary
+                        valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
                     )
                     .overlay(alignment: .topTrailing) {
                         if shouldShowRuleLimitIndicator {
@@ -335,13 +337,15 @@ struct ContentView: View {
                     filterManager.showRuleLimitWarning()
                 } label: {
                     StatCard(
-                        title: hasAppliedFilters ? "Safari Rules" : "Source Rules",
-                        value: hasAppliedFilters
-                            ? appliedSafariRulesCount.formatted()
-                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"),
+                        title: (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules",
+                        value: enabledListsCount == 0
+                            ? "0"
+                            : (hasAppliedFilters
+                                ? appliedSafariRulesCount.formatted()
+                                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
                         icon: "shield.lefthalf.filled",
                         pillColor: .clear,
-                        valueColor: hasAppliedFilters ? .primary : .secondary
+                        valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
                     )
                     .overlay(alignment: .topTrailing) {
                         if shouldShowRuleLimitIndicator {
