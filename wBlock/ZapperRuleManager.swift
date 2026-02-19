@@ -95,4 +95,28 @@ final class ZapperRuleManager: ObservableObject {
     func ruleCount(forDomain hostname: String) -> Int {
         return rules(for: hostname).count
     }
+
+    /// Re-inserts a previously deleted rule back into UserDefaults for the given hostname.
+    /// Used by the undo banner in ZapperRuleManagerView.
+    /// - Parameters:
+    ///   - rule: The CSS selector string to restore.
+    ///   - hostname: The domain the rule belongs to.
+    ///   - index: The original position in the array; clamped to array bounds.
+    func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
+        let key = keyPrefix + hostname
+        var current = defaults?.stringArray(forKey: key) ?? []
+        let insertIndex = min(index, current.count)
+        current.insert(rule, at: insertIndex)
+        defaults?.setValue(current, forKey: key)
+
+        if !domains.contains(hostname) {
+            refresh()
+        }
+
+        if selectedDomain == hostname {
+            rulesForSelectedDomain = rules(for: hostname)
+        }
+
+        logger.info("ZapperRuleManager: Restored rule for '\(hostname)' at index \(insertIndex)")
+    }
 }
