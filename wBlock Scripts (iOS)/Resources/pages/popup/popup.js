@@ -1,6 +1,19 @@
 const NATIVE_HOST_ID = 'application.id';
 const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 
+async function syncRulesToNative(host, rules) {
+    if (!host) return;
+    try {
+        await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+            action: 'syncZapperRules',
+            hostname: host,
+            rules: Array.isArray(rules) ? rules : []
+        });
+    } catch {
+        // Best-effort sync
+    }
+}
+
 function setError(message) {
     const el = document.getElementById('error');
     if (!el) return;
@@ -79,6 +92,7 @@ async function saveZapperRules(host, rules) {
     const key = zapperStorageKey(host);
     const normalized = Array.from(new Set((rules || []).map((r) => String(r).trim()).filter(Boolean)));
     await browser.storage.local.set({ [key]: normalized });
+    await syncRulesToNative(host, normalized);
 }
 
 async function notifyZapperRulesChanged(tabId) {
@@ -287,6 +301,7 @@ async function refreshUi() {
                 setError('');
                 const key = zapperStorageKey(host);
                 await browser.storage.local.remove(key);
+                await syncRulesToNative(host, []);
                 await updateZapperCount(host);
                 currentZapperRules = [];
                 if (zapperRulesExpanded) renderZapperRules(currentZapperRules);
