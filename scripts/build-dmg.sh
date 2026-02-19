@@ -18,14 +18,35 @@ rm -rf "${ARCHIVE_PATH}"
 rm -rf "${EXPORT_PATH}"
 
 echo "Archiving ${SCHEME} (${CONFIGURATION})…"
-xcodebuild archive \
-  -project "${PROJECT_PATH}" \
-  -scheme "${SCHEME}" \
-  -configuration Release \
-  -destination "platform=macOS" \
-  -archivePath "${ARCHIVE_PATH}" \
-  CODE_SIGN_STYLE=Automatic \
+
+# Build the archive command with optional provisioning updates
+ARCHIVE_CMD=(xcodebuild archive
+  -project "${PROJECT_PATH}"
+  -scheme "${SCHEME}"
+  -configuration Release
+  -destination "platform=macOS"
+  -archivePath "${ARCHIVE_PATH}"
+  CODE_SIGN_STYLE=Automatic
   DEVELOPMENT_TEAM=DNP7DGUB7B
+)
+
+# In CI, pass -allowProvisioningUpdates with API key so Xcode can
+# auto-manage provisioning profiles for all targets
+if [[ -n "${APPLE_API_KEY_P8_B64:-}" && -n "${APPLE_API_KEY_ID:-}" && -n "${APPLE_API_ISSUER_ID:-}" ]]; then
+  KEY_PATH="${RUNNER_TEMP:-/tmp}/AuthKey_${APPLE_API_KEY_ID}.p8"
+  if [[ ! -f "${KEY_PATH}" ]]; then
+    echo "${APPLE_API_KEY_P8_B64}" | base64 --decode > "${KEY_PATH}"
+  fi
+  ARCHIVE_CMD+=(
+    -allowProvisioningUpdates
+    -authenticationKeyPath "${KEY_PATH}"
+    -authenticationKeyID "${APPLE_API_KEY_ID}"
+    -authenticationKeyIssuerID "${APPLE_API_ISSUER_ID}"
+  )
+  echo "Using API key for automatic provisioning"
+fi
+
+"${ARCHIVE_CMD[@]}"
 
 if [[ ! -d "${ARCHIVE_PATH}" ]]; then
   echo "Expected archive not found at: ${ARCHIVE_PATH}" >&2
