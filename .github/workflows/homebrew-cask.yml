@@ -134,18 +134,27 @@ jobs:
           # Upload/tagged asset
           gh release upload "${tag}" "${dmg}" --clobber
 
-      - name: Update cask
+      - name: Update cask in tap
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           SHA256=$(shasum -a 256 "build/homebrew/wBlock-${VERSION}.dmg" | awk '{print $1}')
-          CASK="Casks/wblock.rb"
+
+          TAP_DIR=$(mktemp -d)
+          gh repo clone 0xCUB3/homebrew-wblock "${TAP_DIR}" -- --depth 1
+
+          CASK="${TAP_DIR}/Casks/wblock.rb"
           sed -i '' "s/version \".*\"/version \"${VERSION}\"/" "${CASK}"
           sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" "${CASK}"
+
+          cd "${TAP_DIR}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${CASK}"
+          git add Casks/wblock.rb
           git commit -m "update wblock cask to ${VERSION}" || echo "nothing to commit"
-          git push origin HEAD:main
+          git push origin main
+          rm -rf "${TAP_DIR}"
 
       - name: Clean up keychain
         if: always()
