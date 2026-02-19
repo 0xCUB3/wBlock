@@ -133,3 +133,9 @@ jobs:
 
           # Upload/tagged asset
           gh release upload "${tag}" "${dmg}" --clobber
+
+      - name: Clean up keychain
+        if: always()
+        run: |
+          security delete-keychain "${RUNNER_TEMP}/signing.keychain-db" || true
+          rm -f "${HOME}/Library/MobileDevice/Provisioning Profiles/wBlock_DevID.provisionprofile" || true
