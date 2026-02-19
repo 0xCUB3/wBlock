@@ -23808,7 +23808,7 @@ function _toPrimitive(t, r) {
     const state = {
       active: false,
       rules: [],
-      lastAddedSelector: null,
+      undoStack: [],
       lastPickAt: 0,
       candidateElement: null,
       traversalPath: [],
@@ -24252,7 +24252,7 @@ function _toPrimitive(t, r) {
       }
 
       applyLocalRules(state.rules.concat([normalized]));
-      state.lastAddedSelector = normalized;
+      state.undoStack.push(normalized);
       if (state.ui.undoButton) {
         state.ui.undoButton.disabled = false;
       }
@@ -24273,12 +24273,11 @@ function _toPrimitive(t, r) {
     }
 
     function undoLastZap() {
-      if (!state.lastAddedSelector) return;
-      const selectorToRemove = state.lastAddedSelector;
-      state.lastAddedSelector = null;
+      if (state.undoStack.length === 0) return;
+      const selectorToRemove = state.undoStack.pop();
       removeSelectorRule(selectorToRemove);
       if (state.ui.undoButton) {
-        state.ui.undoButton.disabled = true;
+        state.ui.undoButton.disabled = state.undoStack.length === 0;
       }
       showToast("Undone.");
     }
@@ -24388,7 +24387,7 @@ function _toPrimitive(t, r) {
       if (state.active) return;
       ensureUi();
       state.active = true;
-      state.lastAddedSelector = null;
+      state.undoStack = [];
       state.lastPickAt = 0;
       state.candidateElement = null;
       state.traversalPath = [];

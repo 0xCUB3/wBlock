@@ -19,7 +19,7 @@
     active: false,
     host: '',
     rules: [],
-    lastAddedSelector: null,
+    undoStack: [],
     lastPickAt: 0,
     candidateElement: null,
     traversalPath: [],
@@ -523,7 +523,7 @@
       return;
     }
     state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
-    state.lastAddedSelector = normalized;
+    state.undoStack.push(normalized);
     await saveRulesForHost(state.host, state.rules);
     applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
@@ -544,13 +544,12 @@
   }
 
   async function undoLastZap() {
-    if (!state.lastAddedSelector) return;
-    const toRemove = state.lastAddedSelector;
+    if (state.undoStack.length === 0) return;
+    const toRemove = state.undoStack.pop();
     state.rules = state.rules.filter((r) => r !== toRemove);
-    state.lastAddedSelector = null;
     await saveRulesForHost(state.host, state.rules);
     applyRulesToPage(state.rules);
-    if (state.ui.undoButton) state.ui.undoButton.disabled = true;
+    if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
     showToast('Undone.');
   }
 
@@ -694,7 +693,7 @@
     if (state.active) return;
     ensureUi();
     state.active = true;
-    state.lastAddedSelector = null;
+    state.undoStack = [];
     state.lastPickAt = 0;
     state.candidateElement = null;
     state.traversalPath = [];
