@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Any popular community filter list that works in AdGuard or uBlock Origin should also work in wBlock
-**Current focus:** v1.2 Distribution & Code Signing — Phase 10: Build and Entitlements
+**Current focus:** v1.2 Distribution & Code Signing — Phase 11: Notarization Pipeline
 
 ## Current Position
 
 Milestone: v1.2 Distribution & Code Signing
-Phase: 10 of 12 (Build and Entitlements)
-Plan: 2 of 2 complete
-Status: Phase 10 complete
-Last activity: 2026-02-19 — Phase 10 Plan 02 complete (archive + exportArchive pipeline, spctl gate)
+Phase: 11 of 12 (Notarization Pipeline)
+Plan: 1 of 1 complete (checkpoint pending user verification)
+Status: Phase 11 Plan 01 at checkpoint — awaiting MACOS_PROFILE_APP_B64 secret and CI run verification
+Last activity: 2026-02-19 — Phase 11 Plan 01 tasks 1-2 complete (provisioning profile install, notarytool log fetch, stapler validate, keychain cleanup)
 
 Progress: [██████████░░░░░░░░░░░░░░░░░░░░] v1.0 + v1.1 shipped, v1.2 starting
 
@@ -51,12 +51,12 @@ None.
 
 ### Blockers/Concerns
 
-- Phase 11 (Notarization): `aps-environment`/iCloud entitlements require either a Developer ID provisioning profile (Path A) or stripping those entitlements from the Developer ID build (Path B). Path depends on whether CloudKit/push are used at runtime. Resolve during Phase 11 planning via 5-10 min code audit.
+- Phase 11 (Notarization): Checkpoint waiting on user to create Developer ID provisioning profile in Apple Developer Portal (CloudKit + APS + App Groups), encode as base64, add as MACOS_PROFILE_APP_B64 GitHub Secret, then trigger CI and verify the run completes successfully.
 
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Phase 10 Plan 02 complete — ready for Phase 11 (Notarization)
+Stopped at: Phase 11 Plan 01 checkpoint — awaiting MACOS_PROFILE_APP_B64 GitHub Secret and CI run verification
 Resume file: None
 
 ### Quick Tasks Completed

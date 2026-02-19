@@ -17,11 +17,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Notarization
 
-- [ ] **NOTR-01**: `aps-environment`/iCloud entitlements are resolved for Developer ID distribution (either provisioning profile or separate entitlements file)
-- [ ] **NOTR-02**: Provisioning profile(s) are installed in CI before `xcodebuild archive` via GitHub Secrets
-- [ ] **NOTR-03**: CI fetches `xcrun notarytool log <UUID>` on notarization failure for actionable error output
-- [ ] **NOTR-04**: CI runs `xcrun stapler validate` after stapling to catch silent failures
-- [ ] **NOTR-05**: CI deletes the signing keychain in an `if: always()` step to prevent accumulation
+- [x] **NOTR-01**: `aps-environment`/iCloud entitlements are resolved for Developer ID distribution (either provisioning profile or separate entitlements file)
+- [x] **NOTR-02**: Provisioning profile(s) are installed in CI before `xcodebuild archive` via GitHub Secrets
+- [x] **NOTR-03**: CI fetches `xcrun notarytool log <UUID>` on notarization failure for actionable error output
+- [x] **NOTR-04**: CI runs `xcrun stapler validate` after stapling to catch silent failures
+- [x] **NOTR-05**: CI deletes the signing keychain in an `if: always()` step to prevent accumulation
 
 ### Homebrew
 
@@ -62,11 +62,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIGN-03 | Phase 10 | Complete |
 | SIGN-04 | Phase 10 | Complete |
 | SIGN-05 | Phase 10 | Complete |
-| NOTR-01 | Phase 11 | Pending |
-| NOTR-02 | Phase 11 | Pending |
-| NOTR-03 | Phase 11 | Pending |
-| NOTR-04 | Phase 11 | Pending |
-| NOTR-05 | Phase 11 | Pending |
+| NOTR-01 | Phase 11 | Complete |
+| NOTR-02 | Phase 11 | Complete |
+| NOTR-03 | Phase 11 | Complete |
+| NOTR-04 | Phase 11 | Complete |
+| NOTR-05 | Phase 11 | Complete |
 | BREW-01 | Phase 12 | Pending |
 | BREW-02 | Phase 12 | Pending |
 | BREW-03 | Phase 12 | Pending |
