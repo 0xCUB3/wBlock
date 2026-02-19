@@ -1,8 +1,8 @@
 cask "wblock" do
-  version "2.0.1"
-  sha256 "PLACEHOLDER_UPDATED_BY_CI"
+  version "2.0.0"
+  sha256 "7a67045111ff1ba2daa61e3f3f8bc627e1ede90bce8e28eb0e1d6a82cb46315a"
 
-  url "https://github.com/0xCUB3/wBlock/releases/download/v#{version}/wBlock-#{version}.dmg",
+  url "https://github.com/0xCUB3/wBlock/releases/download/#{version}/wBlock-#{version}.dmg",
       verified: "github.com/0xCUB3/wBlock/"
 
   name "wBlock"
