@@ -803,12 +803,14 @@ struct AddFilterListView: View {
 	            macosBody
 	        #endif
 	    }
+        #if os(macOS)
 	    .onAppear {
 	        urlFieldIsFocused = addMode == .url
 	    }
         .onChange(of: addMode) { _, newValue in
             urlFieldIsFocused = newValue == .url
         }
+        #endif
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType.text],

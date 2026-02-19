@@ -958,12 +958,14 @@ struct AddUserScriptView: View {
             #endif
         }
         .interactiveDismissDisabled(isAdding)
+        #if os(macOS)
         .onAppear {
             urlFieldFocused = addMode == .url
         }
         .onChange(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
         }
+        #endif
         .onChange(of: urlInput) { _, newValue in
             validateInput(newValue)
         }
