@@ -67,7 +67,7 @@ struct OnboardingView: View {
     @State private var hasEnabledContentBlockers = false
     @State private var hasEnabledAdvanced = false
 
-    let filterManager: AppFilterManager
+    @ObservedObject var filterManager: AppFilterManager
     
     private static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
     #if os(iOS)
