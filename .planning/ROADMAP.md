@@ -68,10 +68,10 @@ Plans:
   2. The app launches on macOS Tahoe without a Gatekeeper prompt or error 163 after a clean DMG install
   3. When notarization fails, CI prints the full notarytool JSON log (not just "status: Invalid")
   4. CI keychain is deleted in an `if: always()` cleanup step, preventing accumulation across cancelled runs
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01-PLAN.md -- Add provisioning profile install, notarytool log fetch, stapler validate, and keychain cleanup to CI
 
 ### Phase 12: Homebrew Cask
 **Goal**: A versioned Homebrew cask where `brew install wblock`, `brew upgrade wblock`, `brew audit --cask wblock`, and `brew livecheck wblock` all pass, with CI keeping the cask current on every tag push
@@ -101,6 +101,6 @@ Plans:
 | 7. iOS Sync Bridge | v1.1 | 1/1 | Complete | 2026-02-19 |
 | 8. Data Layer | v1.1 | 1/1 | Complete | 2026-02-19 |
 | 9. Settings UI and Rule Management | v1.1 | 1/1 | Complete | 2026-02-19 |
-| 10. Build and Entitlements | v1.2 | 2/2 | Complete | 2026-02-19 |
+| 10. Build and Entitlements | v1.2 | Complete    | 2026-02-19 | 2026-02-19 |
 | 11. Notarization Pipeline | v1.2 | 0/? | Not started | - |
 | 12. Homebrew Cask | v1.2 | 0/? | Not started | - |

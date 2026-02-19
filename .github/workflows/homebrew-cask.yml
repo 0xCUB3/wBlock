@@ -45,6 +45,20 @@ jobs:
           security import "${RUNNER_TEMP}/cert.p12" -k "${KEYCHAIN_PATH}" -P "${MACOS_CERT_PASSWORD}" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
 
+      - name: Install provisioning profile
+        env:
+          MACOS_PROFILE_APP_B64: ${{ secrets.MACOS_PROFILE_APP_B64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${MACOS_PROFILE_APP_B64:-}" ]]; then
+            echo "Missing secret: MACOS_PROFILE_APP_B64" >&2
+            exit 1
+          fi
+          PP_DIR="${HOME}/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "${PP_DIR}"
+          echo "${MACOS_PROFILE_APP_B64}" | base64 --decode > "${PP_DIR}/wBlock_DevID.provisionprofile"
+          echo "Provisioning profile installed"
+
       - name: Build DMG
         run: |
           bash scripts/build-dmg.sh
@@ -82,13 +96,27 @@ jobs:
           key_path="${RUNNER_TEMP}/AuthKey_${APPLE_API_KEY_ID}.p8"
           echo "${APPLE_API_KEY_P8_B64}" | base64 --decode > "${key_path}"
 
-          xcrun notarytool submit "${dmg}" \
+          notary_output=$(xcrun notarytool submit "${dmg}" \
             --key "${key_path}" \
             --key-id "${APPLE_API_KEY_ID}" \
             --issuer "${APPLE_API_ISSUER_ID}" \
-            --wait
+            --wait 2>&1)
+          echo "${notary_output}"
+
+          uuid=$(echo "${notary_output}" | grep "  id:" | head -1 | awk '{print $2}')
+
+          if echo "${notary_output}" | grep -q "status: Invalid"; then
+            echo "Notarization failed. Fetching full log for UUID: ${uuid}"
+            xcrun notarytool log "${uuid}" \
+              --key "${key_path}" \
+              --key-id "${APPLE_API_KEY_ID}" \
+              --issuer "${APPLE_API_ISSUER_ID}"
+            exit 1
+          fi
 
           xcrun stapler staple "${dmg}"
+          xcrun stapler validate "${dmg}"
+          echo "Stapler validation passed"
 
       - name: Upload to GitHub Release
         env:
