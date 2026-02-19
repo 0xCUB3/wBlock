@@ -39,7 +39,7 @@ final class ZapperRuleManager: ObservableObject {
     /// sorts alphabetically, and updates the published domains array.
     /// Domains with no non-empty rules are excluded.
     func refresh() {
-        let allKeys = defaults?.dictionaryRepresentation().keys ?? [].makeIterator() as! Dictionary<String, Any>.Keys
+        let allKeys = defaults?.dictionaryRepresentation().keys.map { $0 } ?? []
         let discovered = allKeys
             .filter { $0.hasPrefix(keyPrefix) }
             .map { String($0.dropFirst(keyPrefix.count)) }
