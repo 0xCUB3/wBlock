@@ -28,6 +28,7 @@ ARCHIVE_CMD=(xcodebuild archive
   -archivePath "${ARCHIVE_PATH}"
   CODE_SIGN_STYLE=Automatic
   DEVELOPMENT_TEAM=DNP7DGUB7B
+  "CODE_SIGN_IDENTITY=Developer ID Application"
 )
 
 # In CI, pass -allowProvisioningUpdates with API key so Xcode can
