@@ -222,9 +222,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 170px;
+  max-height: 300px;
   overflow: auto;
   padding: 4px 0;
+}
+
+.rules[hidden] {
+  display: none !important;
 }
 
 .rule-row {
