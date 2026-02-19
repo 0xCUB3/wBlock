@@ -17,6 +17,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Extract version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+
       - name: Import Developer ID certificate
         env:
           MACOS_CERT_P12_B64: ${{ secrets.MACOS_CERT_P12_B64 }}
@@ -45,9 +51,23 @@ jobs:
           security import "${RUNNER_TEMP}/cert.p12" -k "${KEYCHAIN_PATH}" -P "${MACOS_CERT_PASSWORD}" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
 
+      - name: Install provisioning profile
+        env:
+          MACOS_PROFILE_APP_B64: ${{ secrets.MACOS_PROFILE_APP_B64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${MACOS_PROFILE_APP_B64:-}" ]]; then
+            echo "MACOS_PROFILE_APP_B64 not set, skipping profile install"
+            exit 0
+          fi
+          PP_DIR=~/Library/MobileDevice/Provisioning\ Profiles
+          mkdir -p "${PP_DIR}"
+          echo "${MACOS_PROFILE_APP_B64}" | base64 --decode > "${PP_DIR}/wblock.provisionprofile"
+
       - name: Build DMG
         env:
           SIGNING_IDENTITY: "Developer ID Application: Alexander Skula (DNP7DGUB7B)"
+          VERSION: ${{ env.VERSION }}
         run: |
           bash scripts/build-dmg.sh
 
@@ -72,7 +92,7 @@ jobs:
             exit 1
           fi
 
-          dmg="build/homebrew/wBlock.dmg"
+          dmg="build/homebrew/wBlock-${VERSION}.dmg"
           key_path="${RUNNER_TEMP}/AuthKey_${APPLE_API_KEY_ID}.p8"
           echo "${APPLE_API_KEY_P8_B64}" | base64 --decode > "${key_path}"
 
@@ -104,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          dmg="build/homebrew/wBlock.dmg"
+          dmg="build/homebrew/wBlock-${VERSION}.dmg"
 
           # Ensure a release exists for this tag
           if ! gh release view "${tag}" >/dev/null 2>&1; then
@@ -113,6 +133,19 @@ jobs:
 
           # Upload/tagged asset
           gh release upload "${tag}" "${dmg}" --clobber
+
+      - name: Update cask
+        run: |
+          set -euo pipefail
+          SHA256=$(shasum -a 256 "build/homebrew/wBlock-${VERSION}.dmg" | awk '{print $1}')
+          CASK="Casks/wblock.rb"
+          sed -i '' "s/version \".*\"/version \"${VERSION}\"/" "${CASK}"
+          sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" "${CASK}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${CASK}"
+          git commit -m "update wblock cask to ${VERSION}" || echo "nothing to commit"
+          git push origin HEAD:main
 
       - name: Clean up keychain
         if: always()
