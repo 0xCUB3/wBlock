@@ -1,5 +1,6 @@
 import SafariServices
 import SwiftUI
+import UniformTypeIdentifiers
 import wBlockCoreService
 
 struct SettingsView: View {
@@ -14,6 +15,15 @@ struct SettingsView: View {
     @State private var timer: Timer?
     @State private var showingRestartConfirmation = false
     @State private var isRestarting = false
+    @State private var showingImportDialog = false
+    @State private var showingRestoreBackupConfirmation = false
+    @State private var pendingBackup: WBlockBackup? = nil
+    @State private var backupStatusMessage: String? = nil
+    @State private var showingBackupStatus = false
+    #if os(iOS)
+        @State private var backupDocument: BackupDocument? = nil
+        @State private var showingExportSheet = false
+    #endif
 
     // Computed properties backed by protobuf
     private var isBadgeCounterEnabled: Bool {
@@ -121,6 +131,36 @@ struct SettingsView: View {
                                         .foregroundColor(.secondary)
                                     Image(systemName: "chevron.right")
                                         .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .padding(16)
+
+                            Divider()
+                                .padding(.leading, 16)
+
+                            Button { exportBackup() } label: {
+                                HStack {
+                                    Text("Export Settings")
+                                        .font(.body)
+                                    Spacer()
+                                    Image(systemName: "square.and.arrow.up")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .padding(16)
+
+                            Divider()
+                                .padding(.leading, 16)
+
+                            Button { showingImportDialog = true } label: {
+                                HStack {
+                                    Text("Import Settings")
+                                        .font(.body)
+                                    Spacer()
+                                    Image(systemName: "square.and.arrow.down")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -311,6 +351,42 @@ struct SettingsView: View {
                 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow."
             )
         }
+        .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation) {
+            Button("Cancel", role: .cancel) { pendingBackup = nil }
+            Button("Restore") { performRestore() }
+        } message: {
+            if let backup = pendingBackup {
+                let dateStr = backup.createdAt.formatted(date: .abbreviated, time: .shortened)
+                Text("Backup from \(dateStr) (app v\(backup.appVersion), \(backup.filterSelections.count) filters). This will replace your current filter selections, whitelist, and element zapper rules.")
+            } else {
+                Text("This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.")
+            }
+        }
+        .alert("Backup", isPresented: $showingBackupStatus) {
+            Button("OK") {}
+        } message: {
+            Text(backupStatusMessage ?? "")
+        }
+        .fileImporter(
+            isPresented: $showingImportDialog,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImportResult(result)
+        }
+        #if os(iOS)
+        .fileExporter(
+            isPresented: $showingExportSheet,
+            document: backupDocument,
+            contentType: .json,
+            defaultFilename: exportFilename()
+        ) { result in
+            if case .failure(let error) = result {
+                backupStatusMessage = "Export failed: \(error.localizedDescription)"
+                showingBackupStatus = true
+            }
+        }
+        #endif
     }
 
     private func settingsSectionView<Content: View>(
@@ -335,6 +411,84 @@ struct SettingsView: View {
     }
 }
 extension SettingsView {
+
+    // MARK: - Backup/Restore
+
+    private func exportFilename() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return "wBlock-Backup-\(formatter.string(from: Date())).json"
+    }
+
+    private func exportBackup() {
+        let backup = BackupManager.createBackup(filterManager: filterManager)
+        guard let data = try? BackupManager.exportData(backup: backup) else {
+            backupStatusMessage = "Failed to create backup."
+            showingBackupStatus = true
+            return
+        }
+
+        #if os(macOS)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = exportFilename()
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                backupStatusMessage = "Export failed: \(error.localizedDescription)"
+                showingBackupStatus = true
+            }
+        }
+        #else
+        backupDocument = BackupDocument(data: data)
+        showingExportSheet = true
+        #endif
+    }
+
+    private func handleImportResult(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            Task { @MainActor in
+                var didAccess = false
+                #if os(iOS)
+                    didAccess = url.startAccessingSecurityScopedResource()
+                #endif
+                defer {
+                    #if os(iOS)
+                        if didAccess { url.stopAccessingSecurityScopedResource() }
+                    #endif
+                }
+                do {
+                    let data = try Data(contentsOf: url)
+                    let backup = try BackupManager.importData(from: data)
+                    pendingBackup = backup
+                    showingRestoreBackupConfirmation = true
+                } catch {
+                    backupStatusMessage = "Failed to read backup: \(error.localizedDescription)"
+                    showingBackupStatus = true
+                }
+            }
+        case .failure(let error):
+            backupStatusMessage = "Import failed: \(error.localizedDescription)"
+            showingBackupStatus = true
+        }
+    }
+
+    private func performRestore() {
+        guard let backup = pendingBackup else { return }
+        pendingBackup = nil
+        Task {
+            await BackupManager.restoreBackup(backup, filterManager: filterManager)
+            backupStatusMessage = "Settings restored. Tap Apply Changes to activate."
+            showingBackupStatus = true
+        }
+    }
+
+    // MARK: - User Defaults / Onboarding
+
     private func resetUserDefaults() {
         if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
             suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
