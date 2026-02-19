@@ -60,10 +60,6 @@ jobs:
           echo "Provisioning profile installed"
 
       - name: Build DMG
-        env:
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-          APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8_B64 }}
         run: |
           bash scripts/build-dmg.sh
 

@@ -39,30 +39,13 @@ fi
 
 echo "Exporting archive…"
 
-# Build the export command — exportArchive re-signs with Developer ID
-EXPORT_CMD=(xcodebuild -exportArchive
-  -archivePath "${ARCHIVE_PATH}"
-  -exportPath "${EXPORT_PATH}"
+# exportArchive re-signs with Developer ID Application using the
+# certificate in the keychain and provisioning profiles installed
+# in ~/Library/MobileDevice/Provisioning Profiles/
+xcodebuild -exportArchive \
+  -archivePath "${ARCHIVE_PATH}" \
+  -exportPath "${EXPORT_PATH}" \
   -exportOptionsPlist "${ROOT_DIR}/ExportOptions.plist"
-)
-
-# In CI, pass -allowProvisioningUpdates with API key so Xcode can
-# auto-manage Developer ID provisioning profiles for all targets
-if [[ -n "${APPLE_API_KEY_P8_B64:-}" && -n "${APPLE_API_KEY_ID:-}" && -n "${APPLE_API_ISSUER_ID:-}" ]]; then
-  KEY_PATH="${RUNNER_TEMP:-/tmp}/AuthKey_${APPLE_API_KEY_ID}.p8"
-  if [[ ! -f "${KEY_PATH}" ]]; then
-    echo "${APPLE_API_KEY_P8_B64}" | base64 --decode > "${KEY_PATH}"
-  fi
-  EXPORT_CMD+=(
-    -allowProvisioningUpdates
-    -authenticationKeyPath "${KEY_PATH}"
-    -authenticationKeyID "${APPLE_API_KEY_ID}"
-    -authenticationKeyIssuerID "${APPLE_API_ISSUER_ID}"
-  )
-  echo "Using API key for Developer ID provisioning"
-fi
-
-"${EXPORT_CMD[@]}"
 
 if [[ ! -d "${APP_PATH}" ]]; then
   echo "Expected app not found at: ${APP_PATH}" >&2
