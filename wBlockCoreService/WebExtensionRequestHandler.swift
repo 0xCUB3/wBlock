@@ -113,6 +113,9 @@ public enum WebExtensionRequestHandler {
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
                 return
+            case "syncZapperRules":
+                handleSyncZapperRules(message: message!, context: context)
+                return
             default:
                 break
             }
@@ -400,6 +403,33 @@ public enum WebExtensionRequestHandler {
             let response = createResponse(with: ["userScripts": userScriptDescriptors])
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func handleSyncZapperRules(message: [String: Any?], context: NSExtensionContext) {
+        let hostname = (message["hostname"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !hostname.isEmpty else {
+            let response = createResponse(with: ["ok": false, "error": "Missing hostname"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        let key = "zapperRules_\(hostname)"
+
+        if let rules = message["rules"] as? [String] {
+            let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            if filtered.isEmpty {
+                defaults?.removeObject(forKey: key)
+            } else {
+                defaults?.set(filtered, forKey: key)
+            }
+        } else {
+            // No rules array means clear
+            defaults?.removeObject(forKey: key)
+        }
+
+        let response = createResponse(with: ["ok": true])
+        context.completeRequest(returningItems: [response])
     }
 
     private static func handleUserScriptChunkRequest(
