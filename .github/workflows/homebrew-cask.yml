@@ -67,14 +67,6 @@ jobs:
         run: |
           bash scripts/build-dmg.sh
 
-      - name: Verify Gatekeeper assessment
-        run: |
-          set -euo pipefail
-          app_path="build/homebrew/export/wBlock.app"
-          echo "Running spctl assessment on ${app_path}..."
-          spctl --assess --type execute -v "${app_path}"
-          echo "Gatekeeper assessment passed"
-
       - name: Notarize + staple DMG
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
@@ -121,6 +113,14 @@ jobs:
           xcrun stapler staple "${dmg}"
           xcrun stapler validate "${dmg}"
           echo "Stapler validation passed"
+
+      - name: Verify Gatekeeper assessment
+        run: |
+          set -euo pipefail
+          app_path="build/homebrew/export/wBlock.app"
+          echo "Running spctl assessment on ${app_path}..."
+          spctl --assess --type execute -v "${app_path}"
+          echo "Gatekeeper assessment passed"
 
       - name: Upload to GitHub Release
         env:
