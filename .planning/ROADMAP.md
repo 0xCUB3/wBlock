@@ -39,7 +39,7 @@ See: `.planning/milestones/v1.1-ROADMAP.md` for full details.
 
 - [x] **Phase 10: Build and Entitlements** — Switch to `xcodebuild archive` + `exportArchive`, fix two pre-existing entitlements bugs, gate CI on Gatekeeper assessment (completed 2026-02-19)
 - [x] **Phase 11: Notarization Pipeline** — Add notarytool log fetch on failure, stapler validate, keychain cleanup; revert to manual codesign + notarize approach (completed 2026-02-19)
-- [ ] **Phase 12: Homebrew Cask** — Versioned DMG output, versioned cask with real SHA256 and livecheck, CI auto-update on each tag push
+- [x] **Phase 12: Homebrew Cask** — Versioned DMG output, versioned cask with real SHA256 and livecheck, CI auto-update on each tag push (completed 2026-02-19)
 
 ## Phase Details
 
@@ -83,10 +83,10 @@ Plans:
   3. `brew audit --cask wblock` passes with no errors or warnings
   4. `brew livecheck wblock` reports the current GitHub release version
   5. The cask includes a `zap` stanza that removes preferences, caches, and app support on uninstall
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 12-01: TBD
+- [ ] 12-01-PLAN.md -- Versioned DMG output, cask rewrite with livecheck and zap, CI auto-update step
 
 ## Progress
 
@@ -103,4 +103,4 @@ Plans:
 | 9. Settings UI and Rule Management | v1.1 | 1/1 | Complete | 2026-02-19 |
 | 10. Build and Entitlements | v1.2 | Complete    | 2026-02-19 | 2026-02-19 |
 | 11. Notarization Pipeline | v1.2 | 1/1 | Complete | 2026-02-19 |
-| 12. Homebrew Cask | v1.2 | 0/? | Not started | - |
+| 12. Homebrew Cask | 1/1 | Complete   | 2026-02-19 | - |

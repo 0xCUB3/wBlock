@@ -25,11 +25,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Homebrew
 
-- [ ] **BREW-01**: DMG output is versioned (`wBlock-${VERSION}.dmg`) with version extracted from the tag
-- [ ] **BREW-02**: Homebrew cask uses pinned `version`, real `sha256`, versioned URL with `#{version}` interpolation
-- [ ] **BREW-03**: Homebrew cask includes a `livecheck` block with `strategy :github_latest`
-- [ ] **BREW-04**: CI auto-updates version and SHA256 in `Casks/wblock.rb` on each tag push
-- [ ] **BREW-05**: Homebrew cask includes a `zap` stanza to clean up preferences, caches, and app support
+- [x] **BREW-01**: DMG output is versioned (`wBlock-${VERSION}.dmg`) with version extracted from the tag
+- [x] **BREW-02**: Homebrew cask uses pinned `version`, real `sha256`, versioned URL with `#{version}` interpolation
+- [x] **BREW-03**: Homebrew cask includes a `livecheck` block with `strategy :github_latest`
+- [x] **BREW-04**: CI auto-updates version and SHA256 in `Casks/wblock.rb` on each tag push
+- [x] **BREW-05**: Homebrew cask includes a `zap` stanza to clean up preferences, caches, and app support
 
 ## Future Requirements
 
@@ -67,11 +67,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NOTR-03 | Phase 11 | Complete |
 | NOTR-04 | Phase 11 | Complete |
 | NOTR-05 | Phase 11 | Complete |
-| BREW-01 | Phase 12 | Pending |
-| BREW-02 | Phase 12 | Pending |
-| BREW-03 | Phase 12 | Pending |
-| BREW-04 | Phase 12 | Pending |
-| BREW-05 | Phase 12 | Pending |
+| BREW-01 | Phase 12 | Complete |
+| BREW-02 | Phase 12 | Complete |
+| BREW-03 | Phase 12 | Complete |
+| BREW-04 | Phase 12 | Complete |
+| BREW-05 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 15 total

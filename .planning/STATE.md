@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 
 Milestone: v1.2 Distribution & Code Signing
 Phase: 12 of 12 (Homebrew Cask)
-Plan: 0 of ? (not started)
-Status: Phase 11 complete, ready to plan Phase 12
-Last activity: 2026-02-19 — Phase 11 verified: notarized + stapled DMG passes CI end-to-end
+Plan: 1 of 1 (complete)
+Status: Phase 12 complete — versioned cask with CI auto-update shipped
+Last activity: 2026-02-19 — Phase 12-01 executed: versioned DMG + Homebrew cask rewrite + CI auto-update
 
-Progress: [████████████████████░░░░░░░░░░] v1.0 + v1.1 shipped, v1.2 phases 10-11 complete
+Progress: [██████████████████████████████] v1.0 + v1.1 shipped, v1.2 all phases complete
 
 ## Performance Metrics
 
@@ -30,8 +30,8 @@ Progress: [████████████████████░░░
 - Timeline: 1 day (2026-02-19)
 
 **v1.2 Velocity:**
-- Total plans completed: 3
-- Phases: 3 planned, 2 complete
+- Total plans completed: 4
+- Phases: 3 planned, all complete
 
 ## Accumulated Context
 
@@ -44,6 +44,8 @@ Recent decisions affecting v1.2:
 - Phase 10-01: All 5 extension entitlements (Advanced, Privacy, Security, Custom, Foreign) required app-sandbox key — added matching wBlock Ads reference structure
 - Phase 10-01: ENABLE_HARDENED_RUNTIME was NO on wBlock Ads target — fixed to YES in both Debug and Release (required for notarization)
 - Phase 11: MACOS_PROFILE_APP_B64 secret is NOT needed — manual codesign doesn't require provisioning profiles
+- Phase 12-01: SHA256 computed from local DMG (not re-downloaded from GitHub CDN) to avoid propagation race condition in cask auto-update
+- Phase 12-01: `sed -i ''` used (macOS BSD sed) in CI Update cask step; git push to HEAD:main safe because workflow only triggers on tags
 
 ### Pending Todos
 
@@ -56,7 +58,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Phase 11 complete, ready to plan Phase 12
+Stopped at: Completed 12-01-PLAN.md — Phase 12 (Homebrew Cask) fully complete
 Resume file: None
 
 ### Quick Tasks Completed
