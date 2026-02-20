@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 Milestone: v1.2 Distribution & Code Signing (SHIPPED 2026-02-19)
 Phase: All complete (12/12)
 Status: v1.2 milestone shipped, all 3 milestones complete
-Last activity: 2026-02-19 — v1.2 milestone archived
+Last activity: 2026-02-19 - Completed quick task 13: fix broken script-based ad blocking after adguard scriptlets update
 
 Progress: [██████████████████████████████] v1.0 + v1.1 + v1.2 shipped
 
