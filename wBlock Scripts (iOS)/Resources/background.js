@@ -17795,7 +17795,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      */
     async applyConfiguration(tabId, frameId, configuration) {
       log$1.debug('Applying configuration to tab', tabId, 'frame', frameId, 'configuration', configuration);
-      await Promise.all([BackgroundScript.insertCss(tabId, frameId, configuration.css), BackgroundScript.insertExtendedCss(tabId, frameId, configuration.extendedCss), BackgroundScript.runScriptlets(tabId, frameId, configuration.scriptlets), BackgroundScript.runScripts(tabId, frameId, configuration.js, this.registeredScripts)]);
+      const results = await Promise.allSettled([BackgroundScript.insertCss(tabId, frameId, configuration.css), BackgroundScript.insertExtendedCss(tabId, frameId, configuration.extendedCss), BackgroundScript.runScriptlets(tabId, frameId, configuration.scriptlets), BackgroundScript.runScripts(tabId, frameId, configuration.js, this.registeredScripts)]);
+      for (const r of results) {
+        if (r.status === 'rejected') {
+          log$1.debug('Configuration application step failed in target', {
+            tabId,
+            frameId
+          }, 'error', r.reason);
+        }
+      }
       log$1.debug('Finished applying configuration to tab', tabId, 'frame', frameId);
     }
     /**
@@ -17804,13 +17812,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      * @param scriptInjection Script injection to execute.
      */
     static async executeScript(scriptInjection) {
-      const results = await browser.scripting.executeScript(scriptInjection);
+      let results;
+      try {
+        results = await browser.scripting.executeScript(scriptInjection);
+      } catch (e) {
+        const message = String(e && e.message || e);
+        // Sandboxed frames without allow-scripts cannot execute injected JS; ignore.
+        if (message.includes('sandbox') || message.includes('allow-scripts')) {
+          log$1.debug('Ignoring executeScript failure in sandboxed target', scriptInjection.target, 'error', message);
+          return;
+        }
+        log$1.error('Failed to execute script in target', scriptInjection.target, 'error', e);
+        return;
+      }
       if (results.length === 0) {
         log$1.error('Failed to execute script in target', scriptInjection.target);
         return;
       }
       const result = results[0];
       if (result.error) {
+        const message = String(result.error && result.error.message || result.error);
+        if (message.includes('sandbox') || message.includes('allow-scripts')) {
+          log$1.debug('Ignoring executeScript error in sandboxed target', scriptInjection.target, 'error', message);
+          return;
+        }
         log$1.error('Failed to execute script in target', scriptInjection.target, 'error', result.error);
       }
     }

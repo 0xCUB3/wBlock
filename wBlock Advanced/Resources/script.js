@@ -23296,10 +23296,49 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param {string} code String of scripts to be executed.
    * @returns {boolean} Returns true if code was executed, otherwise returns false.
    */
+  let cachedCspNonce = null;
+  const getCspNonce = () => {
+    if (cachedCspNonce) {
+      return cachedCspNonce;
+    }
+    try {
+      const el = document.querySelector('script[nonce]');
+      const nonce = el ? el.nonce || el.getAttribute('nonce') || '' : '';
+      if (nonce) {
+        cachedCspNonce = nonce;
+      }
+      return nonce;
+    } catch (e) {
+      return '';
+    }
+  };
+  const isSandboxedWithoutScripts = () => {
+    try {
+      const frameEl = window.frameElement;
+      if (!frameEl || !frameEl.hasAttribute || !frameEl.hasAttribute('sandbox')) {
+        return false;
+      }
+      const sandbox = frameEl.sandbox;
+      if (sandbox && typeof sandbox.contains === 'function') {
+        return !sandbox.contains('allow-scripts');
+      }
+      const attr = String(frameEl.getAttribute('sandbox') || '').trim();
+      if (attr === '') {
+        return true;
+      }
+      return !attr.split(/\s+/).includes('allow-scripts');
+    } catch (e) {
+      return false;
+    }
+  };
   const executeScriptsViaTextContent = code => {
     const scriptTag = document.createElement('script');
     scriptTag.setAttribute('type', 'text/javascript');
     scriptTag.textContent = code;
+    const nonce = getCspNonce();
+    if (nonce) {
+      scriptTag.nonce = nonce;
+    }
     const parent = document.head || document.documentElement;
     parent.appendChild(scriptTag);
     if (scriptTag.parentNode) {
@@ -23322,6 +23361,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const url = URL.createObjectURL(blob);
     const scriptTag = document.createElement('script');
     scriptTag.src = url;
+    const nonce = getCspNonce();
+    if (nonce) {
+      scriptTag.nonce = nonce;
+    }
     const parent = document.head || document.documentElement;
     parent.appendChild(scriptTag);
     URL.revokeObjectURL(url);
@@ -23339,6 +23382,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const executeScripts = function () {
     let scripts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+    if (isSandboxedWithoutScripts()) {
+      return;
+    }
     scripts.unshift('( function () { try {');
     // we use this script detect if the script was applied,
     // if the script tag was removed, then it means that code was applied, otherwise no
@@ -23709,7 +23755,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       return window.top.location.href;
     } catch (ex) {
-      wBlockLogger.error("Failed to get top URL: ", ex);
+      // Cross-origin frames cannot read window.top.location; this is expected
+      // and should not be treated as an error.
+      wBlockLogger.debug("Cannot access top URL (likely cross-origin frame): ", ex);
       // Return a random third-party domain as this error signals us
       // that we're in a third-party frame.
       return "https://third-party-domain.com/";

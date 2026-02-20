@@ -40,6 +40,40 @@ function escapeForJS(str) {
         .replace(/\$\{/g, '\\${');
 }
 
+// Best-effort CSP nonce detection for script-tag injection on strict CSP pages
+let wBlockCachedCspNonce = null;
+function getCspNonce() {
+    if (wBlockCachedCspNonce) return wBlockCachedCspNonce;
+    try {
+        const el = document.querySelector('script[nonce]');
+        const nonce = el ? (el.nonce || el.getAttribute('nonce') || '') : '';
+        if (nonce) {
+            wBlockCachedCspNonce = nonce;
+        }
+        return nonce || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+// Detect sandboxed iframes that do not allow scripts (injection will always fail)
+function isSandboxedWithoutScripts() {
+    try {
+        const frameEl = window.frameElement;
+        if (!frameEl) return false;
+        if (!frameEl.getAttribute || !frameEl.hasAttribute || !frameEl.hasAttribute('sandbox')) return false;
+        const sandbox = frameEl.sandbox;
+        if (sandbox && typeof sandbox.contains === 'function') {
+            return !sandbox.contains('allow-scripts');
+        }
+        const attr = String(frameEl.getAttribute('sandbox') || '').trim();
+        if (attr === '') return true;
+        return !attr.split(/\s+/).includes('allow-scripts');
+    } catch (e) {
+        return false;
+    }
+}
+
 // Prevent multiple executions of this entire script in the same context
 if (window.wBlockUserscriptInjectorHasRun) {
     wBlockLog('[wBlock] Userscript injector already ran in this frame.');
@@ -365,10 +399,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         // Page context injection (default behavior - via <script> tag)
         injectInPageContext(script) {
+            if (isSandboxedWithoutScripts()) {
+                wBlockLog(`[wBlock] Skipping page-context injection in sandboxed frame (no allow-scripts): ${script.name}`);
+                return;
+            }
             const scriptElement = document.createElement('script');
             scriptElement.textContent = this.wrapUserScript(script, 'page');
             scriptElement.setAttribute('data-userscript', script.name);
             scriptElement.setAttribute('type', 'text/javascript');
+            const nonce = getCspNonce();
+            if (nonce) {
+                scriptElement.nonce = nonce;
+            }
             (document.head || document.documentElement).appendChild(scriptElement);
             wBlockLog(`[wBlock] Injected ${script.name} in page context via <script> tag`);
         }
@@ -376,12 +418,19 @@ if (window.wBlockUserscriptInjectorHasRun) {
         // Try page context, return false if CSP blocks
         tryInjectInPageContext(script) {
             try {
+                if (isSandboxedWithoutScripts()) {
+                    return false;
+                }
                 // Test if we can inject a script tag (CSP check).
                 // NOTE: In WebExtension/Safari extension isolated worlds, `window` is not shared
                 // with the page context, so use a DOM side-effect to detect execution.
                 const testElement = document.createElement('script');
                 const testId = `__wblock_csp_test_${Date.now()}`;
                 testElement.textContent = `try{document.documentElement && document.documentElement.setAttribute('${testId}','1');}catch(e){}`;
+                const nonce = getCspNonce();
+                if (nonce) {
+                    testElement.nonce = nonce;
+                }
                 (document.head || document.documentElement).appendChild(testElement);
 
                 // Check if the script actually executed
