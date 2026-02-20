@@ -160,6 +160,9 @@ class AppFilterManager: ObservableObject {
         // Migrate old AdGuard Annoyances filter to new split filters
         storedFilterLists = migrateOldAnnoyancesFilter(in: storedFilterLists)
 
+        // Enable AdGuard Extra for existing users who had it disabled
+        enableAdGuardExtraForExistingUsersIfNeeded()
+
         // Remove deprecated filter lists that are no longer shipped by wBlock.
         let deprecatedFilterLists = storedFilterLists.filter { filter in
             !filter.isCustom
@@ -426,6 +429,22 @@ class AppFilterManager: ObservableObject {
             Task { await dataManager.updateFilterLists(result) }
         }
         return result
+    }
+
+    private func enableAdGuardExtraForExistingUsersIfNeeded() {
+        let migrationKey = "adguardExtraEnabledByDefaultMigration_v1"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+        UserDefaults.standard.set(true, forKey: migrationKey)
+
+        Task {
+            let manager = await UserScriptManager.shared
+            await manager.waitUntilReady()
+            let adguardExtraURL = "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
+            let scripts = await manager.userScripts
+            guard let script = scripts.first(where: { $0.url?.absoluteString == adguardExtraURL }),
+                  !script.isEnabled else { return }
+            await manager.setUserScript(script, isEnabled: true)
+        }
     }
 
     /// Fast rebuild for disabled sites changes only - skips SafariConverterLib conversion
