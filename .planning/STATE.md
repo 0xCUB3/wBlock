@@ -5,17 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Any popular community filter list that works in AdGuard or uBlock Origin should also work in wBlock
-**Current focus:** v1.2 Distribution & Code Signing — Phase 12: Homebrew Cask
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: v1.2 Distribution & Code Signing
-Phase: 12 of 12 (Homebrew Cask)
-Plan: 1 of 1 (complete)
-Status: Phase 12 complete — versioned cask with CI auto-update shipped
-Last activity: 2026-02-19 — Phase 12-01 executed: versioned DMG + Homebrew cask rewrite + CI auto-update
+Milestone: v1.2 Distribution & Code Signing (SHIPPED 2026-02-19)
+Phase: All complete (12/12)
+Status: v1.2 milestone shipped, all 3 milestones complete
+Last activity: 2026-02-19 — v1.2 milestone archived
 
-Progress: [██████████████████████████████] v1.0 + v1.1 shipped, v1.2 all phases complete
+Progress: [██████████████████████████████] v1.0 + v1.1 + v1.2 shipped
 
 ## Performance Metrics
 
@@ -58,7 +57,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 12-01-PLAN.md — Phase 12 (Homebrew Cask) fully complete
+Stopped at: Completed quick task 13 — rebuild extension JS with safari-extension 4.2.1
 Resume file: None
 
 ### Quick Tasks Completed
@@ -77,3 +76,4 @@ Resume file: None
 | 10 | fix regional filters empty if app closed on first launch (issue #231) | 2026-02-19 | 9d94efb | [10-fix-regional-filters-empty-if-app-closed](./quick/10-fix-regional-filters-empty-if-app-closed/) |
 | 11 | fix element zapper rules dropdown not collapsing and truncating to 3 (issue #243) | 2026-02-19 | 283eaef | [11-fix-element-zapper-rules-dropdown-not-co](./quick/11-fix-element-zapper-rules-dropdown-not-co/) |
 | 12 | add backup and restore for filter settings (issue #244) | 2026-02-19 | d0e378a | [12-add-backup-and-restore-for-filter-settin](./quick/12-add-backup-and-restore-for-filter-settin/) |
+| 13 | fix broken script-based ad blocking (safari-extension 4.2.1) | 2026-02-19 | 4615e3f | [13-fix-broken-script-based-ad-blocking-afte](./quick/13-fix-broken-script-based-ad-blocking-afte/) |
