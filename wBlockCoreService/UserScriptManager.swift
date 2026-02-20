@@ -792,8 +792,9 @@ public class UserScriptManager: ObservableObject {
                     continue
                 }
 
+                let adguardExtraURL = "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
                 var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
-                newUserScript.isEnabled = false
+                newUserScript.isEnabled = (defaultScript.url == adguardExtraURL)
                 newUserScript.isLocal = false
                 newUserScript.description = "Default userscript"
                 newUserScript.version = ""
@@ -864,8 +865,9 @@ public class UserScriptManager: ObservableObject {
                 continue
             }
 
+            let adguardExtraURL = "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
             var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
-            newUserScript.isEnabled = false  // Default to disabled
+            newUserScript.isEnabled = (defaultScript.url == adguardExtraURL)
             newUserScript.isLocal = false  // Mark as remote
 
             // Add placeholder metadata so they show up in the list
