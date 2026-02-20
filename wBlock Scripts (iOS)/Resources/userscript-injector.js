@@ -24,6 +24,22 @@ const wBlockError = (...args) => {
     console.error(...args);
 };
 
+// Escape a string for safe embedding inside a JavaScript string literal.
+// Handles backslash, single/double quotes, backticks, newlines, and template
+// literal interpolation sequences so that userscript metadata with special
+// characters never produces malformed generated JavaScript.
+function escapeForJS(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/`/g, '\\`')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\$\{/g, '\\${');
+}
+
 // Prevent multiple executions of this entire script in the same context
 if (window.wBlockUserscriptInjectorHasRun) {
     wBlockLog('[wBlock] Userscript injector already ran in this frame.');
@@ -456,7 +472,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     })();`;
 
             return `
-// wBlock Userscript Wrapper for: ${script.name} (${context} context)
+// wBlock Userscript Wrapper for: ${escapeForJS(script.name)} (${context} context)
 (function() {
     'use strict';
 
@@ -479,7 +495,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         console.error(...args);
     };
 
-    wBlockLog('[wBlock UserScript] Executing: ${script.name} in ${context} context');
+    wBlockLog('[wBlock UserScript] Executing: ${escapeForJS(script.name)} in ${context} context');
 
     // Store resources for this script
     const scriptResources = ${resourcesJSON};
@@ -512,15 +528,15 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const GM = {
         info: {
             script: {
-                name: '${script.name || 'Unknown Script'}',
-                version: '${script.version || '1.0.0'}',
-                description: '${script.description || ''}',
+                name: '${escapeForJS(script.name || 'Unknown Script')}',
+                version: '${escapeForJS(script.version || '1.0.0')}',
+                description: '${escapeForJS(script.description || '')}',
                 namespace: 'wblock'
             },
             scriptHandler: 'wBlock Injector',
             version: '0.2.0'
         },
-        log: function(...args) { wBlockLog('[UserScript:${script.name}]', ...args); },
+        log: function(...args) { wBlockLog('[UserScript:${escapeForJS(script.name)}]', ...args); },
 
         // Greasemonkey API implementations using localStorage
         getValue: function(key, defaultValue) {
@@ -776,13 +792,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
     try {
         ${script.content}
-        wBlockLog('[wBlock UserScript] Finished executing: ${script.name}');
+        wBlockLog('[wBlock UserScript] Finished executing: ${escapeForJS(script.name)}');
     } catch (error) {
-        wBlockError('[wBlock UserScript Execution Error] in ${script.name}:', error);
+        wBlockError('[wBlock UserScript Execution Error] in ${escapeForJS(script.name)}:', error);
         wBlockError('[wBlock UserScript Error Stack]:', error.stack);
 
         // Show a console warning for userscript errors
-        wBlockWarn('[wBlock] Error in userscript "${script.name}": ' + (error && error.message ? error.message : String(error)));
+        wBlockWarn('[wBlock] Error in userscript "${escapeForJS(script.name)}": ' + (error && error.message ? error.message : String(error)));
     }
 })();
         `;
