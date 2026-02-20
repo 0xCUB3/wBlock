@@ -2,8 +2,8 @@ function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Objec
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /*
- * WebExtension v1.0.4 (build date: Fri, 15 Aug 2025 06:15:41 GMT)
- * (c) 2025 ameshkov
+ * WebExtension v1.0.4 (build date: Fri, 20 Feb 2026 00:06:14 GMT)
+ * (c) 2026 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
  */
@@ -5692,16 +5692,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       AmazonApstag.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -5716,7 +5715,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function DidomiLoader(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -5727,16 +5725,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function DidomiLoader(source) {
       function UserConsentStatusForVendorSubscribe() {}
-      UserConsentStatusForVendorSubscribe.prototype.filter = function() {
-        return new UserConsentStatusForVendorSubscribe;
+      UserConsentStatusForVendorSubscribe.prototype.filter = function () {
+        return new UserConsentStatusForVendorSubscribe();
       };
       UserConsentStatusForVendorSubscribe.prototype.subscribe = noopFunc;
       function UserConsentStatusForVendor() {}
-      UserConsentStatusForVendor.prototype.first = function() {
-        return new UserConsentStatusForVendorSubscribe;
+      UserConsentStatusForVendor.prototype.first = function () {
+        return new UserConsentStatusForVendorSubscribe();
       };
-      UserConsentStatusForVendor.prototype.filter = function() {
-        return new UserConsentStatusForVendorSubscribe;
+      UserConsentStatusForVendor.prototype.filter = function () {
+        return new UserConsentStatusForVendorSubscribe();
       };
       UserConsentStatusForVendor.prototype.subscribe = noopFunc;
       var DidomiWrapper = {
@@ -5768,7 +5766,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         shouldConsentBeCollected: falseFunc,
         getUserConsentStatusForAll: noopFunc,
         getObservableOnUserConsentStatusForVendor() {
-          return new UserConsentStatusForVendor;
+          return new UserConsentStatusForVendor();
         }
       };
       window.Didomi = DidomiWrapper;
@@ -5818,9 +5816,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             return;
           }
           if (document.readyState !== "complete") {
-            window.addEventListener("load", (function() {
+            window.addEventListener("load", function () {
               setTimeout(arg(window.Didomi));
-            }));
+            });
           } else {
             setTimeout(arg(window.Didomi));
           }
@@ -5828,23 +5826,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       window.didomiOnReady = window.didomiOnReady || didomiOnReadyWrapper;
       if (Array.isArray(window.didomiOnReady)) {
-        window.didomiOnReady.forEach((function(arg) {
+        window.didomiOnReady.forEach(function (arg) {
           if (typeof arg === "function") {
             try {
               setTimeout(arg(window.Didomi));
             } catch (e) {}
           }
-        }));
+        });
       }
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -5859,7 +5856,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function falseFunc() {
       return false;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       DidomiLoader.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -5874,7 +5871,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function Fingerprintjs2(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -5889,15 +5885,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         browserId += (Math.random() * 65536 + 4096).toString(16).slice(-4);
       }
       var Fingerprint2 = function Fingerprint2() {};
-      Fingerprint2.get = function(options, callback) {
+      Fingerprint2.get = function (options, callback) {
         if (!callback) {
           callback = options;
         }
-        setTimeout((function() {
+        setTimeout(function () {
           if (callback) {
             callback(browserId, []);
           }
-        }), 1);
+        }, 1);
       };
       Fingerprint2.prototype = {
         get: Fingerprint2.get
@@ -5909,15 +5905,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       Fingerprintjs2.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -5932,7 +5927,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function Fingerprintjs3(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -5942,7 +5936,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function Fingerprintjs3(source) {
-      var visitorId = function() {
+      var visitorId = function () {
         var id = "";
         for (var i = 0; i < 8; i += 1) {
           id += (Math.random() * 65536 + 4096).toString(16).slice(-4);
@@ -5952,7 +5946,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var FingerprintJS = function FingerprintJS() {};
       FingerprintJS.prototype = {
         load() {
-          return Promise.resolve(new FingerprintJS);
+          return Promise.resolve(new FingerprintJS());
         },
         get() {
           return Promise.resolve({
@@ -5961,16 +5955,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         },
         hashComponents: noopStr
       };
-      window.FingerprintJS = new FingerprintJS;
+      window.FingerprintJS = new FingerprintJS();
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -5978,7 +5971,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function noopStr() {
       return "";
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       Fingerprintjs3.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -5993,7 +5986,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function Gemius(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -6017,16 +6009,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       Gemius.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -6041,7 +6032,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function GoogleAnalytics(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -6077,14 +6067,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           setTimeout(replacer, 1);
         } catch (ex) {}
       }
-      ga.create = function() {
-        return new Tracker;
+      ga.create = function () {
+        return new Tracker();
       };
-      ga.getByName = function() {
-        return new Tracker;
+      ga.getByName = function () {
+        return new Tracker();
       };
-      ga.getAll = function() {
-        return [ new Tracker ];
+      ga.getAll = function () {
+        return [new Tracker()];
       };
       ga.remove = noopFunc;
       ga.loaded = true;
@@ -6096,7 +6086,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         queue.push = push;
         queue.forEach(push);
       }
-      var {dataLayer: dataLayer, google_optimize: google_optimize} = window;
+      var {
+        dataLayer: dataLayer,
+        google_optimize: google_optimize
+      } = window;
       if (dataLayer instanceof Object === false) {
         return;
       }
@@ -6109,7 +6102,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       if (typeof dataLayer.push === "function") {
-        dataLayer.push = function(data) {
+        dataLayer.push = function (data) {
           if (data instanceof Object) {
             handleCallback(data, "eventCallback");
             for (var key in data) {
@@ -6120,9 +6113,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             }
           }
           if (Array.isArray(data)) {
-            data.forEach((function(arg) {
+            data.forEach(function (arg) {
               handleCallback(arg, "callback");
-            }));
+            });
           }
           return noopFunc;
         };
@@ -6138,16 +6131,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       GoogleAnalytics.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -6162,7 +6154,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function GoogleAnalyticsGa(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -6181,7 +6172,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Gaq.prototype._createAsyncTracker = noopFunc;
       Gaq.prototype._getAsyncTracker = noopFunc;
       Gaq.prototype._getPlugin = noopFunc;
-      Gaq.prototype.push = function(data) {
+      Gaq.prototype.push = function (data) {
         if (typeof data === "function") {
           data();
           return;
@@ -6196,7 +6187,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           data[2]();
         }
       };
-      var gaq = new Gaq;
+      var gaq = new Gaq();
       var asyncTrackers = window._gaq || [];
       if (Array.isArray(asyncTrackers)) {
         while (asyncTrackers[0]) {
@@ -6205,15 +6196,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       window._gaq = gaq.qf = gaq;
       function Gat() {}
-      var api = [ "_addIgnoredOrganic", "_addIgnoredRef", "_addItem", "_addOrganic", "_addTrans", "_clearIgnoredOrganic", "_clearIgnoredRef", "_clearOrganic", "_cookiePathCopy", "_deleteCustomVar", "_getName", "_setAccount", "_getAccount", "_getClientInfo", "_getDetectFlash", "_getDetectTitle", "_getLinkerUrl", "_getLocalGifPath", "_getServiceMode", "_getVersion", "_getVisitorCustomVar", "_initData", "_link", "_linkByPost", "_setAllowAnchor", "_setAllowHash", "_setAllowLinker", "_setCampContentKey", "_setCampMediumKey", "_setCampNameKey", "_setCampNOKey", "_setCampSourceKey", "_setCampTermKey", "_setCampaignCookieTimeout", "_setCampaignTrack", "_setClientInfo", "_setCookiePath", "_setCookiePersistence", "_setCookieTimeout", "_setCustomVar", "_setDetectFlash", "_setDetectTitle", "_setDomainName", "_setLocalGifPath", "_setLocalRemoteServerMode", "_setLocalServerMode", "_setReferrerOverride", "_setRemoteServerMode", "_setSampleRate", "_setSessionTimeout", "_setSiteSpeedSampleRate", "_setSessionCookieTimeout", "_setVar", "_setVisitorCookieTimeout", "_trackEvent", "_trackPageLoadTime", "_trackPageview", "_trackSocial", "_trackTiming", "_trackTrans", "_visitCode" ];
-      var tracker = api.reduce((function(res, funcName) {
+      var api = ["_addIgnoredOrganic", "_addIgnoredRef", "_addItem", "_addOrganic", "_addTrans", "_clearIgnoredOrganic", "_clearIgnoredRef", "_clearOrganic", "_cookiePathCopy", "_deleteCustomVar", "_getName", "_setAccount", "_getAccount", "_getClientInfo", "_getDetectFlash", "_getDetectTitle", "_getLinkerUrl", "_getLocalGifPath", "_getServiceMode", "_getVersion", "_getVisitorCustomVar", "_initData", "_link", "_linkByPost", "_setAllowAnchor", "_setAllowHash", "_setAllowLinker", "_setCampContentKey", "_setCampMediumKey", "_setCampNameKey", "_setCampNOKey", "_setCampSourceKey", "_setCampTermKey", "_setCampaignCookieTimeout", "_setCampaignTrack", "_setClientInfo", "_setCookiePath", "_setCookiePersistence", "_setCookieTimeout", "_setCustomVar", "_setDetectFlash", "_setDetectTitle", "_setDomainName", "_setLocalGifPath", "_setLocalRemoteServerMode", "_setLocalServerMode", "_setReferrerOverride", "_setRemoteServerMode", "_setSampleRate", "_setSessionTimeout", "_setSiteSpeedSampleRate", "_setSessionCookieTimeout", "_setVar", "_setVisitorCookieTimeout", "_trackEvent", "_trackPageLoadTime", "_trackPageview", "_trackSocial", "_trackTiming", "_trackTrans", "_visitCode"];
+      var tracker = api.reduce(function (res, funcName) {
         res[funcName] = noopFunc;
         return res;
-      }), {});
-      tracker._getLinkerUrl = function(a) {
+      }, {});
+      tracker._getLinkerUrl = function (a) {
         return a;
       };
-      tracker._link = function(url) {
+      tracker._link = function (url) {
         if (typeof url !== "string") {
           return;
         }
@@ -6227,10 +6218,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Gat.prototype._createTracker = noopFunc;
       Gat.prototype._forceSSL = noopFunc;
       Gat.prototype._getPlugin = noopFunc;
-      Gat.prototype._getTracker = function() {
+      Gat.prototype._getTracker = function () {
         return tracker;
       };
-      Gat.prototype._getTrackerByName = function() {
+      Gat.prototype._getTrackerByName = function () {
         return tracker;
       };
       Gat.prototype._getTrackers = noopFunc;
@@ -6241,30 +6232,34 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Gat.prototype.oa = noopFunc;
       Gat.prototype.pa = noopFunc;
       Gat.prototype.u = noopFunc;
-      var gat = new Gat;
+      var gat = new Gat();
       window._gat = gat;
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       GoogleAnalyticsGa.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -6279,7 +6274,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function GoogleIma3(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -6407,8 +6401,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       var EventHandler = function EventHandler() {
-        this.listeners = new Map;
-        this._dispatch = function(e) {
+        this.listeners = new Map();
+        this._dispatch = function (e) {
           var listeners = this.listeners.get(e.type);
           listeners = listeners ? listeners.values() : [];
           for (var _i = 0, _Array$from = Array.from(listeners); _i < _Array$from.length; _i++) {
@@ -6420,21 +6414,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             }
           }
         };
-        this.addEventListener = function(types, callback, options, context) {
+        this.addEventListener = function (types, callback, options, context) {
           if (!Array.isArray(types)) {
-            types = [ types ];
+            types = [types];
           }
           for (var i = 0; i < types.length; i += 1) {
             var type = types[i];
             if (!this.listeners.has(type)) {
-              this.listeners.set(type, new Map);
+              this.listeners.set(type, new Map());
             }
             this.listeners.get(type).set(callback, callback.bind(context || this));
           }
         };
-        this.removeEventListener = function(types, callback) {
+        this.removeEventListener = function (types, callback) {
           if (!Array.isArray(types)) {
-            types = [ types ];
+            types = [types];
           }
           for (var i = 0; i < types.length; i += 1) {
             var _this$listeners$get;
@@ -6443,7 +6437,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
         };
       };
-      var AdsManager = new EventHandler;
+      var AdsManager = new EventHandler();
       AdsManager.volume = 1;
       AdsManager.collapse = noopFunc;
       AdsManager.configureAdsManager = noopFunc;
@@ -6451,41 +6445,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       AdsManager.discardAdBreak = noopFunc;
       AdsManager.expand = noopFunc;
       AdsManager.focus = noopFunc;
-      AdsManager.getAdSkippableState = function() {
+      AdsManager.getAdSkippableState = function () {
         return false;
       };
-      AdsManager.getCuePoints = function() {
-        return [ 0 ];
+      AdsManager.getCuePoints = function () {
+        return [0];
       };
-      AdsManager.getCurrentAd = function() {
+      AdsManager.getCurrentAd = function () {
         return currentAd;
       };
-      AdsManager.getCurrentAdCuePoints = function() {
+      AdsManager.getCurrentAdCuePoints = function () {
         return [];
       };
-      AdsManager.getRemainingTime = function() {
+      AdsManager.getRemainingTime = function () {
         return 0;
       };
-      AdsManager.getVolume = function() {
+      AdsManager.getVolume = function () {
         return this.volume;
       };
       AdsManager.init = noopFunc;
-      AdsManager.isCustomClickTrackingUsed = function() {
+      AdsManager.isCustomClickTrackingUsed = function () {
         return false;
       };
-      AdsManager.isCustomPlaybackUsed = function() {
+      AdsManager.isCustomPlaybackUsed = function () {
         return false;
       };
       AdsManager.pause = noopFunc;
       AdsManager.requestNextAdBreak = noopFunc;
       AdsManager.resize = noopFunc;
       AdsManager.resume = noopFunc;
-      AdsManager.setVolume = function(v) {
+      AdsManager.setVolume = function (v) {
         this.volume = v;
       };
       AdsManager.skip = noopFunc;
-      AdsManager.start = function() {
-        for (var _i2 = 0, _arr = [ AdEvent.Type.ALL_ADS_COMPLETED, AdEvent.Type.CONTENT_RESUME_REQUESTED ]; _i2 < _arr.length; _i2++) {
+      AdsManager.start = function () {
+        for (var _i2 = 0, _arr = [AdEvent.Type.ALL_ADS_COMPLETED, AdEvent.Type.CONTENT_RESUME_REQUESTED]; _i2 < _arr.length; _i2++) {
           var type = _arr[_i2];
           try {
             this._dispatch(new ima.AdEvent(type));
@@ -6517,26 +6511,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         ADS_MANAGER_LOADED: "adsManagerLoaded"
       };
       var AdsLoader = EventHandler;
-      AdsLoader.prototype.settings = new ImaSdkSettings;
+      AdsLoader.prototype.settings = new ImaSdkSettings();
       AdsLoader.prototype.contentComplete = noopFunc;
       AdsLoader.prototype.destroy = noopFunc;
-      AdsLoader.prototype.getSettings = function() {
+      AdsLoader.prototype.getSettings = function () {
         return this.settings;
       };
-      AdsLoader.prototype.getVersion = function() {
+      AdsLoader.prototype.getVersion = function () {
         return VERSION;
       };
-      AdsLoader.prototype.requestAds = function(adsRequest, userRequestContext) {
+      AdsLoader.prototype.requestAds = function (adsRequest, userRequestContext) {
         var _this = this;
-        requestAnimationFrame((function() {
-          var {ADS_MANAGER_LOADED: ADS_MANAGER_LOADED} = AdsManagerLoadedEvent.Type;
+        requestAnimationFrame(function () {
+          var {
+            ADS_MANAGER_LOADED: ADS_MANAGER_LOADED
+          } = AdsManagerLoadedEvent.Type;
           var event = new ima.AdsManagerLoadedEvent(ADS_MANAGER_LOADED, adsRequest, userRequestContext);
           _this._dispatch(event);
-        }));
+        });
         var e = new ima.AdError("adPlayError", 1205, 1205, "The browser prevented playback initiated without user interaction.", adsRequest, userRequestContext);
-        requestAnimationFrame((function() {
+        requestAnimationFrame(function () {
           _this._dispatch(new ima.AdErrorEvent(e));
-        }));
+        });
       };
       var AdsRenderingSettings = noopFunc;
       var AdsRequest = function AdsRequest() {};
@@ -6567,15 +6563,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       var UniversalAdIdInfo = function UniversalAdIdInfo() {};
-      UniversalAdIdInfo.prototype.getAdIdRegistry = function() {
+      UniversalAdIdInfo.prototype.getAdIdRegistry = function () {
         return "";
       };
-      UniversalAdIdInfo.prototype.getAdIsValue = function() {
+      UniversalAdIdInfo.prototype.getAdIsValue = function () {
         return "";
       };
       var Ad = function Ad() {};
       Ad.prototype = {
-        pi: new AdPodInfo,
+        pi: new AdPodInfo(),
         getAdId: function getAdId() {
           return "";
         },
@@ -6631,13 +6627,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return "";
         },
         getUiElements: function getUiElements() {
-          return [ "" ];
+          return [""];
         },
         getUniversalAdIdRegistry: function getUniversalAdIdRegistry() {
           return "unknown";
         },
         getUniversalAdIds: function getUniversalAdIds() {
-          return [ new UniversalAdIdInfo ];
+          return [new UniversalAdIdInfo()];
         },
         getUniversalAdIdValue: function getUniversalAdIdValue() {
           return "unknown";
@@ -6655,13 +6651,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return 0;
         },
         getWrapperAdIds: function getWrapperAdIds() {
-          return [ "" ];
+          return [""];
         },
         getWrapperAdSystems: function getWrapperAdSystems() {
-          return [ "" ];
+          return [""];
         },
         getWrapperCreativeIds: function getWrapperCreativeIds() {
-          return [ "" ];
+          return [""];
         },
         isLinear: function isLinear() {
           return true;
@@ -6694,22 +6690,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         this.type = type;
         this.adsRequest = adsRequest;
         this.userRequestContext = userRequestContext;
-        this.getErrorCode = function() {
+        this.getErrorCode = function () {
           return this.errorCode;
         };
-        this.getInnerError = function() {
+        this.getInnerError = function () {
           return null;
         };
-        this.getMessage = function() {
+        this.getMessage = function () {
           return this.message;
         };
-        this.getType = function() {
+        this.getType = function () {
           return this.type;
         };
-        this.getVastErrorCode = function() {
+        this.getVastErrorCode = function () {
           return this.vastErrorCode;
         };
-        this.toString = function() {
+        this.toString = function () {
           return `AdError ${this.errorCode}: ${this.message}`;
         };
       };
@@ -6727,7 +6723,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         } catch (e) {}
         return false;
       };
-      var currentAd = isEngadget() ? undefined : new Ad;
+      var currentAd = isEngadget() ? undefined : new Ad();
       var AdEvent = function AdEvent(type) {
         this.type = type;
       };
@@ -6774,10 +6770,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var AdErrorEvent = function AdErrorEvent(error) {
         this.error = error;
         this.type = "adError";
-        this.getError = function() {
+        this.getError = function () {
           return this.error;
         };
-        this.getUserRequestContext = function() {
+        this.getUserRequestContext = function () {
           var _this$error;
           if ((_this$error = this.error) !== null && _this$error !== void 0 && _this$error.userRequestContext) {
             return this.error.userRequestContext;
@@ -6865,7 +6861,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           MEETRICS: 8,
           GOOGLE: 9
         },
-        settings: new ImaSdkSettings,
+        settings: new ImaSdkSettings(),
         UiElements: {
           AD_ATTRIBUTION: "adAttribution",
           COUNTDOWN: "countdown"
@@ -6889,23 +6885,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       GoogleIma3.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -6920,7 +6920,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function GoogleSyndicationAdsByGoogle(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -6986,15 +6985,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       GoogleSyndicationAdsByGoogle.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7009,7 +7007,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function GoogleTagServicesGpt(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7019,15 +7016,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function GoogleTagServicesGpt(source) {
-      var slots = new Map;
-      var slotsById = new Map;
-      var slotsPerPath = new Map;
-      var slotCreatives = new Map;
-      var eventCallbacks = new Map;
-      var gTargeting = new Map;
+      var slots = new Map();
+      var slotsById = new Map();
+      var slotsPerPath = new Map();
+      var slotCreatives = new Map();
+      var eventCallbacks = new Map();
+      var gTargeting = new Map();
       var addEventListener = function addEventListener(name, listener) {
         if (!eventCallbacks.has(name)) {
-          eventCallbacks.set(name, new Set);
+          eventCallbacks.set(name, new Set());
         }
         eventCallbacks.get(name).add(listener);
         return this;
@@ -7039,9 +7036,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return false;
       };
       var fireSlotEvent = function fireSlotEvent(name, slot) {
-        return new Promise((function(resolve) {
-          requestAnimationFrame((function() {
-            var size = [ 0, 0 ];
+        return new Promise(function (resolve) {
+          requestAnimationFrame(function () {
+            var size = [0, 0];
             var callbacksSet = eventCallbacks.get(name) || [];
             var callbackArray = Array.from(callbacksSet);
             for (var i = 0; i < callbackArray.length; i += 1) {
@@ -7052,8 +7049,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               });
             }
             resolve();
-          }));
-        }));
+          });
+        });
       };
       var emptySlotElement = function emptySlotElement(slot) {
         var node = document.getElementById(slot.getSlotElementId());
@@ -7124,7 +7121,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       SizeMappingBuilder.prototype.build = noopNull;
       var getTargetingValue = function getTargetingValue(v) {
         if (typeof v === "string") {
-          return [ v ];
+          return [v];
         }
         try {
           return Array.prototype.flat.call(v);
@@ -7146,9 +7143,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           (_document$getElementB2 = document.getElementById(optDiv)) === null || _document$getElementB2 === void 0 || _document$getElementB2.remove();
           return slotsById.get(optDiv);
         }
-        var attributes = new Map;
-        var targeting = new Map;
-        var exclusions = new Set;
+        var attributes = new Map();
+        var targeting = new Map();
+        var exclusions = new Set();
         var response = {
           advertiserId: undefined,
           campaignId: undefined,
@@ -7156,20 +7153,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           creativeTemplateId: undefined,
           lineItemId: undefined
         };
-        var sizes = [ {
+        var sizes = [{
           getHeight: function getHeight() {
             return 2;
           },
           getWidth: function getWidth() {
             return 2;
           }
-        } ];
+        }];
         var num = (slotsPerPath.get(adUnitPath) || 0) + 1;
         slotsPerPath.set(adUnitPath, num);
         var id = `${adUnitPath}_${num}`;
         var clickUrl = "";
         var collapseEmptyDiv = null;
-        var services = new Set;
+        var services = new Set();
         var slot = {
           addService(e) {
             services.add(e);
@@ -7306,10 +7303,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         },
         collapseEmptyDivs: noopFunc,
         defineOutOfPagePassback() {
-          return new PassbackSlot;
+          return new PassbackSlot();
         },
         definePassback() {
-          return new PassbackSlot;
+          return new PassbackSlot();
         },
         disableInitialLoad: noopFunc,
         display: noopFunc,
@@ -7340,30 +7337,34 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         setVideoContent: noopThis,
         updateCorrelator: noopFunc
       };
-      var {googletag: googletag = {}} = window;
-      var {cmd: cmd = []} = googletag;
+      var {
+        googletag = {}
+      } = window;
+      var {
+        cmd = []
+      } = googletag;
       googletag.apiReady = true;
       googletag.cmd = [];
-      googletag.cmd.push = function(a) {
+      googletag.cmd.push = function (a) {
         try {
           a();
         } catch (ex) {}
         return 1;
       };
-      googletag.companionAds = function() {
+      googletag.companionAds = function () {
         return companionAdsService;
       };
-      googletag.content = function() {
+      googletag.content = function () {
         return contentService;
       };
       googletag.defineOutOfPageSlot = defineSlot;
       googletag.defineSlot = defineSlot;
-      googletag.destroySlots = function() {
+      googletag.destroySlots = function () {
         slots.clear();
         slotsById.clear();
       };
       googletag.disablePublisherConsole = noopFunc;
-      googletag.display = function(arg) {
+      googletag.display = function (arg) {
         var id;
         if (arg !== null && arg !== void 0 && arg.getSlotElementId) {
           id = arg.getSlotElementId();
@@ -7376,13 +7377,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       googletag.enableServices = noopFunc;
       googletag.getVersion = noopStr;
-      googletag.pubads = function() {
+      googletag.pubads = function () {
         return pubAdsService;
       };
       googletag.pubadsReady = true;
       googletag.setAdIframeTitle = noopFunc;
-      googletag.sizeMapping = function() {
-        return new SizeMappingBuilder;
+      googletag.sizeMapping = function () {
+        return new SizeMappingBuilder();
       };
       window.googletag = googletag;
       while (cmd.length !== 0) {
@@ -7393,10 +7394,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -7417,7 +7417,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function trueFunc() {
       return true;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       GoogleTagServicesGpt.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7432,7 +7432,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function Matomo(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7459,16 +7458,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       Matomo.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7483,7 +7481,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function NaverWcslog(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7503,16 +7500,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       NaverWcslog.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7527,7 +7523,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function Pardot(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7564,10 +7559,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -7579,7 +7573,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function noopNull() {
       return null;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       Pardot.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7594,7 +7588,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function Prebid(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7645,10 +7638,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -7659,7 +7651,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function noopArray() {
       return [];
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       Prebid.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7674,7 +7666,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function ScoreCardResearchBeacon(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7695,15 +7686,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       ScoreCardResearchBeacon.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7718,7 +7708,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function abortCurrentInlineScript(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7761,8 +7750,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (base instanceof Object === false && base === null) {
           var props = property.split(".");
           var propIndex = props.indexOf(prop);
@@ -7859,28 +7853,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -7888,16 +7887,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -7922,7 +7925,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortCurrentInlineScript.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -7937,7 +7940,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function abortOnPropertyRead(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -7957,8 +7959,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (chain) {
           var setter = function setter(a) {
             base = a;
@@ -8016,11 +8023,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -8028,10 +8035,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -8039,7 +8045,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortOnPropertyRead.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8054,7 +8060,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function abortOnPropertyWrite(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8074,8 +8079,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (chain) {
           var setter = function setter(a) {
             base = a;
@@ -8132,11 +8142,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -8144,10 +8154,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -8155,7 +8164,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortOnPropertyWrite.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8170,7 +8179,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function abortOnStackTrace(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8190,8 +8198,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (chain) {
           var setter = function setter(a) {
             base = a;
@@ -8214,13 +8227,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var descriptorWrapper = Object.assign(getDescriptorAddon(), {
           value: base[prop],
           get() {
-            if (!this.isAbortingSuspended && this.isolateCallback(matchStackTrace, stack, (new Error).stack)) {
+            if (!this.isAbortingSuspended && this.isolateCallback(matchStackTrace, stack, new Error().stack)) {
               abort();
             }
             return this.value;
           },
           set(newValue) {
-            if (!this.isAbortingSuspended && this.isolateCallback(matchStackTrace, stack, (new Error).stack)) {
+            if (!this.isAbortingSuspended && this.isolateCallback(matchStackTrace, stack, new Error().stack)) {
               abort();
             }
             this.value = newValue;
@@ -8272,11 +8285,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -8284,16 +8297,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -8308,11 +8321,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getDescriptorAddon() {
@@ -8332,24 +8345,34 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -8358,35 +8381,44 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return 0 === Object.keys(t).length && !t.prototype;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -8408,9 +8440,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -8418,7 +8450,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.log(n);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortOnStackTrace.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8433,7 +8465,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function adjustSetInterval(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8456,17 +8487,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
           args[_key - 2] = arguments[_key];
         }
-        return nativeSetInterval.apply(window, [ callback, delay, ...args ]);
+        return nativeSetInterval.apply(window, [callback, delay, ...args]);
       };
       window.setInterval = intervalWrapper;
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -8475,30 +8505,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n instanceof Function || "string" == typeof n;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getBoostMultiplier(t) {
-      var e = parseFloat(t), i = nativeIsNaN(e) || !nativeIsFinite(e) ? .05 : e;
+      var e = parseFloat(t),
+        i = nativeIsNaN(e) || !nativeIsFinite(e) ? .05 : e;
       return i < .001 && (i = .001), i > 50 && (i = 50), i;
     }
     function isDelayMatched(a, e) {
       return shouldMatchAnyDelay(a) || e === getMatchDelay(a);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -8517,7 +8558,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function shouldMatchAnyDelay(n) {
       return "*" === n;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       adjustSetInterval.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8532,7 +8573,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function adjustSetTimeout(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8555,17 +8595,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
           args[_key - 2] = arguments[_key];
         }
-        return nativeSetTimeout.apply(window, [ callback, delay, ...args ]);
+        return nativeSetTimeout.apply(window, [callback, delay, ...args]);
       };
       window.setTimeout = timeoutWrapper;
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -8574,30 +8613,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n instanceof Function || "string" == typeof n;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getBoostMultiplier(t) {
-      var e = parseFloat(t), i = nativeIsNaN(e) || !nativeIsFinite(e) ? .05 : e;
+      var e = parseFloat(t),
+        i = nativeIsNaN(e) || !nativeIsFinite(e) ? .05 : e;
       return i < .001 && (i = .001), i > 50 && (i = 50), i;
     }
     function isDelayMatched(a, e) {
       return shouldMatchAnyDelay(a) || e === getMatchDelay(a);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -8616,7 +8666,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function shouldMatchAnyDelay(n) {
       return "*" === n;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       adjustSetTimeout.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8631,7 +8681,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function callNoThrow(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8644,7 +8693,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!functionName) {
         return;
       }
-      var {base: base, prop: prop} = getPropertyInChain(window, functionName);
+      var {
+        base: base,
+        prop: prop
+      } = getPropertyInChain(window, functionName);
       if (!base || !prop || typeof base[prop] !== "function") {
         var message = `${functionName} is not a function`;
         logMessage(source, message);
@@ -8669,10 +8721,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -8703,7 +8754,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -8712,7 +8768,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       callNoThrow.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8727,7 +8783,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function debugCurrentInlineScript(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8764,8 +8819,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (base instanceof Object === false && base === null) {
           var props = property.split(".");
           var propIndex = props.indexOf(prop);
@@ -8837,28 +8897,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -8866,16 +8931,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -8884,7 +8953,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       debugCurrentInlineScript.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -8899,7 +8968,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function debugOnPropertyRead(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -8919,8 +8987,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (chain) {
           var setter = function setter(a) {
             base = a;
@@ -8978,11 +9051,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -8990,10 +9063,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -9002,7 +9074,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       debugOnPropertyRead.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9017,7 +9089,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function debugOnPropertyWrite(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9037,8 +9108,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (chain) {
           var setter = function setter(a) {
             base = a;
@@ -9095,11 +9171,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -9107,10 +9183,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -9118,7 +9193,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       debugOnPropertyWrite.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9133,7 +9208,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function dirString(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9143,7 +9217,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function dirString(source, times) {
-      var {dir: dir} = console;
+      var {
+        dir: dir
+      } = console;
       function dirWrapper(object) {
         if (typeof dir === "function") {
           dir.call(this, object);
@@ -9155,15 +9231,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       dirString.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9178,7 +9253,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function disableNewtabLinks(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9188,8 +9262,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function disableNewtabLinks(source) {
-      document.addEventListener("click", (function(ev) {
-        var {target: target} = ev;
+      document.addEventListener("click", function (ev) {
+        var {
+          target: target
+        } = ev;
         while (target !== null) {
           if (target.localName === "a" && target.hasAttribute("target")) {
             ev.stopPropagation();
@@ -9199,20 +9275,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           target = target.parentNode;
         }
-      }));
+      });
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       disableNewtabLinks.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9227,7 +9302,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function evalDataPrune(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9257,10 +9331,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -9268,15 +9341,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [], t = arguments.length > 4 ? arguments[4] : void 0, o = e.indexOf(".");
+      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
+        t = arguments.length > 4 ? arguments[4] : void 0,
+        o = e.indexOf(".");
       if (-1 === o) {
         if ("*" === e || "[]" === e) {
           for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
@@ -9309,86 +9385,104 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var c = e.slice(0, o);
       if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1), y = Object.keys(r);
+        var f = e.slice(o + 1),
+          y = Object.keys(r);
         if ("{-}" === c || "[-]" === c) {
           var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach((function(e) {
+          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
             var a = r[e];
             isKeyInObject(a, f, t) && i.push({
               base: r,
               prop: e
             });
-          })), i;
+          }), i;
         }
-        y.forEach((function(e) {
+        y.forEach(function (e) {
           getWildcardPropertyInChain(r[e], f, a, i, t);
-        }));
+        });
       }
-      Array.isArray(r) && r.forEach((function(r) {
+      Array.isArray(r) && r.forEach(function (r) {
         void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      }));
+      });
       var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), 
-      i;
+      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function isPruningNeeded(n, t, r, e, a, i) {
       if (!t) return false;
-      var o, {nativeStringify: u} = i, c = r.map((function(n) {
-        return n.path;
-      })), f = e.map((function(n) {
-        return n.path;
-      }));
+      var o,
+        {
+          nativeStringify: u
+        } = i,
+        c = r.map(function (n) {
+          return n.path;
+        }),
+        f = e.map(function (n) {
+          return n.path;
+        });
       if (0 === c.length && f.length > 0) {
         var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-        t && "object" == typeof t && logMessage(n, t, true, false), o = false;
+        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
       }
-      if (a && !matchStackTrace(a, (new Error).stack || "")) return o = false;
-      for (var s, l = [ ".*.", "*.", ".*", ".[].", "[].", ".[]" ], _loop = function _loop() {
-        var n = f[p], r = n.split(".").pop(), e = l.some((function(t) {
-          return n.includes(t);
-        })), a = getWildcardPropertyInChain(t, n, e);
-        if (!a.length) return {
-          v: o = false
-        };
-        o = !e;
-        for (var i = 0; i < a.length; i += 1) {
-          var u = "string" == typeof r && void 0 !== a[i].base[r];
-          o = e ? u || o : u && o;
-        }
-      }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
+      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
+      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
+          var n = f[p],
+            r = n.split(".").pop(),
+            e = l.some(function (t) {
+              return n.includes(t);
+            }),
+            a = getWildcardPropertyInChain(t, n, e);
+          if (!a.length) return {
+            v: o = false
+          };
+          o = !e;
+          for (var i = 0; i < a.length; i += 1) {
+            var u = "string" == typeof r && void 0 !== a[i].base[r];
+            o = e ? u || o : u && o;
+          }
+        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
     function jsonPruner(e, r, n, a, t, i) {
-      var {nativeStringify: o} = i;
-      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-      r && "object" == typeof r && logMessage(e, r, true, false), r;
+      var {
+        nativeStringify: o
+      } = i;
+      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${new Error().stack}`, true), r && "object" == typeof r && logMessage(e, r, true, false), r;
       try {
         if (!1 === isPruningNeeded(e, r, n, a, t, i)) return r;
-        n.forEach((function(n) {
+        n.forEach(function (n) {
           for (var a = n.path, t = n.value, i = getWildcardPropertyInChain(r, a, !0, [], t), o = i.length - 1; o >= 0; o -= 1) {
             var s = i[o];
             if (void 0 !== s && s.base) if (hit(e), Array.isArray(s.base)) try {
@@ -9399,7 +9493,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               console.error("Error while deleting array element", e);
             } else delete s.base[s.prop];
           }
-        }));
+        });
       } catch (r) {
         logMessage(e, r);
       }
@@ -9408,13 +9502,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getPrunePath(t) {
       var r = ".[=].";
       if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function(t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length; ) {
+        var e = function (t) {
+          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
             var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), 
-            i += 1; else {
+            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
               if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (;i < t.length && /\s/.test(t[i]); ) i += 1;
+                for (; i < t.length && /\s/.test(t[i]);) i += 1;
                 "" !== n && (e.push(n), n = "");
                 continue;
               }
@@ -9430,49 +9523,59 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           return "" !== n && e.push(n), e;
         }(t);
-        return e.map((function(t) {
-          var e = t.split(r), n = e[0], i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), 
-          {
+        return e.map(function (t) {
+          var e = t.split(r),
+            n = e[0],
+            i = e[1];
+          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
             path: n,
             value: i
           }) : {
             path: n
           };
-        }));
+        });
       }
       return [];
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -9494,9 +9597,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -9505,23 +9608,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isKeyInObject(t, r, e) {
-      var n = r.split("."), _check2 = function _check(t, r) {
-        if (null == t) return false;
-        if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-        var n = r[0], i = r.slice(1);
-        if ("*" === n || "[]" === n) {
-          if (Array.isArray(t)) return t.some((function(t) {
-            return _check2(t, i);
-          }));
-          if ("object" == typeof t && null !== t) return Object.keys(t).some((function(r) {
-            return _check2(t[r], i);
-          }));
-        }
-        return !!Object.prototype.hasOwnProperty.call(t, n) && _check2(t[n], i);
-      };
+      var n = r.split("."),
+        _check2 = function _check(t, r) {
+          if (null == t) return false;
+          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
+          var n = r[0],
+            i = r.slice(1);
+          if ("*" === n || "[]" === n) {
+            if (Array.isArray(t)) return t.some(function (t) {
+              return _check2(t, i);
+            });
+            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
+              return _check2(t[r], i);
+            });
+          }
+          return !!Object.prototype.hasOwnProperty.call(t, n) && _check2(t[n], i);
+        };
       return _check2(t, n);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       evalDataPrune.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9536,7 +9641,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function forceWindowClose(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9567,11 +9671,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         window.addEventListener("adguard:subscribed-to-close-window", extCall, {
           once: true
         });
-        setTimeout((function() {
+        setTimeout(function () {
           window.removeEventListener("adguard:subscribed-to-close-window", extCall, {
             once: true
           });
-        }), 5e3);
+        }, 5e3);
       };
       var shouldClose = function shouldClose() {
         if (path === "") {
@@ -9591,38 +9695,47 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       forceWindowClose.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9637,7 +9750,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function hideInShadowDom(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9658,11 +9770,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var hostElements = !baseSelector ? findHostElements(document.documentElement) : document.querySelectorAll(baseSelector);
         var _loop = function _loop() {
           var isHidden = false;
-          var {targets: targets, innerHosts: innerHosts} = pierceShadowDom(selector, hostElements);
-          targets.forEach((function(targetEl) {
+          var {
+            targets: targets,
+            innerHosts: innerHosts
+          } = pierceShadowDom(selector, hostElements);
+          targets.forEach(function (targetEl) {
             hideElement(targetEl);
             isHidden = true;
-          }));
+          });
           if (isHidden) {
             hit(source);
           }
@@ -9678,48 +9793,53 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function findHostElements(o) {
       var n = [];
-      o && o.querySelectorAll("*").forEach((function(o) {
+      o && o.querySelectorAll("*").forEach(function (o) {
         o.shadowRoot && n.push(o);
-      }));
+      });
       return n;
     }
     function pierceShadowDom(e, t) {
-      var c = [], l = [];
-      t.forEach((function(t) {
+      var c = [],
+        l = [];
+      t.forEach(function (t) {
         var o = t.querySelectorAll(e);
         c = c.concat([].slice.call(o));
-        var r = t.shadowRoot, a = r.querySelectorAll(e);
+        var r = t.shadowRoot,
+          a = r.querySelectorAll(e);
         c = c.concat([].slice.call(a)), l.push(findHostElements(r));
-      }));
+      });
       var o = flatten(l);
       return {
         targets: c,
@@ -9728,27 +9848,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function flatten(r) {
       var n = [];
-      r.forEach((function(r) {
+      r.forEach(function (r) {
         return n.push(r);
-      }));
-      for (var t = []; n.length; ) {
+      });
+      for (var t = []; n.length;) {
         var u = n.pop();
-        Array.isArray(u) ? u.forEach((function(r) {
+        Array.isArray(u) ? u.forEach(function (r) {
           return n.push(r);
-        })) : t.push(u);
+        }) : t.push(u);
       }
       return t.reverse();
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper2 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper2(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper2 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper2(...r), r = null);
+          }, t));
+        };
       return _wrapper2;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       hideInShadowDom.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -9763,7 +9885,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function hrefSanitizer(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -9779,7 +9900,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(source, "Selector is required.");
         return;
       }
-      var BASE64_DECODE_TRANSFORM_MARKER = new Set([ "base64decode", "-base64" ]);
+      var BASE64_DECODE_TRANSFORM_MARKER = new Set(["base64decode", "-base64"]);
       var REMOVE_HASH_TRANSFORM_MARKER = "removeHash";
       var REMOVE_PARAM_TRANSFORM_MARKER = "removeParam";
       var MARKER_SEPARATOR = ":";
@@ -9820,7 +9941,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return null;
         }
         try {
-          var {href: href, protocol: protocol} = new URL(text, document.location.href);
+          var {
+            href: href,
+            protocol: protocol
+          } = new URL(text, document.location.href);
           if (protocol !== "http:" && protocol !== "https:") {
             logMessage(source, `Protocol not allowed: "${protocol}", from URL: "${href}"`);
             return null;
@@ -9890,12 +10014,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var validEncodedParam;
         if (searchString.includes(SEARCH_PARAMS_MARKER)) {
           var searchParamsArray = searchString.split(SEARCH_PARAMS_MARKER);
-          searchParamsArray.forEach((function(param) {
+          searchParamsArray.forEach(function (param) {
             decodedParam = decodeBase64SeveralTimes(param, DECODE_ATTEMPTS_NUMBER);
             if (decodedParam && decodedParam.length > 0) {
               validEncodedParam = decodedParam;
             }
-          }));
+          });
           return validEncodedParam;
         }
         return decodeBase64SeveralTimes(searchString, DECODE_ATTEMPTS_NUMBER);
@@ -9926,18 +10050,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         var initSearchParamsLength = urlObj.searchParams.toString().length;
         var removeParams = paramNamesToRemoveStr.split(COMMA);
-        removeParams.forEach((function(param) {
+        removeParams.forEach(function (param) {
           if (urlObj.searchParams.has(param)) {
             urlObj.searchParams.delete(param);
           }
-        }));
+        });
         if (initSearchParamsLength === urlObj.searchParams.toString().length) {
           return "";
         }
         return urlObj.toString();
       };
       var decodeBase64URL = function decodeBase64URL(url) {
-        var {search: search, hash: hash} = new URL(url, document.location.href);
+        var {
+          search: search,
+          hash: hash
+        } = new URL(url, document.location.href);
         if (search.length > 0) {
           return decodeSearchString(search);
         }
@@ -9961,7 +10088,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           logMessage(source, `Invalid selector "${elementSelector}"`);
           return;
         }
-        elements.forEach((function(elem) {
+        elements.forEach(function (elem) {
           try {
             if (!isSanitizableAnchor(elem)) {
               logMessage(source, `${elem} is not a valid element to sanitize`);
@@ -9970,23 +10097,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             var newHref = extractNewHref(elem, attribute);
             if (transform) {
               switch (true) {
-               case BASE64_DECODE_TRANSFORM_MARKER.has(transform):
-                newHref = base64Decode(newHref);
-                break;
-  
-               case transform === REMOVE_HASH_TRANSFORM_MARKER:
-                newHref = removeHash(newHref);
-                break;
-  
-               case transform.startsWith(REMOVE_PARAM_TRANSFORM_MARKER):
-                {
-                  newHref = removeParam(newHref, transform);
+                case BASE64_DECODE_TRANSFORM_MARKER.has(transform):
+                  newHref = base64Decode(newHref);
                   break;
-                }
-  
-               default:
-                logMessage(source, `Invalid transform option: "${transform}"`);
-                return;
+                case transform === REMOVE_HASH_TRANSFORM_MARKER:
+                  newHref = removeHash(newHref);
+                  break;
+                case transform.startsWith(REMOVE_PARAM_TRANSFORM_MARKER):
+                  {
+                    newHref = removeParam(newHref, transform);
+                    break;
+                  }
+                default:
+                  logMessage(source, `Invalid transform option: "${transform}"`);
+                  return;
               }
             }
             var newValidHref = getValidURL(newHref);
@@ -10002,14 +10126,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           } catch (ex) {
             logMessage(source, `Failed to sanitize ${elem}.`);
           }
-        }));
+        });
         hit(source);
       };
       var run = function run() {
         sanitize(selector);
-        observeDOMChanges((function() {
+        observeDOMChanges(function () {
           return sanitize(selector);
-        }), true);
+        }, true);
       };
       if (document.readyState === "loading") {
         window.addEventListener("DOMContentLoaded", run, {
@@ -10020,52 +10144,62 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper3 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper3(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper3 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper3(...r), r = null);
+          }, t));
+        };
       return _wrapper3;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       hrefSanitizer.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -10080,7 +10214,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function injectCssInShadowDom(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -10115,14 +10248,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var injectAdoptedStyleSheets = function injectAdoptedStyleSheets(shadowRoot) {
         try {
-          var stylesheet = new CSSStyleSheet;
+          var stylesheet = new CSSStyleSheet();
           try {
             stylesheet.insertRule(cssRule);
           } catch (e) {
             logMessage(source, `Unable to apply the rule '${cssRule}' due to: \n'${e.message}'`);
             return;
           }
-          shadowRoot.adoptedStyleSheets = [ ...shadowRoot.adoptedStyleSheets, stylesheet ];
+          shadowRoot.adoptedStyleSheets = [...shadowRoot.adoptedStyleSheets, stylesheet];
           hit(source);
         } catch (error) {
           logMessage(source, `Unable to inject adopted style sheet due to: \n'${error.message}'`);
@@ -10141,16 +10274,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -10165,7 +10302,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       t.Element.prototype.attachShadow = new Proxy(t.Element.prototype.attachShadow, o);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       injectCssInShadowDom.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -10180,7 +10317,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function jsonPrune(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -10209,9 +10345,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var nativeResponseJson = Response.prototype.json;
       var responseJsonWrapper = function responseJsonWrapper() {
         var promise = nativeResponseJson.apply(this);
-        return promise.then((function(obj) {
+        return promise.then(function (obj) {
           return jsonPruner(source, obj, prunePaths, requiredPaths, stack, nativeObjects);
-        }));
+        });
       };
       if (typeof Response === "undefined") {
         return;
@@ -10221,10 +10357,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -10232,15 +10367,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [], t = arguments.length > 4 ? arguments[4] : void 0, o = e.indexOf(".");
+      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
+        t = arguments.length > 4 ? arguments[4] : void 0,
+        o = e.indexOf(".");
       if (-1 === o) {
         if ("*" === e || "[]" === e) {
           for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
@@ -10273,30 +10411,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var c = e.slice(0, o);
       if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1), y = Object.keys(r);
+        var f = e.slice(o + 1),
+          y = Object.keys(r);
         if ("{-}" === c || "[-]" === c) {
           var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach((function(e) {
+          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
             var a = r[e];
             isKeyInObject(a, f, t) && i.push({
               base: r,
               prop: e
             });
-          })), i;
+          }), i;
         }
-        y.forEach((function(e) {
+        y.forEach(function (e) {
           getWildcardPropertyInChain(r[e], f, a, i, t);
-        }));
+        });
       }
-      Array.isArray(r) && r.forEach((function(r) {
+      Array.isArray(r) && r.forEach(function (r) {
         void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      }));
+      });
       var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), 
-      i;
+      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -10304,39 +10447,47 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function isPruningNeeded(n, t, r, e, a, i) {
       if (!t) return false;
-      var o, {nativeStringify: u} = i, c = r.map((function(n) {
-        return n.path;
-      })), f = e.map((function(n) {
-        return n.path;
-      }));
+      var o,
+        {
+          nativeStringify: u
+        } = i,
+        c = r.map(function (n) {
+          return n.path;
+        }),
+        f = e.map(function (n) {
+          return n.path;
+        });
       if (0 === c.length && f.length > 0) {
         var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-        t && "object" == typeof t && logMessage(n, t, true, false), o = false;
+        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
       }
-      if (a && !matchStackTrace(a, (new Error).stack || "")) return o = false;
-      for (var s, l = [ ".*.", "*.", ".*", ".[].", "[].", ".[]" ], _loop = function _loop() {
-        var n = f[p], r = n.split(".").pop(), e = l.some((function(t) {
-          return n.includes(t);
-        })), a = getWildcardPropertyInChain(t, n, e);
-        if (!a.length) return {
-          v: o = false
-        };
-        o = !e;
-        for (var i = 0; i < a.length; i += 1) {
-          var u = "string" == typeof r && void 0 !== a[i].base[r];
-          o = e ? u || o : u && o;
-        }
-      }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
+      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
+      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
+          var n = f[p],
+            r = n.split(".").pop(),
+            e = l.some(function (t) {
+              return n.includes(t);
+            }),
+            a = getWildcardPropertyInChain(t, n, e);
+          if (!a.length) return {
+            v: o = false
+          };
+          o = !e;
+          for (var i = 0; i < a.length; i += 1) {
+            var u = "string" == typeof r && void 0 !== a[i].base[r];
+            o = e ? u || o : u && o;
+          }
+        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
     function jsonPruner(e, r, n, a, t, i) {
-      var {nativeStringify: o} = i;
-      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-      r && "object" == typeof r && logMessage(e, r, true, false), r;
+      var {
+        nativeStringify: o
+      } = i;
+      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${new Error().stack}`, true), r && "object" == typeof r && logMessage(e, r, true, false), r;
       try {
         if (!1 === isPruningNeeded(e, r, n, a, t, i)) return r;
-        n.forEach((function(n) {
+        n.forEach(function (n) {
           for (var a = n.path, t = n.value, i = getWildcardPropertyInChain(r, a, !0, [], t), o = i.length - 1; o >= 0; o -= 1) {
             var s = i[o];
             if (void 0 !== s && s.base) if (hit(e), Array.isArray(s.base)) try {
@@ -10347,7 +10498,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               console.error("Error while deleting array element", e);
             } else delete s.base[s.prop];
           }
-        }));
+        });
       } catch (r) {
         logMessage(e, r);
       }
@@ -10356,13 +10507,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getPrunePath(t) {
       var r = ".[=].";
       if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function(t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length; ) {
+        var e = function (t) {
+          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
             var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), 
-            i += 1; else {
+            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
               if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (;i < t.length && /\s/.test(t[i]); ) i += 1;
+                for (; i < t.length && /\s/.test(t[i]);) i += 1;
                 "" !== n && (e.push(n), n = "");
                 continue;
               }
@@ -10378,65 +10528,80 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           return "" !== n && e.push(n), e;
         }(t);
-        return e.map((function(t) {
-          var e = t.split(r), n = e[0], i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), 
-          {
+        return e.map(function (t) {
+          var e = t.split(r),
+            n = e[0],
+            i = e[1];
+          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
             path: n,
             value: i
           }) : {
             path: n
           };
-        }));
+        });
       }
       return [];
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -10458,9 +10623,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -10469,23 +10634,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isKeyInObject(t, r, e) {
-      var n = r.split("."), _check3 = function _check(t, r) {
-        if (null == t) return false;
-        if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-        var n = r[0], i = r.slice(1);
-        if ("*" === n || "[]" === n) {
-          if (Array.isArray(t)) return t.some((function(t) {
-            return _check3(t, i);
-          }));
-          if ("object" == typeof t && null !== t) return Object.keys(t).some((function(r) {
-            return _check3(t[r], i);
-          }));
-        }
-        return !!Object.prototype.hasOwnProperty.call(t, n) && _check3(t[n], i);
-      };
+      var n = r.split("."),
+        _check3 = function _check(t, r) {
+          if (null == t) return false;
+          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
+          var n = r[0],
+            i = r.slice(1);
+          if ("*" === n || "[]" === n) {
+            if (Array.isArray(t)) return t.some(function (t) {
+              return _check3(t, i);
+            });
+            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
+              return _check3(t[r], i);
+            });
+          }
+          return !!Object.prototype.hasOwnProperty.call(t, n) && _check3(t[n], i);
+        };
       return _check3(t, n);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       jsonPrune.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -10500,7 +10667,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function jsonPruneFetchResponse(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -10561,57 +10727,70 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function getFetchData(e, t) {
-      var a, c, n = {}, r = e[0];
+      var a,
+        c,
+        n = {},
+        r = e[0];
       if (r instanceof Request) {
-        var u = t.call(r), f = getRequestData(u);
+        var u = t.call(r),
+          f = getRequestData(u);
         a = f.url, c = f;
       } else a = r, c = e[1];
-      (n.url = a, c instanceof Object) && Object.keys(c).forEach((function(e) {
+      (n.url = a, c instanceof Object) && Object.keys(c).forEach(function (e) {
         n[e] = c[e];
-      }));
+      });
       return n;
     }
     function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map((function(t) {
-        var n = t[0], e = t[1], o = e;
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      })).join(" ") : String(t);
+      }).join(" ") : String(t);
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
     function jsonPruner(e, r, n, a, t, i) {
-      var {nativeStringify: o} = i;
-      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-      r && "object" == typeof r && logMessage(e, r, true, false), r;
+      var {
+        nativeStringify: o
+      } = i;
+      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${new Error().stack}`, true), r && "object" == typeof r && logMessage(e, r, true, false), r;
       try {
         if (!1 === isPruningNeeded(e, r, n, a, t, i)) return r;
-        n.forEach((function(n) {
+        n.forEach(function (n) {
           for (var a = n.path, t = n.value, i = getWildcardPropertyInChain(r, a, !0, [], t), o = i.length - 1; o >= 0; o -= 1) {
             var s = i[o];
             if (void 0 !== s && s.base) if (hit(e), Array.isArray(s.base)) try {
@@ -10622,7 +10801,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               console.error("Error while deleting array element", e);
             } else delete s.base[s.prop];
           }
-        }));
+        });
       } catch (r) {
         logMessage(e, r);
       }
@@ -10631,13 +10810,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getPrunePath(t) {
       var r = ".[=].";
       if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function(t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length; ) {
+        var e = function (t) {
+          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
             var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), 
-            i += 1; else {
+            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
               if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (;i < t.length && /\s/.test(t[i]); ) i += 1;
+                for (; i < t.length && /\s/.test(t[i]);) i += 1;
                 "" !== n && (e.push(n), n = "");
                 continue;
               }
@@ -10653,25 +10831,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           return "" !== n && e.push(n), e;
         }(t);
-        return e.map((function(t) {
-          var e = t.split(r), n = e[0], i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), 
-          {
+        return e.map(function (t) {
+          var e = t.split(r),
+            n = e[0],
+            i = e[1];
+          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
             path: n,
             value: i
           }) : {
             path: n
           };
-        }));
+        });
       }
       return [];
     }
     function forgeResponse(e, t) {
-      var {bodyUsed: s, headers: r, ok: u, redirected: a, status: d, statusText: o, type: l, url: n} = e, v = new Response(t, {
-        status: d,
-        statusText: o,
-        headers: r
-      });
+      var {
+          bodyUsed: s,
+          headers: r,
+          ok: u,
+          redirected: a,
+          status: d,
+          statusText: o,
+          type: l,
+          url: n
+        } = e,
+        v = new Response(t, {
+          status: d,
+          statusText: o,
+          headers: r
+        });
       return Object.defineProperties(v, {
         url: {
           value: n
@@ -10692,60 +10881,73 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function isPruningNeeded(n, t, r, e, a, i) {
       if (!t) return false;
-      var o, {nativeStringify: u} = i, c = r.map((function(n) {
-        return n.path;
-      })), f = e.map((function(n) {
-        return n.path;
-      }));
+      var o,
+        {
+          nativeStringify: u
+        } = i,
+        c = r.map(function (n) {
+          return n.path;
+        }),
+        f = e.map(function (n) {
+          return n.path;
+        });
       if (0 === c.length && f.length > 0) {
         var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-        t && "object" == typeof t && logMessage(n, t, true, false), o = false;
+        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
       }
-      if (a && !matchStackTrace(a, (new Error).stack || "")) return o = false;
-      for (var s, l = [ ".*.", "*.", ".*", ".[].", "[].", ".[]" ], _loop = function _loop() {
-        var n = f[p], r = n.split(".").pop(), e = l.some((function(t) {
-          return n.includes(t);
-        })), a = getWildcardPropertyInChain(t, n, e);
-        if (!a.length) return {
-          v: o = false
-        };
-        o = !e;
-        for (var i = 0; i < a.length; i += 1) {
-          var u = "string" == typeof r && void 0 !== a[i].base[r];
-          o = e ? u || o : u && o;
-        }
-      }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
+      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
+      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
+          var n = f[p],
+            r = n.split(".").pop(),
+            e = l.some(function (t) {
+              return n.includes(t);
+            }),
+            a = getWildcardPropertyInChain(t, n, e);
+          if (!a.length) return {
+            v: o = false
+          };
+          o = !e;
+          for (var i = 0; i < a.length; i += 1) {
+            var u = "string" == typeof r && void 0 !== a[i].base[r];
+            o = e ? u || o : u && o;
+          }
+        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -10761,39 +10963,43 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return 0 === Object.keys(t).length && !t.prototype;
     }
     function getRequestData(t) {
-      var e = getRequestProps().map((function(e) {
-        return [ e, t[e] ];
-      }));
+      var e = getRequestProps().map(function (e) {
+        return [e, t[e]];
+      });
       return Object.fromEntries(e);
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [], t = arguments.length > 4 ? arguments[4] : void 0, o = e.indexOf(".");
+      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
+        t = arguments.length > 4 ? arguments[4] : void 0,
+        o = e.indexOf(".");
       if (-1 === o) {
         if ("*" === e || "[]" === e) {
           for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
@@ -10826,53 +11032,61 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var c = e.slice(0, o);
       if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1), y = Object.keys(r);
+        var f = e.slice(o + 1),
+          y = Object.keys(r);
         if ("{-}" === c || "[-]" === c) {
           var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach((function(e) {
+          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
             var a = r[e];
             isKeyInObject(a, f, t) && i.push({
               base: r,
               prop: e
             });
-          })), i;
+          }), i;
         }
-        y.forEach((function(e) {
+        y.forEach(function (e) {
           getWildcardPropertyInChain(r[e], f, a, i, t);
-        }));
+        });
       }
-      Array.isArray(r) && r.forEach((function(r) {
+      Array.isArray(r) && r.forEach(function (r) {
         void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      }));
+      });
       var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), 
-      i;
+      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -10880,7 +11094,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
@@ -10899,9 +11114,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -10910,23 +11125,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isKeyInObject(t, r, e) {
-      var n = r.split("."), _check4 = function _check(t, r) {
-        if (null == t) return false;
-        if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-        var n = r[0], i = r.slice(1);
-        if ("*" === n || "[]" === n) {
-          if (Array.isArray(t)) return t.some((function(t) {
-            return _check4(t, i);
-          }));
-          if ("object" == typeof t && null !== t) return Object.keys(t).some((function(r) {
-            return _check4(t[r], i);
-          }));
-        }
-        return !!Object.prototype.hasOwnProperty.call(t, n) && _check4(t[n], i);
-      };
+      var n = r.split("."),
+        _check4 = function _check(t, r) {
+          if (null == t) return false;
+          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
+          var n = r[0],
+            i = r.slice(1);
+          if ("*" === n || "[]" === n) {
+            if (Array.isArray(t)) return t.some(function (t) {
+              return _check4(t, i);
+            });
+            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
+              return _check4(t[r], i);
+            });
+          }
+          return !!Object.prototype.hasOwnProperty.call(t, n) && _check4(t[n], i);
+        };
       return _check4(t, n);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       jsonPruneFetchResponse.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -10941,7 +11158,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function jsonPruneXhrResponse(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -10985,16 +11201,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return Reflect.apply(target, thisArg, args);
       };
       var sendWrapper = function sendWrapper(target, thisArg, args) {
-        var stackTrace = (new Error).stack || "";
+        var stackTrace = new Error().stack || "";
         if (!thisArg.xhrShouldBePruned || stack && !matchStackTrace(stack, stackTrace)) {
           return Reflect.apply(target, thisArg, args);
         }
-        var forgedRequest = new XMLHttpRequest;
-        forgedRequest.addEventListener("readystatechange", (function() {
+        var forgedRequest = new XMLHttpRequest();
+        forgedRequest.addEventListener("readystatechange", function () {
           if (forgedRequest.readyState !== 4) {
             return;
           }
-          var {readyState: readyState, response: response, responseText: responseText, responseURL: responseURL, responseXML: responseXML, status: status, statusText: statusText} = forgedRequest;
+          var {
+            readyState: readyState,
+            response: response,
+            responseText: responseText,
+            responseURL: responseURL,
+            responseXML: responseXML,
+            status: status,
+            statusText: statusText
+          } = forgedRequest;
           var content = responseText || response;
           if (typeof content !== "string" && typeof content !== "object") {
             return;
@@ -11012,23 +11236,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                   nativeStringify: nativeStringify
                 });
                 try {
-                  var {responseType: responseType} = thisArg;
+                  var {
+                    responseType: responseType
+                  } = thisArg;
                   switch (responseType) {
-                   case "":
-                   case "text":
-                    modifiedContent = nativeStringify(modifiedContent);
-                    break;
-  
-                   case "arraybuffer":
-                    modifiedContent = (new TextEncoder).encode(nativeStringify(modifiedContent)).buffer;
-                    break;
-  
-                   case "blob":
-                    modifiedContent = new Blob([ nativeStringify(modifiedContent) ]);
-                    break;
-  
-                   default:
-                    break;
+                    case "":
+                    case "text":
+                      modifiedContent = nativeStringify(modifiedContent);
+                      break;
+                    case "arraybuffer":
+                      modifiedContent = new TextEncoder().encode(nativeStringify(modifiedContent)).buffer;
+                      break;
+                    case "blob":
+                      modifiedContent = new Blob([nativeStringify(modifiedContent)]);
+                      break;
+                    default:
+                      break;
                   }
                 } catch (error) {
                   var message = `Response body cannot be converted to reponse type: '${content}'`;
@@ -11072,20 +11295,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               writable: false
             }
           });
-          setTimeout((function() {
+          setTimeout(function () {
             var stateEvent = new Event("readystatechange");
             thisArg.dispatchEvent(stateEvent);
             var loadEvent = new Event("load");
             thisArg.dispatchEvent(loadEvent);
             var loadEndEvent = new Event("loadend");
             thisArg.dispatchEvent(loadEndEvent);
-          }), 1);
+          }, 1);
           hit(source);
-        }));
-        nativeOpen.apply(forgedRequest, [ xhrData.method, xhrData.url, Boolean(xhrData.async) ]);
-        thisArg.collectedHeaders.forEach((function(header) {
+        });
+        nativeOpen.apply(forgedRequest, [xhrData.method, xhrData.url, Boolean(xhrData.async)]);
+        thisArg.collectedHeaders.forEach(function (header) {
           forgedRequest.setRequestHeader(header[0], header[1]);
-        }));
+        });
         thisArg.collectedHeaders = [];
         try {
           nativeSend.call(forgedRequest, args);
@@ -11106,44 +11329,54 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function jsonPruner(e, r, n, a, t, i) {
-      var {nativeStringify: o} = i;
-      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-      r && "object" == typeof r && logMessage(e, r, true, false), r;
+      var {
+        nativeStringify: o
+      } = i;
+      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${new Error().stack}`, true), r && "object" == typeof r && logMessage(e, r, true, false), r;
       try {
         if (!1 === isPruningNeeded(e, r, n, a, t, i)) return r;
-        n.forEach((function(n) {
+        n.forEach(function (n) {
           for (var a = n.path, t = n.value, i = getWildcardPropertyInChain(r, a, !0, [], t), o = i.length - 1; o >= 0; o -= 1) {
             var s = i[o];
             if (void 0 !== s && s.base) if (hit(e), Array.isArray(s.base)) try {
@@ -11154,7 +11387,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               console.error("Error while deleting array element", e);
             } else delete s.base[s.prop];
           }
-        }));
+        });
       } catch (r) {
         logMessage(e, r);
       }
@@ -11163,13 +11396,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getPrunePath(t) {
       var r = ".[=].";
       if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function(t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length; ) {
+        var e = function (t) {
+          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
             var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), 
-            i += 1; else {
+            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
               if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (;i < t.length && /\s/.test(t[i]); ) i += 1;
+                for (; i < t.length && /\s/.test(t[i]);) i += 1;
                 "" !== n && (e.push(n), n = "");
                 continue;
               }
@@ -11185,28 +11417,31 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           return "" !== n && e.push(n), e;
         }(t);
-        return e.map((function(t) {
-          var e = t.split(r), n = e[0], i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), 
-          {
+        return e.map(function (t) {
+          var e = t.split(r),
+            n = e[0],
+            i = e[1];
+          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
             path: n,
             value: i
           }) : {
             path: n
           };
-        }));
+        });
       }
       return [];
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
@@ -11221,70 +11456,79 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function isPruningNeeded(n, t, r, e, a, i) {
       if (!t) return false;
-      var o, {nativeStringify: u} = i, c = r.map((function(n) {
-        return n.path;
-      })), f = e.map((function(n) {
-        return n.path;
-      }));
+      var o,
+        {
+          nativeStringify: u
+        } = i,
+        c = r.map(function (n) {
+          return n.path;
+        }),
+        f = e.map(function (n) {
+          return n.path;
+        });
       if (0 === c.length && f.length > 0) {
         var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-        t && "object" == typeof t && logMessage(n, t, true, false), o = false;
+        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
       }
-      if (a && !matchStackTrace(a, (new Error).stack || "")) return o = false;
-      for (var s, l = [ ".*.", "*.", ".*", ".[].", "[].", ".[]" ], _loop = function _loop() {
-        var n = f[p], r = n.split(".").pop(), e = l.some((function(t) {
-          return n.includes(t);
-        })), a = getWildcardPropertyInChain(t, n, e);
-        if (!a.length) return {
-          v: o = false
-        };
-        o = !e;
-        for (var i = 0; i < a.length; i += 1) {
-          var u = "string" == typeof r && void 0 !== a[i].base[r];
-          o = e ? u || o : u && o;
-        }
-      }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
+      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
+      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
+          var n = f[p],
+            r = n.split(".").pop(),
+            e = l.some(function (t) {
+              return n.includes(t);
+            }),
+            a = getWildcardPropertyInChain(t, n, e);
+          if (!a.length) return {
+            v: o = false
+          };
+          o = !e;
+          for (var i = 0; i < a.length; i += 1) {
+            var u = "string" == typeof r && void 0 !== a[i].base[r];
+            o = e ? u || o : u && o;
+          }
+        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -11297,7 +11541,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
     function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [], t = arguments.length > 4 ? arguments[4] : void 0, o = e.indexOf(".");
+      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
+        t = arguments.length > 4 ? arguments[4] : void 0,
+        o = e.indexOf(".");
       if (-1 === o) {
         if ("*" === e || "[]" === e) {
           for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
@@ -11330,53 +11577,61 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var c = e.slice(0, o);
       if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1), y = Object.keys(r);
+        var f = e.slice(o + 1),
+          y = Object.keys(r);
         if ("{-}" === c || "[-]" === c) {
           var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach((function(e) {
+          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
             var a = r[e];
             isKeyInObject(a, f, t) && i.push({
               base: r,
               prop: e
             });
-          })), i;
+          }), i;
         }
-        y.forEach((function(e) {
+        y.forEach(function (e) {
           getWildcardPropertyInChain(r[e], f, a, i, t);
-        }));
+        });
       }
-      Array.isArray(r) && r.forEach((function(r) {
+      Array.isArray(r) && r.forEach(function (r) {
         void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      }));
+      });
       var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), 
-      i;
+      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -11384,7 +11639,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
@@ -11403,9 +11659,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -11414,23 +11670,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isKeyInObject(t, r, e) {
-      var n = r.split("."), _check5 = function _check(t, r) {
-        if (null == t) return false;
-        if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-        var n = r[0], i = r.slice(1);
-        if ("*" === n || "[]" === n) {
-          if (Array.isArray(t)) return t.some((function(t) {
-            return _check5(t, i);
-          }));
-          if ("object" == typeof t && null !== t) return Object.keys(t).some((function(r) {
-            return _check5(t[r], i);
-          }));
-        }
-        return !!Object.prototype.hasOwnProperty.call(t, n) && _check5(t[n], i);
-      };
+      var n = r.split("."),
+        _check5 = function _check(t, r) {
+          if (null == t) return false;
+          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
+          var n = r[0],
+            i = r.slice(1);
+          if ("*" === n || "[]" === n) {
+            if (Array.isArray(t)) return t.some(function (t) {
+              return _check5(t, i);
+            });
+            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
+              return _check5(t[r], i);
+            });
+          }
+          return !!Object.prototype.hasOwnProperty.call(t, n) && _check5(t[n], i);
+        };
       return _check5(t, n);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       jsonPruneXhrResponse.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -11445,8 +11703,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
-  function log(source, args) {
+  function log$2(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
     if (source.uniqueId) {
@@ -11460,7 +11717,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       console.log(args);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       log.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -11475,7 +11732,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function logAddEventListener(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -11524,7 +11780,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
           args[_key - 2] = arguments[_key];
         }
-        return nativeAddEventListener.apply(context, [ type, listener, ...args ]);
+        return nativeAddEventListener.apply(context, [type, listener, ...args]);
       }
       var descriptor = {
         configurable: true,
@@ -11540,10 +11796,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -11561,17 +11816,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return void 0 === n ? "undefined" : "object" == typeof n ? null === n ? "null" : objectToString(n) : String(n);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map((function(t) {
-        var n = t[0], e = t[1], o = e;
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      })).join(" ") : String(t);
+      }).join(" ") : String(t);
     }
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
@@ -11584,7 +11846,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       return n;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       logAddEventListener.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -11599,7 +11861,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function logEval(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -11623,7 +11884,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           args[_key] = arguments[_key];
         }
         logMessage(source, `new Function(${args.join(", ")})`, true);
-        return nativeFunction.apply(this, [ ...args ]);
+        return nativeFunction.apply(this, [...args]);
       }
       FunctionWrapper.prototype = Object.create(nativeFunction.prototype);
       FunctionWrapper.prototype.constructor = FunctionWrapper;
@@ -11632,22 +11893,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       logEval.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -11662,7 +11927,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function logOnStackTrace(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -11677,10 +11941,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var refineStackTrace = function refineStackTrace(stackString) {
         var regExpValues = backupRegExpValues();
-        var stackSteps = stackString.split("\n").slice(2).map((function(line) {
+        var stackSteps = stackString.split("\n").slice(2).map(function (line) {
           return line.replace(/ {4}at /, "");
-        }));
-        var logInfoArray = stackSteps.map((function(line) {
+        });
+        var logInfoArray = stackSteps.map(function (line) {
           var funcName;
           var funcFullPath;
           var reg = /\(([^\)]+)\)/;
@@ -11695,12 +11959,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             funcName = "function name is not available";
             funcFullPath = line;
           }
-          return [ funcName, funcFullPath ];
-        }));
+          return [funcName, funcFullPath];
+        });
         var logInfoObject = {};
-        logInfoArray.forEach((function(pair) {
+        logInfoArray.forEach(function (pair) {
           logInfoObject[pair[0]] = pair[1];
-        }));
+        });
         if (regExpValues.length && regExpValues[0] !== RegExp.$1) {
           restoreRegExpValues(regExpValues);
         }
@@ -11708,8 +11972,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
-        var {base: base} = chainInfo;
-        var {prop: prop, chain: chain} = chainInfo;
+        var {
+          base: base
+        } = chainInfo;
+        var {
+          prop: prop,
+          chain: chain
+        } = chainInfo;
         if (chain) {
           var setter = function setter(a) {
             base = a;
@@ -11730,13 +11999,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           get() {
             hit(source);
             logMessage(source, `Get ${prop}`, true);
-            console.table(refineStackTrace((new Error).stack));
+            console.table(refineStackTrace(new Error().stack));
             return value;
           },
           set(newValue) {
             hit(source);
             logMessage(source, `Set ${prop}`, true);
-            console.table(refineStackTrace((new Error).stack));
+            console.table(refineStackTrace(new Error().stack));
             value = newValue;
           }
         });
@@ -11775,16 +12044,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -11808,9 +12081,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -11818,7 +12091,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.log(n);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       logOnStackTrace.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -11833,7 +12106,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function m3uPrune(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -11867,11 +12139,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         VMAP_AD: "-VMAP-AD-",
         VMAP_AD_BREAK: "#EXT-X-VMAP-AD-BREAK:"
       };
-      var TAGS_ALLOWLIST = [ "#EXT-X-TARGETDURATION", "#EXT-X-MEDIA-SEQUENCE", "#EXT-X-DISCONTINUITY-SEQUENCE", "#EXT-X-ENDLIST", "#EXT-X-PLAYLIST-TYPE", "#EXT-X-I-FRAMES-ONLY", "#EXT-X-MEDIA", "#EXT-X-STREAM-INF", "#EXT-X-I-FRAME-STREAM-INF", "#EXT-X-SESSION-DATA", "#EXT-X-SESSION-KEY", "#EXT-X-INDEPENDENT-SEGMENTS", "#EXT-X-START" ];
+      var TAGS_ALLOWLIST = ["#EXT-X-TARGETDURATION", "#EXT-X-MEDIA-SEQUENCE", "#EXT-X-DISCONTINUITY-SEQUENCE", "#EXT-X-ENDLIST", "#EXT-X-PLAYLIST-TYPE", "#EXT-X-I-FRAMES-ONLY", "#EXT-X-MEDIA", "#EXT-X-STREAM-INF", "#EXT-X-I-FRAME-STREAM-INF", "#EXT-X-SESSION-DATA", "#EXT-X-SESSION-KEY", "#EXT-X-INDEPENDENT-SEGMENTS", "#EXT-X-START"];
       var isAllowedTag = function isAllowedTag(str) {
-        return TAGS_ALLOWLIST.some((function(el) {
+        return TAGS_ALLOWLIST.some(function (el) {
           return str.startsWith(el);
-        }));
+        });
       };
       var _pruneExtinfFromVmapBlock = function pruneExtinfFromVmapBlock(lines, i) {
         var array = lines.slice();
@@ -11990,16 +12262,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var lines = text.split(/\r?\n/);
         if (text.includes(COMCAST_AD_MARKER.VMAP_AD_BREAK)) {
           lines = pruneVmapBlock(lines);
-          lines = lines.filter((function(l) {
+          lines = lines.filter(function (l) {
             return !!l;
-          })).join("\n");
+          }).join("\n");
           if (shouldLogContent) {
             logMessage(source, `Modified M3U content:\n${lines}`);
           }
           return lines;
         }
         lines = pruneSegments(lines);
-        lines = lines.map((function(line, index, array) {
+        lines = lines.map(function (line, index, array) {
           if (typeof line === "undefined") {
             return line;
           }
@@ -12008,9 +12280,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             line = pruneInfBlock(line, index, array);
           }
           return line;
-        })).filter((function(l) {
+        }).filter(function (l) {
           return !!l;
-        })).join("\n");
+        }).join("\n");
         if (shouldLogContent) {
           logMessage(source, `Modified M3U content:\n${lines}`);
         }
@@ -12038,16 +12310,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return Reflect.apply(target, thisArg, args);
       };
       var sendWrapper = function sendWrapper(target, thisArg, args) {
-        var allowedResponseTypeValues = [ "", "text" ];
+        var allowedResponseTypeValues = ["", "text"];
         if (!thisArg.shouldBePruned || !allowedResponseTypeValues.includes(thisArg.responseType)) {
           return Reflect.apply(target, thisArg, args);
         }
-        var forgedRequest = new XMLHttpRequest;
-        forgedRequest.addEventListener("readystatechange", (function() {
+        var forgedRequest = new XMLHttpRequest();
+        forgedRequest.addEventListener("readystatechange", function () {
           if (forgedRequest.readyState !== 4) {
             return;
           }
-          var {readyState: readyState, response: response, responseText: responseText, responseURL: responseURL, responseXML: responseXML, status: status, statusText: statusText} = forgedRequest;
+          var {
+            readyState: readyState,
+            response: response,
+            responseText: responseText,
+            responseURL: responseURL,
+            responseXML: responseXML,
+            status: status,
+            statusText: statusText
+          } = forgedRequest;
           var content = responseText || response;
           if (typeof content !== "string") {
             return;
@@ -12091,22 +12371,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               writable: false
             }
           });
-          setTimeout((function() {
+          setTimeout(function () {
             var stateEvent = new Event("readystatechange");
             thisArg.dispatchEvent(stateEvent);
             var loadEvent = new Event("load");
             thisArg.dispatchEvent(loadEvent);
             var loadEndEvent = new Event("loadend");
             thisArg.dispatchEvent(loadEndEvent);
-          }), 1);
+          }, 1);
           hit(source);
-        }));
-        nativeOpen.apply(forgedRequest, [ xhrData.method, xhrData.url ]);
-        thisArg.collectedHeaders.forEach((function(header) {
+        });
+        nativeOpen.apply(forgedRequest, [xhrData.method, xhrData.url]);
+        thisArg.collectedHeaders.forEach(function (header) {
           var name = header[0];
           var value = header[1];
           forgedRequest.setRequestHeader(name, value);
-        }));
+        });
         thisArg.collectedHeaders = [];
         try {
           nativeSend.call(forgedRequest, args);
@@ -12159,32 +12439,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -12201,44 +12490,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -12250,7 +12543,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function escapeRegExp(e) {
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       m3uPrune.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12265,7 +12558,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function metrikaYandexTag(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12277,13 +12569,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function metrikaYandexTag(source) {
       var asyncCallbackFromOptions = function asyncCallbackFromOptions(id, param) {
         var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-        var {callback: callback} = options;
-        var {ctx: ctx} = options;
+        var {
+          callback: callback
+        } = options;
+        var {
+          ctx: ctx
+        } = options;
         if (typeof callback === "function") {
           callback = ctx !== undefined ? callback.bind(ctx) : callback;
-          setTimeout((function() {
+          setTimeout(function () {
             return callback();
-          }));
+          });
         }
       };
       var addFileExtension = noopFunc;
@@ -12339,26 +12635,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       } else if (window.ym && window.ym.a) {
         ym.a = window.ym.a;
         window.ym = ym;
-        window.ym.a.forEach((function(params) {
+        window.ym.a.forEach(function (params) {
           var id = params[0];
           init(id);
-        }));
+        });
       }
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       metrikaYandexTag.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12373,7 +12668,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function metrikaYandexWatch(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12386,13 +12680,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var cbName = "yandex_metrika_callbacks";
       var asyncCallbackFromOptions = function asyncCallbackFromOptions() {
         var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-        var {callback: callback} = options;
-        var {ctx: ctx} = options;
+        var {
+          callback: callback
+        } = options;
+        var {
+          ctx: ctx
+        } = options;
         if (typeof callback === "function") {
           callback = ctx !== undefined ? callback.bind(ctx) : callback;
-          setTimeout((function() {
+          setTimeout(function () {
             return callback();
-          }));
+          });
         }
       };
       function Metrika() {}
@@ -12403,16 +12701,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Metrika.prototype.userParams = noopFunc;
       Metrika.prototype.params = noopFunc;
       Metrika.prototype.counters = noopArray;
-      Metrika.prototype.extLink = function(url, options) {
+      Metrika.prototype.extLink = function (url, options) {
         asyncCallbackFromOptions(options);
       };
-      Metrika.prototype.file = function(url, options) {
+      Metrika.prototype.file = function (url, options) {
         asyncCallbackFromOptions(options);
       };
-      Metrika.prototype.hit = function(url, options) {
+      Metrika.prototype.hit = function (url, options) {
         asyncCallbackFromOptions(options);
       };
-      Metrika.prototype.reachGoal = function(target, params, cb, ctx) {
+      Metrika.prototype.reachGoal = function (target, params, cb, ctx) {
         asyncCallbackFromOptions({
           callback: cb,
           ctx: ctx
@@ -12427,21 +12725,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         };
       }
       if (window[cbName] && Array.isArray(window[cbName])) {
-        window[cbName].forEach((function(func) {
+        window[cbName].forEach(function (func) {
           if (typeof func === "function") {
             func();
           }
-        }));
+        });
       }
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -12450,7 +12747,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function noopArray() {
       return [];
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       metrikaYandexWatch.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12465,7 +12762,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function noProtectedAudience(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12500,10 +12796,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -12518,7 +12813,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function noopResolveNull() {
       return Promise.resolve(null);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       noProtectedAudience.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12533,7 +12828,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function noTopics(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12550,7 +12844,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!Object.prototype.hasOwnProperty.call(Document.prototype, TOPICS_PROPERTY_NAME) || Document.prototype[TOPICS_PROPERTY_NAME] instanceof Function === false) {
         return;
       }
-      Document.prototype[TOPICS_PROPERTY_NAME] = function() {
+      Document.prototype[TOPICS_PROPERTY_NAME] = function () {
         return noopPromiseResolve("[]");
       };
       hit(source);
@@ -12558,16 +12852,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}", t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "", s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
       if ("undefined" != typeof Response) {
         var n = new Response(e, {
           headers: {
@@ -12605,7 +12900,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }), Promise.resolve(n);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       noTopics.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12620,7 +12915,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function noeval(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12638,22 +12932,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       noeval.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12668,7 +12966,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function nowebrtc(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12701,7 +12998,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var rtc = window[propertyName];
       window[propertyName] = rtcReplacement;
       if (rtc.prototype) {
-        rtc.prototype.createDataChannel = function(a, b) {
+        rtc.prototype.createDataChannel = function (a, b) {
           return {
             close: noopFunc,
             send: noopFunc
@@ -12712,17 +13009,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -12730,13 +13031,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function convertRtcConfigToString(e) {
       var t = "undefined";
-      if (null === e) t = "null"; else if (e instanceof Object) {
-        var r = "iceServers", n = "urls";
+      if (null === e) t = "null";else if (e instanceof Object) {
+        var r = "iceServers",
+          n = "urls";
         Object.prototype.hasOwnProperty.call(e, r) && e[r] && Object.prototype.hasOwnProperty.call(e[r][0], n) && e[r][0][n] && (t = e[r][0][n].toString());
       }
       return t;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       nowebrtc.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12751,7 +13053,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventAddEventListener(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12808,7 +13109,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
           args[_key - 2] = arguments[_key];
         }
-        return nativeAddEventListener.apply(context, [ type, listener, ...args ]);
+        return nativeAddEventListener.apply(context, [type, listener, ...args]);
       }
       if (noProtect === "true") {
         window.EventTarget.prototype.addEventListener = addEventListenerWrapper;
@@ -12828,26 +13129,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -12862,13 +13167,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return "function" == typeof n ? n.toString() : n.handleEvent.toString();
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventAddEventListener.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12883,7 +13193,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventAdfly(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -12961,22 +13270,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventAdfly.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -12991,7 +13304,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventBab(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13008,12 +13320,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
             args[_key - 1] = arguments[_key];
           }
-          return nativeSetTimeout.apply(window, [ callback, ...args ]);
+          return nativeSetTimeout.apply(window, [callback, ...args]);
         }
         hit(source);
       };
       window.setTimeout = timeoutWrapper;
-      var signatures = [ [ "blockadblock" ], [ "babasbm" ], [ /getItem\('babn'\)/ ], [ "getElementById", "String.fromCharCode", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", "charAt", "DOMContentLoaded", "AdBlock", "addEventListener", "doScroll", "fromCharCode", "<<2|r>>4", "sessionStorage", "clientWidth", "localStorage", "Math", "random" ] ];
+      var signatures = [["blockadblock"], ["babasbm"], [/getItem\('babn'\)/], ["getElementById", "String.fromCharCode", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", "charAt", "DOMContentLoaded", "AdBlock", "addEventListener", "doScroll", "fromCharCode", "<<2|r>>4", "sessionStorage", "clientWidth", "localStorage", "Math", "random"]];
       var check = function check(str) {
         if (typeof str !== "string") {
           return false;
@@ -13055,15 +13367,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventBab.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -13078,7 +13389,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventCanvas(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13094,7 +13404,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (!contextType) {
           shouldPrevent = true;
         } else if (isValidMatchStr(contextType)) {
-          var {isInvertedMatch: isInvertedMatch, matchRegexp: matchRegexp} = parseMatchArg(contextType);
+          var {
+            isInvertedMatch: isInvertedMatch,
+            matchRegexp: matchRegexp
+          } = parseMatchArg(contextType);
           shouldPrevent = matchRegexp.test(type) !== isInvertedMatch;
         } else {
           logMessage(source, `Invalid contextType parameter: ${contextType}`);
@@ -13114,23 +13427,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
@@ -13142,17 +13460,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null != t && t.startsWith("!") && (i = t.slice(1)), isValidStrPattern(i);
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -13161,7 +13484,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -13170,7 +13494,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       return t;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventCanvas.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -13185,7 +13509,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventConstructor(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13211,9 +13534,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           try {
             var parsed = JSON.parse(input);
             if (Array.isArray(parsed)) {
-              return parsed.map((function(p) {
+              return parsed.map(function (p) {
                 return String(p);
-              }));
+              });
             }
             logMessage(source, "Invalid argumentsMatch: not an array");
             return null;
@@ -13289,7 +13612,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         hit(source);
         try {
-          var result = Reflect.construct(target, [ noopFunc ], newTarget);
+          var result = Reflect.construct(target, [noopFunc], newTarget);
           isMatchingSuspended = false;
           return result;
         } catch (e) {
@@ -13311,39 +13634,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function noopFunc() {}
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventConstructor.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -13358,7 +13690,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventElementSrcLoading(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13409,7 +13740,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         hit(source);
         setMatchedAttribute(thisArg);
-        return Reflect.apply(target, thisArg, [ attrName, srcMockData[nodeName] ]);
+        return Reflect.apply(target, thisArg, [attrName, srcMockData[nodeName]]);
       };
       var setAttributeHandler = {
         apply: setAttributeWrapper
@@ -13468,7 +13799,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var eventName = args[0];
         var isMatched = typeof thisArg.getAttribute === "function" && thisArg.getAttribute(source.name) === "matched" && eventName === "error";
         if (isMatched) {
-          return Reflect.apply(target, thisArg, [ eventName, noopFunc ]);
+          return Reflect.apply(target, thisArg, [eventName, noopFunc]);
         }
         return Reflect.apply(target, thisArg, args);
       };
@@ -13477,7 +13808,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       EventTarget.prototype.addEventListener = new Proxy(EventTarget.prototype.addEventListener, addEventListenerHandler);
       var preventInlineOnerror = function preventInlineOnerror(tagName, src) {
-        window.addEventListener("error", (function(event) {
+        window.addEventListener("error", function (event) {
           if (!event.target || !event.target.nodeName || event.target.nodeName.toLowerCase() !== tagName || !event.target.src || !src.test(event.target.src)) {
             return;
           }
@@ -13487,33 +13818,37 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             return;
           }
           event.target.onerror = noopFunc;
-        }), true);
+        }, true);
       };
       preventInlineOnerror(tagName, searchRegexp);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -13524,13 +13859,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function noopFunc() {}
     function getTrustedTypesApi(t) {
-      var r, e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
+      var r,
+        e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
       if (e) return e;
-      var n = "AGPolicy", i = window.trustedTypes, u = !!i, c = {
-        HTML: "TrustedHTML",
-        Script: "TrustedScript",
-        ScriptURL: "TrustedScriptURL"
-      };
+      var n = "AGPolicy",
+        i = window.trustedTypes,
+        u = !!i,
+        c = {
+          HTML: "TrustedHTML",
+          Script: "TrustedScript",
+          ScriptURL: "TrustedScriptURL"
+        };
       if (!u) return {
         name: n,
         isSupported: u,
@@ -13570,36 +13909,42 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       var o = i.createPolicy(n, {
-        createHTML: function createHTML(t) {
-          return t;
+          createHTML: function createHTML(t) {
+            return t;
+          },
+          createScript: function createScript(t) {
+            return t;
+          },
+          createScriptURL: function createScriptURL(t) {
+            return t;
+          }
+        }),
+        createHTML = function createHTML(t) {
+          return o.createHTML(t);
         },
-        createScript: function createScript(t) {
-          return t;
+        createScript = function createScript(t) {
+          return o.createScript(t);
         },
-        createScriptURL: function createScriptURL(t) {
-          return t;
-        }
-      }), createHTML = function createHTML(t) {
-        return o.createHTML(t);
-      }, createScript = function createScript(t) {
-        return o.createScript(t);
-      }, createScriptURL = function createScriptURL(t) {
-        return o.createScriptURL(t);
-      }, create = function create(t, r) {
-        switch (t) {
-         case c.HTML:
-          return createHTML(r);
-  
-         case c.Script:
-          return createScript(r);
-  
-         case c.ScriptURL:
-          return createScriptURL(r);
-  
-         default:
-          return r;
-        }
-      }, p = i.getAttributeType.bind(i), T = i.getPropertyType.bind(i), s = i.isHTML.bind(i), a = i.isScript.bind(i), f = i.isScriptURL.bind(i);
+        createScriptURL = function createScriptURL(t) {
+          return o.createScriptURL(t);
+        },
+        create = function create(t, r) {
+          switch (t) {
+            case c.HTML:
+              return createHTML(r);
+            case c.Script:
+              return createScript(r);
+            case c.ScriptURL:
+              return createScriptURL(r);
+            default:
+              return r;
+          }
+        },
+        p = i.getAttributeType.bind(i),
+        T = i.getPropertyType.bind(i),
+        s = i.isHTML.bind(i),
+        a = i.isScript.bind(i),
+        f = i.isScriptURL.bind(i);
       return {
         name: n,
         isSupported: u,
@@ -13623,7 +13968,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         isScriptURL: f
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventElementSrcLoading.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -13638,7 +13983,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventEvalIf(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13650,7 +13994,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function preventEvalIf(source, search) {
       var searchRegexp = toRegExp(search);
       var nativeEval = window.eval;
-      window.eval = function(payload) {
+      window.eval = function (payload) {
         if (!searchRegexp.test(payload.toString())) {
           return nativeEval.call(window, payload);
         }
@@ -13660,17 +14004,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.eval.toString = nativeEval.toString.bind(nativeEval);
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -13678,15 +14027,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventEvalIf.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -13701,7 +14049,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventFab(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13716,14 +14063,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Fab.prototype.check = noopFunc;
       Fab.prototype.clearEvent = noopFunc;
       Fab.prototype.emitEvent = noopFunc;
-      Fab.prototype.on = function(a, b) {
+      Fab.prototype.on = function (a, b) {
         if (!a) {
           b();
         }
         return this;
       };
       Fab.prototype.onDetected = noopThis;
-      Fab.prototype.onNotDetected = function(a) {
+      Fab.prototype.onNotDetected = function (a) {
         a();
         return this;
       };
@@ -13732,7 +14079,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         set: noopFunc,
         get: noopFunc
       };
-      var fab = new Fab;
+      var fab = new Fab();
       var getSetFab = {
         get() {
           return Fab;
@@ -13779,10 +14126,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -13791,7 +14137,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function noopThis() {
       return this;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventFab.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -13806,7 +14152,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventFetch(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -13837,7 +14182,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var isResponseTypeSpecified = typeof responseType !== "undefined";
       var isResponseTypeSupported = function isResponseTypeSupported(responseType) {
-        var SUPPORTED_TYPES = [ "basic", "cors", "opaque" ];
+        var SUPPORTED_TYPES = ["basic", "cors", "opaque"];
         return SUPPORTED_TYPES.includes(responseType);
       };
       if (isResponseTypeSpecified && !isResponseTypeSupported(responseType)) {
@@ -13846,7 +14191,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var getResponseType = function getResponseType(request) {
         try {
-          var {mode: mode} = request;
+          var {
+            mode: mode
+          } = request;
           if (mode === undefined || mode === "cors" || mode === "no-cors") {
             var fetchURL = new URL(request.url);
             if (fetchURL.origin === document.location.origin) {
@@ -13895,52 +14242,66 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function getFetchData(e, t) {
-      var a, c, n = {}, r = e[0];
+      var a,
+        c,
+        n = {},
+        r = e[0];
       if (r instanceof Request) {
-        var u = t.call(r), f = getRequestData(u);
+        var u = t.call(r),
+          f = getRequestData(u);
         a = f.url, c = f;
       } else a = r, c = e[1];
-      (n.url = a, c instanceof Object) && Object.keys(c).forEach((function(e) {
+      (n.url = a, c instanceof Object) && Object.keys(c).forEach(function (e) {
         n[e] = c[e];
-      }));
+      });
       return n;
     }
     function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map((function(t) {
-        var n = t[0], e = t[1], o = e;
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      })).join(" ") : String(t);
+      }).join(" ") : String(t);
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}", t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "", s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
       if ("undefined" != typeof Response) {
         var n = new Response(e, {
           headers: {
@@ -13979,12 +14340,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function modifyResponse(e) {
-      var t, s = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
-        body: "{}"
-      }, u = {};
-      null == e || null === (t = e.headers) || void 0 === t || t.forEach((function(e, t) {
+      var t,
+        s = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
+          body: "{}"
+        },
+        u = {};
+      null == e || null === (t = e.headers) || void 0 === t || t.forEach(function (e, t) {
         u[t] = e;
-      }));
+      });
       var n = new Response(s.body, {
         status: e.status,
         statusText: e.statusText,
@@ -14000,23 +14363,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }), n;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -14032,43 +14401,45 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return 0 === Object.keys(t).length && !t.prototype;
     }
     function getRequestData(t) {
-      var e = getRequestProps().map((function(e) {
-        return [ e, t[e] ];
-      }));
+      var e = getRequestProps().map(function (e) {
+        return [e, t[e]];
+      });
       return Object.fromEntries(e);
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function generateRandomResponse(e) {
       var t = e;
       if ("true" === t) return t = Math.random().toString(36).slice(-10);
       t = t.replace("length:", "");
       if (!/^\d+-\d+$/.test(t)) return null;
-      var n = getNumberFromString(t.split("-")[0]), r = getNumberFromString(t.split("-")[1]);
+      var n = getNumberFromString(t.split("-")[0]),
+        r = getNumberFromString(t.split("-")[1]);
       if (!nativeIsFinite(n) || !nativeIsFinite(r)) return null;
       if (n > r) {
         var i = n;
@@ -14095,7 +14466,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       for (var t = "", a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = 0; n < r; n += 1) t += a.charAt(Math.floor(76 * Math.random()));
       return t;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventFetch.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14110,7 +14481,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventInnerHTML(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14123,7 +14493,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
       var pattern = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "";
       var replacement = arguments.length > 3 ? arguments[3] : undefined;
-      var {isInvertedMatch: isInvertedMatch, matchRegexp: matchRegexp} = parseMatchArg(pattern);
+      var {
+        isInvertedMatch: isInvertedMatch,
+        matchRegexp: matchRegexp
+      } = parseMatchArg(pattern);
       var nativeDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
       if (nativeDescriptor === undefined) {
         return;
@@ -14172,46 +14545,56 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
         matchValue: a
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventInnerHTML.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14226,7 +14609,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventNavigation(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14257,7 +14639,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return patternUrl.test(url);
       };
-      nav.addEventListener("navigate", (function(event) {
+      nav.addEventListener("navigate", function (event) {
         var _event$destination;
         var destinationURL = event === null || event === void 0 || (_event$destination = event.destination) === null || _event$destination === void 0 ? void 0 : _event$destination.url;
         if (!destinationURL) {
@@ -14273,43 +14655,52 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           hit(source);
           logMessage(source, `Blocked navigation to: ${destinationURL}`);
         }
-      }));
+      });
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventNavigation.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14324,7 +14715,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventPopadsNet(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14353,11 +14743,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -14368,15 +14758,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventPopadsNet.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14391,7 +14780,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventRefresh(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14415,7 +14803,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return Array.from(metaNodes);
       };
       var getMetaContentDelay = function getMetaContentDelay(metaElements) {
-        var delays = metaElements.map((function(meta) {
+        var delays = metaElements.map(function (meta) {
           var contentString = meta.getAttribute("content");
           if (contentString.length === 0) {
             return null;
@@ -14429,15 +14817,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             contentDelay = getNumberFromString(contentString);
           }
           return contentDelay;
-        })).filter((function(delay) {
+        }).filter(function (delay) {
           return delay !== null;
-        }));
+        });
         if (!delays.length) {
           return null;
         }
-        var minDelay = delays.reduce((function(a, b) {
+        var minDelay = delays.reduce(function (a, b) {
           return Math.min(a, b);
-        }));
+        });
         return minDelay;
       };
       var stop = function stop() {
@@ -14453,10 +14841,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return;
         }
         var delayMs = secondsToRun * 1e3;
-        setTimeout((function() {
+        setTimeout(function () {
           window.stop();
           hit(source);
-        }), delayMs);
+        }, delayMs);
       };
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", stop, {
@@ -14469,10 +14857,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -14482,7 +14869,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return nativeIsNaN(r) ? null : r;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -14491,7 +14883,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function nativeIsNaN(N) {
       return (Number.isNaN || window.isNaN)(N);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventRefresh.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14506,7 +14898,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventRequestAnimationFrame(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14518,7 +14909,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function preventRequestAnimationFrame(source, match) {
       var nativeRequestAnimationFrame = window.requestAnimationFrame;
       var shouldLog = typeof match === "undefined";
-      var {isInvertedMatch: isInvertedMatch, matchRegexp: matchRegexp} = parseMatchArg(match);
+      var {
+        isInvertedMatch: isInvertedMatch,
+        matchRegexp: matchRegexp
+      } = parseMatchArg(match);
       var rafWrapper = function rafWrapper(callback) {
         var shouldPrevent = false;
         if (shouldLog) {
@@ -14534,24 +14928,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
           args[_key - 1] = arguments[_key];
         }
-        return nativeRequestAnimationFrame.apply(window, [ callback, ...args ]);
+        return nativeRequestAnimationFrame.apply(window, [callback, ...args]);
       };
       window.requestAnimationFrame = rafWrapper;
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
@@ -14559,7 +14953,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -14572,7 +14967,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n instanceof Function || "string" == typeof n;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -14582,22 +14982,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventRequestAnimationFrame.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14612,7 +15017,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventSetInterval(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14652,41 +15056,64 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
     function isPreventionNeeded(a) {
-      var {callback: e, delay: t, matchCallback: r, matchDelay: l} = a;
+      var {
+        callback: e,
+        delay: t,
+        matchCallback: r,
+        matchDelay: l
+      } = a;
       if (!isValidCallback(e)) return false;
       if (!isValidMatchStr(r) || l && !isValidMatchNumber(l)) return false;
-      var {isInvertedMatch: c, matchRegexp: i} = parseMatchArg(r), {isInvertedDelayMatch: n, delayMatch: s} = parseDelayArg(l), d = parseRawDelay(t), h = String(e);
+      var {
+          isInvertedMatch: c,
+          matchRegexp: i
+        } = parseMatchArg(r),
+        {
+          isInvertedDelayMatch: n,
+          delayMatch: s
+        } = parseDelayArg(l),
+        d = parseRawDelay(t),
+        h = String(e);
       return null === s ? i.test(h) !== c : r ? i.test(h) !== c && d === s !== n : d === s !== n;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -14695,7 +15122,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isNaN || window.isNaN)(N);
     }
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
@@ -14703,7 +15131,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function parseDelayArg(a) {
-      var e = null == a ? void 0 : a.startsWith("!"), t = e ? a.slice(1) : a, l = parseInt(t, 10);
+      var e = null == a ? void 0 : a.startsWith("!"),
+        t = e ? a.slice(1) : a,
+        l = parseInt(t, 10);
       return {
         isInvertedDelayMatch: e,
         delayMatch: nativeIsNaN(l) ? null : l
@@ -14717,7 +15147,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null != t && t.startsWith("!") && (i = t.slice(1)), isValidStrPattern(i);
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -14742,7 +15173,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var e = Math.floor(parseInt(a, 10));
       return "number" != typeof e || nativeIsNaN(e) ? a : e;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventSetInterval.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14757,7 +15188,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventSetTimeout(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14797,31 +15227,50 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function noopFunc() {}
     function isPreventionNeeded(a) {
-      var {callback: e, delay: t, matchCallback: r, matchDelay: l} = a;
+      var {
+        callback: e,
+        delay: t,
+        matchCallback: r,
+        matchDelay: l
+      } = a;
       if (!isValidCallback(e)) return false;
       if (!isValidMatchStr(r) || l && !isValidMatchNumber(l)) return false;
-      var {isInvertedMatch: c, matchRegexp: i} = parseMatchArg(r), {isInvertedDelayMatch: n, delayMatch: s} = parseDelayArg(l), d = parseRawDelay(t), h = String(e);
+      var {
+          isInvertedMatch: c,
+          matchRegexp: i
+        } = parseMatchArg(r),
+        {
+          isInvertedDelayMatch: n,
+          delayMatch: s
+        } = parseDelayArg(l),
+        d = parseRawDelay(t),
+        h = String(e);
       return null === s ? i.test(h) !== c : r ? i.test(h) !== c && d === s !== n : d === s !== n;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
@@ -14829,24 +15278,31 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function parseDelayArg(a) {
-      var e = null == a ? void 0 : a.startsWith("!"), t = e ? a.slice(1) : a, l = parseInt(t, 10);
+      var e = null == a ? void 0 : a.startsWith("!"),
+        t = e ? a.slice(1) : a,
+        l = parseInt(t, 10);
       return {
         isInvertedDelayMatch: e,
         delayMatch: nativeIsNaN(l) ? null : l
       };
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -14865,7 +15321,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -14887,7 +15344,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var e = Math.floor(parseInt(a, 10));
       return "number" != typeof e || nativeIsNaN(e) ? a : e;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventSetTimeout.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -14902,7 +15359,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventWindowOpen(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -14924,11 +15380,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         if (!isValidStrPattern(delay)) {
           logMessage(source, `Invalid parameter: ${delay}`);
-          return nativeOpen.apply(window, [ str, ...args ]);
+          return nativeOpen.apply(window, [str, ...args]);
         }
         var searchRegexp = toRegExp(delay);
         if (match !== searchRegexp.test(str)) {
-          return nativeOpen.apply(window, [ str, ...args ]);
+          return nativeOpen.apply(window, [str, ...args]);
         }
         hit(source);
         return handleOldReplacement(replacement);
@@ -14948,7 +15404,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (match === "*") {
           shouldPrevent = true;
         } else if (isValidMatchStr(match)) {
-          var {isInvertedMatch: isInvertedMatch, matchRegexp: matchRegexp} = parseMatchArg(match);
+          var {
+            isInvertedMatch: isInvertedMatch,
+            matchRegexp: matchRegexp
+          } = parseMatchArg(match);
           shouldPrevent = matchRegexp.test(url) !== isInvertedMatch;
         } else {
           logMessage(source, `Invalid parameter: ${match}`);
@@ -14989,7 +15448,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           hit(source);
           return result;
         }
-        return nativeOpen.apply(window, [ url, ...args ]);
+        return nativeOpen.apply(window, [url, ...args]);
       };
       window.open = isNewSyntax ? newOpenWrapper : oldOpenWrapper;
       window.open.toString = nativeOpen.toString.bind(nativeOpen);
@@ -14997,16 +15456,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -15023,17 +15482,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null != t && t.startsWith("!") && (i = t.slice(1)), isValidStrPattern(i);
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -15042,7 +15506,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isNaN || window.isNaN)(N);
     }
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
@@ -15052,9 +15517,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function handleOldReplacement(e) {
       var n;
       if (e) {
-        if ("trueFunc" === e) n = trueFunc; else if (e.includes("=")) {
+        if ("trueFunc" === e) n = trueFunc;else if (e.includes("=")) {
           if (e.startsWith("{") && e.endsWith("}")) {
-            var t = e.slice(1, -1), u = substringBefore(t, "=");
+            var t = e.slice(1, -1),
+              u = substringBefore(t, "=");
             "noopFunc" === substringAfter(t, "=") && ((n = {})[u] = noopFunc);
           }
         }
@@ -15062,20 +15528,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n;
     }
     function createDecoy(e) {
-      var t, r = function(e) {
-        return e.Object = "data", e.Iframe = "src", e;
-      }({}), {replacement: n, url: o, delay: a} = e;
+      var t,
+        r = function (e) {
+          return e.Object = "data", e.Iframe = "src", e;
+        }({}),
+        {
+          replacement: n,
+          url: o,
+          delay: a
+        } = e;
       t = "obj" === n ? "object" : "iframe";
       var i = document.createElement(t);
-      return i instanceof HTMLObjectElement ? i[r.Object] = o : i instanceof HTMLIFrameElement && (i[r.Iframe] = o), 
-      i.style.setProperty("height", "1px", "important"), i.style.setProperty("position", "fixed", "important"), 
-      i.style.setProperty("top", "-1px", "important"), i.style.setProperty("width", "1px", "important"), 
-      document.body.appendChild(i), setTimeout((function() {
+      return i instanceof HTMLObjectElement ? i[r.Object] = o : i instanceof HTMLIFrameElement && (i[r.Iframe] = o), i.style.setProperty("height", "1px", "important"), i.style.setProperty("position", "fixed", "important"), i.style.setProperty("top", "-1px", "important"), i.style.setProperty("width", "1px", "important"), document.body.appendChild(i), setTimeout(function () {
         return i.remove();
-      }), 1e3 * a), i;
+      }, 1e3 * a), i;
     }
     function getPreventGetter(n) {
-      return function(t, e) {
+      return function (t, e) {
         return (!e || "closed" !== e) && ("function" == typeof n ? noopFunc : e && t[e]);
       };
     }
@@ -15083,7 +15552,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -15103,7 +15577,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var t = n.indexOf(r);
       return t < 0 ? "" : n.substring(t + r.length);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventWindowOpen.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -15118,7 +15592,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function preventXHR(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -15134,8 +15607,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var nativeOpen = window.XMLHttpRequest.prototype.open;
       var nativeGetResponseHeader = window.XMLHttpRequest.prototype.getResponseHeader;
       var nativeGetAllResponseHeaders = window.XMLHttpRequest.prototype.getAllResponseHeaders;
-      var matchedXhrRequests = new Map;
-      var xhrRequestHeaders = new Map;
+      var matchedXhrRequests = new Map();
+      var xhrRequestHeaders = new Map();
       var xhrData;
       var modifiedResponse = "";
       var modifiedResponseText = "";
@@ -15172,10 +15645,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         var storedXhrData = matchedXhrRequests.get(thisArg);
         if (thisArg.responseType === "blob") {
-          modifiedResponse = new Blob;
+          modifiedResponse = new Blob();
         }
         if (thisArg.responseType === "arraybuffer") {
-          modifiedResponse = new ArrayBuffer;
+          modifiedResponse = new ArrayBuffer();
         }
         if (customResponseText) {
           var randomText = generateRandomResponse(customResponseText);
@@ -15186,10 +15659,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             logMessage(source, `Invalid randomize parameter: '${customResponseText}'`);
           }
         }
-        var forgedRequest = new XMLHttpRequest;
+        var forgedRequest = new XMLHttpRequest();
         var transitionReadyState = function transitionReadyState(state) {
           if (state === 2) {
-            var {responseURL: responseURL} = forgedRequest;
+            var {
+              responseURL: responseURL
+            } = forgedRequest;
             Object.defineProperties(thisArg, {
               responseURL: {
                 value: responseURL || storedXhrData.url,
@@ -15198,7 +15673,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             });
           }
           if (state === 4) {
-            var {responseXML: responseXML} = forgedRequest;
+            var {
+              responseXML: responseXML
+            } = forgedRequest;
             Object.defineProperties(thisArg, {
               readyState: {
                 value: 4,
@@ -15236,7 +15713,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           var stateEvent = new Event("readystatechange");
           thisArg.dispatchEvent(stateEvent);
         };
-        forgedRequest.addEventListener("readystatechange", (function() {
+        forgedRequest.addEventListener("readystatechange", function () {
           if (matchedXhrRequests.get(thisArg).shouldFireFirstStage) {
             transitionReadyState(1);
           }
@@ -15247,20 +15724,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           var progressEvent = new ProgressEvent("progress");
           thisArg.dispatchEvent(progressEvent);
           transitionReadyState(4);
-        }));
-        setTimeout((function() {
+        });
+        setTimeout(function () {
           var loadEvent = new ProgressEvent("load");
           thisArg.dispatchEvent(loadEvent);
           var loadEndEvent = new ProgressEvent("loadend");
           thisArg.dispatchEvent(loadEndEvent);
-        }), 1);
-        nativeOpen.apply(forgedRequest, [ storedXhrData.method, storedXhrData.url ]);
+        }, 1);
+        nativeOpen.apply(forgedRequest, [storedXhrData.method, storedXhrData.url]);
         var collectedHeaders = xhrRequestHeaders.get(thisArg) || [];
-        collectedHeaders.forEach((function(header) {
+        collectedHeaders.forEach(function (header) {
           var name = header[0];
           var value = header[1];
           forgedRequest.setRequestHeader(name, value);
-        }));
+        });
         return undefined;
       };
       var getHeaderWrapper = function getHeaderWrapper(target, thisArg, args) {
@@ -15272,10 +15749,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return null;
         }
         var searchHeaderName = args[0].toLowerCase();
-        var matchedHeader = collectedHeaders.find((function(header) {
+        var matchedHeader = collectedHeaders.find(function (header) {
           var headerName = header[0].toLowerCase();
           return headerName === searchHeaderName;
-        }));
+        });
         return matchedHeader ? matchedHeader[1] : null;
       };
       var getAllHeadersWrapper = function getAllHeadersWrapper(target, thisArg) {
@@ -15286,11 +15763,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (!collectedHeaders.length) {
           return "";
         }
-        var allHeadersStr = collectedHeaders.map((function(header) {
+        var allHeadersStr = collectedHeaders.map(function (header) {
           var headerName = header[0];
           var headerValue = header[1];
           return `${headerName.toLowerCase()}: ${headerValue}`;
-        })).join("\r\n");
+        }).join("\r\n");
         return allHeadersStr;
       };
       var openHandler = {
@@ -15313,26 +15790,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map((function(t) {
-        var n = t[0], e = t[1], o = e;
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      })).join(" ") : String(t);
+      }).join(" ") : String(t);
     }
     function generateRandomResponse(e) {
       var t = e;
       if ("true" === t) return t = Math.random().toString(36).slice(-10);
       t = t.replace("length:", "");
       if (!/^\d+-\d+$/.test(t)) return null;
-      var n = getNumberFromString(t.split("-")[0]), r = getNumberFromString(t.split("-")[1]);
+      var n = getNumberFromString(t.split("-")[0]),
+        r = getNumberFromString(t.split("-")[1]);
       if (!nativeIsFinite(n) || !nativeIsFinite(r)) return null;
       if (n > r) {
         var i = n;
@@ -15344,13 +15823,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
@@ -15364,30 +15845,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -15414,29 +15906,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function getRandomIntInclusive(t, n) {
       return t = Math.ceil(t), n = Math.floor(n), Math.floor(Math.random() * (n - t + 1) + t);
@@ -15445,7 +15938,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       for (var t = "", a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = 0; n < r; n += 1) t += a.charAt(Math.floor(76 * Math.random()));
       return t;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       preventXHR.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -15460,7 +15953,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function removeAttr(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -15486,12 +15978,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           logMessage(source, `Invalid selector arg: '${selector}'`);
         }
         var removed = false;
-        nodes.forEach((function(node) {
-          attrs.forEach((function(attr) {
+        nodes.forEach(function (node) {
+          attrs.forEach(function (attr) {
             node.removeAttribute(attr);
             removed = true;
-          }));
-        }));
+          });
+        });
         if (removed) {
           hit(source);
         }
@@ -15527,37 +16019,44 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function parseFlags(t) {
-      var e = "asap", n = "complete", a = "stay", r = new Set([ e, n, a ]), s = new Set(t.trim().split(" ").filter((function(t) {
-        return r.has(t);
-      })));
+      var e = "asap",
+        n = "complete",
+        a = "stay",
+        r = new Set([e, n, a]),
+        s = new Set(t.trim().split(" ").filter(function (t) {
+          return r.has(t);
+        }));
       return {
         ASAP: e,
         COMPLETE: n,
@@ -15568,22 +16067,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper4 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper4(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper4 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper4(...r), r = null);
+          }, t));
+        };
       return _wrapper4;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       removeAttr.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -15598,7 +16104,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function removeClass(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -15615,12 +16120,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       classNames = classNames.split(/\s*\|\s*/);
       var selectors = [];
       if (!selector) {
-        selectors = classNames.map((function(className) {
+        selectors = classNames.map(function (className) {
           return `.${className}`;
-        }));
+        });
       }
       var removeClassHandler = function removeClassHandler() {
-        var nodes = new Set;
+        var nodes = new Set();
         if (selector) {
           var foundNodes = [];
           try {
@@ -15628,32 +16133,32 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           } catch (e) {
             logMessage(source, `Invalid selector arg: '${selector}'`);
           }
-          foundNodes.forEach((function(n) {
+          foundNodes.forEach(function (n) {
             return nodes.add(n);
-          }));
+          });
         } else if (selectors.length > 0) {
-          selectors.forEach((function(s) {
+          selectors.forEach(function (s) {
             var elements = document.querySelectorAll(s);
             for (var i = 0; i < elements.length; i += 1) {
               var element = elements[i];
               nodes.add(element);
             }
-          }));
+          });
         }
         var removed = false;
-        nodes.forEach((function(node) {
-          classNames.forEach((function(className) {
+        nodes.forEach(function (node) {
+          classNames.forEach(function (className) {
             if (node.classList.contains(className)) {
               node.classList.remove(className);
               removed = true;
             }
-          }));
-        }));
+          });
+        });
         if (removed) {
           hit(source);
         }
       };
-      var CLASS_ATTR_NAME = [ "class" ];
+      var CLASS_ATTR_NAME = ["class"];
       var flags = parseFlags(applying);
       var run = function run() {
         removeClassHandler();
@@ -15685,44 +16190,56 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function parseFlags(t) {
-      var e = "asap", n = "complete", a = "stay", r = new Set([ e, n, a ]), s = new Set(t.trim().split(" ").filter((function(t) {
-        return r.has(t);
-      })));
+      var e = "asap",
+        n = "complete",
+        a = "stay",
+        r = new Set([e, n, a]),
+        s = new Set(t.trim().split(" ").filter(function (t) {
+          return r.has(t);
+        }));
       return {
         ASAP: e,
         COMPLETE: n,
@@ -15733,15 +16250,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper5 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper5(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper5 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper5(...r), r = null);
+          }, t));
+        };
       return _wrapper5;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       removeClass.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -15756,7 +16275,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function removeCookie(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -15782,7 +16300,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         hit(source);
       };
       var rmCookie = function rmCookie() {
-        document.cookie.split(";").forEach((function(cookieStr) {
+        document.cookie.split(";").forEach(function (cookieStr) {
           var pos = cookieStr.indexOf("=");
           if (pos === -1) {
             return;
@@ -15798,23 +16316,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               removeCookieFromHost(cookieName, hostName);
             }
           }
-        }));
+        });
       };
       rmCookie();
       window.addEventListener("beforeunload", rmCookie);
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -15822,15 +16345,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       removeCookie.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -15845,7 +16367,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function removeInShadowDom(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -15865,11 +16386,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var hostElements = !baseSelector ? findHostElements(document.documentElement) : document.querySelectorAll(baseSelector);
         var _loop = function _loop() {
           var isRemoved = false;
-          var {targets: targets, innerHosts: innerHosts} = pierceShadowDom(selector, hostElements);
-          targets.forEach((function(targetEl) {
+          var {
+            targets: targets,
+            innerHosts: innerHosts
+          } = pierceShadowDom(selector, hostElements);
+          targets.forEach(function (targetEl) {
             removeElement(targetEl);
             isRemoved = true;
-          }));
+          });
           if (isRemoved) {
             hit(source);
           }
@@ -15885,48 +16409,53 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function findHostElements(o) {
       var n = [];
-      o && o.querySelectorAll("*").forEach((function(o) {
+      o && o.querySelectorAll("*").forEach(function (o) {
         o.shadowRoot && n.push(o);
-      }));
+      });
       return n;
     }
     function pierceShadowDom(e, t) {
-      var c = [], l = [];
-      t.forEach((function(t) {
+      var c = [],
+        l = [];
+      t.forEach(function (t) {
         var o = t.querySelectorAll(e);
         c = c.concat([].slice.call(o));
-        var r = t.shadowRoot, a = r.querySelectorAll(e);
+        var r = t.shadowRoot,
+          a = r.querySelectorAll(e);
         c = c.concat([].slice.call(a)), l.push(findHostElements(r));
-      }));
+      });
       var o = flatten(l);
       return {
         targets: c,
@@ -15935,27 +16464,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function flatten(r) {
       var n = [];
-      r.forEach((function(r) {
+      r.forEach(function (r) {
         return n.push(r);
-      }));
-      for (var t = []; n.length; ) {
+      });
+      for (var t = []; n.length;) {
         var u = n.pop();
-        Array.isArray(u) ? u.forEach((function(r) {
+        Array.isArray(u) ? u.forEach(function (r) {
           return n.push(r);
-        })) : t.push(u);
+        }) : t.push(u);
       }
       return t.reverse();
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper6 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper6(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper6 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper6(...r), r = null);
+          }, t));
+        };
       return _wrapper6;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       removeInShadowDom.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -15970,7 +16501,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function removeNodeText(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -15980,58 +16510,66 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function removeNodeText(source, nodeName, textMatch, parentSelector) {
-      var {selector: selector, nodeNameMatch: nodeNameMatch, textContentMatch: textContentMatch} = parseNodeTextParams(nodeName, textMatch);
+      var {
+        selector: selector,
+        nodeNameMatch: nodeNameMatch,
+        textContentMatch: textContentMatch
+      } = parseNodeTextParams(nodeName, textMatch);
       var handleNodes = function handleNodes(nodes) {
-        return nodes.forEach((function(node) {
+        return nodes.forEach(function (node) {
           var shouldReplace = isTargetNode(node, nodeNameMatch, textContentMatch);
           if (shouldReplace) {
             var ALL_TEXT_PATTERN = /^[^]*$/;
             var REPLACEMENT = "";
             replaceNodeText(source, node, ALL_TEXT_PATTERN, REPLACEMENT);
           }
-        }));
+        });
       };
       if (document.documentElement) {
         handleExistingNodes(selector, handleNodes, parentSelector);
       }
-      observeDocumentWithTimeout((function(mutations) {
+      observeDocumentWithTimeout(function (mutations) {
         return handleMutations(mutations, handleNodes, selector, parentSelector);
-      }));
+      });
     }
     function observeDocumentWithTimeout(e) {
       var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
-        subtree: true,
-        childList: true
-      }, n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1e4, o = new MutationObserver((function(n, o) {
-        o.disconnect(), e(n, o), o.observe(document.documentElement, t);
-      }));
-      o.observe(document.documentElement, t), "number" == typeof n && setTimeout((function() {
+          subtree: true,
+          childList: true
+        },
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1e4,
+        o = new MutationObserver(function (n, o) {
+          o.disconnect(), e(n, o), o.observe(document.documentElement, t);
+        });
+      o.observe(document.documentElement, t), "number" == typeof n && setTimeout(function () {
         return o.disconnect();
-      }), n);
+      }, n);
     }
     function handleExistingNodes(e, n, o) {
-      (o ? document.querySelectorAll(o) : [ document ]).forEach((function(o) {
-        return function(o) {
+      (o ? document.querySelectorAll(o) : [document]).forEach(function (o) {
+        return function (o) {
           if ("#text" === e) {
-            var r = nodeListToArray(o.childNodes).filter((function(e) {
+            var r = nodeListToArray(o.childNodes).filter(function (e) {
               return e.nodeType === Node.TEXT_NODE;
-            }));
+            });
             n(r);
           } else {
             var t = nodeListToArray(o.querySelectorAll(e));
             n(t);
           }
         }(o);
-      }));
+      });
     }
     function handleMutations(n, d, e, o) {
       var t = getAddedNodes(n);
-      e && o ? t.forEach((function() {
+      e && o ? t.forEach(function () {
         handleExistingNodes(e, d, o);
-      })) : d(t);
+      }) : d(t);
     }
     function replaceNodeText(e, t, n, r) {
-      var {textContent: a} = t;
+      var {
+        textContent: a
+      } = t;
       if (a) {
         var i = a.replace(n, r);
         if ("SCRIPT" === t.nodeName) i = getTrustedTypesApi(e).createScript(i);
@@ -16039,11 +16577,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isTargetNode(e, t, n) {
-      var {nodeName: o, textContent: s} = e, a = o.toLowerCase();
+      var {
+          nodeName: o,
+          textContent: s
+        } = e,
+        a = o.toLowerCase();
       return null !== s && "" !== s && (t instanceof RegExp ? t.test(a) : t === a) && (n instanceof RegExp ? n.test(s) : s.includes(n));
     }
     function parseNodeTextParams(t, e) {
-      var a, n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : null, r = "/", s = !(t.startsWith(r) && t.endsWith(r)), o = s ? t : "*", h = s ? t : toRegExp(t), i = e.startsWith(r) ? toRegExp(e) : e;
+      var a,
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : null,
+        r = "/",
+        s = !(t.startsWith(r) && t.endsWith(r)),
+        o = s ? t : "*",
+        h = s ? t : toRegExp(t),
+        i = e.startsWith(r) ? toRegExp(e) : e;
       return n && (a = n.startsWith(r) ? toRegExp(n) : n), {
         selector: o,
         nodeNameMatch: h,
@@ -16054,10 +16602,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -16067,33 +16614,44 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n;
     }
     function getAddedNodes(d) {
-      for (var e = [], r = 0; r < d.length; r += 1) for (var {addedNodes: n} = d[r], o = 0; o < n.length; o += 1) e.push(n[o]);
+      for (var e = [], r = 0; r < d.length; r += 1) for (var {
+          addedNodes: n
+        } = d[r], o = 0; o < n.length; o += 1) e.push(n[o]);
       return e;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getTrustedTypesApi(t) {
-      var r, e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
+      var r,
+        e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
       if (e) return e;
-      var n = "AGPolicy", i = window.trustedTypes, u = !!i, c = {
-        HTML: "TrustedHTML",
-        Script: "TrustedScript",
-        ScriptURL: "TrustedScriptURL"
-      };
+      var n = "AGPolicy",
+        i = window.trustedTypes,
+        u = !!i,
+        c = {
+          HTML: "TrustedHTML",
+          Script: "TrustedScript",
+          ScriptURL: "TrustedScriptURL"
+        };
       if (!u) return {
         name: n,
         isSupported: u,
@@ -16133,36 +16691,42 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       var o = i.createPolicy(n, {
-        createHTML: function createHTML(t) {
-          return t;
+          createHTML: function createHTML(t) {
+            return t;
+          },
+          createScript: function createScript(t) {
+            return t;
+          },
+          createScriptURL: function createScriptURL(t) {
+            return t;
+          }
+        }),
+        createHTML = function createHTML(t) {
+          return o.createHTML(t);
         },
-        createScript: function createScript(t) {
-          return t;
+        createScript = function createScript(t) {
+          return o.createScript(t);
         },
-        createScriptURL: function createScriptURL(t) {
-          return t;
-        }
-      }), createHTML = function createHTML(t) {
-        return o.createHTML(t);
-      }, createScript = function createScript(t) {
-        return o.createScript(t);
-      }, createScriptURL = function createScriptURL(t) {
-        return o.createScriptURL(t);
-      }, create = function create(t, r) {
-        switch (t) {
-         case c.HTML:
-          return createHTML(r);
-  
-         case c.Script:
-          return createScript(r);
-  
-         case c.ScriptURL:
-          return createScriptURL(r);
-  
-         default:
-          return r;
-        }
-      }, p = i.getAttributeType.bind(i), T = i.getPropertyType.bind(i), s = i.isHTML.bind(i), a = i.isScript.bind(i), f = i.isScriptURL.bind(i);
+        createScriptURL = function createScriptURL(t) {
+          return o.createScriptURL(t);
+        },
+        create = function create(t, r) {
+          switch (t) {
+            case c.HTML:
+              return createHTML(r);
+            case c.Script:
+              return createScript(r);
+            case c.ScriptURL:
+              return createScriptURL(r);
+            default:
+              return r;
+          }
+        },
+        p = i.getAttributeType.bind(i),
+        T = i.getPropertyType.bind(i),
+        s = i.isHTML.bind(i),
+        a = i.isScript.bind(i),
+        f = i.isScriptURL.bind(i);
       return {
         name: n,
         isSupported: u,
@@ -16186,7 +16750,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         isScriptURL: f
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       removeNodeText.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -16201,7 +16765,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function removeRequestQueryParameter(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -16227,13 +16790,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var regexpParamsToRemove;
       try {
         if (parametersToRemove.startsWith("/")) {
-          regexpParamsToRemove = [ toRegExp(parametersToRemove) ];
+          regexpParamsToRemove = [toRegExp(parametersToRemove)];
         } else {
           var SEPARATOR_MARK = ",";
           var paramsToRemove = splitByNotEscapedDelimiter(parametersToRemove, SEPARATOR_MARK);
-          regexpParamsToRemove = paramsToRemove.map((function(param) {
+          regexpParamsToRemove = paramsToRemove.map(function (param) {
             return toRegExp(param);
-          }));
+          });
         }
       } catch (e) {
         logMessage(source, `Invalid parameter pattern: ${parametersToRemove}`);
@@ -16244,16 +16807,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           var modified = false;
           var urlObj = new URL(url, window.location.origin);
           var paramNames = Array.from(urlObj.searchParams.keys());
-          paramNames.forEach((function(paramName) {
-            var shouldRemove = regexpParamsToRemove.some((function(regex) {
+          paramNames.forEach(function (paramName) {
+            var shouldRemove = regexpParamsToRemove.some(function (regex) {
               regex.lastIndex = 0;
               return regex.test(paramName);
-            }));
+            });
             if (shouldRemove) {
               urlObj.searchParams.delete(paramName);
               modified = true;
             }
-          }));
+          });
           if (modified) {
             hit(source);
             return urlObj.toString();
@@ -16332,49 +16895,57 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function splitByNotEscapedDelimiter(t, n) {
-      for (var e = [], i = "", g = 0; g < t.length; ) {
+      for (var e = [], i = "", g = 0; g < t.length;) {
         if ("\\" === t[g] && g + 1 < t.length) if (t.substring(g + 1, g + 1 + n.length) === n) {
           i += n, g += 1 + n.length;
           continue;
         }
-        t.substring(g, g + n.length) === n ? (e.push(i), i = "", g += n.length) : (i += t[g], 
-        g += 1);
+        t.substring(g, g + n.length) === n ? (e.push(i), i = "", g += n.length) : (i += t[g], g += 1);
       }
       return e.push(i), e;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       removeRequestQueryParameter.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -16389,7 +16960,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setAttr(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -16403,7 +16973,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!selector || !attr) {
         return;
       }
-      var allowedValues = [ "true", "false" ];
+      var allowedValues = ["true", "false"];
       var shouldCopyValue = value.startsWith("[") && value.endsWith("]");
       var isValidValue = value.length === 0 || !nativeIsNaN(parseInt(value, 10)) && parseInt(value, 10) >= 0 && parseInt(value, 10) <= 32767 || allowedValues.includes(value.toLowerCase());
       if (!shouldCopyValue && !isValidValue) {
@@ -16421,42 +16991,47 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         };
       }
       setAttributeBySelector(source, selector, attr, value, attributeHandler);
-      observeDOMChanges((function() {
+      observeDOMChanges(function () {
         return setAttributeBySelector(source, selector, attr, value, attributeHandler);
-      }), true);
+      }, true);
     }
     function setAttributeBySelector(e, t, l, o) {
-      var r, c = arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : defaultAttributeSetter;
+      var r,
+        c = arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : defaultAttributeSetter;
       try {
         r = document.querySelectorAll(t);
       } catch (l) {
         return void logMessage(e, `Failed to find elements matching selector "${t}"`);
       }
       if (r && 0 !== r.length) try {
-        r.forEach((function(e) {
+        r.forEach(function (e) {
           return c(e, l, o);
-        })), hit(e);
+        }), hit(e);
       } catch (t) {
         logMessage(e, `Failed to set [${l}="${o}"] to each of selected elements.`);
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function nativeIsNaN(N) {
@@ -16469,33 +17044,39 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t.setAttribute(e, r);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper7 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper7(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper7 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper7(...r), r = null);
+          }, t));
+        };
       return _wrapper7;
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setAttr.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -16510,7 +17091,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setConstant(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -16523,7 +17103,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var stack = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
       var valueWrapper = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
       var setProxyTrap = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : false;
-      var uboAliases = [ "set-constant.js", "ubo-set-constant.js", "set.js", "ubo-set.js", "ubo-set-constant", "ubo-set" ];
+      var uboAliases = ["set-constant.js", "ubo-set-constant.js", "set.js", "ubo-set.js", "ubo-set-constant", "ubo-set"];
       if (uboAliases.includes(source.name)) {
         if (stack.length !== 1 && !getNumberFromString(stack)) {
           valueWrapper = stack;
@@ -16582,17 +17162,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       } else {
         return;
       }
-      var valueWrapperNames = [ "asFunction", "asCallback", "asResolved", "asRejected" ];
+      var valueWrapperNames = ["asFunction", "asCallback", "asResolved", "asRejected"];
       if (valueWrapperNames.includes(valueWrapper)) {
         var valueWrappersMap = {
           asFunction(v) {
-            return function() {
+            return function () {
               return v;
             };
           },
           asCallback(v) {
-            return function() {
-              return function() {
+            return function () {
+              return function () {
                 return v;
               };
             };
@@ -16648,13 +17228,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 isProxyTrapSet = true;
                 a = new Proxy(a, {
                   get: function get(target, propertyKey, val) {
-                    propertiesToCheck.reduce((function(object, currentProp, index, array) {
+                    propertiesToCheck.reduce(function (object, currentProp, index, array) {
                       var currentObj = object === null || object === void 0 ? void 0 : object[currentProp];
                       if (index === array.length - 1 && currentObj !== constantValue) {
                         object[currentProp] = constantValue;
                       }
                       return currentObj || object;
-                    }), target);
+                    }, target);
                     return Reflect.get(target, propertyKey, val);
                   }
                 });
@@ -16682,67 +17262,85 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function createSetChainPropAccessor(t) {
-      var {source: e, stack: r, mustCancel: i, trapProp: n, getConstantValue: a, setConstantValue: s} = t, _setChainPropAccess2 = function _setChainPropAccess(t, c) {
-        var o = getPropertyInChain(t, c), {base: u, prop: d, chain: f} = o, h = {
-          factValue: void 0,
-          init(t) {
-            return this.factValue = t, true;
-          },
-          get() {
-            return this.factValue;
-          },
-          set(t) {
-            this.factValue !== t && (this.factValue = t, t instanceof Object && _setChainPropAccess2(t, f));
-          }
-        }, l = {
-          factValue: void 0,
-          descriptorAddon: getDescriptorAddon(),
-          init(t) {
-            return !i(t) && (this.factValue = t, true);
-          },
-          get() {
-            if (!r) return hit(e), a();
-            if (!this.descriptorAddon.isAbortingSuspended) {
-              this.descriptorAddon.isAbortingSuspended = true;
-              var t = false;
-              try {
-                t = matchStackTrace(r, (new Error).stack || "");
-              } catch (t) {
-                return this.descriptorAddon.isAbortingSuspended = false, this.factValue;
+      var {
+          source: e,
+          stack: r,
+          mustCancel: i,
+          trapProp: n,
+          getConstantValue: a,
+          setConstantValue: s
+        } = t,
+        _setChainPropAccess2 = function _setChainPropAccess(t, c) {
+          var o = getPropertyInChain(t, c),
+            {
+              base: u,
+              prop: d,
+              chain: f
+            } = o,
+            h = {
+              factValue: void 0,
+              init(t) {
+                return this.factValue = t, true;
+              },
+              get() {
+                return this.factValue;
+              },
+              set(t) {
+                this.factValue !== t && (this.factValue = t, t instanceof Object && _setChainPropAccess2(t, f));
               }
-              if (this.descriptorAddon.isAbortingSuspended = false, t) return hit(e), a();
-            }
-            return this.factValue;
-          },
-          set(t) {
-            i(t) ? s(t) : this.factValue = t;
-          }
+            },
+            l = {
+              factValue: void 0,
+              descriptorAddon: getDescriptorAddon(),
+              init(t) {
+                return !i(t) && (this.factValue = t, true);
+              },
+              get() {
+                if (!r) return hit(e), a();
+                if (!this.descriptorAddon.isAbortingSuspended) {
+                  this.descriptorAddon.isAbortingSuspended = true;
+                  var t = false;
+                  try {
+                    t = matchStackTrace(r, new Error().stack || "");
+                  } catch (t) {
+                    return this.descriptorAddon.isAbortingSuspended = false, this.factValue;
+                  }
+                  if (this.descriptorAddon.isAbortingSuspended = false, t) return hit(e), a();
+                }
+                return this.factValue;
+              },
+              set(t) {
+                i(t) ? s(t) : this.factValue = t;
+              }
+            };
+          if (f) {
+            if (void 0 === u || null !== u[d]) {
+              (u instanceof Object || "object" == typeof u) && isEmptyObject(u) && n(u, d, true, h);
+              var p = t[d];
+              (p instanceof Object || "object" == typeof p && null !== p) && _setChainPropAccess2(p, f), n(u, d, true, h);
+            } else n(u, d, true, h);
+          } else n(u, d, false, l);
         };
-        if (f) {
-          if (void 0 === u || null !== u[d]) {
-            (u instanceof Object || "object" == typeof u) && isEmptyObject(u) && n(u, d, true, h);
-            var p = t[d];
-            (p instanceof Object || "object" == typeof p && null !== p) && _setChainPropAccess2(p, f), 
-            n(u, d, true, h);
-          } else n(u, d, true, h);
-        } else n(u, d, false, l);
-      };
       return _setChainPropAccess2;
     }
     function getNumberFromString(n) {
@@ -16766,13 +17364,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function throwFunc() {
-      throw new Error;
+      throw new Error();
     }
     function noopPromiseReject() {
       return Promise.reject();
     }
     function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}", t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "", s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
       if ("undefined" != typeof Response) {
         var n = new Response(e, {
           headers: {
@@ -16814,30 +17414,38 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isNaN || window.isNaN)(N);
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -16845,22 +17453,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -16880,9 +17494,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -16918,11 +17532,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function isEmptyObject(t) {
@@ -16944,7 +17558,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setConstant.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -16959,7 +17573,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setCookie(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -16995,16 +17608,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -17016,7 +17633,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getLimitedCookieValue(e) {
       if (!e) return null;
       var n;
-      if (new Set([ "true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever" ]).has(e.toLowerCase())) n = e; else if ("emptyArr" === e) n = "[]"; else if ("emptyObj" === e) n = "{}"; else {
+      if (new Set(["true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever"]).has(e.toLowerCase())) n = e;else if ("emptyArr" === e) n = "[]";else if ("emptyObj" === e) n = "{}";else {
         if (!/^\d+$/.test(e)) return null;
         if (n = parseFloat(e), nativeIsNaN(n)) return null;
         if (Math.abs(n) < 0 || Math.abs(n) > 32767) return null;
@@ -17024,14 +17641,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n;
     }
     function serializeCookie(e, o, i) {
-      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "", t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
+      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "",
+        t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
       if (!t && `${o}`.includes(";") || e.includes(";")) return null;
       var r = `${e}=${t ? encodeURIComponent(o) : o}`;
-      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), 
-      r;
+      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), r;
       var s = getCookiePath(i);
-      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), 
-      r;
+      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), r;
     }
     function isValidCookiePath(n) {
       return "/" === n || "none" === n;
@@ -17039,7 +17655,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getCookiePath(t) {
       return "/" === t ? "path=/" : "";
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setCookie.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -17054,7 +17670,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setCookieReload(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -17096,16 +17711,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -17115,21 +17734,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isNaN || window.isNaN)(N);
     }
     function isCookieSetWithValue(e, t, r) {
-      return e.split(";").some((function(e) {
+      return e.split(";").some(function (e) {
         var n = e.indexOf("=");
         if (-1 === n) return false;
-        var i = e.slice(0, n).trim(), a = e.slice(n + 1).trim();
-        if (new Set([ "$now$", "$currentDate$", "$currentISODate$" ]).has(r)) {
-          var u = Date.now(), s = /^\d+$/.test(a) ? parseInt(a, 10) : new Date(a).getTime();
+        var i = e.slice(0, n).trim(),
+          a = e.slice(n + 1).trim();
+        if (new Set(["$now$", "$currentDate$", "$currentISODate$"]).has(r)) {
+          var u = Date.now(),
+            s = /^\d+$/.test(a) ? parseInt(a, 10) : new Date(a).getTime();
           return t === i && s > u - 864e5;
         }
         return t === i && r === a;
-      }));
+      });
     }
     function getLimitedCookieValue(e) {
       if (!e) return null;
       var n;
-      if (new Set([ "true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever" ]).has(e.toLowerCase())) n = e; else if ("emptyArr" === e) n = "[]"; else if ("emptyObj" === e) n = "{}"; else {
+      if (new Set(["true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever"]).has(e.toLowerCase())) n = e;else if ("emptyArr" === e) n = "[]";else if ("emptyObj" === e) n = "{}";else {
         if (!/^\d+$/.test(e)) return null;
         if (n = parseFloat(e), nativeIsNaN(n)) return null;
         if (Math.abs(n) < 0 || Math.abs(n) > 32767) return null;
@@ -17137,14 +17758,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n;
     }
     function serializeCookie(e, o, i) {
-      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "", t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
+      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "",
+        t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
       if (!t && `${o}`.includes(";") || e.includes(";")) return null;
       var r = `${e}=${t ? encodeURIComponent(o) : o}`;
-      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), 
-      r;
+      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), r;
       var s = getCookiePath(i);
-      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), 
-      r;
+      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), r;
     }
     function isValidCookiePath(n) {
       return "/" === n || "none" === n;
@@ -17152,7 +17772,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getCookiePath(t) {
       return "/" === t ? "path=/" : "";
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setCookieReload.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -17167,7 +17787,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setLocalStorageItem(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -17188,7 +17807,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(source, `Invalid storage item value: '${value}'`);
         return;
       }
-      var {localStorage: localStorage} = window;
+      var {
+        localStorage: localStorage
+      } = window;
       if (validValue === "$remove$") {
         removeStorageItem(source, localStorage, key);
       } else {
@@ -17199,16 +17820,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -17229,9 +17854,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       try {
         if (o.startsWith("/") && (o.endsWith("/") || o.endsWith("/i")) && isValidStrPattern(o)) {
           var r = toRegExp(o);
-          Object.keys(t).forEach((function(e) {
+          Object.keys(t).forEach(function (e) {
             r.test(e) && t.removeItem(e);
-          }));
+          });
         } else t.removeItem(o);
       } catch (t) {
         var s = `Unable to remove storage item due to: ${t.message}`;
@@ -17241,7 +17866,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getLimitedStorageItemValue(e) {
       if ("string" != typeof e) throw new Error("Invalid value");
       var r;
-      if (new Set([ "undefined", "false", "true", "null", "", "yes", "no", "on", "off", "accept", "accepted", "reject", "rejected", "allowed", "denied", "forbidden", "forever" ]).has(e.toLowerCase())) r = e; else if ("emptyArr" === e) r = "[]"; else if ("emptyObj" === e) r = "{}"; else if (/^\d+$/.test(e)) {
+      if (new Set(["undefined", "false", "true", "null", "", "yes", "no", "on", "off", "accept", "accepted", "reject", "rejected", "allowed", "denied", "forbidden", "forever"]).has(e.toLowerCase())) r = e;else if ("emptyArr" === e) r = "[]";else if ("emptyObj" === e) r = "{}";else if (/^\d+$/.test(e)) {
         if (r = parseFloat(e), nativeIsNaN(r)) throw new Error("Invalid value");
         if (Math.abs(r) > 32767) throw new Error("Invalid value");
       } else {
@@ -17251,7 +17876,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return r;
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -17261,17 +17887,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -17279,7 +17910,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function escapeRegExp(e) {
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setLocalStorageItem.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -17294,7 +17925,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setPopadsDummy(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -17324,15 +17954,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setPopadsDummy.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -17347,7 +17976,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function setSessionStorageItem(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -17368,7 +17996,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(source, `Invalid storage item value: '${value}'`);
         return;
       }
-      var {sessionStorage: sessionStorage} = window;
+      var {
+        sessionStorage: sessionStorage
+      } = window;
       if (validValue === "$remove$") {
         removeStorageItem(source, sessionStorage, key);
       } else {
@@ -17379,16 +18009,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -17409,9 +18043,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       try {
         if (o.startsWith("/") && (o.endsWith("/") || o.endsWith("/i")) && isValidStrPattern(o)) {
           var r = toRegExp(o);
-          Object.keys(t).forEach((function(e) {
+          Object.keys(t).forEach(function (e) {
             r.test(e) && t.removeItem(e);
-          }));
+          });
         } else t.removeItem(o);
       } catch (t) {
         var s = `Unable to remove storage item due to: ${t.message}`;
@@ -17421,7 +18055,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getLimitedStorageItemValue(e) {
       if ("string" != typeof e) throw new Error("Invalid value");
       var r;
-      if (new Set([ "undefined", "false", "true", "null", "", "yes", "no", "on", "off", "accept", "accepted", "reject", "rejected", "allowed", "denied", "forbidden", "forever" ]).has(e.toLowerCase())) r = e; else if ("emptyArr" === e) r = "[]"; else if ("emptyObj" === e) r = "{}"; else if (/^\d+$/.test(e)) {
+      if (new Set(["undefined", "false", "true", "null", "", "yes", "no", "on", "off", "accept", "accepted", "reject", "rejected", "allowed", "denied", "forbidden", "forever"]).has(e.toLowerCase())) r = e;else if ("emptyArr" === e) r = "[]";else if ("emptyObj" === e) r = "{}";else if (/^\d+$/.test(e)) {
         if (r = parseFloat(e), nativeIsNaN(r)) throw new Error("Invalid value");
         if (Math.abs(r) > 32767) throw new Error("Invalid value");
       } else {
@@ -17431,7 +18065,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return r;
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -17441,17 +18076,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -17459,7 +18099,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function escapeRegExp(e) {
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       setSessionStorageItem.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -17474,7 +18114,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function spoofCSS(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -17487,7 +18126,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!selectors) {
         return;
       }
-      var uboAliases = [ "spoof-css.js", "ubo-spoof-css.js", "ubo-spoof-css" ];
+      var uboAliases = ["spoof-css.js", "ubo-spoof-css.js", "ubo-spoof-css"];
       function convertToCamelCase(cssProperty) {
         if (!cssProperty.includes("-")) {
           return cssProperty;
@@ -17498,9 +18137,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return `${firstPart}${secondPart[0].toUpperCase()}${secondPart.slice(1)}`;
       }
       var shouldDebug = !!(cssPropertyName === "debug" && cssPropertyValue);
-      var propToValueMap = new Map;
+      var propToValueMap = new Map();
       if (uboAliases.includes(source.name)) {
-        var {args: args} = source;
+        var {
+          args: args
+        } = source;
         var arrayOfProperties = [];
         var isDebug = args.at(-2);
         if (isDebug === "debug") {
@@ -17554,7 +18195,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         toString.toString = toStringOfToString;
         return toString;
       };
-      var propsToBindSet = new Set([ "__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__" ]);
+      var propsToBindSet = new Set(["__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__"]);
       var getter = function getter(target, prop, receiver) {
         hit(source);
         if (prop === "toString") {
@@ -17619,7 +18260,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (!thisArg.matches(selectors)) {
           return rect;
         }
-        var {x: x, y: y, height: height, width: width} = rect;
+        var {
+          x: x,
+          y: y,
+          height: height,
+          width: width
+        } = rect;
         var newDOMRect = new window.DOMRect(x, y, width, height);
         if (propToValueMap.has("top")) {
           setRectValue(newDOMRect, "top", propToValueMap.get("top"));
@@ -17651,15 +18297,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       spoofCSS.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -17674,7 +18319,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedClickElement(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -17705,13 +18349,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var COLON = ":";
       var EXTRA_MATCH_DELIMITER = /(,\s*){1}(?=!?cookie:|!?localStorage:|containsText:)/;
       var sleep = function sleep(delayMs) {
-        return new Promise((function(resolve) {
+        return new Promise(function (resolve) {
           setTimeout(resolve, delayMs);
-        }));
+        });
       };
       spoofClickEventsIsTrusted();
-      var closedShadowRoots = new WeakMap;
-      var bridgeObservers = new Set;
+      var closedShadowRoots = new WeakMap();
+      var bridgeObservers = new Set();
       if (selectors.includes(SHADOW_COMBINATOR)) {
         var attachShadowWrapper = function attachShadowWrapper(target, thisArg, argumentsList) {
           var _argumentsList$;
@@ -17720,12 +18364,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           if (mode === "closed") {
             closedShadowRoots.set(thisArg, shadowRoot);
           }
-          var bridgeObserver = new MutationObserver((function(mutations) {
+          var bridgeObserver = new MutationObserver(function (mutations) {
             triggerMainObserver();
-            mutations.forEach((function(mutation) {
+            mutations.forEach(function (mutation) {
               bridgeIframeLoads(mutation.addedNodes);
-            }));
-          }));
+            });
+          });
           bridgeObserver.observe(shadowRoot, {
             childList: true,
             subtree: true
@@ -17739,9 +18383,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         window.Element.prototype.attachShadow = new Proxy(window.Element.prototype.attachShadow, attachShadowHandler);
       }
       var disconnectBridgeObservers = function disconnectBridgeObservers() {
-        bridgeObservers.forEach((function(obs) {
+        bridgeObservers.forEach(function (obs) {
           return obs.disconnect();
-        }));
+        });
         bridgeObservers.clear();
       };
       var observerTimeoutMs = DEFAULT_OBSERVER_TIMEOUT_SEC * 1e3;
@@ -17773,28 +18417,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var isInvertedMatchCookie = false;
       var isInvertedMatchLocalStorage = false;
       if (extraMatch) {
-        var parsedExtraMatch = extraMatch.split(EXTRA_MATCH_DELIMITER).map((function(matchStr) {
+        var parsedExtraMatch = extraMatch.split(EXTRA_MATCH_DELIMITER).map(function (matchStr) {
           return matchStr.trim();
-        }));
-        parsedExtraMatch.forEach((function(matchStr) {
+        });
+        parsedExtraMatch.forEach(function (matchStr) {
           if (matchStr.includes(COOKIE_MATCH_MARKER)) {
-            var {isInvertedMatch: isInvertedMatch, matchValue: matchValue} = parseMatchArg(matchStr);
+            var {
+              isInvertedMatch: isInvertedMatch,
+              matchValue: matchValue
+            } = parseMatchArg(matchStr);
             isInvertedMatchCookie = isInvertedMatch;
             var cookieMatch = matchValue.replace(COOKIE_MATCH_MARKER, "");
             cookieMatches.push(cookieMatch);
           }
           if (matchStr.includes(LOCAL_STORAGE_MATCH_MARKER)) {
-            var {isInvertedMatch: _isInvertedMatch, matchValue: _matchValue} = parseMatchArg(matchStr);
+            var {
+              isInvertedMatch: _isInvertedMatch,
+              matchValue: _matchValue
+            } = parseMatchArg(matchStr);
             isInvertedMatchLocalStorage = _isInvertedMatch;
             var localStorageMatch = _matchValue.replace(LOCAL_STORAGE_MATCH_MARKER, "");
             localStorageMatches.push(localStorageMatch);
           }
           if (matchStr.includes(TEXT_MATCH_MARKER)) {
-            var {matchValue: _matchValue2} = parseMatchArg(matchStr);
+            var {
+              matchValue: _matchValue2
+            } = parseMatchArg(matchStr);
             var textMatch = _matchValue2.replace(TEXT_MATCH_MARKER, "");
             textMatches = textMatch;
           }
-        }));
+        });
       }
       if (cookieMatches.length > 0) {
         var parsedCookieMatches = parseCookieString(cookieMatches.join(COOKIE_STRING_DELIMITER));
@@ -17803,10 +18455,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (cookieKeys.length === 0) {
           return;
         }
-        var cookiesMatched = Object.keys(parsedCookieMatches).every((function(key) {
+        var cookiesMatched = Object.keys(parsedCookieMatches).every(function (key) {
           var valueMatch = parsedCookieMatches[key] ? toRegExp(parsedCookieMatches[key]) : null;
           var keyMatch = toRegExp(key);
-          return cookieKeys.some((function(cookieKey) {
+          return cookieKeys.some(function (cookieKey) {
             var keysMatched = keyMatch.test(cookieKey);
             if (!keysMatched) {
               return false;
@@ -17819,27 +18471,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               return false;
             }
             return valueMatch.test(parsedCookieValue);
-          }));
-        }));
+          });
+        });
         var shouldRun = cookiesMatched !== isInvertedMatchCookie;
         if (!shouldRun) {
           return;
         }
       }
       if (localStorageMatches.length > 0) {
-        var localStorageMatched = localStorageMatches.every((function(str) {
+        var localStorageMatched = localStorageMatches.every(function (str) {
           var itemValue = window.localStorage.getItem(str);
           return itemValue || itemValue === "";
-        }));
+        });
         var _shouldRun = localStorageMatched !== isInvertedMatchLocalStorage;
         if (!_shouldRun) {
           return;
         }
       }
       var textMatchRegexp = textMatches ? toRegExp(textMatches) : null;
-      var selectorsSequence = selectors.split(SELECTORS_DELIMITER).map((function(selector) {
+      var selectorsSequence = selectors.split(SELECTORS_DELIMITER).map(function (selector) {
         return selector.trim();
-      }));
+      });
       var createElementObj = function createElementObj(element, selector) {
         return {
           element: element || null,
@@ -17907,15 +18559,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             }
           }
         }
-        var allElementsClicked = elementsSequence.every((function(elementObj) {
+        var allElementsClicked = elementsSequence.every(function (elementObj) {
           return elementObj.clicked === true;
-        }));
+        });
         if (allElementsClicked) {
           if (shouldReloadAfterClick && canReload) {
             canReload = false;
-            setTimeout((function() {
+            setTimeout(function () {
               window.location.reload();
-            }), reloadDelayMs);
+            }, reloadDelayMs);
           }
           hit(source);
         }
@@ -17929,7 +18581,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var fulfillAndHandleSelectors = function fulfillAndHandleSelectors() {
         var fulfilledSelectors = [];
-        selectorsSequence.forEach((function(selector, i) {
+        selectorsSequence.forEach(function (selector, i) {
           if (!selector) {
             return;
           }
@@ -17939,17 +18591,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           handleElement(element, i, selector);
           fulfilledSelectors.push(selector);
-        }));
-        selectorsSequence = selectorsSequence.map((function(selector) {
+        });
+        selectorsSequence = selectorsSequence.map(function (selector) {
           return selector && fulfilledSelectors.includes(selector) ? null : selector;
-        }));
+        });
         return selectorsSequence;
       };
       var findElements = function findElements(mutations, observer) {
         selectorsSequence = fulfillAndHandleSelectors();
-        var allSelectorsFulfilled = selectorsSequence.every((function(selector) {
+        var allSelectorsFulfilled = selectorsSequence.every(function (selector) {
           return selector === null;
-        }));
+        });
         if (allSelectorsFulfilled) {
           observer.disconnect();
           disconnectBridgeObservers();
@@ -17962,19 +18614,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           childList: true,
           subtree: true
         });
-        setTimeout((function() {
+        setTimeout(function () {
           observer.disconnect();
           disconnectBridgeObservers();
-        }), observerTimeoutMs);
+        }, observerTimeoutMs);
       };
       var checkInitialElements = function checkInitialElements() {
-        var foundElements = selectorsSequence.every((function(selector) {
+        var foundElements = selectorsSequence.every(function (selector) {
           if (!selector) {
             return false;
           }
           var element = queryShadowSelector(selector, document.documentElement, textMatchRegexp, closedShadowRoots);
           return !!element;
-        }));
+        });
         if (foundElements) {
           fulfillAndHandleSelectors();
           disconnectBridgeObservers();
@@ -17984,64 +18636,79 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       checkInitialElements();
       if (parsedDelayMs) {
-        setTimeout((function() {
+        setTimeout(function () {
           clickElementsBySequence();
           canClick = true;
-        }), parsedDelayMs);
+        }, parsedDelayMs);
       }
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function parseCookieString(i) {
-      var r = i.split(";"), n = {};
-      return r.forEach((function(i) {
-        var r, t = "", e = i.indexOf("=");
+      var r = i.split(";"),
+        n = {};
+      return r.forEach(function (i) {
+        var r,
+          t = "",
+          e = i.indexOf("=");
         -1 === e ? r = i.trim() : (r = i.slice(0, e).trim(), t = i.slice(e + 1)), n[r] = t || null;
-      })), n;
+      }), n;
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper8 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper8(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper8 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper8(...r), r = null);
+          }, t));
+        };
       return _wrapper8;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function parseMatchArg(t) {
-      var e = !!t && (null == t ? void 0 : t.startsWith("!")), a = e ? t.slice(1) : t;
+      var e = !!t && (null == t ? void 0 : t.startsWith("!")),
+        a = e ? t.slice(1) : t;
       return {
         isInvertedMatch: e,
         matchRegexp: toRegExp(a),
@@ -18049,9 +18716,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function queryShadowSelector(e) {
-      var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : document.documentElement, l = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : null, r = arguments.length > 3 ? arguments[3] : void 0, n = " >>> ", o = e.indexOf(n);
+      var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : document.documentElement,
+        l = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : null,
+        r = arguments.length > 3 ? arguments[3] : void 0,
+        n = " >>> ",
+        o = e.indexOf(n);
       if (-1 === o) return l ? findElementWithText(t, e, l) : t.querySelector(e);
-      var i = e.slice(0, o).trim(), u = t.querySelector(i);
+      var i = e.slice(0, o).trim(),
+        u = t.querySelector(i);
       if (!u) return null;
       var d = u.shadowRoot || (null == r ? void 0 : r.get(u));
       return d ? queryShadowSelector(e.slice(o + 5).trim(), d, l, r) : null;
@@ -18059,30 +18731,40 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function spoofClickEventsIsTrusted() {
       var e = Symbol.for("adg-spoof-click-isTrusted");
       if (!EventTarget.prototype[e]) {
-        var t = new Set([ "click", "mousedown", "mouseup", "mouseover", "mouseenter", "pointerdown", "pointerup", "pointerover", "pointerenter" ]), r = EventTarget.prototype.addEventListener, n = EventTarget.prototype.removeEventListener, o = new WeakMap, getMapKey = function getMapKey(e, t) {
-          return `${e}\0${function(e) {
-            var t;
-            return "boolean" == typeof e ? e : null !== (t = null == e ? void 0 : e.capture) && void 0 !== t && t;
-          }(t)}`;
-        };
-        EventTarget.prototype.addEventListener = function(e, n, i) {
+        var t = new Set(["click", "mousedown", "mouseup", "mouseover", "mouseenter", "pointerdown", "pointerup", "pointerover", "pointerenter"]),
+          r = EventTarget.prototype.addEventListener,
+          n = EventTarget.prototype.removeEventListener,
+          o = new WeakMap(),
+          getMapKey = function getMapKey(e, t) {
+            return `${e}\0${function (e) {
+              var t;
+              return "boolean" == typeof e ? e : null !== (t = null == e ? void 0 : e.capture) && void 0 !== t && t;
+            }(t)}`;
+          };
+        EventTarget.prototype.addEventListener = function (e, n, i) {
           if (!n || !t.has(e)) return r.call(this, e, n, i);
-          var a = "function" == typeof n, u = getMapKey(e, i), wrapped = function wrapped(e) {
-            var t = new Proxy(e, {
-              get(e, t) {
-                if ("isTrusted" === t) return true;
-                var r = Reflect.get(e, t);
-                return "function" == typeof r ? r.bind(e) : r;
-              }
-            });
-            return a ? n.call(this, t) : n.handleEvent.call(n, t);
-          }, s = n, v = o.get(s);
-          v || (v = new Map, o.set(s, v));
+          var a = "function" == typeof n,
+            u = getMapKey(e, i),
+            wrapped = function wrapped(e) {
+              var t = new Proxy(e, {
+                get(e, t) {
+                  if ("isTrusted" === t) return true;
+                  var r = Reflect.get(e, t);
+                  return "function" == typeof r ? r.bind(e) : r;
+                }
+              });
+              return a ? n.call(this, t) : n.handleEvent.call(n, t);
+            },
+            s = n,
+            v = o.get(s);
+          v || (v = new Map(), o.set(s, v));
           var l = v.get(u);
           return l || v.set(u, wrapped), r.call(this, e, l || wrapped, i);
-        }, EventTarget.prototype.removeEventListener = function(e, r, i) {
+        }, EventTarget.prototype.removeEventListener = function (e, r, i) {
           if (!r || !t.has(e)) return n.call(this, e, r, i);
-          var a = r, u = getMapKey(e, i), s = o.get(a);
+          var a = r,
+            u = getMapKey(e, i),
+            s = o.get(a);
           if (s && s.has(u)) {
             var v = s.get(u);
             return s.delete(u), n.call(this, e, v, i);
@@ -18092,53 +18774,57 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function triggerMainObserver() {
-      var e = `adg-${randomId()}`, t = document.documentElement;
+      var e = `adg-${randomId()}`,
+        t = document.documentElement;
       t.setAttribute(e, ""), t.removeAttribute(e);
     }
     function bridgeIframeLoads(e) {
-      Array.from(e).forEach((function(e) {
-        (e instanceof HTMLIFrameElement && e.addEventListener("load", (function() {
+      Array.from(e).forEach(function (e) {
+        (e instanceof HTMLIFrameElement && e.addEventListener("load", function () {
           triggerMainObserver();
-        })), e instanceof Element) && e.querySelectorAll("iframe").forEach((function(e) {
-          e.addEventListener("load", (function() {
+        }), e instanceof Element) && e.querySelectorAll("iframe").forEach(function (e) {
+          e.addEventListener("load", function () {
             triggerMainObserver();
-          }));
-        }));
-      }));
+          });
+        });
+      });
     }
     function clickElement(e) {
-      var n = Object.keys(e).find((function(e) {
+      var n = Object.keys(e).find(function (e) {
         return e.startsWith("__reactProps$");
-      }));
+      });
       if (n) {
         var t = e[n];
-        if (t && "function" == typeof t.onClick) return "function" == typeof t.onFocus && t.onFocus(), 
-        void t.onClick();
+        if (t && "function" == typeof t.onClick) return "function" == typeof t.onFocus && t.onFocus(), void t.onClick();
       }
-      var o = e.getBoundingClientRect(), i = o.left + o.width / 2, s = o.top + o.height / 2, c = {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        view: window,
-        clientX: i,
-        clientY: s,
-        screenX: i + window.screenX,
-        screenY: s + window.screenY,
-        button: 0,
-        buttons: 1
-      }, r = Object.assign({}, c, {
-        bubbles: false
-      }), u = Object.assign({}, c, {
-        buttons: 0
-      }), v = "function" == typeof PointerEvent;
-      v && (e.dispatchEvent(new PointerEvent("pointerover", c)), e.dispatchEvent(new PointerEvent("pointerenter", r))), 
-      e.dispatchEvent(new MouseEvent("mouseover", c)), e.dispatchEvent(new MouseEvent("mouseenter", r)), 
-      v && e.dispatchEvent(new PointerEvent("pointerdown", c)), e.dispatchEvent(new MouseEvent("mousedown", c)), 
-      e.focus(), v && e.dispatchEvent(new PointerEvent("pointerup", u)), e.dispatchEvent(new MouseEvent("mouseup", u)), 
-      e.dispatchEvent(new MouseEvent("click", u));
+      var o = e.getBoundingClientRect(),
+        i = o.left + o.width / 2,
+        s = o.top + o.height / 2,
+        c = {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          view: window,
+          clientX: i,
+          clientY: s,
+          screenX: i + window.screenX,
+          screenY: s + window.screenY,
+          button: 0,
+          buttons: 1
+        },
+        r = Object.assign({}, c, {
+          bubbles: false
+        }),
+        u = Object.assign({}, c, {
+          buttons: 0
+        }),
+        v = "function" == typeof PointerEvent;
+      v && (e.dispatchEvent(new PointerEvent("pointerover", c)), e.dispatchEvent(new PointerEvent("pointerenter", r))), e.dispatchEvent(new MouseEvent("mouseover", c)), e.dispatchEvent(new MouseEvent("mouseenter", r)), v && e.dispatchEvent(new PointerEvent("pointerdown", c)), e.dispatchEvent(new MouseEvent("mousedown", c)), e.focus(), v && e.dispatchEvent(new PointerEvent("pointerup", u)), e.dispatchEvent(new MouseEvent("mouseup", u)), e.dispatchEvent(new MouseEvent("click", u));
     }
     function doesElementContainText(t, e) {
-      var {textContent: n} = t;
+      var {
+        textContent: n
+      } = t;
       return !!n && e.test(n);
     }
     function findElementWithText(e, n, t) {
@@ -18148,7 +18834,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function randomId() {
       return Math.random().toString(36).slice(2, 9);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedClickElement.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -18163,7 +18849,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedCreateElement(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -18206,14 +18891,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logError(`Cannot parse attributePairs param: '${attributePairs}'`, e);
         return;
       }
-      attributes.forEach((function(attr) {
+      attributes.forEach(function (attr) {
         try {
           var trustedValue = trustedTypesApi.convertAttributeToTrusted(tagName, attr.name, attr.value);
           element.setAttribute(attr.name, trustedValue);
         } catch (e) {
           logError(`Cannot set attribute '${attr.name}' with value '${attr.value}'`, e);
         }
-      }));
+      });
       var timerId;
       var elementCreated = false;
       var elementRemoved = false;
@@ -18243,35 +18928,39 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return false;
         }
         if (!nativeIsNaN(removeElDelayMs)) {
-          timerId = setTimeout((function() {
+          timerId = setTimeout(function () {
             el.remove();
             elementRemoved = true;
             clearTimeout(timerId);
-          }), removeElDelayMs);
+          }, removeElDelayMs);
         }
         return true;
       };
       if (!findParentAndAppendEl(parentSelector, element, cleanupDelayMs)) {
-        observeDocumentWithTimeout((function(mutations, observer) {
+        observeDocumentWithTimeout(function (mutations, observer) {
           if (elementRemoved || elementCreated || findParentAndAppendEl(parentSelector, element, cleanupDelayMs)) {
             observer.disconnect();
           }
-        }));
+        });
       }
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -18279,14 +18968,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function observeDocumentWithTimeout(e) {
       var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
-        subtree: true,
-        childList: true
-      }, n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1e4, o = new MutationObserver((function(n, o) {
-        o.disconnect(), e(n, o), o.observe(document.documentElement, t);
-      }));
-      o.observe(document.documentElement, t), "number" == typeof n && setTimeout((function() {
+          subtree: true,
+          childList: true
+        },
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1e4,
+        o = new MutationObserver(function (n, o) {
+          o.disconnect(), e(n, o), o.observe(document.documentElement, t);
+        });
+      o.observe(document.documentElement, t), "number" == typeof n && setTimeout(function () {
         return o.disconnect();
-      }), n);
+      }, n);
     }
     function nativeIsNaN(N) {
       return (Number.isNaN || window.isNaN)(N);
@@ -18294,8 +18985,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function parseAttributePairs(e) {
       if (!e) return [];
       for (var r = [], t = 0; t < e.length; t += 1) {
-        for (var i = "", n = ""; t < e.length && "=" !== e[t] && " " !== e[t]; ) i += e[t], 
-        t += 1;
+        for (var i = "", n = ""; t < e.length && "=" !== e[t] && " " !== e[t];) i += e[t], t += 1;
         if (t < e.length && "=" === e[t]) {
           var o = null;
           if ("'" !== e[t += 1] && '"' !== e[t]) throw new Error(`Attribute value should be quoted: "${e.slice(t)}"`);
@@ -18329,13 +19019,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function getTrustedTypesApi(t) {
-      var r, e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
+      var r,
+        e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
       if (e) return e;
-      var n = "AGPolicy", i = window.trustedTypes, u = !!i, c = {
-        HTML: "TrustedHTML",
-        Script: "TrustedScript",
-        ScriptURL: "TrustedScriptURL"
-      };
+      var n = "AGPolicy",
+        i = window.trustedTypes,
+        u = !!i,
+        c = {
+          HTML: "TrustedHTML",
+          Script: "TrustedScript",
+          ScriptURL: "TrustedScriptURL"
+        };
       if (!u) return {
         name: n,
         isSupported: u,
@@ -18375,36 +19069,42 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       var o = i.createPolicy(n, {
-        createHTML: function createHTML(t) {
-          return t;
+          createHTML: function createHTML(t) {
+            return t;
+          },
+          createScript: function createScript(t) {
+            return t;
+          },
+          createScriptURL: function createScriptURL(t) {
+            return t;
+          }
+        }),
+        createHTML = function createHTML(t) {
+          return o.createHTML(t);
         },
-        createScript: function createScript(t) {
-          return t;
+        createScript = function createScript(t) {
+          return o.createScript(t);
         },
-        createScriptURL: function createScriptURL(t) {
-          return t;
-        }
-      }), createHTML = function createHTML(t) {
-        return o.createHTML(t);
-      }, createScript = function createScript(t) {
-        return o.createScript(t);
-      }, createScriptURL = function createScriptURL(t) {
-        return o.createScriptURL(t);
-      }, create = function create(t, r) {
-        switch (t) {
-         case c.HTML:
-          return createHTML(r);
-  
-         case c.Script:
-          return createScript(r);
-  
-         case c.ScriptURL:
-          return createScriptURL(r);
-  
-         default:
-          return r;
-        }
-      }, p = i.getAttributeType.bind(i), T = i.getPropertyType.bind(i), s = i.isHTML.bind(i), a = i.isScript.bind(i), f = i.isScriptURL.bind(i);
+        createScriptURL = function createScriptURL(t) {
+          return o.createScriptURL(t);
+        },
+        create = function create(t, r) {
+          switch (t) {
+            case c.HTML:
+              return createHTML(r);
+            case c.Script:
+              return createScript(r);
+            case c.ScriptURL:
+              return createScriptURL(r);
+            default:
+              return r;
+          }
+        },
+        p = i.getAttributeType.bind(i),
+        T = i.getPropertyType.bind(i),
+        s = i.isHTML.bind(i),
+        a = i.isScript.bind(i),
+        f = i.isScriptURL.bind(i);
       return {
         name: n,
         isSupported: u,
@@ -18428,7 +19128,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         isScriptURL: f
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedCreateElement.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -18443,7 +19143,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedDispatchEvent(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -18461,7 +19160,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (target === "window") {
         eventTarget = window;
       }
-      var events = new Set;
+      var events = new Set();
       var dispatch = function dispatch() {
         var customEvent = new Event(event);
         if (typeof target === "string" && target !== "window") {
@@ -18478,9 +19177,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var eventName = args[0];
         if (thisArg && eventName) {
           events.add(eventName);
-          setTimeout((function() {
+          setTimeout(function () {
             dispatch();
-          }), 1);
+          }, 1);
         }
         return Reflect.apply(eventListener, thisArg, args);
       };
@@ -18492,15 +19191,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedDispatchEvent.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -18515,7 +19213,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedPruneInboundObject(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -18532,7 +19229,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var nativeObjects = {
         nativeStringify: window.JSON.stringify
       };
-      var {base: base, prop: prop} = getPropertyInChain(window, functionName);
+      var {
+        base: base,
+        prop: prop
+      } = getPropertyInChain(window, functionName);
       if (!base || !prop || typeof base[prop] !== "function") {
         var message = `${functionName} is not a function`;
         logMessage(source, message);
@@ -18556,10 +19256,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -18567,11 +19266,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getPropertyInChain(e, r) {
@@ -18600,7 +19299,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [], t = arguments.length > 4 ? arguments[4] : void 0, o = e.indexOf(".");
+      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
+        t = arguments.length > 4 ? arguments[4] : void 0,
+        o = e.indexOf(".");
       if (-1 === o) {
         if ("*" === e || "[]" === e) {
           for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
@@ -18633,30 +19335,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       var c = e.slice(0, o);
       if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1), y = Object.keys(r);
+        var f = e.slice(o + 1),
+          y = Object.keys(r);
         if ("{-}" === c || "[-]" === c) {
           var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach((function(e) {
+          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
             var a = r[e];
             isKeyInObject(a, f, t) && i.push({
               base: r,
               prop: e
             });
-          })), i;
+          }), i;
         }
-        y.forEach((function(e) {
+        y.forEach(function (e) {
           getWildcardPropertyInChain(r[e], f, a, i, t);
-        }));
+        });
       }
-      Array.isArray(r) && r.forEach((function(r) {
+      Array.isArray(r) && r.forEach(function (r) {
         void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      }));
+      });
       var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), 
-      i;
+      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -18664,39 +19371,47 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function isPruningNeeded(n, t, r, e, a, i) {
       if (!t) return false;
-      var o, {nativeStringify: u} = i, c = r.map((function(n) {
-        return n.path;
-      })), f = e.map((function(n) {
-        return n.path;
-      }));
+      var o,
+        {
+          nativeStringify: u
+        } = i,
+        c = r.map(function (n) {
+          return n.path;
+        }),
+        f = e.map(function (n) {
+          return n.path;
+        });
       if (0 === c.length && f.length > 0) {
         var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-        t && "object" == typeof t && logMessage(n, t, true, false), o = false;
+        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
       }
-      if (a && !matchStackTrace(a, (new Error).stack || "")) return o = false;
-      for (var s, l = [ ".*.", "*.", ".*", ".[].", "[].", ".[]" ], _loop = function _loop() {
-        var n = f[p], r = n.split(".").pop(), e = l.some((function(t) {
-          return n.includes(t);
-        })), a = getWildcardPropertyInChain(t, n, e);
-        if (!a.length) return {
-          v: o = false
-        };
-        o = !e;
-        for (var i = 0; i < a.length; i += 1) {
-          var u = "string" == typeof r && void 0 !== a[i].base[r];
-          o = e ? u || o : u && o;
-        }
-      }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
+      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
+      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
+          var n = f[p],
+            r = n.split(".").pop(),
+            e = l.some(function (t) {
+              return n.includes(t);
+            }),
+            a = getWildcardPropertyInChain(t, n, e);
+          if (!a.length) return {
+            v: o = false
+          };
+          o = !e;
+          for (var i = 0; i < a.length; i += 1) {
+            var u = "string" == typeof r && void 0 !== a[i].base[r];
+            o = e ? u || o : u && o;
+          }
+        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
     function jsonPruner(e, r, n, a, t, i) {
-      var {nativeStringify: o} = i;
-      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${(new Error).stack}`, true), 
-      r && "object" == typeof r && logMessage(e, r, true, false), r;
+      var {
+        nativeStringify: o
+      } = i;
+      if (0 === n.length && 0 === a.length) return logMessage(e, `${window.location.hostname}\n${o(r, null, 2)}\nStack trace:\n${new Error().stack}`, true), r && "object" == typeof r && logMessage(e, r, true, false), r;
       try {
         if (!1 === isPruningNeeded(e, r, n, a, t, i)) return r;
-        n.forEach((function(n) {
+        n.forEach(function (n) {
           for (var a = n.path, t = n.value, i = getWildcardPropertyInChain(r, a, !0, [], t), o = i.length - 1; o >= 0; o -= 1) {
             var s = i[o];
             if (void 0 !== s && s.base) if (hit(e), Array.isArray(s.base)) try {
@@ -18707,7 +19422,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               console.error("Error while deleting array element", e);
             } else delete s.base[s.prop];
           }
-        }));
+        });
       } catch (r) {
         logMessage(e, r);
       }
@@ -18716,13 +19431,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getPrunePath(t) {
       var r = ".[=].";
       if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function(t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length; ) {
+        var e = function (t) {
+          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
             var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), 
-            i += 1; else {
+            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
               if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (;i < t.length && /\s/.test(t[i]); ) i += 1;
+                for (; i < t.length && /\s/.test(t[i]);) i += 1;
                 "" !== n && (e.push(n), n = "");
                 continue;
               }
@@ -18738,65 +19452,80 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           return "" !== n && e.push(n), e;
         }(t);
-        return e.map((function(t) {
-          var e = t.split(r), n = e[0], i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), 
-          {
+        return e.map(function (t) {
+          var e = t.split(r),
+            n = e[0],
+            i = e[1];
+          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
             path: n,
             value: i
           }) : {
             path: n
           };
-        }));
+        });
       }
       return [];
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -18821,9 +19550,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -18832,23 +19561,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isKeyInObject(t, r, e) {
-      var n = r.split("."), _check6 = function _check(t, r) {
-        if (null == t) return false;
-        if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-        var n = r[0], i = r.slice(1);
-        if ("*" === n || "[]" === n) {
-          if (Array.isArray(t)) return t.some((function(t) {
-            return _check6(t, i);
-          }));
-          if ("object" == typeof t && null !== t) return Object.keys(t).some((function(r) {
-            return _check6(t[r], i);
-          }));
-        }
-        return !!Object.prototype.hasOwnProperty.call(t, n) && _check6(t[n], i);
-      };
+      var n = r.split("."),
+        _check6 = function _check(t, r) {
+          if (null == t) return false;
+          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
+          var n = r[0],
+            i = r.slice(1);
+          if ("*" === n || "[]" === n) {
+            if (Array.isArray(t)) return t.some(function (t) {
+              return _check6(t, i);
+            });
+            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
+              return _check6(t[r], i);
+            });
+          }
+          return !!Object.prototype.hasOwnProperty.call(t, n) && _check6(t[n], i);
+        };
       return _check6(t, n);
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedPruneInboundObject.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -18863,7 +19594,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedReplaceArgument(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -18941,7 +19671,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       }
       var getPathParts = getPropertyInChain;
-      var {base: base, chain: chain, prop: prop} = getPathParts(window, methodPath);
+      var {
+        base: base,
+        chain: chain,
+        prop: prop
+      } = getPathParts(window, methodPath);
       if (typeof chain !== "undefined") {
         logMessage(source, `Could not reach the end of the prop chain: ${methodPath}`);
         return;
@@ -18952,13 +19686,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       var stringifyObject = function stringifyObject(obj) {
-        return JSON.stringify(obj, (function(key, value) {
+        return JSON.stringify(obj, function (key, value) {
           return typeof value === "function" ? value.toString() : value;
-        }));
+        });
       };
       var createFormattedMessage = function createFormattedMessage(args) {
         var when = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "original";
-        var formattedArgs = args.map((function(arg, index) {
+        var formattedArgs = args.map(function (arg, index) {
           if (typeof arg === "object" && arg !== null) {
             try {
               return `${index}: ${stringifyObject(arg)} // Object converted to string`;
@@ -18967,13 +19701,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             }
           }
           return `${index}: ${String(arg)}`;
-        }));
+        });
         var modifiedOrOriginal = when === "modified" ? "modified" : when;
         var message = `${methodPath} ${modifiedOrOriginal} arguments:\n${formattedArgs.join(",\n")}`;
         return message;
       };
       var checkArgument = function checkArgument(arg) {
-        if (stack && !matchStackTrace(stack, (new Error).stack || "")) {
+        if (stack && !matchStackTrace(stack, new Error().stack || "")) {
           return false;
         }
         if (pattern) {
@@ -19073,10 +19807,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -19098,13 +19831,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function throwFunc() {
-      throw new Error;
+      throw new Error();
     }
     function noopPromiseReject() {
       return Promise.reject();
     }
     function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}", t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "", s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
       if ("undefined" != typeof Response) {
         var n = new Response(e, {
           headers: {
@@ -19145,11 +19880,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getPropertyInChain(e, r) {
@@ -19179,17 +19914,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function extractRegexAndReplacement(e) {
       if (e) {
-        var r = e.slice(8), t = "";
+        var r = e.slice(8),
+          t = "";
         if (r.endsWith("/g") && (r = r.slice(0, -1), t = "g"), r.startsWith("/") && r.endsWith("/")) {
           for (var i = r.slice(1, -1), a = -1, c = 0; c < i.length; c += 1) if ("/" === i[c]) {
-            for (var f = false, n = c - 1; n >= 0 && "\\" === i[n]; ) f = !f, n -= 1;
+            for (var f = false, n = c - 1; n >= 0 && "\\" === i[n];) f = !f, n -= 1;
             if (!f) {
               a = c;
               break;
             }
           }
           if (-1 !== a) {
-            var s = `/${i.slice(0, a)}/${t}`, l = i.slice(a + 1);
+            var s = `/${i.slice(0, a)}/${t}`,
+              l = i.slice(a + 1);
             if (s && "//" !== s) {
               var g;
               try {
@@ -19207,58 +19944,77 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -19286,9 +20042,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -19296,7 +20052,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.log(n);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedReplaceArgument.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -19311,7 +20067,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedReplaceFetchResponse(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -19349,8 +20104,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (!shouldReplace) {
           return Reflect.apply(target, thisArg, args);
         }
-        return nativeFetch.apply(null, args).then((function(response) {
-          return response.clone().text().then((function(bodyText) {
+        return nativeFetch.apply(null, args).then(function (response) {
+          return response.clone().text().then(function (bodyText) {
             var patternRegexp = pattern === "*" ? /(\n|.)*/ : toRegExp(pattern);
             var isPatternFound = pattern === "*" || patternRegexp.test(bodyText);
             if (!isPatternFound) {
@@ -19366,15 +20121,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             var forgedResponse = forgeResponse(response, modifiedTextContent);
             hit(source);
             return forgedResponse;
-          })).catch((function() {
+          }).catch(function () {
             var fetchDataStr = objectToString(fetchData);
             var message = `Response body can't be converted to text: ${fetchDataStr}`;
             logMessage(source, message);
             return response;
-          }));
-        })).catch((function() {
+          });
+        }).catch(function () {
           return Reflect.apply(target, thisArg, args);
-        }));
+        });
       };
       var fetchHandler = {
         apply: handlerWrapper
@@ -19384,56 +20139,78 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function getFetchData(e, t) {
-      var a, c, n = {}, r = e[0];
+      var a,
+        c,
+        n = {},
+        r = e[0];
       if (r instanceof Request) {
-        var u = t.call(r), f = getRequestData(u);
+        var u = t.call(r),
+          f = getRequestData(u);
         a = f.url, c = f;
       } else a = r, c = e[1];
-      (n.url = a, c instanceof Object) && Object.keys(c).forEach((function(e) {
+      (n.url = a, c instanceof Object) && Object.keys(c).forEach(function (e) {
         n[e] = c[e];
-      }));
+      });
       return n;
     }
     function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map((function(t) {
-        var n = t[0], e = t[1], o = e;
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      })).join(" ") : String(t);
+      }).join(" ") : String(t);
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
     function forgeResponse(e, t) {
-      var {bodyUsed: s, headers: r, ok: u, redirected: a, status: d, statusText: o, type: l, url: n} = e, v = new Response(t, {
-        status: d,
-        statusText: o,
-        headers: r
-      });
+      var {
+          bodyUsed: s,
+          headers: r,
+          ok: u,
+          redirected: a,
+          status: d,
+          statusText: o,
+          type: l,
+          url: n
+        } = e,
+        v = new Response(t, {
+          status: d,
+          statusText: o,
+          headers: r
+        });
       return Object.defineProperties(v, {
         url: {
           value: n
@@ -19453,23 +20230,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }), v;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -19485,38 +20268,39 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return 0 === Object.keys(t).length && !t.prototype;
     }
     function getRequestData(t) {
-      var e = getRequestProps().map((function(e) {
-        return [ e, t[e] ];
-      }));
+      var e = getRequestProps().map(function (e) {
+        return [e, t[e]];
+      });
       return Object.fromEntries(e);
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedReplaceFetchResponse.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -19531,7 +20315,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedReplaceNodeText(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -19549,13 +20332,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var fixedPattern = fixQuotes(pattern);
       var fixedReplacement = fixQuotes(replacement);
-      var {selector: selector, nodeNameMatch: nodeNameMatch, textContentMatch: textContentMatch, patternMatch: patternMatch} = parseNodeTextParams(nodeName, textMatch, fixedPattern);
+      var {
+        selector: selector,
+        nodeNameMatch: nodeNameMatch,
+        textContentMatch: textContentMatch,
+        patternMatch: patternMatch
+      } = parseNodeTextParams(nodeName, textMatch, fixedPattern);
       for (var _len = arguments.length, extraArgs = new Array(_len > 5 ? _len - 5 : 0), _key = 5; _key < _len; _key++) {
         extraArgs[_key - 5] = arguments[_key];
       }
       var shouldLog = extraArgs.includes("verbose");
       var handleNodes = function handleNodes(nodes) {
-        return nodes.forEach((function(node) {
+        return nodes.forEach(function (node) {
           var shouldReplace = isTargetNode(node, nodeNameMatch, textContentMatch);
           if (shouldReplace) {
             if (shouldLog) {
@@ -19572,47 +20360,51 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               }
             }
           }
-        }));
+        });
       };
       if (document.documentElement) {
         handleExistingNodes(selector, handleNodes);
       }
-      observeDocumentWithTimeout((function(mutations) {
+      observeDocumentWithTimeout(function (mutations) {
         return handleMutations(mutations, handleNodes);
-      }));
+      });
     }
     function observeDocumentWithTimeout(e) {
       var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
-        subtree: true,
-        childList: true
-      }, n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1e4, o = new MutationObserver((function(n, o) {
-        o.disconnect(), e(n, o), o.observe(document.documentElement, t);
-      }));
-      o.observe(document.documentElement, t), "number" == typeof n && setTimeout((function() {
+          subtree: true,
+          childList: true
+        },
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 1e4,
+        o = new MutationObserver(function (n, o) {
+          o.disconnect(), e(n, o), o.observe(document.documentElement, t);
+        });
+      o.observe(document.documentElement, t), "number" == typeof n && setTimeout(function () {
         return o.disconnect();
-      }), n);
+      }, n);
     }
     function handleExistingNodes(e, n, o) {
-      [ document ].forEach((function(o) {
-        return function(o) {
+      [document].forEach(function (o) {
+        return function (o) {
           if ("#text" === e) {
-            var r = nodeListToArray(o.childNodes).filter((function(e) {
+            var r = nodeListToArray(o.childNodes).filter(function (e) {
               return e.nodeType === Node.TEXT_NODE;
-            }));
+            });
             n(r);
           } else {
             var t = nodeListToArray(o.querySelectorAll(e));
             n(t);
           }
         }(o);
-      }));
+      });
     }
     function handleMutations(n, d, e, o) {
       var t = getAddedNodes(n);
       d(t);
     }
     function replaceNodeText(e, t, n, r) {
-      var {textContent: a} = t;
+      var {
+        textContent: a
+      } = t;
       if (a) {
         var i = a.replace(n, r);
         if ("SCRIPT" === t.nodeName) i = getTrustedTypesApi(e).createScript(i);
@@ -19620,11 +20412,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isTargetNode(e, t, n) {
-      var {nodeName: o, textContent: s} = e, a = o.toLowerCase();
+      var {
+          nodeName: o,
+          textContent: s
+        } = e,
+        a = o.toLowerCase();
       return null !== s && "" !== s && (t instanceof RegExp ? t.test(a) : t === a) && (n instanceof RegExp ? n.test(s) : s.includes(n));
     }
     function parseNodeTextParams(t, e) {
-      var a, n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : null, r = "/", s = !(t.startsWith(r) && t.endsWith(r)), o = s ? t : "*", h = s ? t : toRegExp(t), i = e.startsWith(r) ? toRegExp(e) : e;
+      var a,
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : null,
+        r = "/",
+        s = !(t.startsWith(r) && t.endsWith(r)),
+        o = s ? t : "*",
+        h = s ? t : toRegExp(t),
+        i = e.startsWith(r) ? toRegExp(e) : e;
       return n && (a = n.startsWith(r) ? toRegExp(n) : n), {
         selector: o,
         nodeNameMatch: h,
@@ -19633,7 +20435,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -19642,10 +20449,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -19655,33 +20461,44 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n;
     }
     function getAddedNodes(d) {
-      for (var e = [], r = 0; r < d.length; r += 1) for (var {addedNodes: n} = d[r], o = 0; o < n.length; o += 1) e.push(n[o]);
+      for (var e = [], r = 0; r < d.length; r += 1) for (var {
+          addedNodes: n
+        } = d[r], o = 0; o < n.length; o += 1) e.push(n[o]);
       return e;
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function getTrustedTypesApi(t) {
-      var r, e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
+      var r,
+        e = null == t || null === (r = t.api) || void 0 === r ? void 0 : r.policy;
       if (e) return e;
-      var n = "AGPolicy", i = window.trustedTypes, u = !!i, c = {
-        HTML: "TrustedHTML",
-        Script: "TrustedScript",
-        ScriptURL: "TrustedScriptURL"
-      };
+      var n = "AGPolicy",
+        i = window.trustedTypes,
+        u = !!i,
+        c = {
+          HTML: "TrustedHTML",
+          Script: "TrustedScript",
+          ScriptURL: "TrustedScriptURL"
+        };
       if (!u) return {
         name: n,
         isSupported: u,
@@ -19721,36 +20538,42 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
       var o = i.createPolicy(n, {
-        createHTML: function createHTML(t) {
-          return t;
+          createHTML: function createHTML(t) {
+            return t;
+          },
+          createScript: function createScript(t) {
+            return t;
+          },
+          createScriptURL: function createScriptURL(t) {
+            return t;
+          }
+        }),
+        createHTML = function createHTML(t) {
+          return o.createHTML(t);
         },
-        createScript: function createScript(t) {
-          return t;
+        createScript = function createScript(t) {
+          return o.createScript(t);
         },
-        createScriptURL: function createScriptURL(t) {
-          return t;
-        }
-      }), createHTML = function createHTML(t) {
-        return o.createHTML(t);
-      }, createScript = function createScript(t) {
-        return o.createScript(t);
-      }, createScriptURL = function createScriptURL(t) {
-        return o.createScriptURL(t);
-      }, create = function create(t, r) {
-        switch (t) {
-         case c.HTML:
-          return createHTML(r);
-  
-         case c.Script:
-          return createScript(r);
-  
-         case c.ScriptURL:
-          return createScriptURL(r);
-  
-         default:
-          return r;
-        }
-      }, p = i.getAttributeType.bind(i), T = i.getPropertyType.bind(i), s = i.isHTML.bind(i), a = i.isScript.bind(i), f = i.isScriptURL.bind(i);
+        createScriptURL = function createScriptURL(t) {
+          return o.createScriptURL(t);
+        },
+        create = function create(t, r) {
+          switch (t) {
+            case c.HTML:
+              return createHTML(r);
+            case c.Script:
+              return createScript(r);
+            case c.ScriptURL:
+              return createScriptURL(r);
+            default:
+              return r;
+          }
+        },
+        p = i.getAttributeType.bind(i),
+        T = i.getPropertyType.bind(i),
+        s = i.isHTML.bind(i),
+        a = i.isScript.bind(i),
+        f = i.isScriptURL.bind(i);
       return {
         name: n,
         isSupported: u,
@@ -19774,7 +20597,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         isScriptURL: f
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedReplaceNodeText.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -19789,7 +20612,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedReplaceOutboundText(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -19808,7 +20630,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       var getPathParts = getPropertyInChain;
-      var {base: base, chain: chain, prop: prop} = getPathParts(window, methodPath);
+      var {
+        base: base,
+        chain: chain,
+        prop: prop
+      } = getPathParts(window, methodPath);
       if (typeof chain !== "undefined") {
         logMessage(source, `Could not reach the end of the prop chain: ${methodPath}`);
         return;
@@ -19834,29 +20660,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var decodeAndReplaceContent = function decodeAndReplaceContent(content, pattern, textReplacement, decode, log) {
         switch (decode) {
-         case "base64":
-          try {
-            if (!isValidBase64(content)) {
-              logMessage(source, `Text content is not a valid base64 encoded string: ${content}`);
+          case "base64":
+            try {
+              if (!isValidBase64(content)) {
+                logMessage(source, `Text content is not a valid base64 encoded string: ${content}`);
+                return content;
+              }
+              var decodedContent = atob(content);
+              if (log) {
+                logMessage(source, `Decoded text content: ${decodedContent}`);
+              }
+              var modifiedContent = textToReplace ? decodedContent.replace(pattern, textReplacement) : decodedContent;
+              if (log) {
+                var message = modifiedContent !== decodedContent ? `Modified decoded text content: ${modifiedContent}` : "Decoded text content was not modified";
+                logMessage(source, message);
+              }
+              var encodedContent = btoa(modifiedContent);
+              return encodedContent;
+            } catch (e) {
               return content;
             }
-            var decodedContent = atob(content);
-            if (log) {
-              logMessage(source, `Decoded text content: ${decodedContent}`);
-            }
-            var modifiedContent = textToReplace ? decodedContent.replace(pattern, textReplacement) : decodedContent;
-            if (log) {
-              var message = modifiedContent !== decodedContent ? `Modified decoded text content: ${modifiedContent}` : "Decoded text content was not modified";
-              logMessage(source, message);
-            }
-            var encodedContent = btoa(modifiedContent);
-            return encodedContent;
-          } catch (e) {
-            return content;
-          }
-  
-         default:
-          return content.replace(pattern, textReplacement);
+          default:
+            return content.replace(pattern, textReplacement);
         }
       };
       var logOriginalContent = !textToReplace || !!logContent;
@@ -19870,7 +20695,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         isMatchingSuspended = true;
         hit(source);
         var result = Reflect.apply(target, thisArg, argumentsList);
-        if (stack && !matchStackTrace(stack, (new Error).stack || "")) {
+        if (stack && !matchStackTrace(stack, new Error().stack || "")) {
           return result;
         }
         if (typeof result === "string") {
@@ -19898,10 +20723,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -19909,11 +20733,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getPropertyInChain(e, r) {
@@ -19942,37 +20766,50 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -19980,22 +20817,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -20018,9 +20861,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -20028,7 +20871,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.log(n);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedReplaceOutboundText.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -20043,7 +20886,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedReplaceXhrResponse(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -20069,8 +20911,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var shouldLogContent = verbose === "true";
       var nativeOpen = window.XMLHttpRequest.prototype.open;
       var nativeSend = window.XMLHttpRequest.prototype.send;
-      var matchedXhrRequests = new Set;
-      var xhrRequestHeaders = new Map;
+      var matchedXhrRequests = new Set();
+      var xhrRequestHeaders = new Map();
       var xhrData;
       var openWrapper = function openWrapper(target, thisArg, args) {
         xhrData = getXhrData.apply(null, args);
@@ -20103,13 +20945,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (!matchedXhrRequests.has(thisArg)) {
           return Reflect.apply(target, thisArg, args);
         }
-        var forgedRequest = new XMLHttpRequest;
+        var forgedRequest = new XMLHttpRequest();
         forgedRequest.withCredentials = thisArg.withCredentials;
-        forgedRequest.addEventListener("readystatechange", (function() {
+        forgedRequest.addEventListener("readystatechange", function () {
           if (forgedRequest.readyState !== 4) {
             return;
           }
-          var {readyState: readyState, response: response, responseText: responseText, responseURL: responseURL, responseXML: responseXML, status: status, statusText: statusText} = forgedRequest;
+          var {
+            readyState: readyState,
+            response: response,
+            responseText: responseText,
+            responseURL: responseURL,
+            responseXML: responseXML,
+            status: status,
+            statusText: statusText
+          } = forgedRequest;
           var content = responseText || response;
           if (typeof content !== "string") {
             return;
@@ -20156,25 +21006,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               writable: false
             }
           });
-          setTimeout((function() {
+          setTimeout(function () {
             var stateEvent = new Event("readystatechange");
             thisArg.dispatchEvent(stateEvent);
             var loadEvent = new ProgressEvent("load");
             thisArg.dispatchEvent(loadEvent);
             var loadEndEvent = new ProgressEvent("loadend");
             thisArg.dispatchEvent(loadEndEvent);
-          }), 1);
+          }, 1);
           if (isPatternFound) {
             hit(source);
           }
-        }));
-        nativeOpen.apply(forgedRequest, [ xhrData.method, xhrData.url ]);
+        });
+        nativeOpen.apply(forgedRequest, [xhrData.method, xhrData.url]);
         var collectedHeaders = xhrRequestHeaders.get(thisArg) || [];
-        collectedHeaders.forEach((function(header) {
+        collectedHeaders.forEach(function (header) {
           var name = header[0];
           var value = header[1];
           forgedRequest.setRequestHeader(name, value);
-        }));
+        });
         xhrRequestHeaders.delete(thisArg);
         matchedXhrRequests.delete(thisArg);
         try {
@@ -20196,52 +21046,65 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
     }
     function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map((function(t) {
-        var n = t[0], e = t[1], o = e;
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      })).join(" ") : String(t);
+      }).join(" ") : String(t);
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
@@ -20256,32 +21119,34 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -20296,7 +21161,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedReplaceXhrResponse.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -20311,7 +21176,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSetAttr(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -20326,75 +21190,86 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       setAttributeBySelector(source, selector, attr, value);
-      observeDOMChanges((function() {
+      observeDOMChanges(function () {
         return setAttributeBySelector(source, selector, attr, value);
-      }), true);
+      }, true);
     }
     function setAttributeBySelector(e, t, l, o) {
-      var r, c = arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : defaultAttributeSetter;
+      var r,
+        c = arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : defaultAttributeSetter;
       try {
         r = document.querySelectorAll(t);
       } catch (l) {
         return void logMessage(e, `Failed to find elements matching selector "${t}"`);
       }
       if (r && 0 !== r.length) try {
-        r.forEach((function(e) {
+        r.forEach(function (e) {
           return c(e, l, o);
-        })), hit(e);
+        }), hit(e);
       } catch (t) {
         logMessage(e, `Failed to set [${l}="${o}"] to each of selected elements.`);
       }
     }
     function observeDOMChanges(t) {
-      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1], n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], i = new MutationObserver(throttle((function() {
-        disconnect(), t(), connect();
-      }), 20)), connect = function connect() {
-        n.length > 0 ? i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e,
-          attributeFilter: n
-        }) : i.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: e
-        });
-      }, disconnect = function disconnect() {
-        i.disconnect();
-      };
+      var e = arguments.length > 1 && void 0 !== arguments[1] && arguments[1],
+        n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [],
+        i = new MutationObserver(throttle(function () {
+          disconnect(), t(), connect();
+        }, 20)),
+        connect = function connect() {
+          n.length > 0 ? i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e,
+            attributeFilter: n
+          }) : i.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: e
+          });
+        },
+        disconnect = function disconnect() {
+          i.disconnect();
+        };
       connect();
     }
     function defaultAttributeSetter(t, e, r) {
       return t.setAttribute(e, r);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function throttle(n, t) {
-      var r, e = false, _wrapper9 = function _wrapper() {
-        for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
-        e ? r = u : (n(...u), e = true, setTimeout((function() {
-          e = false, r && (_wrapper9(...r), r = null);
-        }), t));
-      };
+      var r,
+        e = false,
+        _wrapper9 = function _wrapper() {
+          for (var o = arguments.length, u = new Array(o), f = 0; f < o; f++) u[f] = arguments[f];
+          e ? r = u : (n(...u), e = true, setTimeout(function () {
+            e = false, r && (_wrapper9(...r), r = null);
+          }, t));
+        };
       return _wrapper9;
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSetAttr.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -20409,7 +21284,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSetConstant(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -20485,10 +21359,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
@@ -20515,58 +21388,77 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function createSetChainPropAccessor(t) {
-      var {source: e, stack: r, mustCancel: i, trapProp: n, getConstantValue: a, setConstantValue: s} = t, _setChainPropAccess3 = function _setChainPropAccess(t, c) {
-        var o = getPropertyInChain(t, c), {base: u, prop: d, chain: f} = o, h = {
-          factValue: void 0,
-          init(t) {
-            return this.factValue = t, true;
-          },
-          get() {
-            return this.factValue;
-          },
-          set(t) {
-            this.factValue !== t && (this.factValue = t, t instanceof Object && _setChainPropAccess3(t, f));
-          }
-        }, l = {
-          factValue: void 0,
-          descriptorAddon: getDescriptorAddon(),
-          init(t) {
-            return !i(t) && (this.factValue = t, true);
-          },
-          get() {
-            if (!r) return hit(e), a();
-            if (!this.descriptorAddon.isAbortingSuspended) {
-              this.descriptorAddon.isAbortingSuspended = true;
-              var t = false;
-              try {
-                t = matchStackTrace(r, (new Error).stack || "");
-              } catch (t) {
-                return this.descriptorAddon.isAbortingSuspended = false, this.factValue;
+      var {
+          source: e,
+          stack: r,
+          mustCancel: i,
+          trapProp: n,
+          getConstantValue: a,
+          setConstantValue: s
+        } = t,
+        _setChainPropAccess3 = function _setChainPropAccess(t, c) {
+          var o = getPropertyInChain(t, c),
+            {
+              base: u,
+              prop: d,
+              chain: f
+            } = o,
+            h = {
+              factValue: void 0,
+              init(t) {
+                return this.factValue = t, true;
+              },
+              get() {
+                return this.factValue;
+              },
+              set(t) {
+                this.factValue !== t && (this.factValue = t, t instanceof Object && _setChainPropAccess3(t, f));
               }
-              if (this.descriptorAddon.isAbortingSuspended = false, t) return hit(e), a();
-            }
-            return this.factValue;
-          },
-          set(t) {
-            i(t) ? s(t) : this.factValue = t;
-          }
+            },
+            l = {
+              factValue: void 0,
+              descriptorAddon: getDescriptorAddon(),
+              init(t) {
+                return !i(t) && (this.factValue = t, true);
+              },
+              get() {
+                if (!r) return hit(e), a();
+                if (!this.descriptorAddon.isAbortingSuspended) {
+                  this.descriptorAddon.isAbortingSuspended = true;
+                  var t = false;
+                  try {
+                    t = matchStackTrace(r, new Error().stack || "");
+                  } catch (t) {
+                    return this.descriptorAddon.isAbortingSuspended = false, this.factValue;
+                  }
+                  if (this.descriptorAddon.isAbortingSuspended = false, t) return hit(e), a();
+                }
+                return this.factValue;
+              },
+              set(t) {
+                i(t) ? s(t) : this.factValue = t;
+              }
+            };
+          if (f) {
+            if (void 0 === u || null !== u[d]) {
+              (u instanceof Object || "object" == typeof u) && isEmptyObject(u) && n(u, d, true, h);
+              var p = t[d];
+              (p instanceof Object || "object" == typeof p && null !== p) && _setChainPropAccess3(p, f), n(u, d, true, h);
+            } else n(u, d, true, h);
+          } else n(u, d, false, l);
         };
-        if (f) {
-          if (void 0 === u || null !== u[d]) {
-            (u instanceof Object || "object" == typeof u) && isEmptyObject(u) && n(u, d, true, h);
-            var p = t[d];
-            (p instanceof Object || "object" == typeof p && null !== p) && _setChainPropAccess3(p, f), 
-            n(u, d, true, h);
-          } else n(u, d, true, h);
-        } else n(u, d, false, l);
-      };
       return _setChainPropAccess3;
     }
     function getPropertyInChain(e, r) {
@@ -20595,17 +21487,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -20613,11 +21510,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function nativeIsNaN(N) {
@@ -20627,35 +21524,44 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return 0 === Object.keys(t).length && !t.prototype;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -20677,9 +21583,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -20703,7 +21609,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSetConstant.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -20718,7 +21624,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSetCookie(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -20768,49 +21673,50 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function serializeCookie(e, o, i) {
-      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "", t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
+      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "",
+        t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
       if (!t && `${o}`.includes(";") || e.includes(";")) return null;
       var r = `${e}=${t ? encodeURIComponent(o) : o}`;
-      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), 
-      r;
+      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), r;
       var s = getCookiePath(i);
-      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), 
-      r;
+      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), r;
     }
     function isValidCookiePath(n) {
       return "/" === n || "none" === n;
     }
     function getTrustedCookieOffsetMs(e) {
       var r;
-      if ("1year" === e) r = 31536e3; else if ("1day" === e) r = 86400; else if (r = Number.parseInt(e, 10), 
-      Number.isNaN(r)) return null;
+      if ("1year" === e) r = 31536e3;else if ("1day" === e) r = 86400;else if (r = Number.parseInt(e, 10), Number.isNaN(r)) return null;
       return 1e3 * r;
     }
     function parseKeywordValue(t) {
       var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = (new Date).toISOString()), 
-      e;
+      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
     }
     function getCookiePath(t) {
       return "/" === t ? "path=/" : "";
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSetCookie.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -20825,7 +21731,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSetCookieReload(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -20882,68 +21787,74 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function isCookieSetWithValue(e, t, r) {
-      return e.split(";").some((function(e) {
+      return e.split(";").some(function (e) {
         var n = e.indexOf("=");
         if (-1 === n) return false;
-        var i = e.slice(0, n).trim(), a = e.slice(n + 1).trim();
-        if (new Set([ "$now$", "$currentDate$", "$currentISODate$" ]).has(r)) {
-          var u = Date.now(), s = /^\d+$/.test(a) ? parseInt(a, 10) : new Date(a).getTime();
+        var i = e.slice(0, n).trim(),
+          a = e.slice(n + 1).trim();
+        if (new Set(["$now$", "$currentDate$", "$currentISODate$"]).has(r)) {
+          var u = Date.now(),
+            s = /^\d+$/.test(a) ? parseInt(a, 10) : new Date(a).getTime();
           return t === i && s > u - 864e5;
         }
         return t === i && r === a;
-      }));
+      });
     }
     function serializeCookie(e, o, i) {
-      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "", t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
+      var n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : "",
+        t = !(arguments.length > 4 && void 0 !== arguments[4]) || arguments[4];
       if (!t && `${o}`.includes(";") || e.includes(";")) return null;
       var r = `${e}=${t ? encodeURIComponent(o) : o}`;
-      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), 
-      r;
+      if (e.startsWith("__Host-")) return r += "; path=/; secure", n && console.debug(`Domain value: "${n}" has been ignored, because is not allowed for __Host- prefixed cookies`), r;
       var s = getCookiePath(i);
-      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), 
-      r;
+      return s && (r += `; ${s}`), e.startsWith("__Secure-") && (r += "; secure"), n && (r += `; domain=${n}`), r;
     }
     function isValidCookiePath(n) {
       return "/" === n || "none" === n;
     }
     function getTrustedCookieOffsetMs(e) {
       var r;
-      if ("1year" === e) r = 31536e3; else if ("1day" === e) r = 86400; else if (r = Number.parseInt(e, 10), 
-      Number.isNaN(r)) return null;
+      if ("1year" === e) r = 31536e3;else if ("1day" === e) r = 86400;else if (r = Number.parseInt(e, 10), Number.isNaN(r)) return null;
       return 1e3 * r;
     }
     function parseKeywordValue(t) {
       var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = (new Date).toISOString()), 
-      e;
+      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
     }
     function parseCookieString(i) {
-      var r = i.split(";"), n = {};
-      return r.forEach((function(i) {
-        var r, t = "", e = i.indexOf("=");
+      var r = i.split(";"),
+        n = {};
+      return r.forEach(function (i) {
+        var r,
+          t = "",
+          e = i.indexOf("=");
         -1 === e ? r = i.trim() : (r = i.slice(0, e).trim(), t = i.slice(e + 1)), n[r] = t || null;
-      })), n;
+      }), n;
     }
     function getCookiePath(t) {
       return "/" === t ? "path=/" : "";
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSetCookieReload.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -20958,7 +21869,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSetLocalStorageItem(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -20977,23 +21887,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       var parsedValue = parseKeywordValue(value);
-      var {localStorage: localStorage} = window;
+      var {
+        localStorage: localStorage
+      } = window;
       setStorageItem(source, localStorage, key, parsedValue);
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -21009,10 +21925,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function parseKeywordValue(t) {
       var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = (new Date).toISOString()), 
-      e;
+      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSetLocalStorageItem.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -21027,7 +21942,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSetSessionStorageItem(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -21046,23 +21960,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       var parsedValue = parseKeywordValue(value);
-      var {sessionStorage: sessionStorage} = window;
+      var {
+        sessionStorage: sessionStorage
+      } = window;
       setStorageItem(source, sessionStorage, key, parsedValue);
       hit(source);
     }
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -21078,10 +21998,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function parseKeywordValue(t) {
       var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = (new Date).toISOString()), 
-      e;
+      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSetSessionStorageItem.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -21096,7 +22015,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function trustedSuppressNativeMethod(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -21112,18 +22030,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       var IGNORE_ARG_SYMBOL = " ";
-      var suppress = how === "abort" ? getAbortFunc() : function() {};
+      var suppress = how === "abort" ? getAbortFunc() : function () {};
       var signatureMatcher;
       try {
-        signatureMatcher = splitByPipeRespectingRegex(signatureStr).map((function(value) {
+        signatureMatcher = splitByPipeRespectingRegex(signatureStr).map(function (value) {
           return value === IGNORE_ARG_SYMBOL ? value : inferValue(value);
-        }));
+        });
       } catch (e) {
         logMessage(source, `Could not parse the signature matcher: ${getErrorMessage(e)}`);
         return;
       }
       var getPathParts = getPropertyInChain;
-      var {base: base, chain: chain, prop: prop} = getPathParts(window, methodPath);
+      var {
+        base: base,
+        chain: chain,
+        prop: prop
+      } = getPathParts(window, methodPath);
       if (typeof chain !== "undefined") {
         logMessage(source, `Could not reach the end of the prop chain: ${methodPath}`);
         return;
@@ -21134,13 +22056,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       function matchMethodCall(nativeArguments, matchArguments) {
-        return matchArguments.every((function(matcher, i) {
+        return matchArguments.every(function (matcher, i) {
           if (matcher === IGNORE_ARG_SYMBOL) {
             return true;
           }
           var argument = nativeArguments[i];
           return isValueMatched(argument, matcher);
-        }));
+        });
       }
       var isMatchingSuspended = false;
       function apply(target, thisArg, argumentsList) {
@@ -21148,7 +22070,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return Reflect.apply(target, thisArg, argumentsList);
         }
         isMatchingSuspended = true;
-        if (stack && !matchStackTrace(stack, (new Error).stack || "")) {
+        if (stack && !matchStackTrace(stack, new Error().stack || "")) {
           isMatchingSuspended = false;
           return Reflect.apply(target, thisArg, argumentsList);
         }
@@ -21167,16 +22089,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
@@ -21232,19 +22158,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return "function" != typeof t && (nativeIsNaN(t) ? nativeIsNaN(r) : null == t || "number" == typeof t || "boolean" == typeof t ? t === r : "string" == typeof t ? ("string" == typeof r || r instanceof RegExp) && isStringMatched(t, r) : Array.isArray(t) && Array.isArray(r) ? isArrayMatched(t, r) : !(!isArbitraryObject(t) || !isArbitraryObject(r)) && isObjectMatched(t, r));
     }
     function getAbortFunc() {
-      var r = randomId(), n = false;
-      return function() {
+      var r = randomId(),
+        n = false;
+      return function () {
         throw n || (window.onerror = createOnErrorHandler(r), n = true), new ReferenceError(r);
       };
     }
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
       var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), 
-      true;
-      var n = toRegExp(e), a = t.split("\n").slice(2).map((function(e) {
-        return e.trim();
-      })).join("\n");
+      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
+      var n = toRegExp(e),
+        a = t.split("\n").slice(2).map(function (e) {
+          return e.trim();
+        }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
     }
     function getErrorMessage(e) {
@@ -21257,13 +22184,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function splitByPipeRespectingRegex(e) {
-      for (var i = [], n = "", t = false, f = 0; f < e.length; ) {
+      for (var i = [], n = "", t = false, f = 0; f < e.length;) {
         var r = e[f];
         if (t) {
           if ("/" === r) {
-            for (var u = 0, o = n.length - 1; o >= 0 && "\\" === n[o]; ) u += 1, o -= 1;
+            for (var u = 0, o = n.length - 1; o >= 0 && "\\" === n[o];) u += 1, o -= 1;
             if (u % 2 == 0) {
-              for (n += r, f += 1; f < e.length && /[gimsuy]/.test(e[f]); ) n += e[f], f += 1;
+              for (n += r, f += 1; f < e.length && /[gimsuy]/.test(e[f]);) n += e[f], f += 1;
               t = false;
               continue;
             }
@@ -21283,30 +22210,38 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return i.push(n), i;
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript", n = "injectedScript", isInlineScript = function isInlineScript(t) {
-        return t.includes(r);
-      }, isInjectedScript = function isInjectedScript(t) {
-        return t.includes(n);
-      };
+      var r = "inlineScript",
+        n = "injectedScript",
+        isInlineScript = function isInlineScript(t) {
+          return t.includes(r);
+        },
+        isInjectedScript = function isInjectedScript(t) {
+          return t.includes(n);
+        };
       if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href, s = e.indexOf("#");
+      var e = window.location.href,
+        s = e.indexOf("#");
       -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map((function(t) {
+      var c = i.split("\n").slice(2).map(function (t) {
         return t.trim();
-      })).map((function(t) {
-        var i, s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
+      }).map(function (t) {
+        var i,
+          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
         if (s) {
-          var c, l, a = s[2], u = s[3], o = s[4];
+          var c,
+            l,
+            a = s[2],
+            u = s[3],
+            o = s[4];
           if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
             var d;
             a = n;
             var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), 
-            i = `${f} ${a}${u}${o}`.trim();
+            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
           } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
         } else i = t;
         return i;
-      }));
+      });
       if (c) for (var l = 0; l < c.length; l += 1) {
         if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
         if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
@@ -21314,22 +22249,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"), e = null == t ? void 0 : t.value;
+      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
+        e = null == t ? void 0 : t.value;
       if (t && "function" == typeof t.value) return e;
       throw new Error("RegExp.prototype.test is not a function");
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -21342,11 +22283,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function createOnErrorHandler(r) {
       var n = window.onerror;
-      return function(e) {
+      return function (e) {
         if ("string" == typeof e && e.includes(r)) return true;
         if (n instanceof Function) {
           for (var t = arguments.length, o = new Array(t > 1 ? t - 1 : 0), i = 1; i < t; i++) o[i - 1] = arguments[i];
-          return n.apply(window, [ e, ...o ]);
+          return n.apply(window, [e, ...o]);
         }
         return false;
       };
@@ -21364,18 +22305,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (0 === r.length) return 0 === n.length;
       if (0 === n.length) return false;
       for (var t, _loop = function _loop() {
-        var t = n[e];
-        return r.some((function(r) {
-          return isValueMatched(r, t);
-        })) ? 0 : {
-          v: false
-        };
-      }, e = 0; e < n.length; e += 1) if (0 !== (t = _loop()) && t) return t.v;
+          var t = n[e];
+          return r.some(function (r) {
+            return isValueMatched(r, t);
+          }) ? 0 : {
+            v: false
+          };
+        }, e = 0; e < n.length; e += 1) if (0 !== (t = _loop()) && t) return t.v;
       return true;
     }
     function isObjectMatched(e, t) {
       for (var r = Object.keys(t), a = 0; a < r.length; a += 1) {
-        var c = r[a], n = e[c];
+        var c = r[a],
+          n = e[c];
         if (!isValueMatched(n, t[c])) return false;
       }
       return true;
@@ -21395,9 +22337,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function restoreRegExpValues(e) {
       if (e.length) try {
         var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce((function(e, r, t) {
+        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
           return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        }));
+        });
         var t = new RegExp(r);
         e.toString().replace(t, "");
       } catch (e) {
@@ -21405,7 +22347,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.log(n);
       }
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedSuppressNativeMethod.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -21420,7 +22362,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   function xmlPrune(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -21456,13 +22397,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return matchedElements;
       };
       var xPathPruning = function xPathPruning(xPathElements) {
-        xPathElements.forEach((function(element) {
+        xPathElements.forEach(function (element) {
           if (element.nodeType === 1) {
             element.remove();
           } else if (element.nodeType === 2) {
             element.ownerElement.removeAttribute(element.nodeName);
           }
-        }));
+        });
       };
       var isXML = function isXML(text) {
         if (typeof text === "string") {
@@ -21474,7 +22415,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return false;
       };
       var createXMLDocument = function createXMLDocument(text) {
-        var xmlParser = new DOMParser;
+        var xmlParser = new DOMParser();
         var xmlDocument = xmlParser.parseFromString(text, "text/xml");
         return xmlDocument;
       };
@@ -21512,22 +22453,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (isXpath) {
           xPathPruning(elements);
         } else {
-          elements.forEach((function(elem) {
+          elements.forEach(function (elem) {
             elem.remove();
-          }));
+          });
         }
         if (shouldLogContent) {
           logMessage(source, "Modified xml:");
           logMessage(source, xmlDoc, true, false);
         }
-        var serializer = new XMLSerializer;
+        var serializer = new XMLSerializer();
         text = serializer.serializeToString(xmlDoc);
         return text;
       };
       var nativeOpen = window.XMLHttpRequest.prototype.open;
       var nativeSend = window.XMLHttpRequest.prototype.send;
-      var matchedXhrRequests = new Set;
-      var xhrRequestHeaders = new Map;
+      var matchedXhrRequests = new Set();
+      var xhrRequestHeaders = new Map();
       var xhrData;
       var openWrapper = function openWrapper(target, thisArg, args) {
         xhrData = getXhrData.apply(null, args);
@@ -21551,17 +22492,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return Reflect.apply(target, thisArg, args);
       };
       var sendWrapper = function sendWrapper(target, thisArg, args) {
-        var allowedResponseTypeValues = [ "", "text" ];
+        var allowedResponseTypeValues = ["", "text"];
         if (!matchedXhrRequests.has(thisArg) || !allowedResponseTypeValues.includes(thisArg.responseType)) {
           return Reflect.apply(target, thisArg, args);
         }
-        var forgedRequest = new XMLHttpRequest;
+        var forgedRequest = new XMLHttpRequest();
         forgedRequest.withCredentials = thisArg.withCredentials;
-        forgedRequest.addEventListener("readystatechange", (function() {
+        forgedRequest.addEventListener("readystatechange", function () {
           if (forgedRequest.readyState !== 4) {
             return;
           }
-          var {readyState: readyState, response: response, responseText: responseText, responseURL: responseURL, responseXML: responseXML, status: status, statusText: statusText} = forgedRequest;
+          var {
+            readyState: readyState,
+            response: response,
+            responseText: responseText,
+            responseURL: responseURL,
+            responseXML: responseXML,
+            status: status,
+            statusText: statusText
+          } = forgedRequest;
           var content = responseText || response;
           if (typeof content !== "string") {
             return;
@@ -21606,25 +22555,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               writable: false
             }
           });
-          setTimeout((function() {
+          setTimeout(function () {
             var stateEvent = new Event("readystatechange");
             thisArg.dispatchEvent(stateEvent);
             var loadEvent = new ProgressEvent("load");
             thisArg.dispatchEvent(loadEvent);
             var loadEndEvent = new ProgressEvent("loadend");
             thisArg.dispatchEvent(loadEndEvent);
-          }), 1);
+          }, 1);
           if (shouldPruneResponse) {
             hit(source);
           }
-        }));
-        nativeOpen.apply(forgedRequest, [ xhrData.method, xhrData.url ]);
+        });
+        nativeOpen.apply(forgedRequest, [xhrData.method, xhrData.url]);
         var collectedHeaders = xhrRequestHeaders.get(thisArg) || [];
-        collectedHeaders.forEach((function(header) {
+        collectedHeaders.forEach(function (header) {
           var name = header[0];
           var value = header[1];
           forgedRequest.setRequestHeader(name, value);
-        }));
+        });
         xhrRequestHeaders.delete(thisArg);
         matchedXhrRequests.delete(thisArg);
         try {
@@ -21680,33 +22629,42 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function hit(e) {
       if (e.verbose) {
         try {
-          var n = console.trace.bind(console), i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), 
-          e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), 
-          n && n(i);
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
         } catch (e) {}
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2], g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], {name: l, verbose: v} = e;
+      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: l,
+          verbose: v
+        } = e;
       if (n || v) {
         var a = console.log;
         g ? a(`${l}: ${o}`) : a(`${l}:`, o);
       }
     }
     function toRegExp(e) {
-      var r = e || "", t = "/";
+      var r = e || "",
+        t = "/";
       if ("" === r) return new RegExp(".?");
-      var n, i, s = r.lastIndexOf(t), a = r.substring(s + 1), g = r.substring(0, s + 1), u = (i = a, 
-      (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function(e) {
-        if (!e) return false;
-        try {
-          return new RegExp("", e), !0;
-        } catch (e) {
-          return false;
-        }
-      }(i) ? i : "");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
       if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
       var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(c);
@@ -21722,44 +22680,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
-      var a, s = parseMatchProps(t);
+      var a,
+        s = parseMatchProps(t);
       if (isValidParsedData(s)) {
         var n = getMatchPropsData(s);
-        a = Object.keys(n).every((function(e) {
-          var t = n[e], a = r[e];
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
           return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        }));
+        });
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
     function getMatchPropsData(t) {
       var a = {};
-      return Object.keys(t).forEach((function(c) {
+      return Object.keys(t).forEach(function (c) {
         a[c] = toRegExp(t[c]);
-      })), a;
+      }), a;
     }
     function getRequestProps() {
-      return [ "url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode" ];
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
     }
     function isValidParsedData(t) {
-      return Object.values(t).every((function(t) {
+      return Object.values(t).every(function (t) {
         return isValidStrPattern(t);
-      }));
+      });
     }
     function parseMatchProps(e) {
       var r = {};
-      return e.split(" ").forEach((function(e) {
-        var n = e.indexOf(":"), i = e.slice(0, n);
-        if (function(e) {
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
           return getRequestProps().includes(e);
         }(i)) {
           var s = e.slice(n + 1);
           r[i] = s;
         } else r.url = e;
-      })), r;
+      }), r;
     }
     function isValidStrPattern(e) {
-      var t, n = escapeRegExp(e);
+      var t,
+        n = escapeRegExp(e);
       "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
       try {
         t = new RegExp(n), t = !0;
@@ -21771,7 +22733,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function escapeRegExp(e) {
       return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
-    var updatedArgs = args ? [].concat(source).concat(args) : [ source ];
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       xmlPrune.apply(this, updatedArgs);
       if (source.uniqueId) {
@@ -21786,7 +22748,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  
   var scriptletsMap = {
     "amazon-apstag": AmazonApstag,
     "ubo-amazon_apstag.js": AmazonApstag,
@@ -21932,8 +22893,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-addEventListener-logger": logAddEventListener,
     "ubo-aell": logAddEventListener,
     "log-eval": logEval,
-    log: log,
-    "abp-log": log,
+    log: log$2,
+    "abp-log": log$2,
     "log-on-stack-trace": logOnStackTrace,
     "m3u-prune": m3uPrune,
     "m3u-prune.js": m3uPrune,
@@ -22146,11 +23107,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-xml-prune.js": xmlPrune,
     "ubo-xml-prune": xmlPrune
   };
-  
   var getScriptletFunction = function getScriptletFunction(name) {
     return scriptletsMap[name];
   };
-  
   function passSourceAndProps(source, code) {
     var redirect = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     var sourceString = JSON.stringify(source);
@@ -22181,8 +23140,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
 
   /*
-   * SafariExtension v4.0.4 (build date: Fri, 15 Aug 2025 06:06:17 GMT)
-   * (c) 2025 Adguard Software Ltd.
+   * SafariExtension v4.2.1 (build date: Thu, 19 Feb 2026 11:51:07 GMT)
+   * (c) 2026 Adguard Software Ltd.
    * Released under the GPL-3.0 license
    * https://github.com/AdguardTeam/SafariConverterLib/tree/master/Extension
    */
@@ -22307,7 +23266,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * that can be redefined via `setLogger`.
    */
   const log$1 = new ProxyLogger();
-  const version = "4.0.4";
+  const version = "4.2.1";
 
   /**
    * @file Contains common constants and helper functions.
