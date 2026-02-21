@@ -201,7 +201,7 @@ struct UserScriptManagerView: View {
             })
         }
         .sheet(item: $selectedScript) { script in
-            UserScriptContentView(script: script)
+            UserScriptContentView(script: script, userScriptManager: userScriptManager)
         }
         .onAppear {
             refreshScripts()
@@ -720,22 +720,27 @@ struct ScriptContentMainView: View {
     @Binding var displayedContent: String
     @Binding var isLoadingContent: Bool
     @Binding var showFullContent: Bool
+    @Binding var isEditing: Bool
+    @Binding var editableContent: String
+    @Binding var isSaving: Bool
+    var userScriptManager: UserScriptManager
     let previewLength: Int
     let formatFileSize: (Int) -> String
     let toggleContentViewAction: () -> Void
+    let onSaved: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Script Content").font(.headline).fontWeight(.medium)
-                    if !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
+                    if !isEditing && !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle").font(.caption2).foregroundColor(.orange)
                             Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))")
                                 .font(.caption).foregroundColor(.secondary)
                         }
-                    } else if showFullContent && script.content.count > previewLength {
+                    } else if !isEditing && showFullContent && script.content.count > previewLength {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark.circle").font(.caption2).foregroundColor(.green)
                             Text("Full content loaded").font(.caption).foregroundColor(.secondary)
@@ -744,15 +749,49 @@ struct ScriptContentMainView: View {
                 }
                 Spacer()
                 HStack(spacing: 12) {
-                    if !script.content.isEmpty && script.content.count > previewLength {
-                        Button { toggleContentViewAction() } label: {
-                            HStack(spacing: 6) {
-                                if isLoadingContent { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
-                                else { Image(systemName: showFullContent ? "eye.slash" : "eye") }
-                                Text(showFullContent ? "Show Preview" : "Show All")
+                    if isEditing {
+                        Button("Cancel") { isEditing = false }
+                            .buttonStyle(.borderless)
+                        Button {
+                            isSaving = true
+                            Task {
+                                await userScriptManager.saveEditedContent(for: script.id, newContent: editableContent)
+                                displayedContent = editableContent
+                                isSaving = false
+                                isEditing = false
+                                onSaved()
                             }
-                        }.buttonStyle(.borderless).disabled(isLoadingContent)
-                         .help(showFullContent ? "Show preview only" : "Load full content")
+                        } label: {
+                            HStack(spacing: 6) {
+                                if isSaving { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
+                                Text("Save")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isSaving)
+                    } else {
+                        if !script.content.isEmpty {
+                            Button {
+                                editableContent = script.content
+                                isEditing = true
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "pencil")
+                                    Text("Edit")
+                                }
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                        if !script.content.isEmpty && script.content.count > previewLength {
+                            Button { toggleContentViewAction() } label: {
+                                HStack(spacing: 6) {
+                                    if isLoadingContent { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
+                                    else { Image(systemName: showFullContent ? "eye.slash" : "eye") }
+                                    Text(showFullContent ? "Show Preview" : "Show All")
+                                }
+                            }.buttonStyle(.borderless).disabled(isLoadingContent)
+                             .help(showFullContent ? "Show preview only" : "Load full content")
+                        }
                     }
                 }
             }.padding(.horizontal, 20).padding(.vertical, 12)
@@ -763,6 +802,10 @@ struct ScriptContentMainView: View {
                     Text("No Content Available").font(.headline).foregroundColor(.secondary)
                     Text("This script hasn't been downloaded yet.").font(.body).foregroundColor(.secondary)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if isEditing {
+                TextEditor(text: $editableContent)
+                    .font(.system(.body, design: .monospaced))
+                    .padding(8)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
@@ -787,12 +830,16 @@ struct ScriptContentMainView: View {
 
 struct UserScriptContentView: View {
     let script: UserScript
+    var userScriptManager: UserScriptManager
     @Environment(\.dismiss) private var dismiss
     @State private var displayedContent: String = ""
     @State private var isLoadingContent = false
     @State private var showFullContent = false
     @State private var sidebarWidth: CGFloat = 280
     @State private var isPatternsExpanded = false
+    @State private var isEditing = false
+    @State private var editableContent = ""
+    @State private var isSaving = false
 
     private let previewLength = 10000
     #if os(macOS)
@@ -833,6 +880,13 @@ struct UserScriptContentView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
+                        } else if isEditing {
+                            TextEditor(text: $editableContent)
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(minHeight: 300)
+                                .padding(4)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         } else {
                             Text(displayedContent)
                                 .font(.system(.caption, design: .monospaced))
@@ -850,8 +904,41 @@ struct UserScriptContentView: View {
             .navigationTitle(script.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                if isEditing {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") { isEditing = false }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            isSaving = true
+                            Task {
+                                await userScriptManager.saveEditedContent(for: script.id, newContent: editableContent)
+                                displayedContent = editableContent
+                                isSaving = false
+                                isEditing = false
+                            }
+                        } label: {
+                            if isSaving {
+                                ProgressView().scaleEffect(0.8)
+                            } else {
+                                Text("Save").bold()
+                            }
+                        }
+                        .disabled(isSaving)
+                    }
+                } else {
+                    if !script.content.isEmpty {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Edit") {
+                                editableContent = script.content
+                                isEditing = true
+                                showFullContent = true
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") { dismiss() }
+                    }
                 }
             }
         }
@@ -871,9 +958,14 @@ struct UserScriptContentView: View {
                 displayedContent: $displayedContent,
                 isLoadingContent: $isLoadingContent,
                 showFullContent: $showFullContent,
+                isEditing: $isEditing,
+                editableContent: $editableContent,
+                isSaving: $isSaving,
+                userScriptManager: userScriptManager,
                 previewLength: previewLength,
                 formatFileSize: formatFileSize,
-                toggleContentViewAction: toggleContentView
+                toggleContentViewAction: toggleContentView,
+                onSaved: {}
             )
             .frame(minWidth: 400)
         }
