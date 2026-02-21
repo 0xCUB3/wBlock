@@ -48,7 +48,7 @@ struct UserScriptManagerView: View {
     private var displayedScripts: [UserScript] {
         let filteredByEnabled = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
         guard !trimmedSearchText.isEmpty else {
-            return filteredByEnabled
+            return filteredByEnabled.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         }
 
         return filteredByEnabled.filter { script in
@@ -57,7 +57,7 @@ struct UserScriptManagerView: View {
                 || (script.url?.absoluteString.localizedCaseInsensitiveContains(trimmedSearchText)
                     ?? false)
                 || (script.updateURL?.localizedCaseInsensitiveContains(trimmedSearchText) ?? false)
-        }
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     var body: some View {
