@@ -1690,6 +1690,17 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    public func saveEditedContent(for scriptId: UUID, newContent: String) async {
+        guard let index = indexOfUserScript(withId: scriptId) else { return }
+        userScripts[index].content = newContent
+        userScripts[index].parseMetadata()
+        userScripts[index].lastUpdated = Date()
+        _ = writeUserScriptContent(userScripts[index])
+        _ = writeUserScriptResources(userScripts[index])
+        await persistUserScriptsNow()
+        logger.info("Saved edited content for \(self.userScripts[index].name)")
+    }
+
     public struct AutoUpdateResult: Sendable {
         public let updated: Int
         public let failed: Int
