@@ -510,7 +510,10 @@ struct UserScriptManagerView: View {
         .contentShape(.interaction, Rectangle())
         .onTapGesture {
             if script.isDownloaded {
-                selectedScript = script
+                // Defer to avoid race with context menu dismissal on iOS
+                DispatchQueue.main.async {
+                    selectedScript = script
+                }
             }
         }
         .contextMenu {
@@ -772,8 +775,12 @@ struct ScriptContentMainView: View {
                     } else {
                         if !script.content.isEmpty {
                             Button {
-                                editableContent = script.content
                                 isEditing = true
+                                Task.detached { [content = script.content] in
+                                    await MainActor.run {
+                                        editableContent = content
+                                    }
+                                }
                             } label: {
                                 HStack(spacing: 6) {
                                     Image(systemName: "pencil")
@@ -805,7 +812,9 @@ struct ScriptContentMainView: View {
             } else if isEditing {
                 TextEditor(text: $editableContent)
                     .font(.system(.body, design: .monospaced))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(8)
+                    .scrollContentBackground(.hidden)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
@@ -883,10 +892,12 @@ struct UserScriptContentView: View {
                         } else if isEditing {
                             TextEditor(text: $editableContent)
                                 .font(.system(.caption, design: .monospaced))
-                                .frame(minHeight: 300)
+                                .frame(minHeight: 300, maxHeight: .infinity)
+                                .frame(maxWidth: .infinity)
                                 .padding(4)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
+                                .scrollContentBackground(.hidden)
                         } else {
                             Text(displayedContent)
                                 .font(.system(.caption, design: .monospaced))
@@ -930,9 +941,13 @@ struct UserScriptContentView: View {
                     if !script.content.isEmpty {
                         ToolbarItem(placement: .navigationBarLeading) {
                             Button("Edit") {
-                                editableContent = script.content
                                 isEditing = true
                                 showFullContent = true
+                                Task.detached { [content = script.content] in
+                                    await MainActor.run {
+                                        editableContent = content
+                                    }
+                                }
                             }
                         }
                     }
