@@ -384,7 +384,15 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 ForEach(filters) { filter in
-                    filterRowView(filter: filter)
+                    FilterRowView(
+                        filter: filter,
+                        isInlineUserList: isInlineUserList(filter),
+                        onEdit: { editingCustomFilter = filter },
+                        onDelete: { filterManager.removeFilterList(filter) },
+                        onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
+                        onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
+                    )
+                    .equatable()
 
                     if filter.id != filters.last?.id {
                         Divider()
@@ -426,7 +434,15 @@ struct ContentView: View {
             if dataManager.isForeignFiltersExpanded {
                 VStack(spacing: 0) {
                     ForEach(filters) { filter in
-                        filterRowView(filter: filter)
+                        FilterRowView(
+                            filter: filter,
+                            isInlineUserList: isInlineUserList(filter),
+                            onEdit: { editingCustomFilter = filter },
+                            onDelete: { filterManager.removeFilterList(filter) },
+                            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
+                            onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
+                        )
+                        .equatable()
 
                         if filter.id != filters.last?.id {
                             Divider()
@@ -439,7 +455,21 @@ struct ContentView: View {
         }
     }
 
-    private func filterRowView(filter: FilterList) -> some View {
+}
+
+struct FilterRowView: View, Equatable {
+    let filter: FilterList
+    let isInlineUserList: Bool
+    var onEdit: () -> Void
+    var onDelete: () -> Void
+    var onToggle: (Bool) -> Void
+    var onShowRuleLimitWarning: () -> Void
+
+    static func == (lhs: FilterRowView, rhs: FilterRowView) -> Bool {
+        lhs.filter == rhs.filter && lhs.isInlineUserList == rhs.isInlineUserList
+    }
+
+    var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
@@ -529,11 +559,9 @@ struct ContentView: View {
                         // Defer state change to next run loop to avoid layout invalidation during scroll
                         DispatchQueue.main.async {
                             if newValue && filter.limitExceededReason != nil {
-                                filterManager.showRuleLimitWarning(for: filter)
-                                filterManager.toggleFilterListSelection(id: filter.id)
-                            } else {
-                                filterManager.toggleFilterListSelection(id: filter.id)
+                                onShowRuleLimitWarning()
                             }
+                            onToggle(newValue)
                         }
                     }
                 )
@@ -548,13 +576,13 @@ struct ContentView: View {
         .contextMenu {
             if filter.isCustom {
                 Button {
-                    editingCustomFilter = filter
+                    onEdit()
                 } label: {
-                    Label(isInlineUserList(filter) ? "Edit Rules" : "Edit Name", systemImage: "pencil")
+                    Label(isInlineUserList ? "Edit Rules" : "Edit Name", systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
-                    filterManager.removeFilterList(filter)
+                    onDelete()
                 } label: {
                     Label("Delete Added List", systemImage: "trash")
                 }
@@ -571,7 +599,6 @@ struct ContentView: View {
             }
         }
     }
-
 }
 
 struct ContentModifiers: ViewModifier {
