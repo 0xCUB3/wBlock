@@ -106,6 +106,8 @@ async function notifyZapperRulesChanged(tabId) {
 
 let zapperRulesExpanded = false;
 let currentZapperRules = [];
+let host = '';
+let tab = null;
 
 function setRulesExpanded(expanded) {
     zapperRulesExpanded = expanded;
@@ -182,42 +184,14 @@ async function reloadActiveTab(tabId) {
     }
 }
 
-async function refreshUi() {
-    setError('');
-
-    const hostEl = document.getElementById('site-host');
+function setupListeners() {
+    const rulesToggle = document.getElementById('zapper-rules-toggle');
+    const rulesContainer = document.getElementById('zapper-rules');
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
-    const rulesToggle = document.getElementById('zapper-rules-toggle');
-
-    const tab = await getActiveTab();
-    const host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
-
-    if (hostEl) hostEl.textContent = host || '—';
-
-    if (!tab || !tab.id || !host) {
-        setStatus('Unavailable', 'neutral');
-        if (disableToggle) disableToggle.disabled = true;
-        if (zapperActivate) zapperActivate.disabled = true;
-        if (rulesToggle) rulesToggle.disabled = true;
-        await updateZapperCount('');
-        setRulesExpanded(false);
-        return;
-    }
-
-    setStatus('Checking…', 'neutral');
-
-    const disabled = await getSiteDisabledState(host);
-    if (disableToggle) {
-        disableToggle.checked = disabled;
-        disableToggle.disabled = false;
-    }
-    setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');
-
-    await updateZapperCount(host);
+    const zapperClear = document.getElementById('zapper-clear');
 
     if (rulesToggle) {
-        rulesToggle.disabled = false;
         rulesToggle.addEventListener('click', async () => {
             try {
                 setError('');
@@ -232,7 +206,6 @@ async function refreshUi() {
         });
     }
 
-    const rulesContainer = document.getElementById('zapper-rules');
     if (rulesContainer) {
         rulesContainer.addEventListener('click', async (event) => {
             const element = event && event.target && event.target.closest ? event.target.closest('button.rule-delete') : null;
@@ -294,7 +267,6 @@ async function refreshUi() {
         });
     }
 
-    const zapperClear = document.getElementById('zapper-clear');
     if (zapperClear) {
         zapperClear.addEventListener('click', async () => {
             try {
@@ -314,7 +286,52 @@ async function refreshUi() {
     }
 }
 
+async function refreshUi() {
+    setError('');
+
+    const hostEl = document.getElementById('site-host');
+    const disableToggle = document.getElementById('disable-toggle');
+    const zapperActivate = document.getElementById('zapper-activate');
+    const rulesToggle = document.getElementById('zapper-rules-toggle');
+
+    tab = await getActiveTab();
+    host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
+
+    if (hostEl) hostEl.textContent = host || '—';
+
+    if (!tab || !tab.id || !host) {
+        setStatus('Unavailable', 'neutral');
+        if (disableToggle) disableToggle.disabled = true;
+        if (zapperActivate) zapperActivate.disabled = true;
+        if (rulesToggle) rulesToggle.disabled = true;
+        await updateZapperCount('');
+        setRulesExpanded(false);
+        return;
+    }
+
+    setStatus('Checking…', 'neutral');
+
+    const disabled = await getSiteDisabledState(host);
+    if (disableToggle) {
+        disableToggle.checked = disabled;
+        disableToggle.disabled = false;
+    }
+    setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');
+
+    if (rulesToggle) {
+        rulesToggle.disabled = false;
+    }
+
+    await updateZapperCount(host);
+
+    if (zapperRulesExpanded) {
+        currentZapperRules = await loadZapperRules(host);
+        renderZapperRules(currentZapperRules);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    setupListeners();
     refreshUi().catch((error) => {
         console.error('[wBlock] Popup init failed:', error);
         setError('Failed to load popup.');
