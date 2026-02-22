@@ -452,6 +452,7 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     /// Adds a single selector to the host's list if not already present.
+    /// Also clears any matching pending deletion (the user re-created a previously deleted rule).
     @MainActor
     public func addZapperRule(_ selector: String, forHost host: String) async {
         let trimmed = selector.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -460,19 +461,22 @@ public class ProtobufDataManager: ObservableObject {
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             if !ruleList.selectors.contains(trimmed) {
                 ruleList.selectors.append(trimmed)
-                data.extensionData.zapperRulesByHost[host] = ruleList
-                data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
             }
+            ruleList.pendingDeletions.removeAll { $0 == trimmed }
+            data.extensionData.zapperRulesByHost[host] = ruleList
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
     }
 
-    /// Removes a single selector. If the selectors array becomes empty, removes the host key.
+    /// Removes a single selector. If the selectors array becomes empty, removes the host key
+    /// (but keeps it if there are pending deletions the extension hasn't consumed yet).
     @MainActor
     public func deleteZapperRule(_ selector: String, forHost host: String) async {
         await updateData { data in
-            guard var ruleList = data.extensionData.zapperRulesByHost[host] else { return }
+            var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             ruleList.selectors.removeAll { $0 == selector }
-            if ruleList.selectors.isEmpty {
+            ruleList.pendingDeletions.append(selector)
+            if ruleList.selectors.isEmpty && ruleList.pendingDeletions.isEmpty {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
                 data.extensionData.zapperRulesByHost[host] = ruleList
@@ -481,13 +485,43 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
-    /// Removes the host key entirely from the map.
+    /// Removes all selectors for a host and records them as pending deletions
+    /// so the extension sync handler can filter them out.
     @MainActor
     public func deleteAllZapperRules(forHost host: String) async {
         await updateData { data in
-            data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+            var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
+            ruleList.selectors.removeAll()
+            if ruleList.pendingDeletions.isEmpty {
+                data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+            } else {
+                data.extensionData.zapperRulesByHost[host] = ruleList
+            }
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
+    }
+
+    /// Returns and clears pending deletions for a host. Used by the sync handler to
+    /// filter out rules deleted from the app before the extension could be notified.
+    @MainActor
+    public func consumeZapperPendingDeletions(forHost host: String) async -> [String] {
+        var updatedData = await latestAppDataSnapshot()
+        guard var ruleList = updatedData.extensionData.zapperRulesByHost[host],
+              !ruleList.pendingDeletions.isEmpty else {
+            return []
+        }
+        let deletions = ruleList.pendingDeletions
+        ruleList.pendingDeletions.removeAll()
+        if ruleList.selectors.isEmpty {
+            updatedData.extensionData.zapperRulesByHost.removeValue(forKey: host)
+        } else {
+            updatedData.extensionData.zapperRulesByHost[host] = ruleList
+        }
+        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        appData = updatedData
+        await saveData()
+        return deletions
     }
 
     /// Re-inserts a selector at the given index (clamped to bounds).
