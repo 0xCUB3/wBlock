@@ -416,20 +416,26 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
 
+            // Consume any rules deleted from the app since last sync
+            let pendingDeletions = await ProtobufDataManager.shared.consumeZapperPendingDeletions(forHost: hostname)
+            let deletionSet = Set(pendingDeletions)
+
             if let rules = message["rules"] as? [String] {
-                let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                let filtered = rules
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty && !deletionSet.contains($0) }
                 if filtered.isEmpty {
                     await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
                 } else {
                     await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: filtered)
                 }
+                let response = createResponse(with: ["ok": true, "rules": filtered])
+                context.completeRequest(returningItems: [response])
             } else {
-                // No rules array means clear
                 await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
+                let response = createResponse(with: ["ok": true, "rules": [String]()])
+                context.completeRequest(returningItems: [response])
             }
-
-            let response = createResponse(with: ["ok": true])
-            context.completeRequest(returningItems: [response])
         }
     }
 
