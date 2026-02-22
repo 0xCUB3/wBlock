@@ -9,6 +9,7 @@ import Foundation
 internal import SwiftProtobuf
 import Combine
 import os.log
+import Darwin
 
 // MARK: - Disk I/O (off MainActor)
 
@@ -36,13 +37,144 @@ private actor ProtobufDiskStore {
         try data.write(to: url, options: .atomic)
     }
 
-    func writeAppDataIfChanged(appData: Wblock_Data_AppData, previousData: Data?, to url: URL) throws -> (rawData: Data, modificationDate: Date?)? {
-        let rawData = try appData.serializedData()
-        if let previousData, previousData == rawData {
-            return nil
+    func dataVersion(for url: URL) -> Int64 {
+        guard fileExists(at: url),
+              let rawVersion = try? Data(contentsOf: url),
+              let stringVersion = String(data: rawVersion, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              let version = Int64(stringVersion) else {
+            return 0
         }
-        try writeData(rawData, to: url)
-        return (rawData: rawData, modificationDate: modificationDate(for: url))
+        return max(version, 0)
+    }
+
+    private func writeDataVersion(_ version: Int64, to url: URL) throws {
+        let rawVersion = Data(String(max(version, 0)).utf8)
+        try writeData(rawVersion, to: url)
+    }
+
+    private func withExclusiveFileLock<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {
+        let lockURL = dataURL.appendingPathExtension("lock")
+        if !fileExists(at: lockURL) {
+            _ = fileManager.createFile(atPath: lockURL.path, contents: Data())
+        }
+
+        let descriptor = open(lockURL.path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else {
+            let message = String(cString: strerror(errno))
+            throw NSError(
+                domain: "ProtobufDiskStore",
+                code: Int(errno),
+                userInfo: [NSLocalizedDescriptionKey: "Failed to open lock file: \(message)"]
+            )
+        }
+
+        guard flock(descriptor, LOCK_EX) == 0 else {
+            let errorCode = errno
+            let message = String(cString: strerror(errorCode))
+            close(descriptor)
+            throw NSError(
+                domain: "ProtobufDiskStore",
+                code: Int(errorCode),
+                userInfo: [NSLocalizedDescriptionKey: "Failed to lock data file: \(message)"]
+            )
+        }
+
+        defer {
+            _ = flock(descriptor, LOCK_UN)
+            close(descriptor)
+        }
+
+        return try operation()
+    }
+
+    func mutateAppDataAtomically<Result: Sendable>(
+        at dataURL: URL,
+        versionURL: URL,
+        mutate: @Sendable (inout Wblock_Data_AppData) -> Result
+    ) throws -> (
+        appData: Wblock_Data_AppData,
+        rawData: Data,
+        modificationDate: Date?,
+        version: Int64,
+        didWrite: Bool,
+        result: Result
+    ) {
+        try withExclusiveFileLock(for: dataURL) {
+            let persistedRawData = try? Data(contentsOf: dataURL)
+            var workingData: Wblock_Data_AppData
+
+            if let persistedRawData {
+                workingData = try Wblock_Data_AppData(serializedData: persistedRawData)
+            } else {
+                workingData = Wblock_Data_AppData()
+            }
+
+            let mutationResult = mutate(&workingData)
+            let updatedRawData = try workingData.serializedData()
+            let currentVersion = dataVersion(for: versionURL)
+
+            if persistedRawData == updatedRawData {
+                return (
+                    appData: workingData,
+                    rawData: updatedRawData,
+                    modificationDate: modificationDate(for: dataURL),
+                    version: currentVersion,
+                    didWrite: false,
+                    result: mutationResult
+                )
+            }
+
+            try writeData(updatedRawData, to: dataURL)
+            let nextVersion = currentVersion + 1
+            try writeDataVersion(nextVersion, to: versionURL)
+
+            return (
+                appData: workingData,
+                rawData: updatedRawData,
+                modificationDate: modificationDate(for: dataURL),
+                version: nextVersion,
+                didWrite: true,
+                result: mutationResult
+            )
+        }
+    }
+
+    func writeAppDataIfChanged(
+        appData: Wblock_Data_AppData,
+        previousData: Data?,
+        to dataURL: URL,
+        versionURL: URL
+    ) throws -> (rawData: Data, modificationDate: Date?, version: Int64)? {
+        try withExclusiveFileLock(for: dataURL) {
+            let persistedRawData = try? Data(contentsOf: dataURL)
+            var mergedSnapshot = appData
+
+            // If another process wrote between our read and this debounced write,
+            // preserve authoritative zapper state from disk to avoid clobbering it.
+            if let persistedRawData,
+               let previousData,
+               previousData != persistedRawData,
+               let persistedAppData = try? Wblock_Data_AppData(serializedData: persistedRawData) {
+                mergedSnapshot.extensionData.zapperRulesByHost = persistedAppData.extensionData.zapperRulesByHost
+                mergedSnapshot.extensionData.lastUpdated = max(
+                    mergedSnapshot.extensionData.lastUpdated,
+                    persistedAppData.extensionData.lastUpdated
+                )
+            }
+
+            let rawData = try mergedSnapshot.serializedData()
+            if let persistedRawData, persistedRawData == rawData {
+                return nil
+            }
+
+            try writeData(rawData, to: dataURL)
+
+            let nextVersion = dataVersion(for: versionURL) + 1
+            try writeDataVersion(nextVersion, to: versionURL)
+
+            return (rawData: rawData, modificationDate: modificationDate(for: dataURL), version: nextVersion)
+        }
     }
 
     func removeItemIfExists(at url: URL) throws {
@@ -439,7 +571,7 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setZapperRules(forHost host: String, rules: [String]) async {
         let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        await updateData { data in
+        await updateDataImmediately { data in
             if filtered.isEmpty {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
@@ -457,7 +589,7 @@ public class ProtobufDataManager: ObservableObject {
     public func addZapperRule(_ selector: String, forHost host: String) async {
         let trimmed = selector.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        await updateData { data in
+        await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             if !ruleList.selectors.contains(trimmed) {
                 ruleList.selectors.append(trimmed)
@@ -472,7 +604,7 @@ public class ProtobufDataManager: ObservableObject {
     /// (but keeps it if there are pending deletions the extension hasn't consumed yet).
     @MainActor
     public func deleteZapperRule(_ selector: String, forHost host: String) async {
-        await updateData { data in
+        await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             ruleList.selectors.removeAll { $0 == selector }
             ruleList.pendingDeletions.append(selector)
@@ -489,7 +621,7 @@ public class ProtobufDataManager: ObservableObject {
     /// so the extension sync handler can filter them out.
     @MainActor
     public func deleteAllZapperRules(forHost host: String) async {
-        await updateData { data in
+        await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
             ruleList.selectors.removeAll()
@@ -506,28 +638,53 @@ public class ProtobufDataManager: ObservableObject {
     /// filter out rules deleted from the app before the extension could be notified.
     @MainActor
     public func consumeZapperPendingDeletions(forHost host: String) async -> [String] {
-        var updatedData = await latestAppDataSnapshot()
-        guard var ruleList = updatedData.extensionData.zapperRulesByHost[host],
-              !ruleList.pendingDeletions.isEmpty else {
+        pendingSaveTask?.cancel()
+
+        do {
+            let mutation = try await diskStore.mutateAppDataAtomically(
+                at: dataFileURL,
+                versionURL: dataVersionFileURL
+            ) { data in
+                guard var ruleList = data.extensionData.zapperRulesByHost[host],
+                      !ruleList.pendingDeletions.isEmpty else {
+                    return [String]()
+                }
+
+                let deletions = ruleList.pendingDeletions
+                ruleList.pendingDeletions.removeAll()
+
+                if ruleList.selectors.isEmpty {
+                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                } else {
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                }
+                data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+                return deletions
+            }
+
+            appData = mutation.appData
+            lastSavedData = mutation.rawData
+            lastLoadedDataFileModificationDate = mutation.modificationDate
+            lastLoadedDataVersion = mutation.version
+            lastError = nil
+
+            if mutation.didWrite {
+                logger.info("✅ Saved protobuf data (\(mutation.rawData.count) bytes)")
+                didSaveDataSubject.send()
+            }
+
+            return mutation.result
+        } catch {
+            logger.error("❌ Failed to consume pending zapper deletions: \(error.localizedDescription)")
+            lastError = error
             return []
         }
-        let deletions = ruleList.pendingDeletions
-        ruleList.pendingDeletions.removeAll()
-        if ruleList.selectors.isEmpty {
-            updatedData.extensionData.zapperRulesByHost.removeValue(forKey: host)
-        } else {
-            updatedData.extensionData.zapperRulesByHost[host] = ruleList
-        }
-        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        appData = updatedData
-        await saveData()
-        return deletions
     }
 
     /// Re-inserts a selector at the given index (clamped to bounds).
     @MainActor
     public func restoreZapperRule(_ selector: String, forHost host: String, at index: Int) async {
-        await updateData { data in
+        await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             let insertIndex = min(max(index, 0), ruleList.selectors.count)
             ruleList.selectors.insert(selector, at: insertIndex)
@@ -556,18 +713,25 @@ public class ProtobufDataManager: ObservableObject {
     private let diskStore = ProtobufDiskStore()
     private let dataFileName = "wblock_data.pb"
     private let backupFileName = "wblock_data_backup.pb"
+    private let dataVersionFileName = "wblock_data.version"
     private let migrationFileName = "migration_completed.flag"
     private let terminologySanitizationVersion = 1 // Increment this to re-run sanitization
     private var lastLoadedDataFileModificationDate: Date?
+    private var lastLoadedDataVersion: Int64 = 0
     private var initialLoadTask: Task<Void, Never>?
 
     /// Returns the most recent app data snapshot from disk if available; otherwise, returns the in-memory value.
     /// This helps avoid clobbering concurrent writes from other processes that share the app group file.
-    func latestAppDataSnapshot() async -> Wblock_Data_AppData {
+    func latestAppDataSnapshot(forceReadFromDisk: Bool = false) async -> Wblock_Data_AppData {
         let currentModDate = await diskStore.modificationDate(for: dataFileURL)
+        let currentVersion = await diskStore.dataVersion(for: dataVersionFileURL)
 
         // If nothing changed on disk, avoid redundant decode work.
-        if let currentModDate, currentModDate == lastLoadedDataFileModificationDate {
+        if !forceReadFromDisk,
+            let currentModDate,
+            currentModDate == lastLoadedDataFileModificationDate,
+            currentVersion == lastLoadedDataVersion
+        {
             return appData
         }
 
@@ -576,6 +740,7 @@ public class ProtobufDataManager: ObservableObject {
            let loaded = try? await diskStore.readAppData(from: dataFileURL) {
             lastLoadedDataFileModificationDate = loaded.modificationDate ?? currentModDate
             lastSavedData = loaded.rawData
+            lastLoadedDataVersion = currentVersion
             return loaded.appData
         }
 
@@ -586,21 +751,30 @@ public class ProtobufDataManager: ObservableObject {
     /// Reloads protobuf data from disk only if the underlying file has changed.
     /// Returns `true` when in-memory state was refreshed.
     @discardableResult
-    public func refreshFromDiskIfModified() async -> Bool {
+    public func refreshFromDiskIfModified(forceRead: Bool = false) async -> Bool {
         guard let currentModDate = await diskStore.modificationDate(for: dataFileURL) else {
             return false
         }
-        if let lastLoaded = lastLoadedDataFileModificationDate, lastLoaded == currentModDate {
+        let currentVersion = await diskStore.dataVersion(for: dataVersionFileURL)
+        if !forceRead,
+            let lastLoaded = lastLoadedDataFileModificationDate,
+            lastLoaded == currentModDate,
+            currentVersion == lastLoadedDataVersion
+        {
             return false
         }
 
         do {
             let loaded = try await diskStore.readAppData(from: dataFileURL)
-            appData = loaded.appData
+            let didChange = lastSavedData != loaded.rawData
+            if didChange {
+                appData = loaded.appData
+            }
             lastSavedData = loaded.rawData
             lastLoadedDataFileModificationDate = loaded.modificationDate ?? currentModDate
+            lastLoadedDataVersion = currentVersion
             lastError = nil
-            return true
+            return didChange
         } catch {
             lastError = error
             logger.error("❌ Failed to refresh protobuf data from disk: \(error.localizedDescription)")
@@ -615,6 +789,10 @@ public class ProtobufDataManager: ObservableObject {
     
     private lazy var backupFileURL: URL = {
         getDataDirectoryURL().appendingPathComponent(backupFileName)
+    }()
+
+    private lazy var dataVersionFileURL: URL = {
+        getDataDirectoryURL().appendingPathComponent(dataVersionFileName)
     }()
     
     private lazy var migrationFlagURL: URL = {
@@ -653,6 +831,33 @@ public class ProtobufDataManager: ObservableObject {
         block(&updatedData)
         appData = updatedData
         await saveData()
+    }
+
+    /// Writes immediately for cross-process paths that need deterministic visibility.
+    @MainActor
+    private func updateDataImmediately(with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async {
+        pendingSaveTask?.cancel()
+
+        do {
+            let mutation = try await diskStore.mutateAppDataAtomically(
+                at: dataFileURL,
+                versionURL: dataVersionFileURL,
+                mutate: block
+            )
+            appData = mutation.appData
+            lastSavedData = mutation.rawData
+            lastLoadedDataFileModificationDate = mutation.modificationDate
+            lastLoadedDataVersion = mutation.version
+            lastError = nil
+
+            if mutation.didWrite {
+                logger.info("✅ Saved protobuf data (\(mutation.rawData.count) bytes)")
+                didSaveDataSubject.send()
+            }
+        } catch {
+            logger.error("❌ Failed to save data immediately: \(error.localizedDescription)")
+            lastError = error
+        }
     }
     
     // MARK: - Data Directory Setup
@@ -720,10 +925,12 @@ public class ProtobufDataManager: ObservableObject {
             // Load protobuf data
             if await diskStore.fileExists(at: dataFileURL) {
                 let loaded = try await diskStore.readAppData(from: dataFileURL)
+                let dataVersion = await diskStore.dataVersion(for: dataVersionFileURL)
 
                 appData = loaded.appData
                 lastSavedData = loaded.rawData
                 lastLoadedDataFileModificationDate = loaded.modificationDate
+                lastLoadedDataVersion = dataVersion
                 lastError = nil
 
                 logger.info("✅ Loaded protobuf data (\(loaded.rawData.count) bytes)")
@@ -761,6 +968,7 @@ public class ProtobufDataManager: ObservableObject {
 
             appData = loaded.appData
             lastSavedData = loaded.rawData
+            lastLoadedDataVersion = await diskStore.dataVersion(for: dataVersionFileURL)
             lastError = nil
 
             logger.info("✅ Loaded backup data (\(loaded.rawData.count) bytes)")
@@ -784,8 +992,14 @@ public class ProtobufDataManager: ObservableObject {
         } catch {
             logger.error("⚠️ Failed to remove backup file during reset: \(error.localizedDescription)")
         }
+        do {
+            try await diskStore.removeItemIfExists(at: dataVersionFileURL)
+        } catch {
+            logger.error("⚠️ Failed to remove data version file during reset: \(error.localizedDescription)")
+        }
         lastSavedData = nil
         lastLoadedDataFileModificationDate = nil
+        lastLoadedDataVersion = 0
         await createDefaultData()
     }
 
@@ -862,10 +1076,12 @@ public class ProtobufDataManager: ObservableObject {
             if let result = try await diskStore.writeAppDataIfChanged(
                 appData: snapshot,
                 previousData: previous,
-                to: dataFileURL
+                to: dataFileURL,
+                versionURL: dataVersionFileURL
             ) {
                 lastSavedData = result.rawData
                 lastLoadedDataFileModificationDate = result.modificationDate
+                lastLoadedDataVersion = result.version
                 lastError = nil
                 logger.info("✅ Saved protobuf data (\(result.rawData.count) bytes)")
                 didSaveDataSubject.send()

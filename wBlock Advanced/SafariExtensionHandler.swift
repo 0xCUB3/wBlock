@@ -55,7 +55,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
     @MainActor
     private func refreshSharedDataIfNeeded() async {
         await ProtobufDataManager.shared.waitUntilLoaded()
-        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
     }
 
     /// Handles incoming messages from a web page.

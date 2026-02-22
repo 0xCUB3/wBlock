@@ -139,7 +139,7 @@ struct PopoverView: View {
         }
         .onChange(of: viewModel.showingZapperRules) { expanded in
             guard expanded else { return }
-            viewModel.loadZapperRules()
+            Task { await viewModel.loadZapperRules() }
         }
     }
 

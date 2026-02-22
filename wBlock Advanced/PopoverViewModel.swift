@@ -53,11 +53,12 @@ public class PopoverViewModel: ObservableObject {
             self.host = host
             // Reload data to ensure we have the latest
             await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let list = ProtobufDataManager.shared.disabledSites
             self.isDisabled = isHostDisabled(host: host, disabledSites: list)
             
             // Load zapper rules after host is set
-            self.loadZapperRules()
+            await self.loadZapperRules()
             
             // Load blocked requests log for the active tab
             self.blockedRequests = await ToolbarData.shared.getBlockedURLsOnActiveTab(in: window)
@@ -128,11 +129,13 @@ public class PopoverViewModel: ObservableObject {
     }
     
     /// Load zapper rules for the current host
-    public func loadZapperRules() {
+    public func loadZapperRules() async {
         guard !host.isEmpty else {
             os_log(.info, "PopoverViewModel: Cannot load zapper rules - host is empty")
             return
         }
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
         zapperRules = ProtobufDataManager.shared.getZapperRules(forHost: host)
 
         os_log(.info, "PopoverViewModel: Loaded %d zapper rules for host: %@", zapperRules.count, host)
@@ -196,8 +199,10 @@ public class PopoverViewModel: ObservableObject {
         showingZapperRules.toggle()
         if showingZapperRules {
             // Always reload rules when expanding to ensure fresh data
-            loadZapperRules()
-            os_log(.info, "PopoverViewModel: Toggled zapper rules visibility to %{BOOL}d, reloaded %d rules", showingZapperRules, zapperRules.count)
+            Task {
+                await loadZapperRules()
+                os_log(.info, "PopoverViewModel: Toggled zapper rules visibility to %{BOOL}d, reloaded %d rules", showingZapperRules, zapperRules.count)
+            }
         }
     }
     

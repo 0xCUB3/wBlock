@@ -390,7 +390,6 @@
 
 /* Begin PBXFileReference section */
 		750C5D5C2E82D75100FC2F60 /* wBlock beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "wBlock beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		750C5D5E2E82D75200FC2F60 /* wBlock copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "wBlock copy-Info.plist"; path = "/Users/shindgewongxj/Documents/GitHub/wBlock/wBlock copy-Info.plist"; sourceTree = "<absolute>"; };
 		C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = FilterUpdateService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C2D2DE0897C0056F63D /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C452DE089C50056F63D /* wBlockCoreService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = wBlockCoreService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -874,7 +873,6 @@
 				C1F16CAC2DE355DE0031E7EF /* wBlock Custom (iOS) */,
 				C1A2873E2E73617D00F5B43D /* FilterUpdateService */,
 				C1A41C6A2DE08AD30056F63D /* Frameworks */,
-				750C5D5E2E82D75200FC2F60 /* wBlock copy-Info.plist */,
 				C1A41C2E2DE0897C0056F63D /* Products */,
 				C10F7D172EF5DD3100D9801F /* Recovered References */,
 			);

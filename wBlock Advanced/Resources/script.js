@@ -23791,6 +23791,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   safari.self.addEventListener("message", handleMessage);
 
   // Load persistent zapper rules for this site
+  const PERSISTENT_ZAPPER_SYNC_INTERVAL_MS = 5000;
+  let persistentZapperSyncIntervalId = null;
+  let persistentZapperRulesSignature = "";
+
   function loadPersistentZapperRules() {
     wBlockLogger.info(
       "Loading persistent zapper rules for hostname:",
@@ -23826,6 +23830,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     tryLoadRules();
   }
 
+  function startPersistentZapperRuleSyncLoop() {
+    if (persistentZapperSyncIntervalId !== null) return;
+    persistentZapperSyncIntervalId = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      if (!(safari && safari.extension)) return;
+      safari.extension.dispatchMessage("zapperController", {
+        action: "loadRules",
+        hostname: location.hostname,
+      });
+    }, PERSISTENT_ZAPPER_SYNC_INTERVAL_MS);
+    window.addEventListener(
+      "pagehide",
+      () => {
+        if (persistentZapperSyncIntervalId !== null) {
+          clearInterval(persistentZapperSyncIntervalId);
+          persistentZapperSyncIntervalId = null;
+        }
+      },
+      { once: true },
+    );
+  }
+
   // Automatically load persistent zapper rules on page load
   // Try loading immediately
   loadPersistentZapperRules();
@@ -23846,6 +23872,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       setTimeout(loadPersistentZapperRules, 200);
     });
   }
+  startPersistentZapperRuleSyncLoop();
 
   // Apply zapper rules to the page (for persistent blocking)
   function applyZapperRules(rules) {
@@ -23856,6 +23883,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           .filter(Boolean),
       ),
     );
+    const nextSignature = normalizedRules.join("\u001f");
+
+    if (nextSignature === persistentZapperRulesSignature) {
+      return;
+    }
+    persistentZapperRulesSignature = nextSignature;
 
     if (normalizedRules.length === 0) {
       const styleElement = document.getElementById(

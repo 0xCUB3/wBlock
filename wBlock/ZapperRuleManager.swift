@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import Darwin
 import wBlockCoreService
 
 /// ZapperRuleManager is the unified data layer for element zapper rules stored in protobuf.
@@ -28,16 +29,30 @@ final class ZapperRuleManager: ObservableObject {
     }
 
     private let logger = Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager")
+    private let monitorQueue = DispatchQueue(label: "skula.wBlock.zapper-rules-monitor", qos: .utility)
+    private var dataDirectoryMonitor: DispatchSourceFileSystemObject?
+    private var dataDirectoryFileDescriptor: CInt = -1
+    private var pendingRefreshTask: Task<Void, Never>?
 
-    private init() {}
+    private init() {
+        Task { @MainActor in
+            setupDataDirectoryMonitor()
+            await refreshFromDisk()
+        }
+    }
 
     // MARK: - Public API
 
     /// Reads all hostnames with zapper rules from protobuf and updates the published domains array.
     func refresh() {
-        let discovered = ProtobufDataManager.shared.getZapperDomains()
-        domains = discovered
-        logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
+        Task { @MainActor in
+            await refreshFromDisk()
+        }
+    }
+
+    /// Async variant for call sites that need to await completion.
+    func refreshNow() async {
+        await refreshFromDisk()
     }
 
     /// Returns the stored CSS selector strings for the given hostname, filtered for non-empty entries.
@@ -47,9 +62,9 @@ final class ZapperRuleManager: ObservableObject {
 
     /// Removes a single CSS selector for the hostname and refreshes local state.
     func deleteRule(_ rule: String, forDomain hostname: String) {
-        Task {
+        Task { @MainActor in
             await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: hostname)
-            refresh()
+            await refreshFromDisk()
             if selectedDomain == hostname {
                 rulesForSelectedDomain = rules(for: hostname)
             }
@@ -58,9 +73,9 @@ final class ZapperRuleManager: ObservableObject {
 
     /// Removes all rules for the hostname and refreshes local state.
     func deleteAllRules(forDomain hostname: String) {
-        Task {
+        Task { @MainActor in
             await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
-            refresh()
+            await refreshFromDisk()
             if selectedDomain == hostname {
                 rulesForSelectedDomain = []
             }
@@ -74,12 +89,82 @@ final class ZapperRuleManager: ObservableObject {
 
     /// Re-inserts a previously deleted rule and refreshes local state.
     func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
-        Task {
+        Task { @MainActor in
             await ProtobufDataManager.shared.restoreZapperRule(rule, forHost: hostname, at: index)
-            refresh()
+            await refreshFromDisk()
             if selectedDomain == hostname {
                 rulesForSelectedDomain = rules(for: hostname)
             }
+        }
+    }
+
+    private func refreshFromDisk() async {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+        publishStateFromDataManager()
+    }
+
+    private func publishStateFromDataManager() {
+        let discovered = ProtobufDataManager.shared.getZapperDomains()
+        domains = discovered
+        if let selectedDomain {
+            rulesForSelectedDomain = rules(for: selectedDomain)
+        }
+        logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
+    }
+
+    private func setupDataDirectoryMonitor() {
+        dataDirectoryMonitor?.cancel()
+        dataDirectoryMonitor = nil
+        pendingRefreshTask?.cancel()
+        pendingRefreshTask = nil
+
+        guard let directoryURL = ProtobufDataManager.shared.protobufDataDirectoryURL() else {
+            logger.error("ZapperRuleManager: Failed to locate protobuf data directory")
+            return
+        }
+
+        let descriptor = open(directoryURL.path, O_EVTONLY)
+        guard descriptor >= 0 else {
+            logger.error("ZapperRuleManager: Failed to open protobuf data directory")
+            return
+        }
+
+        dataDirectoryFileDescriptor = descriptor
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: [.write, .rename, .delete, .attrib, .extend],
+            queue: monitorQueue
+        )
+
+        source.setEventHandler { [weak self] in
+            guard let self else { return }
+            self.pendingRefreshTask?.cancel()
+            self.pendingRefreshTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                await self?.refreshFromDisk()
+            }
+        }
+
+        source.setCancelHandler { [weak self] in
+            guard let self else { return }
+            if self.dataDirectoryFileDescriptor >= 0 {
+                close(self.dataDirectoryFileDescriptor)
+                self.dataDirectoryFileDescriptor = -1
+            }
+        }
+
+        dataDirectoryMonitor = source
+        source.resume()
+    }
+
+    deinit {
+        pendingRefreshTask?.cancel()
+        dataDirectoryMonitor?.cancel()
+        dataDirectoryMonitor = nil
+        if dataDirectoryFileDescriptor >= 0 {
+            close(dataDirectoryFileDescriptor)
+            dataDirectoryFileDescriptor = -1
         }
     }
 }

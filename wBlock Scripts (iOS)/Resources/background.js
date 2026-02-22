@@ -18190,6 +18190,40 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         ok: true
       };
     }
+    if (message && message.action === "wblock:zapper:syncRules") {
+      const hostname = typeof message.hostname === "string" ? message.hostname : "";
+      const rules = Array.isArray(message.rules) ? message.rules : [];
+      if (!hostname) {
+        return { ok: false, error: "Missing hostname", rules: [] };
+      }
+      try {
+        const response = await browser.runtime.sendNativeMessage("application.id", {
+          action: "syncZapperRules",
+          hostname,
+          rules
+        });
+        return response || { ok: false, rules: [] };
+      } catch (error) {
+        console.error("[wBlock] Failed to sync zapper rules via background bridge:", error);
+        return { ok: false, error: String(error && error.message ? error.message : error), rules: [] };
+      }
+    }
+    if (message && message.action === "wblock:zapper:getRules") {
+      const hostname = typeof message.hostname === "string" ? message.hostname : "";
+      if (!hostname) {
+        return { ok: false, error: "Missing hostname", rules: [] };
+      }
+      try {
+        const response = await browser.runtime.sendNativeMessage("application.id", {
+          action: "getZapperRules",
+          hostname
+        });
+        return response || { ok: false, rules: [] };
+      } catch (error) {
+        console.error("[wBlock] Failed to fetch zapper rules via background bridge:", error);
+        return { ok: false, error: String(error && error.message ? error.message : error), rules: [] };
+      }
+    }
     if (message && message.action === "getUserScripts") {
       const userScriptRequest = {
         action: "getUserScripts",

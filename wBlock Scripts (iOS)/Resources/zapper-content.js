@@ -8,12 +8,14 @@
   'use strict';
 
   const STORAGE_PREFIX = 'wblock.zapperRules.v1:';
+  const META_PREFIX = 'wblock.zapperMeta.v1:';
   const STYLE_ID = 'wblock-zapper-style';
   const UI_STYLE_ID = 'wblock-zapper-ui-style';
   const UI_ROOT_ID = 'wblock-zapper-root';
   const HIGHLIGHT_ID = 'wblock-zapper-highlight';
   const TOAST_ID = 'wblock-zapper-toast';
   const MAX_RULES_PER_SITE = 200;
+  const RULE_SYNC_INTERVAL_MS = 5000;
 
   const state = {
     active: false,
@@ -40,6 +42,9 @@
     },
   };
 
+  let ruleSyncIntervalId = null;
+  let ruleSyncInFlight = false;
+
   function safeHostname() {
     try {
       return typeof location !== 'undefined' ? (location.hostname || '') : '';
@@ -50,6 +55,58 @@
 
   function storageKey(host) {
     return `${STORAGE_PREFIX}${host}`;
+  }
+
+  function metaKey(host) {
+    return `${META_PREFIX}${host}`;
+  }
+
+  function normalizeRules(rules) {
+    return Array.from(new Set(
+      (rules || [])
+        .filter((s) => typeof s === 'string')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    ));
+  }
+
+  function rulesSignature(rules) {
+    return normalizeRules(rules).join('\u001f');
+  }
+
+  function normalizeMeta(raw) {
+    if (!raw || typeof raw !== 'object') {
+      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0 };
+    }
+    const lastLocalEditAt = Number(raw.lastLocalEditAt);
+    const lastSyncAt = Number(raw.lastSyncAt);
+    return {
+      pendingSync: Boolean(raw.pendingSync),
+      lastLocalEditAt: Number.isFinite(lastLocalEditAt) ? lastLocalEditAt : 0,
+      lastSyncAt: Number.isFinite(lastSyncAt) ? lastSyncAt : 0
+    };
+  }
+
+  async function getSyncMeta(host) {
+    if (!host) return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0 };
+    try {
+      const key = metaKey(host);
+      const result = await browser.storage.local.get(key);
+      return normalizeMeta(result[key]);
+    } catch {
+      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0 };
+    }
+  }
+
+  async function setSyncMeta(host, patch) {
+    if (!host) return;
+    const key = metaKey(host);
+    const current = await getSyncMeta(host);
+    const next = normalizeMeta({
+      ...current,
+      ...patch
+    });
+    await browser.storage.local.set({ [key]: next });
   }
 
   async function loadRulesForHost(host) {
@@ -70,31 +127,118 @@
 
   async function syncRulesToNative(host, rules) {
     if (!host) return null;
+    const normalizedRules = normalizeRules(rules);
     try {
-      const response = await browser.runtime.sendNativeMessage('application.id', {
-        action: 'syncZapperRules',
+      const response = await browser.runtime.sendMessage({
+        action: 'wblock:zapper:syncRules',
         hostname: host,
-        rules: Array.isArray(rules) ? rules : []
+        rules: normalizedRules
       });
       // If the native side returned an authoritative rules list (e.g. after
       // filtering out app-deleted rules), update browser.storage.local to match.
       if (response && Array.isArray(response.rules)) {
         const key = storageKey(host);
-        await browser.storage.local.set({ [key]: response.rules });
-        return response.rules;
+        const normalized = normalizeRules(response.rules);
+        await browser.storage.local.set({ [key]: normalized });
+        await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
+        return normalized;
       }
       return null;
     } catch {
+      try {
+        const response = await browser.runtime.sendNativeMessage('application.id', {
+          action: 'syncZapperRules',
+          hostname: host,
+          rules: normalizedRules
+        });
+        if (response && Array.isArray(response.rules)) {
+          const key = storageKey(host);
+          const normalized = normalizeRules(response.rules);
+          await browser.storage.local.set({ [key]: normalized });
+          await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
+          return normalized;
+        }
+      } catch {
+        return null;
+      }
       return null;
+    }
+  }
+
+  async function fetchRulesFromNative(host) {
+    if (!host) return null;
+    try {
+      const response = await browser.runtime.sendMessage({
+        action: 'wblock:zapper:getRules',
+        hostname: host
+      });
+      if (!response || !Array.isArray(response.rules)) {
+        return null;
+      }
+      const normalized = Array.from(new Set(
+        response.rules
+          .filter((s) => typeof s === 'string')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0)
+      ));
+      const localRules = await loadRulesForHost(host);
+      const localSig = rulesSignature(localRules);
+      const nativeSig = rulesSignature(normalized);
+      const meta = await getSyncMeta(host);
+      if (meta.pendingSync && localSig !== nativeSig) {
+        const reconciled = await syncRulesToNative(host, localRules);
+        return Array.isArray(reconciled) ? reconciled : localRules;
+      }
+      const key = storageKey(host);
+      await browser.storage.local.set({ [key]: normalized });
+      await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
+      return normalized;
+    } catch {
+      try {
+        const response = await browser.runtime.sendNativeMessage('application.id', {
+          action: 'getZapperRules',
+          hostname: host
+        });
+        if (!response || !Array.isArray(response.rules)) {
+          return null;
+        }
+        const normalized = Array.from(new Set(
+          response.rules
+            .filter((s) => typeof s === 'string')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
+        ));
+        const localRules = await loadRulesForHost(host);
+        const localSig = rulesSignature(localRules);
+        const nativeSig = rulesSignature(normalized);
+        const meta = await getSyncMeta(host);
+        if (meta.pendingSync && localSig !== nativeSig) {
+          const reconciled = await syncRulesToNative(host, localRules);
+          return Array.isArray(reconciled) ? reconciled : localRules;
+        }
+        const key = storageKey(host);
+        await browser.storage.local.set({ [key]: normalized });
+        await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
+        return normalized;
+      } catch {
+        return null;
+      }
     }
   }
 
   async function saveRulesForHost(host, rules) {
     if (!host) return;
     const key = storageKey(host);
-    const unique = Array.from(new Set(rules)).slice(0, MAX_RULES_PER_SITE);
+    const unique = normalizeRules(rules).slice(0, MAX_RULES_PER_SITE);
     await browser.storage.local.set({ [key]: unique });
-    await syncRulesToNative(host, unique);
+    await setSyncMeta(host, { pendingSync: true, lastLocalEditAt: Date.now() });
+    const reconciled = await syncRulesToNative(host, unique);
+    if (!Array.isArray(reconciled)) {
+      return;
+    }
+    if (rulesSignature(reconciled) !== rulesSignature(unique)) {
+      await browser.storage.local.set({ [key]: reconciled });
+    }
   }
 
   function ensureStyleElement(id) {
@@ -861,15 +1005,59 @@
     if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Off';
   }
 
+  async function refreshRulesFromNativeIfNeeded() {
+    const currentHost = safeHostname();
+    if (!currentHost) return;
+
+    if (state.host !== currentHost) {
+      state.host = currentHost;
+    }
+
+    const nativeRules = await fetchRulesFromNative(state.host);
+    if (!Array.isArray(nativeRules)) return;
+
+    if (rulesSignature(nativeRules) === rulesSignature(state.rules)) {
+      return;
+    }
+
+    state.rules = nativeRules;
+    applyRulesToPage(state.rules);
+  }
+
+  function startRuleSyncLoop() {
+    if (ruleSyncIntervalId !== null) return;
+    ruleSyncIntervalId = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
+      if (ruleSyncInFlight) return;
+      ruleSyncInFlight = true;
+      refreshRulesFromNativeIfNeeded()
+        .catch(() => {})
+        .finally(() => {
+          ruleSyncInFlight = false;
+        });
+    }, RULE_SYNC_INTERVAL_MS);
+    window.addEventListener('pagehide', () => {
+      if (ruleSyncIntervalId !== null) {
+        clearInterval(ruleSyncIntervalId);
+        ruleSyncIntervalId = null;
+      }
+    }, { once: true });
+  }
+
   async function reloadRulesAndApply() {
     state.host = safeHostname();
+    const nativeRules = await fetchRulesFromNative(state.host);
+    if (Array.isArray(nativeRules)) {
+      state.rules = nativeRules;
+      applyRulesToPage(state.rules);
+      return;
+    }
+
     state.rules = await loadRulesForHost(state.host);
     applyRulesToPage(state.rules);
-    // Sync existing rules to native (migration/write-through)
     if (state.rules.length > 0) {
       const reconciled = await syncRulesToNative(state.host, state.rules);
       if (reconciled !== null && reconciled.length !== state.rules.length) {
-        // Native filtered out some rules (deleted from app) -- update local state
         state.rules = reconciled;
         applyRulesToPage(state.rules);
       }
@@ -895,4 +1083,5 @@
 
   // Initial load: apply existing rules for this host.
   reloadRulesAndApply().catch(() => {});
+  startRuleSyncLoop();
 })();

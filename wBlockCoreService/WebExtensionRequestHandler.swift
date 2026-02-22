@@ -116,6 +116,9 @@ public enum WebExtensionRequestHandler {
             case "syncZapperRules":
                 handleSyncZapperRules(message: message!, context: context)
                 return
+            case "getZapperRules":
+                handleGetZapperRules(message: message!, context: context)
+                return
             default:
                 break
             }
@@ -415,6 +418,7 @@ public enum WebExtensionRequestHandler {
 
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
 
             // Consume any rules deleted from the app since last sync
             let pendingDeletions = await ProtobufDataManager.shared.consumeZapperPendingDeletions(forHost: hostname)
@@ -436,6 +440,23 @@ public enum WebExtensionRequestHandler {
                 let response = createResponse(with: ["ok": true, "rules": [String]()])
                 context.completeRequest(returningItems: [response])
             }
+        }
+    }
+
+    private static func handleGetZapperRules(message: [String: Any?], context: NSExtensionContext) {
+        let hostname = (message["hostname"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !hostname.isEmpty else {
+            let response = createResponse(with: ["ok": false, "error": "Missing hostname", "rules": [String]()])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
+            let response = createResponse(with: ["ok": true, "rules": rules])
+            context.completeRequest(returningItems: [response])
         }
     }
 

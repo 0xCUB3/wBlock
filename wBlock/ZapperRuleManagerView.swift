@@ -4,6 +4,7 @@ struct ZapperRuleManagerView: View {
     @ObservedObject private var ruleManager = ZapperRuleManager.shared
     @State private var expandedDomains: Set<String> = []
     @State private var pendingUndo: (rule: String, domain: String, index: Int)? = nil
+    @State private var isRefreshing = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -30,16 +31,22 @@ struct ZapperRuleManagerView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
         .navigationTitle("Element Zapper Rules")
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    Task { await refreshRules(expandSmallDomains: false) }
+                } label: {
+                    Image(systemName: isRefreshing ? "arrow.triangle.2.circlepath.circle.fill" : "arrow.triangle.2.circlepath")
+                }
+                .disabled(isRefreshing)
+                .accessibilityLabel("Refresh rules")
+            }
+        }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .onAppear {
-            ruleManager.refresh()
-            for domain in ruleManager.domains {
-                if ruleManager.ruleCount(forDomain: domain) <= 5 {
-                    expandedDomains.insert(domain)
-                }
-            }
+            Task { await refreshRules(expandSmallDomains: true) }
         }
     }
 
@@ -200,5 +207,19 @@ struct ZapperRuleManagerView: View {
     private func deleteRule(_ rule: String, from domain: String, at index: Int) {
         pendingUndo = (rule: rule, domain: domain, index: index)
         ruleManager.deleteRule(rule, forDomain: domain)
+    }
+
+    private func refreshRules(expandSmallDomains: Bool) async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        await ruleManager.refreshNow()
+        expandedDomains.formIntersection(Set(ruleManager.domains))
+        if expandSmallDomains {
+            for domain in ruleManager.domains where ruleManager.ruleCount(forDomain: domain) <= 5 {
+                expandedDomains.insert(domain)
+            }
+        }
     }
 }
