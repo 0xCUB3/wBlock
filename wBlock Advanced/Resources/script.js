@@ -24220,6 +24220,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       doneButton.addEventListener("click", (event) => {
         interceptEvent(event);
         deactivate({ removeUi: true });
+        window.location.reload();
       });
 
       const defaultGroup = document.createElement("span");

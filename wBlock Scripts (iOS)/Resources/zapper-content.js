@@ -44,6 +44,43 @@
 
   let ruleSyncIntervalId = null;
   let ruleSyncInFlight = false;
+  let isFinalizingSession = false;
+  const pendingSaveOperations = new Set();
+
+  function trackPendingSave(operationPromise) {
+    let trackedPromise;
+    trackedPromise = Promise.resolve(operationPromise)
+      .catch(() => {})
+      .finally(() => {
+        pendingSaveOperations.delete(trackedPromise);
+      });
+    pendingSaveOperations.add(trackedPromise);
+    return trackedPromise;
+  }
+
+  async function waitForPendingSaves(timeoutMs = 1500) {
+    if (pendingSaveOperations.size === 0) return;
+    const pending = Array.from(pendingSaveOperations);
+    await Promise.race([
+      Promise.allSettled(pending),
+      new Promise((resolve) => setTimeout(resolve, timeoutMs))
+    ]);
+  }
+
+  async function finalizeSessionAndReload() {
+    if (isFinalizingSession) return;
+    isFinalizingSession = true;
+
+    try {
+      await waitForPendingSaves();
+      deactivateZapper({ removeUi: true });
+      window.location.reload();
+    } catch {
+      deactivateZapper({ removeUi: true });
+    } finally {
+      isFinalizingSession = false;
+    }
+  }
 
   function safeHostname() {
     try {
@@ -423,9 +460,8 @@
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       }
-      // Delay teardown until after the current input/click sequence completes
-      // so we don't accidentally retarget the synthetic click to the page.
-      setTimeout(() => deactivateZapper({ removeUi: true }), 0);
+      doneButton.disabled = true;
+      finalizeSessionAndReload().catch(() => {});
     };
     doneButton.addEventListener('click', onDone);
     doneButton.addEventListener('pointerup', onDone, true);
@@ -690,7 +726,7 @@
     }
     state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
     state.undoStack.push(normalized);
-    await saveRulesForHost(state.host, state.rules);
+    await trackPendingSave(saveRulesForHost(state.host, state.rules));
     applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
     showToast(options.manual ? 'Rule saved for this site.' : 'Hidden. Rule saved for this site.');
@@ -713,7 +749,7 @@
     if (state.undoStack.length === 0) return;
     const toRemove = state.undoStack.pop();
     state.rules = state.rules.filter((r) => r !== toRemove);
-    await saveRulesForHost(state.host, state.rules);
+    await trackPendingSave(saveRulesForHost(state.host, state.rules));
     applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
     showToast('Undone.');
