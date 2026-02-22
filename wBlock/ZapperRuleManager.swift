@@ -2,7 +2,7 @@ import Foundation
 import os.log
 import wBlockCoreService
 
-/// ZapperRuleManager is the unified data layer for element zapper rules stored in shared UserDefaults.
+/// ZapperRuleManager is the unified data layer for element zapper rules stored in protobuf.
 ///
 /// It enumerates all hostnames that have saved rules, reads rules per hostname, and deletes
 /// rules individually or in bulk. Phase 9 Settings UI binds to this ObservableObject.
@@ -27,62 +27,52 @@ final class ZapperRuleManager: ObservableObject {
         }
     }
 
-    private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-    private let keyPrefix = "zapperRules_"
     private let logger = Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager")
 
     private init() {}
 
     // MARK: - Public API
 
-    /// Scans all UserDefaults keys matching the zapperRules_* prefix, extracts hostnames,
-    /// sorts alphabetically, and updates the published domains array.
-    /// Domains with no non-empty rules are excluded.
+    /// Reads all hostnames with zapper rules from protobuf and updates the published domains array.
     func refresh() {
-        let allKeys = defaults?.dictionaryRepresentation().keys.map { $0 } ?? []
-        let discovered = allKeys
-            .filter { $0.hasPrefix(keyPrefix) }
-            .map { String($0.dropFirst(keyPrefix.count)) }
-            .filter { !rules(for: $0).isEmpty }
-            .sorted()
+        let discovered = ProtobufDataManager.shared.getZapperDomains()
         domains = discovered
         logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
     }
 
     /// Returns the stored CSS selector strings for the given hostname, filtered for non-empty entries.
     func rules(for hostname: String) -> [String] {
-        let key = keyPrefix + hostname
-        let raw = defaults?.stringArray(forKey: key) ?? []
-        return raw.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        ProtobufDataManager.shared.getZapperRules(forHost: hostname)
     }
 
     /// Removes a single CSS selector from the stored array for the hostname.
-    /// If the array becomes empty after removal, the UserDefaults key is deleted entirely.
+    /// If the array becomes empty after removal, the host is removed from domains.
     /// Updates domains and rulesForSelectedDomain when the affected domain is selected.
     func deleteRule(_ rule: String, forDomain hostname: String) {
-        let key = keyPrefix + hostname
-        var current = defaults?.stringArray(forKey: key) ?? []
-        current.removeAll { $0 == rule }
+        Task {
+            await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: hostname)
+        }
 
-        if current.isEmpty {
-            defaults?.removeObject(forKey: key)
+        // Update local state optimistically
+        if ProtobufDataManager.shared.getZapperRules(forHost: hostname).filter({ $0 != rule }).isEmpty {
             domains.removeAll { $0 == hostname }
-            logger.info("ZapperRuleManager: Deleted last rule for '\(hostname)' — key removed")
+            logger.info("ZapperRuleManager: Deleted last rule for '\(hostname)'")
         } else {
-            defaults?.setValue(current, forKey: key)
-            logger.info("ZapperRuleManager: Deleted rule for '\(hostname)' — \(current.count) remaining")
+            logger.info("ZapperRuleManager: Deleted rule for '\(hostname)'")
         }
 
         if selectedDomain == hostname {
-            rulesForSelectedDomain = rules(for: hostname)
+            rulesForSelectedDomain = rules(for: hostname).filter { $0 != rule }
         }
     }
 
-    /// Removes the UserDefaults key for the hostname entirely, deleting all its rules.
+    /// Removes all rules for the hostname entirely.
     /// Updates domains and clears rulesForSelectedDomain if the domain was selected.
     func deleteAllRules(forDomain hostname: String) {
-        let key = keyPrefix + hostname
-        defaults?.removeObject(forKey: key)
+        Task {
+            await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
+        }
+
         domains.removeAll { $0 == hostname }
         logger.info("ZapperRuleManager: Deleted all rules for '\(hostname)'")
 
@@ -96,18 +86,16 @@ final class ZapperRuleManager: ObservableObject {
         return rules(for: hostname).count
     }
 
-    /// Re-inserts a previously deleted rule back into UserDefaults for the given hostname.
+    /// Re-inserts a previously deleted rule back for the given hostname.
     /// Used by the undo banner in ZapperRuleManagerView.
     /// - Parameters:
     ///   - rule: The CSS selector string to restore.
     ///   - hostname: The domain the rule belongs to.
     ///   - index: The original position in the array; clamped to array bounds.
     func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
-        let key = keyPrefix + hostname
-        var current = defaults?.stringArray(forKey: key) ?? []
-        let insertIndex = min(index, current.count)
-        current.insert(rule, at: insertIndex)
-        defaults?.setValue(current, forKey: key)
+        Task {
+            await ProtobufDataManager.shared.restoreZapperRule(rule, forHost: hostname, at: index)
+        }
 
         if !domains.contains(hostname) {
             refresh()
@@ -115,8 +103,13 @@ final class ZapperRuleManager: ObservableObject {
 
         if selectedDomain == hostname {
             rulesForSelectedDomain = rules(for: hostname)
+            // If the async hasn't committed yet, add it locally
+            if !rulesForSelectedDomain.contains(rule) {
+                let insertIndex = min(index, rulesForSelectedDomain.count)
+                rulesForSelectedDomain.insert(rule, at: insertIndex)
+            }
         }
 
-        logger.info("ZapperRuleManager: Restored rule for '\(hostname)' at index \(insertIndex)")
+        logger.info("ZapperRuleManager: Restored rule for '\(hostname)' at index \(index)")
     }
 }
