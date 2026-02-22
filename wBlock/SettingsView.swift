@@ -46,298 +46,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    LazyVStack(spacing: 16) {
-                        #if os(macOS)
-                            settingsSectionView(title: "Display") {
-                                HStack {
-                                    Text("Show blocked item count in toolbar")
-                                        .font(.body)
-                                    Spacer()
-                                    Toggle(
-                                        "",
-                                        isOn: Binding(
-                                            get: { isBadgeCounterEnabled },
-                                            set: { newValue in
-                                                Task {
-                                                    await dataManager.setIsBadgeCounterEnabled(
-                                                        newValue)
-                                                    // Wait for save to complete before notifying Safari
-                                                    await dataManager.saveDataImmediately()
-                                                    // Force Safari to refresh the toolbar badge
-                                                    SFSafariApplication.setToolbarItemsNeedUpdate()
-                                                }
-                                            }
-                                        )
-                                    )
-                                    .labelsHidden()
-                                    .toggleStyle(.switch)
-                                }
-                                .padding(16)
-                            }
-                        #endif
-
-                        settingsSectionView(title: "Actions") {
-                            NavigationLink {
-                                LogsView()
-                            } label: {
-                                HStack {
-                                    Text("View Logs")
-                                        .font(.body)
-                                    Spacer()
-                                    Image(systemName: "doc.text.magnifyingglass")
-                                        .foregroundColor(.secondary)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .padding(16)
-
-                            Divider()
-                                .padding(.leading, 16)
-
-                            NavigationLink {
-                                WhitelistManagerView(filterManager: filterManager)
-                            } label: {
-                                HStack {
-                                    Text("Manage Whitelist")
-                                        .font(.body)
-                                    Spacer()
-                                    Image(systemName: "list.bullet.indent")
-                                        .foregroundColor(.secondary)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .padding(16)
-
-                            Divider()
-                                .padding(.leading, 16)
-
-                            NavigationLink {
-                                ZapperRuleManagerView()
-                            } label: {
-                                HStack {
-                                    Text("Manage Element Zapper Rules")
-                                        .font(.body)
-                                    Spacer()
-                                    Image(systemName: "wand.and.stars")
-                                        .foregroundColor(.secondary)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .padding(16)
-
-                            Divider()
-                                .padding(.leading, 16)
-
-                            Button { exportBackup() } label: {
-                                HStack {
-                                    Text("Export Settings")
-                                        .font(.body)
-                                    Spacer()
-                                    Image(systemName: "square.and.arrow.up")
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .padding(16)
-
-                            Divider()
-                                .padding(.leading, 16)
-
-                            Button { showingImportDialog = true } label: {
-                                HStack {
-                                    Text("Import Settings")
-                                        .font(.body)
-                                    Spacer()
-                                    Image(systemName: "square.and.arrow.down")
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .padding(16)
-                        }
-
-                        settingsSectionView(title: "Filter Auto-Update") {
-                            VStack(spacing: 0) {
-                                // Toggle row
-                                HStack {
-                                    Text("Auto-Update Filters")
-                                        .font(.body)
-                                    Spacer()
-                                    Toggle(
-                                        "",
-                                        isOn: Binding(
-                                            get: { autoUpdateEnabled },
-                                            set: { newValue in
-                                                Task {
-                                                    await dataManager.setAutoUpdateEnabled(newValue)
-                                                    await handleAutoUpdateConfigChange()
-                                                    await MainActor.run {
-                                                        if newValue {
-                                                            startTimer()
-                                                        } else {
-                                                            stopTimer()
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    )
-                                    .labelsHidden()
-                                    .toggleStyle(.switch)
-                                }
-                                .padding(16)
-
-                                if autoUpdateEnabled {
-                                    Divider()
-                                        .padding(.leading, 16)
-
-                                    // Frequency slider
-                                    VStack(spacing: 10) {
-                                        HStack(spacing: 8) {
-                                            Text("1h")
-                                                .font(.caption2)
-                                                .foregroundStyle(.tertiary)
-                                            Slider(
-                                                value: Binding(
-                                                    get: { autoUpdateIntervalHours },
-                                                    set: { newValue in
-                                                        Task {
-                                                            await dataManager
-                                                                .setAutoUpdateIntervalHours(
-                                                                    newValue)
-                                                            await handleAutoUpdateConfigChange()
-                                                        }
-                                                    }
-                                                ),
-                                                in:
-                                                    minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
-                                                step: 1
-                                            )
-                                            Text("7d")
-                                                .font(.caption2)
-                                                .foregroundStyle(.tertiary)
-                                            Text(
-                                                intervalDescription(hours: autoUpdateIntervalHours)
-                                            )
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                            .frame(minWidth: 90, alignment: .trailing)
-                                            .contentTransition(.numericText())
-                                        }
-                                        HStack {
-                                            Text("Next: \(compactStatusLine)")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            Spacer()
-                                            Text(lastUpdateLine)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        #if os(iOS)
-                                            Text("iOS background refresh is best-effort; checks may run later than scheduled.")
-                                                .font(.caption2)
-                                                .foregroundStyle(.tertiary)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                        #endif
-                                    }
-                                    .padding(16)
-                                }
-                            }
-                        }
-
-                        settingsSectionView(title: "Sync") {
-                            HStack(spacing: 12) {
-                                Text("iCloud Sync")
-                                    .font(.body)
-
-                                Spacer()
-
-                                Button {
-                                    Task { await syncManager.syncNow(trigger: "Manual") }
-                                } label: {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
-                                        .symbolRenderingMode(.hierarchical)
-                                        .foregroundStyle(
-                                            (!syncManager.isEnabled || syncManager.isSyncing)
-                                                ? .tertiary : .secondary
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(!syncManager.isEnabled || syncManager.isSyncing)
-                                .accessibilityLabel("Sync Now")
-
-                                Toggle(
-                                    "",
-                                    isOn: Binding(
-                                        get: { syncManager.isEnabled },
-                                        set: { newValue in
-                                            syncManager.setEnabled(newValue)
-                                        }
-                                    )
-                                )
-                                .labelsHidden()
-                                .toggleStyle(.switch)
-                            }
-                            .padding(16)
-                        }
-
-                        settingsSectionView(title: "About") {
-                            HStack {
-                                Text("wBlock Version")
-                                    .font(.body)
-                                Spacer()
-                                Text(
-                                    Bundle.main.infoDictionary?["CFBundleShortVersionString"]
-                                        as? String ?? "Unknown"
-                                )
-                                .foregroundColor(.secondary)
-                            }
-                            .padding(16)
-                        }
-
-                        settingsSectionView(title: "Danger Zone") {
-                            Button(role: .destructive) {
-                                showingRestartConfirmation = true
-                            } label: {
-                                HStack {
-                                    if isRestarting {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .padding(.trailing, 8)
-                                    }
-                                    Text(isRestarting ? "Restarting…" : "Restart Onboarding")
-                                    Spacer()
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(isRestarting)
-                            .padding(16)
-                        }
-
-                    }
-                    .padding(.horizontal)
-
-                    Spacer(minLength: 20)
-                }
-                .padding(.vertical)
-            }
-            #if os(iOS)
-                .padding(.horizontal, 16)
-                .navigationBarTitleDisplayMode(.inline)
-            #endif
-        }
+        settingsContent
         .task {
             await updateScheduleLine()
             await MainActor.run { startTimer() }
@@ -389,20 +98,317 @@ struct SettingsView: View {
         #endif
     }
 
-    private func settingsSectionView<Content: View>(
-        title: String, @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(LocalizedStringKey(title))
-                .font(.headline)
-                .foregroundColor(.primary)
-                .padding(.horizontal, 4)
+    @ViewBuilder
+    private var settingsContent: some View {
+        #if os(iOS)
+        NavigationStack {
+            List {
+                Section("Actions") {
+                    NavigationLink {
+                        LogsView()
+                    } label: {
+                        Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                    }
 
-            VStack(spacing: 0) {
-                content()
+                    NavigationLink {
+                        WhitelistManagerView(filterManager: filterManager)
+                    } label: {
+                        Label("Manage Whitelist", systemImage: "list.bullet.indent")
+                    }
+
+                    NavigationLink {
+                        ZapperRuleManagerView()
+                    } label: {
+                        Label("Manage Element Zapper Rules", systemImage: "wand.and.stars")
+                    }
+
+                    Button { exportBackup() } label: {
+                        Label("Export Settings", systemImage: "square.and.arrow.up")
+                    }
+
+                    Button { showingImportDialog = true } label: {
+                        Label("Import Settings", systemImage: "square.and.arrow.down")
+                    }
+                }
+
+                Section {
+                    Toggle(
+                        "Auto-Update Filters",
+                        isOn: Binding(
+                            get: { autoUpdateEnabled },
+                            set: { newValue in
+                                Task {
+                                    await dataManager.setAutoUpdateEnabled(newValue)
+                                    await handleAutoUpdateConfigChange()
+                                    await MainActor.run {
+                                        if newValue {
+                                            startTimer()
+                                        } else {
+                                            stopTimer()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    )
+
+                    if autoUpdateEnabled {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(intervalDescription(hours: autoUpdateIntervalHours))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .contentTransition(.numericText())
+
+                            Slider(
+                                value: Binding(
+                                    get: { autoUpdateIntervalHours },
+                                    set: { newValue in
+                                        Task {
+                                            await dataManager
+                                                .setAutoUpdateIntervalHours(newValue)
+                                            await handleAutoUpdateConfigChange()
+                                        }
+                                    }
+                                ),
+                                in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
+                                step: 1
+                            )
+                        }
+                    }
+                } header: {
+                    Text("Filter Auto-Update")
+                } footer: {
+                    if autoUpdateEnabled {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(compactStatusLine) · \(lastUpdateLine)")
+                            Text("iOS background refresh is best-effort; checks may run later than scheduled.")
+                        }
+                    }
+                }
+
+                Section("Sync") {
+                    HStack(spacing: 12) {
+                        Text("iCloud Sync")
+
+                        Spacer()
+
+                        Button {
+                            Task { await syncManager.syncNow(trigger: "Manual") }
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(
+                                    (!syncManager.isEnabled || syncManager.isSyncing)
+                                        ? .tertiary : .secondary
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!syncManager.isEnabled || syncManager.isSyncing)
+                        .accessibilityLabel("Sync Now")
+
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { syncManager.isEnabled },
+                                set: { newValue in
+                                    syncManager.setEnabled(newValue)
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                    }
+                }
+
+                Section("About") {
+                    LabeledContent("wBlock Version") {
+                        Text(
+                            Bundle.main.infoDictionary?["CFBundleShortVersionString"]
+                                as? String ?? "Unknown"
+                        )
+                    }
+                }
+
+                Section("Danger Zone") {
+                    Button(role: .destructive) {
+                        showingRestartConfirmation = true
+                    } label: {
+                        HStack {
+                            if isRestarting {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .padding(.trailing, 8)
+                            }
+                            Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                        }
+                    }
+                    .disabled(isRestarting)
+                }
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .unifiedTabListStyle()
+            .navigationBarTitleDisplayMode(.inline)
         }
+        #else
+        NavigationStack {
+            List {
+                Section("Display") {
+                    Toggle(
+                        "Show blocked item count in toolbar",
+                        isOn: Binding(
+                            get: { isBadgeCounterEnabled },
+                            set: { newValue in
+                                Task {
+                                    await dataManager.setIsBadgeCounterEnabled(newValue)
+                                    await dataManager.saveDataImmediately()
+                                    SFSafariApplication.setToolbarItemsNeedUpdate()
+                                }
+                            }
+                        )
+                    )
+                }
+
+                Section("Actions") {
+                    NavigationLink {
+                        LogsView()
+                    } label: {
+                        Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                    }
+
+                    NavigationLink {
+                        WhitelistManagerView(filterManager: filterManager)
+                    } label: {
+                        Label("Manage Whitelist", systemImage: "list.bullet.indent")
+                    }
+
+                    NavigationLink {
+                        ZapperRuleManagerView()
+                    } label: {
+                        Label("Manage Element Zapper Rules", systemImage: "wand.and.stars")
+                    }
+
+                    Button { exportBackup() } label: {
+                        Label("Export Settings", systemImage: "square.and.arrow.up")
+                    }
+
+                    Button { showingImportDialog = true } label: {
+                        Label("Import Settings", systemImage: "square.and.arrow.down")
+                    }
+                }
+
+                Section {
+                    Toggle(
+                        "Auto-Update Filters",
+                        isOn: Binding(
+                            get: { autoUpdateEnabled },
+                            set: { newValue in
+                                Task {
+                                    await dataManager.setAutoUpdateEnabled(newValue)
+                                    await handleAutoUpdateConfigChange()
+                                    await MainActor.run {
+                                        if newValue {
+                                            startTimer()
+                                        } else {
+                                            stopTimer()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    )
+
+                    if autoUpdateEnabled {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(intervalDescription(hours: autoUpdateIntervalHours))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .contentTransition(.numericText())
+
+                            Slider(
+                                value: Binding(
+                                    get: { autoUpdateIntervalHours },
+                                    set: { newValue in
+                                        Task {
+                                            await dataManager
+                                                .setAutoUpdateIntervalHours(newValue)
+                                            await handleAutoUpdateConfigChange()
+                                        }
+                                    }
+                                ),
+                                in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
+                                step: 1
+                            )
+                        }
+                    }
+                } header: {
+                    Text("Filter Auto-Update")
+                } footer: {
+                    if autoUpdateEnabled {
+                        Text("\(compactStatusLine) · \(lastUpdateLine)")
+                    }
+                }
+
+                Section("Sync") {
+                    HStack(spacing: 12) {
+                        Text("iCloud Sync")
+
+                        Spacer()
+
+                        Button {
+                            Task { await syncManager.syncNow(trigger: "Manual") }
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(
+                                    (!syncManager.isEnabled || syncManager.isSyncing)
+                                        ? .tertiary : .secondary
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!syncManager.isEnabled || syncManager.isSyncing)
+                        .accessibilityLabel("Sync Now")
+
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { syncManager.isEnabled },
+                                set: { newValue in
+                                    syncManager.setEnabled(newValue)
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                    }
+                }
+
+                Section("About") {
+                    LabeledContent("wBlock Version") {
+                        Text(
+                            Bundle.main.infoDictionary?["CFBundleShortVersionString"]
+                                as? String ?? "Unknown"
+                        )
+                    }
+                }
+
+                Section("Danger Zone") {
+                    Button(role: .destructive) {
+                        showingRestartConfirmation = true
+                    } label: {
+                        HStack {
+                            if isRestarting {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .padding(.trailing, 8)
+                            }
+                            Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                        }
+                    }
+                    .disabled(isRestarting)
+                }
+            }
+            .unifiedTabListStyle()
+        }
+        #endif
     }
 
     private func handleAutoUpdateConfigChange() async {

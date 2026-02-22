@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct StatCard: View {
     let title: String
     let value: String
@@ -14,14 +15,12 @@ struct StatCard: View {
     let pillColor: Color
     let valueColor: Color
 
-    private let valueWidth: CGFloat = 80
-
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .font(.system(size: 22))
                 .foregroundStyle(valueColor)
-                .frame(width: 32)
+                .frame(width: 30)
                 .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -43,7 +42,6 @@ struct StatCard: View {
                     .font(.title2.monospacedDigit())
                     .fontWeight(.semibold)
                     .foregroundStyle(valueColor)
-                    .frame(minWidth: valueWidth, alignment: .leading)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .minimumScaleFactor(0.6)
@@ -52,23 +50,18 @@ struct StatCard: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
+        #if os(iOS)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        #else
+        .frame(minWidth: 155)
+        #endif
         .background {
             #if os(iOS)
-            if #available(iOS 26.0, *) {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(.regularMaterial)
-            } else {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(.regularMaterial)
-            }
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
             #else
-            if #available(macOS 26.0, *) {
-                Capsule()
-                    .fill(.regularMaterial)
-            } else {
-                Capsule()
-                    .fill(.regularMaterial)
-            }
+            Capsule()
+                .fill(.regularMaterial)
             #endif
         }
     }

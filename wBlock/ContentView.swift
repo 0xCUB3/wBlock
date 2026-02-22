@@ -163,34 +163,18 @@ struct ContentView: View {
     }
 
     private func isInlineUserList(_ filter: FilterList) -> Bool {
-        filter.isCustom
-            && filter.url.scheme?.lowercased() == "wblock"
+        filter.url.scheme?.lowercased() == "wblock"
             && filter.url.host?.lowercased() == "userlist"
+    }
+
+    private func supportsCustomActions(_ filter: FilterList) -> Bool {
+        filter.isCustom || filterManager.customFilterLists.contains(where: { $0.id == filter.id })
     }
 
     private var filtersView: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    statsCardsView
-
-                    VStack(spacing: 16) {
-                        ForEach(categorizedFilters, id: \.category) { item in
-                            if item.category == .foreign {
-                                foreignFiltersDisclosureView(filters: item.filters)
-                            } else {
-                                filterSectionView(category: item.category, filters: item.filters)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-
-                    Spacer(minLength: 20)
-                }
-                .padding(.vertical)
-            }
-        #if os(iOS)
-                .padding(.horizontal, 16)
+            nativeFiltersListView
+            #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
@@ -279,6 +263,77 @@ struct ContentView: View {
         #endif
     }
 
+    private var nativeFiltersListView: some View {
+        #if os(iOS)
+        List {
+            Section {
+                statsCardsView
+                    .unifiedTabCardSectionRow()
+            }
+
+            ForEach(categorizedFilters, id: \.category) { item in
+                if item.category == .foreign {
+                    Section {
+                        if dataManager.isForeignFiltersExpanded {
+                            ForEach(item.filters) { filter in
+                                filterRowView(for: filter)
+                            }
+                        }
+                    } header: {
+                        Button {
+                            Task {
+                                await dataManager.setIsForeignFiltersExpanded(
+                                    !dataManager.isForeignFiltersExpanded
+                                )
+                            }
+                        } label: {
+                            HStack {
+                                Text(item.category.localizedName)
+                                Spacer()
+                                Image(
+                                    systemName: dataManager.isForeignFiltersExpanded
+                                        ? "chevron.down"
+                                        : "chevron.right"
+                                )
+                                .font(.caption)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .textCase(nil)
+                    }
+                } else {
+                    Section(item.category.localizedName) {
+                        ForEach(item.filters) { filter in
+                            filterRowView(for: filter)
+                        }
+                    }
+                }
+            }
+        }
+        .unifiedTabListStyle()
+        #else
+        ScrollView {
+            VStack(spacing: 20) {
+                statsCardsView
+
+                VStack(spacing: 16) {
+                    ForEach(categorizedFilters, id: \.category) { item in
+                        if item.category == .foreign {
+                            macOSForeignFiltersView(filters: item.filters)
+                        } else {
+                            macOSFilterSectionView(category: item.category, filters: item.filters)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer(minLength: 20)
+            }
+            .padding(.vertical)
+        }
+        #endif
+    }
+
     private var userscriptsView: some View {
         NavigationStack {
             UserScriptManagerView(userScriptManager: userScriptManager)
@@ -306,59 +361,41 @@ struct ContentView: View {
 
     private var statsCardsView: some View {
         HStack(spacing: 12) {
-            #if os(iOS)
-                Button {
-                    filterManager.showRuleLimitWarning()
-                } label: {
-                    StatCard(
-                        title: "Rules",
-                        value: enabledListsCount == 0
-                            ? "0"
-                            : (hasAppliedFilters
-                                ? appliedSafariRulesCount.formatted()
-                                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
-                        icon: "shield.lefthalf.filled",
-                        pillColor: .clear,
-                        valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
-                    )
-                    .overlay(alignment: .topTrailing) {
-                        if shouldShowRuleLimitIndicator {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
-                                .padding(.trailing, 10)
-                                .padding(.top, 8)
-                        }
+            Button {
+                filterManager.showRuleLimitWarning()
+            } label: {
+                StatCard(
+                    title: {
+                        #if os(iOS)
+                        return "Rules"
+                        #else
+                        return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
+                        #endif
+                    }(),
+                    value: enabledListsCount == 0
+                        ? "0"
+                        : (hasAppliedFilters
+                            ? appliedSafariRulesCount.formatted()
+                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
+                    icon: "shield.lefthalf.filled",
+                    pillColor: .clear,
+                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
+                )
+                .overlay(alignment: .topTrailing) {
+                    if shouldShowRuleLimitIndicator {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                            .padding(.trailing, 6)
+                            .padding(.top, 4)
                     }
                 }
-                .buttonStyle(.plain)
-            #else
-                Button {
-                    filterManager.showRuleLimitWarning()
-                } label: {
-                    StatCard(
-                        title: (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules",
-                        value: enabledListsCount == 0
-                            ? "0"
-                            : (hasAppliedFilters
-                                ? appliedSafariRulesCount.formatted()
-                                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
-                        icon: "shield.lefthalf.filled",
-                        pillColor: .clear,
-                        valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
-                    )
-                    .overlay(alignment: .topTrailing) {
-                        if shouldShowRuleLimitIndicator {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
-                                .padding(.trailing, 10)
-                                .padding(.top, 8)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-            #endif
+                #if os(iOS)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                #endif
+            }
+            .buttonStyle(.plain)
+
             StatCard(
                 title: "Enabled Lists",
                 value: "\(enabledListsCount)",
@@ -366,34 +403,39 @@ struct ContentView: View {
                 pillColor: .clear,
                 valueColor: .primary
             )
+            #if os(iOS)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            #endif
         }
         .padding(.horizontal)
     }
 
-    private func filterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View
-    {
+    private func filterRowView(for filter: FilterList) -> some View {
+        FilterRowView(
+            filter: filter,
+            isInlineUserList: isInlineUserList(filter),
+            supportsCustomActions: supportsCustomActions(filter),
+            onEdit: { editingCustomFilter = filter },
+            onDelete: { filterManager.removeFilterList(filter) },
+            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
+            onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
+        )
+    }
+
+    #if os(macOS)
+    private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(category.localizedName)
                     .font(.headline)
                     .foregroundColor(.primary)
-
                 Spacer()
             }
             .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
                 ForEach(filters) { filter in
-                    FilterRowView(
-                        filter: filter,
-                        isInlineUserList: isInlineUserList(filter),
-                        onEdit: { editingCustomFilter = filter },
-                        onDelete: { filterManager.removeFilterList(filter) },
-                        onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
-                        onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
-                    )
-                    .equatable()
-
+                    filterRowView(for: filter)
                     if filter.id != filters.last?.id {
                         Divider()
                             .padding(.leading, 16)
@@ -404,9 +446,8 @@ struct ContentView: View {
         }
     }
 
-    private func foreignFiltersDisclosureView(filters: [FilterList]) -> some View {
+    private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Manual expand/collapse button instead of DisclosureGroup (avoids LazyVStack bug)
             Button {
                 Task {
                     await dataManager.setIsForeignFiltersExpanded(
@@ -417,9 +458,7 @@ struct ContentView: View {
                     Text(FilterListCategory.foreign.localizedName)
                         .font(.headline)
                         .foregroundColor(.primary)
-
                     Spacer()
-
                     Image(
                         systemName: dataManager.isForeignFiltersExpanded
                             ? "chevron.down" : "chevron.right"
@@ -434,16 +473,7 @@ struct ContentView: View {
             if dataManager.isForeignFiltersExpanded {
                 VStack(spacing: 0) {
                     ForEach(filters) { filter in
-                        FilterRowView(
-                            filter: filter,
-                            isInlineUserList: isInlineUserList(filter),
-                            onEdit: { editingCustomFilter = filter },
-                            onDelete: { filterManager.removeFilterList(filter) },
-                            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
-                            onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
-                        )
-                        .equatable()
-
+                        filterRowView(for: filter)
                         if filter.id != filters.last?.id {
                             Divider()
                                 .padding(.leading, 16)
@@ -454,23 +484,48 @@ struct ContentView: View {
             }
         }
     }
-
+    #endif
 }
 
-struct FilterRowView: View, Equatable {
+struct FilterRowView: View {
     let filter: FilterList
     let isInlineUserList: Bool
+    let supportsCustomActions: Bool
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
     var onShowRuleLimitWarning: () -> Void
 
-    static func == (lhs: FilterRowView, rhs: FilterRowView) -> Bool {
-        lhs.filter == rhs.filter && lhs.isInlineUserList == rhs.isInlineUserList
+    @ViewBuilder
+    private var contextMenuItems: some View {
+        if supportsCustomActions {
+            Button {
+                onEdit()
+            } label: {
+                Label(isInlineUserList ? "Edit Rules" : "Edit Name", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete Added List", systemImage: "trash")
+            }
+        }
+
+        Button {
+            #if os(macOS)
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(filter.url.absoluteString, forType: .string)
+            #else
+                UIPasteboard.general.string = filter.url.absoluteString
+            #endif
+        } label: {
+            Label("Copy URL", systemImage: "doc.on.doc")
+        }
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     if let flags = filter.flagEmojis {
@@ -570,34 +625,12 @@ struct FilterRowView: View, Equatable {
             .toggleStyle(.switch)
             .frame(alignment: .center)
         }
-        .padding(16)
-        .id(filter.id)
-        .contentShape(.interaction, Rectangle())
         .contextMenu {
-            if filter.isCustom {
-                Button {
-                    onEdit()
-                } label: {
-                    Label(isInlineUserList ? "Edit Rules" : "Edit Name", systemImage: "pencil")
-                }
-
-                Button(role: .destructive) {
-                    onDelete()
-                } label: {
-                    Label("Delete Added List", systemImage: "trash")
-                }
-            }
-            Button {
-                #if os(macOS)
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(filter.url.absoluteString, forType: .string)
-                #else
-                    UIPasteboard.general.string = filter.url.absoluteString
-                #endif
-            } label: {
-                Label("Copy URL", systemImage: "doc.on.doc")
-            }
+            contextMenuItems
         }
+        #if os(macOS)
+        .padding(16)
+        #endif
     }
 }
 

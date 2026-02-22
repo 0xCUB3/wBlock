@@ -61,138 +61,7 @@ struct UserScriptManagerView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Stats cards
-                statsCardsView
-
-                // Scripts list
-                if scripts.isEmpty {
-                    emptyStateView
-                        .padding(.top, 40)
-                } else if displayedScripts.isEmpty {
-                    noSearchResultsView
-                        .padding(.top, 40)
-                } else {
-                    scriptsListView
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-        }
-        #if os(macOS)
-        .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
-        .overlay(alignment: .topTrailing) {
-            ZStack(alignment: .topTrailing) {
-                if isDropTarget {
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6]))
-                        .padding(8)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.accentColor.opacity(0.05))
-                                .padding(8)
-                        }
-                }
-
-                if isDropProcessing {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Importing…")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(8)
-                    .background(.regularMaterial, in: Capsule())
-                    .padding(12)
-                }
-            }
-        }
-        #endif
-        #if os(iOS)
-        .padding(.horizontal, 16)
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                if #unavailable(iOS 26.0) {
-                    Button {
-                        showSearch = true
-                    } label: {
-                        Image(systemName: "magnifyingglass")
-                    }
-                }
-                if !scripts.filter(\.isDownloaded).isEmpty {
-                    Button {
-                        refreshAllUserScripts()
-                    } label: {
-                        Image(systemName: "arrow.down.circle")
-                    }
-                    .disabled(isRefreshing)
-                }
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                Button {
-                    showOnlyEnabled.toggle()
-                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                } label: {
-                    Image(
-                        systemName: showOnlyEnabled
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle")
-                }
-            }
-        }
-        #elseif os(macOS)
-        .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                ToolbarSearchField(
-                    text: $searchText,
-                    isExpanded: $showSearch,
-                    prompt: "Search scripts"
-                )
-
-                if !showSearch {
-                    if !scripts.filter(\.isDownloaded).isEmpty {
-                        Button {
-                            refreshAllUserScripts()
-                        } label: {
-                            Label("Check for Updates", systemImage: "arrow.down.circle")
-                        }
-                        .disabled(isRefreshing)
-                    }
-
-                    Button {
-                        showingAddScriptSheet = true
-                    } label: {
-                        Label("Add Userscript", systemImage: "plus")
-                    }
-
-                    Button {
-                        showOnlyEnabled.toggle()
-                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                    } label: {
-                        Label(
-                            "Show Enabled Only",
-                            systemImage: showOnlyEnabled
-                                ? "line.3.horizontal.decrease.circle.fill"
-                                : "line.3.horizontal.decrease.circle")
-                    }
-                }
-            }
-        }
-        #endif
-        #if os(iOS)
-        .searchable(
-            text: $searchText,
-            isPresented: $showSearch,
-            prompt: "Search scripts"
-        )
-        .modifier(SearchMinimizeBehavior())
-        #endif
+        userScriptContent
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
         }) {
@@ -247,6 +116,160 @@ struct UserScriptManagerView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var userScriptContent: some View {
+        #if os(iOS)
+        List {
+            Section {
+                statsCardsView
+                    .unifiedTabCardSectionRow()
+            }
+
+            if scripts.isEmpty {
+                Section {
+                    emptyStateView
+                        .padding(.vertical, 40)
+                }
+            } else if displayedScripts.isEmpty {
+                Section {
+                    noSearchResultsView
+                        .padding(.vertical, 40)
+                }
+            } else {
+                Section("Userscripts") {
+                    ForEach(displayedScripts) { script in
+                        scriptRowView(script: script)
+                    }
+                }
+            }
+        }
+        .unifiedTabListStyle()
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                if #unavailable(iOS 26.0) {
+                    Button {
+                        showSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
+                if !scripts.filter(\.isDownloaded).isEmpty {
+                    Button {
+                        refreshAllUserScripts()
+                    } label: {
+                        Image(systemName: "arrow.down.circle")
+                    }
+                    .disabled(isRefreshing)
+                }
+                Button {
+                    showingAddScriptSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                Button {
+                    showOnlyEnabled.toggle()
+                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                } label: {
+                    Image(
+                        systemName: showOnlyEnabled
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
+        .searchable(
+            text: $searchText,
+            isPresented: $showSearch,
+            prompt: "Search scripts"
+        )
+        .modifier(SearchMinimizeBehavior())
+        #else
+        ScrollView {
+            VStack(spacing: 20) {
+                statsCardsView
+
+                if scripts.isEmpty {
+                    emptyStateView
+                        .padding(.top, 40)
+                } else if displayedScripts.isEmpty {
+                    noSearchResultsView
+                        .padding(.top, 40)
+                } else {
+                    scriptsListView
+                }
+
+                Spacer(minLength: 20)
+            }
+            .padding(.vertical)
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
+        .overlay(alignment: .topTrailing) {
+            ZStack(alignment: .topTrailing) {
+                if isDropTarget {
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6]))
+                        .padding(8)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.accentColor.opacity(0.05))
+                                .padding(8)
+                        }
+                }
+
+                if isDropProcessing {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Importing…")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(8)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(12)
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .automatic) {
+                ToolbarSearchField(
+                    text: $searchText,
+                    isExpanded: $showSearch,
+                    prompt: "Search scripts"
+                )
+
+                if !showSearch {
+                    if !scripts.filter(\.isDownloaded).isEmpty {
+                        Button {
+                            refreshAllUserScripts()
+                        } label: {
+                            Label("Check for Updates", systemImage: "arrow.down.circle")
+                        }
+                        .disabled(isRefreshing)
+                    }
+
+                    Button {
+                        showingAddScriptSheet = true
+                    } label: {
+                        Label("Add Userscript", systemImage: "plus")
+                    }
+
+                    Button {
+                        showOnlyEnabled.toggle()
+                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                    } label: {
+                        Label(
+                            "Show Enabled Only",
+                            systemImage: showOnlyEnabled
+                                ? "line.3.horizontal.decrease.circle.fill"
+                                : "line.3.horizontal.decrease.circle")
+                    }
+                }
+            }
+        }
+        #endif
     }
 
     private func refreshScripts() {
@@ -361,6 +384,9 @@ struct UserScriptManagerView: View {
                 pillColor: .clear,
                 valueColor: .primary
             )
+            #if os(iOS)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            #endif
 
             StatCard(
                 title: "Enabled",
@@ -369,10 +395,14 @@ struct UserScriptManagerView: View {
                 pillColor: .clear,
                 valueColor: .primary
             )
+            #if os(iOS)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            #endif
         }
         .padding(.horizontal)
     }
 
+    #if os(macOS)
     private var scriptsListView: some View {
         LazyVStack(spacing: 16) {
             VStack(spacing: 0) {
@@ -389,9 +419,10 @@ struct UserScriptManagerView: View {
         }
         .padding(.horizontal)
     }
+    #endif
 
     private func scriptRowView(script: UserScript) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(script.name)
                     .font(.body)
@@ -505,7 +536,6 @@ struct UserScriptManagerView: View {
                 .frame(alignment: .center)
             }
         }
-        .padding(16)
         .id(script.id)
         .contentShape(.interaction, Rectangle())
         .onTapGesture {
@@ -548,6 +578,9 @@ struct UserScriptManagerView: View {
                 }
             }
         }
+        #if os(macOS)
+        .padding(16)
+        #endif
     }
 
     private var emptyStateView: some View {
