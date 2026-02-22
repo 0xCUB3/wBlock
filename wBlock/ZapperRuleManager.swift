@@ -45,39 +45,25 @@ final class ZapperRuleManager: ObservableObject {
         ProtobufDataManager.shared.getZapperRules(forHost: hostname)
     }
 
-    /// Removes a single CSS selector from the stored array for the hostname.
-    /// If the array becomes empty after removal, the host is removed from domains.
-    /// Updates domains and rulesForSelectedDomain when the affected domain is selected.
+    /// Removes a single CSS selector for the hostname and refreshes local state.
     func deleteRule(_ rule: String, forDomain hostname: String) {
         Task {
             await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: hostname)
-        }
-
-        // Update local state optimistically
-        if ProtobufDataManager.shared.getZapperRules(forHost: hostname).filter({ $0 != rule }).isEmpty {
-            domains.removeAll { $0 == hostname }
-            logger.info("ZapperRuleManager: Deleted last rule for '\(hostname)'")
-        } else {
-            logger.info("ZapperRuleManager: Deleted rule for '\(hostname)'")
-        }
-
-        if selectedDomain == hostname {
-            rulesForSelectedDomain = rules(for: hostname).filter { $0 != rule }
+            refresh()
+            if selectedDomain == hostname {
+                rulesForSelectedDomain = rules(for: hostname)
+            }
         }
     }
 
-    /// Removes all rules for the hostname entirely.
-    /// Updates domains and clears rulesForSelectedDomain if the domain was selected.
+    /// Removes all rules for the hostname and refreshes local state.
     func deleteAllRules(forDomain hostname: String) {
         Task {
             await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
-        }
-
-        domains.removeAll { $0 == hostname }
-        logger.info("ZapperRuleManager: Deleted all rules for '\(hostname)'")
-
-        if selectedDomain == hostname {
-            rulesForSelectedDomain = []
+            refresh()
+            if selectedDomain == hostname {
+                rulesForSelectedDomain = []
+            }
         }
     }
 
@@ -86,30 +72,14 @@ final class ZapperRuleManager: ObservableObject {
         return rules(for: hostname).count
     }
 
-    /// Re-inserts a previously deleted rule back for the given hostname.
-    /// Used by the undo banner in ZapperRuleManagerView.
-    /// - Parameters:
-    ///   - rule: The CSS selector string to restore.
-    ///   - hostname: The domain the rule belongs to.
-    ///   - index: The original position in the array; clamped to array bounds.
+    /// Re-inserts a previously deleted rule and refreshes local state.
     func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
         Task {
             await ProtobufDataManager.shared.restoreZapperRule(rule, forHost: hostname, at: index)
-        }
-
-        if !domains.contains(hostname) {
             refresh()
-        }
-
-        if selectedDomain == hostname {
-            rulesForSelectedDomain = rules(for: hostname)
-            // If the async hasn't committed yet, add it locally
-            if !rulesForSelectedDomain.contains(rule) {
-                let insertIndex = min(index, rulesForSelectedDomain.count)
-                rulesForSelectedDomain.insert(rule, at: insertIndex)
+            if selectedDomain == hostname {
+                rulesForSelectedDomain = rules(for: hostname)
             }
         }
-
-        logger.info("ZapperRuleManager: Restored rule for '\(hostname)' at index \(index)")
     }
 }
