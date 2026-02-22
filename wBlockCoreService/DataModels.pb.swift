@@ -471,6 +471,19 @@ struct Wblock_Data_PerformanceData: Sendable {
   init() {}
 }
 
+/// Per-host element zapper rule list
+struct Wblock_Data_ZapperRuleList: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var selectors: [String] = []
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
 /// Extension-specific data for Safari extensions
 struct Wblock_Data_ExtensionData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -482,6 +495,8 @@ struct Wblock_Data_ExtensionData: Sendable {
   var zapperRules: [String] = []
 
   var lastUpdated: Int64 = 0
+
+  var zapperRulesByHost: Dictionary<String,Wblock_Data_ZapperRuleList> = [:]
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1286,6 +1301,7 @@ extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._Messa
     1: .standard(proto: "tab_blocked_requests"),
     2: .standard(proto: "zapper_rules"),
     3: .standard(proto: "last_updated"),
+    4: .standard(proto: "zapper_rules_by_host"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1297,6 +1313,7 @@ extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 1: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_TabData>.self, value: &self.tabBlockedRequests) }()
       case 2: try { try decoder.decodeRepeatedStringField(value: &self.zapperRules) }()
       case 3: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdated) }()
+      case 4: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_ZapperRuleList>.self, value: &self.zapperRulesByHost) }()
       default: break
       }
     }
@@ -1312,6 +1329,9 @@ extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if self.lastUpdated != 0 {
       try visitor.visitSingularInt64Field(value: self.lastUpdated, fieldNumber: 3)
     }
+    if !self.zapperRulesByHost.isEmpty {
+      try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_ZapperRuleList>.self, value: self.zapperRulesByHost, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1319,6 +1339,36 @@ extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs.tabBlockedRequests != rhs.tabBlockedRequests {return false}
     if lhs.zapperRules != rhs.zapperRules {return false}
     if lhs.lastUpdated != rhs.lastUpdated {return false}
+    if lhs.zapperRulesByHost != rhs.zapperRulesByHost {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".ZapperRuleList"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "selectors"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedStringField(value: &self.selectors) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.selectors.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.selectors, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Wblock_Data_ZapperRuleList, rhs: Wblock_Data_ZapperRuleList) -> Bool {
+    if lhs.selectors != rhs.selectors {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -128,11 +128,17 @@ enum Platform {
   PLATFORM_IOS = 2;
 }
 
+// Per-host element zapper rule list
+message ZapperRuleList {
+  repeated string selectors = 1;
+}
+
 // Extension-specific data for Safari extensions
 message ExtensionData {
   map<string, TabData> tab_blocked_requests = 1;
-  repeated string zapper_rules = 2;
+  repeated string zapper_rules = 2;  // deprecated, kept for wire compat
   int64 last_updated = 3;
+  map<string, ZapperRuleList> zapper_rules_by_host = 4;
 }
 
 // Tab-specific blocking data
