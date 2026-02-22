@@ -250,7 +250,7 @@ struct SettingsView: View {
         }
         #else
         NavigationStack {
-            List {
+            Form {
                 Section("Display") {
                     Toggle(
                         "Show blocked item count in toolbar",
@@ -265,6 +265,7 @@ struct SettingsView: View {
                             }
                         )
                     )
+                    .toggleStyle(.switch)
                 }
 
                 Section("Actions") {
@@ -286,12 +287,14 @@ struct SettingsView: View {
                         Label("Manage Element Zapper Rules", systemImage: "wand.and.stars")
                     }
 
-                    Button { exportBackup() } label: {
-                        Label("Export Settings", systemImage: "square.and.arrow.up")
-                    }
+                    HStack {
+                        Button { exportBackup() } label: {
+                            Label("Export Settings", systemImage: "square.and.arrow.up")
+                        }
 
-                    Button { showingImportDialog = true } label: {
-                        Label("Import Settings", systemImage: "square.and.arrow.down")
+                        Button { showingImportDialog = true } label: {
+                            Label("Import Settings", systemImage: "square.and.arrow.down")
+                        }
                     }
                 }
 
@@ -315,14 +318,10 @@ struct SettingsView: View {
                             }
                         )
                     )
+                    .toggleStyle(.switch)
 
                     if autoUpdateEnabled {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(intervalDescription(hours: autoUpdateIntervalHours))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .contentTransition(.numericText())
-
+                        LabeledContent(intervalDescription(hours: autoUpdateIntervalHours)) {
                             Slider(
                                 value: Binding(
                                     get: { autoUpdateIntervalHours },
@@ -337,7 +336,9 @@ struct SettingsView: View {
                                 in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
                                 step: 1
                             )
+                            .frame(maxWidth: 260)
                         }
+                        .contentTransition(.numericText())
                     }
                 } header: {
                     Text("Filter Auto-Update")
@@ -406,7 +407,7 @@ struct SettingsView: View {
                     .disabled(isRestarting)
                 }
             }
-            .unifiedTabListStyle()
+            .formStyle(.grouped)
         }
         #endif
     }
