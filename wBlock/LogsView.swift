@@ -350,7 +350,6 @@ struct LogEntryRow: View {
                         .font(.subheadline)
                         .foregroundColor(.primary)
                         .lineLimit(isExpanded ? nil : 2)
-                        .fixedSize(horizontal: false, vertical: true)
 
                     // Metadata (if expanded)
                     if isExpanded, let metadata = entry.metadata, !metadata.isEmpty {
