@@ -88,15 +88,13 @@ enum BackupManager {
         // Whitelist
         let whitelistedDomains = defaults?.stringArray(forKey: "disabledSites") ?? []
 
-        // Zapper rules
+        // Zapper rules (from protobuf)
         var zapperRules: [String: [String]] = [:]
-        if let allKeys = defaults?.dictionaryRepresentation().keys {
-            let prefix = "zapperRules_"
-            for key in allKeys where key.hasPrefix(prefix) {
-                let hostname = String(key.dropFirst(prefix.count))
-                if let rules = defaults?.stringArray(forKey: key), !rules.isEmpty {
-                    zapperRules[hostname] = rules
-                }
+        let zapperDomains = ProtobufDataManager.shared.getZapperDomains()
+        for domain in zapperDomains {
+            let rules = ProtobufDataManager.shared.getZapperRules(forHost: domain)
+            if !rules.isEmpty {
+                zapperRules[domain] = rules
             }
         }
 
@@ -168,12 +166,10 @@ enum BackupManager {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
         defaults?.set(backup.whitelistedDomains, forKey: "disabledSites")
 
-        // 4. Restore zapper rules
-        let prefix = "zapperRules_"
+        // 4. Restore zapper rules (to protobuf)
         for (hostname, rules) in backup.zapperRules {
-            defaults?.set(rules, forKey: prefix + hostname)
+            await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: rules)
         }
-        defaults?.synchronize()
 
         // 5. Mark unapplied changes so user can apply
         filterManager.hasUnappliedChanges = true

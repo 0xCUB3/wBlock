@@ -14,6 +14,23 @@ async function syncRulesToNative(host, rules) {
     }
 }
 
+async function bulkSyncAllRulesToNative() {
+    try {
+        const all = await browser.storage.local.get(null);
+        const promises = [];
+        for (const key of Object.keys(all)) {
+            if (!key.startsWith(ZAPPER_STORAGE_PREFIX)) continue;
+            const hostname = key.slice(ZAPPER_STORAGE_PREFIX.length);
+            if (!hostname) continue;
+            const rules = Array.isArray(all[key]) ? all[key] : [];
+            promises.push(syncRulesToNative(hostname, rules));
+        }
+        await Promise.all(promises);
+    } catch {
+        // Best-effort bulk sync
+    }
+}
+
 function setError(message) {
     const el = document.getElementById('error');
     if (!el) return;
@@ -323,6 +340,8 @@ async function refreshUi() {
     }
 
     await updateZapperCount(host);
+
+    bulkSyncAllRulesToNative().catch(() => {});
 
     if (zapperRulesExpanded) {
         currentZapperRules = await loadZapperRules(host);
