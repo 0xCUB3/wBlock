@@ -413,23 +413,24 @@ public enum WebExtensionRequestHandler {
             return
         }
 
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-        let key = "zapperRules_\(hostname)"
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
 
-        if let rules = message["rules"] as? [String] {
-            let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-            if filtered.isEmpty {
-                defaults?.removeObject(forKey: key)
+            if let rules = message["rules"] as? [String] {
+                let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                if filtered.isEmpty {
+                    await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
+                } else {
+                    await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: filtered)
+                }
             } else {
-                defaults?.set(filtered, forKey: key)
+                // No rules array means clear
+                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
             }
-        } else {
-            // No rules array means clear
-            defaults?.removeObject(forKey: key)
-        }
 
-        let response = createResponse(with: ["ok": true])
-        context.completeRequest(returningItems: [response])
+            let response = createResponse(with: ["ok": true])
+            context.completeRequest(returningItems: [response])
+        }
     }
 
     private static func handleUserScriptChunkRequest(

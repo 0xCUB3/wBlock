@@ -20,7 +20,6 @@ public class PopoverViewModel: ObservableObject {
     @Published public var zapperRules: [String] = []
     @Published public var showingZapperRules: Bool = false
 
-    private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
     private var isLoading: Bool = false
 
     private func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
@@ -130,58 +129,47 @@ public class PopoverViewModel: ObservableObject {
     
     /// Load zapper rules for the current host
     public func loadZapperRules() {
-        guard !host.isEmpty else { 
+        guard !host.isEmpty else {
             os_log(.info, "PopoverViewModel: Cannot load zapper rules - host is empty")
-            return 
+            return
         }
-        let key = "zapperRules_\(host)"
-        let rawRules = defaults?.stringArray(forKey: key) ?? []
-        
-        // Filter out empty or whitespace-only rules
-        zapperRules = rawRules.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        
-        os_log(.info, "PopoverViewModel: Loaded %d zapper rules for host: %@ (filtered from %d raw rules)", zapperRules.count, host, rawRules.count)
-        
-        #if DEBUG
-        // Debug: Log each rule
-        for (index, rule) in zapperRules.enumerated() {
-            os_log(.info, "PopoverViewModel: Rule %d: '%@' (length: %d)", index, rule, rule.count)
-        }
-        #endif
+        zapperRules = ProtobufDataManager.shared.getZapperRules(forHost: host)
+
+        os_log(.info, "PopoverViewModel: Loaded %d zapper rules for host: %@", zapperRules.count, host)
     }
 
     /// Delete a specific zapper rule
     public func deleteZapperRule(_ rule: String) {
         guard !host.isEmpty else { return }
-        let key = "zapperRules_\(host)"
-        var rules = defaults?.stringArray(forKey: key) ?? []
-        rules.removeAll { $0 == rule }
-        defaults?.setValue(rules, forKey: key)
-        defaults?.synchronize()
-        
+
+        Task {
+            await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: host)
+        }
+
         // Update local state
-        zapperRules = rules
-        
-        os_log(.info, "PopoverViewModel: Deleted zapper rule '%@' for host: %@, remaining: %d", rule, host, rules.count)
-        
+        zapperRules.removeAll { $0 == rule }
+
+        os_log(.info, "PopoverViewModel: Deleted zapper rule '%@' for host: %@, remaining: %d", rule, host, zapperRules.count)
+
         // Reload the page to apply changes
         Task {
             await reloadCurrentPage()
         }
     }
-    
+
     /// Delete all zapper rules for the current host
     public func deleteAllZapperRules() {
         guard !host.isEmpty else { return }
-        let key = "zapperRules_\(host)"
-        defaults?.removeObject(forKey: key)
-        defaults?.synchronize()
-        
+
+        Task {
+            await ProtobufDataManager.shared.deleteAllZapperRules(forHost: host)
+        }
+
         // Update local state
         zapperRules = []
-        
+
         os_log(.info, "PopoverViewModel: Deleted all zapper rules for host: %@", host)
-        
+
         // Reload the page to apply changes
         Task {
             await reloadCurrentPage()
