@@ -2,15 +2,21 @@ const NATIVE_HOST_ID = 'application.id';
 const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 
 async function syncRulesToNative(host, rules) {
-    if (!host) return;
+    if (!host) return null;
     try {
-        await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
             action: 'syncZapperRules',
             hostname: host,
             rules: Array.isArray(rules) ? rules : []
         });
+        if (response && Array.isArray(response.rules)) {
+            const key = zapperStorageKey(host);
+            await browser.storage.local.set({ [key]: response.rules });
+            return response.rules;
+        }
+        return null;
     } catch {
-        // Best-effort sync
+        return null;
     }
 }
 

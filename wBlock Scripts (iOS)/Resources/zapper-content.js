@@ -69,15 +69,23 @@
   }
 
   async function syncRulesToNative(host, rules) {
-    if (!host) return;
+    if (!host) return null;
     try {
-      await browser.runtime.sendNativeMessage('application.id', {
+      const response = await browser.runtime.sendNativeMessage('application.id', {
         action: 'syncZapperRules',
         hostname: host,
         rules: Array.isArray(rules) ? rules : []
       });
+      // If the native side returned an authoritative rules list (e.g. after
+      // filtering out app-deleted rules), update browser.storage.local to match.
+      if (response && Array.isArray(response.rules)) {
+        const key = storageKey(host);
+        await browser.storage.local.set({ [key]: response.rules });
+        return response.rules;
+      }
+      return null;
     } catch {
-      // Native sync is best-effort; extension still works via browser.storage.local
+      return null;
     }
   }
 
@@ -857,9 +865,14 @@
     state.host = safeHostname();
     state.rules = await loadRulesForHost(state.host);
     applyRulesToPage(state.rules);
-    // Sync existing rules to native UserDefaults (migration/write-through)
+    // Sync existing rules to native (migration/write-through)
     if (state.rules.length > 0) {
-      await syncRulesToNative(state.host, state.rules);
+      const reconciled = await syncRulesToNative(state.host, state.rules);
+      if (reconciled !== null && reconciled.length !== state.rules.length) {
+        // Native filtered out some rules (deleted from app) -- update local state
+        state.rules = reconciled;
+        applyRulesToPage(state.rules);
+      }
     }
   }
 
