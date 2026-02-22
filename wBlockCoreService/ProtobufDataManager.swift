@@ -419,6 +419,89 @@ public class ProtobufDataManager: ObservableObject {
         Array(appData.extensionData.tabBlockedRequests.keys)
     }
 
+    // MARK: - Zapper Rules
+
+    /// Returns sorted array of all hostnames that have at least one zapper rule.
+    public func getZapperDomains() -> [String] {
+        appData.extensionData.zapperRulesByHost
+            .filter { !$0.value.selectors.isEmpty }
+            .map { $0.key }
+            .sorted()
+    }
+
+    /// Returns the selectors array for a given hostname, filtered for non-empty entries.
+    public func getZapperRules(forHost host: String) -> [String] {
+        guard let ruleList = appData.extensionData.zapperRulesByHost[host] else { return [] }
+        return ruleList.selectors.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    /// Sets/replaces rules for a host. If rules are empty, removes the key.
+    @MainActor
+    public func setZapperRules(forHost host: String, rules: [String]) async {
+        let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        await updateData { data in
+            if filtered.isEmpty {
+                data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+            } else {
+                var ruleList = Wblock_Data_ZapperRuleList()
+                ruleList.selectors = filtered
+                data.extensionData.zapperRulesByHost[host] = ruleList
+            }
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    /// Adds a single selector to the host's list if not already present.
+    @MainActor
+    public func addZapperRule(_ selector: String, forHost host: String) async {
+        let trimmed = selector.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        await updateData { data in
+            var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            if !ruleList.selectors.contains(trimmed) {
+                ruleList.selectors.append(trimmed)
+                data.extensionData.zapperRulesByHost[host] = ruleList
+                data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+            }
+        }
+    }
+
+    /// Removes a single selector. If the selectors array becomes empty, removes the host key.
+    @MainActor
+    public func deleteZapperRule(_ selector: String, forHost host: String) async {
+        await updateData { data in
+            guard var ruleList = data.extensionData.zapperRulesByHost[host] else { return }
+            ruleList.selectors.removeAll { $0 == selector }
+            if ruleList.selectors.isEmpty {
+                data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+            } else {
+                data.extensionData.zapperRulesByHost[host] = ruleList
+            }
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    /// Removes the host key entirely from the map.
+    @MainActor
+    public func deleteAllZapperRules(forHost host: String) async {
+        await updateData { data in
+            data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    /// Re-inserts a selector at the given index (clamped to bounds).
+    @MainActor
+    public func restoreZapperRule(_ selector: String, forHost host: String, at index: Int) async {
+        await updateData { data in
+            var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            let insertIndex = min(max(index, 0), ruleList.selectors.count)
+            ruleList.selectors.insert(selector, at: insertIndex)
+            data.extensionData.zapperRulesByHost[host] = ruleList
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
     // MARK: - Singleton
     public static let shared = ProtobufDataManager()
     
@@ -930,6 +1013,21 @@ public class ProtobufDataManager: ObservableObject {
                 migratedData.extensionData.tabBlockedRequests[tabId] = tabData
             }
             migratedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+
+        // Migrate zapper rules from UserDefaults
+        for key in groupDefaults.dictionaryRepresentation().keys {
+            if key.hasPrefix("zapperRules_") {
+                let hostname = String(key.dropFirst("zapperRules_".count))
+                if let rules = groupDefaults.stringArray(forKey: key) {
+                    let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                    if !filtered.isEmpty {
+                        var ruleList = Wblock_Data_ZapperRuleList()
+                        ruleList.selectors = filtered
+                        migratedData.extensionData.zapperRulesByHost[hostname] = ruleList
+                    }
+                }
+            }
         }
 
         // Migrate filter lists
