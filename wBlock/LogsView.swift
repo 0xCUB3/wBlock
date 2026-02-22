@@ -15,7 +15,6 @@ struct LogsView: View {
     @State private var selectedLevel: LogLevel? = nil
     @State private var selectedCategory: LogCategory? = nil
     @State private var searchText = ""
-    @State private var expandedEntries: Set<UUID> = []
     @State private var showingShareSheet = false
     @Environment(\.dismiss) private var dismiss
 
@@ -66,12 +65,7 @@ struct LogsView: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(filteredEntries) { entry in
-                                LogEntryRow(
-                                    entry: entry,
-                                    isExpanded: expandedEntries.contains(entry.id)
-                                ) {
-                                    toggleExpanded(entry.id)
-                                }
+                                LogEntryRow(entry: entry)
                                 Divider()
                                     .padding(.leading, 48)
                             }
@@ -251,14 +245,6 @@ struct LogsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func toggleExpanded(_ id: UUID) {
-        if expandedEntries.contains(id) {
-            expandedEntries.remove(id)
-        } else {
-            expandedEntries.insert(id)
-        }
-    }
-
     private func loadLogs() async {
         await ConcurrentLogManager.shared.ingestSharedAutoUpdateLog()
         entries = await ConcurrentLogManager.shared.getEntries()
@@ -297,8 +283,6 @@ struct LogsView: View {
 
 struct LogEntryRow: View {
     let entry: LogEntry
-    let isExpanded: Bool
-    let onTap: () -> Void
 
     private var levelColor: Color {
         switch entry.level {
@@ -311,80 +295,63 @@ struct LogEntryRow: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .top, spacing: 12) {
-                // Level indicator
-                VStack(spacing: 4) {
-                    Text(entry.level.emoji)
-                        .font(.caption)
-                    if entry.count > 1 {
-                        Text(String.localizedStringWithFormat(
-                            NSLocalizedString("×%d", comment: "Collapsed duplicate log entry count"),
-                            entry.count
-                        ))
-                            .font(.system(size: 9))
-                            .foregroundColor(.secondary)
-                    }
+        HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 4) {
+                Text(entry.level.emoji)
+                    .font(.caption)
+                if entry.count > 1 {
+                    Text(String.localizedStringWithFormat(
+                        NSLocalizedString("×%d", comment: "Collapsed duplicate log entry count"),
+                        entry.count
+                    ))
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
                 }
-                .frame(width: 32)
+            }
+            .frame(width: 32)
 
-                // Main content
-                VStack(alignment: .leading, spacing: 4) {
-                    // Time and category
-                    HStack(spacing: 8) {
-                        Text(timeString(from: entry.timestamp))
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text(timeString(from: entry.timestamp))
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.secondary)
 
-                        Text(entry.category.localizedName)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(levelColor)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(levelColor.opacity(0.15), in: Capsule())
-                    }
+                    Text(entry.category.localizedName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(levelColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(levelColor.opacity(0.15), in: Capsule())
+                }
 
-                    // Message
-                    Text(entry.message)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .lineLimit(isExpanded ? nil : 2)
+                Text(entry.message)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
 
-                    // Metadata (if expanded)
-                    if isExpanded, let metadata = entry.metadata, !metadata.isEmpty {
-                        let sortedKeys = metadata.keys.sorted()
-                        VStack(alignment: .leading, spacing: 2) {
-                            ForEach(sortedKeys, id: \.self) { key in
-                                HStack(spacing: 6) {
-                                    Text(key)
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                        .fontWeight(.medium)
-                                    Text(metadata[key] ?? "")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
+                if let metadata = entry.metadata, !metadata.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(metadata.keys.sorted(), id: \.self) { key in
+                            HStack(spacing: 6) {
+                                Text(key)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .fontWeight(.medium)
+                                Text(metadata[key] ?? "")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
                             }
                         }
-                        .padding(.top, 4)
-                        .padding(.leading, 8)
                     }
+                    .padding(.top, 4)
+                    .padding(.leading, 8)
                 }
-
-                Spacer()
-
-                // Expand indicator
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .opacity((entry.metadata?.isEmpty ?? true) ? 0 : 1)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
+
+            Spacer()
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     private func timeString(from date: Date) -> String {
