@@ -479,6 +479,8 @@ struct Wblock_Data_ZapperRuleList: Sendable {
 
   var selectors: [String] = []
 
+  var pendingDeletions: [String] = []
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1349,12 +1351,14 @@ extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._Mess
   static let protoMessageName: String = _protobuf_package + ".ZapperRuleList"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "selectors"),
+    2: .standard(proto: "pending_deletions"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedStringField(value: &self.selectors) }()
+      case 2: try { try decoder.decodeRepeatedStringField(value: &self.pendingDeletions) }()
       default: break
       }
     }
@@ -1364,11 +1368,15 @@ extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._Mess
     if !self.selectors.isEmpty {
       try visitor.visitRepeatedStringField(value: self.selectors, fieldNumber: 1)
     }
+    if !self.pendingDeletions.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.pendingDeletions, fieldNumber: 2)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Wblock_Data_ZapperRuleList, rhs: Wblock_Data_ZapperRuleList) -> Bool {
     if lhs.selectors != rhs.selectors {return false}
+    if lhs.pendingDeletions != rhs.pendingDeletions {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

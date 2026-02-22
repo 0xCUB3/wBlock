@@ -131,6 +131,7 @@ enum Platform {
 // Per-host element zapper rule list
 message ZapperRuleList {
   repeated string selectors = 1;
+  repeated string pending_deletions = 2;
 }
 
 // Extension-specific data for Safari extensions
