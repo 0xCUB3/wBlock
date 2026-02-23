@@ -38,6 +38,9 @@ struct AdGuardSyntaxHighlighter {
         let regexPattern: PlatformColor
         let defaultText: PlatformColor
 
+        /// Custom amber for HTML filtering rules (systemYellow has poor contrast on light backgrounds)
+        private static let amberColor = PlatformColor(red: 0.8, green: 0.6, blue: 0.0, alpha: 1.0)
+
         static var `default`: Theme {
             #if canImport(AppKit)
             return Theme(
@@ -49,7 +52,7 @@ struct AdGuardSyntaxHighlighter {
                 modifier: NSColor.systemOrange,
                 extendedCSS: NSColor.systemTeal,
                 scriptlet: NSColor.systemPink,
-                htmlFiltering: PlatformColor(red: 0.8, green: 0.6, blue: 0.0, alpha: 1.0),
+                htmlFiltering: amberColor,
                 regexPattern: NSColor.systemCyan,
                 defaultText: NSColor.labelColor
             )
@@ -63,7 +66,7 @@ struct AdGuardSyntaxHighlighter {
                 modifier: UIColor.systemOrange,
                 extendedCSS: UIColor.systemTeal,
                 scriptlet: UIColor.systemPink,
-                htmlFiltering: PlatformColor(red: 0.8, green: 0.6, blue: 0.0, alpha: 1.0),
+                htmlFiltering: amberColor,
                 regexPattern: UIColor.systemCyan,
                 defaultText: UIColor.label
             )

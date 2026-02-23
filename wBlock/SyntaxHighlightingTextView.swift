@@ -130,7 +130,8 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         let attributed = highlighter.highlight(text)
         textView.attributedText = attributed
 
-        if selectedRange.location + selectedRange.length <= (textView.text?.count ?? 0) {
+        let utf16Length = (textView.text as NSString?)?.length ?? 0
+        if selectedRange.location + selectedRange.length <= utf16Length {
             textView.selectedRange = selectedRange
         }
         context.coordinator.isUpdating = false
@@ -157,7 +158,8 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
             let attributed = parent.highlighter.highlight(newText)
             textView.attributedText = attributed
 
-            if selectedRange.location + selectedRange.length <= newText.count {
+            let utf16Length = (newText as NSString).length
+            if selectedRange.location + selectedRange.length <= utf16Length {
                 textView.selectedRange = selectedRange
             }
             isUpdating = false
