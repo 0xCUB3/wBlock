@@ -85,9 +85,13 @@ class AppFilterManager: ObservableObject {
         await dataManager.updateFilterLists(filterLists)
     }
 
-    // Synchronous wrapper for non-async contexts
-    private func saveFilterListsSync() {
-        Task {
+    private var pendingSaveTask: Task<Void, Never>?
+
+    func saveFilterListsCoalesced() {
+        pendingSaveTask?.cancel()
+        pendingSaveTask = Task {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            guard !Task.isCancelled else { return }
             await saveFilterLists()
         }
     }
@@ -134,7 +138,7 @@ class AppFilterManager: ObservableObject {
 
         let defaultLists = loader.getDefaultFilterLists()
         filterLists = defaultLists
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         await dataManager.updateRuleCounts(
             lastRuleCount: 0,
@@ -243,7 +247,7 @@ class AppFilterManager: ObservableObject {
         if filterLists.isEmpty && !dataManager.isLoading {
             let defaultLists = loader.getDefaultFilterLists()
             filterLists = defaultLists
-            saveFilterListsSync()
+            saveFilterListsCoalesced()
         }
 
         // Load saved rule counts from protobuf data
@@ -617,7 +621,7 @@ class AppFilterManager: ObservableObject {
             }
         }
         self.filterLists = newFilterLists
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
     }
 
     /// Updates version and count for a single filter instead of all filters
@@ -638,7 +642,7 @@ class AppFilterManager: ObservableObject {
         newFilterLists[index] = updatedFilter
         newFilterLists[index].isSelected = currentSelectionState
         self.filterLists = newFilterLists
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
     }
 
     func doesFilterFileExist(_ filter: FilterList) -> Bool {
@@ -684,7 +688,7 @@ class AppFilterManager: ObservableObject {
                 autoDisabledFilters.removeAll { $0.id == id }
             }
 
-            saveFilterListsSync()
+            saveFilterListsCoalesced()
             hasUnappliedChanges = true
         }
     }
@@ -729,7 +733,7 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
         hasUnappliedChanges = true
     }
 
@@ -871,7 +875,7 @@ class AppFilterManager: ObservableObject {
                         }
                     })
 
-                saveFilterListsSync()
+                await saveFilterLists()
             } else {
                 await ConcurrentLogManager.shared.info(
                     .filterApply, "No updates available", metadata: [:])
@@ -1251,7 +1255,7 @@ class AppFilterManager: ObservableObject {
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
         // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
 
-        saveFilterListsSync()  // Save any state like sourceRuleCount if updated
+        await saveFilterLists()
 
         // Save rule counts to UserDefaults for next app launch
         saveRuleCounts()
@@ -1307,7 +1311,7 @@ class AppFilterManager: ObservableObject {
             })
 
         // Save after download
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         // Apply changes (conversion, reload, etc)
         statusDescription = "Applying filters...\n(This may take a while)"
@@ -1371,7 +1375,7 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         await applyChanges()
         isLoading = false
@@ -1392,7 +1396,7 @@ class AppFilterManager: ObservableObject {
             }
         )
 
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         await MainActor.run {
             for filter in successfullyUpdatedFilters {
@@ -1430,7 +1434,7 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
     }
 
     // MARK: - List Management
@@ -1575,7 +1579,7 @@ class AppFilterManager: ObservableObject {
             customFilterLists.append(newFilterToAdd)
 
             filterLists.append(newFilterToAdd)
-            saveFilterListsSync()
+            saveFilterListsCoalesced()
 
             Task {
                 await ConcurrentLogManager.shared.info(
@@ -1597,7 +1601,7 @@ class AppFilterManager: ObservableObject {
                             "✅ Filter '\(currentName)' added successfully. Apply changes to enable it."
                         self.hasError = false
                     }
-                    saveFilterListsSync()
+                    saveFilterListsCoalesced()
                 } else {
                     await ConcurrentLogManager.shared.error(
                         .filterUpdate, "Failed to download custom filter",
@@ -1624,7 +1628,7 @@ class AppFilterManager: ObservableObject {
 
         customFilterLists.append(filter)
         filterLists.append(filter)
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         Task {
             await ConcurrentLogManager.shared.info(
@@ -1642,7 +1646,7 @@ class AppFilterManager: ObservableObject {
         customFilterLists.removeAll { $0.id == filter.id }
 
         filterLists.removeAll { $0.id == filter.id }
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         if let containerURL = loader.getSharedContainerURL() {
             let idFileURL = containerURL.appendingPathComponent(
@@ -1695,7 +1699,7 @@ class AppFilterManager: ObservableObject {
             customFilterLists[customIndex].name = trimmed
             customFilterLists[customIndex].hasUserProvidedName = true
         }
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
 
         Task {
             await ConcurrentLogManager.shared.info(
@@ -1777,7 +1781,7 @@ class AppFilterManager: ObservableObject {
             customFilterLists[customIndex].sourceRuleCount = filterLists[index].sourceRuleCount
         }
 
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
         hasUnappliedChanges = true
         statusDescription = "✅ User list updated. Apply changes to enable it."
         hasError = false
@@ -1806,7 +1810,7 @@ class AppFilterManager: ObservableObject {
             filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)
         }
 
-        saveFilterListsSync()
+        saveFilterListsCoalesced()
         hasUnappliedChanges = false
         statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
 
