@@ -162,7 +162,7 @@ extension AppFilterManager {
         #if os(macOS)
         let maxConcurrent = 3
         #else
-        let maxConcurrent = 2
+        let maxConcurrent = 1
         #endif
 
         var iterator = targets.makeIterator()

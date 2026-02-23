@@ -341,7 +341,7 @@ public enum WebExtensionRequestHandler {
         }
     }
 
-    private static func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 3) async -> Bool {
+    private static func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 5) async -> Bool {
         for attempt in 1...maxRetries {
             let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
             if case .success = result {
@@ -350,7 +350,7 @@ public enum WebExtensionRequestHandler {
 
             if attempt < maxRetries {
                 // WKErrorDomain error 6 is often transient immediately after writing JSON files.
-                let delayMs = min(200 * attempt, 800)
+                let delayMs = min(200 * attempt, 1500)
                 try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
             }
         }
@@ -398,7 +398,7 @@ public enum WebExtensionRequestHandler {
         #if os(macOS)
         let maxConcurrent = 3
         #else
-        let maxConcurrent = 2
+        let maxConcurrent = 1
         #endif
 
         var iterator = targets.makeIterator()
