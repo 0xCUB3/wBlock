@@ -342,7 +342,7 @@ extension AppFilterManager {
         }
 
         let overallReloadStartTime = Date()
-        let reloadSummary = await reloadContentBlockersInParallel(platformTargets, totalCount: totalFiltersCount)
+        let reloadSummary = await reloadContentBlockersInParallel(platformTargets)
         let allReloadsSuccessful = reloadSummary.allSuccessful
 
         // Log reload summary
@@ -726,7 +726,8 @@ extension AppFilterManager {
         try destinationHandle.write(contentsOf: newlineData)
     }
 
-    func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo], totalCount: Int) async -> ReloadPhaseSummary {
+    func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
+        let totalCount = targets.count
         #if os(macOS)
         let maxConcurrent = 3
         #else
