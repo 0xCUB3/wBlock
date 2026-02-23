@@ -7,15 +7,21 @@ import Foundation
 
 #if canImport(AppKit)
 import AppKit
-typealias PlatformColor = NSColor
-typealias PlatformFont = NSFont
 #elseif canImport(UIKit)
 import UIKit
-typealias PlatformColor = UIColor
-typealias PlatformFont = UIFont
 #endif
 
 struct AdGuardSyntaxHighlighter {
+
+    // MARK: - Platform typealiases
+
+    #if canImport(AppKit)
+    typealias PlatformColor = NSColor
+    typealias PlatformFont = NSFont
+    #elseif canImport(UIKit)
+    typealias PlatformColor = UIColor
+    typealias PlatformFont = UIFont
+    #endif
 
     // MARK: - Theme
 
@@ -30,7 +36,7 @@ struct AdGuardSyntaxHighlighter {
         let scriptlet: PlatformColor
         let htmlFiltering: PlatformColor
         let regexPattern: PlatformColor
-        let domain: PlatformColor
+        let defaultText: PlatformColor
 
         static var `default`: Theme {
             #if canImport(AppKit)
@@ -43,9 +49,9 @@ struct AdGuardSyntaxHighlighter {
                 modifier: NSColor.systemOrange,
                 extendedCSS: NSColor.systemTeal,
                 scriptlet: NSColor.systemPink,
-                htmlFiltering: NSColor.systemYellow,
+                htmlFiltering: PlatformColor(red: 0.8, green: 0.6, blue: 0.0, alpha: 1.0),
                 regexPattern: NSColor.systemCyan,
-                domain: NSColor.labelColor
+                defaultText: NSColor.labelColor
             )
             #else
             return Theme(
@@ -57,9 +63,9 @@ struct AdGuardSyntaxHighlighter {
                 modifier: UIColor.systemOrange,
                 extendedCSS: UIColor.systemTeal,
                 scriptlet: UIColor.systemPink,
-                htmlFiltering: UIColor.systemYellow,
+                htmlFiltering: PlatformColor(red: 0.8, green: 0.6, blue: 0.0, alpha: 1.0),
                 regexPattern: UIColor.systemCyan,
-                domain: UIColor.label
+                defaultText: UIColor.label
             )
             #endif
         }
@@ -73,9 +79,9 @@ struct AdGuardSyntaxHighlighter {
         let fullLine: Bool
         let italic: Bool
 
-        init(_ pattern: String, color: PlatformColor, fullLine: Bool = false, italic: Bool = false) {
+        init(_ pattern: String, color: PlatformColor, fullLine: Bool = false, italic: Bool = false, options: NSRegularExpression.Options = []) {
             // swiftlint:disable:next force_try
-            self.regex = try! NSRegularExpression(pattern: pattern, options: [])
+            self.regex = try! NSRegularExpression(pattern: pattern, options: options)
             self.color = color
             self.fullLine = fullLine
             self.italic = italic
@@ -108,19 +114,19 @@ struct AdGuardSyntaxHighlighter {
         // Line-level patterns (checked in order, first match wins for full-line coloring)
         self.linePatterns = [
             RulePattern("^!", color: theme.comment, fullLine: true),
-            RulePattern("^\\[Adblock", color: theme.sectionHeader, fullLine: true, italic: true),
-            RulePattern("^@@", color: theme.exception, fullLine: true),
+            RulePattern("^\\[.+\\]\\s*$", color: theme.sectionHeader, fullLine: true, italic: true),
             RulePattern("^.+?#%#", color: theme.scriptlet, fullLine: true),
             RulePattern("^.+?\\$\\$", color: theme.htmlFiltering, fullLine: true),
         ]
 
         // Inline patterns (applied as overlays after line-level coloring)
         self.inlinePatterns = [
+            RulePattern("^@@", color: theme.exception),
             RulePattern("(##|#@#|#\\?#|#\\$#)", color: theme.elementHiding),
             RulePattern("^\\|\\|", color: theme.urlBlocking),
             RulePattern("\\$(~?[\\w-]+(?:=[^,\\s]*)?(?:,~?[\\w-]+(?:=[^,\\s]*)?)*)$", color: theme.modifier),
-            RulePattern(":(has|contains|matches-css|matches-attr|matches-property|if|if-not|nth-ancestor|upward|xpath|remove|remove-attr|remove-class)\\(", color: theme.extendedCSS),
-            RulePattern("/.+/", color: theme.regexPattern),
+            RulePattern(":(has|contains|matches-css|matches-attr|matches-property|if|if-not|nth-ancestor|upward|xpath|remove|remove-attr|remove-class|not)\\(", color: theme.extendedCSS),
+            RulePattern("^/.*/$", color: theme.regexPattern),
         ]
     }
 
@@ -130,11 +136,16 @@ struct AdGuardSyntaxHighlighter {
         let result = NSMutableAttributedString()
         let lines = text.components(separatedBy: "\n")
 
+        let defaultAttributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: theme.defaultText,
+            .font: baseFont
+        ]
+
         for (index, line) in lines.enumerated() {
             let attributed = highlightLine(line)
             result.append(attributed)
             if index < lines.count - 1 {
-                result.append(NSAttributedString(string: "\n"))
+                result.append(NSAttributedString(string: "\n", attributes: defaultAttributes))
             }
         }
 
@@ -146,7 +157,7 @@ struct AdGuardSyntaxHighlighter {
         let fullRange = NSRange(location: 0, length: nsLine.length)
 
         let attributed = NSMutableAttributedString(string: line, attributes: [
-            .foregroundColor: theme.domain,
+            .foregroundColor: theme.defaultText,
             .font: baseFont
         ])
 
