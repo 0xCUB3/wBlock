@@ -205,16 +205,12 @@ extension AppFilterManager {
         var conversionMetrics: [TargetConversionMetrics] = []
 
         await MainActor.run {
-            self.processedFiltersCount = 0  // Use this to track processed targets for progress
-
-            // Update ViewModel phase
-            self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
-            self.applyProgressViewModel.updateConvertingDone(0)
-        }
-
-        await MainActor.run {
+            self.processedFiltersCount = 0
             self.ruleCountsByExtension = [:]
             self.extensionsApproachingLimit = []
+
+            self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
+            self.applyProgressViewModel.updateConvertingDone(0)
         }
 
         // Collect advanced rules by target bundle ID (single storage)
@@ -273,7 +269,7 @@ extension AppFilterManager {
 
             await MainActor.run {
                 self.processedFiltersCount += 1
-                self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7  // Up to 70% for conversion
+                self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
                 self.applyProgressViewModel.updateProgress(self.progress)
                 self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
                 self.applyProgressViewModel.updateCurrentFilter(blockerName)
@@ -283,6 +279,12 @@ extension AppFilterManager {
                     self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
                 } else {
                     self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
+                }
+
+                if ruleCountForThisTarget > ruleLimit {
+                    self.hasError = true
+                    self.statusDescription =
+                        "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
                 }
             }
 
@@ -296,12 +298,6 @@ extension AppFilterManager {
                         "ruleLimit": "\(ruleLimit)",
                     ]
                 )
-
-                await MainActor.run {
-                    self.hasError = true
-                    self.statusDescription =
-                        "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
-                }
             }
 
             overallSafariRulesApplied += ruleCountForThisTarget
@@ -430,26 +426,17 @@ extension AppFilterManager {
 
         await MainActor.run {
             self.progress = 1.0
-
-            // Update ViewModel to 100%
             self.applyProgressViewModel.updateProgress(1.0)
-        }
 
-        let hasErrorValue = await MainActor.run { self.hasError }
-        if allReloadsSuccessful && !hasErrorValue {
-            await MainActor.run {
+            if allReloadsSuccessful && !self.hasError {
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
                 self.hasUnappliedChanges = false
-            }
-        } else if !hasErrorValue {  // Implies reload issue was the only problem
-            await MainActor.run {
+            } else if !self.hasError {
                 self.statusDescription =
                     "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
             }
-        }  // If hasError was already true, statusDescription would reflect the earlier error.
 
-        await MainActor.run {
             self.isLoading = false
 
             let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
@@ -464,7 +451,6 @@ extension AppFilterManager {
                     .map { $0.displayName }
             )
 
-            // Update ViewModel with final statistics
             self.applyProgressViewModel.updateStatistics(
                 sourceRules: self.sourceRulesCount,
                 safariRules: self.lastRuleCount,
@@ -485,8 +471,7 @@ extension AppFilterManager {
         saveRuleCounts()
 
         // Final summary log
-        let hasErrorValueForLog = await MainActor.run { self.hasError }
-        let statusDesc = await MainActor.run { self.statusDescription }
+        let (hasErrorValueForLog, statusDesc) = await MainActor.run { (self.hasError, self.statusDescription) }
 
         if allReloadsSuccessful && !hasErrorValueForLog {
             await ConcurrentLogManager.shared.info(
