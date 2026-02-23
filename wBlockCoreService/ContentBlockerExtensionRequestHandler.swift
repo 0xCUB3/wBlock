@@ -17,6 +17,27 @@ import UniformTypeIdentifiers
 /// and the content blocker extension. If no custom rules are found, it falls back to
 /// the default blocker list included in the extension bundle.
 public enum ContentBlockerExtensionRequestHandler {
+    /// Convenience entry point that handles platform detection, target lookup, and fallback.
+    public static func handleRequest(with context: NSExtensionContext) {
+        #if os(iOS)
+        let platform: Platform = .iOS
+        #else
+        let platform: Platform = .macOS
+        #endif
+
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "Unknown"
+        guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forBundleIdentifier: bundleIdentifier, platform: platform) else {
+            os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for bundleIdentifier '%@' on platform '%@'.", bundleIdentifier, String(describing: platform))
+            let emptyRules = "[]"
+            let item = NSExtensionItem()
+            item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+            context.completeRequest(returningItems: [item])
+            return
+        }
+
+        handleRequest(with: context, groupIdentifier: GroupIdentifier.shared.value, rulesFilenameInAppGroup: targetInfo.rulesFilename)
+    }
+
     /// Handles content blocking extension request for rules.
     ///
     /// This method loads the content blocker rules JSON file from the shared container
