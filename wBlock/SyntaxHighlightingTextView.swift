@@ -51,7 +51,15 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
         let attributed = highlighter.highlight(text)
         textView.textStorage?.setAttributedString(attributed)
 
-        textView.selectedRanges = selectedRanges
+        let newLength = textView.string.utf16.count
+        let validRanges = selectedRanges.compactMap { rangeValue -> NSValue? in
+            let range = rangeValue.rangeValue
+            guard range.location + range.length <= newLength else { return nil }
+            return rangeValue
+        }
+        if !validRanges.isEmpty {
+            textView.selectedRanges = validRanges as [NSValue]
+        }
         context.coordinator.isUpdating = false
     }
 
