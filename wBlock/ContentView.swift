@@ -1564,8 +1564,7 @@ struct EditUserListView: View {
                         }
 
                         Section("Rules") {
-                            TextEditor(text: $rules)
-                                .font(.system(.body, design: .monospaced))
+                            SyntaxHighlightingTextView(text: $rules)
                                 .frame(minHeight: 260)
                         }
                     }
@@ -1654,10 +1653,8 @@ struct EditUserListView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
 
-                                TextEditor(text: $rules)
-                                    .font(.system(.body, design: .monospaced))
+                                SyntaxHighlightingTextView(text: $rules)
                                     .frame(minHeight: 260)
-                                    .scrollContentBackground(.hidden)
                                     .padding(10)
                                     .background(
                                         .background,
