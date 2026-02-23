@@ -75,6 +75,10 @@ class AppFilterManager: ObservableObject {
 
     var customFilterLists: [FilterList] = []
 
+    private var filterListIndexByID: [UUID: Int] {
+        Dictionary(uniqueKeysWithValues: filterLists.enumerated().map { ($1.id, $0) })
+    }
+
     // Save filter lists
     func saveFilterLists() async {
         // Use existing updateFilterLists method from ProtobufDataManager+Extensions
@@ -624,7 +628,7 @@ class AppFilterManager: ObservableObject {
         }.value
 
         guard let updatedFilter = updatedFilters.first,
-            let index = self.filterLists.firstIndex(where: { $0.id == filter.id })
+            let index = self.filterListIndexByID[filter.id]
         else {
             return
         }
@@ -672,7 +676,7 @@ class AppFilterManager: ObservableObject {
     }
 
     func toggleFilterListSelection(id: UUID) {
-        if let index = filterLists.firstIndex(where: { $0.id == id }) {
+        if let index = filterListIndexByID[id] {
             filterLists[index].isSelected.toggle()
 
             if filterLists[index].isSelected {
@@ -1672,7 +1676,7 @@ class AppFilterManager: ObservableObject {
         let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        guard let index = filterLists.firstIndex(where: { $0.id == id && $0.isCustom }) else {
+        guard let index = filterListIndexByID[id], filterLists[index].isCustom else {
             return
         }
 
@@ -1718,7 +1722,7 @@ class AppFilterManager: ObservableObject {
             return
         }
 
-        guard let index = filterLists.firstIndex(where: { $0.id == id && $0.isCustom }) else {
+        guard let index = filterListIndexByID[id], filterLists[index].isCustom else {
             statusDescription = "User list not found."
             hasError = true
             return
