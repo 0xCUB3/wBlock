@@ -541,17 +541,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
     ///   - groupIdentifier: Group ID to use for the shared container.
     ///   - targetRulesFilename: Target filename for the rules.
     /// - Returns: The number of Safari content blocker rules generated from the conversion.
-    @available(*, deprecated, message: "Use convertFilter(rules:groupIdentifier:targetRulesFilename:) -> (safariRulesCount: Int, advancedRulesText: String?) and buildCombinedFilterEngine instead")
-    public static func convertFilterLegacy(rules: String, groupIdentifier: String, targetRulesFilename: String) -> Int {
-        let result = convertFilter(rules: rules, groupIdentifier: groupIdentifier, targetRulesFilename: targetRulesFilename)
-        
-        // Legacy behavior - build engine immediately if there are advanced rules
-        if let advancedRulesText = result.advancedRulesText, !advancedRulesText.isEmpty {
-            buildCombinedFilterEngine(combinedAdvancedRules: advancedRulesText, groupIdentifier: groupIdentifier)
-        }
-        
-        return result.safariRulesCount
-    }
 }
 
 // MARK: - Safari Content Blocker functions

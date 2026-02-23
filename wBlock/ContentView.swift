@@ -6,7 +6,6 @@
 //
 
 import Combine
-import SafariServices
 import SwiftUI
 import UniformTypeIdentifiers
 import UserNotifications

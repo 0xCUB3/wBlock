@@ -423,7 +423,6 @@
 				AppFilterManager.swift,
 				ConcurrentLogManager.swift,
 				ContentView.swift,
-				DataMigration.swift,
 				FilterListLoader.swift,
 				FilterListUpdater.swift,
 				Info.plist,

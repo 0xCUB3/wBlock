@@ -7,8 +7,6 @@
 
 import Combine
 import CryptoKit
-import Darwin
-import SafariServices
 import SwiftUI
 import wBlockCoreService
 
