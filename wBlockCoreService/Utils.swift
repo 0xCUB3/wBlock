@@ -278,6 +278,48 @@ public enum ContentBlockerIncrementalCache {
     }
 }
 
+public enum HostMatcher {
+    public static func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
+        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalizedHost.isEmpty { return false }
+        for site in disabledSites {
+            let disabled = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if disabled.isEmpty { continue }
+            if normalizedHost == disabled { return true }
+            if normalizedHost.hasSuffix("." + disabled) { return true }
+        }
+        return false
+    }
+}
+
+public enum UserScriptMetadataParser {
+    public static func extractResourceNames(from userScriptContent: String) -> [String] {
+        var names: [String] = []
+        var inMetadata = false
+
+        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed == "// ==UserScript==" {
+                inMetadata = true
+                continue
+            }
+            if trimmed == "// ==/UserScript==" { break }
+            if !inMetadata { continue }
+
+            if trimmed.hasPrefix("// @resource") {
+                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
+                if parts.count >= 3 {
+                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !name.isEmpty { names.append(name) }
+                }
+            }
+        }
+
+        return Array(Set(names)).sorted()
+    }
+}
+
 func measure<T>(label: String, block: () -> T) -> T {
     let start = DispatchTime.now()  // Start the timer
 

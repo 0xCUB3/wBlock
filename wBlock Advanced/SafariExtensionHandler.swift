@@ -15,32 +15,6 @@ import os.log
 /// content scripts, dispatches configuration rules, and manages content
 /// blocking events.
 public class SafariExtensionHandler: SFSafariExtensionHandler {
-    private static func extractResourceNames(from userScriptContent: String) -> [String] {
-        var names: [String] = []
-        var inMetadata = false
-
-        for line in userScriptContent.split(whereSeparator: \.isNewline) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "// ==UserScript==" {
-                inMetadata = true
-                continue
-            }
-            if trimmed == "// ==/UserScript==" { break }
-            if !inMetadata { continue }
-
-            if trimmed.hasPrefix("// @resource") {
-                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
-                if parts.count >= 3 {
-                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty { names.append(name) }
-                }
-            }
-        }
-
-        return Array(Set(names)).sorted()
-    }
-    
     @MainActor
     private func getOrCreateUserScriptManager() -> UserScriptManager { // New helper method
         return UserScriptManager.shared
@@ -104,7 +78,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                 // configuration or honor per-site disable.
                 if let url = URL(string: urlString), let host = url.host {
                     // Check if this host or any parent domain is disabled
-                    let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+                    let isDisabled = HostMatcher.isHostDisabled(host: host, disabledSites: disabled)
                     
                     os_log(.info, "SafariExtensionHandler: Host '%@' disabled check: %{BOOL}d (disabled sites: %@)", host, isDisabled, disabled.joined(separator: ", "))
                     
@@ -204,7 +178,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
 
                 // Check if site is disabled before processing userscripts
                 if let url = URL(string: urlString), let host = url.host {
-                    let isDisabled = isHostDisabled(host: host, disabledSites: disabled)
+                    let isDisabled = HostMatcher.isHostDisabled(host: host, disabledSites: disabled)
 
                     os_log(.info, "SafariExtensionHandler: UserScripts - Host '%@' disabled check: %{BOOL}d", host, isDisabled)
 
@@ -230,7 +204,7 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                         let resourceNames =
                             !script.resourceContents.isEmpty
                             ? Array(script.resourceContents.keys).sorted()
-                            : Self.extractResourceNames(from: script.content)
+                            : UserScriptMetadataParser.extractResourceNames(from: script.content)
                         return [
                             "id": script.id.uuidString,
                             "name": script.name,
@@ -547,26 +521,4 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
     }
     
     /// Checks if a host is disabled, including subdomain matching.
-    /// For example, if "reddit.com" is disabled, this will return true for both "reddit.com" and "www.reddit.com"
-    ///
-    /// - Parameters:
-    ///   - host: The hostname to check
-    ///   - disabledSites: Array of disabled site hostnames
-    /// - Returns: True if the host or any parent domain is disabled
-    private func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
-        // Check for exact match first
-        if disabledSites.contains(host) {
-            return true
-        }
-        
-        // Check if any disabled site is a parent domain of this host
-        for disabledSite in disabledSites {
-            if host == disabledSite || host.hasSuffix("." + disabledSite) {
-                return true
-            }
-        }
-        
-        return false
-    }
-    
 }

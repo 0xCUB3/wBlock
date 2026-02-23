@@ -22,18 +22,6 @@ public class PopoverViewModel: ObservableObject {
 
     private var isLoading: Bool = false
 
-    private func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
-        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if normalizedHost.isEmpty { return false }
-        for site in disabledSites {
-            let disabled = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if disabled.isEmpty { continue }
-            if normalizedHost == disabled { return true }
-            if normalizedHost.hasSuffix("." + disabled) { return true }
-        }
-        return false
-    }
-
     /// Load current site host and disabled state
     public func loadState() async {
         isLoading = true
@@ -55,7 +43,7 @@ public class PopoverViewModel: ObservableObject {
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let list = ProtobufDataManager.shared.disabledSites
-            self.isDisabled = isHostDisabled(host: host, disabledSites: list)
+            self.isDisabled = HostMatcher.isHostDisabled(host: host, disabledSites: list)
             
             // Load zapper rules after host is set
             await self.loadZapperRules()

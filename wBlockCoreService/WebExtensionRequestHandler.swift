@@ -16,18 +16,6 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
-    private static func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
-        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if normalizedHost.isEmpty { return false }
-        for site in disabledSites {
-            let disabled = site.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if disabled.isEmpty { continue }
-            if normalizedHost == disabled { return true }
-            if normalizedHost.hasSuffix("." + disabled) { return true }
-        }
-        return false
-    }
-
     private static func emptyRulesPayload() -> [String: Any] {
         [
             "css": [],
@@ -38,33 +26,6 @@ public enum WebExtensionRequestHandler {
         ]
     }
 
-    private static func extractResourceNames(from userScriptContent: String) -> [String] {
-        // Only parse the metadata header block to avoid scanning huge script bodies.
-        var names: [String] = []
-        var inMetadata = false
-
-        for line in userScriptContent.split(whereSeparator: \.isNewline) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "// ==UserScript==" {
-                inMetadata = true
-                continue
-            }
-            if trimmed == "// ==/UserScript==" { break }
-            if !inMetadata { continue }
-
-            if trimmed.hasPrefix("// @resource") {
-                // Format: // @resource <name> <url>
-                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
-                if parts.count >= 3 {
-                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty { names.append(name) }
-                }
-            }
-        }
-
-        return Array(Set(names)).sorted()
-    }
     /// Processes an extension request and provides content blocking configuration.
     ///
     /// This method extracts the URL from the request, looks up the appropriate blocking
@@ -131,7 +92,7 @@ public enum WebExtensionRequestHandler {
                 Task { @MainActor in
                     await ProtobufDataManager.shared.waitUntilLoaded()
                     let disabledSites = ProtobufDataManager.shared.disabledSites
-                    let disabled = isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
+                    let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
 
                     if disabled {
                         message?["payload"] = emptyRulesPayload()
@@ -303,7 +264,7 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             let disabledSites = ProtobufDataManager.shared.disabledSites
-            let disabled = isHostDisabled(host: host, disabledSites: disabledSites)
+            let disabled = HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled])
             context.completeRequest(returningItems: [response])
         }
@@ -374,7 +335,7 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
             if let url = URL(string: urlString) {
                 let disabledSites = ProtobufDataManager.shared.disabledSites
-                if isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
+                if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
                     let response = createResponse(with: ["userScripts": []])
                     context.completeRequest(returningItems: [response])
                     return
@@ -390,7 +351,7 @@ public enum WebExtensionRequestHandler {
                 let resourceNames =
                     !script.resourceContents.isEmpty
                     ? Array(script.resourceContents.keys).sorted()
-                    : extractResourceNames(from: script.content)
+                    : UserScriptMetadataParser.extractResourceNames(from: script.content)
                 return [
                     "id": script.id.uuidString,
                     "name": script.name,
