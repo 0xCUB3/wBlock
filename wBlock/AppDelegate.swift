@@ -171,8 +171,10 @@ extension AppDelegate: NSApplicationDelegate {
         periodicUpdateTimer?.invalidate()
         periodicUpdateTimer = nil
 
+        // Flush any pending coalesced filter list saves
+        filterManager?.flushPendingSave()
+
         // Flush any pending protobuf saves
-        // Note: saveData() debounces, but will execute immediately if app is terminating
         ProtobufDataManager.shared.saveData()
     }
 
@@ -376,13 +378,18 @@ extension AppDelegate: UIApplicationDelegate {
             await rescheduleBackgroundTasks(reason: "EnterBackground")
         }
 
+        // Flush any pending coalesced filter list saves
+        filterManager?.flushPendingSave()
+
         // Flush any pending protobuf saves when entering background
         ProtobufDataManager.shared.saveData()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
+        // Flush any pending coalesced filter list saves
+        filterManager?.flushPendingSave()
+
         // Flush any pending protobuf saves before termination
-        // Note: iOS may not always call this, so we also save in applicationDidEnterBackground
         ProtobufDataManager.shared.saveData()
     }
     

@@ -96,6 +96,13 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    func flushPendingSave() {
+        guard pendingSaveTask != nil else { return }
+        pendingSaveTask?.cancel()
+        pendingSaveTask = nil
+        Task { await saveFilterLists() }
+    }
+
     init() {
         self.logManager = ConcurrentLogManager.shared
         self.loader = FilterListLoader()
