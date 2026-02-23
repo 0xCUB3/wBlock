@@ -470,7 +470,7 @@ struct UserScriptManagerView: View {
                         .cornerRadius(4)
                 }
 
-                if !script.isDownloaded {
+                if script.isEnabled && !script.isDownloaded {
                     Text("Not Downloaded")
                         .font(.caption2)
                         .fontWeight(.medium)
@@ -641,9 +641,9 @@ private struct ScriptStatusBadgesView: View {
                 }
                 Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
             }
-            if !script.isDownloaded {
+            if script.isEnabled && !script.isDownloaded {
                 Badge(text: "Not Downloaded", color: .red)
-            } else {
+            } else if script.isDownloaded {
                 Badge(text: "Downloaded", color: .green)
             }
         }
