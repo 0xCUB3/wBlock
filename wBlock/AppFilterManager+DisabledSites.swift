@@ -110,37 +110,24 @@ extension AppFilterManager {
         // Capture disabled sites on MainActor
         let disabledSites = dataManager.disabledSites
 
-        await Task.detached {
+        let targetsToReload = await Task.detached { () -> [ContentBlockerTargetInfo] in
+            var nonEmptyTargets: [ContentBlockerTargetInfo] = []
             for targetInfo in platformTargets {
-                // Use fast update method that only modifies ignore rules
-                _ = ContentBlockerService.fastUpdateDisabledSites(
+                let result = ContentBlockerService.fastUpdateDisabledSites(
                     groupIdentifier: GroupIdentifier.shared.value,
                     targetRulesFilename: targetInfo.rulesFilename,
                     disabledSites: disabledSites
                 )
+                if result.safariRulesCount > 0 {
+                    nonEmptyTargets.append(targetInfo)
+                }
             }
+            return nonEmptyTargets
         }.value
 
         let overallReloadStartTime = Date()
-        var successCount = 0
-
-        for targetInfo in platformTargets {
-            // Check if this extension has any rules before reloading
-            let rulesCount = self.ruleCountsByExtension[targetInfo.bundleIdentifier] ?? 0
-            if rulesCount > 0 {
-                let reloadSuccess = await reloadContentBlockerWithRetry(targetInfo: targetInfo)
-                if reloadSuccess {
-                    successCount += 1
-                }
-                // Small delay between reloads to reduce memory pressure
-                try? await Task.sleep(nanoseconds: 50_000_000)  // 50ms
-            } else {
-                // Skip reload for empty extensions
-                await ConcurrentLogManager.shared.debug(
-                    .filterApply, "Skipping reload for empty extension",
-                    metadata: ["blocker": targetInfo.displayName])
-            }
-        }
+        let successCount = await Self.reloadDisabledSitesTargetsInParallel(targetsToReload)
+        let skippedCount = max(platformTargets.count - targetsToReload.count, 0)
 
         let reloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
 
@@ -150,20 +137,69 @@ extension AppFilterManager {
             self.fastUpdateCount += 1
             self.isLoading = false
 
-            if successCount == platformTargets.count {
+            if successCount == targetsToReload.count {
                 self.statusDescription =
                     "✅ Disabled sites updated successfully in \(reloadTime) (fast update #\(self.fastUpdateCount))"
             } else {
                 self.statusDescription =
-                    "⚠️ Updated \(successCount)/\(platformTargets.count) extensions in \(reloadTime)"
+                    "⚠️ Updated \(successCount)/\(targetsToReload.count) extensions in \(reloadTime)"
             }
         }
 
         await ConcurrentLogManager.shared.info(
             .whitelist, "Fast disabled sites update completed",
             metadata: [
-                "successCount": "\(successCount)", "totalCount": "\(platformTargets.count)",
+                "successCount": "\(successCount)",
+                "totalCount": "\(targetsToReload.count)",
+                "skippedCount": "\(skippedCount)",
                 "reloadTime": reloadTime,
             ])
+    }
+
+    nonisolated private static func reloadDisabledSitesTargetsInParallel(_ targets: [ContentBlockerTargetInfo]) async -> Int {
+        guard !targets.isEmpty else { return 0 }
+
+        #if os(macOS)
+        let maxConcurrent = 3
+        #else
+        let maxConcurrent = 2
+        #endif
+
+        var iterator = targets.makeIterator()
+        var successCount = 0
+
+        await withTaskGroup(of: Bool.self) { group in
+            func enqueueNext() {
+                guard let targetInfo = iterator.next() else { return }
+                group.addTask {
+                    await Self.reloadDisabledSiteTargetWithRetry(identifier: targetInfo.bundleIdentifier)
+                }
+            }
+
+            for _ in 0..<min(maxConcurrent, targets.count) {
+                enqueueNext()
+            }
+
+            while let success = await group.next() {
+                if success { successCount += 1 }
+                enqueueNext()
+            }
+        }
+
+        return successCount
+    }
+
+    nonisolated private static func reloadDisabledSiteTargetWithRetry(identifier: String, maxRetries: Int = 5) async -> Bool {
+        for attempt in 1...maxRetries {
+            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
+            if case .success = result {
+                return true
+            }
+            if attempt < maxRetries {
+                let delayMs = min(200 * attempt, 1500)
+                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+            }
+        }
+        return false
     }
 }

@@ -284,6 +284,7 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
 
             var list = ProtobufDataManager.shared.disabledSites
+            let previousList = list
             if disabled {
                 if !list.contains(host) { list.append(host) }
             } else {
@@ -297,30 +298,133 @@ public enum WebExtensionRequestHandler {
                 }
             }
 
+            // No-op writes/reloads are expensive; skip if nothing actually changed.
+            guard list != previousList else {
+                let effectiveDisabled = HostMatcher.isHostDisabled(host: host, disabledSites: list)
+                let response = createResponse(with: [
+                    "disabled": effectiveDisabled,
+                    "changed": false,
+                    "reloadDurationMs": 0,
+                    "reloadedTargets": 0,
+                    "skippedTargets": 0,
+                    "failedTargets": 0
+                ])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
 
             // Apply the change immediately by fast-updating the existing blocker JSON
-            // and reloading each content blocker target for the current platform.
+            // and reloading each relevant content blocker target for the current platform.
             #if os(macOS)
             let platform: Platform = .macOS
             #else
             let platform: Platform = .iOS
             #endif
 
-            let groupID = GroupIdentifier.shared.value
-            let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
-            for target in targets {
-                _ = ContentBlockerService.fastUpdateDisabledSites(
-                    groupIdentifier: groupID,
-                    targetRulesFilename: target.rulesFilename,
-                    disabledSites: list
-                )
-                _ = await ContentBlockerService.reloadContentBlocker(withIdentifier: target.bundleIdentifier)
-            }
+            let applyStart = Date()
+            let summary = await Task.detached(priority: .userInitiated) {
+                await applyDisabledSitesFastPath(disabledSites: list, platform: platform)
+            }.value
+            let applyDurationMs = Int(Date().timeIntervalSince(applyStart) * 1000)
 
-            let response = createResponse(with: ["disabled": disabled])
+            let response = createResponse(with: [
+                "disabled": disabled,
+                "changed": true,
+                "reloadDurationMs": applyDurationMs,
+                "reloadedTargets": summary.reloadedTargets,
+                "skippedTargets": summary.skippedTargets,
+                "failedTargets": summary.failedTargets
+            ])
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 3) async -> Bool {
+        for attempt in 1...maxRetries {
+            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
+            if case .success = result {
+                return true
+            }
+
+            if attempt < maxRetries {
+                // WKErrorDomain error 6 is often transient immediately after writing JSON files.
+                let delayMs = min(200 * attempt, 800)
+                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+            }
+        }
+        return false
+    }
+
+    private static func applyDisabledSitesFastPath(disabledSites: [String], platform: Platform) async -> (
+        reloadedTargets: Int,
+        skippedTargets: Int,
+        failedTargets: Int
+    ) {
+        let groupID = GroupIdentifier.shared.value
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
+
+        // Update JSON for all targets, then only reload targets that actually have rules.
+        var targetsToReload: [ContentBlockerTargetInfo] = []
+        for target in targets {
+            let updateResult = ContentBlockerService.fastUpdateDisabledSites(
+                groupIdentifier: groupID,
+                targetRulesFilename: target.rulesFilename,
+                disabledSites: disabledSites
+            )
+            if updateResult.safariRulesCount > 0 {
+                targetsToReload.append(target)
+            }
+        }
+
+        let skippedTargets = max(targets.count - targetsToReload.count, 0)
+        guard !targetsToReload.isEmpty else {
+            return (reloadedTargets: 0, skippedTargets: skippedTargets, failedTargets: 0)
+        }
+
+        let results = await reloadTargetsWithRetry(targetsToReload)
+        return (
+            reloadedTargets: results.reloadedTargets,
+            skippedTargets: skippedTargets,
+            failedTargets: results.failedTargets
+        )
+    }
+
+    private static func reloadTargetsWithRetry(_ targets: [ContentBlockerTargetInfo]) async -> (
+        reloadedTargets: Int,
+        failedTargets: Int
+    ) {
+        #if os(macOS)
+        let maxConcurrent = 3
+        #else
+        let maxConcurrent = 2
+        #endif
+
+        var iterator = targets.makeIterator()
+        var outcomes: [Bool] = []
+
+        await withTaskGroup(of: Bool.self) { group in
+            func enqueueNext() {
+                guard let nextTarget = iterator.next() else { return }
+                group.addTask {
+                    await reloadContentBlockerWithRetry(identifier: nextTarget.bundleIdentifier)
+                }
+            }
+
+            for _ in 0..<min(maxConcurrent, targets.count) {
+                enqueueNext()
+            }
+
+            while let success = await group.next() {
+                outcomes.append(success)
+                enqueueNext()
+            }
+        }
+
+        let reloadedTargets = outcomes.filter { $0 }.count
+        let failedTargets = outcomes.count - reloadedTargets
+        return (reloadedTargets: reloadedTargets, failedTargets: failedTargets)
     }
 
     /// Returns enabled userscripts for a URL, but without inlining potentially huge `content`/`resources`.
