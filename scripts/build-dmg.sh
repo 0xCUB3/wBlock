@@ -9,13 +9,20 @@ CONFIGURATION="Release"
 OUT_DIR="${ROOT_DIR}/build/homebrew"
 DERIVED_DATA="${OUT_DIR}/DerivedData"
 APP_PATH="${DERIVED_DATA}/Build/Products/${CONFIGURATION}/wBlock.app"
-DMG_PATH="${OUT_DIR}/wBlock.dmg"
 
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
-DEVELOPMENT_TEAM_ID="${DEVELOPMENT_TEAM_ID:-}"
+VERSION="${VERSION:-}"
+if [[ -n "${VERSION}" ]]; then
+  DMG_NAME="wBlock-${VERSION}.dmg"
+else
+  DMG_NAME="wBlock.dmg"
+fi
+DMG_PATH="${OUT_DIR}/${DMG_NAME}"
 
 mkdir -p "${OUT_DIR}"
 rm -f "${DMG_PATH}"
+
+TEAM_ID="${TEAM_ID:-}"
 
 echo "Building ${SCHEME} (${CONFIGURATION})…"
 xcodebuild \
@@ -30,6 +37,15 @@ xcodebuild \
 if [[ ! -d "${APP_PATH}" ]]; then
   echo "Expected app not found at: ${APP_PATH}" >&2
   exit 1
+fi
+
+# CODE_SIGNING_ALLOWED=NO leaves $(AppIdentifierPrefix) unresolved in plists.
+# Patch it so Safari can identify the extension's team.
+if [[ -n "${TEAM_ID}" ]]; then
+  adv_plist="${APP_PATH}/Contents/PlugIns/wBlock Advanced.appex/Contents/Info.plist"
+  if [[ -f "${adv_plist}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${adv_plist}"
+  fi
 fi
 
 if [[ -n "${SIGNING_IDENTITY}" ]]; then
@@ -50,7 +66,7 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
     fi
   }
 
-  # Sign embedded frameworks/dylibs first
+  # Sign embedded frameworks first (inside-out)
   if [[ -d "${APP_PATH}/Contents/Frameworks" ]]; then
     while IFS= read -r -d '' f; do
       sign_item "${f}"
@@ -80,7 +96,7 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
         "wBlock Security") entitlements="${ROOT_DIR}/wBlock Security/wBlock_Security.entitlements" ;;
         "wBlock Foreign") entitlements="${ROOT_DIR}/wBlock Foreign/wBlock_Foreign.entitlements" ;;
         "wBlock Custom") entitlements="${ROOT_DIR}/wBlock Custom/wBlock_Custom.entitlements" ;;
-        "wBlock Privacy") entitlements="${ROOT_DIR}/wBlock/wBlock.entitlements" ;;
+        "wBlock Privacy") entitlements="${ROOT_DIR}/wBlock Privacy/wBlock_Privacy.entitlements" ;;
       esac
 
       if [[ -n "${entitlements}" && -f "${entitlements}" ]]; then
@@ -91,14 +107,18 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
     done < <(find "${APP_PATH}/Contents/PlugIns" -maxdepth 1 -name "*.appex" -print0)
   fi
 
-  # Finally, sign the app itself
-  app_entitlements="${ROOT_DIR}/wBlock/wBlock.entitlements"
+  # Sign the main app last (outermost)
+  # Use the direct-distribution entitlements which strip restricted
+  # entitlements (iCloud, push notifications) that require an embedded
+  # provisioning profile. Without a profile, AMFI rejects the app on launch.
+  app_entitlements="${ROOT_DIR}/wBlock/wBlock-DirectDistribution.entitlements"
   if [[ -f "${app_entitlements}" ]]; then
     sign_item "${APP_PATH}" "${app_entitlements}"
   else
     sign_item "${APP_PATH}"
   fi
 
+  echo "Verifying code signature…"
   codesign --verify --deep --strict --verbose=2 "${APP_PATH}"
 fi
 
