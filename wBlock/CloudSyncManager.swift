@@ -245,7 +245,7 @@ final class CloudSyncManager: ObservableObject {
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
 
-            _ = try await saveRecord(record)
+            _ = try await saveRecord(record, retryPayload: payload)
 
             defaults.set(payloadHash, forKey: Keys.lastUploadedHash)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
@@ -839,16 +839,28 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func saveRecord(_ record: CKRecord) async throws -> CKRecord {
+    private func saveRecord(
+        _ record: CKRecord,
+        retryPayload: SyncPayload? = nil
+    ) async throws -> CKRecord {
         guard let database else { throw CloudSyncError.cloudKitUnavailable }
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
-            database.save(record) { saved, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
+        do {
+            return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
+                database.save(record) { saved, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    continuation.resume(returning: saved ?? record)
                 }
-                continuation.resume(returning: saved ?? record)
             }
+        } catch let ckError as CKError where ckError.code == .serverRecordChanged {
+            guard let retryPayload, let serverRecord = ckError.serverRecord else { throw ckError }
+            logger.info("Server record changed, retrying save with server version")
+            var mutableRecord = serverRecord
+            let payloadURL = try await applyPayloadFields(retryPayload, to: &mutableRecord)
+            defer { try? FileManager.default.removeItem(at: payloadURL) }
+            return try await saveRecord(mutableRecord)
         }
     }
 

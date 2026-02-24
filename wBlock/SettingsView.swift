@@ -186,7 +186,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Sync") {
+                Section {
                     HStack(spacing: 12) {
                         Text("iCloud Sync")
 
@@ -217,6 +217,18 @@ struct SettingsView: View {
                         )
                         .labelsHidden()
                         .toggleStyle(.switch)
+                    }
+                } header: {
+                    Text("Sync")
+                } footer: {
+                    if syncManager.isEnabled {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(syncManager.statusLine) · \(syncManager.lastSyncLine)")
+                            if let error = syncManager.lastErrorMessage {
+                                Text(error)
+                                    .foregroundStyle(.red)
+                            }
+                        }
                     }
                 }
 
@@ -348,7 +360,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Sync") {
+                Section {
                     HStack(spacing: 12) {
                         Text("iCloud Sync")
 
@@ -379,6 +391,18 @@ struct SettingsView: View {
                         )
                         .labelsHidden()
                         .toggleStyle(.switch)
+                    }
+                } header: {
+                    Text("Sync")
+                } footer: {
+                    if syncManager.isEnabled {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(syncManager.statusLine) · \(syncManager.lastSyncLine)")
+                            if let error = syncManager.lastErrorMessage {
+                                Text(error)
+                                    .foregroundStyle(.red)
+                            }
+                        }
                     }
                 }
 
