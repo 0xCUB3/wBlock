@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -150,6 +150,7 @@ jobs:
           sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" "${CASK}"
 
           cd "${TAP_DIR}"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/0xCUB3/homebrew-wblock.git"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/wblock.rb

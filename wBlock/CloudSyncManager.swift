@@ -24,9 +24,13 @@ final class CloudSyncManager: ObservableObject {
     /// Check whether the running binary was signed with the iCloud entitlement.
     /// Direct-distribution builds strip it to avoid AMFI rejection.
     private static let hasCloudKitEntitlement: Bool = {
+        #if os(macOS)
         guard let task = SecTaskCreateFromSelf(nil) else { return false }
         let value = SecTaskCopyValueForEntitlement(task, "com.apple.developer.icloud-services" as CFString, nil)
         return value != nil
+        #else
+        return true
+        #endif
     }()
 
     @Published private(set) var isEnabled: Bool
