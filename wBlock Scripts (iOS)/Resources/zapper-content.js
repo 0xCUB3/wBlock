@@ -908,6 +908,13 @@
     if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
     showToast('Element Zapper enabled.');
 
+    // After the popup closes, keyboard focus stays on Safari's chrome.
+    // Without explicit focus, keydown events (like Escape) never reach our
+    // document listener.
+    setTimeout(() => {
+      document.documentElement.focus();
+    }, 80);
+
     const onMove = (event) => {
       if (!state.active) return;
       if (state.candidateElement) return;
@@ -931,6 +938,7 @@
       const el = elementFromEvent(event);
       if (!el || shouldIgnoreTarget(el)) return;
       interceptEvent(event);
+      document.documentElement.focus();
       state.lastPickAt = now;
       enterRefineMode(el);
     };

@@ -24586,6 +24586,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       requestPersistentZapperRules();
       showToast("Element Zapper enabled.");
 
+      // After the popover closes, keyboard focus stays on Safari's chrome.
+      // Without explicit focus, keydown events (like Escape) never reach our
+      // document listener.  A short delay lets the popover dismiss first.
+      setTimeout(() => {
+        document.documentElement.focus();
+      }, 80);
+
       const onMove = (event) => {
         if (!state.active) return;
         if (state.candidateElement) return;
@@ -24625,6 +24632,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (!element || shouldIgnoreTarget(element)) return;
 
         interceptEvent(event);
+        // preventDefault on pointerdown prevents focus transfer to the page,
+        // so re-focus explicitly to keep keyboard shortcuts (Escape) working.
+        document.documentElement.focus();
         state.lastPickAt = now;
         enterRefineMode(element);
       };
