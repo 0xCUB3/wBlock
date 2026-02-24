@@ -137,7 +137,7 @@ jobs:
 
       - name: Update cask in tap
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -euo pipefail
           SHA256=$(shasum -a 256 "build/homebrew/wBlock-${VERSION}.dmg" | awk '{print $1}')
