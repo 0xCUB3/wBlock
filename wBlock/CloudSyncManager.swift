@@ -3,11 +3,31 @@ import Combine
 import CryptoKit
 import Foundation
 import os.log
+import Security
 import wBlockCoreService
+
+private enum CloudSyncError: LocalizedError {
+    case cloudKitUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .cloudKitUnavailable:
+            return "iCloud is not available in this build"
+        }
+    }
+}
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
     static let shared = CloudSyncManager()
+
+    /// Check whether the running binary was signed with the iCloud entitlement.
+    /// Direct-distribution builds strip it to avoid AMFI rejection.
+    private static let hasCloudKitEntitlement: Bool = {
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
+        let value = SecTaskCopyValueForEntitlement(task, "com.apple.developer.icloud-services" as CFString, nil)
+        return value != nil
+    }()
 
     @Published private(set) var isEnabled: Bool
     @Published private(set) var isSyncing: Bool = false
@@ -22,7 +42,13 @@ final class CloudSyncManager: ObservableObject {
     private let userScriptManager = UserScriptManager.shared
 
     private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-    private let database = CKContainer.default().privateCloudDatabase
+    private lazy var database: CKDatabase? = {
+        guard Self.hasCloudKitEntitlement else {
+            logger.info("CloudKit unavailable (no iCloud entitlement)")
+            return nil
+        }
+        return CKContainer.default().privateCloudDatabase
+    }()
     private let recordID = CKRecord.ID(recordName: "wblock-sync-config")
     private let recordType = "wBlockSync"
 
@@ -789,6 +815,7 @@ final class CloudSyncManager: ObservableObject {
     // MARK: - CloudKit I/O
 
     private func fetchRecord() async throws -> CKRecord? {
+        guard let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
             return try await withCheckedThrowingContinuation { continuation in
                 database.fetch(withRecordID: recordID) { record, error in
@@ -809,7 +836,8 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func saveRecord(_ record: CKRecord) async throws -> CKRecord {
-        try await withCheckedThrowingContinuation { continuation in
+        guard let database else { throw CloudSyncError.cloudKitUnavailable }
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
             database.save(record) { saved, error in
                 if let error {
                     continuation.resume(throwing: error)
