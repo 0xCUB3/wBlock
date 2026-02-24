@@ -22,6 +22,8 @@ DMG_PATH="${OUT_DIR}/${DMG_NAME}"
 mkdir -p "${OUT_DIR}"
 rm -f "${DMG_PATH}"
 
+TEAM_ID="${TEAM_ID:-}"
+
 echo "Building ${SCHEME} (${CONFIGURATION})…"
 xcodebuild \
   -project "${PROJECT_PATH}" \
@@ -35,6 +37,15 @@ xcodebuild \
 if [[ ! -d "${APP_PATH}" ]]; then
   echo "Expected app not found at: ${APP_PATH}" >&2
   exit 1
+fi
+
+# CODE_SIGNING_ALLOWED=NO leaves $(AppIdentifierPrefix) unresolved in plists.
+# Patch it so Safari can identify the extension's team.
+if [[ -n "${TEAM_ID}" ]]; then
+  adv_plist="${APP_PATH}/Contents/PlugIns/wBlock Advanced.appex/Contents/Info.plist"
+  if [[ -f "${adv_plist}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${adv_plist}"
+  fi
 fi
 
 if [[ -n "${SIGNING_IDENTITY}" ]]; then
@@ -97,7 +108,10 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
   fi
 
   # Sign the main app last (outermost)
-  app_entitlements="${ROOT_DIR}/wBlock/wBlock.entitlements"
+  # Use the direct-distribution entitlements which strip restricted
+  # entitlements (iCloud, push notifications) that require an embedded
+  # provisioning profile. Without a profile, AMFI rejects the app on launch.
+  app_entitlements="${ROOT_DIR}/wBlock/wBlock-DirectDistribution.entitlements"
   if [[ -f "${app_entitlements}" ]]; then
     sign_item "${APP_PATH}" "${app_entitlements}"
   else

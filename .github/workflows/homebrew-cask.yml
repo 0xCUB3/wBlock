@@ -67,6 +67,7 @@ jobs:
       - name: Build DMG
         env:
           SIGNING_IDENTITY: "Developer ID Application: Alexander Skula (DNP7DGUB7B)"
+          TEAM_ID: "DNP7DGUB7B"
           VERSION: ${{ env.VERSION }}
         run: |
           bash scripts/build-dmg.sh
