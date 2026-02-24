@@ -420,12 +420,12 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppDelegate.swift,
+				AppFilterManager.swift,
 				"AppFilterManager+ApplyPipeline.swift",
 				"AppFilterManager+CustomFilters.swift",
 				"AppFilterManager+DisabledSites.swift",
 				"AppFilterManager+RuleCounts.swift",
 				"AppFilterManager+Updates.swift",
-				AppFilterManager.swift,
 				ConcurrentLogManager.swift,
 				ContentView.swift,
 				FilterListLoader.swift,

@@ -137,66 +137,66 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   // methods supported on all messages.
 
   var settings: Wblock_Data_AppSettings {
-    get {return _storage._settings ?? Wblock_Data_AppSettings()}
+    get {_storage._settings ?? Wblock_Data_AppSettings()}
     set {_uniqueStorage()._settings = newValue}
   }
   /// Returns true if `settings` has been explicitly set.
-  var hasSettings: Bool {return _storage._settings != nil}
+  var hasSettings: Bool {_storage._settings != nil}
   /// Clears the value of `settings`. Subsequent reads from it will return its default value.
   mutating func clearSettings() {_uniqueStorage()._settings = nil}
 
   var filterLists: [Wblock_Data_FilterListData] {
-    get {return _storage._filterLists}
+    get {_storage._filterLists}
     set {_uniqueStorage()._filterLists = newValue}
   }
 
   var userScripts: [Wblock_Data_UserScriptData] {
-    get {return _storage._userScripts}
+    get {_storage._userScripts}
     set {_uniqueStorage()._userScripts = newValue}
   }
 
   var whitelist: Wblock_Data_WhitelistData {
-    get {return _storage._whitelist ?? Wblock_Data_WhitelistData()}
+    get {_storage._whitelist ?? Wblock_Data_WhitelistData()}
     set {_uniqueStorage()._whitelist = newValue}
   }
   /// Returns true if `whitelist` has been explicitly set.
-  var hasWhitelist: Bool {return _storage._whitelist != nil}
+  var hasWhitelist: Bool {_storage._whitelist != nil}
   /// Clears the value of `whitelist`. Subsequent reads from it will return its default value.
   mutating func clearWhitelist() {_uniqueStorage()._whitelist = nil}
 
   var ruleCounts: Wblock_Data_RuleCountData {
-    get {return _storage._ruleCounts ?? Wblock_Data_RuleCountData()}
+    get {_storage._ruleCounts ?? Wblock_Data_RuleCountData()}
     set {_uniqueStorage()._ruleCounts = newValue}
   }
   /// Returns true if `ruleCounts` has been explicitly set.
-  var hasRuleCounts: Bool {return _storage._ruleCounts != nil}
+  var hasRuleCounts: Bool {_storage._ruleCounts != nil}
   /// Clears the value of `ruleCounts`. Subsequent reads from it will return its default value.
   mutating func clearRuleCounts() {_uniqueStorage()._ruleCounts = nil}
 
   var performance: Wblock_Data_PerformanceData {
-    get {return _storage._performance ?? Wblock_Data_PerformanceData()}
+    get {_storage._performance ?? Wblock_Data_PerformanceData()}
     set {_uniqueStorage()._performance = newValue}
   }
   /// Returns true if `performance` has been explicitly set.
-  var hasPerformance: Bool {return _storage._performance != nil}
+  var hasPerformance: Bool {_storage._performance != nil}
   /// Clears the value of `performance`. Subsequent reads from it will return its default value.
   mutating func clearPerformance() {_uniqueStorage()._performance = nil}
 
   var autoUpdate: Wblock_Data_AutoUpdateMetadata {
-    get {return _storage._autoUpdate ?? Wblock_Data_AutoUpdateMetadata()}
+    get {_storage._autoUpdate ?? Wblock_Data_AutoUpdateMetadata()}
     set {_uniqueStorage()._autoUpdate = newValue}
   }
   /// Returns true if `autoUpdate` has been explicitly set.
-  var hasAutoUpdate: Bool {return _storage._autoUpdate != nil}
+  var hasAutoUpdate: Bool {_storage._autoUpdate != nil}
   /// Clears the value of `autoUpdate`. Subsequent reads from it will return its default value.
   mutating func clearAutoUpdate() {_uniqueStorage()._autoUpdate = nil}
 
   var extensionData: Wblock_Data_ExtensionData {
-    get {return _storage._extensionData ?? Wblock_Data_ExtensionData()}
+    get {_storage._extensionData ?? Wblock_Data_ExtensionData()}
     set {_uniqueStorage()._extensionData = newValue}
   }
   /// Returns true if `extensionData` has been explicitly set.
-  var hasExtensionData: Bool {return _storage._extensionData != nil}
+  var hasExtensionData: Bool {_storage._extensionData != nil}
   /// Clears the value of `extensionData`. Subsequent reads from it will return its default value.
   mutating func clearExtensionData() {_uniqueStorage()._extensionData = nil}
 
@@ -270,11 +270,11 @@ struct Wblock_Data_FilterListData: Sendable {
   var version: String = String()
 
   var sourceRuleCount: Int32 {
-    get {return _sourceRuleCount ?? 0}
+    get {_sourceRuleCount ?? 0}
     set {_sourceRuleCount = newValue}
   }
   /// Returns true if `sourceRuleCount` has been explicitly set.
-  var hasSourceRuleCount: Bool {return self._sourceRuleCount != nil}
+  var hasSourceRuleCount: Bool {self._sourceRuleCount != nil}
   /// Clears the value of `sourceRuleCount`. Subsequent reads from it will return its default value.
   mutating func clearSourceRuleCount() {self._sourceRuleCount = nil}
 
@@ -298,104 +298,104 @@ struct Wblock_Data_UserScriptData: @unchecked Sendable {
   // methods supported on all messages.
 
   var id: String {
-    get {return _storage._id}
+    get {_storage._id}
     set {_uniqueStorage()._id = newValue}
   }
 
   var name: String {
-    get {return _storage._name}
+    get {_storage._name}
     set {_uniqueStorage()._name = newValue}
   }
 
   var url: String {
-    get {return _storage._url ?? String()}
+    get {_storage._url ?? String()}
     set {_uniqueStorage()._url = newValue}
   }
   /// Returns true if `url` has been explicitly set.
-  var hasURL: Bool {return _storage._url != nil}
+  var hasURL: Bool {_storage._url != nil}
   /// Clears the value of `url`. Subsequent reads from it will return its default value.
   mutating func clearURL() {_uniqueStorage()._url = nil}
 
   var isEnabled: Bool {
-    get {return _storage._isEnabled}
+    get {_storage._isEnabled}
     set {_uniqueStorage()._isEnabled = newValue}
   }
 
   var description_p: String {
-    get {return _storage._description_p}
+    get {_storage._description_p}
     set {_uniqueStorage()._description_p = newValue}
   }
 
   var version: String {
-    get {return _storage._version}
+    get {_storage._version}
     set {_uniqueStorage()._version = newValue}
   }
 
   var matches: [String] {
-    get {return _storage._matches}
+    get {_storage._matches}
     set {_uniqueStorage()._matches = newValue}
   }
 
   var excludeMatches: [String] {
-    get {return _storage._excludeMatches}
+    get {_storage._excludeMatches}
     set {_uniqueStorage()._excludeMatches = newValue}
   }
 
   var includes: [String] {
-    get {return _storage._includes}
+    get {_storage._includes}
     set {_uniqueStorage()._includes = newValue}
   }
 
   var excludes: [String] {
-    get {return _storage._excludes}
+    get {_storage._excludes}
     set {_uniqueStorage()._excludes = newValue}
   }
 
   var runAt: String {
-    get {return _storage._runAt}
+    get {_storage._runAt}
     set {_uniqueStorage()._runAt = newValue}
   }
 
   var injectInto: String {
-    get {return _storage._injectInto}
+    get {_storage._injectInto}
     set {_uniqueStorage()._injectInto = newValue}
   }
 
   var grant: [String] {
-    get {return _storage._grant}
+    get {_storage._grant}
     set {_uniqueStorage()._grant = newValue}
   }
 
   var isLocal: Bool {
-    get {return _storage._isLocal}
+    get {_storage._isLocal}
     set {_uniqueStorage()._isLocal = newValue}
   }
 
   var updateURL: String {
-    get {return _storage._updateURL ?? String()}
+    get {_storage._updateURL ?? String()}
     set {_uniqueStorage()._updateURL = newValue}
   }
   /// Returns true if `updateURL` has been explicitly set.
-  var hasUpdateURL: Bool {return _storage._updateURL != nil}
+  var hasUpdateURL: Bool {_storage._updateURL != nil}
   /// Clears the value of `updateURL`. Subsequent reads from it will return its default value.
   mutating func clearUpdateURL() {_uniqueStorage()._updateURL = nil}
 
   var downloadURL: String {
-    get {return _storage._downloadURL ?? String()}
+    get {_storage._downloadURL ?? String()}
     set {_uniqueStorage()._downloadURL = newValue}
   }
   /// Returns true if `downloadURL` has been explicitly set.
-  var hasDownloadURL: Bool {return _storage._downloadURL != nil}
+  var hasDownloadURL: Bool {_storage._downloadURL != nil}
   /// Clears the value of `downloadURL`. Subsequent reads from it will return its default value.
   mutating func clearDownloadURL() {_uniqueStorage()._downloadURL = nil}
 
   var content: String {
-    get {return _storage._content}
+    get {_storage._content}
     set {_uniqueStorage()._content = newValue}
   }
 
   var lastUpdated: Int64 {
-    get {return _storage._lastUpdated}
+    get {_storage._lastUpdated}
     set {_uniqueStorage()._lastUpdated = newValue}
   }
 
@@ -494,6 +494,7 @@ struct Wblock_Data_ExtensionData: Sendable {
 
   var tabBlockedRequests: Dictionary<String,Wblock_Data_TabData> = [:]
 
+  /// deprecated, kept for wire compat
   var zapperRules: [String] = []
 
   var lastUpdated: Int64 = 0
@@ -564,41 +565,16 @@ struct Wblock_Data_AutoUpdateMetadata: Sendable {
 fileprivate let _protobuf_package = "wblock.data"
 
 extension Wblock_Data_FilterListCategory: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    0: .same(proto: "FILTER_LIST_CATEGORY_UNSPECIFIED"),
-    1: .same(proto: "FILTER_LIST_CATEGORY_ALL"),
-    2: .same(proto: "FILTER_LIST_CATEGORY_ADS"),
-    3: .same(proto: "FILTER_LIST_CATEGORY_PRIVACY"),
-    4: .same(proto: "FILTER_LIST_CATEGORY_SECURITY"),
-    5: .same(proto: "FILTER_LIST_CATEGORY_MULTIPURPOSE"),
-    6: .same(proto: "FILTER_LIST_CATEGORY_ANNOYANCES"),
-    7: .same(proto: "FILTER_LIST_CATEGORY_EXPERIMENTAL"),
-    8: .same(proto: "FILTER_LIST_CATEGORY_CUSTOM"),
-    9: .same(proto: "FILTER_LIST_CATEGORY_FOREIGN"),
-    10: .same(proto: "FILTER_LIST_CATEGORY_SCRIPTS"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FILTER_LIST_CATEGORY_UNSPECIFIED\0\u{1}FILTER_LIST_CATEGORY_ALL\0\u{1}FILTER_LIST_CATEGORY_ADS\0\u{1}FILTER_LIST_CATEGORY_PRIVACY\0\u{1}FILTER_LIST_CATEGORY_SECURITY\0\u{1}FILTER_LIST_CATEGORY_MULTIPURPOSE\0\u{1}FILTER_LIST_CATEGORY_ANNOYANCES\0\u{1}FILTER_LIST_CATEGORY_EXPERIMENTAL\0\u{1}FILTER_LIST_CATEGORY_CUSTOM\0\u{1}FILTER_LIST_CATEGORY_FOREIGN\0\u{1}FILTER_LIST_CATEGORY_SCRIPTS\0")
 }
 
 extension Wblock_Data_Platform: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    0: .same(proto: "PLATFORM_UNSPECIFIED"),
-    1: .same(proto: "PLATFORM_MACOS"),
-    2: .same(proto: "PLATFORM_IOS"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PLATFORM_UNSPECIFIED\0\u{1}PLATFORM_MACOS\0\u{1}PLATFORM_IOS\0")
 }
 
 extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "settings"),
-    2: .standard(proto: "filter_lists"),
-    3: .standard(proto: "user_scripts"),
-    4: .same(proto: "whitelist"),
-    5: .standard(proto: "rule_counts"),
-    6: .same(proto: "performance"),
-    7: .standard(proto: "auto_update"),
-    8: .standard(proto: "extension_data"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{3}filter_lists\0\u{3}user_scripts\0\u{1}whitelist\0\u{3}rule_counts\0\u{1}performance\0\u{3}auto_update\0\u{3}extension_data\0")
 
   fileprivate class _StorageClass {
     var _settings: Wblock_Data_AppSettings? = nil
@@ -717,21 +693,7 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
 
 extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppSettings"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "has_completed_onboarding"),
-    2: .standard(proto: "selected_blocking_level"),
-    3: .standard(proto: "last_update_check"),
-    4: .standard(proto: "show_advanced_features"),
-    5: .standard(proto: "app_version"),
-    6: .standard(proto: "last_terminology_sanitization_version"),
-    7: .standard(proto: "has_enabled_content_blockers"),
-    8: .standard(proto: "has_enabled_platform_extension"),
-    9: .standard(proto: "has_set_all_websites_permission"),
-    10: .standard(proto: "userscript_show_enabled_only"),
-    11: .standard(proto: "excluded_default_userscript_urls"),
-    12: .standard(proto: "is_foreign_filters_expanded"),
-    13: .standard(proto: "is_badge_counter_enabled"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}has_completed_onboarding\0\u{3}selected_blocking_level\0\u{3}last_update_check\0\u{3}show_advanced_features\0\u{3}app_version\0\u{3}last_terminology_sanitization_version\0\u{3}has_enabled_content_blockers\0\u{3}has_enabled_platform_extension\0\u{3}has_set_all_websites_permission\0\u{3}userscript_show_enabled_only\0\u{3}excluded_default_userscript_urls\0\u{3}is_foreign_filters_expanded\0\u{3}is_badge_counter_enabled\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -821,19 +783,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
 
 extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "id"),
-    2: .same(proto: "name"),
-    3: .same(proto: "url"),
-    4: .same(proto: "category"),
-    5: .standard(proto: "is_selected"),
-    6: .same(proto: "description"),
-    7: .same(proto: "version"),
-    8: .standard(proto: "source_rule_count"),
-    9: .standard(proto: "last_updated"),
-    10: .standard(proto: "is_custom"),
-    11: .standard(proto: "local_file_path"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -917,26 +867,7 @@ extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".UserScriptData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "id"),
-    2: .same(proto: "name"),
-    3: .same(proto: "url"),
-    4: .standard(proto: "is_enabled"),
-    5: .same(proto: "description"),
-    6: .same(proto: "version"),
-    7: .same(proto: "matches"),
-    8: .standard(proto: "exclude_matches"),
-    9: .same(proto: "includes"),
-    10: .same(proto: "excludes"),
-    11: .standard(proto: "run_at"),
-    12: .standard(proto: "inject_into"),
-    13: .same(proto: "grant"),
-    14: .standard(proto: "is_local"),
-    15: .standard(proto: "update_url"),
-    16: .standard(proto: "download_url"),
-    17: .same(proto: "content"),
-    18: .standard(proto: "last_updated"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1125,10 +1056,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".WhitelistData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "disabled_sites"),
-    2: .standard(proto: "last_updated"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1163,12 +1091,7 @@ extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RuleCountData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "last_rule_count"),
-    2: .standard(proto: "rule_counts_by_category"),
-    3: .standard(proto: "categories_approaching_limit"),
-    4: .standard(proto: "last_updated"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_rule_count\0\u{3}rule_counts_by_category\0\u{3}categories_approaching_limit\0\u{3}last_updated\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1213,18 +1136,7 @@ extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Wblock_Data_PerformanceData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".PerformanceData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "last_conversion_time"),
-    2: .standard(proto: "last_reload_time"),
-    3: .standard(proto: "last_fast_update_time"),
-    4: .standard(proto: "fast_update_count"),
-    5: .standard(proto: "source_rules_count"),
-    6: .standard(proto: "conversion_stage_description"),
-    7: .standard(proto: "current_filter_name"),
-    8: .standard(proto: "processed_filters_count"),
-    9: .standard(proto: "total_filters_count"),
-    10: .standard(proto: "current_platform"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_conversion_time\0\u{3}last_reload_time\0\u{3}last_fast_update_time\0\u{3}fast_update_count\0\u{3}source_rules_count\0\u{3}conversion_stage_description\0\u{3}current_filter_name\0\u{3}processed_filters_count\0\u{3}total_filters_count\0\u{3}current_platform\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1297,14 +1209,44 @@ extension Wblock_Data_PerformanceData: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 }
 
+extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".ZapperRuleList"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}selectors\0\u{3}pending_deletions\0")
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedStringField(value: &self.selectors) }()
+      case 2: try { try decoder.decodeRepeatedStringField(value: &self.pendingDeletions) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.selectors.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.selectors, fieldNumber: 1)
+    }
+    if !self.pendingDeletions.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.pendingDeletions, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Wblock_Data_ZapperRuleList, rhs: Wblock_Data_ZapperRuleList) -> Bool {
+    if lhs.selectors != rhs.selectors {return false}
+    if lhs.pendingDeletions != rhs.pendingDeletions {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ExtensionData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "tab_blocked_requests"),
-    2: .standard(proto: "zapper_rules"),
-    3: .standard(proto: "last_updated"),
-    4: .standard(proto: "zapper_rules_by_host"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}tab_blocked_requests\0\u{3}zapper_rules\0\u{3}last_updated\0\u{3}zapper_rules_by_host\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1347,49 +1289,9 @@ extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._Messa
   }
 }
 
-extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".ZapperRuleList"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "selectors"),
-    2: .standard(proto: "pending_deletions"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try { try decoder.decodeRepeatedStringField(value: &self.selectors) }()
-      case 2: try { try decoder.decodeRepeatedStringField(value: &self.pendingDeletions) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.selectors.isEmpty {
-      try visitor.visitRepeatedStringField(value: self.selectors, fieldNumber: 1)
-    }
-    if !self.pendingDeletions.isEmpty {
-      try visitor.visitRepeatedStringField(value: self.pendingDeletions, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Wblock_Data_ZapperRuleList, rhs: Wblock_Data_ZapperRuleList) -> Bool {
-    if lhs.selectors != rhs.selectors {return false}
-    if lhs.pendingDeletions != rhs.pendingDeletions {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
 extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".TabData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "blocked_count"),
-    2: .standard(proto: "is_disabled"),
-    3: .same(proto: "host"),
-    4: .standard(proto: "last_updated"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}blocked_count\0\u{3}is_disabled\0\u{1}host\0\u{3}last_updated\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1434,19 +1336,7 @@ extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
 
 extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "enabled"),
-    2: .standard(proto: "interval_hours"),
-    3: .standard(proto: "last_check_time"),
-    4: .standard(proto: "last_successful_time"),
-    5: .standard(proto: "next_eligible_time"),
-    6: .standard(proto: "force_next"),
-    7: .standard(proto: "is_running"),
-    8: .standard(proto: "running_since_timestamp"),
-    9: .standard(proto: "filter_etags"),
-    10: .standard(proto: "filter_last_modified"),
-    11: .standard(proto: "userscripts_initial_setup_completed"),
-  ]
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{3}userscripts_initial_setup_completed\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
