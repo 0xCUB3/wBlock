@@ -98,16 +98,19 @@ public enum WebExtensionRequestHandler {
                         message?["payload"] = emptyRulesPayload()
                     } else {
                         do {
-                            let webExtension = try WebExtension.shared(
-                                groupID: GroupIdentifier.shared.value
-                            )
-
                             var topUrl: URL?
                             if let topUrlString = payload["topUrl"] as? String {
                                 topUrl = URL(string: topUrlString)
                             }
 
-                            if let configuration = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
+                            let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
+                                let webExtension = try WebExtension.shared(
+                                    groupID: GroupIdentifier.shared.value
+                                )
+                                return webExtension.lookup(pageUrl: url, topUrl: topUrl)
+                            }
+
+                            if let configuration {
                                 message?["payload"] = convertToPayload(configuration)
                             }
                         } catch {

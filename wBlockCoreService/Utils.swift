@@ -320,6 +320,19 @@ public enum UserScriptMetadataParser {
     }
 }
 
+/// Serializes access to the shared WebExtension instance to prevent data races
+/// between concurrent lookup() and buildFilterEngine() calls.
+public final class WebExtensionGate: @unchecked Sendable {
+    public static let shared = WebExtensionGate()
+    private let lock = NSLock()
+
+    public func withLock<T>(_ body: () throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body()
+    }
+}
+
 func measure<T>(label: String, block: () -> T) -> T {
     let start = DispatchTime.now()  // Start the timer
 

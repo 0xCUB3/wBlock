@@ -96,16 +96,19 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                     }
                     // Otherwise proceed normally
                     do {
-                        let webExtension = try WebExtension.shared(
-                            groupID: GroupIdentifier.shared.value
-                        )
-
                         var topUrl: URL?
                         if let topUrlString = topUrlString {
                             topUrl = URL(string: topUrlString)
                         }
 
-                        if let conf = webExtension.lookup(pageUrl: url, topUrl: topUrl) {
+                        let conf: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
+                            let webExtension = try WebExtension.shared(
+                                groupID: GroupIdentifier.shared.value
+                            )
+                            return webExtension.lookup(pageUrl: url, topUrl: topUrl)
+                        }
+
+                        if let conf {
                             // Convert the configuration into a payload (dictionary
                             // format) consumable by the content script.
                             var payload = convertToPayload(conf)

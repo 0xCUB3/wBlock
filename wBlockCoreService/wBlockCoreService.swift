@@ -499,16 +499,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
         
         measure(label: "Building combined filter engine") {
-            do {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-                os_log(.info, "Successfully built combined filter engine with %d characters of advanced rules", combinedAdvancedRules.count)
-            } catch {
-                os_log(
-                    .error,
-                    "Failed to build combined filtering engine: %@",
-                    error.localizedDescription
-                )
+            WebExtensionGate.shared.withLock {
+                do {
+                    let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                    _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
+                    os_log(.info, "Successfully built combined filter engine with %d characters of advanced rules", combinedAdvancedRules.count)
+                } catch {
+                    os_log(
+                        .error,
+                        "Failed to build combined filtering engine: %@",
+                        error.localizedDescription
+                    )
+                }
             }
         }
     }
@@ -519,16 +521,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
     ///   - groupIdentifier: Group ID to use for the shared container.
     public static func clearFilterEngine(groupIdentifier: String) {
         measure(label: "Clearing filter engine") {
-            do {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: "")
-                os_log(.info, "Successfully cleared filter engine")
-            } catch {
-                os_log(
-                    .error,
-                    "Failed to clear filtering engine: %@",
-                    error.localizedDescription
-                )
+            WebExtensionGate.shared.withLock {
+                do {
+                    let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                    _ = try webExtension.buildFilterEngine(rules: "")
+                    os_log(.info, "Successfully cleared filter engine")
+                } catch {
+                    os_log(
+                        .error,
+                        "Failed to clear filtering engine: %@",
+                        error.localizedDescription
+                    )
+                }
             }
         }
     }
