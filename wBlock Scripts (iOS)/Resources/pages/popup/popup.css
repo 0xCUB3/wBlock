@@ -35,7 +35,6 @@ body {
 
 .popup {
   width: 100%;
-  min-width: 320px;
   max-width: 380px;
   padding: 14px;
   box-sizing: border-box;
