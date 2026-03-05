@@ -22,7 +22,7 @@ DMG_PATH="${OUT_DIR}/${DMG_NAME}"
 mkdir -p "${OUT_DIR}"
 rm -f "${DMG_PATH}"
 
-TEAM_ID="${TEAM_ID:-}"
+TEAM_ID="${TEAM_ID:-DNP7DGUB7B}"
 
 echo "Building ${SCHEME} (${CONFIGURATION})…"
 xcodebuild \
