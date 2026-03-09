@@ -7,8 +7,7 @@ struct SettingsView: View {
     let filterManager: AppFilterManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
-    private let minimumAutoUpdateIntervalHours: Double = 1
-    private let maximumAutoUpdateIntervalHours: Double = 24 * 7
+    private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
     @State private var lastUpdateLine = String(localized: "Last: Never")
     @State private var isOverdue = false
@@ -153,26 +152,18 @@ struct SettingsView: View {
                     )
 
                     if autoUpdateEnabled {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(intervalDescription(hours: autoUpdateIntervalHours))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .contentTransition(.numericText())
-
-                            Slider(
-                                value: Binding(
-                                    get: { autoUpdateIntervalHours },
-                                    set: { newValue in
-                                        Task {
-                                            await dataManager
-                                                .setAutoUpdateIntervalHours(newValue)
-                                            await handleAutoUpdateConfigChange()
-                                        }
-                                    }
-                                ),
-                                in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
-                                step: 1
-                            )
+                        Picker("Update Interval", selection: Binding(
+                            get: { Self.nearestPreset(to: autoUpdateIntervalHours) },
+                            set: { newValue in
+                                Task {
+                                    await dataManager.setAutoUpdateIntervalHours(newValue)
+                                    await handleAutoUpdateConfigChange()
+                                }
+                            }
+                        )) {
+                            ForEach(Self.autoUpdateIntervalPresets, id: \.self) { hours in
+                                Text(intervalDescription(hours: hours)).tag(hours)
+                            }
                         }
                     }
                 } header: {
@@ -333,24 +324,19 @@ struct SettingsView: View {
                     .toggleStyle(.switch)
 
                     if autoUpdateEnabled {
-                        LabeledContent(intervalDescription(hours: autoUpdateIntervalHours)) {
-                            Slider(
-                                value: Binding(
-                                    get: { autoUpdateIntervalHours },
-                                    set: { newValue in
-                                        Task {
-                                            await dataManager
-                                                .setAutoUpdateIntervalHours(newValue)
-                                            await handleAutoUpdateConfigChange()
-                                        }
-                                    }
-                                ),
-                                in: minimumAutoUpdateIntervalHours...maximumAutoUpdateIntervalHours,
-                                step: 1
-                            )
-                            .frame(maxWidth: 260)
+                        Picker("Update Interval", selection: Binding(
+                            get: { Self.nearestPreset(to: autoUpdateIntervalHours) },
+                            set: { newValue in
+                                Task {
+                                    await dataManager.setAutoUpdateIntervalHours(newValue)
+                                    await handleAutoUpdateConfigChange()
+                                }
+                            }
+                        )) {
+                            ForEach(Self.autoUpdateIntervalPresets, id: \.self) { hours in
+                                Text(intervalDescription(hours: hours)).tag(hours)
+                            }
                         }
-                        .contentTransition(.numericText())
                     }
                 } header: {
                     Text("Filter Auto-Update")
@@ -552,6 +538,10 @@ extension SettingsView {
             }
             await updateScheduleLine()
         }
+    }
+
+    private static func nearestPreset(to hours: Double) -> Double {
+        autoUpdateIntervalPresets.min(by: { abs($0 - hours) < abs($1 - hours) }) ?? 6
     }
 
     private func intervalDescription(hours: Double) -> String {
