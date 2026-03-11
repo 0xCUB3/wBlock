@@ -297,3 +297,11 @@
 "No description provided by the script metadata." = "Δεν παρέχεται περιγραφή από τα μεταδεδομένα κώδικα.";
 "Loading userscripts…" = "Φόρτωση κώδικα χρήστη…";
 "Step %d of %d" = "Βήμα %d of %d";
+"Extensions" = "Επεκτάσεις";
+"Updates" = "Ενημερώσεις";
+"Restart Onboarding" = "Επανεκκίνηση Ενσωμάτωσης";
+"Restarting…" = "Επανεκκίνηση…";
+"Safari Rules" = "Κανόνες Safari";
+"Source Rules" = "Κανόνες Πηγής";
+"Conversion" = "Μετατροπή";
+"Reload" = "Επαναφόρτωση";

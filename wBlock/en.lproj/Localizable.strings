@@ -297,3 +297,11 @@
 "No description provided by the script metadata." = "No description provided by the script metadata.";
 "Loading userscripts…" = "Loading userscripts…";
 "Step %d of %d" = "Step %d of %d";
+"Extensions" = "Extensions";
+"Updates" = "Updates";
+"Restart Onboarding" = "Restart Onboarding";
+"Restarting…" = "Restarting…";
+"Safari Rules" = "Safari Rules";
+"Source Rules" = "Source Rules";
+"Conversion" = "Conversion";
+"Reload" = "Reload";

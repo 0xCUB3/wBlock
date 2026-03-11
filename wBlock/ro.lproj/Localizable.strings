@@ -295,3 +295,11 @@
 "No description provided by the script metadata." = "Metadatele scriptului nu oferă o descriere.";
 "Loading userscripts…" = "Se încarcă scripturile de utilizator…";
 "Step %d of %d" = "Pasul %d din %d";
+"Extensions" = "Extensii";
+"Updates" = "Actualizări";
+"Restart Onboarding" = "Repornire configurare";
+"Restarting…" = "Se repornește…";
+"Safari Rules" = "Reguli Safari";
+"Source Rules" = "Reguli sursă";
+"Conversion" = "Conversie";
+"Reload" = "Reîncărcare";

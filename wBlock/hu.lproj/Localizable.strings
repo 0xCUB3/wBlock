@@ -297,3 +297,11 @@
 "No description provided by the script metadata." = "A szkript metaadatai nem tartalmaznak leírást.";
 "Loading userscripts…" = "Felhasználói szkriptek betöltése…";
 "Step %d of %d" = "%d/%d lépés";
+"Extensions" = "Bővítmények";
+"Updates" = "Frissítések";
+"Restart Onboarding" = "Beállítás újraindítása";
+"Restarting…" = "Újraindítás…";
+"Safari Rules" = "Safari szabályok";
+"Source Rules" = "Forrásszabályok";
+"Conversion" = "Konverzió";
+"Reload" = "Újratöltés";

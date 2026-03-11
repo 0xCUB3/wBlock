@@ -295,3 +295,11 @@
 "No description provided by the script metadata." = "腳本中繼資料未提供描述。";
 "Loading userscripts…" = "正在載入使用者腳本…";
 "Step %d of %d" = "第 %d / %d 步";
+"Extensions" = "擴充功能";
+"Updates" = "更新";
+"Restart Onboarding" = "重新開始引導";
+"Restarting…" = "正在重新啟動…";
+"Safari Rules" = "Safari 規則";
+"Source Rules" = "來源規則";
+"Conversion" = "轉換";
+"Reload" = "重新載入";

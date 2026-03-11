@@ -295,3 +295,11 @@
 "No description provided by the script metadata." = "스크립트 메타데이터에 설명이 없습니다.";
 "Loading userscripts…" = "유저스크립트 불러오는 중…";
 "Step %d of %d" = "%d / %d 단계";
+"Extensions" = "확장 프로그램";
+"Updates" = "업데이트";
+"Restart Onboarding" = "온보딩 다시 시작";
+"Restarting…" = "재시작 중…";
+"Safari Rules" = "Safari 규칙";
+"Source Rules" = "소스 규칙";
+"Conversion" = "변환";
+"Reload" = "새로고침";

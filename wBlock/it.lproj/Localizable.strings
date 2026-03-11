@@ -295,3 +295,11 @@
 "No description provided by the script metadata." = "I metadati dello script non includono una descrizione.";
 "Loading userscripts…" = "Caricamento userscript…";
 "Step %d of %d" = "Passaggio %d di %d";
+"Extensions" = "Estensioni";
+"Updates" = "Aggiornamenti";
+"Restart Onboarding" = "Riavvia configurazione";
+"Restarting…" = "Riavvio…";
+"Safari Rules" = "Regole Safari";
+"Source Rules" = "Regole sorgente";
+"Conversion" = "Conversione";
+"Reload" = "Ricarica";
