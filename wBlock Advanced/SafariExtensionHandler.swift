@@ -516,10 +516,10 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
     ///   - window: The Safari window containing the toolbar item.
     public override func popoverWillShow(in window: SFSafariWindow) {
         Task {
-            let blockedCount = await ToolbarData.shared.getBlockedOnActiveTab(in: window)
-            await SafariExtensionViewController.shared.updateBlockedCount(blockedCount)
-            let blockedRequests = await ToolbarData.shared.getBlockedURLsOnActiveTab(in: window)
-            await SafariExtensionViewController.shared.updateBlockedRequests(blockedRequests)
+            // Refresh all popover state (host, disabled, zapper rules, blocked data).
+            // The view is a singleton so onAppear only fires once; this ensures
+            // every subsequent open shows current data.
+            await SafariExtensionViewController.shared.reloadState()
         }
     }
     

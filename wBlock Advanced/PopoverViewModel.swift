@@ -48,7 +48,8 @@ public class PopoverViewModel: ObservableObject {
             // Load zapper rules after host is set
             await self.loadZapperRules()
             
-            // Load blocked requests log for the active tab
+            // Load blocked request count and URL log for the active tab
+            self.blockedCount = await ToolbarData.shared.getBlockedOnActiveTab(in: window)
             self.blockedRequests = await ToolbarData.shared.getBlockedURLsOnActiveTab(in: window)
             
             os_log(.info, "PopoverViewModel: Loaded state for host '%@', isDisabled: %{BOOL}d, disabled sites: %@", host, self.isDisabled, list.joined(separator: ", "))

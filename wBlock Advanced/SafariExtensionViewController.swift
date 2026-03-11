@@ -41,10 +41,16 @@ class SafariExtensionViewController: SFSafariExtensionViewController {
     func updateBlockedCount(_ count: Int) {
         viewModel.blockedCount = count
     }
-    
+
     /// Updates the blocked request URL log for the active tab.
     func updateBlockedRequests(_ urls: [String]) {
         viewModel.blockedRequests = urls
+    }
+
+    /// Reloads all popover state (host, disabled, zapper rules, blocked data).
+    /// Called from popoverWillShow to ensure fresh data on every open.
+    func reloadState() async {
+        await viewModel.loadState()
     }
 
     // MARK: - UI Setup
