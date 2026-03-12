@@ -214,11 +214,6 @@ struct OnboardingView: View {
         .onChange(of: userScriptManager.userScripts) { _ in
             seedSelectedUserscriptsIfNeeded()
         }
-        .onChange(of: step) { _, newStep in
-            if newStep == .protection {
-                probeForExistingICloudSetupIfNeeded()
-            }
-        }
         .confirmationDialog(
             "Use existing iCloud setup?",
             isPresented: $showRemoteConfigPrompt,
@@ -864,7 +859,6 @@ struct OnboardingView: View {
     private func probeForExistingICloudSetupIfNeeded() {
         guard !hasProbedRemoteConfig else { return }
         guard !hasCompletedOnboarding else { return }
-        guard step == .protection else { return }
 
         hasProbedRemoteConfig = true
 

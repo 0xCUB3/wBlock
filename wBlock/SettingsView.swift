@@ -19,6 +19,8 @@ struct SettingsView: View {
     @State private var pendingBackup: WBlockBackup? = nil
     @State private var backupStatusMessage: String? = nil
     @State private var showingBackupStatus = false
+    @State private var showingSyncAdoptPrompt = false
+    @State private var syncAdoptTimestamp: String?
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
         @State private var showingExportSheet = false
@@ -95,6 +97,33 @@ struct SettingsView: View {
             }
         }
         #endif
+        .confirmationDialog(
+            "Use existing iCloud setup?",
+            isPresented: $showingSyncAdoptPrompt,
+            titleVisibility: .visible
+        ) {
+            Button("Use iCloud Setup") {
+                Task {
+                    syncManager.setEnabled(true, startSync: false)
+                    let applied = await CloudSyncManager.shared.downloadAndApplyLatestRemoteConfig(
+                        trigger: "Settings-AdoptRemote"
+                    )
+                    if !applied {
+                        syncManager.setEnabled(true)
+                    }
+                }
+            }
+            Button("Start Fresh") {
+                syncManager.setEnabled(true)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let syncAdoptTimestamp {
+                Text("An existing wBlock configuration was found in iCloud (\(syncAdoptTimestamp)). Would you like to adopt it, or start fresh and upload your current setup?")
+            } else {
+                Text("An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?")
+            }
+        }
     }
 
     @ViewBuilder
@@ -202,7 +231,11 @@ struct SettingsView: View {
                             isOn: Binding(
                                 get: { syncManager.isEnabled },
                                 set: { newValue in
-                                    syncManager.setEnabled(newValue)
+                                    if newValue {
+                                        probeAndEnableSync()
+                                    } else {
+                                        syncManager.setEnabled(false)
+                                    }
                                 }
                             )
                         )
@@ -371,7 +404,11 @@ struct SettingsView: View {
                             isOn: Binding(
                                 get: { syncManager.isEnabled },
                                 set: { newValue in
-                                    syncManager.setEnabled(newValue)
+                                    if newValue {
+                                        probeAndEnableSync()
+                                    } else {
+                                        syncManager.setEnabled(false)
+                                    }
                                 }
                             )
                         )
@@ -425,6 +462,26 @@ struct SettingsView: View {
     private func handleAutoUpdateConfigChange() async {
         await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
         await updateScheduleLine()
+    }
+
+    private func probeAndEnableSync() {
+        Task {
+            let probe = await CloudSyncManager.shared.probeRemoteConfig()
+            guard probe.exists else {
+                syncManager.setEnabled(true)
+                return
+            }
+
+            if let updatedAt = probe.updatedAt {
+                let formatter = RelativeDateTimeFormatter()
+                formatter.unitsStyle = .short
+                let date = Date(timeIntervalSince1970: updatedAt)
+                syncAdoptTimestamp = formatter.localizedString(for: date, relativeTo: Date())
+            } else {
+                syncAdoptTimestamp = nil
+            }
+            showingSyncAdoptPrompt = true
+        }
     }
 }
 extension SettingsView {
