@@ -193,7 +193,7 @@ struct UpdatePopupView: View {
                                 // Handle filter list updates
                                 let filtersToUpdate = filterManager.availableUpdates.filter { selectedFilters.contains($0.id) }
                                 if !filtersToUpdate.isEmpty {
-                                    await filterManager.downloadSelectedFilters(filtersToUpdate)
+                                    await filterManager.downloadAndApplySelectedFilters(filtersToUpdate, showProgressSheet: true)
                                 }
 
                                 // Handle script updates

@@ -333,6 +333,46 @@ public final class WebExtensionGate: @unchecked Sendable {
     }
 }
 
+/// Runs an async operation on each item with bounded concurrency, calling `onResult`
+/// for each completed result in completion order. Platform-aware default concurrency.
+public func boundedConcurrentForEach<Item: Sendable, Result: Sendable>(
+    _ items: [Item],
+    maxConcurrent: Int? = nil,
+    operation: @Sendable @escaping (Item) async -> Result,
+    onResult: (Result) async -> Void
+) async {
+    guard !items.isEmpty else { return }
+
+    let limit: Int
+    if let maxConcurrent {
+        limit = maxConcurrent
+    } else {
+        #if os(macOS)
+        limit = 3
+        #else
+        limit = 2
+        #endif
+    }
+
+    var iterator = items.makeIterator()
+
+    await withTaskGroup(of: Result.self) { group in
+        func enqueueNext() {
+            guard let item = iterator.next() else { return }
+            group.addTask { await operation(item) }
+        }
+
+        for _ in 0..<min(limit, items.count) {
+            enqueueNext()
+        }
+
+        while let result = await group.next() {
+            await onResult(result)
+            enqueueNext()
+        }
+    }
+}
+
 func measure<T>(label: String, block: () -> T) -> T {
     let start = DispatchTime.now()  // Start the timer
 

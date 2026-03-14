@@ -98,76 +98,43 @@ struct ContentView: View {
     }
 
     var body: some View {
-        #if os(iOS)
-            TabView {
-                filtersView
-                    .tabItem {
-                        Label("Filters", systemImage: "list.bullet.rectangle")
-                    }
-                userscriptsView
-                    .tabItem {
-                        Label("Userscripts", systemImage: "doc.text.fill")
-                    }
-                settingsView
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
-            }
-            .modifier(
-                ContentModifiers(
-                    filterManager: filterManager,
-                    userScriptManager: userScriptManager,
-                    dataManager: dataManager,
-                    showingAddFilterSheet: $showingAddFilterSheet,
-                    scenePhase: scenePhase
-                ))
-            .sheet(item: $editingCustomFilter) { filter in
-                if isInlineUserList(filter) {
-                    EditUserListView(filterManager: filterManager, filter: filter)
-                } else {
-                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+        TabView {
+            filtersView
+                .tabItem {
+                    Label("Filters", systemImage: "list.bullet.rectangle")
                 }
-            }
-        #elseif os(macOS)
-            TabView {
-                filtersView
-                    .tabItem {
-                        Label("Filters", systemImage: "list.bullet.rectangle")
-                    }
-                userscriptsView
-                    .tabItem {
-                        Label("Userscripts", systemImage: "doc.text.fill")
-                    }
-                settingsView
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
-            }
-            .modifier(
-                ContentModifiers(
-                    filterManager: filterManager,
-                    userScriptManager: userScriptManager,
-                    dataManager: dataManager,
-                    showingAddFilterSheet: $showingAddFilterSheet,
-                    scenePhase: scenePhase
-                ))
-            .sheet(item: $editingCustomFilter) { filter in
-                if isInlineUserList(filter) {
-                    EditUserListView(filterManager: filterManager, filter: filter)
-                } else {
-                    EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+            userscriptsView
+                .tabItem {
+                    Label("Userscripts", systemImage: "doc.text.fill")
                 }
+            settingsView
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
+                }
+        }
+        .modifier(
+            ContentModifiers(
+                filterManager: filterManager,
+                userScriptManager: userScriptManager,
+                dataManager: dataManager,
+                showingAddFilterSheet: $showingAddFilterSheet,
+                scenePhase: scenePhase
+            ))
+        .sheet(item: $editingCustomFilter) { filter in
+            if isInlineUserList(filter) {
+                EditUserListView(filterManager: filterManager, filter: filter)
+            } else {
+                EditCustomFilterNameView(filterManager: filterManager, filter: filter)
             }
-        #endif
+        }
     }
 
     private func isInlineUserList(_ filter: FilterList) -> Bool {
-        filter.url.scheme?.lowercased() == "wblock"
-            && filter.url.host?.lowercased() == "userlist"
+        filter.isInlineUserList
     }
 
     private func supportsCustomActions(_ filter: FilterList) -> Bool {
-        filter.isCustom || filterManager.customFilterLists.contains(where: { $0.id == filter.id })
+        filter.isCustom
     }
 
     private var filtersView: some View {

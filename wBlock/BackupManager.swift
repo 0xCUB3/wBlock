@@ -69,10 +69,8 @@ enum BackupManager {
         let customEntries = filterManager.filterLists
             .filter { $0.isCustom }
             .map { filter -> WBlockBackup.CustomFilterEntry in
-                let isInlineUserList = filter.url.scheme?.lowercased() == "wblock"
-                    && filter.url.host?.lowercased() == "userlist"
                 var content: String? = nil
-                if isInlineUserList, let fileURL = loader.localFileURL(for: filter) {
+                if filter.isInlineUserList, let fileURL = loader.localFileURL(for: filter) {
                     content = try? String(contentsOf: fileURL, encoding: .utf8)
                 }
                 return WBlockBackup.CustomFilterEntry(

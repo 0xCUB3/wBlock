@@ -5,7 +5,6 @@
 //  Created by Alexander Skula on 5/23/25.
 //
 
-import Combine
 import CryptoKit
 import SwiftUI
 import wBlockCoreService
@@ -73,7 +72,9 @@ class AppFilterManager: ObservableObject {
         qos: .utility
     )
 
-    var customFilterLists: [FilterList] = []
+    var customFilterLists: [FilterList] {
+        filterLists.filter(\.isCustom)
+    }
 
     var filterListIndexByID: [UUID: Int] {
         Dictionary(uniqueKeysWithValues: filterLists.enumerated().map { ($1.id, $0) })
@@ -141,7 +142,6 @@ class AppFilterManager: ObservableObject {
         processedFiltersCount = 0
 
         filterLists = []
-        customFilterLists = []
 
         let defaultLists = loader.getDefaultFilterLists()
         filterLists = defaultLists
@@ -207,7 +207,6 @@ class AppFilterManager: ObservableObject {
         }
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
-        customFilterLists = dataManager.getCustomFilterLists()
 
         // Merge any new default filters added in app updates
         if !migratedFilterLists.isEmpty {

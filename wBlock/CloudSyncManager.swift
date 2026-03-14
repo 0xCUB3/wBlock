@@ -384,7 +384,6 @@ final class CloudSyncManager: ObservableObject {
                         Self.deleteInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
                     }
                     filterManager.filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                    filterManager.customFilterLists.removeAll { urlsToDelete.contains($0.url.absoluteString) }
                     changed = true
                 }
             }
@@ -421,7 +420,6 @@ final class CloudSyncManager: ObservableObject {
                         // Replace mismatched legacy entry (ID-based filename mismatch breaks local storage).
                         let existing = filterManager.filterLists[existingIndex]
                         filterManager.filterLists.removeAll { $0.id == existing.id }
-                        filterManager.customFilterLists.removeAll { $0.id == existing.id }
                         changed = true
                         shouldTreatAsMissing = true
                     }
@@ -452,7 +450,6 @@ final class CloudSyncManager: ObservableObject {
                             description: remoteCustom.description ?? "User-added filter list.",
                             sourceRuleCount: nil
                         )
-                        filterManager.customFilterLists.append(newFilter)
                         filterManager.filterLists.append(newFilter)
                         changed = true
                     }
@@ -467,7 +464,6 @@ final class CloudSyncManager: ObservableObject {
                         description: remoteCustom.description ?? "User-added filter list.",
                         sourceRuleCount: nil
                     )
-                    filterManager.customFilterLists.append(newFilter)
                     filterManager.filterLists.append(newFilter)
                     changed = true
                 }
@@ -600,7 +596,6 @@ final class CloudSyncManager: ObservableObject {
                         Self.deleteInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
                     }
                     filterManager.filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                    filterManager.customFilterLists.removeAll { urlsToDelete.contains($0.url.absoluteString) }
                     filterManager.hasUnappliedChanges = true
                     await filterManager.saveFilterLists()
                 }
@@ -665,7 +660,6 @@ final class CloudSyncManager: ObservableObject {
                         description: remoteCustom.description ?? "User-added filter list.",
                         sourceRuleCount: nil
                     )
-                    filterManager.customFilterLists.append(newFilter)
                     filterManager.filterLists.append(newFilter)
                     changed = true
                 }

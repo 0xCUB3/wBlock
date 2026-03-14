@@ -56,12 +56,10 @@ struct WhitelistView: View {
         .onAppear {
             viewModel.loadWhitelistedDomains()
         }
-        .alert(isPresented: $showingAlert) {
-            Alert(
-                title: Text("Error"),
-                message: Text(alertMessage),
-                dismissButton: .default(Text("OK"))
-            )
+        .alert("Error", isPresented: $showingAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
         }
     }
     

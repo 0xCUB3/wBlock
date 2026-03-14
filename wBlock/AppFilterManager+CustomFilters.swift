@@ -141,8 +141,6 @@ extension AppFilterManager {
         if !customFilterLists.contains(where: { $0.url == filter.url }) {
             let newFilterToAdd = filter
 
-            customFilterLists.append(newFilterToAdd)
-
             filterLists.append(newFilterToAdd)
             saveFilterListsCoalesced()
 
@@ -191,7 +189,6 @@ extension AppFilterManager {
     internal func addCustomFilterListWithoutFetch(_ filter: FilterList) {
         guard !customFilterLists.contains(where: { $0.url == filter.url }) else { return }
 
-        customFilterLists.append(filter)
         filterLists.append(filter)
         saveFilterListsCoalesced()
 
@@ -207,8 +204,6 @@ extension AppFilterManager {
         if filter.isCustom, CloudSyncManager.shared.isEnabled {
             CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)
         }
-
-        customFilterLists.removeAll { $0.id == filter.id }
 
         filterLists.removeAll { $0.id == filter.id }
         saveFilterListsCoalesced()
@@ -230,15 +225,7 @@ extension AppFilterManager {
     }
 
     nonisolated private static func countRulesInUserListContent(_ content: String) -> Int {
-        var count = 0
-        content.enumerateLines { line, _ in
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty { return }
-            if trimmed.hasPrefix("!") { return }
-            if trimmed.hasPrefix("[") { return }
-            count += 1
-        }
-        return count
+        FilterList.countRules(in: content)
     }
 
     func updateCustomFilterListName(id: UUID, newName: String) {
@@ -260,10 +247,6 @@ extension AppFilterManager {
 
         filterLists[index].name = trimmed
         filterLists[index].hasUserProvidedName = true
-        if let customIndex = customFilterLists.firstIndex(where: { $0.id == id }) {
-            customFilterLists[customIndex].name = trimmed
-            customFilterLists[customIndex].hasUserProvidedName = true
-        }
         saveFilterListsCoalesced()
 
         Task {
@@ -298,9 +281,7 @@ extension AppFilterManager {
         }
 
         let filter = filterLists[index]
-        let isInlineUserList = filter.url.scheme?.lowercased() == "wblock"
-            && filter.url.host?.lowercased() == "userlist"
-        guard isInlineUserList else {
+        guard filter.isInlineUserList else {
             statusDescription = "Only pasted user lists can be edited."
             hasError = true
             return
@@ -339,12 +320,6 @@ extension AppFilterManager {
         filterLists[index].name = trimmedName
         filterLists[index].description = trimmedDescription
         filterLists[index].sourceRuleCount = Self.countRulesInUserListContent(trimmedContent)
-
-        if let customIndex = customFilterLists.firstIndex(where: { $0.id == id }) {
-            customFilterLists[customIndex].name = trimmedName
-            customFilterLists[customIndex].description = trimmedDescription
-            customFilterLists[customIndex].sourceRuleCount = filterLists[index].sourceRuleCount
-        }
 
         saveFilterListsCoalesced()
         hasUnappliedChanges = true

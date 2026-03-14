@@ -157,49 +157,20 @@ extension AppFilterManager {
     }
 
     nonisolated private static func reloadDisabledSitesTargetsInParallel(_ targets: [ContentBlockerTargetInfo]) async -> Int {
-        guard !targets.isEmpty else { return 0 }
-
-        #if os(macOS)
-        let maxConcurrent = 3
-        #else
-        let maxConcurrent = 1
-        #endif
-
-        var iterator = targets.makeIterator()
         var successCount = 0
 
-        await withTaskGroup(of: Bool.self) { group in
-            func enqueueNext() {
-                guard let targetInfo = iterator.next() else { return }
-                group.addTask {
-                    await Self.reloadDisabledSiteTargetWithRetry(identifier: targetInfo.bundleIdentifier)
-                }
-            }
-
-            for _ in 0..<min(maxConcurrent, targets.count) {
-                enqueueNext()
-            }
-
-            while let success = await group.next() {
-                if success { successCount += 1 }
-                enqueueNext()
-            }
-        }
+        await boundedConcurrentForEach(targets, maxConcurrent: {
+            #if os(macOS)
+            return 3
+            #else
+            return 1
+            #endif
+        }(), operation: { target in
+            await Self.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 5).success
+        }, onResult: { success in
+            if success { successCount += 1 }
+        })
 
         return successCount
-    }
-
-    nonisolated private static func reloadDisabledSiteTargetWithRetry(identifier: String, maxRetries: Int = 5) async -> Bool {
-        for attempt in 1...maxRetries {
-            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
-            if case .success = result {
-                return true
-            }
-            if attempt < maxRetries {
-                let delayMs = min(200 * attempt, 1500)
-                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
-            }
-        }
-        return false
     }
 }

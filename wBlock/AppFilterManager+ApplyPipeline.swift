@@ -623,7 +623,7 @@ extension AppFilterManager {
         let durationMs: Int
     }
 
-    private struct ReloadAttemptResult {
+    struct ReloadAttemptResult {
         let success: Bool
         let attempts: Int
         let durationMs: Int
@@ -728,70 +728,50 @@ extension AppFilterManager {
 
     func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count
-        #if os(macOS)
-        let maxConcurrent = 3
-        #else
-        let maxConcurrent = 2
-        #endif
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
 
-        var iterator = targets.makeIterator()
+        await boundedConcurrentForEach(targets, operation: { target in
+            let reloadResult = await Self.reloadWithRetry(
+                identifier: target.bundleIdentifier,
+                maxRetries: 5
+            )
+            return (target, reloadResult)
+        }, onResult: { (target, reloadResult) in
+            let name = target.displayName
 
-        await withTaskGroup(of: (ContentBlockerTargetInfo, ReloadAttemptResult).self) { group in
-            func startNext() {
-                guard let target = iterator.next() else { return }
+            await MainActor.run {
+                self.processedFiltersCount += 1
+                self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
+                self.applyProgressViewModel.updateCurrentFilter(name)
 
-                group.addTask {
-                    let reloadResult = await Self.reloadWithRetry(
-                        identifier: target.bundleIdentifier,
-                        maxRetries: 5
-                    )
-                    return (target, reloadResult)
-                }
-            }
+                self.progress =
+                    0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
+                self.applyProgressViewModel.updateProgress(self.progress)
 
-            for _ in 0..<min(maxConcurrent, targets.count) {
-                startNext()
-            }
-
-            while let (target, reloadResult) = await group.next() {
-                let name = target.displayName
-
-                await MainActor.run {
-                    self.processedFiltersCount += 1
-                    self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
-                    self.applyProgressViewModel.updateCurrentFilter(name)
-
-                    self.progress =
-                        0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
-                    self.applyProgressViewModel.updateProgress(self.progress)
-
-                    if !reloadResult.success {
-                        if !self.hasError {
-                            self.statusDescription = "Failed to reload \(name)."
-                        }
-                        self.hasError = true
+                if !reloadResult.success {
+                    if !self.hasError {
+                        self.statusDescription = "Failed to reload \(name)."
                     }
+                    self.hasError = true
                 }
-
-                metrics.append(
-                    TargetReloadMetrics(
-                        blockerName: name,
-                        success: reloadResult.success,
-                        attempts: reloadResult.attempts,
-                        durationMs: reloadResult.durationMs
-                    )
-                )
-                allSuccessful = allSuccessful && reloadResult.success
-                startNext()
             }
-        }
+
+            metrics.append(
+                TargetReloadMetrics(
+                    blockerName: name,
+                    success: reloadResult.success,
+                    attempts: reloadResult.attempts,
+                    durationMs: reloadResult.durationMs
+                )
+            )
+            allSuccessful = allSuccessful && reloadResult.success
+        })
 
         return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
     }
 
-    nonisolated private static func reloadWithRetry(
+    nonisolated static func reloadWithRetry(
         identifier: String,
         maxRetries: Int
     ) async -> ReloadAttemptResult {

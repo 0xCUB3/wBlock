@@ -80,36 +80,12 @@ extension AppFilterManager {
         isLoading = false
     }
 
-    func updateSelectedFilters(_ selectedFilters: [FilterList]) async {  // From UpdatePopupView
+    func downloadAndApplySelectedFilters(_ selectedFilters: [FilterList], showProgressSheet: Bool = false) async {
         isLoading = true
         progress = 0
-
-        let updatedSuccessfullyFilters = await filterUpdater.updateSelectedFilters(
-            selectedFilters,
-            progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
-                }
-            }
-        )
-
-        await MainActor.run {
-            for filter in updatedSuccessfullyFilters {
-                self.availableUpdates.removeAll { $0.id == filter.id }
-            }
+        if showProgressSheet {
+            statusDescription = "Downloading filter updates..."
         }
-
-        saveFilterListsCoalesced()
-
-        await applyChanges()
-        isLoading = false
-        progress = 0
-    }
-
-    func downloadSelectedFilters(_ selectedFilters: [FilterList]) async {
-        isLoading = true
-        progress = 0
-        statusDescription = "Downloading filter updates..."
 
         let successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
             selectedFilters,
@@ -122,23 +98,19 @@ extension AppFilterManager {
 
         saveFilterListsCoalesced()
 
-        await MainActor.run {
-            for filter in successfullyUpdatedFilters {
-                self.availableUpdates.removeAll { $0.id == filter.id }
-            }
+        for filter in successfullyUpdatedFilters {
+            availableUpdates.removeAll { $0.id == filter.id }
         }
 
         isLoading = false
         progress = 0
 
-        // Close the update popup and show apply progress sheet
-        await MainActor.run {
+        if showProgressSheet {
             showingUpdatePopup = false
-            self.prepareApplyRunState()
+            prepareApplyRunState()
             showingApplyProgressSheet = true
         }
 
-        // Automatically apply changes after download
         await applyChanges()
     }
 

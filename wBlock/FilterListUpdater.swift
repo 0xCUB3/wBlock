@@ -39,17 +39,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Counts effective rules in a given filter list content string.
     private func countRulesInContent(content: String) -> Int {
-        var count = 0
-        // More efficient than components(separatedBy:) which creates an array
-        content.enumerateLines { line, _ in
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty && !trimmed.hasPrefix("!") && !trimmed.hasPrefix("[")
-                && !trimmed.hasPrefix("#")
-            {
-                count += 1
-            }
-        }
-        return count
+        FilterList.countRules(in: content)
     }
 
     /// Updates missing versions for filter lists and returns a dictionary of indices and versions
@@ -598,35 +588,22 @@ final class FilterListUpdater: @unchecked Sendable {
 
         var updatedFilters: [FilterList] = []
         var completedSteps: Float = 0
-        var iterator = selectedFilters.makeIterator()
 
-        await withTaskGroup(of: (FilterList, Bool).self) { group in
-            func startNext() {
-                guard let filter = iterator.next() else { return }
-                group.addTask {
-                    let success = await self.fetchAndProcessFilter(filter)
-                    return (filter, success)
-                }
+        await boundedConcurrentForEach(selectedFilters, maxConcurrent: maxConcurrent, operation: { filter in
+            let success = await self.fetchAndProcessFilter(filter)
+            return (filter, success)
+        }, onResult: { (filter, success) in
+            if success {
+                updatedFilters.append(filter)
+                await ConcurrentLogManager.shared.info(
+                    .filterUpdate, "Successfully updated filter", metadata: ["filter": filter.name])
+            } else {
+                await ConcurrentLogManager.shared.error(
+                    .filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
             }
-
-            for _ in 0..<min(maxConcurrent, selectedFilters.count) {
-                startNext()
-            }
-
-            while let (filter, success) = await group.next() {
-                if success {
-                    updatedFilters.append(filter)
-                    await ConcurrentLogManager.shared.info(
-                        .filterUpdate, "Successfully updated filter", metadata: ["filter": filter.name])
-                } else {
-                    await ConcurrentLogManager.shared.error(
-                        .filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
-                }
-                completedSteps += 1
-                progressCallback(completedSteps / totalSteps)
-                startNext()
-            }
-        }
+            completedSteps += 1
+            progressCallback(completedSteps / totalSteps)
+        })
 
         return updatedFilters
     }
@@ -739,41 +716,27 @@ final class FilterListUpdater: @unchecked Sendable {
 
         var completedSteps: Float = 0
         var updatedScripts: [UserScript] = []
-        var iterator = selectedScripts.makeIterator()
 
-        await withTaskGroup(of: (UserScript, UserScript?, Bool).self) { group in
-            func startNext() {
-                guard let script = iterator.next() else { return }
-                group.addTask {
-                    let (updatedScript, success) = await self.fetchAndProcessScript(script)
-                    return (script, updatedScript, success)
+        await boundedConcurrentForEach(selectedScripts, maxConcurrent: maxConcurrent, operation: { script in
+            let (updatedScript, success) = await self.fetchAndProcessScript(script)
+            return (script, updatedScript, success)
+        }, onResult: { (script, updatedScript, success) in
+            if success, let updated = updatedScript {
+                updatedScripts.append(updated)
+                await ConcurrentLogManager.shared.info(
+                    .userScript, "Successfully updated script", metadata: ["script": script.name])
+
+                if let manager = userScriptManager {
+                    await manager.updateUserScript(updated)
                 }
+            } else {
+                await ConcurrentLogManager.shared.error(
+                    .userScript, "Failed to update script", metadata: ["script": script.name])
             }
 
-            for _ in 0..<min(maxConcurrent, selectedScripts.count) {
-                startNext()
-            }
-
-            while let (script, updatedScript, success) = await group.next() {
-                if success, let updated = updatedScript {
-                    updatedScripts.append(updated)
-                    await ConcurrentLogManager.shared.info(
-                        .userScript, "Successfully updated script", metadata: ["script": script.name])
-
-                    // Update the script in the userScriptManager
-                    if let manager = userScriptManager {
-                        await manager.updateUserScript(updated)
-                    }
-                } else {
-                    await ConcurrentLogManager.shared.error(
-                        .userScript, "Failed to update script", metadata: ["script": script.name])
-                }
-
-                completedSteps += 1
-                progressCallback(completedSteps / totalSteps)
-                startNext()
-            }
-        }
+            completedSteps += 1
+            progressCallback(completedSteps / totalSteps)
+        })
 
         return updatedScripts
     }
