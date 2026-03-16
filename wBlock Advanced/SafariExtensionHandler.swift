@@ -313,6 +313,63 @@ public class SafariExtensionHandler: SFSafariExtensionHandler {
                 if let resourceName { response["resourceName"] = resourceName }
                 page.dispatchMessageToScript(withName: responseMessageName, userInfo: response)
             }
+        case "gmXmlhttpRequest":
+            let xhrRequestId = userInfo?["requestId"] as? String ?? ""
+            let xhrUrl = userInfo?["url"] as? String ?? ""
+            let xhrMethod = userInfo?["method"] as? String ?? "GET"
+            let xhrHeaders = userInfo?["headers"] as? [String: String] ?? [:]
+            let xhrBody = userInfo?["body"] as? String
+            let xhrAnonymous = userInfo?["anonymous"] as? Bool ?? false
+
+            guard let url = URL(string: xhrUrl) else {
+                let errorResponse: [String: Any] = [
+                    "requestId": xhrRequestId,
+                    "error": "Invalid URL"
+                ]
+                page.dispatchMessageToScript(withName: "gmXmlhttpRequest", userInfo: errorResponse)
+                return
+            }
+
+            Task.detached {
+                var request = URLRequest(url: url)
+                request.httpMethod = xhrMethod.uppercased()
+                for (key, value) in xhrHeaders {
+                    request.setValue(value, forHTTPHeaderField: key)
+                }
+                if let xhrBody, !xhrBody.isEmpty,
+                   ["POST", "PUT", "PATCH"].contains(xhrMethod.uppercased()) {
+                    request.httpBody = xhrBody.data(using: .utf8)
+                }
+                if xhrAnonymous {
+                    request.httpShouldHandleCookies = false
+                }
+
+                do {
+                    let (data, response) = try await URLSession.shared.data(for: request)
+                    let httpResponse = response as? HTTPURLResponse
+                    var responseHeaders: [String: String] = [:]
+                    if let allHeaders = httpResponse?.allHeaderFields as? [String: String] {
+                        responseHeaders = allHeaders
+                    }
+                    let responseText = String(data: data, encoding: .utf8) ?? ""
+                    let result: [String: Any] = [
+                        "requestId": xhrRequestId,
+                        "status": httpResponse?.statusCode ?? 0,
+                        "statusText": HTTPURLResponse.localizedString(forStatusCode: httpResponse?.statusCode ?? 0),
+                        "responseHeaders": responseHeaders,
+                        "responseText": responseText,
+                        "response": responseText,
+                        "finalUrl": httpResponse?.url?.absoluteString ?? xhrUrl
+                    ]
+                    page.dispatchMessageToScript(withName: "gmXmlhttpRequest", userInfo: result)
+                } catch {
+                    let errorResponse: [String: Any] = [
+                        "requestId": xhrRequestId,
+                        "error": error.localizedDescription
+                    ]
+                    page.dispatchMessageToScript(withName: "gmXmlhttpRequest", userInfo: errorResponse)
+                }
+            }
         case "zapperController":
             // Handle element zapper messages
             guard let action = userInfo?["action"] as? String else {

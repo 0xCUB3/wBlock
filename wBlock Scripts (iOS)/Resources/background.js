@@ -18240,6 +18240,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { userScripts: [] };
       }
     }
+    if (message && message.action === "gmXmlhttpRequest") {
+      try {
+        const fetchOptions = {
+          method: message.method || 'GET',
+          headers: message.headers || {},
+          credentials: message.anonymous ? 'omit' : 'include'
+        };
+        const httpMethod = (message.method || 'GET').toUpperCase();
+        if (message.body && (httpMethod === 'POST' || httpMethod === 'PUT' || httpMethod === 'PATCH')) {
+          fetchOptions.body = message.body;
+        }
+        const fetchResponse = await fetch(message.url, fetchOptions);
+        const responseHeaders = {};
+        fetchResponse.headers.forEach((value, key) => {
+          responseHeaders[key] = value;
+        });
+        const responseText = await fetchResponse.text();
+        return {
+          status: fetchResponse.status,
+          statusText: fetchResponse.statusText,
+          responseHeaders: responseHeaders,
+          responseText: responseText,
+          response: responseText,
+          finalUrl: fetchResponse.url
+        };
+      } catch (error) {
+        return { error: error.message || String(error) };
+      }
+    }
     if (message && (message.action === "getUserScriptContentChunk" || message.action === "getUserScriptResourceChunk")) {
       const chunkRequest = {
         action: message.action,

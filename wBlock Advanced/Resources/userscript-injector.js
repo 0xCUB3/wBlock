@@ -101,8 +101,79 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // if the listener isn't attached yet.
             this.setupMessageListener();
 
+            // Bridge for GM_xmlhttpRequest: page-context scripts post messages here,
+            // and we forward them through the background/native layer (CORS-free).
+            this.setupXhrBridge();
+
             // Request userscripts from native app
             this.requestUserScripts();
+        }
+
+        setupXhrBridge() {
+            window.addEventListener('message', (event) => {
+                if (event.source !== window) return;
+                const data = event.data;
+                if (!data || data.type !== 'wblock-gm-xhr-request') return;
+
+                const { id, url, method, headers, body, anonymous, responseType } = data;
+
+                this.proxyXhr({ url, method, headers, body, anonymous, responseType })
+                    .then(result => {
+                        window.postMessage({
+                            type: 'wblock-gm-xhr-response',
+                            id: id,
+                            success: true,
+                            result: result
+                        }, '*');
+                    })
+                    .catch(error => {
+                        window.postMessage({
+                            type: 'wblock-gm-xhr-response',
+                            id: id,
+                            success: false,
+                            error: error.message || String(error)
+                        }, '*');
+                    });
+            });
+        }
+
+        async proxyXhr(details) {
+            // Route the fetch through the background script (WebExtension) or
+            // native handler (Safari App Extension) to bypass page-level CORS.
+            if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
+                return await browser.runtime.sendMessage({
+                    action: 'gmXmlhttpRequest',
+                    url: details.url,
+                    method: details.method || 'GET',
+                    headers: details.headers || {},
+                    body: details.body || null,
+                    anonymous: !!details.anonymous,
+                    responseType: details.responseType || 'text'
+                });
+            }
+
+            if (typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage) {
+                return await new Promise((resolve, reject) => {
+                    const requestId = this.generateRequestId('gmxhr');
+                    const timeoutId = setTimeout(() => {
+                        this.pendingNativeRequests.delete(requestId);
+                        reject(new Error('GM_xmlhttpRequest timeout'));
+                    }, 30000);
+
+                    this.pendingNativeRequests.set(requestId, { resolve, reject, timeoutId });
+                    safari.extension.dispatchMessage('gmXmlhttpRequest', {
+                        requestId,
+                        url: details.url,
+                        method: details.method || 'GET',
+                        headers: details.headers || {},
+                        body: details.body || null,
+                        anonymous: !!details.anonymous,
+                        responseType: details.responseType || 'text'
+                    });
+                });
+            }
+
+            throw new Error('No messaging API available for GM_xmlhttpRequest proxy');
         }
 
         generateRequestId(prefix) {
@@ -746,7 +817,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
         },
 
         xmlhttpRequest: function(details) {
-            // GM_xmlhttpRequest implementation using fetch API
+            // GM_xmlhttpRequest routed through the extension's background/native
+            // layer to bypass page-level CORS restrictions.
             wBlockLog('[wBlock] GM_xmlhttpRequest called with:', details);
 
             if (!details || !details.url) {
@@ -755,63 +827,81 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
 
             const method = (details.method || 'GET').toUpperCase();
-            const headers = details.headers || {};
-            const data = details.data;
+            const requestId = 'gmxhr-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 
-            const fetchOptions = {
-                method: method,
-                headers: headers,
-                credentials: details.anonymous ? 'omit' : 'include'
+            const onResult = (result) => {
+                if (details.onload) {
+                    details.onload({
+                        status: result.status,
+                        statusText: result.statusText,
+                        responseHeaders: result.responseHeaders,
+                        responseText: result.responseText,
+                        response: result.response,
+                        readyState: 4,
+                        finalUrl: result.finalUrl || details.url
+                    });
+                }
+            };
+            const onFail = (errorMsg) => {
+                wBlockError('[wBlock] GM_xmlhttpRequest error:', errorMsg);
+                if (details.onerror) {
+                    details.onerror({ error: errorMsg, statusText: errorMsg });
+                }
             };
 
-            if (data && (method === 'POST' || method === 'PUT')) {
-                fetchOptions.body = data;
-            }
+            const requestPayload = {
+                url: details.url,
+                method: method,
+                headers: details.headers || {},
+                body: details.data || null,
+                anonymous: !!details.anonymous,
+                responseType: details.responseType || 'text'
+            };
 
-            fetch(details.url, fetchOptions)
-                .then(response => {
-                    const responseHeaders = {};
-                    response.headers.forEach((value, key) => {
-                        responseHeaders[key] = value;
-                    });
-
-                    return response.text().then(responseText => ({
-                        status: response.status,
-                        statusText: response.statusText,
-                        responseHeaders: responseHeaders,
-                        responseText: responseText,
-                        response: responseText
-                    }));
-                })
-                .then(result => {
-                    if (details.onload) {
-                        details.onload({
-                            status: result.status,
-                            statusText: result.statusText,
-                            responseHeaders: result.responseHeaders,
-                            responseText: result.responseText,
-                            response: result.response,
-                            readyState: 4,
-                            finalUrl: details.url
+            ${isContentContext ? `
+            // Content context: send directly via browser.runtime.sendMessage
+            (async () => {
+                try {
+                    if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
+                        const result = await browser.runtime.sendMessage({
+                            action: 'gmXmlhttpRequest', ...requestPayload
                         });
+                        if (result && result.error) { onFail(result.error); }
+                        else { onResult(result); }
+                        return;
                     }
-                })
-                .catch(error => {
-                    wBlockError('[wBlock] GM_xmlhttpRequest error:', error);
-                    if (details.onerror) {
-                        details.onerror({
-                            error: error.message,
-                            statusText: error.message
-                        });
-                    }
-                });
+                    onFail('No messaging API available');
+                } catch (error) {
+                    onFail(error.message || String(error));
+                }
+            })();
 
-            // Return an abort controller-like object
+            return { abort: function() { wBlockLog('[wBlock] GM_xmlhttpRequest abort called'); } };
+            ` : `
+            // Page context: proxy through the content script via postMessage
+            const responseHandler = (event) => {
+                if (event.source !== window) return;
+                const msg = event.data;
+                if (!msg || msg.type !== 'wblock-gm-xhr-response' || msg.id !== requestId) return;
+                window.removeEventListener('message', responseHandler);
+
+                if (msg.success) { onResult(msg.result); }
+                else { onFail(msg.error); }
+            };
+            window.addEventListener('message', responseHandler);
+            window.postMessage({
+                type: 'wblock-gm-xhr-request',
+                id: requestId,
+                ...requestPayload
+            }, '*');
+
             return {
                 abort: function() {
+                    window.removeEventListener('message', responseHandler);
                     wBlockLog('[wBlock] GM_xmlhttpRequest abort called');
                 }
             };
+            `}
         },
 
         // Provide access to the real page window object
