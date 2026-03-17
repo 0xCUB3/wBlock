@@ -31,6 +31,7 @@ html, body {
 body {
   display: flex;
   justify-content: center;
+  min-width: 340px;
 }
 
 .popup {

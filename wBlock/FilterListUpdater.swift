@@ -188,16 +188,29 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
+        // Pre-fetch all validators on MainActor BEFORE entering the task group
+        // to avoid deadlock (MainActor suspends waiting for group, child tasks
+        // need MainActor to read validators).
+        let eligibleFilters = filterLists.filter { $0.limitExceededReason == nil }
+        var validatorsMap: [UUID: (etag: String?, lastModified: String?)] = [:]
+        for filter in eligibleFilters {
+            validatorsMap[filter.id] = await storedValidators(for: filter)
+        }
+
         var filtersWithUpdates: [FilterList] = []
+        // Collect validator updates to apply after the group completes
+        // (writing to ProtobufDataManager requires MainActor).
+        let pendingValidatorUpdates = PendingValidatorUpdates()
 
         await withTaskGroup(of: (FilterList, Bool).self) { group in
-            for filter in filterLists {
-                if filter.limitExceededReason != nil {
-                    continue
-                }
-
+            for filter in eligibleFilters {
+                let validators = validatorsMap[filter.id] ?? (nil, nil)
                 group.addTask {
-                    let hasUpdate = await self.hasUpdate(for: filter)
+                    let hasUpdate = await self.hasUpdateNoMainActor(
+                        for: filter,
+                        validators: validators,
+                        pendingValidatorUpdates: pendingValidatorUpdates
+                    )
                     return (filter, hasUpdate)
                 }
             }
@@ -209,19 +222,41 @@ final class FilterListUpdater: @unchecked Sendable {
             }
         }
 
+        // Apply deferred validator updates now that we're back on the caller's context
+        let updates = await pendingValidatorUpdates.drain()
+        if !updates.isEmpty {
+            await ProtobufDataManager.shared.setFilterValidators(updates)
+        }
+
         return filtersWithUpdates
     }
 
-    /// Checks if a filter has an update.
-    /// Uses conditional GET + local byte comparison so unstable validators
-    /// (ETag/Last-Modified churn) do not create false-positive update counts.
-    func hasUpdate(for filter: FilterList) async -> Bool {
+    /// Actor-isolated storage for validator updates collected during concurrent checks.
+    private actor PendingValidatorUpdates {
+        var updates: [String: (etag: String?, lastModified: String?)] = [:]
+
+        func add(uuid: String, etag: String?, lastModified: String?) {
+            updates[uuid] = (etag, lastModified)
+        }
+
+        func drain() -> [String: (etag: String?, lastModified: String?)] {
+            let result = updates
+            updates.removeAll()
+            return result
+        }
+    }
+
+    /// Like hasUpdate but avoids MainActor calls inside the task group.
+    /// Validators are passed in pre-fetched, and validator writes are deferred.
+    private func hasUpdateNoMainActor(
+        for filter: FilterList,
+        validators: (etag: String?, lastModified: String?),
+        pendingValidatorUpdates: PendingValidatorUpdates
+    ) async -> Bool {
         if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
-            // Local / inline user lists don't have remote updates.
             return false
         }
         do {
-            let validators = await storedValidators(for: filter)
             let request: URLRequest
             if filter.url.host?.contains("gitflic.ru") == true {
                 request = NetworkRequestFactory.makeGitflicRequest(
@@ -260,37 +295,39 @@ final class FilterListUpdater: @unchecked Sendable {
                 let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
                 let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
                 if responseEtag != nil || responseLastModified != nil {
-                    await ProtobufDataManager.shared.setFilterValidators(
-                        filter.id.uuidString,
+                    await pendingValidatorUpdates.add(
+                        uuid: filter.id.uuidString,
                         etag: responseEtag,
                         lastModified: responseLastModified
                     )
                 }
                 return false
             case .invalidContent:
-                await ConcurrentLogManager.shared.debug(
-                    .filterUpdate, "Skipping update signal due to non-filter response body",
-                    metadata: ["filter": filter.name]
-                )
                 return false
             case .unexpectedStatus:
                 throw URLError(.badServerResponse)
             }
         } catch {
-            // Some providers reject conditional requests; fall back to a direct comparison.
-            await ConcurrentLogManager.shared.debug(
-                .filterUpdate, "Conditional check failed, falling back to full comparison",
-                metadata: ["filter": filter.name, "error": error.localizedDescription])
+            // Fall through to full comparison below.
         }
 
         do {
             return try await compareRemoteToLocal(filter: filter)
         } catch {
-            await ConcurrentLogManager.shared.error(
-                .filterUpdate, "Error checking update for filter",
-                metadata: ["filter": filter.name, "error": error.localizedDescription])
             return false
         }
+    }
+
+    /// Original hasUpdate kept for non-concurrent callers (e.g. auto-update).
+    func hasUpdate(for filter: FilterList) async -> Bool {
+        let validators = await storedValidators(for: filter)
+        let updates = PendingValidatorUpdates()
+        let result = await hasUpdateNoMainActor(for: filter, validators: validators, pendingValidatorUpdates: updates)
+        let pending = await updates.drain()
+        if !pending.isEmpty {
+            await ProtobufDataManager.shared.setFilterValidators(pending)
+        }
+        return result
     }
 
     private func localDataForComparison(filter: FilterList) -> Data? {

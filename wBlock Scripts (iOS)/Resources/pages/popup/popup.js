@@ -342,7 +342,6 @@ function setupListeners() {
     const rulesContainer = document.getElementById('zapper-rules');
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
-    const zapperRefresh = document.getElementById('zapper-refresh');
     const zapperClear = document.getElementById('zapper-clear');
 
     if (rulesToggle) {
@@ -423,24 +422,6 @@ function setupListeners() {
         });
     }
 
-    if (zapperRefresh) {
-        zapperRefresh.addEventListener('click', async () => {
-            try {
-                setError('');
-                zapperRefresh.disabled = true;
-                currentZapperRules = await getAuthoritativeZapperRules(host);
-                await updateZapperCount(host);
-                if (zapperRulesExpanded) renderZapperRules(currentZapperRules);
-                await notifyZapperRulesChanged(tab.id);
-            } catch (error) {
-                console.error('[wBlock] Failed to refresh zapper rules:', error);
-                setError('Failed to refresh zapper rules.');
-            } finally {
-                zapperRefresh.disabled = false;
-            }
-        });
-    }
-
     if (zapperClear) {
         zapperClear.addEventListener('click', async () => {
             try {
@@ -452,6 +433,7 @@ function setupListeners() {
                 await updateZapperCount(host);
                 if (zapperRulesExpanded) renderZapperRules(currentZapperRules);
                 await notifyZapperRulesChanged(tab.id);
+                await reloadActiveTab(tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to clear zaps:', error);
                 setError('Failed to clear zapper rules.');
@@ -466,7 +448,6 @@ async function refreshUi() {
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
-    const zapperRefresh = document.getElementById('zapper-refresh');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
 
     tab = await getActiveTab();
@@ -478,7 +459,6 @@ async function refreshUi() {
         setStatus('Unavailable', 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
-        if (zapperRefresh) zapperRefresh.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
         await updateZapperCount('');
         setRulesExpanded(false);
@@ -497,10 +477,6 @@ async function refreshUi() {
     if (rulesToggle) {
         rulesToggle.disabled = false;
     }
-    if (zapperRefresh) {
-        zapperRefresh.disabled = false;
-    }
-
     currentZapperRules = await getAuthoritativeZapperRules(host);
     await updateZapperCount(host);
 
