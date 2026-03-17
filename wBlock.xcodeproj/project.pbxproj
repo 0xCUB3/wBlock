@@ -7,21 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		750C5D462E82D75100FC2F60 /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		750C5D492E82D75100FC2F60 /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D4C2E82D75100FC2F60 /* wBlock Privacy.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C032DE354E40031E7EF /* wBlock Privacy.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D4E2E82D75100FC2F60 /* wBlock Ads.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D502E82D75100FC2F60 /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D512E82D75100FC2F60 /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D522E82D75100FC2F60 /* wBlock Security.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D532E82D75100FC2F60 /* wBlock Custom.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D542E82D75100FC2F60 /* wBlock Security iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C512DE3557D0031E7EF /* wBlock Security iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D552E82D75100FC2F60 /* wBlock Custom iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D562E82D75100FC2F60 /* wBlock Foreign.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16C172DE354FB0031E7EF /* wBlock Foreign.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		750C5D582E82D75100FC2F60 /* FilterUpdateService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		867CCA302F696EA200719EFE /* wBlock Scripts.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 867CCA182F696EA200719EFE /* wBlock Scripts.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		867CCA392F696F2200719EFE /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
+		867CCA3A2F696F2200719EFE /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C1A287482E73617D00F5B43D /* FilterUpdateService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A2874F2E7361D000F5B43D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41C4D2DE089C50056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
@@ -32,7 +20,6 @@
 		C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C692DE08AD30056F63D /* wBlock Ads.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41C892DE08BDA0056F63D /* wBlock Ads iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1E44F382E4CBA9300F58897 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = C1E44F372E4CBA9300F58897 /* SwiftProtobuf */; };
 		C1F16BF02DE354C30031E7EF /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
 		C1F16BFA2DE354C30031E7EF /* wBlock Security.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -60,121 +47,22 @@
 		C1F16D582DE36AFC0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D5B2DE36B060031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D612DE36B0E0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16D642DE36B100031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		750C5D252E82D75100FC2F60 /* PBXContainerItemProxy */ = {
+		867CCA2E2F696EA200719EFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 867CCA172F696EA200719EFE;
+			remoteInfo = "wBlock Scripts";
+		};
+		867CCA3B2F696F2200719EFE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C1A41C442DE089C50056F63D;
 			remoteInfo = wBlockCoreService;
-		};
-		750C5D272E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1A41C682DE08AD30056F63D;
-			remoteInfo = "wBlock Ads";
-		};
-		750C5D292E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1A41C7F2DE08BDA0056F63D;
-			remoteInfo = "wBlock Ads (iOS)";
-		};
-		750C5D2B2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1A41CB52DE08CAB0056F63D;
-			remoteInfo = "wBlock Scripts (iOS)";
-		};
-		750C5D2D2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1A41CD62DE08CC90056F63D;
-			remoteInfo = "wBlock Advanced";
-		};
-		750C5D2F2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16BEE2DE354C30031E7EF;
-			remoteInfo = "wBlock Security";
-		};
-		750C5D312E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C022DE354E40031E7EF;
-			remoteInfo = "wBlock Annoyances";
-		};
-		750C5D332E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C162DE354FB0031E7EF;
-			remoteInfo = "wBlock Foreign & Experimental";
-		};
-		750C5D352E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C2A2DE355150031E7EF;
-			remoteInfo = "wBlock Custom";
-		};
-		750C5D372E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C3E2DE355670031E7EF;
-			remoteInfo = "wBlock Privacy iOS";
-		};
-		750C5D392E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C502DE3557D0031E7EF;
-			remoteInfo = "wBlock Security (iOS)";
-		};
-		750C5D3B2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C622DE3558A0031E7EF;
-			remoteInfo = "wBlock Annoyances (iOS)";
-		};
-		750C5D3D2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C742DE355A80031E7EF;
-			remoteInfo = "wBlock Multipurpose iOS";
-		};
-		750C5D3F2E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C862DE355BC0031E7EF;
-			remoteInfo = "wBlock Foreign (iOS)";
-		};
-		750C5D412E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C982DE355CC0031E7EF;
-			remoteInfo = "wBlock Experimental iOS";
-		};
-		750C5D432E82D75100FC2F60 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16CAA2DE355DE0031E7EF;
-			remoteInfo = "wBlock Custom (iOS)";
 		};
 		C19A20582E6F596900E66F69 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -224,13 +112,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = C1A41CB52DE08CAB0056F63D;
 			remoteInfo = "wBlock Scripts (iOS)";
-		};
-		C1A41CE72DE08CC90056F63D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1A41CD62DE08CC90056F63D;
-			remoteInfo = "wBlock Advanced";
 		};
 		C1F16BF82DE354C30031E7EF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -298,48 +179,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		750C5D482E82D75100FC2F60 /* Embed Frameworks */ = {
+		867CCA3D2F696F2200719EFE /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				750C5D492E82D75100FC2F60 /* wBlockCoreService.framework in Embed Frameworks */,
+				867CCA3A2F696F2200719EFE /* wBlockCoreService.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		750C5D4A2E82D75100FC2F60 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				750C5D4B2E82D75100FC2F60 /* wBlock Advanced.appex in Embed Foundation Extensions */,
-				750C5D4C2E82D75100FC2F60 /* wBlock Privacy.appex in Embed Foundation Extensions */,
-				750C5D4D2E82D75100FC2F60 /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
-				750C5D4E2E82D75100FC2F60 /* wBlock Ads.appex in Embed Foundation Extensions */,
-				750C5D4F2E82D75100FC2F60 /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */,
-				750C5D502E82D75100FC2F60 /* wBlock Ads iOS.appex in Embed Foundation Extensions */,
-				750C5D512E82D75100FC2F60 /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */,
-				750C5D522E82D75100FC2F60 /* wBlock Security.appex in Embed Foundation Extensions */,
-				750C5D532E82D75100FC2F60 /* wBlock Custom.appex in Embed Foundation Extensions */,
-				750C5D542E82D75100FC2F60 /* wBlock Security iOS.appex in Embed Foundation Extensions */,
-				750C5D552E82D75100FC2F60 /* wBlock Custom iOS.appex in Embed Foundation Extensions */,
-				750C5D562E82D75100FC2F60 /* wBlock Foreign.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		750C5D572E82D75100FC2F60 /* Embed XPC Services */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
-			dstSubfolderSpec = 16;
-			files = (
-				750C5D582E82D75100FC2F60 /* FilterUpdateService.xpc in Embed XPC Services */,
-			);
-			name = "Embed XPC Services";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C1A2874D2E73617D00F5B43D /* Embed XPC Services */ = {
@@ -370,7 +218,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C1A41CE92DE08CC90056F63D /* wBlock Advanced.appex in Embed Foundation Extensions */,
 				C1F16C0E2DE354E40031E7EF /* wBlock Privacy.appex in Embed Foundation Extensions */,
 				C1A41CCE2DE08CAB0056F63D /* wBlock Scripts iOS.appex in Embed Foundation Extensions */,
 				C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */,
@@ -381,6 +228,7 @@
 				C1F16C362DE355150031E7EF /* wBlock Custom.appex in Embed Foundation Extensions */,
 				C1F16C5A2DE3557D0031E7EF /* wBlock Security iOS.appex in Embed Foundation Extensions */,
 				C1F16CB42DE355DE0031E7EF /* wBlock Custom iOS.appex in Embed Foundation Extensions */,
+				867CCA302F696EA200719EFE /* wBlock Scripts.appex in Embed Foundation Extensions */,
 				C1F16C222DE354FB0031E7EF /* wBlock Foreign.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -389,7 +237,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		750C5D5C2E82D75100FC2F60 /* wBlock beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "wBlock beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		867CCA182F696EA200719EFE /* wBlock Scripts.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Scripts.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = FilterUpdateService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C2D2DE0897C0056F63D /* wBlock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wBlock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41C452DE089C50056F63D /* wBlockCoreService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = wBlockCoreService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -397,7 +245,6 @@
 		C1A41C6B2DE08AD30056F63D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Ads iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Scripts iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Advanced.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Security.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C032DE354E40031E7EF /* wBlock Privacy.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Privacy.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16C172DE354FB0031E7EF /* wBlock Foreign.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Foreign.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -416,37 +263,28 @@
 			);
 			target = C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */;
 		};
-		750C5D5D2E82D75100FC2F60 /* Exceptions for "wBlock" folder in "wBlock beta" target */ = {
+		867CCA342F696EA200719EFE /* Exceptions for "wBlock Scripts" folder in "wBlock Scripts" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				AppDelegate.swift,
-				AppFilterManager.swift,
-				"AppFilterManager+ApplyPipeline.swift",
-				"AppFilterManager+CustomFilters.swift",
-				"AppFilterManager+DisabledSites.swift",
-				"AppFilterManager+RuleCounts.swift",
-				"AppFilterManager+Updates.swift",
-				ConcurrentLogManager.swift,
-				ContentView.swift,
-				FilterListLoader.swift,
-				FilterListUpdater.swift,
 				Info.plist,
-				LogsView.swift,
-				MigrationView.swift,
-				OnboardingView.swift,
-				Protos/wblock_data.proto,
-				"Resources/App Icons/AppIcon.icon",
-				"Resources/App Icons/AppIconBeta.icon",
-				Resources/Assets.xcassets,
-				SettingsView.swift,
-				StatCard.swift,
-				UpdatePopupView.swift,
-				UserScriptManagerView.swift,
-				wBlockApp.swift,
-				WhitelistManagerView.swift,
-				WhitelistView.swift,
 			);
-			target = 750C5D232E82D75100FC2F60 /* wBlock beta */;
+			target = 867CCA172F696EA200719EFE /* wBlock Scripts */;
+		};
+		867CCA482F696F6600719EFE /* Exceptions for "wBlock Scripts (iOS)" folder in "wBlock Scripts" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/_locales,
+				Resources/assets,
+				Resources/Assets.xcassets,
+				Resources/background.js,
+				Resources/content.js,
+				Resources/manifest.json,
+				Resources/pages,
+				Resources/rules/csp_strip_rules.json,
+				"Resources/userscript-injector.js",
+				"Resources/zapper-content.js",
+			);
+			target = 867CCA172F696EA200719EFE /* wBlock Scripts */;
 		};
 		C1A2874C2E73617D00F5B43D /* Exceptions for "FilterUpdateService" folder in "FilterUpdateService" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -483,13 +321,6 @@
 				Info.plist,
 			);
 			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
-		};
-		C1A41CED2DE08CC90056F63D /* Exceptions for "wBlock Advanced" folder in "wBlock Advanced" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
 		};
 		C1F16BF22DE354C30031E7EF /* Exceptions for "wBlock Security" folder in "wBlock Security" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -550,6 +381,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		867CCA192F696EA200719EFE /* wBlock Scripts */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				867CCA342F696EA200719EFE /* Exceptions for "wBlock Scripts" folder in "wBlock Scripts" target */,
+			);
+			path = "wBlock Scripts";
+			sourceTree = "<group>";
+		};
 		C1A2873E2E73617D00F5B43D /* FilterUpdateService */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -562,7 +401,6 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				C1A41C3A2DE0897D0056F63D /* Exceptions for "wBlock" folder in "wBlock" target */,
-				750C5D5D2E82D75100FC2F60 /* Exceptions for "wBlock" folder in "wBlock beta" target */,
 			);
 			path = wBlock;
 			sourceTree = "<group>";
@@ -595,6 +433,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				C1A41CD22DE08CAB0056F63D /* Exceptions for "wBlock Scripts (iOS)" folder in "wBlock Scripts iOS" target */,
+				867CCA482F696F6600719EFE /* Exceptions for "wBlock Scripts (iOS)" folder in "wBlock Scripts" target */,
 			);
 			explicitFolders = (
 				Resources/_locales,
@@ -602,14 +441,6 @@
 				Resources/pages,
 			);
 			path = "wBlock Scripts (iOS)";
-			sourceTree = "<group>";
-		};
-		C1A41CD82DE08CC90056F63D /* wBlock Advanced */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1A41CED2DE08CC90056F63D /* Exceptions for "wBlock Advanced" folder in "wBlock Advanced" target */,
-			);
-			path = "wBlock Advanced";
 			sourceTree = "<group>";
 		};
 		C1F16BF12DE354C30031E7EF /* wBlock Security */ = {
@@ -689,11 +520,11 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		750C5D452E82D75100FC2F60 /* Frameworks */ = {
+		867CCA152F696EA200719EFE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				750C5D462E82D75100FC2F60 /* wBlockCoreService.framework in Frameworks */,
+				867CCA392F696F2200719EFE /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -745,14 +576,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				C1F16D612DE36B0E0031E7EF /* wBlockCoreService.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C1A41CD42DE08CC90056F63D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C1F16D642DE36B100031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -868,7 +691,6 @@
 				C1A41C6D2DE08AD30056F63D /* wBlock Ads */,
 				C1A41C812DE08BDA0056F63D /* wBlock Ads (iOS) */,
 				C1A41CB72DE08CAB0056F63D /* wBlock Scripts (iOS) */,
-				C1A41CD82DE08CC90056F63D /* wBlock Advanced */,
 				C1F16BF12DE354C30031E7EF /* wBlock Security */,
 				C1F16C192DE354FB0031E7EF /* wBlock Foreign */,
 				C1F16C2D2DE355150031E7EF /* wBlock Custom */,
@@ -876,6 +698,7 @@
 				C1F16C882DE355BC0031E7EF /* wBlock Foreign (iOS) */,
 				C1F16CAC2DE355DE0031E7EF /* wBlock Custom (iOS) */,
 				C1A2873E2E73617D00F5B43D /* FilterUpdateService */,
+				867CCA192F696EA200719EFE /* wBlock Scripts */,
 				C1A41C6A2DE08AD30056F63D /* Frameworks */,
 				C1A41C2E2DE0897C0056F63D /* Products */,
 				C10F7D172EF5DD3100D9801F /* Recovered References */,
@@ -890,7 +713,6 @@
 				C1A41C692DE08AD30056F63D /* wBlock Ads.appex */,
 				C1A41C802DE08BDA0056F63D /* wBlock Ads iOS.appex */,
 				C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */,
-				C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */,
 				C1F16BEF2DE354C30031E7EF /* wBlock Security.appex */,
 				C1F16C032DE354E40031E7EF /* wBlock Privacy.appex */,
 				C1F16C172DE354FB0031E7EF /* wBlock Foreign.appex */,
@@ -900,7 +722,7 @@
 				C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */,
 				C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */,
 				C1A2873D2E73617D00F5B43D /* FilterUpdateService.xpc */,
-				750C5D5C2E82D75100FC2F60 /* wBlock beta.app */,
+				867CCA182F696EA200719EFE /* wBlock Scripts.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -926,46 +748,29 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		750C5D232E82D75100FC2F60 /* wBlock beta */ = {
+		867CCA172F696EA200719EFE /* wBlock Scripts */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 750C5D592E82D75100FC2F60 /* Build configuration list for PBXNativeTarget "wBlock beta" */;
+			buildConfigurationList = 867CCA332F696EA200719EFE /* Build configuration list for PBXNativeTarget "wBlock Scripts" */;
 			buildPhases = (
-				750C5D442E82D75100FC2F60 /* Sources */,
-				750C5D452E82D75100FC2F60 /* Frameworks */,
-				750C5D472E82D75100FC2F60 /* Resources */,
-				750C5D482E82D75100FC2F60 /* Embed Frameworks */,
-				750C5D4A2E82D75100FC2F60 /* Embed Foundation Extensions */,
-				750C5D572E82D75100FC2F60 /* Embed XPC Services */,
+				867CCA142F696EA200719EFE /* Sources */,
+				867CCA152F696EA200719EFE /* Frameworks */,
+				867CCA162F696EA200719EFE /* Resources */,
+				867CCA3D2F696F2200719EFE /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				750C5D242E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D262E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D282E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D2A2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D2C2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D2E2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D302E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D322E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D342E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D362E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D382E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D3A2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D3C2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D3E2E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D402E82D75100FC2F60 /* PBXTargetDependency */,
-				750C5D422E82D75100FC2F60 /* PBXTargetDependency */,
+				867CCA3C2F696F2200719EFE /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				C1A41C2F2DE0897C0056F63D /* wBlock */,
+				867CCA192F696EA200719EFE /* wBlock Scripts */,
 			);
-			name = "wBlock beta";
+			name = "wBlock Scripts";
 			packageProductDependencies = (
 			);
-			productName = wBlock;
-			productReference = 750C5D5C2E82D75100FC2F60 /* wBlock beta.app */;
-			productType = "com.apple.product-type.application";
+			productName = "wBlock Scripts";
+			productReference = 867CCA182F696EA200719EFE /* wBlock Scripts.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		C1A2873C2E73617D00F5B43D /* FilterUpdateService */ = {
 			isa = PBXNativeTarget;
@@ -1007,7 +812,6 @@
 				C1A41C752DE08AD30056F63D /* PBXTargetDependency */,
 				C1A41C882DE08BDA0056F63D /* PBXTargetDependency */,
 				C1A41CCD2DE08CAB0056F63D /* PBXTargetDependency */,
-				C1A41CE82DE08CC90056F63D /* PBXTargetDependency */,
 				C1F16BF92DE354C30031E7EF /* PBXTargetDependency */,
 				C1F16C0D2DE354E40031E7EF /* PBXTargetDependency */,
 				C1F16C212DE354FB0031E7EF /* PBXTargetDependency */,
@@ -1019,6 +823,7 @@
 				C1F16C8F2DE355BC0031E7EF /* PBXTargetDependency */,
 				C1F16CA12DE355CC0031E7EF /* PBXTargetDependency */,
 				C1F16CB32DE355DE0031E7EF /* PBXTargetDependency */,
+				867CCA2F2F696EA200719EFE /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C1A41C2F2DE0897C0056F63D /* wBlock */,
@@ -1121,28 +926,6 @@
 			);
 			productName = "wBlock Scripts (iOS)";
 			productReference = C1A41CB62DE08CAB0056F63D /* wBlock Scripts iOS.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		C1A41CD62DE08CC90056F63D /* wBlock Advanced */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C1A41CEA2DE08CC90056F63D /* Build configuration list for PBXNativeTarget "wBlock Advanced" */;
-			buildPhases = (
-				C1A41CD32DE08CC90056F63D /* Sources */,
-				C1A41CD42DE08CC90056F63D /* Frameworks */,
-				C1A41CD52DE08CC90056F63D /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				C1A41CD82DE08CC90056F63D /* wBlock Advanced */,
-			);
-			name = "wBlock Advanced";
-			packageProductDependencies = (
-			);
-			productName = "wBlock Advanced";
-			productReference = C1A41CD72DE08CC90056F63D /* wBlock Advanced.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		C1F16BEE2DE354C30031E7EF /* wBlock Security */ = {
@@ -1391,9 +1174,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					867CCA172F696EA200719EFE = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					C1A2873C2E73617D00F5B43D = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -1410,9 +1196,6 @@
 						CreatedOnToolsVersion = 16.4;
 					};
 					C1A41CB52DE08CAB0056F63D = {
-						CreatedOnToolsVersion = 16.4;
-					};
-					C1A41CD62DE08CC90056F63D = {
 						CreatedOnToolsVersion = 16.4;
 					};
 					C1F16BEE2DE354C30031E7EF = {
@@ -1476,7 +1259,6 @@
 			projectRoot = "";
 			targets = (
 				C1A41C2C2DE0897C0056F63D /* wBlock */,
-				750C5D232E82D75100FC2F60 /* wBlock beta */,
 				C1A41C442DE089C50056F63D /* wBlockCoreService */,
 				C1A41C682DE08AD30056F63D /* wBlock Ads */,
 				C1F16BEE2DE354C30031E7EF /* wBlock Security */,
@@ -1489,14 +1271,14 @@
 				C1F16C862DE355BC0031E7EF /* wBlock Foreign & Experimental iOS */,
 				C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */,
 				C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */,
-				C1A41CD62DE08CC90056F63D /* wBlock Advanced */,
 				C1A2873C2E73617D00F5B43D /* FilterUpdateService */,
+				867CCA172F696EA200719EFE /* wBlock Scripts */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		750C5D472E82D75100FC2F60 /* Resources */ = {
+		867CCA162F696EA200719EFE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1539,13 +1321,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C1A41CB42DE08CAB0056F63D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C1A41CD52DE08CC90056F63D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1632,7 +1407,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		750C5D442E82D75100FC2F60 /* Sources */ = {
+		867CCA142F696EA200719EFE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1675,13 +1450,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C1A41CB22DE08CAB0056F63D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C1A41CD32DE08CC90056F63D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1768,139 +1536,18 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		750C5D242E82D75100FC2F60 /* PBXTargetDependency */ = {
+		867CCA2F2F696EA200719EFE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = 867CCA172F696EA200719EFE /* wBlock Scripts */;
+			targetProxy = 867CCA2E2F696EA200719EFE /* PBXContainerItemProxy */;
+		};
+		867CCA3C2F696F2200719EFE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
-			targetProxy = 750C5D252E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D262E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1A41C682DE08AD30056F63D /* wBlock Ads */;
-			targetProxy = 750C5D272E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D282E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */;
-			targetProxy = 750C5D292E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D2A2E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
-			targetProxy = 750C5D2B2E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D2C2E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
-			targetProxy = 750C5D2D2E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D2E2E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1F16BEE2DE354C30031E7EF /* wBlock Security */;
-			targetProxy = 750C5D2F2E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D302E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1F16C022DE354E40031E7EF /* wBlock Privacy */;
-			targetProxy = 750C5D312E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D322E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1F16C162DE354FB0031E7EF /* wBlock Foreign */;
-			targetProxy = 750C5D332E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D342E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1F16C2A2DE355150031E7EF /* wBlock Custom */;
-			targetProxy = 750C5D352E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D362E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C3E2DE355670031E7EF /* wBlock Privacy iOS */;
-			targetProxy = 750C5D372E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D382E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C502DE3557D0031E7EF /* wBlock Security iOS */;
-			targetProxy = 750C5D392E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D3A2E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */;
-			targetProxy = 750C5D3B2E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D3C2E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C742DE355A80031E7EF /* wBlock Multipurpose iOS */;
-			targetProxy = 750C5D3D2E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D3E2E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C862DE355BC0031E7EF /* wBlock Foreign & Experimental iOS */;
-			targetProxy = 750C5D3F2E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D402E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C982DE355CC0031E7EF /* wBlock Experimental iOS */;
-			targetProxy = 750C5D412E82D75100FC2F60 /* PBXContainerItemProxy */;
-		};
-		750C5D422E82D75100FC2F60 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */;
-			targetProxy = 750C5D432E82D75100FC2F60 /* PBXContainerItemProxy */;
+			targetProxy = 867CCA3B2F696F2200719EFE /* PBXContainerItemProxy */;
 		};
 		C1A41C4C2DE089C50056F63D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1932,14 +1579,6 @@
 			);
 			target = C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */;
 			targetProxy = C1A41CCC2DE08CAB0056F63D /* PBXContainerItemProxy */;
-		};
-		C1A41CE82DE08CC90056F63D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = C1A41CD62DE08CC90056F63D /* wBlock Advanced */;
-			targetProxy = C1A41CE72DE08CC90056F63D /* PBXContainerItemProxy */;
 		};
 		C1F16BF92DE354C30031E7EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2044,97 +1683,115 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		750C5D5A2E82D75100FC2F60 /* Debug */ = {
+		867CCA312F696EA200719EFE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconBeta;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
+				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock Scripts.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 108;
-				DEAD_CODE_STRIPPING = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readwrite;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock copy-Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				INFOPLIST_FILE = "wBlock Scripts/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Scripts";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
 		};
-		750C5D5B2E82D75100FC2F60 /* Release */ = {
+		867CCA322F696EA200719EFE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconBeta;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
+				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock Scripts.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 108;
-				DEAD_CODE_STRIPPING = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readwrite;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock copy-Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				INFOPLIST_FILE = "wBlock Scripts/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Scripts";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Scripts";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
 		};
@@ -2727,98 +2384,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		C1A41CEB2DE08CC90056F63D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Advanced/wBlock_Advanced.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 108;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Advanced/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Advanced";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.1;
-				OTHER_LDFLAGS = (
-					"-framework",
-					SafariServices,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Advanced";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		C1A41CEC2DE08CC90056F63D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Advanced/wBlock_Advanced.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 108;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Advanced/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Advanced";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.1;
-				OTHER_LDFLAGS = (
-					"-framework",
-					SafariServices,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Advanced";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -3522,11 +3087,11 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		750C5D592E82D75100FC2F60 /* Build configuration list for PBXNativeTarget "wBlock beta" */ = {
+		867CCA332F696EA200719EFE /* Build configuration list for PBXNativeTarget "wBlock Scripts" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				750C5D5A2E82D75100FC2F60 /* Debug */,
-				750C5D5B2E82D75100FC2F60 /* Release */,
+				867CCA312F696EA200719EFE /* Debug */,
+				867CCA322F696EA200719EFE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -3590,15 +3155,6 @@
 			buildConfigurations = (
 				C1A41CD02DE08CAB0056F63D /* Debug */,
 				C1A41CD12DE08CAB0056F63D /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C1A41CEA2DE08CC90056F63D /* Build configuration list for PBXNativeTarget "wBlock Advanced" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C1A41CEB2DE08CC90056F63D /* Debug */,
-				C1A41CEC2DE08CC90056F63D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

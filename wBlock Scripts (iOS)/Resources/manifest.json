@@ -58,6 +58,17 @@
         "nativeMessaging",
         "storage",
         "unlimitedStorage",
-        "scripting"
-    ]
+        "scripting",
+        "tabs",
+        "declarativeNetRequest"
+    ],
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "csp_strip",
+                "enabled": true,
+                "path": "csp_strip_rules.json"
+            }
+        ]
+    }
 }
