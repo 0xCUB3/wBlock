@@ -303,17 +303,26 @@ final class FilterListUpdater: @unchecked Sendable {
                 }
                 return false
             case .invalidContent:
+                await ConcurrentLogManager.shared.debug(
+                    .filterUpdate, "Skipping update signal due to non-filter response body",
+                    metadata: ["filter": filter.name]
+                )
                 return false
             case .unexpectedStatus:
                 throw URLError(.badServerResponse)
             }
         } catch {
-            // Fall through to full comparison below.
+            await ConcurrentLogManager.shared.debug(
+                .filterUpdate, "Conditional check failed, falling back to full comparison",
+                metadata: ["filter": filter.name, "error": error.localizedDescription])
         }
 
         do {
             return try await compareRemoteToLocal(filter: filter)
         } catch {
+            await ConcurrentLogManager.shared.error(
+                .filterUpdate, "Error checking update for filter",
+                metadata: ["filter": filter.name, "error": error.localizedDescription])
             return false
         }
     }
