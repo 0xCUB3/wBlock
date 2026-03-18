@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: ./scripts/update-scriptlets.sh [safari-extension-version]
+# Usage: ./scripts/update-scriptlets.sh [safari-extension-version] [scriptlets-version]
 # Example: ./scripts/update-scriptlets.sh 4.3.0
+# Example: ./scripts/update-scriptlets.sh 4.2.1 2.3.0   (override scriptlets)
 # If no version argument is given, the script auto-detects npm latest.
 #
 # Prerequisites: node, pnpm, git (all available via Homebrew on macOS)
@@ -26,7 +27,6 @@ error()   { echo -e "${RED}[error]${RESET} $*" >&2; }
 # ---------------------------------------------------------------------------
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-SCRIPT_JS="${ROOT_DIR}/wBlock Advanced/Resources/script.js"
 BACKGROUND_JS="${ROOT_DIR}/wBlock Scripts (iOS)/Resources/background.js"
 CONTENT_JS="${ROOT_DIR}/wBlock Scripts (iOS)/Resources/content.js"
 
@@ -40,8 +40,16 @@ else
   VERSION="$(npm view @adguard/safari-extension version)"
 fi
 
+SCRIPTLETS_OVERRIDE=""
+if [[ $# -ge 2 ]]; then
+  SCRIPTLETS_OVERRIDE="$2"
+fi
+
 echo ""
 echo -e "${BOLD}Target: @adguard/safari-extension ${VERSION}${RESET}"
+if [[ -n "${SCRIPTLETS_OVERRIDE}" ]]; then
+  echo -e "${BOLD}Scriptlets override: @adguard/scriptlets ${SCRIPTLETS_OVERRIDE}${RESET}"
+fi
 echo ""
 warn "Review the version above. Press Ctrl-C within 5 seconds to abort."
 sleep 5
@@ -77,30 +85,30 @@ success "Cloned to ${CLONE_DIR}"
 # ---------------------------------------------------------------------------
 info "Bumping @adguard/safari-extension to ${VERSION} in package.json files..."
 
-APPEXT_PKG="${CLONE_DIR}/extensions/appext/package.json"
 WEBEXT_PKG="${CLONE_DIR}/extensions/webext/package.json"
 
 sed -i '' \
   "s/\"@adguard\/safari-extension\": \"[^\"]*\"/\"@adguard\/safari-extension\": \"${VERSION}\"/" \
-  "${APPEXT_PKG}" \
   "${WEBEXT_PKG}"
 
-success "Updated appext/package.json"
 success "Updated webext/package.json"
 
-# ---------------------------------------------------------------------------
-# Step 3: Build appext (produces dist/script.js)
-# ---------------------------------------------------------------------------
-info "Building appext (script.js)..."
-(
-  cd "${CLONE_DIR}/extensions/appext"
-  pnpm install --frozen-lockfile=false
-  pnpm run build
-)
-success "appext build complete: ${CLONE_DIR}/extensions/appext/dist/script.js"
+# Apply scriptlets override if specified
+if [[ -n "${SCRIPTLETS_OVERRIDE}" ]]; then
+  info "Overriding @adguard/scriptlets to ${SCRIPTLETS_OVERRIDE}..."
+  node -e "
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('${WEBEXT_PKG}', 'utf8'));
+    pkg.pnpm = pkg.pnpm || {};
+    pkg.pnpm.overrides = pkg.pnpm.overrides || {};
+    pkg.pnpm.overrides['@adguard/scriptlets'] = '${SCRIPTLETS_OVERRIDE}';
+    fs.writeFileSync('${WEBEXT_PKG}', JSON.stringify(pkg, null, 2) + '\n');
+  "
+  success "Added pnpm override for @adguard/scriptlets@${SCRIPTLETS_OVERRIDE}"
+fi
 
 # ---------------------------------------------------------------------------
-# Step 4: Build webext (produces dist/background.js, dist/content.js)
+# Step 3: Build webext (produces dist/background.js, dist/content.js)
 # ---------------------------------------------------------------------------
 info "Building webext (background.js, content.js)..."
 (
@@ -180,15 +188,10 @@ splice_file() {
 }
 
 # ---------------------------------------------------------------------------
-# Step 5: Splice all three files
+# Step 4: Splice webext files
 # ---------------------------------------------------------------------------
 echo ""
 info "--- Splicing files ---"
-
-splice_file \
-  "${CLONE_DIR}/extensions/appext/dist/script.js" \
-  "${SCRIPT_JS}" \
-  "@file App extension content script"
 
 splice_file \
   "${CLONE_DIR}/extensions/webext/dist/background.js" \
@@ -230,19 +233,15 @@ check_syntax() {
   fi
 }
 
-# Version marker in all three files
-check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${SCRIPT_JS}"
+# Version marker in both files
 check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${BACKGROUND_JS}"
 check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${CONTENT_JS}"
 
 # wBlock custom code symbols
-check_grep "handleZapperMessage"   "handleZapperMessage"   "${SCRIPT_JS}"
-check_grep "wBlockLogger"          "wBlockLogger"           "${SCRIPT_JS}"
 check_grep "engineTimestamp"       "engineTimestamp"        "${BACKGROUND_JS}"
 check_grep "window.adguard"        "window.adguard"         "${CONTENT_JS}"
 
 # JS syntax
-check_syntax "${SCRIPT_JS}"
 check_syntax "${BACKGROUND_JS}"
 check_syntax "${CONTENT_JS}"
 
@@ -266,18 +265,16 @@ echo -e "${GREEN}${BOLD}--- Done ---${RESET}"
 echo ""
 echo -e "  Version updated to: ${BOLD}@adguard/safari-extension ${VERSION}${RESET}"
 echo "  Files modified:"
-echo "    - wBlock Advanced/Resources/script.js"
 echo "    - wBlock Scripts (iOS)/Resources/background.js"
 echo "    - wBlock Scripts (iOS)/Resources/content.js"
 echo ""
-echo "  Next step: commit all three files:"
-echo -e "  ${BOLD}git add 'wBlock Advanced/Resources/script.js' \\"
-echo "        'wBlock Scripts (iOS)/Resources/background.js' \\"
+echo "  Next step: commit both files:"
+echo -e "  ${BOLD}git add 'wBlock Scripts (iOS)/Resources/background.js' \\"
 echo "        'wBlock Scripts (iOS)/Resources/content.js'"
 echo ""
 
 # Detect scriptlets version embedded in the output for the commit message hint
-SCRIPTLETS_VER="$(grep -o 'scriptlets [0-9]*\.[0-9]*\.[0-9]*' "${SCRIPT_JS}" | head -1 | awk '{print $2}' || true)"
+SCRIPTLETS_VER="$(grep -o 'scriptlets [0-9]*\.[0-9]*\.[0-9]*' "${BACKGROUND_JS}" | head -1 | awk '{print $2}' || true)"
 if [[ -n "${SCRIPTLETS_VER}" ]]; then
   echo -e "  git commit -m \"rebuild extension JS with safari-extension ${VERSION} (scriptlets ${SCRIPTLETS_VER})\"${RESET}"
 else

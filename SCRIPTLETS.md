@@ -12,13 +12,12 @@ no build step is required at app build time.
 
 | File | Target |
 |------|--------|
-| `wBlock Advanced/Resources/script.js` | macOS app extension (appext) |
-| `wBlock Scripts (iOS)/Resources/background.js` | iOS web extension background script |
-| `wBlock Scripts (iOS)/Resources/content.js` | iOS web extension content script |
+| `wBlock Scripts (iOS)/Resources/background.js` | shared web extension background script (macOS + iOS) |
+| `wBlock Scripts (iOS)/Resources/content.js` | shared web extension content script (macOS + iOS) |
 
 ## How it works (architecture)
 
-Each of the three files is a concatenation of two parts:
+Each file is a concatenation of two parts:
 
 1. **Upstream `@adguard/safari-extension` rollup output** — scriptlets, extended-css, and the
    SafariExtension framework (ContentScript/BackgroundScript API), built by the safari-blocker
@@ -33,7 +32,6 @@ wBlock custom section in each file:
 
 | File | Boundary marker |
 |------|----------------|
-| `script.js` | `@file App extension content script.` |
 | `background.js` | `@file Background script for the WebExtension.` |
 | `content.js` | `@file Content script for the WebExtension.` |
 
@@ -45,9 +43,9 @@ something wBlock depends on directly. To update scriptlets, bump the safari-exte
 Update the scriptlet bundle **quarterly** (approximately every 3 months), or immediately when
 a scriptlet used by wBlock's default filter lists is missing from the current bundle.
 
-**Current versions (as of 2026-02-20):**
+**Current versions (as of 2026-03-18):**
 - `@adguard/safari-extension`: 4.2.1
-- `@adguard/scriptlets`: 2.2.16
+- `@adguard/scriptlets`: 2.3.0 (overridden from safari-extension's pinned 2.2.16)
 
 Check for new releases at:
 - https://github.com/AdguardTeam/Scriptlets/releases
@@ -60,24 +58,27 @@ Prerequisites: `node`, `pnpm`, `git` (all available via Homebrew on macOS).
 Run:
 
 ```bash
-./scripts/update-scriptlets.sh [safari-extension-version]
+./scripts/update-scriptlets.sh [safari-extension-version] [scriptlets-version]
 ```
 
 If no version argument is given, the script auto-detects npm latest and prints the version
 before proceeding (you have 5 seconds to abort with Ctrl-C if the version is unexpected).
 
-Example with explicit version:
+The optional second argument overrides `@adguard/scriptlets` via pnpm overrides, useful when
+the latest scriptlets release hasn't been picked up by safari-extension yet.
+
+Examples:
 
 ```bash
-./scripts/update-scriptlets.sh 4.3.0
+./scripts/update-scriptlets.sh 4.3.0          # bump safari-extension
+./scripts/update-scriptlets.sh 4.2.1 2.3.0    # same safari-extension, override scriptlets
 ```
 
 The script:
 1. Clones `ameshkov/safari-blocker` (depth=1) into a temp directory
-2. Bumps `@adguard/safari-extension` in both `extensions/appext/package.json` and
-   `extensions/webext/package.json`
-3. Builds appext (`pnpm install && pnpm run build` → `dist/script.js`)
-4. Builds webext (`pnpm install && pnpm run build` → `dist/background.js`, `dist/content.js`)
+2. Bumps `@adguard/safari-extension` in `extensions/webext/package.json`
+3. If a scriptlets override is specified, adds a pnpm override to force that version
+4. Builds webext (`pnpm install && pnpm run build` -> `dist/background.js`, `dist/content.js`)
 5. Splices each built file into the corresponding wBlock file, preserving the wBlock custom code
 6. Runs all verification checks (see Smoke Test below)
 7. Prints a summary with the exact `git commit` command to use
@@ -89,24 +90,20 @@ debugging (its path is printed when the error occurs).
 
 Steps 1-3 are automated by the script. Steps 4-5 are manual.
 
-1. **Check version marker** (all three files):
+1. **Check version marker:**
    ```bash
-   grep "SafariExtension v" "wBlock Advanced/Resources/script.js"
    grep "SafariExtension v" "wBlock Scripts (iOS)/Resources/background.js"
    grep "SafariExtension v" "wBlock Scripts (iOS)/Resources/content.js"
    ```
 
 2. **Verify wBlock custom code is preserved:**
    ```bash
-   grep "handleZapperMessage" "wBlock Advanced/Resources/script.js"
-   grep "wBlockLogger"         "wBlock Advanced/Resources/script.js"
    grep "engineTimestamp"      "wBlock Scripts (iOS)/Resources/background.js"
    grep "window.adguard"       "wBlock Scripts (iOS)/Resources/content.js"
    ```
 
 3. **JS syntax check:**
    ```bash
-   node --check "wBlock Advanced/Resources/script.js"
    node --check "wBlock Scripts (iOS)/Resources/background.js"
    node --check "wBlock Scripts (iOS)/Resources/content.js"
    ```
@@ -121,16 +118,15 @@ Steps 1-3 are automated by the script. Steps 4-5 are manual.
 ## Scriptlet coverage
 
 `trusted-replace-fetch-response` **is present** in the current bundle
-(`wBlock Advanced/Resources/script.js`, `@adguard/scriptlets` 2.2.16, confirmed 2026-02-20).
+(`@adguard/scriptlets` 2.3.0, confirmed 2026-03-18).
 This scriptlet is used by several YouTube ad-blocking rules in EasyList and AdGuard Base.
 
 ## Committing
 
-Commit all three JS files together with a version-descriptive message:
+Commit both JS files together with a version-descriptive message:
 
 ```bash
-git add 'wBlock Advanced/Resources/script.js' \
-        'wBlock Scripts (iOS)/Resources/background.js' \
+git add 'wBlock Scripts (iOS)/Resources/background.js' \
         'wBlock Scripts (iOS)/Resources/content.js'
 git commit -m "rebuild extension JS with safari-extension X.Y.Z (scriptlets A.B.C)"
 ```
@@ -149,13 +145,12 @@ Install via `brew install node`.
 **Script fails at splice step with "boundary pattern not found"**
 The `@file` boundary markers may have changed in an upstream update. Grep for them manually:
 ```bash
-grep -n "@file App extension content script" "wBlock Advanced/Resources/script.js"
 grep -n "@file Background script for the WebExtension" "wBlock Scripts (iOS)/Resources/background.js"
 grep -n "@file Content script for the WebExtension" "wBlock Scripts (iOS)/Resources/content.js"
 ```
 If any are missing, the upstream format changed and the splice logic in `update-scriptlets.sh`
-needs updating. Check `extensions/appext/src/index.ts` and `extensions/webext/src/index.ts` in
-the cloned safari-blocker for the new entry-point comment.
+needs updating. Check `extensions/webext/src/index.ts` in the cloned safari-blocker for the
+new entry-point comment.
 
 **`SafariExtension v` grep fails after script completes**
 The build may not have completed successfully. The temp directory (path printed on error)
