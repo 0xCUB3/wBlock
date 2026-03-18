@@ -83,8 +83,6 @@ struct ApplyChangesProgressView: View {
                 )
             }
         }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private var phaseCard: some View {
@@ -106,18 +104,11 @@ struct ApplyChangesProgressView: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private func summaryCard(_ summary: ApplyChangesSummary) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Summary")
-                .font(.headline)
-
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 StatCard(
                     title: "Safari Rules",
@@ -155,8 +146,6 @@ struct ApplyChangesProgressView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private func detail(for step: ApplyChangesPhaseProgress) -> String? {
