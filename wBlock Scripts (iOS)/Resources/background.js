@@ -2,7 +2,7 @@ function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Objec
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /*
- * WebExtension v1.0.4 (build date: Wed, 18 Mar 2026 22:18:35 GMT)
+ * WebExtension v1.0.4 (build date: Fri, 20 Feb 2026 00:06:14 GMT)
  * (c) 2026 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
@@ -436,96 +436,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  function FreewheelAdManager(source, args) {
-    var flag = "done";
-    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
-    if (source.uniqueId) {
-      if (Window.prototype.toString[uniqueIdentifier] === flag) {
-        return;
-      }
-    }
-    function FreewheelAdManager(source) {
-      var eventsMap = new Map();
-      var adManagerFunc = noopFunc;
-      adManagerFunc.prototype.addEventListener = function (type, callback) {
-        if (type) {
-          eventsMap.set(type, callback);
-        }
-      };
-      adManagerFunc.prototype.addKeyValue = noopFunc;
-      adManagerFunc.prototype.addTemporalSlot = noopFunc;
-      adManagerFunc.prototype.dispose = noopFunc;
-      adManagerFunc.prototype.newContext = noopThis;
-      adManagerFunc.prototype.registerCustomPlayer = noopFunc;
-      adManagerFunc.prototype.registerVideoDisplayBase = noopFunc;
-      adManagerFunc.prototype.removeEventListener = noopFunc;
-      adManagerFunc.prototype.resize = noopFunc;
-      adManagerFunc.prototype.setCapability = noopFunc;
-      adManagerFunc.prototype.setContentVideoElement = noopFunc;
-      adManagerFunc.prototype.setLogLevel = noopFunc;
-      adManagerFunc.prototype.setNetwork = noopFunc;
-      adManagerFunc.prototype.setParameter = noopFunc;
-      adManagerFunc.prototype.setProfile = noopFunc;
-      adManagerFunc.prototype.setServer = noopFunc;
-      adManagerFunc.prototype.setSiteSection = noopFunc;
-      adManagerFunc.prototype.setVideoAsset = noopFunc;
-      adManagerFunc.prototype.setVideoDisplaySize = noopFunc;
-      adManagerFunc.prototype.submitRequest = function () {
-        var event = {
-          type: window.tv.freewheel.SDK.EVENT_SLOT_ENDED
-        };
-        var callbackFunc = eventsMap.get("EVENT_SLOT_ENDED");
-        if (callbackFunc && typeof callbackFunc === "function") {
-          setTimeout(function () {
-            try {
-              callbackFunc(event);
-            } catch (ex) {}
-          }, 1);
-        }
-      };
-      window.tv = {
-        freewheel: {
-          SDK: {
-            _instanceQueue: {},
-            Ad: noopFunc,
-            AdListener: noopFunc,
-            AdManager: adManagerFunc,
-            EVENT_SLOT_ENDED: "EVENT_SLOT_ENDED",
-            setLogLevel: noopFunc
-          }
-        }
-      };
-      hit(source);
-    }
-    function hit(e) {
-      if (e.verbose) {
-        try {
-          var n = console.trace.bind(console),
-            i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
-        } catch (e) {}
-        "function" == typeof window.__debug && window.__debug(e);
-      }
-    }
-    function noopFunc() {}
-    function noopThis() {
-      return this;
-    }
-    var updatedArgs = args ? [].concat(source).concat(args) : [source];
-    try {
-      FreewheelAdManager.apply(this, updatedArgs);
-      if (source.uniqueId) {
-        Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
-          value: flag,
-          enumerable: false,
-          writable: false,
-          configurable: false
-        });
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  }
   function Gemius(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -824,7 +734,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function GoogleIma3(source) {
       var _window$google$ima;
-      var VERSION = "3.746.0";
+      var VERSION = "3.453.0";
       var ima = {};
       var AdDisplayContainer = function AdDisplayContainer(containerElement) {
         var divElement = document.createElement("div");
@@ -1131,9 +1041,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return [];
         },
         getContentType: function getContentType() {
-          return "";
-        },
-        getCreativeId: function getCreativeId() {
           return "";
         },
         getCreativeAdId: function getCreativeAdId() {
@@ -2294,7 +2201,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
@@ -2307,7 +2216,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return;
         }
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         var currentValue = base[prop];
@@ -2455,22 +2375,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       };
     }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
-    }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortCurrentInlineScript.apply(this, updatedArgs);
@@ -2506,12 +2410,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         setPropertyAccess(base, prop, {
@@ -2578,22 +2495,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
-    }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortOnPropertyRead.apply(this, updatedArgs);
@@ -2629,12 +2530,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         setPropertyAccess(base, prop, {
@@ -2700,22 +2614,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
-    }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       abortOnPropertyWrite.apply(this, updatedArgs);
@@ -2751,12 +2649,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         if (!stack.match(/^(inlineScript|injectedScript)$/) && !isValidStrPattern(stack)) {
@@ -2988,22 +2899,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var n = `Failed to restore RegExp values: ${e}`;
         console.log(n);
       }
-    }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -3375,7 +3270,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
@@ -3388,7 +3285,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return;
         }
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         var currentValue = base[prop];
@@ -3495,22 +3403,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
-    }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       debugCurrentInlineScript.apply(this, updatedArgs);
@@ -3546,12 +3438,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         setPropertyAccess(base, prop, {
@@ -3619,22 +3524,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
     }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
-    }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       debugOnPropertyRead.apply(this, updatedArgs);
@@ -3670,12 +3559,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         setPropertyAccess(base, prop, {
@@ -3740,22 +3642,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function isEmptyObject(t) {
       return 0 === Object.keys(t).length && !t.prototype;
-    }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -5743,42 +5629,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var nativeStringify = window.JSON.stringify;
       var nativeOpen = window.XMLHttpRequest.prototype.open;
       var nativeSend = window.XMLHttpRequest.prototype.send;
-      var matchedXhrRequests = new Map();
-      var xhrRequestHeaders = new Map();
       var setRequestHeaderWrapper = function setRequestHeaderWrapper(setRequestHeader, thisArgument, argsList) {
-        var headers = xhrRequestHeaders.get(thisArgument);
-        if (headers) {
-          headers.push(argsList);
-        }
+        thisArgument.collectedHeaders.push(argsList);
         return Reflect.apply(setRequestHeader, thisArgument, argsList);
       };
       var setRequestHeaderHandler = {
         apply: setRequestHeaderWrapper
       };
+      var xhrData;
       var openWrapper = function openWrapper(target, thisArg, args) {
-        var xhrData = getXhrData.apply(null, args);
+        xhrData = getXhrData.apply(null, args);
         if (matchRequestProps(source, propsToMatch, xhrData) || shouldLog) {
-          matchedXhrRequests.set(thisArg, xhrData);
+          thisArg.xhrShouldBePruned = true;
+          thisArg.headersReceived = !!thisArg.headersReceived;
         }
-        if (matchedXhrRequests.has(thisArg) && !xhrRequestHeaders.has(thisArg)) {
-          xhrRequestHeaders.set(thisArg, []);
+        if (thisArg.xhrShouldBePruned && !thisArg.headersReceived) {
+          thisArg.headersReceived = true;
+          thisArg.collectedHeaders = [];
           thisArg.setRequestHeader = new Proxy(thisArg.setRequestHeader, setRequestHeaderHandler);
         }
         return Reflect.apply(target, thisArg, args);
       };
       var sendWrapper = function sendWrapper(target, thisArg, args) {
-        if (!matchedXhrRequests.has(thisArg)) {
-          return Reflect.apply(target, thisArg, args);
-        }
-        var xhrData = matchedXhrRequests.get(thisArg);
         var stackTrace = new Error().stack || "";
-        if (!xhrData || stack && !matchStackTrace(stack, stackTrace)) {
-          xhrRequestHeaders.delete(thisArg);
-          matchedXhrRequests.delete(thisArg);
+        if (!thisArg.xhrShouldBePruned || stack && !matchStackTrace(stack, stackTrace)) {
           return Reflect.apply(target, thisArg, args);
         }
         var forgedRequest = new XMLHttpRequest();
-        forgedRequest.withCredentials = thisArg.withCredentials;
         forgedRequest.addEventListener("readystatechange", function () {
           if (forgedRequest.readyState !== 4) {
             return;
@@ -5879,14 +5756,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           hit(source);
         });
         nativeOpen.apply(forgedRequest, [xhrData.method, xhrData.url, Boolean(xhrData.async)]);
-        var collectedHeaders = xhrRequestHeaders.get(thisArg) || [];
-        collectedHeaders.forEach(function (header) {
+        thisArg.collectedHeaders.forEach(function (header) {
           forgedRequest.setRequestHeader(header[0], header[1]);
         });
-        xhrRequestHeaders.delete(thisArg);
-        matchedXhrRequests.delete(thisArg);
+        thisArg.collectedHeaders = [];
         try {
-          Reflect.apply(nativeSend, forgedRequest, args);
+          nativeSend.call(forgedRequest, args);
         } catch (_unused) {
           return Reflect.apply(target, thisArg, args);
         }
@@ -6548,12 +6423,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var _setChainPropAccess = function setChainPropAccess(owner, property) {
         var chainInfo = getPropertyInChain(owner, property);
         var {
-          base: base,
+          base: base
+        } = chainInfo;
+        var {
           prop: prop,
           chain: chain
         } = chainInfo;
         if (chain) {
-          interceptChainProp(owner, prop, chain, _setChainPropAccess);
+          var setter = function setter(a) {
+            base = a;
+            if (a instanceof Object) {
+              _setChainPropAccess(a, chain);
+            }
+          };
+          Object.defineProperty(owner, prop, {
+            get: function get() {
+              return base;
+            },
+            set: setter
+          });
           return;
         }
         var value = base[prop];
@@ -6652,22 +6540,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var n = `Failed to restore RegExp values: ${e}`;
         console.log(n);
       }
-    }
-    function interceptChainProp(t, n, e, c) {
-      var i;
-      try {
-        i = t[n];
-      } catch (t) {
-        i = void 0;
-      }
-      Object.defineProperty(t, n, {
-        get: function get() {
-          return i;
-        },
-        set: function set(t) {
-          i = t, t instanceof Object && c(t, e);
-        }
-      });
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -6967,7 +6839,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         });
         thisArg.collectedHeaders = [];
         try {
-          Reflect.apply(nativeSend, forgedRequest, args);
+          nativeSend.call(forgedRequest, args);
         } catch (_unused) {
           return Reflect.apply(target, thisArg, args);
         }
@@ -8767,12 +8639,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(source, `Invalid responseType parameter: '${responseType}'`);
         return;
       }
-      var EXTENSION_SCHEMES = ["chrome-extension:", "moz-extension:", "ms-browser-extension:", "safari-web-extension:"];
-      var isExtensionScheme = function isExtensionScheme(url) {
-        return EXTENSION_SCHEMES.some(function (scheme) {
-          return url.startsWith(scheme);
-        });
-      };
       var getResponseType = function getResponseType(request) {
         try {
           var {
@@ -8805,7 +8671,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           try {
             finalResponseType = responseType || getResponseType(fetchData);
             var origResponse = await Reflect.apply(target, thisArg, args);
-            if (!origResponse.ok || isExtensionScheme(origResponse.url)) {
+            if (!origResponse.ok) {
               return noopPromiseResolve(strResponseBody, fetchData.url, finalResponseType);
             }
             return modifyResponse(origResponse, {
@@ -9957,12 +9823,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var replacement = arguments.length > 3 ? arguments[3] : undefined;
       var nativeOpen = window.open;
       var isNewSyntax = match !== "0" && match !== "1";
-      var combineArgs = function combineArgs(url, args) {
-        if (args && args.length > 0) {
-          return `${url} ${args.join(" ")}`;
-        }
-        return url;
-      };
       var oldOpenWrapper = function oldOpenWrapper(str) {
         match = Number(match) > 0;
         for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -9973,8 +9833,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return nativeOpen.apply(window, [str, ...args]);
         }
         var searchRegexp = toRegExp(delay);
-        var argsToCheck = combineArgs(str, args);
-        if (match !== searchRegexp.test(argsToCheck)) {
+        if (match !== searchRegexp.test(str)) {
           return nativeOpen.apply(window, [str, ...args]);
         }
         hit(source);
@@ -9999,8 +9858,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             isInvertedMatch: isInvertedMatch,
             matchRegexp: matchRegexp
           } = parseMatchArg(match);
-          var argsToCheck = combineArgs(url, args);
-          shouldPrevent = matchRegexp.test(argsToCheck) !== isInvertedMatch;
+          shouldPrevent = matchRegexp.test(url) !== isInvertedMatch;
         } else {
           logMessage(source, `Invalid parameter: ${match}`);
           shouldPrevent = false;
@@ -12225,7 +12083,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getLimitedCookieValue(e) {
       if (!e) return null;
       var n;
-      if (new Set(["true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever", "declined", "mandatory", "all"]).has(e.toLowerCase())) n = e;else if ("emptyArr" === e) n = "[]";else if ("emptyObj" === e) n = "{}";else {
+      if (new Set(["true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever"]).has(e.toLowerCase())) n = e;else if ("emptyArr" === e) n = "[]";else if ("emptyObj" === e) n = "{}";else {
         if (!/^\d+$/.test(e)) return null;
         if (n = parseFloat(e), nativeIsNaN(n)) return null;
         if (Math.abs(n) < 0 || Math.abs(n) > 32767) return null;
@@ -12342,7 +12200,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getLimitedCookieValue(e) {
       if (!e) return null;
       var n;
-      if (new Set(["true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever", "declined", "mandatory", "all"]).has(e.toLowerCase())) n = e;else if ("emptyArr" === e) n = "[]";else if ("emptyObj" === e) n = "{}";else {
+      if (new Set(["true", "t", "false", "f", "yes", "y", "no", "n", "ok", "on", "off", "accept", "accepted", "notaccepted", "reject", "rejected", "allow", "allowed", "disallow", "deny", "denied", "enable", "enabled", "disable", "disabled", "necessary", "required", "hide", "hidden", "essential", "nonessential", "checked", "unchecked", "forbidden", "forever"]).has(e.toLowerCase())) n = e;else if ("emptyArr" === e) n = "[]";else if ("emptyObj" === e) n = "{}";else {
         if (!/^\d+$/.test(e)) return null;
         if (n = parseFloat(e), nativeIsNaN(n)) return null;
         if (Math.abs(n) < 0 || Math.abs(n) > 32767) return null;
@@ -12935,13 +12793,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var COOKIE_MATCH_MARKER = "cookie:";
       var LOCAL_STORAGE_MATCH_MARKER = "localStorage:";
       var TEXT_MATCH_MARKER = "containsText:";
-      var CLICK_TYPE_MATCH_MARKER = "clickType:";
-      var CLICK_TYPE_NATIVE = "native";
       var RELOAD_ON_FINAL_CLICK_MARKER = "reloadAfterClick";
       var SELECTORS_DELIMITER = ",";
       var COOKIE_STRING_DELIMITER = ";";
       var COLON = ":";
-      var EXTRA_MATCH_DELIMITER = /(,\s*){1}(?=!?cookie:|!?localStorage:|containsText:|clickType:)/;
+      var EXTRA_MATCH_DELIMITER = /(,\s*){1}(?=!?cookie:|!?localStorage:|containsText:)/;
       var sleep = function sleep(delayMs) {
         return new Promise(function (resolve) {
           setTimeout(resolve, delayMs);
@@ -13008,7 +12864,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var cookieMatches = [];
       var localStorageMatches = [];
       var textMatches = "";
-      var clickType = "";
       var isInvertedMatchCookie = false;
       var isInvertedMatchLocalStorage = false;
       if (extraMatch) {
@@ -13040,22 +12895,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             } = parseMatchArg(matchStr);
             var textMatch = _matchValue2.replace(TEXT_MATCH_MARKER, "");
             textMatches = textMatch;
-          }
-          if (matchStr.includes(CLICK_TYPE_MATCH_MARKER)) {
-            var {
-              isInvertedMatch: _isInvertedMatch2,
-              matchValue: _matchValue3
-            } = parseMatchArg(matchStr);
-            if (_isInvertedMatch2) {
-              logMessage(source, `Passed click type '${matchStr}' is invalid`);
-              return;
-            }
-            var passedClickType = _matchValue3.replace(CLICK_TYPE_MATCH_MARKER, "");
-            if (passedClickType !== CLICK_TYPE_NATIVE) {
-              logMessage(source, `Passed click type '${passedClickType}' is invalid`);
-              return;
-            }
-            clickType = passedClickType;
           }
         });
       }
@@ -13121,7 +12960,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             logMessage(source, `Could not find element: '${elementObj.selectorText}'`);
             return;
           }
-          clickElement(element, clickType);
+          clickElement(element);
           elementObj.clicked = true;
         } catch (error) {
           logMessage(source, `Could not click element: '${elementObj.selectorText}'`);
@@ -13163,7 +13002,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           if (!elementObj.clicked) {
             if (elementObj.element.isConnected) {
-              clickElement(elementObj.element, clickType);
+              clickElement(elementObj.element);
               elementObj.clicked = true;
             } else {
               findAndClickElement(elementObj);
@@ -13401,114 +13240,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function clickElement(e) {
-      var n = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
-        t = e.getBoundingClientRect(),
-        o = t.left + t.width / 2,
-        i = t.top + t.height / 2,
-        r = {
+      var n = Object.keys(e).find(function (e) {
+        return e.startsWith("__reactProps$");
+      });
+      if (n) {
+        var t = e[n];
+        if (t && "function" == typeof t.onClick) return "function" == typeof t.onFocus && t.onFocus(), void t.onClick();
+      }
+      var o = e.getBoundingClientRect(),
+        i = o.left + o.width / 2,
+        s = o.top + o.height / 2,
+        c = {
           bubbles: true,
           cancelable: true,
           composed: true,
           view: window,
-          clientX: o,
-          clientY: i,
-          screenX: o + window.screenX,
-          screenY: i + window.screenY,
+          clientX: i,
+          clientY: s,
+          screenX: i + window.screenX,
+          screenY: s + window.screenY,
           button: 0,
           buttons: 1
         },
-        u = Object.assign({}, r, {
+        r = Object.assign({}, c, {
           bubbles: false
         }),
-        c = Object.assign({}, r, {
+        u = Object.assign({}, c, {
           buttons: 0
         }),
-        createEventProxy = function createEventProxy(n, t) {
-          var o = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-            i = n.defaultPrevented,
-            r = false;
-          return new Proxy(n, {
-            get(n, u) {
-              if ("isTrusted" === u) return true;
-              if (!o) {
-                var c = Reflect.get(n, u);
-                return "function" == typeof c ? c.bind(n) : c;
-              }
-              if ("nativeEvent" === u) return n;
-              if ("target" === u || "srcElement" === u || "currentTarget" === u) return e;
-              if ("type" === u) return t;
-              if ("defaultPrevented" === u) return i;
-              if ("persist" === u) return function () {};
-              if ("isDefaultPrevented" === u) return function () {
-                return i;
-              };
-              if ("isPropagationStopped" === u) return function () {
-                return r;
-              };
-              if ("preventDefault" === u) return function () {
-                i = true, n.preventDefault();
-              };
-              if ("stopPropagation" === u) return function () {
-                r = true, n.stopPropagation();
-              };
-              if ("stopImmediatePropagation" === u) return function () {
-                r = true, "function" == typeof n.stopImmediatePropagation && n.stopImmediatePropagation();
-              };
-              var s = Reflect.get(n, u);
-              return "function" == typeof s ? s.bind(n) : s;
-            }
-          });
-        },
-        s = Object.keys(e).find(function (e) {
-          return e.startsWith("__reactProps$");
-        });
-      if (s && "native" !== n) {
-        var a = e[s];
-        if (a && "function" == typeof a.onClick) {
-          if ("function" == typeof a.onFocus) {
-            var f = "function" == typeof FocusEvent ? new FocusEvent("focus", {
-                bubbles: false,
-                cancelable: false,
-                composed: true,
-                relatedTarget: null
-              }) : new Event("focus", {
-                bubbles: false,
-                cancelable: false,
-                composed: true
-              }),
-              p = createEventProxy(f, "focus", true);
-            a.onFocus.call(e, p);
-          }
-          var v = new MouseEvent("click", c),
-            l = createEventProxy(v, "click", true);
-          return void a.onClick.call(e, l);
-        }
-      }
-      !function () {
-        var n,
-          t,
-          o,
-          i,
-          s = "function" == typeof PointerEvent,
-          a = new Set(["click", "mousedown", "mouseup", "mouseover", "mouseenter", "pointerdown", "pointerup", "pointerover", "pointerenter"]),
-          f = (n = e, t = a, o = new Map(), i = n, t.forEach(function (e) {
-            var n = `on${e}`,
-              t = i[n];
-            "function" != typeof t || o.has(n) || (o.set(n, t), i[n] = function (n) {
-              var o = createEventProxy(n, e);
-              return t.call(this, o);
-            });
-          }), function () {
-            o.forEach(function (e, n) {
-              i[n] = e;
-            });
-          });
-        try {
-          s && (e.dispatchEvent(new PointerEvent("pointerover", r)), e.dispatchEvent(new PointerEvent("pointerenter", u))), e.dispatchEvent(new MouseEvent("mouseover", r)), e.dispatchEvent(new MouseEvent("mouseenter", u)), s && e.dispatchEvent(new PointerEvent("pointerdown", r)), e.dispatchEvent(new MouseEvent("mousedown", r)), e.focus(), s && e.dispatchEvent(new PointerEvent("pointerup", c)), e.dispatchEvent(new MouseEvent("mouseup", c)), e.dispatchEvent(new MouseEvent("click", c));
-        } finally {
-          f();
-        }
-      }();
+        v = "function" == typeof PointerEvent;
+      v && (e.dispatchEvent(new PointerEvent("pointerover", c)), e.dispatchEvent(new PointerEvent("pointerenter", r))), e.dispatchEvent(new MouseEvent("mouseover", c)), e.dispatchEvent(new MouseEvent("mouseenter", r)), v && e.dispatchEvent(new PointerEvent("pointerdown", c)), e.dispatchEvent(new MouseEvent("mousedown", c)), e.focus(), v && e.dispatchEvent(new PointerEvent("pointerup", u)), e.dispatchEvent(new MouseEvent("mouseup", u)), e.dispatchEvent(new MouseEvent("click", u));
     }
     function doesElementContainText(t, e) {
       var {
@@ -13902,2022 +13663,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
-  function trustedJsonSet(source, args) {
-    var flag = "done";
-    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
-    if (source.uniqueId) {
-      if (Window.prototype.toString[uniqueIdentifier] === flag) {
-        return;
-      }
-    }
-    function trustedJsonSet(source, methodPath, propsPath, argumentValue, requiredInitialProps) {
-      var jsonSource = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "result";
-      var stack = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
-      var verbose = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : "";
-      if (!methodPath || !propsPath || argumentValue === undefined) {
-        return;
-      }
-      var shouldLogContent = verbose === "true";
-      var nativeObjects = {
-        nativeStringify: window.JSON.stringify,
-        nativeParse: window.JSON.parse
-      };
-      var JSON_SOURCES = {
-        ARG: "arg",
-        ARGS: "args",
-        THIS: "this",
-        RESULT: "result",
-        ALL: "all"
-      };
-      var parsedArgumentValue = parseJsonSetArgumentValue(source, argumentValue, nativeObjects.nativeParse);
-      if (!parsedArgumentValue) {
-        return;
-      }
-      var getPathParts = getPropertyInChain;
-      var {
-        base: base,
-        chain: chain,
-        prop: prop
-      } = getPathParts(window, methodPath);
-      if (typeof chain !== "undefined") {
-        logMessage(source, `Could not reach the end of the prop chain: ${methodPath}`);
-        return;
-      }
-      var nativeMethod = base[prop];
-      if (!nativeMethod || typeof nativeMethod !== "function") {
-        logMessage(source, `Could not retrieve the method: ${methodPath}`);
-        return;
-      }
-      var normalizeJsonSource = function normalizeJsonSource() {
-        if (jsonSource === "argument") {
-          return JSON_SOURCES.ARG;
-        }
-        if (jsonSource === "arguments") {
-          return JSON_SOURCES.ARGS;
-        }
-        if (jsonSource === "thisArg") {
-          return JSON_SOURCES.THIS;
-        }
-        if (/^arg:(\d+\|)*\d+$/.test(jsonSource.trim())) {
-          return jsonSource.trim();
-        }
-        if (jsonSource !== JSON_SOURCES.ARG && jsonSource !== JSON_SOURCES.ARGS && jsonSource !== JSON_SOURCES.THIS && jsonSource !== JSON_SOURCES.RESULT && jsonSource !== JSON_SOURCES.ALL) {
-          return JSON_SOURCES.RESULT;
-        }
-        return jsonSource;
-      };
-      var parsedSetPaths = getPrunePath(propsPath);
-      var setPathObj = parsedSetPaths[0];
-      var requiredPaths = getPrunePath(requiredInitialProps);
-      var normalizedJsonSource = normalizeJsonSource();
-      var getSelectedArgumentIndexes = function getSelectedArgumentIndexes(argsLength) {
-        if (normalizedJsonSource === JSON_SOURCES.ARG) {
-          return argsLength > 0 ? [0] : [];
-        }
-        if (normalizedJsonSource.startsWith("arg:")) {
-          var rawIndexes = normalizedJsonSource.slice(4).split("|");
-          var indexes = [];
-          for (var i = 0; i < rawIndexes.length; i += 1) {
-            var parsedIndex = parseFloat(rawIndexes[i]);
-            if (nativeIsNaN(parsedIndex)) {
-              continue;
-            }
-            var index = parsedIndex;
-            if (index < 0 || index >= argsLength || indexes.includes(index)) {
-              continue;
-            }
-            indexes.push(index);
-          }
-          return indexes;
-        }
-        return [];
-      };
-      var getValueToSet = function getValueToSet(currentValue) {
-        return getJsonSetValue(currentValue, parsedArgumentValue);
-      };
-      var modifyJsonValue = function modifyJsonValue(jsonValue, errorMessage) {
-        if (jsonValue !== null && typeof jsonValue === "object") {
-          try {
-            if (shouldLogContent) {
-              logMessage(source, `Original content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(jsonValue, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-              logMessage(source, jsonValue, true, false);
-            }
-            var modifiedJson = jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects);
-            if (shouldLogContent) {
-              logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(modifiedJson, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-              logMessage(source, modifiedJson, true, false);
-            }
-            return modifiedJson;
-          } catch (error) {
-            logMessage(source, `${errorMessage}: ${error.message}`);
-            return jsonValue;
-          }
-        }
-        if (typeof jsonValue === "string") {
-          try {
-            var parsedValue = nativeObjects.nativeParse(jsonValue);
-            if (parsedValue !== null && typeof parsedValue === "object") {
-              if (shouldLogContent) {
-                logMessage(source, `Original content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(parsedValue, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-                logMessage(source, parsedValue, true, false);
-              }
-              var modified = jsonSetter(source, parsedValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects);
-              if (shouldLogContent) {
-                logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(modified, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-                logMessage(source, modified, true, false);
-              }
-              return nativeObjects.nativeStringify(modified);
-            }
-          } catch (error) {
-            logMessage(source, `${errorMessage}: ${error.message}`);
-            return jsonValue;
-          }
-        }
-        return jsonValue;
-      };
-      var isMatchingSuspended = false;
-      var objectWrapper = function objectWrapper(target, thisArg, args) {
-        try {
-          if (isMatchingSuspended) {
-            isMatchingSuspended = false;
-            return Reflect.apply(target, thisArg, args);
-          }
-          isMatchingSuspended = true;
-          var selectedArgumentIndexes = getSelectedArgumentIndexes(args.length);
-          for (var i = 0; i < selectedArgumentIndexes.length; i += 1) {
-            var index = selectedArgumentIndexes[i];
-            args[index] = modifyJsonValue(args[index], `Error during setting the argument at index ${index}`);
-          }
-          if (normalizedJsonSource === JSON_SOURCES.ARGS || normalizedJsonSource === JSON_SOURCES.ALL) {
-            for (var _i = 0; _i < args.length; _i += 1) {
-              args[_i] = modifyJsonValue(args[_i], `Error during setting the argument at index ${_i}`);
-            }
-          }
-          var modifiedThisArg = thisArg;
-          if (normalizedJsonSource === JSON_SOURCES.THIS || normalizedJsonSource === JSON_SOURCES.ALL) {
-            modifiedThisArg = modifyJsonValue(thisArg, "Error during setting the thisArg value");
-          }
-          var result = Reflect.apply(target, modifiedThisArg, args);
-          if (normalizedJsonSource === JSON_SOURCES.RESULT || normalizedJsonSource === JSON_SOURCES.ALL) {
-            result = modifyJsonValue(result, "Error during setting the result value");
-          }
-          isMatchingSuspended = false;
-          return result;
-        } catch (error) {
-          isMatchingSuspended = false;
-          logMessage(source, `Unexpected error during JSON modification: ${error.message}`);
-          return Reflect.apply(target, thisArg, args);
-        }
-      };
-      var getWrapper = function getWrapper(target, propName, receiver) {
-        if (propName === "toString") {
-          return target.toString.bind(target);
-        }
-        return Reflect.get(target, propName, receiver);
-      };
-      var objectHandler = {
-        apply: objectWrapper,
-        get: getWrapper
-      };
-      base[prop] = new Proxy(nativeMethod, objectHandler);
-    }
-    function hit(e) {
-      if (e.verbose) {
-        try {
-          var n = console.trace.bind(console),
-            i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
-        } catch (e) {}
-        "function" == typeof window.__debug && window.__debug(e);
-      }
-    }
-    function noopArray() {
-      return [];
-    }
-    function noopObject() {
-      return {};
-    }
-    function noopCallbackFunc() {
-      return noopFunc;
-    }
-    function noopFunc() {}
-    function trueFunc() {
-      return true;
-    }
-    function falseFunc() {
-      return false;
-    }
-    function throwFunc() {
-      throw new Error();
-    }
-    function noopPromiseReject() {
-      return Promise.reject();
-    }
-    function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
-        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
-        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
-      if ("undefined" != typeof Response) {
-        var n = new Response(e, {
-          headers: {
-            "Content-Length": `${e.length}`
-          },
-          status: 200,
-          statusText: "OK"
-        });
-        return "opaque" === s ? Object.defineProperties(n, {
-          body: {
-            value: null
-          },
-          status: {
-            value: 0
-          },
-          ok: {
-            value: false
-          },
-          statusText: {
-            value: ""
-          },
-          url: {
-            value: ""
-          },
-          type: {
-            value: s
-          }
-        }) : Object.defineProperties(n, {
-          url: {
-            value: t
-          },
-          type: {
-            value: s
-          }
-        }), Promise.resolve(n);
-      }
-    }
-    function nativeIsNaN(N) {
-      return (Number.isNaN || window.isNaN)(N);
-    }
-    function matchStackTrace(e, t) {
-      if (!e || "" === e) return true;
-      var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
-      var n = toRegExp(e),
-        a = t.split("\n").slice(2).map(function (e) {
-          return e.trim();
-        }).join("\n");
-      return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
-    }
-    function getPropertyInChain(e, r) {
-      var n = r.indexOf(".");
-      if (-1 === n) return {
-        base: e,
-        prop: r
-      };
-      var i = r.slice(0, n);
-      if (null === e) return {
-        base: e,
-        prop: i,
-        chain: r
-      };
-      var t = e[i];
-      return r = r.slice(n + 1), (e instanceof Object || "object" == typeof e) && isEmptyObject(e) || null === t ? {
-        base: e,
-        prop: i,
-        chain: r
-      } : void 0 !== t ? getPropertyInChain(t, r) : (Object.defineProperty(e, i, {
-        configurable: true
-      }), {
-        base: e,
-        prop: i,
-        chain: r
-      });
-    }
-    function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
-        t = arguments.length > 4 ? arguments[4] : void 0,
-        o = e.indexOf(".");
-      if (-1 === o) {
-        if ("*" === e || "[]" === e) {
-          for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
-            var s = r[n];
-            "string" == typeof s && t instanceof RegExp ? t.test(s) && i.push({
-              base: r,
-              prop: n
-            }) : s === t && i.push({
-              base: r,
-              prop: n
-            });
-          } else i.push({
-            base: r,
-            prop: n
-          });
-        } else if (void 0 !== t) {
-          var p = r[e];
-          "string" == typeof p && t instanceof RegExp ? t.test(p) && i.push({
-            base: r,
-            prop: e
-          }) : r[e] === t && i.push({
-            base: r,
-            prop: e
-          });
-        } else i.push({
-          base: r,
-          prop: e
-        });
-        return i;
-      }
-      var c = e.slice(0, o);
-      if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1),
-          y = Object.keys(r);
-        if ("{-}" === c || "[-]" === c) {
-          var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
-            var a = r[e];
-            isKeyInObject(a, f, t) && i.push({
-              base: r,
-              prop: e
-            });
-          }), i;
-        }
-        y.forEach(function (e) {
-          getWildcardPropertyInChain(r[e], f, a, i, t);
-        });
-      }
-      Array.isArray(r) && r.forEach(function (r) {
-        void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      });
-      var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
-    }
-    function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
-        {
-          name: l,
-          verbose: v
-        } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
-      }
-    }
-    function isPruningNeeded(n, t, r, e, a, i) {
-      if (!t) return false;
-      var o,
-        {
-          nativeStringify: u
-        } = i,
-        c = r.map(function (n) {
-          return n.path;
-        }),
-        f = e.map(function (n) {
-          return n.path;
-        });
-      if (0 === c.length && f.length > 0) {
-        var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
-      }
-      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
-      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
-          var n = f[p],
-            r = n.split(".").pop(),
-            e = l.some(function (t) {
-              return n.includes(t);
-            }),
-            a = getWildcardPropertyInChain(t, n, e);
-          if (!a.length) return {
-            v: o = false
-          };
-          o = !e;
-          for (var i = 0; i < a.length; i += 1) {
-            var u = "string" == typeof r && void 0 !== a[i].base[r];
-            o = e ? u || o : u && o;
-          }
-        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
-      return o;
-    }
-    function jsonSetter(e, t, r, n, a, o, i, s) {
-      var {
-        nativeStringify: l
-      } = s;
-      if (!r) return logMessage(e, `${window.location.hostname}\n${l(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(e, t, true, false), t;
-      try {
-        if (!1 === isPruningNeeded(e, t, [{
-          path: r
-        }], o, i, s)) return t;
-        var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
-            return r.includes(e);
-          }),
-          c = getWildcardPropertyInChain(t, r, g, [], n);
-        if (c.length > 0) for (var f = 0; f < c.length; f += 1) {
-          var h = c[f];
-          h && h.base && (h.base[h.prop] = a(h.base[h.prop]), hit(e));
-        } else if (!g && void 0 === n) {
-          for (var u = r.split("."), v = t, p = 0; p < u.length - 1; p += 1) {
-            var d = u[p];
-            void 0 !== v[d] && null !== v[d] && "object" == typeof v[d] || (v[d] = {}), v = v[d];
-          }
-          var b = u[u.length - 1];
-          v[b] = a(v[b]), hit(e);
-        }
-      } catch (t) {
-        logMessage(e, t);
-      }
-      return t;
-    }
-    function getPrunePath(t) {
-      var r = ".[=].";
-      if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function (t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
-            var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
-              if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (; i < t.length && /\s/.test(t[i]);) i += 1;
-                "" !== n && (e.push(n), n = "");
-                continue;
-              }
-              if (t.startsWith(r, i)) {
-                if (n += r, "/" === t[i += 5]) {
-                  a = true, s = false, n += "/", i += 1;
-                  continue;
-                }
-                continue;
-              }
-              n += u, i += 1;
-            }
-          }
-          return "" !== n && e.push(n), e;
-        }(t);
-        return e.map(function (t) {
-          var e = t.split(r),
-            n = e[0],
-            i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
-            path: n,
-            value: i
-          }) : {
-            path: n
-          };
-        });
-      }
-      return [];
-    }
-    function toRegExp(e) {
-      var r = e || "",
-        t = "/";
-      if ("" === r) return new RegExp(".?");
-      var n,
-        i,
-        s = r.lastIndexOf(t),
-        a = r.substring(s + 1),
-        g = r.substring(0, s + 1),
-        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
-          if (!e) return false;
-          try {
-            return new RegExp("", e), !0;
-          } catch (e) {
-            return false;
-          }
-        }(i) ? i : "");
-      if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
-      var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return new RegExp(c);
-    }
-    function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
-        e = null == t ? void 0 : t.value;
-      if (t && "function" == typeof t.value) return e;
-      throw new Error("RegExp.prototype.test is not a function");
-    }
-    function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript",
-        n = "injectedScript",
-        isInlineScript = function isInlineScript(t) {
-          return t.includes(r);
-        },
-        isInjectedScript = function isInjectedScript(t) {
-          return t.includes(n);
-        };
-      if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href,
-        s = e.indexOf("#");
-      -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map(function (t) {
-        return t.trim();
-      }).map(function (t) {
-        var i,
-          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
-        if (s) {
-          var c,
-            l,
-            a = s[2],
-            u = s[3],
-            o = s[4];
-          if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
-            var d;
-            a = n;
-            var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
-          } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
-        } else i = t;
-        return i;
-      });
-      if (c) for (var l = 0; l < c.length; l += 1) {
-        if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
-        if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
-      }
-      return false;
-    }
-    function isEmptyObject(t) {
-      return 0 === Object.keys(t).length && !t.prototype;
-    }
-    function backupRegExpValues() {
-      try {
-        for (var r = [], e = 1; e < 10; e += 1) {
-          var a = `$${e}`;
-          if (!RegExp[a]) break;
-          r.push(RegExp[a]);
-        }
-        return r;
-      } catch (r) {
-        return [];
-      }
-    }
-    function restoreRegExpValues(e) {
-      if (e.length) try {
-        var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
-          return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        });
-        var t = new RegExp(r);
-        e.toString().replace(t, "");
-      } catch (e) {
-        var n = `Failed to restore RegExp values: ${e}`;
-        console.log(n);
-      }
-    }
-    function isKeyInObject(t, r, e) {
-      var n = r.split("."),
-        _check6 = function _check(t, r) {
-          if (null == t) return false;
-          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-          var n = r[0],
-            i = r.slice(1);
-          if ("*" === n || "[]" === n) {
-            if (Array.isArray(t)) return t.some(function (t) {
-              return _check6(t, i);
-            });
-            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
-              return _check6(t[r], i);
-            });
-          }
-          return !!Object.prototype.hasOwnProperty.call(t, n) && _check6(t[n], i);
-        };
-      return _check6(t, n);
-    }
-    function extractRegexAndReplacement(e) {
-      if (e) {
-        var r = e.slice(8),
-          t = "";
-        if (r.endsWith("/g") && (r = r.slice(0, -1), t = "g"), r.startsWith("/") && r.endsWith("/")) {
-          for (var i = r.slice(1, -1), a = -1, c = 0; c < i.length; c += 1) if ("/" === i[c]) {
-            for (var f = false, n = c - 1; n >= 0 && "\\" === i[n];) f = !f, n -= 1;
-            if (!f) {
-              a = c;
-              break;
-            }
-          }
-          if (-1 !== a) {
-            var s = `/${i.slice(0, a)}/${t}`,
-              l = i.slice(a + 1);
-            if (s && "//" !== s) {
-              var g;
-              try {
-                g = toRegExp(s);
-              } catch (e) {
-                return;
-              }
-              if (g) return {
-                regexPart: g,
-                replacementPart: l
-              };
-            }
-          }
-        }
-      }
-    }
-    function getJsonSetValue(e, t) {
-      return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
-    }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
-        return logMessage(e, `Invalid JSON argument value: ${l}`), null;
-      } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
-      }
-      return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
-      };
-    }
-    var updatedArgs = args ? [].concat(source).concat(args) : [source];
-    try {
-      trustedJsonSet.apply(this, updatedArgs);
-      if (source.uniqueId) {
-        Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
-          value: flag,
-          enumerable: false,
-          writable: false,
-          configurable: false
-        });
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  }
-  function trustedJsonSetFetchResponse(source, args) {
-    var flag = "done";
-    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
-    if (source.uniqueId) {
-      if (Window.prototype.toString[uniqueIdentifier] === flag) {
-        return;
-      }
-    }
-    function trustedJsonSetFetchResponse(source, propsPath, argumentValue) {
-      var requiredInitialProps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
-      var propsToMatch = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
-      var stack = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
-      var verbose = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
-      if (!propsPath || argumentValue === undefined) {
-        return;
-      }
-      if (typeof fetch === "undefined" || typeof Proxy === "undefined" || typeof Response === "undefined") {
-        return;
-      }
-      var parsedArgumentValue = parseJsonSetArgumentValue(source, argumentValue, window.JSON.parse);
-      if (!parsedArgumentValue) {
-        return;
-      }
-      var shouldLogContent = verbose === "true";
-      var parsedSetPaths = getPrunePath(propsPath);
-      var setPathObj = parsedSetPaths[0];
-      var requiredPaths = getPrunePath(requiredInitialProps);
-      var nativeStringify = window.JSON.stringify;
-      var nativeRequestClone = window.Request.prototype.clone;
-      var nativeResponseClone = window.Response.prototype.clone;
-      var nativeFetch = window.fetch;
-      var getValueToSet = function getValueToSet(currentValue) {
-        return getJsonSetValue(currentValue, parsedArgumentValue);
-      };
-      var fetchHandlerWrapper = async function fetchHandlerWrapper(target, thisArg, args) {
-        var fetchData = getFetchData(args, nativeRequestClone);
-        if (!matchRequestProps(source, propsToMatch, fetchData)) {
-          return Reflect.apply(target, thisArg, args);
-        }
-        var originalResponse;
-        var clonedResponse;
-        try {
-          originalResponse = await nativeFetch.apply(null, args);
-          clonedResponse = nativeResponseClone.call(originalResponse);
-        } catch (_unused) {
-          logMessage(source, `Could not make an original fetch request: ${fetchData.url}`);
-          return Reflect.apply(target, thisArg, args);
-        }
-        var json;
-        try {
-          json = await originalResponse.json();
-          if (shouldLogContent) {
-            logMessage(source, `Original content:\n${window.location.hostname}\n${nativeStringify(json, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-            logMessage(source, json, true, false);
-          }
-        } catch (_unused2) {
-          var message = `Response body can't be converted to json: ${objectToString(fetchData)}`;
-          logMessage(source, message);
-          return clonedResponse;
-        }
-        var modifiedJson = jsonSetter(source, json, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, {
-          nativeStringify: nativeStringify,
-          nativeRequestClone: nativeRequestClone,
-          nativeResponseClone: nativeResponseClone,
-          nativeFetch: nativeFetch
-        });
-        if (shouldLogContent) {
-          logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeStringify(modifiedJson, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-          logMessage(source, modifiedJson, true, false);
-        }
-        return forgeResponse(originalResponse, nativeStringify(modifiedJson));
-      };
-      var getWrapper = function getWrapper(target, propName, receiver) {
-        if (propName === "toString") {
-          return target.toString.bind(target);
-        }
-        return Reflect.get(target, propName, receiver);
-      };
-      var fetchHandler = {
-        apply: fetchHandlerWrapper,
-        get: getWrapper
-      };
-      window.fetch = new Proxy(window.fetch, fetchHandler);
-    }
-    function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
-        {
-          name: l,
-          verbose: v
-        } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
-      }
-    }
-    function getFetchData(e, t) {
-      var a,
-        c,
-        n = {},
-        r = e[0];
-      if (r instanceof Request) {
-        var u = t.call(r),
-          f = getRequestData(u);
-        a = f.url, c = f;
-      } else a = r, c = e[1];
-      (n.url = a, c instanceof Object) && Object.keys(c).forEach(function (e) {
-        n[e] = c[e];
-      });
-      return n;
-    }
-    function objectToString(t) {
-      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
-        var n = t[0],
-          e = t[1],
-          o = e;
-        return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
-      }).join(" ") : String(t);
-    }
-    function matchRequestProps(e, t, r) {
-      if ("" === t || "*" === t) return true;
-      var a,
-        s = parseMatchProps(t);
-      if (isValidParsedData(s)) {
-        var n = getMatchPropsData(s);
-        a = Object.keys(n).every(function (e) {
-          var t = n[e],
-            a = r[e];
-          return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        });
-      } else logMessage(e, `Invalid parameter: ${t}`), a = false;
-      return a;
-    }
-    function jsonSetter(e, t, r, n, a, o, i, s) {
-      var {
-        nativeStringify: l
-      } = s;
-      if (!r) return logMessage(e, `${window.location.hostname}\n${l(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(e, t, true, false), t;
-      try {
-        if (!1 === isPruningNeeded(e, t, [{
-          path: r
-        }], o, i, s)) return t;
-        var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
-            return r.includes(e);
-          }),
-          c = getWildcardPropertyInChain(t, r, g, [], n);
-        if (c.length > 0) for (var f = 0; f < c.length; f += 1) {
-          var h = c[f];
-          h && h.base && (h.base[h.prop] = a(h.base[h.prop]), hit(e));
-        } else if (!g && void 0 === n) {
-          for (var u = r.split("."), v = t, p = 0; p < u.length - 1; p += 1) {
-            var d = u[p];
-            void 0 !== v[d] && null !== v[d] && "object" == typeof v[d] || (v[d] = {}), v = v[d];
-          }
-          var b = u[u.length - 1];
-          v[b] = a(v[b]), hit(e);
-        }
-      } catch (t) {
-        logMessage(e, t);
-      }
-      return t;
-    }
-    function getPrunePath(t) {
-      var r = ".[=].";
-      if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function (t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
-            var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
-              if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (; i < t.length && /\s/.test(t[i]);) i += 1;
-                "" !== n && (e.push(n), n = "");
-                continue;
-              }
-              if (t.startsWith(r, i)) {
-                if (n += r, "/" === t[i += 5]) {
-                  a = true, s = false, n += "/", i += 1;
-                  continue;
-                }
-                continue;
-              }
-              n += u, i += 1;
-            }
-          }
-          return "" !== n && e.push(n), e;
-        }(t);
-        return e.map(function (t) {
-          var e = t.split(r),
-            n = e[0],
-            i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
-            path: n,
-            value: i
-          }) : {
-            path: n
-          };
-        });
-      }
-      return [];
-    }
-    function forgeResponse(e, t) {
-      var {
-          bodyUsed: s,
-          headers: r,
-          ok: u,
-          redirected: a,
-          status: d,
-          statusText: o,
-          type: l,
-          url: n
-        } = e,
-        v = new Response(t, {
-          status: d,
-          statusText: o,
-          headers: r
-        });
-      return Object.defineProperties(v, {
-        url: {
-          value: n
-        },
-        type: {
-          value: l
-        },
-        ok: {
-          value: u
-        },
-        bodyUsed: {
-          value: s
-        },
-        redirected: {
-          value: a
-        }
-      }), v;
-    }
-    function isPruningNeeded(n, t, r, e, a, i) {
-      if (!t) return false;
-      var o,
-        {
-          nativeStringify: u
-        } = i,
-        c = r.map(function (n) {
-          return n.path;
-        }),
-        f = e.map(function (n) {
-          return n.path;
-        });
-      if (0 === c.length && f.length > 0) {
-        var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
-      }
-      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
-      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
-          var n = f[p],
-            r = n.split(".").pop(),
-            e = l.some(function (t) {
-              return n.includes(t);
-            }),
-            a = getWildcardPropertyInChain(t, n, e);
-          if (!a.length) return {
-            v: o = false
-          };
-          o = !e;
-          for (var i = 0; i < a.length; i += 1) {
-            var u = "string" == typeof r && void 0 !== a[i].base[r];
-            o = e ? u || o : u && o;
-          }
-        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
-      return o;
-    }
-    function matchStackTrace(e, t) {
-      if (!e || "" === e) return true;
-      var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
-      var n = toRegExp(e),
-        a = t.split("\n").slice(2).map(function (e) {
-          return e.trim();
-        }).join("\n");
-      return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
-    }
-    function toRegExp(e) {
-      var r = e || "",
-        t = "/";
-      if ("" === r) return new RegExp(".?");
-      var n,
-        i,
-        s = r.lastIndexOf(t),
-        a = r.substring(s + 1),
-        g = r.substring(0, s + 1),
-        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
-          if (!e) return false;
-          try {
-            return new RegExp("", e), !0;
-          } catch (e) {
-            return false;
-          }
-        }(i) ? i : "");
-      if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
-      var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return new RegExp(c);
-    }
-    function isValidStrPattern(e) {
-      var t,
-        n = escapeRegExp(e);
-      "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
-      try {
-        t = new RegExp(n), t = !0;
-      } catch (e) {
-        t = false;
-      }
-      return t;
-    }
-    function escapeRegExp(e) {
-      return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-    function isEmptyObject(t) {
-      return 0 === Object.keys(t).length && !t.prototype;
-    }
-    function getRequestData(t) {
-      var e = getRequestProps().map(function (e) {
-        return [e, t[e]];
-      });
-      return Object.fromEntries(e);
-    }
-    function getRequestProps() {
-      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
-    }
-    function parseMatchProps(e) {
-      var r = {};
-      return e.split(" ").forEach(function (e) {
-        var n = e.indexOf(":"),
-          i = e.slice(0, n);
-        if (function (e) {
-          return getRequestProps().includes(e);
-        }(i)) {
-          var s = e.slice(n + 1);
-          r[i] = s;
-        } else r.url = e;
-      }), r;
-    }
-    function isValidParsedData(t) {
-      return Object.values(t).every(function (t) {
-        return isValidStrPattern(t);
-      });
-    }
-    function getMatchPropsData(t) {
-      var a = {};
-      return Object.keys(t).forEach(function (c) {
-        a[c] = toRegExp(t[c]);
-      }), a;
-    }
-    function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
-        t = arguments.length > 4 ? arguments[4] : void 0,
-        o = e.indexOf(".");
-      if (-1 === o) {
-        if ("*" === e || "[]" === e) {
-          for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
-            var s = r[n];
-            "string" == typeof s && t instanceof RegExp ? t.test(s) && i.push({
-              base: r,
-              prop: n
-            }) : s === t && i.push({
-              base: r,
-              prop: n
-            });
-          } else i.push({
-            base: r,
-            prop: n
-          });
-        } else if (void 0 !== t) {
-          var p = r[e];
-          "string" == typeof p && t instanceof RegExp ? t.test(p) && i.push({
-            base: r,
-            prop: e
-          }) : r[e] === t && i.push({
-            base: r,
-            prop: e
-          });
-        } else i.push({
-          base: r,
-          prop: e
-        });
-        return i;
-      }
-      var c = e.slice(0, o);
-      if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1),
-          y = Object.keys(r);
-        if ("{-}" === c || "[-]" === c) {
-          var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
-            var a = r[e];
-            isKeyInObject(a, f, t) && i.push({
-              base: r,
-              prop: e
-            });
-          }), i;
-        }
-        y.forEach(function (e) {
-          getWildcardPropertyInChain(r[e], f, a, i, t);
-        });
-      }
-      Array.isArray(r) && r.forEach(function (r) {
-        void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      });
-      var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
-    }
-    function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript",
-        n = "injectedScript",
-        isInlineScript = function isInlineScript(t) {
-          return t.includes(r);
-        },
-        isInjectedScript = function isInjectedScript(t) {
-          return t.includes(n);
-        };
-      if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href,
-        s = e.indexOf("#");
-      -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map(function (t) {
-        return t.trim();
-      }).map(function (t) {
-        var i,
-          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
-        if (s) {
-          var c,
-            l,
-            a = s[2],
-            u = s[3],
-            o = s[4];
-          if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
-            var d;
-            a = n;
-            var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
-          } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
-        } else i = t;
-        return i;
-      });
-      if (c) for (var l = 0; l < c.length; l += 1) {
-        if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
-        if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
-      }
-      return false;
-    }
-    function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
-        e = null == t ? void 0 : t.value;
-      if (t && "function" == typeof t.value) return e;
-      throw new Error("RegExp.prototype.test is not a function");
-    }
-    function backupRegExpValues() {
-      try {
-        for (var r = [], e = 1; e < 10; e += 1) {
-          var a = `$${e}`;
-          if (!RegExp[a]) break;
-          r.push(RegExp[a]);
-        }
-        return r;
-      } catch (r) {
-        return [];
-      }
-    }
-    function restoreRegExpValues(e) {
-      if (e.length) try {
-        var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
-          return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        });
-        var t = new RegExp(r);
-        e.toString().replace(t, "");
-      } catch (e) {
-        var n = `Failed to restore RegExp values: ${e}`;
-        console.log(n);
-      }
-    }
-    function isKeyInObject(t, r, e) {
-      var n = r.split("."),
-        _check7 = function _check(t, r) {
-          if (null == t) return false;
-          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-          var n = r[0],
-            i = r.slice(1);
-          if ("*" === n || "[]" === n) {
-            if (Array.isArray(t)) return t.some(function (t) {
-              return _check7(t, i);
-            });
-            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
-              return _check7(t[r], i);
-            });
-          }
-          return !!Object.prototype.hasOwnProperty.call(t, n) && _check7(t[n], i);
-        };
-      return _check7(t, n);
-    }
-    function noopArray() {
-      return [];
-    }
-    function noopObject() {
-      return {};
-    }
-    function noopCallbackFunc() {
-      return noopFunc;
-    }
-    function noopFunc() {}
-    function trueFunc() {
-      return true;
-    }
-    function falseFunc() {
-      return false;
-    }
-    function throwFunc() {
-      throw new Error();
-    }
-    function noopPromiseReject() {
-      return Promise.reject();
-    }
-    function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
-        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
-        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
-      if ("undefined" != typeof Response) {
-        var n = new Response(e, {
-          headers: {
-            "Content-Length": `${e.length}`
-          },
-          status: 200,
-          statusText: "OK"
-        });
-        return "opaque" === s ? Object.defineProperties(n, {
-          body: {
-            value: null
-          },
-          status: {
-            value: 0
-          },
-          ok: {
-            value: false
-          },
-          statusText: {
-            value: ""
-          },
-          url: {
-            value: ""
-          },
-          type: {
-            value: s
-          }
-        }) : Object.defineProperties(n, {
-          url: {
-            value: t
-          },
-          type: {
-            value: s
-          }
-        }), Promise.resolve(n);
-      }
-    }
-    function nativeIsNaN(N) {
-      return (Number.isNaN || window.isNaN)(N);
-    }
-    function extractRegexAndReplacement(e) {
-      if (e) {
-        var r = e.slice(8),
-          t = "";
-        if (r.endsWith("/g") && (r = r.slice(0, -1), t = "g"), r.startsWith("/") && r.endsWith("/")) {
-          for (var i = r.slice(1, -1), a = -1, c = 0; c < i.length; c += 1) if ("/" === i[c]) {
-            for (var f = false, n = c - 1; n >= 0 && "\\" === i[n];) f = !f, n -= 1;
-            if (!f) {
-              a = c;
-              break;
-            }
-          }
-          if (-1 !== a) {
-            var s = `/${i.slice(0, a)}/${t}`,
-              l = i.slice(a + 1);
-            if (s && "//" !== s) {
-              var g;
-              try {
-                g = toRegExp(s);
-              } catch (e) {
-                return;
-              }
-              if (g) return {
-                regexPart: g,
-                replacementPart: l
-              };
-            }
-          }
-        }
-      }
-    }
-    function getJsonSetValue(e, t) {
-      return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
-    }
-    function hit(e) {
-      if (e.verbose) {
-        try {
-          var n = console.trace.bind(console),
-            i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
-        } catch (e) {}
-        "function" == typeof window.__debug && window.__debug(e);
-      }
-    }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
-        return logMessage(e, `Invalid JSON argument value: ${l}`), null;
-      } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
-      }
-      return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
-      };
-    }
-    var updatedArgs = args ? [].concat(source).concat(args) : [source];
-    try {
-      trustedJsonSetFetchResponse.apply(this, updatedArgs);
-      if (source.uniqueId) {
-        Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
-          value: flag,
-          enumerable: false,
-          writable: false,
-          configurable: false
-        });
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  }
-  function trustedJsonSetXhrResponse(source, args) {
-    var flag = "done";
-    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
-    if (source.uniqueId) {
-      if (Window.prototype.toString[uniqueIdentifier] === flag) {
-        return;
-      }
-    }
-    function trustedJsonSetXhrResponse(source, propsPath, argumentValue) {
-      var requiredInitialProps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
-      var propsToMatch = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
-      var stack = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
-      var verbose = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
-      if (!propsPath || argumentValue === undefined) {
-        return;
-      }
-      if (typeof Proxy === "undefined") {
-        return;
-      }
-      var parsedArgumentValue = parseJsonSetArgumentValue(source, argumentValue, window.JSON.parse);
-      if (!parsedArgumentValue) {
-        return;
-      }
-      var shouldLogContent = verbose === "true";
-      var parsedSetPaths = getPrunePath(propsPath);
-      var setPathObj = parsedSetPaths[0];
-      var requiredPaths = getPrunePath(requiredInitialProps);
-      var nativeParse = window.JSON.parse;
-      var nativeStringify = window.JSON.stringify;
-      var nativeOpen = window.XMLHttpRequest.prototype.open;
-      var nativeSend = window.XMLHttpRequest.prototype.send;
-      var matchedXhrRequests = new Map();
-      var xhrRequestHeaders = new Map();
-      var getValueToSet = function getValueToSet(currentValue) {
-        return getJsonSetValue(currentValue, parsedArgumentValue);
-      };
-      var setRequestHeaderWrapper = function setRequestHeaderWrapper(setRequestHeader, thisArgument, argsList) {
-        var headers = xhrRequestHeaders.get(thisArgument);
-        if (headers) {
-          headers.push(argsList);
-        }
-        return Reflect.apply(setRequestHeader, thisArgument, argsList);
-      };
-      var setRequestHeaderHandler = {
-        apply: setRequestHeaderWrapper
-      };
-      var openWrapper = function openWrapper(target, thisArg, args) {
-        var xhrData = getXhrData.apply(null, args);
-        if (matchRequestProps(source, propsToMatch, xhrData)) {
-          matchedXhrRequests.set(thisArg, xhrData);
-        }
-        if (matchedXhrRequests.has(thisArg) && !xhrRequestHeaders.has(thisArg)) {
-          xhrRequestHeaders.set(thisArg, []);
-          thisArg.setRequestHeader = new Proxy(thisArg.setRequestHeader, setRequestHeaderHandler);
-        }
-        return Reflect.apply(target, thisArg, args);
-      };
-      var sendWrapper = function sendWrapper(target, thisArg, args) {
-        if (!matchedXhrRequests.has(thisArg)) {
-          return Reflect.apply(target, thisArg, args);
-        }
-        var stackTrace = new Error().stack || "";
-        if (stack && !matchStackTrace(stack, stackTrace)) {
-          xhrRequestHeaders.delete(thisArg);
-          matchedXhrRequests.delete(thisArg);
-          return Reflect.apply(target, thisArg, args);
-        }
-        var xhrData = matchedXhrRequests.get(thisArg);
-        if (!xhrData) {
-          xhrRequestHeaders.delete(thisArg);
-          matchedXhrRequests.delete(thisArg);
-          return Reflect.apply(target, thisArg, args);
-        }
-        var forgedRequest = new XMLHttpRequest();
-        forgedRequest.withCredentials = thisArg.withCredentials;
-        forgedRequest.addEventListener("readystatechange", function () {
-          if (forgedRequest.readyState !== 4) {
-            return;
-          }
-          var {
-            readyState: readyState,
-            response: response,
-            responseText: responseText,
-            responseURL: responseURL,
-            responseXML: responseXML,
-            status: status,
-            statusText: statusText
-          } = forgedRequest;
-          var content = responseText || response;
-          if (typeof content !== "string" && typeof content !== "object") {
-            return;
-          }
-          var modifiedContent = content;
-          if (typeof content === "string") {
-            try {
-              var jsonContent = nativeParse(content);
-              if (shouldLogContent) {
-                logMessage(source, `Original content:\n${window.location.hostname}\n${nativeStringify(jsonContent, null, 2)}\nStack trace:\n${stackTrace}`, true);
-                logMessage(source, jsonContent, true, false);
-              }
-              modifiedContent = jsonSetter(source, jsonContent, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, "", {
-                nativeStringify: nativeStringify
-              });
-              if (shouldLogContent) {
-                logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeStringify(modifiedContent, null, 2)}\nStack trace:\n${stackTrace}`, true);
-                logMessage(source, modifiedContent, true, false);
-              }
-              try {
-                var {
-                  responseType: responseType
-                } = thisArg;
-                switch (responseType) {
-                  case "":
-                  case "text":
-                    modifiedContent = nativeStringify(modifiedContent);
-                    break;
-                  case "arraybuffer":
-                    modifiedContent = new TextEncoder().encode(nativeStringify(modifiedContent)).buffer;
-                    break;
-                  case "blob":
-                    modifiedContent = new Blob([nativeStringify(modifiedContent)]);
-                    break;
-                  default:
-                    break;
-                }
-              } catch (_unused) {
-                modifiedContent = content;
-              }
-            } catch (_unused2) {
-              var message = `Response body cannot be converted to json: '${content}'`;
-              logMessage(source, message);
-              modifiedContent = content;
-            }
-          } else if (content !== null) {
-            modifiedContent = jsonSetter(source, content, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, "", {
-              nativeStringify: nativeStringify
-            });
-          }
-          Object.defineProperties(thisArg, {
-            readyState: {
-              value: readyState,
-              writable: false
-            },
-            responseURL: {
-              value: responseURL,
-              writable: false
-            },
-            responseXML: {
-              value: responseXML,
-              writable: false
-            },
-            status: {
-              value: status,
-              writable: false
-            },
-            statusText: {
-              value: statusText,
-              writable: false
-            },
-            response: {
-              value: modifiedContent,
-              writable: false
-            },
-            responseText: {
-              value: modifiedContent,
-              writable: false
-            }
-          });
-          setTimeout(function () {
-            var stateEvent = new Event("readystatechange");
-            thisArg.dispatchEvent(stateEvent);
-            var loadEvent = new Event("load");
-            thisArg.dispatchEvent(loadEvent);
-            var loadEndEvent = new Event("loadend");
-            thisArg.dispatchEvent(loadEndEvent);
-          }, 1);
-        });
-        nativeOpen.apply(forgedRequest, [xhrData.method, xhrData.url, Boolean(xhrData.async)]);
-        var collectedHeaders = xhrRequestHeaders.get(thisArg) || [];
-        collectedHeaders.forEach(function (header) {
-          forgedRequest.setRequestHeader(header[0], header[1]);
-        });
-        xhrRequestHeaders.delete(thisArg);
-        matchedXhrRequests.delete(thisArg);
-        try {
-          Reflect.apply(nativeSend, forgedRequest, args);
-        } catch (_unused3) {
-          return Reflect.apply(target, thisArg, args);
-        }
-        return undefined;
-      };
-      var openHandler = {
-        apply: openWrapper
-      };
-      var sendHandler = {
-        apply: sendWrapper
-      };
-      XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, openHandler);
-      XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, sendHandler);
-    }
-    function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
-        {
-          name: l,
-          verbose: v
-        } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
-      }
-    }
-    function getPrunePath(t) {
-      var r = ".[=].";
-      if ("string" == typeof t && void 0 !== t && "" !== t) {
-        var e = function (t) {
-          for (var e = [], n = "", i = 0, a = false, s = false; i < t.length;) {
-            var u = t[i];
-            if (a) n += u, "\\" === u ? s = !s : ("/" !== u || s || (a = false), s = false), i += 1;else {
-              if (" " === u || "\n" === u || "\t" === u || "\r" === u || "\f" === u || "\v" === u) {
-                for (; i < t.length && /\s/.test(t[i]);) i += 1;
-                "" !== n && (e.push(n), n = "");
-                continue;
-              }
-              if (t.startsWith(r, i)) {
-                if (n += r, "/" === t[i += 5]) {
-                  a = true, s = false, n += "/", i += 1;
-                  continue;
-                }
-                continue;
-              }
-              n += u, i += 1;
-            }
-          }
-          return "" !== n && e.push(n), e;
-        }(t);
-        return e.map(function (t) {
-          var e = t.split(r),
-            n = e[0],
-            i = e[1];
-          return void 0 !== i ? ("true" === i ? i = true : "false" === i ? i = false : i.startsWith("/") ? i = toRegExp(i) : "string" == typeof i && /^\d+$/.test(i) && (i = parseFloat(i)), {
-            path: n,
-            value: i
-          }) : {
-            path: n
-          };
-        });
-      }
-      return [];
-    }
-    function matchRequestProps(e, t, r) {
-      if ("" === t || "*" === t) return true;
-      var a,
-        s = parseMatchProps(t);
-      if (isValidParsedData(s)) {
-        var n = getMatchPropsData(s);
-        a = Object.keys(n).every(function (e) {
-          var t = n[e],
-            a = r[e];
-          return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
-        });
-      } else logMessage(e, `Invalid parameter: ${t}`), a = false;
-      return a;
-    }
-    function getXhrData(r, t, a, e, n) {
-      return {
-        method: r,
-        url: t,
-        async: a,
-        user: e,
-        password: n
-      };
-    }
-    function jsonSetter(e, t, r, n, a, o, i, s) {
-      var {
-        nativeStringify: l
-      } = s;
-      if (!r) return logMessage(e, `${window.location.hostname}\n${l(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(e, t, true, false), t;
-      try {
-        if (!1 === isPruningNeeded(e, t, [{
-          path: r
-        }], o, i, s)) return t;
-        var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
-            return r.includes(e);
-          }),
-          c = getWildcardPropertyInChain(t, r, g, [], n);
-        if (c.length > 0) for (var f = 0; f < c.length; f += 1) {
-          var h = c[f];
-          h && h.base && (h.base[h.prop] = a(h.base[h.prop]), hit(e));
-        } else if (!g && void 0 === n) {
-          for (var u = r.split("."), v = t, p = 0; p < u.length - 1; p += 1) {
-            var d = u[p];
-            void 0 !== v[d] && null !== v[d] && "object" == typeof v[d] || (v[d] = {}), v = v[d];
-          }
-          var b = u[u.length - 1];
-          v[b] = a(v[b]), hit(e);
-        }
-      } catch (t) {
-        logMessage(e, t);
-      }
-      return t;
-    }
-    function matchStackTrace(e, t) {
-      if (!e || "" === e) return true;
-      var r = backupRegExpValues();
-      if (shouldAbortInlineOrInjectedScript(e, t)) return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), true;
-      var n = toRegExp(e),
-        a = t.split("\n").slice(2).map(function (e) {
-          return e.trim();
-        }).join("\n");
-      return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
-    }
-    function getMatchPropsData(t) {
-      var a = {};
-      return Object.keys(t).forEach(function (c) {
-        a[c] = toRegExp(t[c]);
-      }), a;
-    }
-    function getRequestProps() {
-      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
-    }
-    function isValidParsedData(t) {
-      return Object.values(t).every(function (t) {
-        return isValidStrPattern(t);
-      });
-    }
-    function parseMatchProps(e) {
-      var r = {};
-      return e.split(" ").forEach(function (e) {
-        var n = e.indexOf(":"),
-          i = e.slice(0, n);
-        if (function (e) {
-          return getRequestProps().includes(e);
-        }(i)) {
-          var s = e.slice(n + 1);
-          r[i] = s;
-        } else r.url = e;
-      }), r;
-    }
-    function isValidStrPattern(e) {
-      var t,
-        n = escapeRegExp(e);
-      "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
-      try {
-        t = new RegExp(n), t = !0;
-      } catch (e) {
-        t = false;
-      }
-      return t;
-    }
-    function escapeRegExp(e) {
-      return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-    function getWildcardPropertyInChain(r, e) {
-      var a = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        i = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : [],
-        t = arguments.length > 4 ? arguments[4] : void 0,
-        o = e.indexOf(".");
-      if (-1 === o) {
-        if ("*" === e || "[]" === e) {
-          for (var n in r) if (Object.prototype.hasOwnProperty.call(r, n)) if (void 0 !== t) {
-            var s = r[n];
-            "string" == typeof s && t instanceof RegExp ? t.test(s) && i.push({
-              base: r,
-              prop: n
-            }) : s === t && i.push({
-              base: r,
-              prop: n
-            });
-          } else i.push({
-            base: r,
-            prop: n
-          });
-        } else if (void 0 !== t) {
-          var p = r[e];
-          "string" == typeof p && t instanceof RegExp ? t.test(p) && i.push({
-            base: r,
-            prop: e
-          }) : r[e] === t && i.push({
-            base: r,
-            prop: e
-          });
-        } else i.push({
-          base: r,
-          prop: e
-        });
-        return i;
-      }
-      var c = e.slice(0, o);
-      if ("[]" === c && Array.isArray(r) || "*" === c && r instanceof Object || "[-]" === c && Array.isArray(r) || "{-}" === c && r instanceof Object) {
-        var f = e.slice(o + 1),
-          y = Object.keys(r);
-        if ("{-}" === c || "[-]" === c) {
-          var h = Array.isArray(r) ? "array" : "object";
-          return ("{-}" !== c || "object" !== h) && ("[-]" !== c || "array" !== h) || y.forEach(function (e) {
-            var a = r[e];
-            isKeyInObject(a, f, t) && i.push({
-              base: r,
-              prop: e
-            });
-          }), i;
-        }
-        y.forEach(function (e) {
-          getWildcardPropertyInChain(r[e], f, a, i, t);
-        });
-      }
-      Array.isArray(r) && r.forEach(function (r) {
-        void 0 !== r && getWildcardPropertyInChain(r, e, a, i, t);
-      });
-      var d = r[c];
-      return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
-    }
-    function shouldAbortInlineOrInjectedScript(t, i) {
-      var r = "inlineScript",
-        n = "injectedScript",
-        isInlineScript = function isInlineScript(t) {
-          return t.includes(r);
-        },
-        isInjectedScript = function isInjectedScript(t) {
-          return t.includes(n);
-        };
-      if (!isInlineScript(t) && !isInjectedScript(t)) return false;
-      var e = window.location.href,
-        s = e.indexOf("#");
-      -1 !== s && (e = e.slice(0, s));
-      var c = i.split("\n").slice(2).map(function (t) {
-        return t.trim();
-      }).map(function (t) {
-        var i,
-          s = /(.*?@)?(\S+)(:\d+)(:\d+)\)?$/.exec(t);
-        if (s) {
-          var c,
-            l,
-            a = s[2],
-            u = s[3],
-            o = s[4];
-          if (null !== (c = a) && void 0 !== c && c.startsWith("(") && (a = a.slice(1)), null !== (l = a) && void 0 !== l && l.startsWith("<anonymous>")) {
-            var d;
-            a = n;
-            var f = void 0 !== s[1] ? s[1].slice(0, -1) : t.slice(0, s.index).trim();
-            null !== (d = f) && void 0 !== d && d.startsWith("at") && (f = f.slice(2).trim()), i = `${f} ${a}${u}${o}`.trim();
-          } else i = a === e ? `${r}${u}${o}`.trim() : `${a}${u}${o}`.trim();
-        } else i = t;
-        return i;
-      });
-      if (c) for (var l = 0; l < c.length; l += 1) {
-        if (isInlineScript(t) && c[l].startsWith(r) && c[l].match(toRegExp(t))) return true;
-        if (isInjectedScript(t) && c[l].startsWith(n) && c[l].match(toRegExp(t))) return true;
-      }
-      return false;
-    }
-    function getNativeRegexpTest() {
-      var t = Object.getOwnPropertyDescriptor(RegExp.prototype, "test"),
-        e = null == t ? void 0 : t.value;
-      if (t && "function" == typeof t.value) return e;
-      throw new Error("RegExp.prototype.test is not a function");
-    }
-    function backupRegExpValues() {
-      try {
-        for (var r = [], e = 1; e < 10; e += 1) {
-          var a = `$${e}`;
-          if (!RegExp[a]) break;
-          r.push(RegExp[a]);
-        }
-        return r;
-      } catch (r) {
-        return [];
-      }
-    }
-    function restoreRegExpValues(e) {
-      if (e.length) try {
-        var r = "";
-        r = 1 === e.length ? `(${e[0]})` : e.reduce(function (e, r, t) {
-          return 1 === t ? `(${e}),(${r})` : `${e},(${r})`;
-        });
-        var t = new RegExp(r);
-        e.toString().replace(t, "");
-      } catch (e) {
-        var n = `Failed to restore RegExp values: ${e}`;
-        console.log(n);
-      }
-    }
-    function isKeyInObject(t, r, e) {
-      var n = r.split("."),
-        _check8 = function _check(t, r) {
-          if (null == t) return false;
-          if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
-          var n = r[0],
-            i = r.slice(1);
-          if ("*" === n || "[]" === n) {
-            if (Array.isArray(t)) return t.some(function (t) {
-              return _check8(t, i);
-            });
-            if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
-              return _check8(t[r], i);
-            });
-          }
-          return !!Object.prototype.hasOwnProperty.call(t, n) && _check8(t[n], i);
-        };
-      return _check8(t, n);
-    }
-    function noopArray() {
-      return [];
-    }
-    function noopObject() {
-      return {};
-    }
-    function noopCallbackFunc() {
-      return noopFunc;
-    }
-    function noopFunc() {}
-    function trueFunc() {
-      return true;
-    }
-    function falseFunc() {
-      return false;
-    }
-    function throwFunc() {
-      throw new Error();
-    }
-    function noopPromiseReject() {
-      return Promise.reject();
-    }
-    function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
-        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
-        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
-      if ("undefined" != typeof Response) {
-        var n = new Response(e, {
-          headers: {
-            "Content-Length": `${e.length}`
-          },
-          status: 200,
-          statusText: "OK"
-        });
-        return "opaque" === s ? Object.defineProperties(n, {
-          body: {
-            value: null
-          },
-          status: {
-            value: 0
-          },
-          ok: {
-            value: false
-          },
-          statusText: {
-            value: ""
-          },
-          url: {
-            value: ""
-          },
-          type: {
-            value: s
-          }
-        }) : Object.defineProperties(n, {
-          url: {
-            value: t
-          },
-          type: {
-            value: s
-          }
-        }), Promise.resolve(n);
-      }
-    }
-    function nativeIsNaN(N) {
-      return (Number.isNaN || window.isNaN)(N);
-    }
-    function extractRegexAndReplacement(e) {
-      if (e) {
-        var r = e.slice(8),
-          t = "";
-        if (r.endsWith("/g") && (r = r.slice(0, -1), t = "g"), r.startsWith("/") && r.endsWith("/")) {
-          for (var i = r.slice(1, -1), a = -1, c = 0; c < i.length; c += 1) if ("/" === i[c]) {
-            for (var f = false, n = c - 1; n >= 0 && "\\" === i[n];) f = !f, n -= 1;
-            if (!f) {
-              a = c;
-              break;
-            }
-          }
-          if (-1 !== a) {
-            var s = `/${i.slice(0, a)}/${t}`,
-              l = i.slice(a + 1);
-            if (s && "//" !== s) {
-              var g;
-              try {
-                g = toRegExp(s);
-              } catch (e) {
-                return;
-              }
-              if (g) return {
-                regexPart: g,
-                replacementPart: l
-              };
-            }
-          }
-        }
-      }
-    }
-    function getJsonSetValue(e, t) {
-      return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
-    }
-    function hit(e) {
-      if (e.verbose) {
-        try {
-          var n = console.trace.bind(console),
-            i = "[AdGuard] ";
-          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
-        } catch (e) {}
-        "function" == typeof window.__debug && window.__debug(e);
-      }
-    }
-    function isPruningNeeded(n, t, r, e, a, i) {
-      if (!t) return false;
-      var o,
-        {
-          nativeStringify: u
-        } = i,
-        c = r.map(function (n) {
-          return n.path;
-        }),
-        f = e.map(function (n) {
-          return n.path;
-        });
-      if (0 === c.length && f.length > 0) {
-        var g = u(t);
-        if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
-      }
-      for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
-          var n = f[p],
-            r = n.split(".").pop(),
-            e = l.some(function (t) {
-              return n.includes(t);
-            }),
-            a = getWildcardPropertyInChain(t, n, e);
-          if (!a.length) return {
-            v: o = false
-          };
-          o = !e;
-          for (var i = 0; i < a.length; i += 1) {
-            var u = "string" == typeof r && void 0 !== a[i].base[r];
-            o = e ? u || o : u && o;
-          }
-        }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
-      return o;
-    }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
-        return logMessage(e, `Invalid JSON argument value: ${l}`), null;
-      } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
-      }
-      return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
-      };
-    }
-    function toRegExp(e) {
-      var r = e || "",
-        t = "/";
-      if ("" === r) return new RegExp(".?");
-      var n,
-        i,
-        s = r.lastIndexOf(t),
-        a = r.substring(s + 1),
-        g = r.substring(0, s + 1),
-        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
-          if (!e) return false;
-          try {
-            return new RegExp("", e), !0;
-          } catch (e) {
-            return false;
-          }
-        }(i) ? i : "");
-      if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
-      var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return new RegExp(c);
-    }
-    var updatedArgs = args ? [].concat(source).concat(args) : [source];
-    try {
-      trustedJsonSetXhrResponse.apply(this, updatedArgs);
-      if (source.uniqueId) {
-        Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
-          value: flag,
-          enumerable: false,
-          writable: false,
-          configurable: false
-        });
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  }
   function trustedPruneInboundObject(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -16267,22 +14012,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function isKeyInObject(t, r, e) {
       var n = r.split("."),
-        _check9 = function _check(t, r) {
+        _check6 = function _check(t, r) {
           if (null == t) return false;
           if (0 === r.length) return void 0 === e || ("string" == typeof t && e instanceof RegExp ? e.test(t) : t === e);
           var n = r[0],
             i = r.slice(1);
           if ("*" === n || "[]" === n) {
             if (Array.isArray(t)) return t.some(function (t) {
-              return _check9(t, i);
+              return _check6(t, i);
             });
             if ("object" == typeof t && null !== t) return Object.keys(t).some(function (r) {
-              return _check9(t[r], i);
+              return _check6(t[r], i);
             });
           }
-          return !!Object.prototype.hasOwnProperty.call(t, n) && _check9(t[n], i);
+          return !!Object.prototype.hasOwnProperty.call(t, n) && _check6(t[n], i);
         };
-      return _check9(t, n);
+      return _check6(t, n);
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -17733,7 +15478,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         xhrRequestHeaders.delete(thisArg);
         matchedXhrRequests.delete(thisArg);
         try {
-          Reflect.apply(nativeSend, forgedRequest, args);
+          nativeSend.call(forgedRequest, args);
         } catch (_unused) {
           return Reflect.apply(target, thisArg, args);
         }
@@ -19282,7 +17027,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         xhrRequestHeaders.delete(thisArg);
         matchedXhrRequests.delete(thisArg);
         try {
-          Reflect.apply(nativeSend, forgedRequest, args);
+          nativeSend.call(forgedRequest, args);
         } catch (_unused) {
           return Reflect.apply(target, thisArg, args);
         }
@@ -19464,7 +17209,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     fingerprintjs3: Fingerprintjs3,
     "ubo-fingerprint3.js": Fingerprintjs3,
     "fingerprint3.js": Fingerprintjs3,
-    "freewheel-admanager": FreewheelAdManager,
     gemius: Gemius,
     "google-analytics-ga": GoogleAnalyticsGa,
     "ubo-google-analytics_ga.js": GoogleAnalyticsGa,
@@ -19795,9 +17539,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "trusted-click-element": trustedClickElement,
     "trusted-create-element": trustedCreateElement,
     "trusted-dispatch-event": trustedDispatchEvent,
-    "trusted-json-set-fetch-response": trustedJsonSetFetchResponse,
-    "trusted-json-set": trustedJsonSet,
-    "trusted-json-set-xhr-response": trustedJsonSetXhrResponse,
     "trusted-prune-inbound-object": trustedPruneInboundObject,
     "trusted-replace-argument": trustedReplaceArgument,
     "trusted-replace-fetch-response": trustedReplaceFetchResponse,
