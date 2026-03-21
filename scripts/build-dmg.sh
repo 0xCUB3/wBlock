@@ -85,9 +85,16 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
     done < <(find "${APP_PATH}/Contents/XPCServices" -maxdepth 1 -name "*.xpc" -print0)
   fi
 
-  # Sign embedded Safari extensions
+  # Sign embedded Safari extensions (sign nested frameworks inside each appex first)
   if [[ -d "${APP_PATH}/Contents/PlugIns" ]]; then
     while IFS= read -r -d '' appex; do
+      # Sign frameworks nested inside the appex before signing the appex itself
+      if [[ -d "${appex}/Contents/Frameworks" ]]; then
+        while IFS= read -r -d '' nested; do
+          sign_item "${nested}"
+        done < <(find "${appex}/Contents/Frameworks" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) -print0)
+      fi
+
       appex_name="$(basename "${appex}" .appex)"
       entitlements=""
       case "${appex_name}" in
@@ -97,6 +104,7 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
         "wBlock Foreign") entitlements="${ROOT_DIR}/wBlock Foreign/wBlock_Foreign.entitlements" ;;
         "wBlock Custom") entitlements="${ROOT_DIR}/wBlock Custom/wBlock_Custom.entitlements" ;;
         "wBlock Privacy") entitlements="${ROOT_DIR}/wBlock Privacy/wBlock_Privacy.entitlements" ;;
+        "wBlock Scripts") entitlements="${ROOT_DIR}/wBlock Scripts/wBlock Scripts.entitlements" ;;
       esac
 
       if [[ -n "${entitlements}" && -f "${entitlements}" ]]; then
