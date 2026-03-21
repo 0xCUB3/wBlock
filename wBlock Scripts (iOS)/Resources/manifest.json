@@ -29,8 +29,7 @@
             ],
             "run_at": "document_start",
             "all_frames": true,
-            "match_about_blank": true,
-            "match_origin_as_fallback": true
+            "match_about_blank": true
         },
         {
             "js": [
@@ -54,13 +53,15 @@
         }
     },
     "permissions": [
-        "<all_urls>",
         "nativeMessaging",
         "storage",
         "unlimitedStorage",
         "scripting",
         "tabs",
         "declarativeNetRequest"
+    ],
+    "host_permissions": [
+        "<all_urls>"
     ],
     "declarative_net_request": {
         "rule_resources": [
