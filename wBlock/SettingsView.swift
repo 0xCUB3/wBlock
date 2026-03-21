@@ -175,7 +175,7 @@ struct SettingsView: View {
         NavigationLink {
             WhitelistManagerView(filterManager: filterManager)
         } label: {
-            Label("Manage Whitelist", systemImage: "list.bullet.indent")
+            Label("Manage Whitelist", systemImage: "list.bullet")
         }
 
         NavigationLink {
@@ -337,9 +337,7 @@ struct SettingsView: View {
 
                 Section("Actions") {
                     actionsSection
-                    HStack {
-                        backupButtons
-                    }
+                    backupButtons
                 }
 
                 autoUpdateSection
