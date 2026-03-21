@@ -358,7 +358,12 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Downloads remote content and compares it against the locally cached version
     private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
-        let request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
+        let request: URLRequest
+        if filter.url.host?.contains("gitflic.ru") == true {
+            request = NetworkRequestFactory.makeGitflicRequest(url: filter.url, timeout: 30)
+        } else {
+            request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
+        }
         let (data, response) = try await urlSession.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
