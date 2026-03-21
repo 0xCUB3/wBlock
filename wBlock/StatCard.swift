@@ -46,11 +46,16 @@ struct StatCard: View {
                     .truncationMode(.tail)
                     .minimumScaleFactor(0.6)
                     .allowsTightening(true)
+                    .frame(minWidth: 60, alignment: .leading)
             }
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
+        #if os(iOS)
         .frame(maxWidth: .infinity, alignment: .leading)
+        #else
+        .frame(minWidth: 155)
+        #endif
         .background {
             #if os(iOS)
             RoundedRectangle(cornerRadius: 24, style: .continuous)
