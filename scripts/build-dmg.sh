@@ -42,10 +42,16 @@ fi
 # CODE_SIGNING_ALLOWED=NO leaves $(AppIdentifierPrefix) unresolved in plists.
 # Patch it so Safari can identify the extension's team.
 if [[ -n "${TEAM_ID}" ]]; then
-  adv_plist="${APP_PATH}/Contents/PlugIns/wBlock Advanced.appex/Contents/Info.plist"
-  if [[ -f "${adv_plist}" ]]; then
-    /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${adv_plist}"
-  fi
+  for appex_plist in "${APP_PATH}/Contents/PlugIns/"*.appex/Contents/Info.plist; do
+    if [[ -f "${appex_plist}" ]]; then
+      # Add AppIdentifierPrefix if not already present
+      if ! /usr/libexec/PlistBuddy -c "Print :AppIdentifierPrefix" "${appex_plist}" &>/dev/null; then
+        /usr/libexec/PlistBuddy -c "Add :AppIdentifierPrefix string ${TEAM_ID}." "${appex_plist}"
+      else
+        /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${appex_plist}"
+      fi
+    fi
+  done
 fi
 
 if [[ -n "${SIGNING_IDENTITY}" ]]; then
