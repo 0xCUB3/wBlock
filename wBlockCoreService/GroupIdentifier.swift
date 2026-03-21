@@ -38,6 +38,7 @@ public final class GroupIdentifier {
         #if os(macOS)
         if let prefix = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String {
             value = "\(prefix)\(Self.plainGroupIdentifier)"
+            GroupContainerMigrator.migrateIfNeeded(from: Self.plainGroupIdentifier, to: value)
         } else {
             value = Self.plainGroupIdentifier
         }

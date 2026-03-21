@@ -63,6 +63,19 @@ if [[ -n "${TEAM_ID}" ]]; then
       /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${main_plist}"
     fi
   fi
+
+  # Patch XPC service plists so they also use the team-prefixed group
+  if [[ -d "${APP_PATH}/Contents/XPCServices" ]]; then
+    for xpc_plist in "${APP_PATH}/Contents/XPCServices/"*.xpc/Contents/Info.plist; do
+      if [[ -f "${xpc_plist}" ]]; then
+        if ! /usr/libexec/PlistBuddy -c "Print :AppIdentifierPrefix" "${xpc_plist}" &>/dev/null; then
+          /usr/libexec/PlistBuddy -c "Add :AppIdentifierPrefix string ${TEAM_ID}." "${xpc_plist}"
+        else
+          /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${xpc_plist}"
+        fi
+      fi
+    done
+  fi
 fi
 
 if [[ -n "${SIGNING_IDENTITY}" ]]; then

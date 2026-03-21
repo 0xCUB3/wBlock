@@ -42,9 +42,6 @@ struct wBlockApp: App {
                         }
                         handleLaunchArguments()
 
-                        // Migrate group container before anything else accesses it
-                        GroupContainerMigrator.migrateIfNeeded()
-
                         // Run migrations (idempotent - only saves if needed)
                         Task {
                             await dataManager.migrateMultipurposeToAnnoyances()
