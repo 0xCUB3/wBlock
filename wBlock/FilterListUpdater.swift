@@ -257,22 +257,12 @@ final class FilterListUpdater: @unchecked Sendable {
             return false
         }
         do {
-            let request: URLRequest
-            if filter.url.host?.contains("gitflic.ru") == true {
-                request = NetworkRequestFactory.makeGitflicRequest(
-                    url: filter.url,
-                    etag: validators.etag,
-                    lastModified: validators.lastModified,
-                    timeout: 30
-                )
-            } else {
-                request = NetworkRequestFactory.makeConditionalRequest(
-                    url: filter.url,
-                    etag: validators.etag,
-                    lastModified: validators.lastModified,
-                    timeout: 20
-                )
-            }
+            let request = NetworkRequestFactory.makeConditionalRequest(
+                url: filter.url,
+                etag: validators.etag,
+                lastModified: validators.lastModified,
+                timeout: 20
+            )
 
             let (data, response) = try await urlSession.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -358,12 +348,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Downloads remote content and compares it against the locally cached version
     private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
-        let request: URLRequest
-        if filter.url.host?.contains("gitflic.ru") == true {
-            request = NetworkRequestFactory.makeGitflicRequest(url: filter.url, timeout: 30)
-        } else {
-            request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
-        }
+        let request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
         let (data, response) = try await urlSession.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
@@ -471,25 +456,13 @@ final class FilterListUpdater: @unchecked Sendable {
         do {
             let validators = await storedValidators(for: filter)
             
-            // Special handling for GitFlic URLs which may be blocked by Cloudflare
-            let (data, response): (Data, URLResponse)
-            if filter.url.host?.contains("gitflic.ru") == true {
-                let request = NetworkRequestFactory.makeGitflicRequest(
-                    url: filter.url,
-                    etag: validators.etag,
-                    lastModified: validators.lastModified,
-                    timeout: 30
-                )
-                (data, response) = try await urlSession.data(for: request)
-            } else {
-                let request = NetworkRequestFactory.makeConditionalRequest(
-                    url: filter.url,
-                    etag: validators.etag,
-                    lastModified: validators.lastModified,
-                    timeout: 30
-                )
-                (data, response) = try await urlSession.data(for: request)
-            }
+            let request = NetworkRequestFactory.makeConditionalRequest(
+                url: filter.url,
+                etag: validators.etag,
+                lastModified: validators.lastModified,
+                timeout: 30
+            )
+            let (data, response) = try await urlSession.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 await ConcurrentLogManager.shared.error(

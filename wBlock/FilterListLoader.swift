@@ -190,7 +190,7 @@ class FilterListLoader {
                 id: UUID(), name: "Bypass Paywalls Clean Filter",
                 url: URL(
                     string:
-                        "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt"
+                        "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev"
                 )!, category: FilterListCategory.annoyances,
                 description:
                     "Blocks paywall-related elements. Enable the corresponding userscript for best results."

@@ -157,17 +157,9 @@ public class UserScriptManager: ObservableObject {
                 "📥 Downloading on-demand @resource '\(resourceName)' from \(resourceURLString)"
             )
 
-            let data: Data
-            if url.host?.contains("gitflic") == true {
-                let request = self.createGitflicRequest(for: url)
-                let (responseData, _) = try await self.urlSession.data(for: request)
-                data = responseData
-            } else {
-                let (responseData, _) = try await self.urlSession.data(from: url)
-                data = responseData
-            }
+            let (responseData, _) = try await self.urlSession.data(from: url)
 
-            guard let resourceContent = String(data: data, encoding: .utf8) else {
+            guard let resourceContent = String(data: responseData, encoding: .utf8) else {
                 self.logger.error(
                     "❌ Failed to decode on-demand @resource '\(resourceName)' from: \(resourceURLString)"
                 )
@@ -264,11 +256,6 @@ public class UserScriptManager: ObservableObject {
             logger.error("❌ Failed to encode userscript resources for \(userScript.name): \(error)")
             return false
         }
-    }
-
-    /// Creates a request with browser-like headers for gitflic.ru to bypass DDoS protection
-    private func createGitflicRequest(for url: URL) -> URLRequest {
-        NetworkRequestFactory.makeGitflicRequest(url: url, timeout: 30)
     }
 
     /// Checks if content is a DDoS protection page instead of actual content
@@ -930,17 +917,9 @@ public class UserScriptManager: ObservableObject {
                 guard let scriptURL = currentScript.url else { continue }
 
                 do {
-                    let data: Data
-                    if scriptURL.host?.contains("gitflic") == true {
-                        let request = self.createGitflicRequest(for: scriptURL)
-                        let (responseData, _) = try await self.urlSession.data(for: request)
-                        data = responseData
-                    } else {
-                        let (responseData, _) = try await self.urlSession.data(from: scriptURL)
-                        data = responseData
-                    }
+                    let (responseData, _) = try await self.urlSession.data(from: scriptURL)
 
-                    guard let content = String(data: data, encoding: .utf8), !content.isEmpty else {
+                    guard let content = String(data: responseData, encoding: .utf8), !content.isEmpty else {
                         continue
                     }
                     guard !self.isDDoSProtectionPage(content) else { continue }
@@ -997,18 +976,9 @@ public class UserScriptManager: ObservableObject {
             do {
                 logger.info("📥 Downloading required script: \(requireURL)")
 
-                // Use special handling for gitflic.ru to bypass DDoS protection
-                let data: Data
-                if url.host?.contains("gitflic") == true {
-                    let request = createGitflicRequest(for: url)
-                    let (responseData, _) = try await urlSession.data(for: request)
-                    data = responseData
-                } else {
-                    let (responseData, _) = try await urlSession.data(from: url)
-                    data = responseData
-                }
+                let (responseData, _) = try await urlSession.data(from: url)
 
-                if let requiredContent = String(data: data, encoding: .utf8) {
+                if let requiredContent = String(data: responseData, encoding: .utf8) {
                     // Check for DDoS protection page
                     if isDDoSProtectionPage(requiredContent) {
                         logger.error("❌ Received DDoS protection page for @require: \(requireURL)")
@@ -1059,18 +1029,9 @@ public class UserScriptManager: ObservableObject {
             do {
                 logger.info("📥 Downloading resource: \(resourceName) from \(resourceURL)")
 
-                // Use special handling for gitflic.ru to bypass DDoS protection
-                let data: Data
-                if url.host?.contains("gitflic") == true {
-                    let request = createGitflicRequest(for: url)
-                    let (responseData, _) = try await urlSession.data(for: request)
-                    data = responseData
-                } else {
-                    let (responseData, _) = try await urlSession.data(from: url)
-                    data = responseData
-                }
+                let (responseData, _) = try await urlSession.data(from: url)
 
-                if let resourceContent = String(data: data, encoding: .utf8) {
+                if let resourceContent = String(data: responseData, encoding: .utf8) {
                     // Check for DDoS protection page
                     if isDDoSProtectionPage(resourceContent) {
                         logger.error(
@@ -1100,16 +1061,7 @@ public class UserScriptManager: ObservableObject {
         logger.info("📥 Downloading userscript from: \(url)")
 
         do {
-            // Use special handling for gitflic.ru to bypass DDoS protection
-            let data: Data
-            if url.host?.contains("gitflic") == true {
-                let request = createGitflicRequest(for: url)
-                let (responseData, _) = try await urlSession.data(for: request)
-                data = responseData
-            } else {
-                let (responseData, _) = try await urlSession.data(from: url)
-                data = responseData
-            }
+            let (data, _) = try await urlSession.data(from: url)
 
             let content = String(data: data, encoding: .utf8) ?? ""
 
@@ -1278,16 +1230,7 @@ public class UserScriptManager: ObservableObject {
         hasError = false
 
         do {
-            // Use special handling for gitflic.ru to bypass DDoS protection
-            let data: Data
-            if url.host?.contains("gitflic.ru") == true {
-                let request = createGitflicRequest(for: url)
-                let (responseData, _) = try await urlSession.data(for: request)
-                data = responseData
-            } else {
-                let (responseData, _) = try await urlSession.data(from: url)
-                data = responseData
-            }
+            let (data, _) = try await urlSession.data(from: url)
 
             let content = String(data: data, encoding: .utf8) ?? ""
 

@@ -936,11 +936,25 @@ public class ProtobufDataManager: ObservableObject {
                 logger.info("✅ Loaded protobuf data (\(loaded.rawData.count) bytes)")
 
                 // Migrate BPC userscript from gitflic to Greasy Fork
+                var needsSave = false
                 let oldBpcURL = "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript%2Fbpc.en.user.js"
                 let newBpcURL = "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js"
                 if let bpcIndex = appData.userScripts.firstIndex(where: { $0.url == oldBpcURL }) {
                     appData.userScripts[bpcIndex].url = newBpcURL
                     logger.info("🔄 Migrated BPC userscript URL from gitflic to Greasy Fork")
+                    needsSave = true
+                }
+
+                // Migrate BPC filter list from gitflic to Cloudflare proxy
+                let oldBpcFilterURL = "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt"
+                let newBpcFilterURL = "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev"
+                if let bpcFilterIndex = appData.filterLists.firstIndex(where: { $0.url == oldBpcFilterURL }) {
+                    appData.filterLists[bpcFilterIndex].url = newBpcFilterURL
+                    logger.info("🔄 Migrated BPC filter list URL from gitflic to Cloudflare proxy")
+                    needsSave = true
+                }
+
+                if needsSave {
                     await saveDataImmediately()
                 }
 

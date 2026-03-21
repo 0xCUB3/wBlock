@@ -888,15 +888,6 @@ public actor SharedAutoUpdateManager {
     }
 
     private func makeConditionalRequest(for filter: FilterList, etag: String?, lastModified: String?) -> URLRequest {
-        if filter.url.host?.contains("gitflic.ru") == true {
-            return NetworkRequestFactory.makeGitflicRequest(
-                url: filter.url,
-                etag: etag,
-                lastModified: lastModified,
-                timeout: 30
-            )
-        }
-
         return NetworkRequestFactory.makeConditionalRequest(
             url: filter.url,
             etag: etag,

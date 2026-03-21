@@ -92,37 +92,6 @@ public enum NetworkRequestFactory {
         return request
     }
 
-    public static func makeGitflicRequest(
-        url: URL,
-        etag: String? = nil,
-        lastModified: String? = nil,
-        cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalCacheData,
-        timeout: TimeInterval = 30
-    ) -> URLRequest {
-        var request = makeConditionalRequest(
-            url: url,
-            etag: etag,
-            lastModified: lastModified,
-            cachePolicy: cachePolicy,
-            timeout: timeout
-        )
-        request.setValue(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
-            forHTTPHeaderField: "User-Agent"
-        )
-        request.setValue("text/plain,*/*", forHTTPHeaderField: "Accept")
-        request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
-        request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
-        request.setValue("gitflic.ru", forHTTPHeaderField: "Host")
-        request.setValue("https://gitflic.ru", forHTTPHeaderField: "Referer")
-        request.setValue("same-origin", forHTTPHeaderField: "Sec-Fetch-Site")
-        request.setValue("navigate", forHTTPHeaderField: "Sec-Fetch-Mode")
-        request.setValue("document", forHTTPHeaderField: "Sec-Fetch-Dest")
-        request.setValue("?1", forHTTPHeaderField: "Sec-Fetch-User")
-        request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
-        request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
-        return request
-    }
 }
 
 public enum ContentBlockerIncrementalCache {
