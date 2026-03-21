@@ -53,6 +53,26 @@ public struct UserScript: Identifiable, Codable, Hashable {
         self.content = content
     }
 
+    /// Compares two dot-separated version strings numerically.
+    /// Returns true only if `remote` is strictly greater than `local`.
+    /// Non-numeric segment prefixes (e.g. "0b") use leading digits only; no digits = 0.
+    public static func isVersionNewer(_ remote: String, than local: String) -> Bool {
+        let remoteParts = remote.split(separator: ".", omittingEmptySubsequences: false).map { part in
+            Int(part.prefix(while: { $0.isNumber })) ?? 0
+        }
+        let localParts = local.split(separator: ".", omittingEmptySubsequences: false).map { part in
+            Int(part.prefix(while: { $0.isNumber })) ?? 0
+        }
+        let maxLen = max(remoteParts.count, localParts.count)
+        for i in 0..<maxLen {
+            let r = i < remoteParts.count ? remoteParts[i] : 0
+            let l = i < localParts.count ? localParts[i] : 0
+            if r > l { return true }
+            if r < l { return false }
+        }
+        return false
+    }
+
     private static let matchRegexCache: NSCache<NSString, NSRegularExpression> = {
         let cache = NSCache<NSString, NSRegularExpression>()
         cache.countLimit = 512
