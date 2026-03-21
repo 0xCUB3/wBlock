@@ -100,7 +100,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 | License<sup>18</sup>    | GPL-3.0                           | GPL-3.0              | Proprietary           | GPL-3.0              |
 | Primary Language<sup>19</sup>        | Swift                | JavaScript   | Swift          | TypeScript/Swift   |
 | Secondary Language      | Swift                             | CSS                  | N/A (Closed)          | HTML/CSS    |
-| Extension Architecture<sup>8</sup>   | Content Blocker + App (macOS) / Web (iOS) | Manifest V3 Web Extension | Content Blocker + Web Extension | Content Blocker + Web Extension |
+| Extension Architecture<sup>8</sup>   | Content Blocker + Web Extension | Manifest V3 Web Extension | Content Blocker + Web Extension | Content Blocker + Web Extension |
 | Manifest Version<sup>9</sup>         | Safari Native                     | V3                   | Safari Native         | Safari Native        |
 | Filterlist Storage Database<sup>10</sup> | Protobuf                        | IndexedDB + JSON     | Unknown               | SQLite + JSON        |
 | Element Zapper<sup>11</sup>          | ✅                                 | ✅                    | ❌                    | ✅                    |
