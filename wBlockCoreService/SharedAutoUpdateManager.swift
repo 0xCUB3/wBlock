@@ -368,8 +368,8 @@ public actor SharedAutoUpdateManager {
                     "Auto-update safe mode: skipped work inside extension. Updates run when the app is active or via background tasks."
                 )
                 hasLoggedExtensionSafeModeNotice = true
+                appendSkipTelemetry(trigger: trigger, reason: "extension_safe_mode")
             }
-            appendSkipTelemetry(trigger: trigger, reason: "extension_safe_mode")
             return
         }
 
