@@ -518,12 +518,6 @@ struct FilterRowView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                } else if filter.sourceRuleCount == nil {
-                    // Filter not yet downloaded or count not calculated
-                    Text("(pending)")
-                        .font(.caption)
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if !filter.description.isEmpty {
