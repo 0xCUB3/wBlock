@@ -37,7 +37,6 @@ struct LiquidGlassDesignSystem {
     }
 
     static let standardCornerRadius: CGFloat = 12
-    static let cardCornerRadius: CGFloat = 16
     static let buttonCornerRadius: CGFloat = 12
 }
 
@@ -107,27 +106,6 @@ extension View {
                 Capsule()
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
-    }
-}
-
-struct LiquidGlassCard<Content: View>: View {
-    let content: Content
-    let cornerRadius: CGFloat
-    let style: LiquidGlassDesignSystem.GlassStyle
-
-    init(
-        cornerRadius: CGFloat = LiquidGlassDesignSystem.cardCornerRadius,
-        style: LiquidGlassDesignSystem.GlassStyle = .regular,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.content = content()
-        self.cornerRadius = cornerRadius
-        self.style = style
-    }
-
-    var body: some View {
-        content
-            .liquidGlass(style: style, cornerRadius: cornerRadius)
     }
 }
 
@@ -206,23 +184,4 @@ struct SearchMinimizeBehavior: ViewModifier {
         content.searchToolbarBehavior(.minimize)
     }
     #endif
-}
-
-struct LiquidGlassButtonStyle: ButtonStyle {
-    let tint: Color?
-    let cornerRadius: CGFloat
-
-    init(tint: Color? = nil, cornerRadius: CGFloat = LiquidGlassDesignSystem.buttonCornerRadius) {
-        self.tint = tint
-        self.cornerRadius = cornerRadius
-    }
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .liquidGlassInteractive(tint: tint, cornerRadius: cornerRadius)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
-    }
 }

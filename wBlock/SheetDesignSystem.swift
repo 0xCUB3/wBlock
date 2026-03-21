@@ -110,67 +110,6 @@ extension View {
             .controlSize(.large)
     }
 
-    /// Applies consistent secondary action button style
-    func secondaryActionButtonStyle() -> some View {
-        self.buttonStyle(.bordered)
-            .controlSize(.large)
-    }
-}
-
-// MARK: - Empty State View
-
-struct EmptyStateView: View {
-    let icon: String
-    let title: String
-    let description: String
-    let actionTitle: String?
-    let action: (() -> Void)?
-
-    init(
-        icon: String,
-        title: String,
-        description: String,
-        actionTitle: String? = nil,
-        action: (() -> Void)? = nil
-    ) {
-        self.icon = icon
-        self.title = title
-        self.description = description
-        self.actionTitle = actionTitle
-        self.action = action
-    }
-
-    var body: some View {
-        VStack(spacing: 24) {
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary.opacity(0.6))
-
-            VStack(spacing: 8) {
-                Text(LocalizedStringKey(title))
-                    .font(.title2)
-                    .fontWeight(.medium)
-
-                Text(LocalizedStringKey(description))
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            if let actionTitle = actionTitle, let action = action {
-                Button {
-                    action()
-                } label: {
-                    Label(LocalizedStringKey(actionTitle), systemImage: "plus")
-                        .font(.body)
-                        .fontWeight(.medium)
-                }
-                .primaryActionButtonStyle()
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical)
-    }
 }
 
 // MARK: - Progress View with Status
