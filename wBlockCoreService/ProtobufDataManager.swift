@@ -935,6 +935,15 @@ public class ProtobufDataManager: ObservableObject {
 
                 logger.info("✅ Loaded protobuf data (\(loaded.rawData.count) bytes)")
 
+                // Migrate BPC userscript from gitflic to Greasy Fork
+                let oldBpcURL = "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript%2Fbpc.en.user.js"
+                let newBpcURL = "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js"
+                if let bpcIndex = appData.userScripts.firstIndex(where: { $0.url == oldBpcURL }) {
+                    appData.userScripts[bpcIndex].url = newBpcURL
+                    logger.info("🔄 Migrated BPC userscript URL from gitflic to Greasy Fork")
+                    await saveDataImmediately()
+                }
+
                 // Check if terminology sanitization is needed
                 if appData.settings.lastTerminologySanitizationVersion < terminologySanitizationVersion {
                     logger.info("🧹 Running terminology sanitization (version \(self.terminologySanitizationVersion))...")

@@ -289,7 +289,7 @@ public class UserScriptManager: ObservableObject {
         ),
         (
             "Bypass Paywalls Clean",
-            "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript%2Fbpc.en.user.js"
+            "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js"
         ),
         (
             "YouTube Classic",
