@@ -32,6 +32,7 @@ xcodebuild \
   -destination "platform=macOS" \
   -derivedDataPath "${DERIVED_DATA}" \
   "CODE_SIGNING_ALLOWED=NO" \
+  "ARCHS=arm64 x86_64" \
   build
 
 if [[ ! -d "${APP_PATH}" ]]; then
