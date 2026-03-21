@@ -632,7 +632,7 @@ struct ContentModifiers: ViewModifier {
                 Button("OK", role: .cancel) {}
             }
             .alert(
-                "Rule Limit Warning",
+                filterManager.ruleLimitWarningTitle,
                 isPresented: $filterManager.showingRuleLimitWarningAlert
             ) {
                 Button("OK", role: .cancel) {}

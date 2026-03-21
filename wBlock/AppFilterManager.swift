@@ -43,6 +43,7 @@ class AppFilterManager: ObservableObject {
     @Published var extensionsApproachingLimit: Set<String> = []
     @Published var showingRuleLimitWarningAlert = false
     @Published var ruleLimitWarningMessage = ""
+    @Published var ruleLimitWarningTitle = ""
 
     // Performance tracking
     @Published var lastFastUpdateTime: String = "N/A"
@@ -135,6 +136,7 @@ class AppFilterManager: ObservableObject {
         extensionsApproachingLimit = []
         showingRuleLimitWarningAlert = false
         ruleLimitWarningMessage = ""
+        ruleLimitWarningTitle = ""
         lastRuleCount = 0
         lastFastUpdateTime = "N/A"
         fastUpdateCount = 0
@@ -497,6 +499,8 @@ class AppFilterManager: ObservableObject {
                 .joined(separator: "\n")
         }
 
+        let isNearLimit = totalRules >= totalWarningThreshold || !nearLimitBlockers.isEmpty
+        ruleLimitWarningTitle = isNearLimit ? "Rule Limit Warning" : "Rule Capacity"
         ruleLimitWarningMessage = message
         showingRuleLimitWarningAlert = true
     }
