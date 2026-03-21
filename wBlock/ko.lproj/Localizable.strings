@@ -144,7 +144,7 @@
 "Cancel" = "취소";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "대용량 파일 - 스크롤이 느려질 수 있음";
-"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube 광고를 차단하려면 wBlock Advanced를 활성화하고 '모든 웹사이트에서 항상 허용'으로 설정해야 합니다.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube 광고를 차단하려면 wBlock Scripts를 활성화하고 '모든 웹사이트에서 항상 허용'으로 설정해야 합니다.";
 "Privacy" = "개인정보 보호";
 "Rules" = "규칙";
 "Enabled Lists" = "활성화된 목록";
@@ -261,7 +261,7 @@
 "Downloaded %d update" = "업데이트 %d개 다운로드됨";
 "Safari → Settings → Extensions" = "Safari → 설정 → 확장 프로그램";
 "Settings → Apps → Safari → Extensions" = "설정 → 앱 → Safari → 확장 프로그램";
-"Enable 'wBlock Advanced' → Always Allow on Every Website" = "'wBlock Advanced' 활성화 → 모든 웹 사이트에서 항상 허용";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' 활성화 → 모든 웹 사이트에서 항상 허용";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' 활성화 → 모든 웹 사이트에서 항상 허용";
 "Importing…" = "가져오는 중…";
 "Choose File…" = "파일 선택…";

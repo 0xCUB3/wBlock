@@ -144,7 +144,7 @@
 "Cancel" = "Mégse";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Nagy fájl - a görgetés lassú lehet";
-"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "A YouTube-hirdetések blokkolásához a 'wBlock Advanced' bővítményt engedélyezni kell, és 'Always Allow on All Websites' értékre kell állítani.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "A YouTube-hirdetések blokkolásához a 'wBlock Scripts' bővítményt engedélyezni kell, és 'Always Allow on All Websites' értékre kell állítani.";
 "Privacy" = "Adatvédelem";
 "Rules" = "Szabályok";
 "Enabled Lists" = "Engedélyezett listák";
@@ -263,7 +263,7 @@
 "Downloaded %d update" = "%d frissítés letöltve";
 "Safari → Settings → Extensions" = "Safari → Beállítások → Bővítmények";
 "Settings → Apps → Safari → Extensions" = "Beállítások → Alkalmazások → Safari → Bővítmények";
-"Enable 'wBlock Advanced' → Always Allow on Every Website" = "Engedélyezd a 'wBlock Advanced' bővítményt → Always Allow on Every Website";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "Engedélyezd a 'wBlock Scripts' bővítményt → Always Allow on Every Website";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Engedélyezd a 'wBlock Scripts' bővítményt → Always Allow on Every Website";
 "Importing…" = "Importálás…";
 "Choose File…" = "Fájl kiválasztása…";

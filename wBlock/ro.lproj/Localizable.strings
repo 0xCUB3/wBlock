@@ -144,7 +144,7 @@
 "Cancel" = "Anulează";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Fișier mare - derularea poate fi lentă";
-"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Advanced trebuie activat și setat la 'Always Allow on All Websites' pentru a bloca reclamele YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts trebuie activat și setat la 'Always Allow on All Websites' pentru a bloca reclamele YouTube.";
 "Privacy" = "Confidențialitate";
 "Rules" = "Reguli";
 "Enabled Lists" = "Liste activate";
@@ -261,7 +261,7 @@
 "Downloaded %d update" = "S-a descărcat %d actualizare";
 "Safari → Settings → Extensions" = "Safari → Configurări → Extensii";
 "Settings → Apps → Safari → Extensions" = "Configurări → Aplicații → Safari → Extensii";
-"Enable 'wBlock Advanced' → Always Allow on Every Website" = "Activează 'wBlock Advanced' → Permite întotdeauna pe fiecare site web";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activează 'wBlock Scripts' → Permite întotdeauna pe fiecare site web";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activează 'wBlock Scripts' → Permite întotdeauna pe fiecare site web";
 "Importing…" = "Se importă…";
 "Choose File…" = "Alege fișier…";

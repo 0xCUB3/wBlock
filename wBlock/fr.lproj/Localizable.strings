@@ -144,7 +144,7 @@
 "Cancel" = "Annuler";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Fichier volumineux - le défilement peut être lent";
-"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Advanced doit être activé et réglé sur 'Always Allow on All Websites' pour bloquer les publicités YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts doit être activé et réglé sur 'Always Allow on All Websites' pour bloquer les publicités YouTube.";
 "Privacy" = "Confidentialité";
 "Rules" = "Règles";
 "Enabled Lists" = "Listes activées";
@@ -261,7 +261,7 @@
 "Downloaded %d update" = "%d mise à jour téléchargée";
 "Safari → Settings → Extensions" = "Safari → Réglages → Extensions";
 "Settings → Apps → Safari → Extensions" = "Réglages → Applications → Safari → Extensions";
-"Enable 'wBlock Advanced' → Always Allow on Every Website" = "Activer 'wBlock Advanced' → Toujours autoriser sur tous les sites web";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activer 'wBlock Scripts' → Toujours autoriser sur tous les sites web";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activer 'wBlock Scripts' → Toujours autoriser sur tous les sites web";
 "Importing…" = "Importation…";
 "Choose File…" = "Choisir un fichier…";

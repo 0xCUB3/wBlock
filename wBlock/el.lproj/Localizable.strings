@@ -144,7 +144,7 @@
 "Cancel" = "Ακύρωση";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Μεγάλο αρχείο - η κύλιση μπορεί να είναι αργή";
-"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "Το wBlock Advanced πρέπει να είναι ενεργοποιημένο και να οριστεί σε 'Να επιτρέπεται πάντα σε όλους τους ιστότοπους' για να αποκλείσετε διαφημίσεις YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "Το wBlock Scripts πρέπει να είναι ενεργοποιημένο και να οριστεί σε 'Να επιτρέπεται πάντα σε όλους τους ιστότοπους' για να αποκλείσετε διαφημίσεις YouTube.";
 "Privacy" = "Απόρρητο";
 "Rules" = "Κανόνες";
 "Enabled Lists" = "Ενεργοποιημένες λίστες";
@@ -263,7 +263,7 @@
 "Downloaded %d update" = "Λήψη %d ενημέρωσης";
 "Safari → Settings → Extensions" = "Safari → Ρυθμίσεις → Επεκτάσεις";
 "Settings → Apps → Safari → Extensions" = "Ρυθμίσεις → Εφαρμογές → Safari → Επεκτάσεις";
-"Enable 'wBlock Advanced' → Always Allow on Every Website" = "Ενεργοποίηση 'wBlock Advanced' → Να επιτρέπονται πάντα σε κάθε ιστότοπο";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "Ενεργοποίηση 'wBlock Scripts' → Να επιτρέπονται πάντα σε κάθε ιστότοπο";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Ενεργοποίηση 'wBlock Scripts' → Να επιτρέπονται πάντα σε κάθε ιστότοπο";
 "Importing…" = "Εισαγωγή…";
 "Choose File…" = "Επιλογή Αρχείου…";

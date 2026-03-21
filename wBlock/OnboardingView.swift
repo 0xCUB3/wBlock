@@ -637,7 +637,7 @@ struct OnboardingView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             #if os(macOS)
-                            Text("Enable 'wBlock Advanced' → Always Allow on Every Website")
+                            Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             Text("Required for YouTube ad blocking and much more")

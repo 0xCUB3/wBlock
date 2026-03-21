@@ -144,7 +144,7 @@
 "Cancel" = "取消";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "文件较大，滚动可能较慢";
-"wBlock Advanced must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Advanced 并将其设置为 'Always Allow on All Websites'。";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其设置为 'Always Allow on All Websites'。";
 "Privacy" = "隐私";
 "Rules" = "规则";
 "Enabled Lists" = "已启用列表";
@@ -261,7 +261,7 @@
 "Downloaded %d update" = "已下载 %d 个更新";
 "Safari → Settings → Extensions" = "Safari → 设置 → 扩展";
 "Settings → Apps → Safari → Extensions" = "设置 → 应用 → Safari → 扩展";
-"Enable 'wBlock Advanced' → Always Allow on Every Website" = "启用 'wBlock Advanced' → 在每个网站上始终允许";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "启用 'wBlock Scripts' → 在每个网站上始终允许";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "启用 'wBlock Scripts' → 在每个网站上始终允许";
 "Importing…" = "正在导入…";
 "Choose File…" = "选择文件…";
