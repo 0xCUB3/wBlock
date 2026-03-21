@@ -80,19 +80,19 @@ public enum ContentBlockerExtensionRequestHandler {
             }
         }
 
-        guard let finalURL = rulesToLoadURL, let attachment = NSItemProvider(contentsOf: finalURL) else {
-            os_log(.error, "Failed to create attachment from URL: %@", rulesToLoadURL?.path ?? "nil URL")
+        guard let finalURL = rulesToLoadURL, let data = try? Data(contentsOf: finalURL) else {
+            os_log(.error, "Failed to read data from URL: %@", rulesToLoadURL?.path ?? "nil URL")
             let emptyRules = "[]"
             let item = NSExtensionItem()
             item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
             context.completeRequest(returningItems: [item]) { _ in
-                os_log(.info, "Finished loading EMPTY content blocker due to attachment failure for: %@", rulesFilenameInAppGroup)
+                os_log(.info, "Finished loading EMPTY content blocker due to read failure for: %@", rulesFilenameInAppGroup)
             }
             return
         }
 
         let item = NSExtensionItem()
-        item.attachments = [attachment]
+        item.attachments = [NSItemProvider(item: data as NSData, typeIdentifier: UTType.json.identifier as String)]
         context.completeRequest(returningItems: [item]) { _ in
             os_log(.info, "Successfully completed request for content blocker rules from %@ (originally sought %@)", finalURL.path, rulesFilenameInAppGroup)
         }
