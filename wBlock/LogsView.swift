@@ -233,7 +233,7 @@ struct LogsView: View {
                 // Stats
                 Text("\(filteredEntries.count) entries")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .padding(.leading, 8)
             }
             .padding(.horizontal)
@@ -245,12 +245,12 @@ struct LogsView: View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text("No logs found")
                 .font(.headline)
             Text("Logs will appear here as the app runs")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -318,7 +318,7 @@ struct LogEntryRow: View {
                             entry.count
                         ))
                             .font(.system(size: 9))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .frame(width: 32)
@@ -327,12 +327,12 @@ struct LogEntryRow: View {
                     HStack(spacing: 8) {
                         Text(timeString(from: entry.timestamp))
                             .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
 
                         Text(entry.category.localizedName)
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(levelColor)
+                            .foregroundStyle(levelColor)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(levelColor.opacity(0.15), in: Capsule())
@@ -340,7 +340,7 @@ struct LogEntryRow: View {
 
                     Text(entry.message)
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                         .lineLimit(isExpanded ? nil : 2)
                         .animation(nil, value: isExpanded)
 
@@ -350,11 +350,11 @@ struct LogEntryRow: View {
                                 HStack(spacing: 6) {
                                     Text(key)
                                         .font(.caption2)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .fontWeight(.medium)
                                     Text(metadata[key] ?? "")
                                         .font(.caption2)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }
@@ -368,7 +368,7 @@ struct LogEntryRow: View {
                 if !(entry.metadata?.isEmpty ?? true) || entry.message.count > 80 {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding(.horizontal, 12)

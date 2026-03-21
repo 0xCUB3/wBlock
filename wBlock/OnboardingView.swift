@@ -546,7 +546,7 @@ struct OnboardingView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("The \(bypassScript.name) userscript requires the \(filterName)")
                             .font(.caption)
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                     }
                 }
                 .padding(12)
@@ -598,7 +598,7 @@ struct OnboardingView: View {
                         Text("1.")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .frame(width: 20, alignment: .trailing)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -608,14 +608,14 @@ struct OnboardingView: View {
                                 .fontWeight(.medium)
                             Text("Enable all 5 Content Blocker extensions")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             #else
                             Text("Settings → Apps → Safari → Extensions")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             Text("Enable all 5 Content Blocker extensions")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             #endif
                         }
 
@@ -632,7 +632,7 @@ struct OnboardingView: View {
                         Text("2.")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .frame(width: 20, alignment: .trailing)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -642,14 +642,14 @@ struct OnboardingView: View {
                                 .fontWeight(.medium)
                             Text("Required for YouTube ad blocking and much more")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             #else
                             Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             Text("Required for YouTube ad blocking and much more")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             #endif
                         }
 

@@ -71,14 +71,14 @@ struct UpdatePopupView: View {
                                     ForEach(filters, id: \.id) { filter in
                                         HStack {
                                             Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
-                                                .foregroundColor(selectedFilters.contains(filter.id) ? .blue : .gray)
+                                                .foregroundStyle(selectedFilters.contains(filter.id) ? .blue : .gray)
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(filter.name)
                                                     .font(.body)
                                                 if !filter.description.isEmpty {
                                                     Text(filter.description)
                                                         .font(.caption)
-                                                        .foregroundColor(.gray)
+                                                        .foregroundStyle(.gray)
                                                         .lineLimit(1)
                                                 }
                                             }
@@ -109,14 +109,14 @@ struct UpdatePopupView: View {
                                     ForEach(scriptsWithUpdates, id: \.id) { script in
                                         HStack {
                                             Image(systemName: selectedScripts.contains(script.id) ? "checkmark.circle.fill" : "circle")
-                                                .foregroundColor(selectedScripts.contains(script.id) ? .blue : .gray)
+                                                .foregroundStyle(selectedScripts.contains(script.id) ? .blue : .gray)
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(script.name)
                                                     .font(.body)
                                                 if !script.description.isEmpty {
                                                     Text(script.description)
                                                         .font(.caption)
-                                                        .foregroundColor(.gray)
+                                                        .foregroundStyle(.gray)
                                                         .lineLimit(1)
                                                 }
                                             }

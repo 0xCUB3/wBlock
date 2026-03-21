@@ -105,10 +105,10 @@ struct UserScriptManagerView: View {
                             .frame(width: 200)
                         Text(refreshStatus)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("\(Int(refreshProgress * 100))%")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(20)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -224,7 +224,7 @@ struct UserScriptManagerView: View {
                             .scaleEffect(0.8)
                         Text("Importing…")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(8)
                     .background(.regularMaterial, in: Capsule())
@@ -427,13 +427,13 @@ struct UserScriptManagerView: View {
                 Text(script.name)
                     .font(.body)
                     .fontWeight(.medium)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if !script.description.isEmpty {
                     Text(script.description)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -442,17 +442,17 @@ struct UserScriptManagerView: View {
                     if !script.version.isEmpty {
                         Text("Version \(script.version)")
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     if let lastUpdated = script.lastUpdatedFormatted {
                         if !script.version.isEmpty {
                             Text("·")
                                 .font(.caption2)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         Text(lastUpdated)
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -466,7 +466,7 @@ struct UserScriptManagerView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.blue.opacity(0.12))
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .cornerRadius(4)
                 }
 
@@ -477,7 +477,7 @@ struct UserScriptManagerView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.red.opacity(0.15))
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .cornerRadius(4)
                 }
             }
@@ -587,13 +587,13 @@ struct UserScriptManagerView: View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundStyle(.secondary.opacity(0.6))
             Text("No Userscripts")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text("Add userscripts to customize your browsing experience")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Button {
                 showingAddScriptSheet = true
             } label: {
@@ -608,10 +608,10 @@ struct UserScriptManagerView: View {
         VStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 36))
-                .foregroundColor(.secondary.opacity(0.7))
+                .foregroundStyle(.secondary.opacity(0.7))
             Text("No matching userscripts")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -623,9 +623,9 @@ private struct ScriptNameAndDescriptionView: View {
     let script: UserScript
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(script.name).font(.title2).fontWeight(.semibold).foregroundColor(.primary).textSelection(.enabled)
+            Text(script.name).font(.title2).fontWeight(.semibold).foregroundStyle(.primary).textSelection(.enabled)
             if !script.description.isEmpty {
-                Text(script.description).font(.body).foregroundColor(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                Text(script.description).font(.body).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -655,10 +655,10 @@ private struct ScriptFileInfoView: View {
     let formatFileSize: (Int) -> String
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("File Information").font(.caption).fontWeight(.medium).foregroundColor(.secondary)
+            Text("File Information").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
             HStack {
-                Text("Size:").font(.caption2).foregroundColor(.secondary)
-                Text(formatFileSize(script.content.count)).font(.caption).fontWeight(.medium).foregroundColor(.primary)
+                Text("Size:").font(.caption2).foregroundStyle(.secondary)
+                Text(formatFileSize(script.content.count)).font(.caption).fontWeight(.medium).foregroundStyle(.primary)
                 Spacer()
             }.padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6)
         }
@@ -669,8 +669,8 @@ private struct ScriptURLView: View {
     let script: UserScript
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Source URL").font(.caption).fontWeight(.medium).foregroundColor(.secondary)
-            Text(script.url?.absoluteString ?? "N/A").font(.caption).foregroundColor(.blue).textSelection(.enabled).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
+            Text("Source URL").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
+            Text(script.url?.absoluteString ?? "N/A").font(.caption).foregroundStyle(.blue).textSelection(.enabled).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -683,12 +683,12 @@ private struct ScriptMatchPatternRowView: View {
         HStack(alignment: .top, spacing: 6) {
             Text("\(index + 1).")
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .frame(width: 18, alignment: .trailing)
 
             Text(pattern)
                 .font(.caption)
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
                 .textSelection(.enabled)
                 .lineLimit(nil)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -709,10 +709,10 @@ private struct ScriptMatchPatternsView: View {
             } label: {
                 HStack(spacing: 8) {
                     Text("URL Patterns (\(script.matches.count))")
-                        .font(.caption).fontWeight(.medium).foregroundColor(.secondary)
+                        .font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
                     Spacer()
                     Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
-                        .font(.caption2).foregroundColor(.secondary)
+                        .font(.caption2).foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(.plain).padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6).onHover { _ in }
@@ -772,14 +772,14 @@ struct ScriptContentMainView: View {
                     Text("Script Content").font(.headline).fontWeight(.medium)
                     if !isEditing && !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
                         HStack(spacing: 4) {
-                            Image(systemName: "info.circle").font(.caption2).foregroundColor(.orange)
+                            Image(systemName: "info.circle").font(.caption2).foregroundStyle(.orange)
                             Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))")
-                                .font(.caption).foregroundColor(.secondary)
+                                .font(.caption).foregroundStyle(.secondary)
                         }
                     } else if !isEditing && showFullContent && script.content.count > previewLength {
                         HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle").font(.caption2).foregroundColor(.green)
-                            Text("Full content loaded").font(.caption).foregroundColor(.secondary)
+                            Image(systemName: "checkmark.circle").font(.caption2).foregroundStyle(.green)
+                            Text("Full content loaded").font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -838,9 +838,9 @@ struct ScriptContentMainView: View {
             Divider()
             if script.content.isEmpty {
                 VStack(spacing: 16) {
-                    Image(systemName: "doc.text").font(.system(size: 48)).foregroundColor(.secondary.opacity(0.6))
-                    Text("No Content Available").font(.headline).foregroundColor(.secondary)
-                    Text("This script hasn't been downloaded yet.").font(.body).foregroundColor(.secondary)
+                    Image(systemName: "doc.text").font(.system(size: 48)).foregroundStyle(.secondary.opacity(0.6))
+                    Text("No Content Available").font(.headline).foregroundStyle(.secondary)
+                    Text("This script hasn't been downloaded yet.").font(.body).foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if isEditing {
                 TextEditor(text: $editableContent)
@@ -858,7 +858,7 @@ struct ScriptContentMainView: View {
                 .overlay( Group {
                     if script.content.count > 100000 && showFullContent {
                         VStack { Spacer(); HStack { Spacer()
-                            HStack(spacing: 6) { Image(systemName: "info.circle.fill").foregroundColor(.orange)
+                            HStack(spacing: 6) { Image(systemName: "info.circle.fill").foregroundStyle(.orange)
                                 Text("Large file - scrolling may be slow")
                             }.padding(.horizontal, 8).padding(.vertical, 4).background(Color.orange.opacity(0.1)).cornerRadius(6).padding()
                         }}
@@ -912,13 +912,13 @@ struct UserScriptContentView: View {
                             VStack(spacing: 16) {
                                 Image(systemName: "doc.text")
                                     .font(.system(size: 48))
-                                    .foregroundColor(.secondary.opacity(0.6))
+                                    .foregroundStyle(.secondary.opacity(0.6))
                                 Text("No Content Available")
                                     .font(.headline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                                 Text("This script hasn't been downloaded yet.")
                                     .font(.body)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
@@ -1064,7 +1064,7 @@ struct Badge: View {
     var body: some View {
         Text(LocalizedStringKey(text)).font(.caption2).fontWeight(.medium)
             .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(color.opacity(0.15)).foregroundColor(color).cornerRadius(4)
+            .background(color.opacity(0.15)).foregroundStyle(color).cornerRadius(4)
     }
 }
 

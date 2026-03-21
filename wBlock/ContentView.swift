@@ -394,7 +394,7 @@ struct ContentView: View {
             HStack {
                 Text(category.localizedName)
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 Spacer()
             }
             .padding(.horizontal, 4)
@@ -423,14 +423,14 @@ struct ContentView: View {
                 HStack {
                     Text(FilterListCategory.foreign.localizedName)
                         .font(.headline)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                     Spacer()
                     Image(
                         systemName: dataManager.isForeignFiltersExpanded
                             ? "chevron.down" : "chevron.right"
                     )
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 4)
             }
@@ -499,7 +499,7 @@ struct FilterRowView: View {
                     }
                     Text(filter.name)
                         .fontWeight(.medium)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .font(.body)
@@ -510,20 +510,20 @@ struct FilterRowView: View {
                     // Both counts available and different — show expansion
                     Text("(\(rawCount.formatted()) source \u{2192} \(expandedCount.formatted()) expanded rules)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let count = filter.sourceRuleCount, count > 0 {
                     // Single count (no expansion, counts match, or rawSourceRuleCount is nil after restart)
                     Text("(\(count.formatted()) rules)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if !filter.description.isEmpty {
                     Text(filter.description)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -537,7 +537,7 @@ struct FilterRowView: View {
                             .lineLimit(nil)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .foregroundColor(.orange)
+                    .foregroundStyle(.orange)
                     .padding(.vertical, 4)
                     .padding(.horizontal, 8)
                     .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
@@ -547,18 +547,18 @@ struct FilterRowView: View {
                     if !filter.version.isEmpty {
                         Text("Version \(filter.version)")
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
 
                     if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
                         if !filter.version.isEmpty {
                             Text("·")
                                 .font(.caption2)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         Text(lastUpdatedFormatted)
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -671,7 +671,7 @@ struct ContentModifiers: ViewModifier {
                                 .scaleEffect(1.5)
                             Text(filterManager.statusDescription)
                                 .padding(.top, 10)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                         .padding(20)

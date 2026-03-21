@@ -56,7 +56,7 @@ struct ZapperRuleManagerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Element Zapper Rules")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
@@ -95,7 +95,7 @@ struct ZapperRuleManagerView: View {
             HStack {
                 Text(domain)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                     .truncationMode(.middle)
 
@@ -103,12 +103,12 @@ struct ZapperRuleManagerView: View {
 
                 Text("\(count) \(count == 1 ? "rule" : "rules")")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .padding(.trailing, 4)
 
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .padding(16)
             .contentShape(Rectangle())
@@ -128,7 +128,7 @@ struct ZapperRuleManagerView: View {
                 HStack(alignment: .center, spacing: 12) {
                     Text(rule)
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
 
@@ -138,7 +138,7 @@ struct ZapperRuleManagerView: View {
                         deleteRule(rule, from: domain, at: ruleIndex)
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .font(.system(size: 18))
                     }
                     .buttonStyle(.plain)
@@ -156,15 +156,15 @@ struct ZapperRuleManagerView: View {
         VStack(spacing: 16) {
             Image(systemName: "wand.and.stars")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundStyle(.secondary.opacity(0.6))
 
             Text("No Element Zapper Rules")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
 
             Text("Zap elements on any website using the wBlock extension in Safari, then manage them here.")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -177,7 +177,7 @@ struct ZapperRuleManagerView: View {
         HStack {
             Text("Rule deleted")
                 .font(.subheadline)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
 
             Spacer()
 

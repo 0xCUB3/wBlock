@@ -30,7 +30,7 @@ struct WhitelistView: View {
                             viewModel.removeDomain(domain)
                         }) {
                             Image(systemName: "minus.circle.fill")
-                                .foregroundColor(.red)
+                                .foregroundStyle(.red)
                         }
                     }
                 }
@@ -47,7 +47,7 @@ struct WhitelistView: View {
                     addDomain()
                 }) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                 }
                 .disabled(newDomain.isEmpty)
             }

@@ -56,7 +56,7 @@ struct WhitelistManagerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Add Domain")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .padding(.horizontal, 4)
 
             HStack(spacing: 12) {
@@ -74,7 +74,7 @@ struct WhitelistManagerView: View {
                 } label: {
                     Image(systemName: isAddingDomain ? "hourglass" : "plus.circle.fill")
                         .font(.title2)
-                        .foregroundColor(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .secondary : .accentColor)
+                        .foregroundStyle(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .secondary : Color.accentColor)
                 }
                 .buttonStyle(.plain)
                 .disabled(newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAddingDomain)
@@ -86,7 +86,7 @@ struct WhitelistManagerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Whitelisted Domains")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
@@ -110,7 +110,7 @@ struct WhitelistManagerView: View {
                     toggleDomainSelection(domain)
                 } label: {
                     Image(systemName: selectedDomains.contains(domain) ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(selectedDomains.contains(domain) ? .accentColor : .secondary)
+                        .foregroundStyle(selectedDomains.contains(domain) ? Color.accentColor : .secondary)
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
@@ -118,7 +118,7 @@ struct WhitelistManagerView: View {
 
             Text(domain)
                 .font(.body)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
 
@@ -146,13 +146,13 @@ struct WhitelistManagerView: View {
         VStack(spacing: 16) {
             Image(systemName: "list.bullet.indent")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundStyle(.secondary.opacity(0.6))
             Text("No Whitelisted Domains")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text("Add domains to disable ad blocking on specific sites")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

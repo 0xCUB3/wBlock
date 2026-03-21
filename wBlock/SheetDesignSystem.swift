@@ -49,7 +49,7 @@ struct SheetHeader: View {
                     onDismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .font(.title2)
                 }
                 .buttonStyle(.plain)
@@ -144,7 +144,7 @@ struct EmptyStateView: View {
         VStack(spacing: 24) {
             Image(systemName: icon)
                 .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundStyle(.secondary.opacity(0.6))
 
             VStack(spacing: 8) {
                 Text(LocalizedStringKey(title))
@@ -153,7 +153,7 @@ struct EmptyStateView: View {
 
                 Text(LocalizedStringKey(description))
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
@@ -201,7 +201,7 @@ struct ProgressViewWithStatus: View {
                 Text("\(progressPercentage)%")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .animation(.easeInOut(duration: 0.2), value: progressPercentage)
             }
             .padding(.horizontal)
@@ -209,7 +209,7 @@ struct ProgressViewWithStatus: View {
             if let description = description {
                 Text(LocalizedStringKey(description))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
         }
