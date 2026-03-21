@@ -690,17 +690,24 @@ final class FilterListUpdater: @unchecked Sendable {
                 return false
             }
 
-            // Create a temporary script to parse the metadata
             var tempScript = UserScript(name: script.name, content: onlineContent)
             tempScript.parseMetadata()
 
-            // Compare versions (if version is empty, assume update is needed)
+            // Compare versions numerically (remote must be strictly greater)
             if !tempScript.version.isEmpty && !script.version.isEmpty {
-                return tempScript.version != script.version
-            } else {
-                // If we can't compare versions, check if content differs
-                return onlineContent != script.content
+                return UserScript.isVersionNewer(tempScript.version, than: script.version)
             }
+
+            // @updateURL may point to .meta.js (metadata only). Content comparison
+            // against a meta-only response would always return true, so if we can't
+            // compare versions from a meta source, we can't determine update status.
+            let isMeta = updateURLString.hasSuffix(".meta.js")
+            if isMeta {
+                return false
+            }
+
+            // Full script URL: fall back to content comparison
+            return onlineContent != script.content
         } catch {
             await ConcurrentLogManager.shared.error(
                 .userScript, "Error checking update for script",
