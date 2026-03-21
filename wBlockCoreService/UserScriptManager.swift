@@ -1711,9 +1711,44 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    /// Auto-updates enabled remote userscripts without presenting UI alerts.
-    /// This intentionally keeps behavior simple: download latest, process `@require`/`@resource`,
-    /// and persist if the resulting content differs.
+    /// Resolves the lightweight metadata URL for a userscript.
+    /// Priority: @updateURL > .user.js -> .meta.js derivation > nil (skip meta check).
+    private func resolveMetaURL(for script: UserScript) -> URL? {
+        if let updateURLString = script.updateURL, let url = URL(string: updateURLString) {
+            return url
+        }
+        guard let scriptURL = script.url else { return nil }
+        let urlString = scriptURL.absoluteString
+        guard urlString.hasSuffix(".user.js") else { return nil }
+        let metaString = String(urlString.dropLast(8)) + ".meta.js"
+        return URL(string: metaString)
+    }
+
+    /// Resolves the full script download URL.
+    /// Priority: @downloadURL > script.url.
+    private func resolveDownloadURL(for script: UserScript) -> URL? {
+        if let downloadURLString = script.downloadURL, let url = URL(string: downloadURLString) {
+            return url
+        }
+        return script.url
+    }
+
+    /// Fetches a URL and parses @version from the metadata block.
+    /// Returns nil if fetch fails, content is empty, or no version found.
+    private func fetchRemoteVersion(from url: URL) async -> String? {
+        do {
+            let (data, _) = try await urlSession.data(from: url)
+            guard let content = String(data: data, encoding: .utf8), !content.isEmpty else { return nil }
+            var temp = UserScript(name: "", content: content)
+            temp.parseMetadata()
+            return temp.version.isEmpty ? nil : temp.version
+        } catch {
+            return nil
+        }
+    }
+
+    /// Auto-updates enabled remote userscripts using a two-phase flow:
+    /// first check .meta.js for version changes, then download full script only if needed.
     public func autoUpdateEnabledUserScripts() async -> AutoUpdateResult {
         await waitUntilReady()
 
@@ -1728,46 +1763,12 @@ public class UserScriptManager: ObservableObject {
         var didChange = false
 
         for candidate in candidates {
-            guard let url = candidate.url else { continue }
             do {
-                let (data, _) = try await urlSession.data(from: url)
-                let rawContent = String(data: data, encoding: .utf8) ?? ""
-                if rawContent.isEmpty { continue }
-
-                var tempUserScript = UserScript(name: candidate.name, content: rawContent)
-                tempUserScript.parseMetadata()
-
-                let processedContent = await processRequireDirectives(tempUserScript)
-                let resourceContents = await processResourceDirectives(tempUserScript)
-
-                guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { continue }
-
-                // Skip if nothing changed (cheap check).
-                if userScripts[index].content == processedContent,
-                   userScripts[index].resourceContents == resourceContents {
-                    continue
+                let updated = try await updateSingleScript(candidate)
+                if updated {
+                    updatedCount += 1
+                    didChange = true
                 }
-
-                userScripts[index].content = processedContent
-                userScripts[index].resourceContents = resourceContents
-                userScripts[index].description = tempUserScript.description
-                userScripts[index].version = tempUserScript.version
-                userScripts[index].matches = tempUserScript.matches
-                userScripts[index].excludeMatches = tempUserScript.excludeMatches
-                userScripts[index].includes = tempUserScript.includes
-                userScripts[index].excludes = tempUserScript.excludes
-                userScripts[index].runAt = tempUserScript.runAt
-                userScripts[index].injectInto = tempUserScript.injectInto
-                userScripts[index].grant = tempUserScript.grant
-                userScripts[index].require = tempUserScript.require
-                userScripts[index].updateURL = tempUserScript.updateURL
-                userScripts[index].downloadURL = tempUserScript.downloadURL
-                userScripts[index].lastUpdated = Date()
-
-                _ = writeUserScriptContent(userScripts[index])
-                _ = writeUserScriptResources(userScripts[index])
-                updatedCount += 1
-                didChange = true
             } catch {
                 failedCount += 1
                 logger.error("❌ Auto-update userscript failed: \(candidate.name) – \(error.localizedDescription)")
@@ -1783,6 +1784,67 @@ public class UserScriptManager: ObservableObject {
         }
 
         return AutoUpdateResult(updated: updatedCount, failed: failedCount)
+    }
+
+    /// Two-phase update for a single script.
+    /// Phase 1: fetch meta URL, compare @version. If newer, proceed to phase 2.
+    /// Phase 2: download full script, process directives, write if content changed.
+    /// Falls back to full download + content comparison if meta check is inconclusive.
+    private func updateSingleScript(_ candidate: UserScript) async throws -> Bool {
+        guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { return false }
+
+        // Phase 1: Try meta check
+        let metaURL = resolveMetaURL(for: candidate)
+        if let metaURL = metaURL {
+            let remoteVersion = await fetchRemoteVersion(from: metaURL)
+            if let remoteVersion = remoteVersion, !candidate.version.isEmpty {
+                // Both versions available: compare
+                if !UserScript.isVersionNewer(remoteVersion, than: candidate.version) {
+                    return false // Not newer, skip
+                }
+                // Newer version found, proceed to full download
+            }
+            // If remoteVersion is nil or local version is empty, fall through to full download
+        }
+
+        // Phase 2: Full download + content comparison
+        guard let downloadURL = resolveDownloadURL(for: candidate) else { return false }
+
+        let (data, _) = try await urlSession.data(from: downloadURL)
+        let rawContent = String(data: data, encoding: .utf8) ?? ""
+        if rawContent.isEmpty { return false }
+
+        var tempUserScript = UserScript(name: candidate.name, content: rawContent)
+        tempUserScript.parseMetadata()
+
+        let processedContent = await processRequireDirectives(tempUserScript)
+        let resourceContents = await processResourceDirectives(tempUserScript)
+
+        // Skip if nothing changed
+        if userScripts[index].content == processedContent,
+           userScripts[index].resourceContents == resourceContents {
+            return false
+        }
+
+        userScripts[index].content = processedContent
+        userScripts[index].resourceContents = resourceContents
+        userScripts[index].description = tempUserScript.description
+        userScripts[index].version = tempUserScript.version
+        userScripts[index].matches = tempUserScript.matches
+        userScripts[index].excludeMatches = tempUserScript.excludeMatches
+        userScripts[index].includes = tempUserScript.includes
+        userScripts[index].excludes = tempUserScript.excludes
+        userScripts[index].runAt = tempUserScript.runAt
+        userScripts[index].injectInto = tempUserScript.injectInto
+        userScripts[index].grant = tempUserScript.grant
+        userScripts[index].require = tempUserScript.require
+        userScripts[index].updateURL = tempUserScript.updateURL
+        userScripts[index].downloadURL = tempUserScript.downloadURL
+        userScripts[index].lastUpdated = Date()
+
+        _ = writeUserScriptContent(userScripts[index])
+        _ = writeUserScriptResources(userScripts[index])
+        return true
     }
 
     public func downloadAndEnableUserScript(_ userScript: UserScript) async {
