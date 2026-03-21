@@ -5,6 +5,8 @@
 //  Created by Andrey Meshkov on 01/02/2025.
 //
 
+import Foundation
+
 /// GroupIdentifier provides access to the app group identifier used for sharing
 /// data between the main app and its extensions.
 ///
@@ -18,21 +20,29 @@ public final class GroupIdentifier {
     /// The app group identifier string used to access the shared container.
     public let value: String
 
+    /// The plain group identifier without team prefix.
+    public static let plainGroupIdentifier = "group.skula.wBlock"
+
     /// Private initializer that sets the appropriate group identifier based on
-    /// platform.
+    /// platform and distribution method.
     ///
-    /// Before XCode 16.3 it was necessary to have different group identifiers
-    /// for macOS and iOS and have something like this:
+    /// On macOS Sequoia, non-Mac App Store apps that access a group container
+    /// using the `group.` prefix trigger a "would like to access data from
+    /// other apps" TCC prompt. Using the `<TeamID>.group.` prefix avoids this.
     ///
-    /// ```swift
-    /// if let teamIdentifierPrefix = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String
-    ///     value = "\(teamIdentifierPrefix)group.dev.ameshkov.safari-blocker"
-    /// }
-    /// ```
-    ///
-    /// Starting from XCode 16.3 this is no longer necessary and we can use the
-    /// same group ID for iOS and macOS.
+    /// MAS builds don't set AppIdentifierPrefix in the Info.plist, so they
+    /// fall through to the plain identifier (which is exempt from the prompt).
+    /// Direct distribution builds have AppIdentifierPrefix patched in by the
+    /// build script, so they use the team-prefixed identifier.
     private init() {
-        value = "group.skula.wBlock"
+        #if os(macOS)
+        if let prefix = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String {
+            value = "\(prefix)\(Self.plainGroupIdentifier)"
+        } else {
+            value = Self.plainGroupIdentifier
+        }
+        #else
+        value = Self.plainGroupIdentifier
+        #endif
     }
 }

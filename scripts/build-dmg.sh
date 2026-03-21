@@ -40,11 +40,12 @@ if [[ ! -d "${APP_PATH}" ]]; then
 fi
 
 # CODE_SIGNING_ALLOWED=NO leaves $(AppIdentifierPrefix) unresolved in plists.
-# Patch it so Safari can identify the extension's team.
+# Patch it so Safari can identify the extension's team, and so GroupIdentifier
+# can construct the team-prefixed group ID (avoids Sequoia TCC prompts).
 if [[ -n "${TEAM_ID}" ]]; then
+  # Patch appex plists
   for appex_plist in "${APP_PATH}/Contents/PlugIns/"*.appex/Contents/Info.plist; do
     if [[ -f "${appex_plist}" ]]; then
-      # Add AppIdentifierPrefix if not already present
       if ! /usr/libexec/PlistBuddy -c "Print :AppIdentifierPrefix" "${appex_plist}" &>/dev/null; then
         /usr/libexec/PlistBuddy -c "Add :AppIdentifierPrefix string ${TEAM_ID}." "${appex_plist}"
       else
@@ -52,10 +53,37 @@ if [[ -n "${TEAM_ID}" ]]; then
       fi
     fi
   done
+
+  # Patch main app plist so GroupIdentifier picks up the team prefix
+  main_plist="${APP_PATH}/Contents/Info.plist"
+  if [[ -f "${main_plist}" ]]; then
+    if ! /usr/libexec/PlistBuddy -c "Print :AppIdentifierPrefix" "${main_plist}" &>/dev/null; then
+      /usr/libexec/PlistBuddy -c "Add :AppIdentifierPrefix string ${TEAM_ID}." "${main_plist}"
+    else
+      /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${main_plist}"
+    fi
+  fi
 fi
 
 if [[ -n "${SIGNING_IDENTITY}" ]]; then
   echo "Signing app for distribution…"
+
+  TEAM_GROUP="${TEAM_ID}.group.skula.wBlock"
+
+  # Create a modified entitlements file that adds the team-prefixed app group.
+  # On macOS Sequoia, non-MAS apps accessing a group container without a team
+  # prefix trigger repeated "access data from other apps" TCC prompts.
+  prepare_entitlements() {
+    local src="$1"
+    local tmp
+    tmp=$(mktemp)
+    cp "${src}" "${tmp}"
+    # Check if application-groups array exists and add team-prefixed group
+    if /usr/libexec/PlistBuddy -c "Print :com.apple.security.application-groups" "${tmp}" &>/dev/null; then
+      /usr/libexec/PlistBuddy -c "Add :com.apple.security.application-groups: string ${TEAM_GROUP}" "${tmp}" 2>/dev/null || true
+    fi
+    echo "${tmp}"
+  }
 
   sign_item() {
     local item_path="$1"
@@ -84,7 +112,9 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
     while IFS= read -r -d '' xpc; do
       local_entitlements="${ROOT_DIR}/FilterUpdateService/FilterUpdateService.entitlements"
       if [[ -f "${local_entitlements}" ]]; then
-        sign_item "${xpc}" "${local_entitlements}"
+        modified_ent="$(prepare_entitlements "${local_entitlements}")"
+        sign_item "${xpc}" "${modified_ent}"
+        rm -f "${modified_ent}"
       else
         sign_item "${xpc}"
       fi
@@ -114,7 +144,9 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
       esac
 
       if [[ -n "${entitlements}" && -f "${entitlements}" ]]; then
-        sign_item "${appex}" "${entitlements}"
+        modified_ent="$(prepare_entitlements "${entitlements}")"
+        sign_item "${appex}" "${modified_ent}"
+        rm -f "${modified_ent}"
       else
         sign_item "${appex}"
       fi
@@ -127,7 +159,9 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
   # provisioning profile. Without a profile, AMFI rejects the app on launch.
   app_entitlements="${ROOT_DIR}/wBlock/wBlock-DirectDistribution.entitlements"
   if [[ -f "${app_entitlements}" ]]; then
-    sign_item "${APP_PATH}" "${app_entitlements}"
+    modified_ent="$(prepare_entitlements "${app_entitlements}")"
+    sign_item "${APP_PATH}" "${modified_ent}"
+    rm -f "${modified_ent}"
   else
     sign_item "${APP_PATH}"
   fi
