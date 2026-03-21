@@ -20,9 +20,6 @@ public final class GroupIdentifier {
     /// The app group identifier string used to access the shared container.
     public let value: String
 
-    /// The plain group identifier without team prefix.
-    public static let plainGroupIdentifier = "group.skula.wBlock"
-
     /// Private initializer that sets the appropriate group identifier based on
     /// platform and distribution method.
     ///
@@ -37,13 +34,12 @@ public final class GroupIdentifier {
     private init() {
         #if os(macOS)
         if let prefix = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String {
-            value = "\(prefix)\(Self.plainGroupIdentifier)"
-            GroupContainerMigrator.migrateIfNeeded(from: Self.plainGroupIdentifier, to: value)
+            value = "\(prefix)group.skula.wBlock"
         } else {
-            value = Self.plainGroupIdentifier
+            value = "group.skula.wBlock"
         }
         #else
-        value = Self.plainGroupIdentifier
+        value = "group.skula.wBlock"
         #endif
     }
 }

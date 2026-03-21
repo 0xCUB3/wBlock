@@ -51,7 +51,7 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var isPrefetchingDefaultMetadata = false
 
     private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
-    private let sharedContainerIdentifier = "group.skula.wBlock"
+    private let sharedContainerIdentifier = GroupIdentifier.shared.value
     private let dataManager = ProtobufDataManager.shared
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
@@ -390,7 +390,7 @@ public class UserScriptManager: ObservableObject {
             }
         }
         // Then try group directory
-        if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.skula.wBlock")?
+        if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)?
             .appendingPathComponent("userscripts") {
             let fileURL = groupURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
             if FileManager.default.fileExists(atPath: fileURL.path),
