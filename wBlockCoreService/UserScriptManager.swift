@@ -29,6 +29,17 @@ public enum UserScriptImportError: LocalizedError {
     }
 }
 
+public extension Notification.Name {
+    static let userScriptManagerDidImportLocalUserScript = Notification.Name(
+        "UserScriptManagerDidImportLocalUserScript")
+    static let userScriptManagerDidRemoveLocalUserScript = Notification.Name(
+        "UserScriptManagerDidRemoveLocalUserScript")
+}
+
+public enum UserScriptManagerNotificationKey {
+    public static let name = "name"
+}
+
 @MainActor
 public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = [] {
@@ -1382,6 +1393,12 @@ public class UserScriptManager: ObservableObject {
             _ = writeUserScriptContent(newUserScript)
             _ = writeUserScriptResources(newUserScript)
 
+            NotificationCenter.default.post(
+                name: .userScriptManagerDidImportLocalUserScript,
+                object: self,
+                userInfo: [UserScriptManagerNotificationKey.name: newUserScript.name]
+            )
+
             checkForDuplicatesAndAskForConfirmation()
 
             await persistUserScriptsNow()
@@ -1548,6 +1565,15 @@ public class UserScriptManager: ObservableObject {
             // Remove from memory
             userScripts.remove(at: index)
             saveUserScripts()
+
+            if userScript.isLocal {
+                NotificationCenter.default.post(
+                    name: .userScriptManagerDidRemoveLocalUserScript,
+                    object: self,
+                    userInfo: [UserScriptManagerNotificationKey.name: userScript.name]
+                )
+            }
+
             statusDescription = "Removed \(userScript.name)"
 
             logger.info("🗑️ Removed userscript: '\(userScript.name)'")

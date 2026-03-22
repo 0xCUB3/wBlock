@@ -60,12 +60,13 @@ final class CloudSyncManager: ObservableObject {
     private var pendingUploadTask: Task<Void, Never>?
     private var pendingSyncTask: Task<Void, Never>?
     private var isApplyingRemoteChanges: Bool = false
-    private let deletedCustomTTLDays: Double = 90
+    private let deletedMarkerTTLDays: Double = 90
 
     private init() {
         isEnabled = defaults.bool(forKey: Keys.enabled)
         refreshStatusFromDefaults()
         observeLocalSaves()
+        observeLocalUserScriptChanges()
     }
 
     func recordDeletedCustomListURL(_ urlString: String) {
@@ -84,6 +85,24 @@ final class CloudSyncManager: ObservableObject {
         var markers = loadDeletedCustomURLMarkers()
         markers.removeValue(forKey: trimmed)
         saveDeletedCustomURLMarkers(markers)
+    }
+
+    func recordDeletedLocalUserScriptName(_ name: String) {
+        let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
+        guard !normalized.isEmpty else { return }
+
+        var markers = loadDeletedLocalUserScriptMarkers()
+        markers[normalized] = Date().timeIntervalSince1970
+        saveDeletedLocalUserScriptMarkers(markers)
+    }
+
+    func clearDeletedLocalUserScriptName(_ name: String) {
+        let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
+        guard !normalized.isEmpty else { return }
+
+        var markers = loadDeletedLocalUserScriptMarkers()
+        markers.removeValue(forKey: normalized)
+        saveDeletedLocalUserScriptMarkers(markers)
     }
 
     func attach(filterManager: AppFilterManager) {
@@ -177,6 +196,26 @@ final class CloudSyncManager: ObservableObject {
             .sink { [weak self] in
                 guard let self else { return }
                 self.handleLocalSave()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func observeLocalUserScriptChanges() {
+        NotificationCenter.default.publisher(for: .userScriptManagerDidImportLocalUserScript)
+            .compactMap { notification in
+                notification.userInfo?[UserScriptManagerNotificationKey.name] as? String
+            }
+            .sink { [weak self] name in
+                self?.clearDeletedLocalUserScriptName(name)
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .userScriptManagerDidRemoveLocalUserScript)
+            .compactMap { notification in
+                notification.userInfo?[UserScriptManagerNotificationKey.name] as? String
+            }
+            .sink { [weak self] name in
+                self?.recordDeletedLocalUserScriptName(name)
             }
             .store(in: &cancellables)
     }
@@ -535,6 +574,11 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func applyRemoteUserScripts(_ scripts: SyncPayload.UserScripts) async {
+        let remoteDeletedLocalNames = Set(scripts.deletedLocalNames ?? [])
+        if !remoteDeletedLocalNames.isEmpty {
+            mergeDeletedLocalUserScriptNames(remoteDeletedLocalNames)
+        }
+
         // Remote scripts (URL-based)
         // Ensure each desired remote script exists and has the correct enabled state.
         for remote in scripts.remote {
@@ -551,9 +595,38 @@ final class CloudSyncManager: ObservableObject {
         }
 
         // Local scripts (content-based)
-        // Import or replace local scripts from the remote payload. Do not remove local-only scripts.
+        // The newer remote payload is authoritative for synced local imports.
         for local in scripts.local {
-            if let existing = userScriptManager.userScripts.first(where: { $0.isLocal && $0.name == local.name }) {
+            clearDeletedLocalUserScriptName(local.name)
+        }
+
+        let deletedLocalNames = deletedLocalUserScriptNameSet()
+        let remoteLocalScripts = scripts.local.map {
+            CloudSyncLocalUserScript(name: $0.name, content: $0.content, isEnabled: $0.isEnabled)
+        }
+        let localNamesToDelete = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
+            localNames: userScriptManager.userScripts.filter(\.isLocal).map(\.name),
+            remoteScripts: remoteLocalScripts,
+            deletedNames: deletedLocalNames
+        )
+
+        if !localNamesToDelete.isEmpty {
+            let scriptsToDelete = userScriptManager.userScripts.filter { script in
+                script.isLocal
+                    && localNamesToDelete.contains(
+                        CloudSyncLocalUserScriptReconciler.normalizedName(script.name))
+            }
+            for script in scriptsToDelete {
+                userScriptManager.removeUserScript(script)
+            }
+        }
+
+        for local in scripts.local {
+            if let existing = userScriptManager.userScripts.first(where: {
+                $0.isLocal
+                    && CloudSyncLocalUserScriptReconciler.normalizedName($0.name)
+                        == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
+            }) {
                 if existing.content == local.content {
                     await userScriptManager.setUserScript(existing, isEnabled: local.isEnabled)
                     continue
@@ -571,7 +644,11 @@ final class CloudSyncManager: ObservableObject {
 
             _ = await userScriptManager.addUserScript(fromLocalFile: tempURL)
 
-            if let imported = userScriptManager.userScripts.first(where: { $0.isLocal && $0.name == local.name }) {
+            if let imported = userScriptManager.userScripts.first(where: {
+                $0.isLocal
+                    && CloudSyncLocalUserScriptReconciler.normalizedName($0.name)
+                        == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
+            }) {
                 await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
             }
         }
@@ -584,6 +661,11 @@ final class CloudSyncManager: ObservableObject {
         let remoteDeleted = Set(remotePayload.filters.deletedCustomURLs ?? [])
         if !remoteDeleted.isEmpty {
             mergeDeletedCustomListURLs(remoteDeleted)
+        }
+
+        let remoteDeletedLocalNames = Set(remotePayload.userScripts.deletedLocalNames ?? [])
+        if !remoteDeletedLocalNames.isEmpty {
+            mergeDeletedLocalUserScriptNames(remoteDeletedLocalNames)
         }
 
         let deletedCustomURLs = deletedCustomURLSet()
@@ -612,6 +694,18 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
+        let deletedLocalNames = deletedLocalUserScriptNameSet()
+        if !deletedLocalNames.isEmpty {
+            let scriptsToDelete = userScriptManager.userScripts.filter { script in
+                script.isLocal
+                    && deletedLocalNames.contains(
+                        CloudSyncLocalUserScriptReconciler.normalizedName(script.name))
+            }
+            for script in scriptsToDelete {
+                userScriptManager.removeUserScript(script)
+            }
+        }
+
         let localCustomURLs: Set<String> = Set(dataManager.getCustomFilterLists().map { $0.url.absoluteString })
         let remoteCustoms = remotePayload.filters.customLists
         let missingCustoms = remoteCustoms.filter {
@@ -627,9 +721,14 @@ final class CloudSyncManager: ObservableObject {
         let remoteRemoteScripts = remotePayload.userScripts.remote
         let missingRemoteScripts = remoteRemoteScripts.filter { !localRemoteScriptURLs.contains($0.url) }
 
-        let localLocalNames = Set(userScriptManager.userScripts.filter(\.isLocal).map(\.name))
         let remoteLocalScripts = remotePayload.userScripts.local
-        let missingLocalScripts = remoteLocalScripts.filter { !localLocalNames.contains($0.name) }
+        let missingLocalScripts = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
+            remoteScripts: remoteLocalScripts.map {
+                CloudSyncLocalUserScript(name: $0.name, content: $0.content, isEnabled: $0.isEnabled)
+            },
+            localNames: userScriptManager.userScripts.filter(\.isLocal).map(\.name),
+            deletedNames: deletedLocalNames
+        )
 
         guard !missingCustoms.isEmpty || !missingRemoteScripts.isEmpty || !missingLocalScripts.isEmpty else {
             return
@@ -710,7 +809,11 @@ final class CloudSyncManager: ObservableObject {
             defer { try? FileManager.default.removeItem(at: tempURL) }
 
             _ = await userScriptManager.addUserScript(fromLocalFile: tempURL)
-            if let imported = userScriptManager.userScripts.first(where: { $0.isLocal && $0.name == local.name }) {
+            if let imported = userScriptManager.userScripts.first(where: {
+                $0.isLocal
+                    && CloudSyncLocalUserScriptReconciler.normalizedName($0.name)
+                        == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
+            }) {
                 await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
             }
         }
@@ -730,7 +833,7 @@ final class CloudSyncManager: ObservableObject {
         let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
         let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
         return SyncPayload(
-            schemaVersion: 4,
+            schemaVersion: 5,
             updatedAt: max(0, updatedAt),
             contentHash: contentHash,
             settings: content.settings,
@@ -798,7 +901,12 @@ final class CloudSyncManager: ObservableObject {
             }
             .sorted { $0.name < $1.name }
 
-        let userScripts = SyncPayload.UserScripts(remote: remoteScripts, local: localScripts)
+        let deletedLocalNames = Array(deletedLocalUserScriptNameSet()).sorted()
+        let userScripts = SyncPayload.UserScripts(
+            remote: remoteScripts,
+            local: localScripts,
+            deletedLocalNames: deletedLocalNames.isEmpty ? nil : deletedLocalNames
+        )
 
         let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
 
@@ -908,6 +1016,7 @@ final class CloudSyncManager: ObservableObject {
         static let lastDownloadedAt = "cloudSyncLastDownloadedAt"
         static let lastSyncAt = "cloudSyncLastSyncAt"
         static let deletedCustomURLs = "cloudSyncDeletedCustomURLs"
+        static let deletedLocalUserScriptNames = "cloudSyncDeletedLocalUserScriptNames"
     }
 
     private static func sha256Hex(_ data: Data) -> String {
@@ -996,7 +1105,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func pruneDeletedCustomURLMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
-        let ttl = deletedCustomTTLDays * 24 * 60 * 60
+        let ttl = deletedMarkerTTLDays * 24 * 60 * 60
         let now = Date().timeIntervalSince1970
         return markers.filter { _, deletedAt in
             deletedAt > 0 && (now - deletedAt) <= ttl
@@ -1018,6 +1127,60 @@ final class CloudSyncManager: ObservableObject {
             }
         }
         saveDeletedCustomURLMarkers(markers)
+    }
+
+    private func deletedLocalUserScriptNameSet() -> Set<String> {
+        let markers = loadDeletedLocalUserScriptMarkers()
+        return Set(markers.keys)
+    }
+
+    private func loadDeletedLocalUserScriptMarkers() -> [String: TimeInterval] {
+        let raw = defaults.dictionary(forKey: Keys.deletedLocalUserScriptNames) ?? [:]
+        var result: [String: TimeInterval] = [:]
+        for (key, value) in raw {
+            let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(key)
+            guard !normalized.isEmpty else { continue }
+            if let t = value as? TimeInterval {
+                result[normalized] = t
+            } else if let d = value as? Double {
+                result[normalized] = d
+            } else if let n = value as? NSNumber {
+                result[normalized] = n.doubleValue
+            }
+        }
+
+        let pruned = pruneDeletedLocalUserScriptMarkers(result)
+        if pruned.count != result.count {
+            saveDeletedLocalUserScriptMarkers(pruned)
+        }
+        return pruned
+    }
+
+    private func pruneDeletedLocalUserScriptMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
+        let ttl = deletedMarkerTTLDays * 24 * 60 * 60
+        let now = Date().timeIntervalSince1970
+        return markers.filter { _, deletedAt in
+            deletedAt > 0 && (now - deletedAt) <= ttl
+        }
+    }
+
+    private func saveDeletedLocalUserScriptMarkers(_ markers: [String: TimeInterval]) {
+        let pruned = pruneDeletedLocalUserScriptMarkers(markers)
+        defaults.set(pruned, forKey: Keys.deletedLocalUserScriptNames)
+    }
+
+    private func mergeDeletedLocalUserScriptNames(_ names: Set<String>) {
+        guard !names.isEmpty else { return }
+        var markers = loadDeletedLocalUserScriptMarkers()
+        let now = Date().timeIntervalSince1970
+        for name in names {
+            let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
+            guard !normalized.isEmpty else { continue }
+            if markers[normalized] == nil {
+                markers[normalized] = now
+            }
+        }
+        saveDeletedLocalUserScriptMarkers(markers)
     }
 }
 
@@ -1072,6 +1235,7 @@ private struct SyncPayload: Codable {
     struct UserScripts: Codable {
         let remote: [RemoteUserScript]
         let local: [LocalUserScript]
+        let deletedLocalNames: [String]?
     }
 
     struct Content: Codable {
