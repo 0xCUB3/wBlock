@@ -38,6 +38,7 @@
 "last updated %@" = "τελευταία ενημέρωση %@";
 "Recommended" = "Συνιστάται";
 "\(progressPercentage)%" = "\(Ποσοστό προόδου)%";
+"Import" = "Εισαγωγή";
 "Import File" = "Εισαγωγή Αρχείου";
 "Edit User List" = "Επεξεργασία Λίστας Χρηστών";
 "Community options" = "Επιλογές Κοινότητας";
@@ -81,6 +82,8 @@
 "The \(bypassScript.name) userscript requires the \(filterName)" = "Ο κώδικας χρήστη \(bypassScript.name) απαιτεί το \(filterName)";
 "Foreign" = "Άλλες γλώσσες";
 "Minimal" = "Ελάχιστο";
+"Base filter only." = "Μόνο βασικό φίλτρο.";
+"Balanced defaults." = "Ισορροπημένες προεπιλογές.";
 "Whitelist" = "Λίστα επιτρεπόμενων";
 "Next" = "Επόμενο";
 "Sync settings across devices" = "Συγχρονισμός ρυθμίσεων σε όλες τις συσκευές";
@@ -179,8 +182,10 @@
 "N/A" = "-";
 "Import Failed" = "Η εισαγωγή απέτυχε";
 "Manage Whitelist" = "Διαχείριση λευκής λίστας";
+"Manage Element Zapper Rules" = "Διαχείριση κανόνων αποκλεισμού στοιχείων";
 "FilterApply" = "FilterApply";
 "Every %d hours" = "Κάθε %d ώρες";
+"Update Interval" = "Διάστημα ενημέρωσης";
 "Update & Apply" = "Ενημέρωση & εφαρμογή";
 "Looks good! Tap Add to continue." = "Φαίνεται καλό! Πατήστε Προσθήκη για να συνεχίσετε.";
 "Filters applied successfully." = "Τα φίλτρα εφαρμόστηκαν με επιτυχία.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Αξιόπιστο: %@";
 "Logs will appear here as the app runs" = "Τα αρχεία καταγραφής θα εμφανίζονται εδώ καθώς εκτελείται η εφαρμογή";
 "Downloaded %d updates" = "Λήψεις %d ενημερώσεων";
+"Enable the Safari extensions so wBlock can block ads." = "Ενεργοποιήστε τις επεκτάσεις του Safari ώστε το wBlock να μπορεί να αποκλείει διαφημίσεις.";
 "Setup Instructions" = "Οδηγίες εγκατάστασης";
 "Every 1 day" = "Κάθε 1 ημέρα";
 "Reading Files" = "Ανάγνωση αρχείων";

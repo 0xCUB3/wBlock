@@ -38,6 +38,7 @@
 "last updated %@" = "last updated %@";
 "Recommended" = "Recommended";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
+"Import" = "Import";
 "Import File" = "Import File";
 "Edit User List" = "Edit User List";
 "Community options" = "Community options";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "The \\(bypassScript.name) userscript requires the \\(filterName)";
 "Foreign" = "Foreign";
 "Minimal" = "Minimal";
+"Base filter only." = "Base filter only.";
+"Balanced defaults." = "Balanced defaults.";
 "Whitelist" = "Whitelist";
 "Next" = "Next";
 "Sync settings across devices" = "Sync settings across devices";
@@ -179,8 +182,10 @@
 "N/A" = "N/A";
 "Import Failed" = "Import Failed";
 "Manage Whitelist" = "Manage Whitelist";
+"Manage Element Zapper Rules" = "Manage Element Zapper Rules";
 "FilterApply" = "FilterApply";
 "Every %d hours" = "Every %d hours";
+"Update Interval" = "Update Interval";
 "Update & Apply" = "Update & Apply";
 "Looks good! Tap Add to continue." = "Looks good! Tap Add to continue.";
 "Filters applied successfully." = "Filters applied successfully.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Trust: %@";
 "Logs will appear here as the app runs" = "Logs will appear here as the app runs";
 "Downloaded %d updates" = "Downloaded %d updates";
+"Enable the Safari extensions so wBlock can block ads." = "Enable the Safari extensions so wBlock can block ads.";
 "Setup Instructions" = "Setup Instructions";
 "Every 1 day" = "Every 1 day";
 "Reading Files" = "Reading Files";
