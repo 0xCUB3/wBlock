@@ -37,6 +37,7 @@
 "Add Filter List" = "添加过滤列表";
 "last updated %@" = "上次更新 %@";
 "Recommended" = "推荐";
+"Import" = "导入";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "导入文件";
 "Edit User List" = "编辑用户列表";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 用户脚本需要 \\(filterName)";
 "Foreign" = "外语";
 "Minimal" = "最小";
+"Base filter only." = "仅基础过滤器。";
+"Balanced defaults." = "平衡的默认设置。";
 "Whitelist" = "白名单";
 "Next" = "下一步";
 "Sync settings across devices" = "跨设备同步设置";
@@ -179,8 +182,10 @@
 "N/A" = "N/A";
 "Import Failed" = "导入失败";
 "Manage Whitelist" = "管理白名单";
+"Manage Element Zapper Rules" = "管理元素清除器规则";
 "FilterApply" = "应用过滤器";
 "Every %d hours" = "每 %d 小时";
+"Update Interval" = "更新间隔";
 "Update & Apply" = "更新并应用";
 "Looks good! Tap Add to continue." = "看起来不错！点按“添加”以继续。";
 "Filters applied successfully." = "过滤器已成功应用。";
@@ -208,6 +213,7 @@
 "Trust: %@" = "信任度：%@";
 "Logs will appear here as the app runs" = "应用运行时日志将显示在这里";
 "Downloaded %d updates" = "已下载 %d 个更新";
+"Enable the Safari extensions so wBlock can block ads." = "启用 Safari 扩展，这样 wBlock 才能拦截广告。";
 "Setup Instructions" = "设置说明";
 "Every 1 day" = "每 1 天";
 "Reading Files" = "正在读取文件";
@@ -251,6 +257,8 @@
 "Add Filter" = "添加过滤器";
 "Invalid" = "无效";
 "Waiting for activity" = "等待活动";
+"Waiting for iOS background wake or app open" = "等待 iOS 后台唤醒或打开应用";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "iOS 后台刷新采用尽力而为机制，检查可能会比计划时间更晚运行。";
 "Name" = "名称";
 "Startup" = "启动";
 "Active" = "活跃";

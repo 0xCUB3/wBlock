@@ -37,6 +37,7 @@
 "Add Filter List" = "Aggiungi lista filtri";
 "last updated %@" = "ultimo aggiornamento %@";
 "Recommended" = "Consigliato";
+"Import" = "Importa";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Importa file";
 "Edit User List" = "Modifica lista utente";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Lo userscript \\(bypassScript.name) richiede \\(filterName)";
 "Foreign" = "Estero";
 "Minimal" = "Minimo";
+"Base filter only." = "Solo filtro di base.";
+"Balanced defaults." = "Impostazioni predefinite bilanciate.";
 "Whitelist" = "Whitelist";
 "Next" = "Avanti";
 "Sync settings across devices" = "Sincronizza le impostazioni tra dispositivi";
@@ -179,8 +182,10 @@
 "N/A" = "N/D";
 "Import Failed" = "Importazione non riuscita";
 "Manage Whitelist" = "Gestisci whitelist";
+"Manage Element Zapper Rules" = "Gestisci le regole dello zapper elementi";
 "FilterApply" = "Applicazione filtri";
 "Every %d hours" = "Ogni %d ore";
+"Update Interval" = "Intervallo di aggiornamento";
 "Update & Apply" = "Aggiorna e applica";
 "Looks good! Tap Add to continue." = "Sembra tutto a posto! Tocca Aggiungi per continuare.";
 "Filters applied successfully." = "Filtri applicati con successo.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Attendibilità: %@";
 "Logs will appear here as the app runs" = "I log appariranno qui mentre l'app è in esecuzione";
 "Downloaded %d updates" = "Scaricati %d aggiornamenti";
+"Enable the Safari extensions so wBlock can block ads." = "Abilita le estensioni Safari così wBlock può bloccare le pubblicità.";
 "Setup Instructions" = "Istruzioni di configurazione";
 "Every 1 day" = "Ogni 1 giorno";
 "Reading Files" = "Lettura file";
@@ -251,6 +257,8 @@
 "Add Filter" = "Aggiungi filtro";
 "Invalid" = "Non valido";
 "Waiting for activity" = "In attesa di attività";
+"Waiting for iOS background wake or app open" = "In attesa del risveglio in background di iOS o dell'apertura dell'app";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "L'aggiornamento in background di iOS è best-effort, i controlli potrebbero avvenire più tardi del previsto.";
 "Name" = "Nome";
 "Startup" = "Avvio";
 "Active" = "Attivo";

@@ -37,6 +37,7 @@
 "Add Filter List" = "إضافة قائمة فلترة";
 "last updated %@" = "آخر تحديث %@";
 "Recommended" = "موصى به";
+"Import" = "استيراد";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "استيراد ملف";
 "Edit User List" = "تعديل قائمة المستخدم";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "سكريبت المستخدم \\(bypassScript.name) يتطلب \\(filterName)";
 "Foreign" = "أجنبي";
 "Minimal" = "الحد الأدنى";
+"Base filter only." = "الفلتر الأساسي فقط.";
+"Balanced defaults." = "الإعدادات الافتراضية المتوازنة.";
 "Whitelist" = "القائمة البيضاء";
 "Next" = "التالي";
 "Sync settings across devices" = "مزامنة الإعدادات عبر الأجهزة";
@@ -179,8 +182,10 @@
 "N/A" = "غير متاح";
 "Import Failed" = "فشل الاستيراد";
 "Manage Whitelist" = "إدارة القائمة البيضاء";
+"Manage Element Zapper Rules" = "إدارة قواعد أداة إخفاء العناصر";
 "FilterApply" = "تطبيق الفلتر";
 "Every %d hours" = "كل %d ساعات";
+"Update Interval" = "فاصل التحديث";
 "Update & Apply" = "تحديث وتطبيق";
 "Looks good! Tap Add to continue." = "يبدو جيدًا! اضغط إضافة للمتابعة.";
 "Filters applied successfully." = "تم تطبيق الفلاتر بنجاح.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "الثقة: %@";
 "Logs will appear here as the app runs" = "ستظهر السجلات هنا أثناء تشغيل التطبيق";
 "Downloaded %d updates" = "تم تنزيل %d تحديثات";
+"Enable the Safari extensions so wBlock can block ads." = "فعّل امتدادات Safari حتى يتمكن wBlock من حظر الإعلانات.";
 "Setup Instructions" = "تعليمات الإعداد";
 "Every 1 day" = "كل يوم";
 "Reading Files" = "جارٍ قراءة الملفات";
@@ -251,6 +257,8 @@
 "Add Filter" = "إضافة فلتر";
 "Invalid" = "غير صالح";
 "Waiting for activity" = "في انتظار النشاط";
+"Waiting for iOS background wake or app open" = "في انتظار تنشيط iOS في الخلفية أو فتح التطبيق";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "يتم تحديث الخلفية في iOS بأفضل جهد ممكن، وقد تُجرى عمليات التحقق في وقت متأخر عن الموعد المحدد.";
 "Name" = "الاسم";
 "Startup" = "بدء التشغيل";
 "Active" = "نشط";

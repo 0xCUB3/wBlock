@@ -37,6 +37,7 @@
 "Add Filter List" = "Szűrőlista hozzáadása";
 "last updated %@" = "utoljára frissítve: %@";
 "Recommended" = "Ajánlott";
+"Import" = "Importálás";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Fájl importálása";
 "Edit User List" = "Felhasználói lista szerkesztése";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "A(z) \\(bypassScript.name) felhasználói szkripthez szükséges ez: \\(filterName)";
 "Foreign" = "Nemzetközi";
 "Minimal" = "Minimális";
+"Base filter only." = "Csak az alap szűrő.";
+"Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
 "Whitelist" = "Engedélyezőlista";
 "Next" = "Következő";
 "Sync settings across devices" = "Beállítások szinkronizálása az eszközök között";
@@ -179,8 +182,10 @@
 "N/A" = "N/A";
 "Import Failed" = "Importálás sikertelen";
 "Manage Whitelist" = "Engedélyezőlista kezelése";
+"Manage Element Zapper Rules" = "Elemeltávolító szabályok kezelése";
 "FilterApply" = "FilterApply";
 "Every %d hours" = "%d óránként";
+"Update Interval" = "Frissítési időköz";
 "Update & Apply" = "Frissítés és alkalmazás";
 "Looks good! Tap Add to continue." = "Jól néz ki! Koppints a Hozzáadásra a folytatáshoz.";
 "Filters applied successfully." = "A szűrők sikeresen alkalmazva.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Megbízhatóság: %@";
 "Logs will appear here as the app runs" = "A naplók itt jelennek meg az alkalmazás futása közben";
 "Downloaded %d updates" = "%d frissítés letöltve";
+"Enable the Safari extensions so wBlock can block ads." = "Engedélyezd a Safari-bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket.";
 "Setup Instructions" = "Beállítási útmutató";
 "Every 1 day" = "Naponta";
 "Reading Files" = "Fájlok olvasása";

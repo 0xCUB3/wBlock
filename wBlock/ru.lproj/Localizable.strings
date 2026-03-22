@@ -37,6 +37,7 @@
 "Add Filter List" = "Добавить список фильтров";
 "last updated %@" = "обновлено %@";
 "Recommended" = "Рекомендуется";
+"Import" = "Импорт";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Импорт файла";
 "Edit User List" = "Изменить пользовательский список";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Пользовательскому скрипту \\(bypassScript.name) требуется \\(filterName)";
 "Foreign" = "Иностранные";
 "Minimal" = "Минимальный";
+"Base filter only." = "Только базовый фильтр.";
+"Balanced defaults." = "Сбалансированные настройки по умолчанию.";
 "Whitelist" = "Белый список";
 "Next" = "Далее";
 "Sync settings across devices" = "Синхронизировать настройки между устройствами";
@@ -179,8 +182,10 @@
 "N/A" = "Н/Д";
 "Import Failed" = "Импорт не удался";
 "Manage Whitelist" = "Управление белым списком";
+"Manage Element Zapper Rules" = "Управление правилами скрытия элементов";
 "FilterApply" = "Применение фильтров";
 "Every %d hours" = "Каждые %d часов";
+"Update Interval" = "Интервал обновления";
 "Update & Apply" = "Обновить и применить";
 "Looks good! Tap Add to continue." = "Все хорошо! Нажмите «Добавить», чтобы продолжить.";
 "Filters applied successfully." = "Фильтры успешно применены.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Доверие: %@";
 "Logs will appear here as the app runs" = "Журналы будут появляться здесь во время работы приложения";
 "Downloaded %d updates" = "Загружено %d обновлений";
+"Enable the Safari extensions so wBlock can block ads." = "Включите расширения Safari, чтобы wBlock мог блокировать рекламу.";
 "Setup Instructions" = "Инструкции по настройке";
 "Every 1 day" = "Каждый 1 день";
 "Reading Files" = "Чтение файлов";
@@ -251,6 +257,8 @@
 "Add Filter" = "Добавить фильтр";
 "Invalid" = "Недопустимо";
 "Waiting for activity" = "Ожидание активности";
+"Waiting for iOS background wake or app open" = "Ожидание пробуждения iOS в фоне или открытия приложения";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "Фоновое обновление iOS работает по best-effort, проверки могут выполняться позже запланированного.";
 "Name" = "Имя";
 "Startup" = "Запуск";
 "Active" = "Активно";

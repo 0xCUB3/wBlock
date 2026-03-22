@@ -37,6 +37,7 @@
 "Add Filter List" = "フィルターリストを追加";
 "last updated %@" = "最終更新 %@";
 "Recommended" = "推奨";
+"Import" = "インポート";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "ファイルをインポート";
 "Edit User List" = "ユーザーリストを編集";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) ユーザースクリプトには \\(filterName) が必要です";
 "Foreign" = "海外";
 "Minimal" = "最小";
+"Base filter only." = "ベースフィルターのみ。";
+"Balanced defaults." = "バランスの取れた既定設定。";
 "Whitelist" = "ホワイトリスト";
 "Next" = "次へ";
 "Sync settings across devices" = "設定をデバイス間で同期";
@@ -179,8 +182,10 @@
 "N/A" = "N/A";
 "Import Failed" = "インポートに失敗しました";
 "Manage Whitelist" = "ホワイトリストを管理";
+"Manage Element Zapper Rules" = "要素ザッパーのルールを管理";
 "FilterApply" = "フィルター適用";
 "Every %d hours" = "%d時間ごと";
+"Update Interval" = "更新間隔";
 "Update & Apply" = "更新して適用";
 "Looks good! Tap Add to continue." = "問題ありません！続行するには「追加」をタップしてください。";
 "Filters applied successfully." = "フィルターを適用しました。";
@@ -208,6 +213,7 @@
 "Trust: %@" = "信頼: %@";
 "Logs will appear here as the app runs" = "アプリの実行中にここへログが表示されます";
 "Downloaded %d updates" = "%d件の更新をダウンロード";
+"Enable the Safari extensions so wBlock can block ads." = "wBlock が広告をブロックできるように Safari 拡張機能を有効にしてください。";
 "Setup Instructions" = "設定手順";
 "Every 1 day" = "1日ごと";
 "Reading Files" = "ファイルを読み込み中";
@@ -251,6 +257,8 @@
 "Add Filter" = "フィルターを追加";
 "Invalid" = "無効";
 "Waiting for activity" = "アクティビティを待機中";
+"Waiting for iOS background wake or app open" = "iOS のバックグラウンド起動またはアプリの起動を待機中";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "iOS のバックグラウンド更新はベストエフォートであり、確認は予定より遅れて実行される場合があります。";
 "Name" = "名前";
 "Startup" = "起動";
 "Active" = "アクティブ";

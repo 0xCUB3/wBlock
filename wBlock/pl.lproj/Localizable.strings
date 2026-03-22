@@ -37,6 +37,7 @@
 "Add Filter List" = "Dodaj listę filtrów";
 "last updated %@" = "ostatnia aktualizacja %@";
 "Recommended" = "Zalecane";
+"Import" = "Importuj";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Importuj plik";
 "Edit User List" = "Edytuj listę użytkownika";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Skrypt użytkownika \\(bypassScript.name) wymaga \\(filterName)";
 "Foreign" = "Zagraniczne";
 "Minimal" = "Minimalny";
+"Base filter only." = "Tylko filtr podstawowy.";
+"Balanced defaults." = "Zrównoważone ustawienia domyślne.";
 "Whitelist" = "Biała lista";
 "Next" = "Dalej";
 "Sync settings across devices" = "Synchronizuj ustawienia między urządzeniami";
@@ -179,8 +182,10 @@
 "N/A" = "N/A";
 "Import Failed" = "Import nie powiódł się";
 "Manage Whitelist" = "Zarządzaj białą listą";
+"Manage Element Zapper Rules" = "Zarządzaj regułami usuwacza elementów";
 "FilterApply" = "Stosowanie filtrów";
 "Every %d hours" = "Co %d godzin";
+"Update Interval" = "Interwał aktualizacji";
 "Update & Apply" = "Aktualizuj i zastosuj";
 "Looks good! Tap Add to continue." = "Wygląda dobrze! Stuknij Dodaj, aby kontynuować.";
 "Filters applied successfully." = "Filtry zostały pomyślnie zastosowane.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Zaufanie: %@";
 "Logs will appear here as the app runs" = "Logi będą pojawiać się tutaj podczas działania aplikacji";
 "Downloaded %d updates" = "Pobrano %d aktualizacji";
+"Enable the Safari extensions so wBlock can block ads." = "Włącz rozszerzenia Safari, aby wBlock mógł blokować reklamy.";
 "Setup Instructions" = "Instrukcje konfiguracji";
 "Every 1 day" = "Co 1 dzień";
 "Reading Files" = "Odczytywanie plików";
@@ -251,6 +257,8 @@
 "Add Filter" = "Dodaj filtr";
 "Invalid" = "Nieprawidłowe";
 "Waiting for activity" = "Oczekiwanie na aktywność";
+"Waiting for iOS background wake or app open" = "Oczekiwanie na wybudzenie iOS w tle lub otwarcie aplikacji";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "Odświeżanie w tle w iOS działa na zasadzie best effort, sprawdzenia mogą nastąpić później niż zaplanowano.";
 "Name" = "Nazwa";
 "Startup" = "Uruchamianie";
 "Active" = "Aktywne";

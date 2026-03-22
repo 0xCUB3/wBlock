@@ -37,6 +37,7 @@
 "Add Filter List" = "Adaugă listă de filtre";
 "last updated %@" = "actualizat ultima dată %@";
 "Recommended" = "Recomandat";
+"Import" = "Importă";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Importă fișier";
 "Edit User List" = "Editează lista utilizator";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Scriptul utilizator \\(bypassScript.name) necesită \\(filterName)";
 "Foreign" = "Străine";
 "Minimal" = "Minim";
+"Base filter only." = "Doar filtrul de bază.";
+"Balanced defaults." = "Setări implicite echilibrate.";
 "Whitelist" = "Listă albă";
 "Next" = "Următorul";
 "Sync settings across devices" = "Sincronizează setările între dispozitive";
@@ -179,8 +182,10 @@
 "N/A" = "N/A";
 "Import Failed" = "Importul a eșuat";
 "Manage Whitelist" = "Gestionează lista albă";
+"Manage Element Zapper Rules" = "Gestionează regulile pentru eliminatorul de elemente";
 "FilterApply" = "Aplicare filtre";
 "Every %d hours" = "La fiecare %d ore";
+"Update Interval" = "Interval de actualizare";
 "Update & Apply" = "Actualizează și aplică";
 "Looks good! Tap Add to continue." = "Arată bine! Atinge Adaugă pentru a continua.";
 "Filters applied successfully." = "Filtrele au fost aplicate cu succes.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "Încredere: %@";
 "Logs will appear here as the app runs" = "Jurnalele vor apărea aici pe măsură ce aplicația rulează";
 "Downloaded %d updates" = "S-au descărcat %d actualizări";
+"Enable the Safari extensions so wBlock can block ads." = "Activează extensiile Safari pentru ca wBlock să poată bloca reclamele.";
 "Setup Instructions" = "Instrucțiuni de configurare";
 "Every 1 day" = "La fiecare 1 zi";
 "Reading Files" = "Se citesc fișierele";
@@ -251,6 +257,8 @@
 "Add Filter" = "Adaugă filtru";
 "Invalid" = "Nevalid";
 "Waiting for activity" = "În așteptarea activității";
+"Waiting for iOS background wake or app open" = "În așteptarea trezirii iOS în fundal sau a deschiderii aplicației";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "Actualizarea în fundal pe iOS este de tip best-effort; verificările pot rula mai târziu decât era programat.";
 "Name" = "Nume";
 "Startup" = "Pornire";
 "Active" = "Activ";

@@ -37,6 +37,7 @@
 "Add Filter List" = "필터 목록 추가";
 "last updated %@" = "최근 업데이트: %@";
 "Recommended" = "권장";
+"Import" = "가져오기";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "파일 가져오기";
 "Edit User List" = "사용자 목록 편집";
@@ -81,6 +82,8 @@
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 유저스크립트는 \\(filterName)이(가) 필요합니다";
 "Foreign" = "해외";
 "Minimal" = "최소";
+"Base filter only." = "기본 필터만 사용.";
+"Balanced defaults." = "균형 잡힌 기본 설정.";
 "Whitelist" = "허용 목록";
 "Next" = "다음";
 "Sync settings across devices" = "기기 간 설정 동기화";
@@ -179,8 +182,10 @@
 "N/A" = "해당 없음";
 "Import Failed" = "가져오기 실패";
 "Manage Whitelist" = "허용 목록 관리";
+"Manage Element Zapper Rules" = "요소 제거기 규칙 관리";
 "FilterApply" = "필터 적용";
 "Every %d hours" = "%d시간마다";
+"Update Interval" = "업데이트 간격";
 "Update & Apply" = "업데이트 및 적용";
 "Looks good! Tap Add to continue." = "좋습니다! 계속하려면 추가를 탭하세요.";
 "Filters applied successfully." = "필터가 성공적으로 적용되었습니다.";
@@ -208,6 +213,7 @@
 "Trust: %@" = "신뢰도: %@";
 "Logs will appear here as the app runs" = "앱이 실행되면 여기에 로그가 표시됩니다";
 "Downloaded %d updates" = "업데이트 %d개 다운로드됨";
+"Enable the Safari extensions so wBlock can block ads." = "wBlock이 광고를 차단할 수 있도록 Safari 확장 프로그램을 활성화하세요.";
 "Setup Instructions" = "설정 지침";
 "Every 1 day" = "1일마다";
 "Reading Files" = "파일 읽는 중";
@@ -251,6 +257,8 @@
 "Add Filter" = "필터 추가";
 "Invalid" = "유효하지 않음";
 "Waiting for activity" = "활동 대기 중";
+"Waiting for iOS background wake or app open" = "iOS 백그라운드 깨우기 또는 앱 열기 대기 중";
+"iOS background refresh is best-effort; checks may run later than scheduled." = "iOS 백그라운드 새로 고침은 최선의 노력으로 수행되며, 확인은 예정된 시간보다 늦게 실행될 수 있습니다.";
 "Name" = "이름";
 "Startup" = "시작";
 "Active" = "활성";
