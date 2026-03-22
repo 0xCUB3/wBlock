@@ -1,5 +1,7 @@
 .claude/settings.local.json
 build/
+.DS_Store
+**/.DS_Store
 
 # Xcode
 *.xcuserstate
