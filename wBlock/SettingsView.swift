@@ -188,13 +188,11 @@ struct SettingsView: View {
     @ViewBuilder
     private var backupButtons: some View {
         #if os(macOS)
-        HStack(spacing: 12) {
-            Button { exportBackup() } label: {
-                Label("Export", systemImage: "square.and.arrow.up")
-            }
-            Button { showingImportDialog = true } label: {
-                Label("Import", systemImage: "square.and.arrow.down")
-            }
+        Button { exportBackup() } label: {
+            Label("Export", systemImage: "square.and.arrow.up")
+        }
+        Button { showingImportDialog = true } label: {
+            Label("Import", systemImage: "square.and.arrow.down")
         }
         #else
         Button { exportBackup() } label: {
