@@ -175,7 +175,7 @@ struct ContentView: View {
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .topBarLeading) {
                         applyChangesToolbarButton
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
@@ -261,15 +261,6 @@ struct ContentView: View {
     private var nativeFiltersListView: some View {
         #if os(iOS)
         List {
-            if hasPendingChanges {
-                Section {
-                    PendingChangesListRow(
-                        isLoading: filterManager.isLoading,
-                        action: applyPendingChanges
-                    )
-                }
-            }
-
             Section {
                 statsCardsView
                     .unifiedTabCardSectionRow()
@@ -344,7 +335,7 @@ struct ContentView: View {
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
+                        ToolbarItem(placement: .topBarLeading) {
                             applyChangesToolbarButton
                         }
                     }
@@ -482,39 +473,6 @@ struct ContentView: View {
         }
     }
     #endif
-}
-
-struct PendingChangesListRow: View {
-    let isLoading: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Changes Pending")
-                        .font(.headline)
-                    Text("Safari is using your last applied setup.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 12)
-
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Text("Apply Changes")
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.tint)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .disabled(isLoading)
-    }
 }
 
 private extension View {
