@@ -170,7 +170,7 @@ enum BackupManager {
         }
 
         // 5. Mark unapplied changes so user can apply
-        filterManager.hasUnappliedChanges = true
+        filterManager.markNonSelectionChangesPending()
 
         // 6. Refresh ZapperRuleManager
         ZapperRuleManager.shared.refresh()

@@ -77,8 +77,37 @@ class AppFilterManager: ObservableObject {
         filterLists.filter(\.isCustom)
     }
 
+    private var appliedSelectedFilterIDs: Set<UUID> = []
+    private var hasPendingSelectionChanges = false
+    private var hasPendingNonSelectionChanges = false
+
+    private var selectedFilterIDs: Set<UUID> {
+        Set(filterLists.filter(\.isSelected).map(\.id))
+    }
+
     var filterListIndexByID: [UUID: Int] {
         Dictionary(uniqueKeysWithValues: filterLists.enumerated().map { ($1.id, $0) })
+    }
+
+    func refreshPendingSelectionChanges() {
+        hasPendingSelectionChanges = selectedFilterIDs != appliedSelectedFilterIDs
+        refreshHasUnappliedChanges()
+    }
+
+    func markNonSelectionChangesPending() {
+        hasPendingNonSelectionChanges = true
+        refreshHasUnappliedChanges()
+    }
+
+    func markCurrentStateApplied() {
+        appliedSelectedFilterIDs = selectedFilterIDs
+        hasPendingSelectionChanges = false
+        hasPendingNonSelectionChanges = false
+        hasUnappliedChanges = false
+    }
+
+    private func refreshHasUnappliedChanges() {
+        hasUnappliedChanges = hasPendingSelectionChanges || hasPendingNonSelectionChanges
     }
 
     // Save filter lists
@@ -127,7 +156,7 @@ class AppFilterManager: ObservableObject {
     func resetForOnboarding() async {
         isLoading = true
         statusDescription = "Resetting…"
-        hasUnappliedChanges = false
+        markCurrentStateApplied()
         showingApplyProgressSheet = false
         showingUpdatePopup = false
         missingFilters = []
@@ -147,6 +176,7 @@ class AppFilterManager: ObservableObject {
 
         let defaultLists = loader.getDefaultFilterLists()
         filterLists = defaultLists
+        markCurrentStateApplied()
         saveFilterListsCoalesced()
 
         await dataManager.updateRuleCounts(
@@ -204,7 +234,7 @@ class AppFilterManager: ObservableObject {
             }
 
             if removedSelected {
-                hasUnappliedChanges = true
+                markNonSelectionChangesPending()
             }
         }
 
@@ -226,6 +256,8 @@ class AppFilterManager: ObservableObject {
         }
 
         filterLists = migratedFilterLists
+        appliedSelectedFilterIDs = selectedFilterIDs
+        refreshPendingSelectionChanges()
 
         // Ensure custom filter files use ID-based filenames so users can rename lists safely.
         Task.detached(priority: .utility) { [loader, migratedFilterLists] in
@@ -413,7 +445,7 @@ class AppFilterManager: ObservableObject {
             }
 
             saveFilterListsCoalesced()
-            hasUnappliedChanges = true
+            refreshPendingSelectionChanges()
         }
     }
 
@@ -458,7 +490,7 @@ class AppFilterManager: ObservableObject {
         }
 
         saveFilterListsCoalesced()
-        hasUnappliedChanges = true
+        refreshPendingSelectionChanges()
     }
 
     // MARK: - Rule limit UX

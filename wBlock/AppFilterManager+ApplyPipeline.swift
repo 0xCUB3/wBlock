@@ -164,11 +164,11 @@ extension AppFilterManager {
             await MainActor.run {
                 self.isLoading = false
                 self.showingApplyProgressSheet = false
-                self.hasUnappliedChanges = false
                 self.lastRuleCount = 0
                 self.ruleCountsByExtension.removeAll()
                 self.extensionsApproachingLimit.removeAll()
                 self.saveRuleCounts()
+                self.markCurrentStateApplied()
             }
             return
         }
@@ -431,7 +431,7 @@ extension AppFilterManager {
             if allReloadsSuccessful && !self.hasError {
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
-                self.hasUnappliedChanges = false
+                self.markCurrentStateApplied()
             } else if !self.hasError {
                 self.statusDescription =
                     "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."

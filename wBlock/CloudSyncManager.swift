@@ -509,7 +509,7 @@ final class CloudSyncManager: ObservableObject {
             }
 
             if changed {
-                filterManager.hasUnappliedChanges = true
+                filterManager.markNonSelectionChangesPending()
                 await filterManager.saveFilterLists()
             }
             return
@@ -678,7 +678,7 @@ final class CloudSyncManager: ObservableObject {
                         Self.deleteInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
                     }
                     filterManager.filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                    filterManager.hasUnappliedChanges = true
+                    filterManager.markNonSelectionChangesPending()
                     await filterManager.saveFilterLists()
                 }
             } else {
@@ -763,7 +763,7 @@ final class CloudSyncManager: ObservableObject {
                     changed = true
                 }
                 if changed {
-                    filterManager.hasUnappliedChanges = true
+                    filterManager.markNonSelectionChangesPending()
                     await filterManager.saveFilterLists()
                 }
             } else {

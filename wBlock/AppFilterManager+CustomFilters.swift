@@ -106,7 +106,7 @@ extension AppFilterManager {
         }
 
         addCustomFilterListWithoutFetch(newFilter)
-        hasUnappliedChanges = true
+        markNonSelectionChangesPending()
         statusDescription = "✅ User list added. Apply changes to enable it."
         hasError = false
     }
@@ -159,7 +159,7 @@ extension AppFilterManager {
                         .filterUpdate, "Successfully downloaded custom filter",
                         metadata: ["filter": currentName])
                     await MainActor.run {
-                        self.hasUnappliedChanges = true
+                        self.markNonSelectionChangesPending()
                         self.statusDescription =
                             "✅ Filter '\(currentName)' added successfully. Apply changes to enable it."
                         self.hasError = false
@@ -221,7 +221,7 @@ extension AppFilterManager {
             await ConcurrentLogManager.shared.info(
                 .system, "Removed custom filter", metadata: ["filter": filter.name])
         }
-        hasUnappliedChanges = true
+        markNonSelectionChangesPending()
     }
 
     nonisolated private static func countRulesInUserListContent(_ content: String) -> Int {
@@ -322,7 +322,7 @@ extension AppFilterManager {
         filterLists[index].sourceRuleCount = Self.countRulesInUserListContent(trimmedContent)
 
         saveFilterListsCoalesced()
-        hasUnappliedChanges = true
+        markNonSelectionChangesPending()
         statusDescription = "✅ User list updated. Apply changes to enable it."
         hasError = false
     }
@@ -351,7 +351,6 @@ extension AppFilterManager {
         }
 
         saveFilterListsCoalesced()
-        hasUnappliedChanges = false
         statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
 
         await MainActor.run {
