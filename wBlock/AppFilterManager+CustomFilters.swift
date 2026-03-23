@@ -106,7 +106,7 @@ extension AppFilterManager {
         }
 
         addCustomFilterListWithoutFetch(newFilter)
-        hasUnappliedChanges = true
+        refreshPendingChanges()
         statusDescription = "✅ User list added. Apply changes to enable it."
         hasError = false
     }
@@ -143,6 +143,7 @@ extension AppFilterManager {
 
             filterLists.append(newFilterToAdd)
             saveFilterListsCoalesced()
+            refreshPendingChanges()
 
             Task {
                 await ConcurrentLogManager.shared.info(
@@ -159,7 +160,7 @@ extension AppFilterManager {
                         .filterUpdate, "Successfully downloaded custom filter",
                         metadata: ["filter": currentName])
                     await MainActor.run {
-                        self.hasUnappliedChanges = true
+                        self.refreshPendingChanges()
                         self.statusDescription =
                             "✅ Filter '\(currentName)' added successfully. Apply changes to enable it."
                         self.hasError = false
@@ -191,6 +192,7 @@ extension AppFilterManager {
 
         filterLists.append(filter)
         saveFilterListsCoalesced()
+        refreshPendingChanges()
 
         Task {
             await ConcurrentLogManager.shared.info(
@@ -207,6 +209,7 @@ extension AppFilterManager {
 
         filterLists.removeAll { $0.id == filter.id }
         saveFilterListsCoalesced()
+        refreshPendingChanges()
 
         if let containerURL = loader.getSharedContainerURL() {
             let idFileURL = containerURL.appendingPathComponent(
@@ -221,7 +224,6 @@ extension AppFilterManager {
             await ConcurrentLogManager.shared.info(
                 .system, "Removed custom filter", metadata: ["filter": filter.name])
         }
-        hasUnappliedChanges = true
     }
 
     nonisolated private static func countRulesInUserListContent(_ content: String) -> Int {
@@ -322,7 +324,7 @@ extension AppFilterManager {
         filterLists[index].sourceRuleCount = Self.countRulesInUserListContent(trimmedContent)
 
         saveFilterListsCoalesced()
-        hasUnappliedChanges = true
+        markNonSelectionChangesPending()
         statusDescription = "✅ User list updated. Apply changes to enable it."
         hasError = false
     }
@@ -351,7 +353,6 @@ extension AppFilterManager {
         }
 
         saveFilterListsCoalesced()
-        hasUnappliedChanges = false
         statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
 
         await MainActor.run {

@@ -53,6 +53,10 @@ struct ContentView: View {
         filterManager.lastRuleCount > 0
     }
 
+    private var hasPendingChanges: Bool {
+        filterManager.hasUnappliedChanges
+    }
+
     private var totalSafariRuleCapacity: Int {
         let blockers = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
         return blockers.count * 150_000
@@ -70,6 +74,10 @@ struct ContentView: View {
 
     private var displayableCategories: [FilterListCategory] {
         FilterListCategory.allCases.filter { $0 != .all }
+    }
+
+    private var applyChangesSymbolName: String {
+        "arrow.triangle.2.circlepath"
     }
 
     /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
@@ -137,6 +145,28 @@ struct ContentView: View {
         filter.isCustom
     }
 
+    private func applyPendingChanges() {
+        guard !filterManager.isLoading else { return }
+        Task {
+            await filterManager.checkAndEnableFilters(forceReload: true)
+        }
+    }
+
+    private var applyChangesToolbarButton: some View {
+        Button {
+            applyPendingChanges()
+        } label: {
+            if hasPendingChanges {
+                Text("Apply")
+                    .fontWeight(.semibold)
+            } else {
+                Image(systemName: applyChangesSymbolName)
+            }
+        }
+        .disabled(filterManager.isLoading)
+        .accessibilityLabel("Apply Changes")
+    }
+
     private var filtersView: some View {
         NavigationStack {
             nativeFiltersListView
@@ -144,14 +174,7 @@ struct ContentView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            Task {
-                                await filterManager.checkAndEnableFilters(forceReload: true)
-                            }
-                        } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                        }
-                        .disabled(filterManager.isLoading)
+                        applyChangesToolbarButton
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
                         if #unavailable(iOS 26.0) {
@@ -200,14 +223,12 @@ struct ContentView: View {
                     )
 
                     if !showFilterSearch {
-                        Button {
-                            Task {
-                                await filterManager.checkAndEnableFilters(forceReload: true)
-                            }
-                        } label: {
-                            Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
-                        }
-                        .disabled(filterManager.isLoading)
+                        applyChangesToolbarButton
+                        .help(
+                            hasPendingChanges
+                                ? "Apply your pending changes"
+                                : "Apply changes"
+                        )
 
                         Button {
                             showingAddFilterSheet = true
@@ -307,14 +328,18 @@ struct ContentView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                Task {
-                                    await filterManager.checkAndEnableFilters(forceReload: true)
-                                }
-                            } label: {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                            }
-                            .disabled(filterManager.isLoading)
+                            applyChangesToolbarButton
+                        }
+                    }
+                #elseif os(macOS)
+                    .toolbar {
+                        ToolbarItem(placement: .automatic) {
+                            applyChangesToolbarButton
+                                .help(
+                                    hasPendingChanges
+                                        ? "Apply your pending changes"
+                                        : "Apply changes"
+                                )
                         }
                     }
                 #endif
