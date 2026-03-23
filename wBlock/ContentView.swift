@@ -53,6 +53,10 @@ struct ContentView: View {
         filterManager.lastRuleCount > 0
     }
 
+    private var hasPendingChanges: Bool {
+        filterManager.hasUnappliedChanges
+    }
+
     private var totalSafariRuleCapacity: Int {
         let blockers = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
         return blockers.count * 150_000
@@ -70,6 +74,12 @@ struct ContentView: View {
 
     private var displayableCategories: [FilterListCategory] {
         FilterListCategory.allCases.filter { $0 != .all }
+    }
+
+    private var applyChangesSymbolName: String {
+        hasPendingChanges
+            ? "arrow.triangle.2.circlepath.circle.fill"
+            : "arrow.triangle.2.circlepath"
     }
 
     /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
@@ -137,6 +147,26 @@ struct ContentView: View {
         filter.isCustom
     }
 
+    private func applyPendingChanges() {
+        guard !filterManager.isLoading else { return }
+        Task {
+            await filterManager.checkAndEnableFilters(forceReload: true)
+        }
+    }
+
+    @ViewBuilder
+    private var pendingChangesInset: some View {
+        if hasPendingChanges {
+            PendingChangesBanner(
+                isLoading: filterManager.isLoading,
+                action: applyPendingChanges
+            )
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+        }
+    }
+
     private var filtersView: some View {
         NavigationStack {
             nativeFiltersListView
@@ -145,13 +175,17 @@ struct ContentView: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button {
-                            Task {
-                                await filterManager.checkAndEnableFilters(forceReload: true)
-                            }
+                            applyPendingChanges()
                         } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                            if hasPendingChanges {
+                                Text("Apply")
+                                    .fontWeight(.semibold)
+                            } else {
+                                Image(systemName: applyChangesSymbolName)
+                            }
                         }
                         .disabled(filterManager.isLoading)
+                        .accessibilityLabel("Apply Changes")
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
                         if #unavailable(iOS 26.0) {
@@ -178,6 +212,9 @@ struct ContentView: View {
                 }
             #endif
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            pendingChangesInset
+        }
         #if os(iOS)
             .searchable(
                 text: $filterSearchText,
@@ -201,13 +238,16 @@ struct ContentView: View {
 
                     if !showFilterSearch {
                         Button {
-                            Task {
-                                await filterManager.checkAndEnableFilters(forceReload: true)
-                            }
+                            applyPendingChanges()
                         } label: {
-                            Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
+                            Label("Apply Changes", systemImage: applyChangesSymbolName)
                         }
                         .disabled(filterManager.isLoading)
+                        .help(
+                            hasPendingChanges
+                                ? "Apply your pending changes"
+                                : "Apply changes"
+                        )
 
                         Button {
                             showingAddFilterSheet = true
@@ -308,16 +348,23 @@ struct ContentView: View {
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             Button {
-                                Task {
-                                    await filterManager.checkAndEnableFilters(forceReload: true)
-                                }
+                                applyPendingChanges()
                             } label: {
-                                Image(systemName: "arrow.triangle.2.circlepath")
+                                if hasPendingChanges {
+                                    Text("Apply")
+                                        .fontWeight(.semibold)
+                                } else {
+                                    Image(systemName: applyChangesSymbolName)
+                                }
                             }
                             .disabled(filterManager.isLoading)
+                            .accessibilityLabel("Apply Changes")
                         }
                     }
                 #endif
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            pendingChangesInset
         }
     }
 
@@ -451,6 +498,73 @@ struct ContentView: View {
         }
     }
     #endif
+}
+
+struct PendingChangesBanner: View {
+    let isLoading: Bool
+    let action: () -> Void
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            bannerLayout(compact: false)
+            bannerLayout(compact: true)
+        }
+    }
+
+    @ViewBuilder
+    private func bannerLayout(compact: Bool) -> some View {
+        let copy = bannerCopy
+        let button = bannerButton
+
+        if compact {
+            VStack(alignment: .leading, spacing: 12) {
+                copy
+                button
+            }
+            .bannerChrome()
+        } else {
+            HStack(alignment: .center, spacing: 14) {
+                copy
+                Spacer(minLength: 12)
+                button
+            }
+            .bannerChrome()
+        }
+    }
+
+    private var bannerCopy: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.tint)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Changes Pending")
+                    .font(.headline)
+                Text("Safari is still using your last applied setup.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var bannerButton: some View {
+        Button("Apply Changes", action: action)
+            .buttonStyle(.borderedProminent)
+            .disabled(isLoading)
+    }
+}
+
+private extension View {
+    func bannerChrome() -> some View {
+        self
+            .padding(14)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(.quaternary)
+            }
+    }
 }
 
 struct FilterRowView: View {
