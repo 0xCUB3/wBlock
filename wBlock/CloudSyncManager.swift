@@ -658,7 +658,11 @@ final class CloudSyncManager: ObservableObject {
         // Import missing custom filter lists and userscripts before uploading so we don't
         // accidentally drop them from the single shared CloudKit payload.
 
-        let remoteDeleted = Set(remotePayload.filters.deletedCustomURLs ?? [])
+        let localCustomURLs: Set<String> = Set(dataManager.getCustomFilterLists().map { $0.url.absoluteString })
+        let remoteDeleted = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
+            remoteDeletedURLs: Set(remotePayload.filters.deletedCustomURLs ?? []),
+            localCustomURLs: localCustomURLs
+        )
         if !remoteDeleted.isEmpty {
             mergeDeletedCustomListURLs(remoteDeleted)
         }
@@ -706,7 +710,6 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        let localCustomURLs: Set<String> = Set(dataManager.getCustomFilterLists().map { $0.url.absoluteString })
         let remoteCustoms = remotePayload.filters.customLists
         let missingCustoms = remoteCustoms.filter {
             !deletedCustomURLs.contains($0.url) && !localCustomURLs.contains($0.url)
