@@ -27,7 +27,6 @@ class AppFilterManager: ObservableObject {
     @Published var progress: Float = 0
     var missingFilters: [FilterList] = []
     var missingUserScripts: [UserScript] = []
-    @Published var whitelistViewModel = WhitelistViewModel()
     @Published var availableUpdates: [FilterList] = []
     @Published var showingUpdatePopup = false
     @Published var showingNoUpdatesAlert = false

@@ -81,8 +81,6 @@ extension AppFilterManager {
                 ])
 
             lastKnownDisabledSites = currentDisabledSites
-            await MainActor.run { self.whitelistViewModel.loadWhitelistedDomains() }
-
             // Only rebuild if we have applied filters (don't rebuild on startup)
             if !hasUnappliedChanges && lastRuleCount > 0 {
                 await fastApplyDisabledSitesChanges()
