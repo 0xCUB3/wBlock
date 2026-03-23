@@ -155,7 +155,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private var pendingChangesInset: some View {
+    private var pendingChangesOverlay: some View {
         if hasPendingChanges {
             PendingChangesBanner(
                 isLoading: filterManager.isLoading,
@@ -163,7 +163,6 @@ struct ContentView: View {
             )
             .padding(.horizontal)
             .padding(.top, 8)
-            .padding(.bottom, 4)
         }
     }
 
@@ -212,8 +211,8 @@ struct ContentView: View {
                 }
             #endif
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            pendingChangesInset
+        .overlay(alignment: .top) {
+            pendingChangesOverlay
         }
         #if os(iOS)
             .searchable(
@@ -363,8 +362,8 @@ struct ContentView: View {
                     }
                 #endif
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            pendingChangesInset
+        .overlay(alignment: .top) {
+            pendingChangesOverlay
         }
     }
 
@@ -533,18 +532,12 @@ struct PendingChangesBanner: View {
     }
 
     private var bannerCopy: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                .font(.title3)
-                .foregroundStyle(.tint)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Changes Pending")
-                    .font(.headline)
-                Text("Safari is still using your last applied setup.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Changes Pending")
+                .font(.headline)
+            Text("Safari is still using your last applied setup.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
     }
 
