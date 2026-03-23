@@ -413,6 +413,8 @@ final class CloudSyncManager: ObservableObject {
 
         if let filterManager {
             var changed = false
+            var selectionChanged = false
+            var nonSelectionChanged = false
 
             // Remove deleted custom lists (prevents resurrection + keeps UI consistent).
             if !deletedCustomURLs.isEmpty {
@@ -424,6 +426,7 @@ final class CloudSyncManager: ObservableObject {
                     }
                     filterManager.filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
                     changed = true
+                    nonSelectionChanged = true
                 }
             }
 
@@ -436,6 +439,7 @@ final class CloudSyncManager: ObservableObject {
                 if filterManager.filterLists[index].isSelected != shouldSelect {
                     filterManager.filterLists[index].isSelected = shouldSelect
                     changed = true
+                    selectionChanged = true
                 }
             }
 
@@ -460,6 +464,7 @@ final class CloudSyncManager: ObservableObject {
                         let existing = filterManager.filterLists[existingIndex]
                         filterManager.filterLists.removeAll { $0.id == existing.id }
                         changed = true
+                        nonSelectionChanged = true
                         shouldTreatAsMissing = true
                     }
 
@@ -467,16 +472,19 @@ final class CloudSyncManager: ObservableObject {
                         if filterManager.filterLists[existingIndex].name != remoteCustom.name {
                             filterManager.filterLists[existingIndex].name = remoteCustom.name
                             changed = true
+                            nonSelectionChanged = true
                         }
                         if let desc = remoteCustom.description,
                            filterManager.filterLists[existingIndex].description != desc
                         {
                             filterManager.filterLists[existingIndex].description = desc
                             changed = true
+                            nonSelectionChanged = true
                         }
                         if filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected {
                             filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
                             changed = true
+                            selectionChanged = true
                         }
                     } else {
                         let newFilter = FilterList(
@@ -491,6 +499,7 @@ final class CloudSyncManager: ObservableObject {
                         )
                         filterManager.filterLists.append(newFilter)
                         changed = true
+                        nonSelectionChanged = true
                     }
                 } else {
                     let newFilter = FilterList(
@@ -505,11 +514,16 @@ final class CloudSyncManager: ObservableObject {
                     )
                     filterManager.filterLists.append(newFilter)
                     changed = true
+                    nonSelectionChanged = true
                 }
             }
 
             if changed {
-                filterManager.markNonSelectionChangesPending()
+                if nonSelectionChanged {
+                    filterManager.markNonSelectionChangesPending()
+                } else if selectionChanged {
+                    filterManager.refreshPendingSelectionChanges()
+                }
                 await filterManager.saveFilterLists()
             }
             return
