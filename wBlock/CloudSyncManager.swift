@@ -380,6 +380,9 @@ final class CloudSyncManager: ObservableObject {
         // Whitelist
         await dataManager.setWhitelistedDomains(payload.whitelistDomains)
 
+        // Element zapper rules
+        await applyRemoteZapperRules(payload.zapperRules ?? [:])
+
         // Filter lists (selection + custom lists)
         await applyRemoteFilters(payload.filters)
 
@@ -668,6 +671,22 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
+    private func applyRemoteZapperRules(_ zapperRules: [String: [String]]) async {
+        let normalizedRemoteRules = Self.normalizedZapperRules(zapperRules)
+        let currentDomains = Set(dataManager.getZapperDomains())
+        let remoteDomains = Set(normalizedRemoteRules.keys)
+
+        for domain in currentDomains.subtracting(remoteDomains) {
+            await dataManager.deleteAllZapperRules(forHost: domain)
+        }
+
+        for domain in normalizedRemoteRules.keys.sorted() {
+            await dataManager.setZapperRules(forHost: domain, rules: normalizedRemoteRules[domain] ?? [])
+        }
+
+        await ZapperRuleManager.shared.refreshNow()
+    }
+
     private func reconcileMissingDefinitionsIfNeeded(from remotePayload: SyncPayload) async {
         // Import missing custom filter lists and userscripts before uploading so we don't
         // accidentally drop them from the single shared CloudKit payload.
@@ -850,13 +869,14 @@ final class CloudSyncManager: ObservableObject {
         let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
         let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
         return SyncPayload(
-            schemaVersion: 5,
+            schemaVersion: 6,
             updatedAt: max(0, updatedAt),
             contentHash: contentHash,
             settings: content.settings,
             filters: content.filters,
             userScripts: content.userScripts,
-            whitelistDomains: content.whitelistDomains
+            whitelistDomains: content.whitelistDomains,
+            zapperRules: content.zapperRules
         )
     }
 
@@ -926,13 +946,43 @@ final class CloudSyncManager: ObservableObject {
         )
 
         let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
+        let zapperRules = Self.normalizedZapperRules(
+            Dictionary(
+                uniqueKeysWithValues: dataManager.getZapperDomains().map { domain in
+                    (domain, dataManager.getZapperRules(forHost: domain))
+                }
+            )
+        )
 
         return SyncPayload.Content(
             settings: settings,
             filters: filters,
             userScripts: userScripts,
-            whitelistDomains: whitelistDomains
+            whitelistDomains: whitelistDomains,
+            zapperRules: zapperRules
         )
+    }
+
+    private static func normalizedZapperRules(_ rulesByDomain: [String: [String]]) -> [String: [String]] {
+        var normalized: [String: [String]] = [:]
+
+        for (domain, rules) in rulesByDomain {
+            let trimmedDomain = domain.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedDomain.isEmpty else { continue }
+
+            let cleanedRules = Array(
+                Set(
+                    rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty }
+                )
+            ).sorted()
+
+            if !cleanedRules.isEmpty {
+                normalized[trimmedDomain] = cleanedRules
+            }
+        }
+
+        return normalized
     }
 
     // MARK: - CloudKit I/O
@@ -1260,6 +1310,7 @@ private struct SyncPayload: Codable {
         let filters: Filters
         let userScripts: UserScripts
         let whitelistDomains: [String]
+        let zapperRules: [String: [String]]?
     }
 
     let schemaVersion: Int
@@ -1269,4 +1320,5 @@ private struct SyncPayload: Codable {
     let filters: Filters
     let userScripts: UserScripts
     let whitelistDomains: [String]
+    let zapperRules: [String: [String]]?
 }
