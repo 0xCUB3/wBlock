@@ -154,16 +154,19 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder
-    private var pendingChangesOverlay: some View {
-        if hasPendingChanges {
-            PendingChangesBanner(
-                isLoading: filterManager.isLoading,
-                action: applyPendingChanges
-            )
-            .padding(.horizontal)
-            .padding(.top, 8)
+    private var applyChangesToolbarButton: some View {
+        Button {
+            applyPendingChanges()
+        } label: {
+            if hasPendingChanges {
+                Text("Apply")
+                    .fontWeight(.semibold)
+            } else {
+                Image(systemName: applyChangesSymbolName)
+            }
         }
+        .disabled(filterManager.isLoading)
+        .accessibilityLabel("Apply Changes")
     }
 
     private var filtersView: some View {
@@ -172,19 +175,8 @@ struct ContentView: View {
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            applyPendingChanges()
-                        } label: {
-                            if hasPendingChanges {
-                                Text("Apply")
-                                    .fontWeight(.semibold)
-                            } else {
-                                Image(systemName: applyChangesSymbolName)
-                            }
-                        }
-                        .disabled(filterManager.isLoading)
-                        .accessibilityLabel("Apply Changes")
+                    ToolbarItem(placement: .topBarTrailing) {
+                        applyChangesToolbarButton
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
                         if #unavailable(iOS 26.0) {
@@ -210,9 +202,6 @@ struct ContentView: View {
                     }
                 }
             #endif
-        }
-        .overlay(alignment: .top) {
-            pendingChangesOverlay
         }
         #if os(iOS)
             .searchable(
@@ -242,6 +231,7 @@ struct ContentView: View {
                             Label("Apply Changes", systemImage: applyChangesSymbolName)
                         }
                         .disabled(filterManager.isLoading)
+                        .pendingToolbarButtonStyle(isProminent: hasPendingChanges)
                         .help(
                             hasPendingChanges
                                 ? "Apply your pending changes"
@@ -271,6 +261,15 @@ struct ContentView: View {
     private var nativeFiltersListView: some View {
         #if os(iOS)
         List {
+            if hasPendingChanges {
+                Section {
+                    PendingChangesListRow(
+                        isLoading: filterManager.isLoading,
+                        action: applyPendingChanges
+                    )
+                }
+            }
+
             Section {
                 statsCardsView
                     .unifiedTabCardSectionRow()
@@ -345,25 +344,11 @@ struct ContentView: View {
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                applyPendingChanges()
-                            } label: {
-                                if hasPendingChanges {
-                                    Text("Apply")
-                                        .fontWeight(.semibold)
-                                } else {
-                                    Image(systemName: applyChangesSymbolName)
-                                }
-                            }
-                            .disabled(filterManager.isLoading)
-                            .accessibilityLabel("Apply Changes")
+                        ToolbarItem(placement: .topBarTrailing) {
+                            applyChangesToolbarButton
                         }
                     }
                 #endif
-        }
-        .overlay(alignment: .top) {
-            pendingChangesOverlay
         }
     }
 
@@ -499,64 +484,47 @@ struct ContentView: View {
     #endif
 }
 
-struct PendingChangesBanner: View {
+struct PendingChangesListRow: View {
     let isLoading: Bool
     let action: () -> Void
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            bannerLayout(compact: false)
-            bannerLayout(compact: true)
-        }
-    }
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Changes Pending")
+                        .font(.headline)
+                    Text("Safari is using your last applied setup.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-    @ViewBuilder
-    private func bannerLayout(compact: Bool) -> some View {
-        let copy = bannerCopy
-        let button = bannerButton
-
-        if compact {
-            VStack(alignment: .leading, spacing: 12) {
-                copy
-                button
-            }
-            .bannerChrome()
-        } else {
-            HStack(alignment: .center, spacing: 14) {
-                copy
                 Spacer(minLength: 12)
-                button
+
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Apply Changes")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.tint)
+                }
             }
-            .bannerChrome()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    private var bannerCopy: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Changes Pending")
-                .font(.headline)
-            Text("Safari is still using your last applied setup.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var bannerButton: some View {
-        Button("Apply Changes", action: action)
-            .buttonStyle(.borderedProminent)
-            .disabled(isLoading)
+        .buttonStyle(.plain)
+        .disabled(isLoading)
     }
 }
 
 private extension View {
-    func bannerChrome() -> some View {
-        self
-            .padding(14)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(.quaternary)
-            }
+    @ViewBuilder
+    func pendingToolbarButtonStyle(isProminent: Bool) -> some View {
+        if isProminent {
+            self.buttonStyle(.borderedProminent)
+        } else {
+            self
+        }
     }
 }
 
