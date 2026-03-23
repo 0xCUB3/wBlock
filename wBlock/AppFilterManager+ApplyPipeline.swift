@@ -131,8 +131,18 @@ extension AppFilterManager {
         }
 
         let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+        let generatedZapperRules = ZapperContentBlockerRuleGenerator.generatedRules(
+            from: Dictionary(
+                uniqueKeysWithValues: self.dataManager.getZapperDomains().map { host in
+                    (host, self.dataManager.getZapperRules(forHost: host))
+                }
+            )
+        )
+        let generatedZapperRulesText = generatedZapperRules.isEmpty
+            ? nil
+            : generatedZapperRules.joined(separator: "\n")
 
-        if allSelectedFilters.isEmpty {
+        if allSelectedFilters.isEmpty && generatedZapperRules.isEmpty {
             await MainActor.run {
                 self.statusDescription =
                     "No filter lists selected. Clearing rules from all extensions."
@@ -183,6 +193,7 @@ extension AppFilterManager {
         let totalFiltersCount = platformTargets.count
         await MainActor.run {
             self.sourceRulesCount = allSelectedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
+                + generatedZapperRules.count
 
             // Update ViewModel
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
@@ -223,6 +234,7 @@ extension AppFilterManager {
 
         for targetInfo in platformTargets {
             let filters = filtersByTargetInfo[targetInfo] ?? []
+            let extraRulesText = targetInfo.slot == 5 ? generatedZapperRulesText : nil
             let blockerName = targetInfo.displayName
             let conversionStart = Date()
 
@@ -239,6 +251,7 @@ extension AppFilterManager {
                     filters: filters,
                     targetInfo: targetInfo,
                     disabledSites: disabledSites,
+                    extraRulesText: extraRulesText,
                     groupIdentifier: GroupIdentifier.shared.value
                 )
             }.value
@@ -538,6 +551,7 @@ extension AppFilterManager {
         filters: [FilterList],
         targetInfo: ContentBlockerTargetInfo,
         disabledSites: [String],
+        extraRulesText: String?,
         groupIdentifier: String
     ) -> (safariRulesCount: Int, advancedRulesText: String?) {
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -585,6 +599,15 @@ extension AppFilterManager {
                         )
                     }
                 }
+            }
+
+            if let extraRulesText, !extraRulesText.isEmpty {
+                try Self.appendInlineRulesToCombinedStream(
+                    extraRulesText,
+                    destinationHandle: fileHandle,
+                    hasher: &hasher,
+                    newlineData: newlineData
+                )
             }
 
             let digest = hasher.finalize()
@@ -645,12 +668,14 @@ extension AppFilterManager {
         filters: [FilterList],
         targetInfo: ContentBlockerTargetInfo,
         disabledSites: [String],
+        extraRulesText: String?,
         groupIdentifier: String
     ) -> TargetConversionOutcome {
         let rulesFilename = targetInfo.rulesFilename
         let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
             filters: filters,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            extraRulesText: extraRulesText
         )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
             targetRulesFilename: rulesFilename,
@@ -687,6 +712,7 @@ extension AppFilterManager {
             filters: filters,
             targetInfo: targetInfo,
             disabledSites: disabledSites,
+            extraRulesText: extraRulesText,
             groupIdentifier: groupIdentifier
         )
 
@@ -722,6 +748,19 @@ extension AppFilterManager {
             try destinationHandle.write(contentsOf: chunk)
         }
 
+        hasher.update(data: newlineData)
+        try destinationHandle.write(contentsOf: newlineData)
+    }
+
+    nonisolated private static func appendInlineRulesToCombinedStream(
+        _ rulesText: String,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data
+    ) throws {
+        let rulesData = Data(rulesText.utf8)
+        hasher.update(data: rulesData)
+        try destinationHandle.write(contentsOf: rulesData)
         hasher.update(data: newlineData)
         try destinationHandle.write(contentsOf: newlineData)
     }

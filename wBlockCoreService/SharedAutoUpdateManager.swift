@@ -1118,6 +1118,15 @@ public actor SharedAutoUpdateManager {
             selectedFilters: selectedFilters,
             across: targets
         )
+        let mirroredZapperRulesText = await MainActor.run {
+            ZapperContentBlockerRuleGenerator.generatedRulesText(
+                from: Dictionary(
+                    uniqueKeysWithValues: ProtobufDataManager.shared.getZapperDomains().map { host in
+                        (host, ProtobufDataManager.shared.getZapperRules(forHost: host))
+                    }
+                )
+            )
+        }
         var targetMetrics: [RebuildTargetMetrics] = []
 
         for target in targets {
@@ -1125,12 +1134,14 @@ public actor SharedAutoUpdateManager {
 
             let filtersForTarget = filtersByTarget[target] ?? []
             let rulesFilename = target.rulesFilename
+            let extraRulesText = target.slot == 5 ? mirroredZapperRulesText : nil
             let conversionStart = Date()
             var inputWriteDurationMs = 0
             var inputBytes: Int64 = 0
             let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
                 filters: filtersForTarget,
-                groupIdentifier: GroupIdentifier.shared.value
+                groupIdentifier: GroupIdentifier.shared.value,
+                extraRulesText: extraRulesText
             )
             let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
                 targetRulesFilename: rulesFilename,
@@ -1172,6 +1183,14 @@ public actor SharedAutoUpdateManager {
                     _ = streamFilterDataForConversion(
                         f,
                         containerURL: containerURL,
+                        destinationHandle: fileHandle,
+                        hasher: &hasher,
+                        newlineData: newlineData
+                    )
+                }
+                if let extraRulesText, !extraRulesText.isEmpty {
+                    try appendInlineRulesToCombinedStream(
+                        extraRulesText,
                         destinationHandle: fileHandle,
                         hasher: &hasher,
                         newlineData: newlineData
@@ -1330,6 +1349,19 @@ public actor SharedAutoUpdateManager {
             finishLine()
             return count
         }
+    }
+
+    private func appendInlineRulesToCombinedStream(
+        _ rulesText: String,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data
+    ) throws {
+        let rulesData = Data(rulesText.utf8)
+        hasher.update(data: rulesData)
+        try destinationHandle.write(contentsOf: rulesData)
+        hasher.update(data: newlineData)
+        try destinationHandle.write(contentsOf: newlineData)
     }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {

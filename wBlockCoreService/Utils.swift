@@ -97,7 +97,7 @@ public enum NetworkRequestFactory {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "2"
+    private static let inputSignatureSchemaVersion = "3"
 
     private struct State: Codable {
         var inputSignature: String
@@ -106,7 +106,8 @@ public enum ContentBlockerIncrementalCache {
 
     public static func computeInputSignature(
         filters: [FilterList],
-        groupIdentifier: String
+        groupIdentifier: String,
+        extraRulesText: String? = nil
     ) -> String? {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -120,6 +121,14 @@ public enum ContentBlockerIncrementalCache {
         for filter in filters {
             let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
             canonical.append("\(filter.id.uuidString)|\(fileMarker)\n")
+        }
+
+        if let extraRulesText, !extraRulesText.isEmpty {
+            let extraDigest = SHA256.hash(data: Data(extraRulesText.utf8))
+            let extraFingerprint = extraDigest.map { String(format: "%02x", $0) }.joined()
+            canonical.append("extra=\(extraFingerprint)\n")
+        } else {
+            canonical.append("extra=\n")
         }
 
         let digest = SHA256.hash(data: Data(canonical.utf8))
