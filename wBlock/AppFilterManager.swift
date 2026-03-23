@@ -78,11 +78,16 @@ class AppFilterManager: ObservableObject {
     }
 
     private var appliedSelectedFilterIDs: Set<UUID> = []
+    private var appliedCustomFilterKeys: Set<String> = []
     private var hasPendingSelectionChanges = false
     private var hasPendingNonSelectionChanges = false
 
     private var selectedFilterIDs: Set<UUID> {
         Set(filterLists.filter(\.isSelected).map(\.id))
+    }
+
+    private var customFilterKeys: Set<String> {
+        Set(filterLists.filter(\.isCustom).map(\.url.absoluteString))
     }
 
     var filterListIndexByID: [UUID: Int] {
@@ -94,6 +99,13 @@ class AppFilterManager: ObservableObject {
         refreshHasUnappliedChanges()
     }
 
+    func refreshPendingChanges() {
+        hasPendingSelectionChanges =
+            selectedFilterIDs != appliedSelectedFilterIDs
+            || customFilterKeys != appliedCustomFilterKeys
+        refreshHasUnappliedChanges()
+    }
+
     func markNonSelectionChangesPending() {
         hasPendingNonSelectionChanges = true
         refreshHasUnappliedChanges()
@@ -101,6 +113,7 @@ class AppFilterManager: ObservableObject {
 
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
+        appliedCustomFilterKeys = customFilterKeys
         hasPendingSelectionChanges = false
         hasPendingNonSelectionChanges = false
         hasUnappliedChanges = false
@@ -173,6 +186,7 @@ class AppFilterManager: ObservableObject {
         processedFiltersCount = 0
 
         filterLists = []
+        markCurrentStateApplied()
 
         let defaultLists = loader.getDefaultFilterLists()
         filterLists = defaultLists
@@ -295,6 +309,7 @@ class AppFilterManager: ObservableObject {
         // Set up observer for disabled sites changes
         setupDisabledSitesObserver()
 
+        markCurrentStateApplied()
         statusDescription = "Initialized with \(filterLists.count) filter list(s)."
         // Update versions and counts in background without applying changes
         Task { await updateVersionsAndCounts() }
@@ -444,7 +459,7 @@ class AppFilterManager: ObservableObject {
             }
 
             saveFilterListsCoalesced()
-            refreshPendingSelectionChanges()
+            refreshPendingChanges()
         }
     }
 
@@ -489,7 +504,7 @@ class AppFilterManager: ObservableObject {
         }
 
         saveFilterListsCoalesced()
-        refreshPendingSelectionChanges()
+        refreshPendingChanges()
     }
 
     // MARK: - Rule limit UX

@@ -164,11 +164,11 @@ extension AppFilterManager {
             await MainActor.run {
                 self.isLoading = false
                 self.showingApplyProgressSheet = false
+                self.markCurrentStateApplied()
                 self.lastRuleCount = 0
                 self.ruleCountsByExtension.removeAll()
                 self.extensionsApproachingLimit.removeAll()
                 self.saveRuleCounts()
-                self.markCurrentStateApplied()
             }
             return
         }

@@ -106,7 +106,7 @@ extension AppFilterManager {
         }
 
         addCustomFilterListWithoutFetch(newFilter)
-        markNonSelectionChangesPending()
+        refreshPendingChanges()
         statusDescription = "✅ User list added. Apply changes to enable it."
         hasError = false
     }
@@ -143,6 +143,7 @@ extension AppFilterManager {
 
             filterLists.append(newFilterToAdd)
             saveFilterListsCoalesced()
+            refreshPendingChanges()
 
             Task {
                 await ConcurrentLogManager.shared.info(
@@ -159,7 +160,7 @@ extension AppFilterManager {
                         .filterUpdate, "Successfully downloaded custom filter",
                         metadata: ["filter": currentName])
                     await MainActor.run {
-                        self.markNonSelectionChangesPending()
+                        self.refreshPendingChanges()
                         self.statusDescription =
                             "✅ Filter '\(currentName)' added successfully. Apply changes to enable it."
                         self.hasError = false
@@ -191,6 +192,7 @@ extension AppFilterManager {
 
         filterLists.append(filter)
         saveFilterListsCoalesced()
+        refreshPendingChanges()
 
         Task {
             await ConcurrentLogManager.shared.info(
@@ -207,6 +209,7 @@ extension AppFilterManager {
 
         filterLists.removeAll { $0.id == filter.id }
         saveFilterListsCoalesced()
+        refreshPendingChanges()
 
         if let containerURL = loader.getSharedContainerURL() {
             let idFileURL = containerURL.appendingPathComponent(
@@ -221,7 +224,6 @@ extension AppFilterManager {
             await ConcurrentLogManager.shared.info(
                 .system, "Removed custom filter", metadata: ["filter": filter.name])
         }
-        markNonSelectionChangesPending()
     }
 
     nonisolated private static func countRulesInUserListContent(_ content: String) -> Int {
