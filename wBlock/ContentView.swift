@@ -76,12 +76,6 @@ struct ContentView: View {
         FilterListCategory.allCases.filter { $0 != .all }
     }
 
-    private var applyChangesSymbolName: String {
-        hasPendingChanges
-            ? "arrow.triangle.2.circlepath.circle.fill"
-            : "arrow.triangle.2.circlepath"
-    }
-
     /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
     private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
         let allFilters = filterManager.filterLists
@@ -157,12 +151,12 @@ struct ContentView: View {
     @ViewBuilder
     private var pendingChangesInset: some View {
         if hasPendingChanges {
-            PendingChangesBanner(
+            PendingChangesStrip(
                 isLoading: filterManager.isLoading,
                 action: applyPendingChanges
             )
             .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.top, 6)
             .padding(.bottom, 4)
         }
     }
@@ -177,12 +171,7 @@ struct ContentView: View {
                         Button {
                             applyPendingChanges()
                         } label: {
-                            if hasPendingChanges {
-                                Text("Apply")
-                                    .fontWeight(.semibold)
-                            } else {
-                                Image(systemName: applyChangesSymbolName)
-                            }
+                            Image(systemName: "arrow.triangle.2.circlepath")
                         }
                         .disabled(filterManager.isLoading)
                         .accessibilityLabel("Apply Changes")
@@ -240,7 +229,7 @@ struct ContentView: View {
                         Button {
                             applyPendingChanges()
                         } label: {
-                            Label("Apply Changes", systemImage: applyChangesSymbolName)
+                            Label("Apply Changes", systemImage: "arrow.triangle.2.circlepath")
                         }
                         .disabled(filterManager.isLoading)
                         .help(
@@ -350,12 +339,7 @@ struct ContentView: View {
                             Button {
                                 applyPendingChanges()
                             } label: {
-                                if hasPendingChanges {
-                                    Text("Apply")
-                                        .fontWeight(.semibold)
-                                } else {
-                                    Image(systemName: applyChangesSymbolName)
-                                }
+                                Image(systemName: "arrow.triangle.2.circlepath")
                             }
                             .disabled(filterManager.isLoading)
                             .accessibilityLabel("Apply Changes")
@@ -500,70 +484,76 @@ struct ContentView: View {
     #endif
 }
 
-struct PendingChangesBanner: View {
+struct PendingChangesStrip: View {
     let isLoading: Bool
     let action: () -> Void
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            bannerLayout(compact: false)
-            bannerLayout(compact: true)
-        }
-    }
-
-    @ViewBuilder
-    private func bannerLayout(compact: Bool) -> some View {
-        let copy = bannerCopy
-        let button = bannerButton
-
-        if compact {
-            VStack(alignment: .leading, spacing: 12) {
-                copy
-                button
-            }
-            .bannerChrome()
-        } else {
-            HStack(alignment: .center, spacing: 14) {
-                copy
-                Spacer(minLength: 12)
-                button
-            }
-            .bannerChrome()
-        }
-    }
-
-    private var bannerCopy: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                .font(.title3)
-                .foregroundStyle(.tint)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Changes Pending")
-                    .font(.headline)
-                Text("Safari is still using your last applied setup.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        Button(action: action) {
+            ViewThatFits(in: .horizontal) {
+                horizontalLayout
+                compactLayout
             }
         }
+        .buttonStyle(.plain)
+        .disabled(isLoading)
+        .accessibilityLabel("Apply Changes")
+        .accessibilityHint("Apply your pending changes")
     }
 
-    private var bannerButton: some View {
-        Button("Apply Changes", action: action)
-            .buttonStyle(.borderedProminent)
-            .disabled(isLoading)
+    private var horizontalLayout: some View {
+        HStack(spacing: 10) {
+            stripIndicator
+            stripMessage
+                .lineLimit(1)
+            Spacer(minLength: 12)
+            stripActionLabel
+        }
+        .stripChrome()
+    }
+
+    private var compactLayout: some View {
+        HStack(spacing: 10) {
+            stripIndicator
+            stripMessage
+                .lineLimit(2)
+            Spacer(minLength: 8)
+            stripActionLabel
+        }
+        .stripChrome()
+    }
+
+    private var stripIndicator: some View {
+        Circle()
+            .fill(.tint)
+            .frame(width: 8, height: 8)
+    }
+
+    private var stripMessage: some View {
+        Text("Pending changes, Safari is still using the previous rules.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+    }
+
+    private var stripActionLabel: some View {
+        HStack(spacing: 5) {
+            Text("Apply Changes")
+                .font(.footnote.weight(.semibold))
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.semibold))
+        }
+        .foregroundStyle(.tint)
+        .fixedSize()
     }
 }
 
 private extension View {
-    func bannerChrome() -> some View {
+    func stripChrome() -> some View {
         self
-            .padding(14)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(.quaternary)
-            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 }
 
