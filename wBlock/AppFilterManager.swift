@@ -256,8 +256,7 @@ class AppFilterManager: ObservableObject {
         }
 
         filterLists = migratedFilterLists
-        appliedSelectedFilterIDs = selectedFilterIDs
-        refreshPendingSelectionChanges()
+        markCurrentStateApplied()
 
         // Ensure custom filter files use ID-based filenames so users can rename lists safely.
         Task.detached(priority: .utility) { [loader, migratedFilterLists] in

@@ -77,9 +77,7 @@ struct ContentView: View {
     }
 
     private var applyChangesSymbolName: String {
-        hasPendingChanges
-            ? "arrow.triangle.2.circlepath.circle.fill"
-            : "arrow.triangle.2.circlepath"
+        "arrow.triangle.2.circlepath"
     }
 
     /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
