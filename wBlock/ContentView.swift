@@ -225,13 +225,7 @@ struct ContentView: View {
                     )
 
                     if !showFilterSearch {
-                        Button {
-                            applyPendingChanges()
-                        } label: {
-                            Label("Apply Changes", systemImage: applyChangesSymbolName)
-                        }
-                        .disabled(filterManager.isLoading)
-                        .pendingToolbarButtonStyle(isProminent: hasPendingChanges)
+                        applyChangesToolbarButton
                         .help(
                             hasPendingChanges
                                 ? "Apply your pending changes"
@@ -337,6 +331,17 @@ struct ContentView: View {
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             applyChangesToolbarButton
+                        }
+                    }
+                #elseif os(macOS)
+                    .toolbar {
+                        ToolbarItem(placement: .automatic) {
+                            applyChangesToolbarButton
+                                .help(
+                                    hasPendingChanges
+                                        ? "Apply your pending changes"
+                                        : "Apply changes"
+                                )
                         }
                     }
                 #endif
@@ -473,17 +478,6 @@ struct ContentView: View {
         }
     }
     #endif
-}
-
-private extension View {
-    @ViewBuilder
-    func pendingToolbarButtonStyle(isProminent: Bool) -> some View {
-        if isProminent {
-            self.buttonStyle(.borderedProminent)
-        } else {
-            self
-        }
-    }
 }
 
 struct FilterRowView: View {
