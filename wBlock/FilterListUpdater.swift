@@ -197,29 +197,19 @@ final class FilterListUpdater: @unchecked Sendable {
             validatorsMap[filter.id] = await storedValidators(for: filter)
         }
 
-        var filtersWithUpdates: [FilterList] = []
         // Collect validator updates to apply after the group completes
         // (writing to ProtobufDataManager requires MainActor).
         let pendingValidatorUpdates = PendingValidatorUpdates()
-
-        await withTaskGroup(of: (FilterList, Bool).self) { group in
-            for filter in eligibleFilters {
-                let validators = validatorsMap[filter.id] ?? (nil, nil)
-                group.addTask {
-                    let hasUpdate = await self.hasUpdateNoMainActor(
-                        for: filter,
-                        validators: validators,
-                        pendingValidatorUpdates: pendingValidatorUpdates
-                    )
-                    return (filter, hasUpdate)
-                }
-            }
-
-            for await (filter, hasUpdate) in group {
-                if hasUpdate {
-                    filtersWithUpdates.append(filter)
-                }
-            }
+        // Keep preflight update checks bounded so Apply Changes doesn't burst
+        // one URLSession task per selected filter on iOS.
+        let filtersWithUpdates = await boundedConcurrentCompactMap(eligibleFilters) { filter in
+            let validators = validatorsMap[filter.id] ?? (nil, nil)
+            let hasUpdate = await self.hasUpdateNoMainActor(
+                for: filter,
+                validators: validators,
+                pendingValidatorUpdates: pendingValidatorUpdates
+            )
+            return hasUpdate ? filter : nil
         }
 
         // Apply deferred validator updates now that we're back on the caller's context
@@ -634,24 +624,11 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks for updates to userscripts and returns those with available updates
     func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
-        var scriptsWithUpdates: [UserScript] = []
-
-        await withTaskGroup(of: (UserScript, Bool).self) { group in
-            for script in scripts.filter({ $0.isDownloaded && $0.updateURL != nil }) {
-                group.addTask {
-                    let hasUpdate = await self.hasScriptUpdate(for: script)
-                    return (script, hasUpdate)
-                }
-            }
-
-            for await (script, hasUpdate) in group {
-                if hasUpdate {
-                    scriptsWithUpdates.append(script)
-                }
-            }
+        let eligibleScripts = scripts.filter { $0.isDownloaded && $0.updateURL != nil }
+        return await boundedConcurrentCompactMap(eligibleScripts) { script in
+            let hasUpdate = await self.hasScriptUpdate(for: script)
+            return hasUpdate ? script : nil
         }
-
-        return scriptsWithUpdates
     }
 
     /// Checks if a specific userscript has an update available
