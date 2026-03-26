@@ -1218,19 +1218,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func baseName(for fileURL: URL) -> String {
-        let filename = fileURL.lastPathComponent
-        let lowercased = filename.lowercased()
-
-        // Use case-insensitive suffix check but preserve original casing in the returned name
-        if lowercased.hasSuffix(".user.js") {
-            return String(filename.dropLast(".user.js".count))
-        }
-
-        if lowercased.hasSuffix(".js") {
-            return String(filename.dropLast(3))
-        }
-
-        return fileURL.deletingPathExtension().lastPathComponent
+        UserScriptURLSupport.displayName(forFilename: fileURL.lastPathComponent)
     }
 
     // MARK: - Public Methods
@@ -1256,7 +1244,7 @@ public class UserScriptManager: ObservableObject {
             }
 
             var newUserScript = UserScript(
-                name: url.lastPathComponent.replacingOccurrences(of: ".user.js", with: ""),
+                name: UserScriptURLSupport.displayName(forRemoteURL: url),
                 url: url, content: content)
             newUserScript.parseMetadata()
             newUserScript.isEnabled = true

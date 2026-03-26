@@ -1281,7 +1281,7 @@ struct AddUserScriptView: View {
                 Text("Script URL")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Paste the direct .user.js link. wBlock will download and install it for you.")
+                Text("Paste the direct .user.js or .js link. wBlock will download and install it for you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1375,8 +1375,8 @@ struct AddUserScriptView: View {
     private var requirementsCard: some View {
         DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
             VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", text: "Starts with https://")
-                requirementRow(icon: "doc.text", text: "Ends with .user.js")
+                requirementRow(icon: "link", text: "Starts with http:// or https://")
+                requirementRow(icon: "doc.text", text: "Ends with .js or .user.js")
                 requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
             }
             .padding(.top, 8)
@@ -1412,8 +1412,8 @@ struct AddUserScriptView: View {
     private var requirementsDisclosure: some View {
         DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
             VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", text: "Starts with https://")
-                requirementRow(icon: "doc.text", text: "Ends with .user.js")
+                requirementRow(icon: "link", text: "Starts with http:// or https://")
+                requirementRow(icon: "doc.text", text: "Ends with .js or .user.js")
                 requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
             }
             .padding(.top, 8)
@@ -1589,14 +1589,8 @@ struct AddUserScriptView: View {
             return
         }
 
-        guard let components = URLComponents(string: trimmed),
-              let scheme = components.scheme?.lowercased(),
-              ["https", "http"].contains(scheme),
-              let host = components.host,
-              !host.isEmpty,
-              trimmed.lowercased().hasSuffix(".user.js"),
-              let url = components.url else {
-            validationState = .invalid(String(localized: "Provide a valid https:// link ending in .user.js"))
+        guard let url = UserScriptURLSupport.validatedRemoteURL(from: trimmed) else {
+            validationState = .invalid("Provide a valid http:// or https:// link ending in .js or .user.js")
             return
         }
 

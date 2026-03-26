@@ -7,6 +7,47 @@
 
 import Foundation
 
+public enum UserScriptURLSupport {
+    public static func validatedRemoteURL(from rawValue: String) -> URL? {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard let components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              ["https", "http"].contains(scheme),
+              let host = components.host,
+              !host.isEmpty,
+              hasSupportedExtension(in: components.path),
+              let url = components.url else {
+            return nil
+        }
+
+        return url
+    }
+
+    public static func displayName(forRemoteURL url: URL) -> String {
+        displayName(forFilename: url.lastPathComponent)
+    }
+
+    public static func displayName(forFilename filename: String) -> String {
+        let lowercased = filename.lowercased()
+
+        if lowercased.hasSuffix(".user.js") {
+            return String(filename.dropLast(".user.js".count))
+        }
+
+        if lowercased.hasSuffix(".js") {
+            return String(filename.dropLast(".js".count))
+        }
+
+        return URL(fileURLWithPath: filename).deletingPathExtension().lastPathComponent
+    }
+
+    private static func hasSupportedExtension(in path: String) -> Bool {
+        let lowercased = path.lowercased()
+        return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+    }
+}
+
 public struct UserScriptResource: Codable, Hashable {
     public let name: String
     public let url: String
