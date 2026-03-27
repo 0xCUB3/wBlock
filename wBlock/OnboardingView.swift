@@ -789,22 +789,8 @@ struct OnboardingView: View {
             for i in updatedFilters.indices {
                 updatedFilters[i].isSelected = false
             }
-            // Enable only the recommended filters
-            let recommendedFilters = [
-                "AdGuard Base Filter",
-                "AdGuard Tracking Protection Filter",
-                "AdGuard Cookie Notices",
-                "AdGuard Popups",
-                "AdGuard Mobile App Banners",
-                "AdGuard Other Annoyances",
-                "AdGuard Widgets",
-                "EasyPrivacy",
-                "Online Security Filter",
-                "d3Host List by d3ward",
-                "Anti-Adblock List"
-            ]
             for i in updatedFilters.indices {
-                if recommendedFilters.contains(updatedFilters[i].name) {
+                if FilterListLoader.recommendedFilterNames.contains(updatedFilters[i].name) {
                     updatedFilters[i].isSelected = true
                 }
             }

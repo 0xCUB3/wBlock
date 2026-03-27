@@ -9,6 +9,37 @@ import Foundation
 import wBlockCoreService
 
 class FilterListLoader {
+    #if os(macOS)
+        static let recommendedFilterNames: Set<String> = [
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
+            "EasyPrivacy",
+            "Online Security Filter",
+            "d3Host List by d3ward",
+            "AdGuard Cookie Notices",
+            "AdGuard Popups",
+            "AdGuard Mobile App Banners",
+            "AdGuard Other Annoyances",
+            "AdGuard Widgets",
+            "Anti-Adblock List",
+        ]
+    #else
+        static let recommendedFilterNames: Set<String> = [
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
+            "EasyPrivacy",
+            "Online Security Filter",
+            "d3Host List by d3ward",
+            "AdGuard Cookie Notices",
+            "AdGuard Popups",
+            "AdGuard Mobile App Banners",
+            "AdGuard Other Annoyances",
+            "AdGuard Widgets",
+            "Anti-Adblock List",
+            "AdGuard Mobile Filter",
+        ]
+    #endif
+
     private let filterURLMigrations: [String: URL] = [
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
@@ -638,40 +669,8 @@ class FilterListLoader {
                         "Extensive blocklist targeting ads, trackers, and other unwanted content."))
         #endif
 
-        // Set default selections for recommended filters
-        #if os(macOS)
-            let recommendedFilters = [
-                "AdGuard Base Filter",
-                "AdGuard Tracking Protection Filter",
-                "EasyPrivacy",
-                "Online Security Filter",
-                "d3Host List by d3ward",
-                "AdGuard Cookie Notices",
-                "AdGuard Popups",
-                "AdGuard Mobile App Banners",
-                "AdGuard Other Annoyances",
-                "AdGuard Widgets",
-                "Anti-Adblock List",
-            ]
-        #else
-            let recommendedFilters = [
-                "AdGuard Base Filter",
-                "AdGuard Tracking Protection Filter",
-                "EasyPrivacy",
-                "Online Security Filter",
-                "d3Host List by d3ward",
-                "AdGuard Cookie Notices",
-                "AdGuard Popups",
-                "AdGuard Mobile App Banners",
-                "AdGuard Other Annoyances",
-                "AdGuard Widgets",
-                "Anti-Adblock List",
-                "AdGuard Mobile Filter",  // Added for iOS/iPadOS
-            ]
-        #endif
-
         for index in filterLists.indices {
-            filterLists[index].isSelected = recommendedFilters.contains(filterLists[index].name)
+            filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)
         }
 
         return filterLists
