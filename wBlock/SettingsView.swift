@@ -27,10 +27,6 @@ struct SettingsView: View {
     #endif
 
     // Computed properties backed by protobuf
-    private var isBadgeCounterEnabled: Bool {
-        dataManager.isBadgeCounterEnabled
-    }
-
     private var autoUpdateEnabled: Bool {
         dataManager.autoUpdateEnabled
     }
@@ -333,23 +329,6 @@ struct SettingsView: View {
         #else
         NavigationStack {
             Form {
-                Section("Display") {
-                    Toggle(
-                        "Show blocked item count in toolbar",
-                        isOn: Binding(
-                            get: { isBadgeCounterEnabled },
-                            set: { newValue in
-                                Task {
-                                    await dataManager.setIsBadgeCounterEnabled(newValue)
-                                    await dataManager.saveDataImmediately()
-                                    SFSafariApplication.setToolbarItemsNeedUpdate()
-                                }
-                            }
-                        )
-                    )
-                    .toggleStyle(.switch)
-                }
-
                 Section("Actions") {
                     actionsSection
                     backupButtons
