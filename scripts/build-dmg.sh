@@ -25,11 +25,12 @@ rm -f "${DMG_PATH}"
 TEAM_ID="${TEAM_ID:-DNP7DGUB7B}"
 
 echo "Building ${SCHEME} (${CONFIGURATION})…"
+# generic/platform=macOS is required for a real universal build on Apple Silicon.
 xcodebuild \
   -project "${PROJECT_PATH}" \
   -scheme "${SCHEME}" \
   -configuration "${CONFIGURATION}" \
-  -destination "platform=macOS" \
+  -destination "generic/platform=macOS" \
   -derivedDataPath "${DERIVED_DATA}" \
   "CODE_SIGNING_ALLOWED=NO" \
   "ARCHS=arm64 x86_64" \
