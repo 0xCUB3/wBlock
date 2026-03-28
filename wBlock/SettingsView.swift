@@ -186,11 +186,16 @@ struct SettingsView: View {
         #if os(macOS)
         LabeledContent {
             HStack(spacing: 8) {
-                Button("Export", systemImage: "square.and.arrow.up") {
+                Button {
                     exportBackup()
+                } label: {
+                    Label("Export", systemImage: "arrow.up.doc")
                 }
-                Button("Import", systemImage: "square.and.arrow.down") {
+
+                Button {
                     showingImportDialog = true
+                } label: {
+                    Label("Import", systemImage: "arrow.down.doc")
                 }
             }
             .buttonStyle(.bordered)
