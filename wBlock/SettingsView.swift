@@ -272,7 +272,7 @@ struct SettingsView: View {
         } footer: {
             if syncManager.isEnabled {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(syncManager.statusLine) · \(syncManager.lastSyncLine)")
+                    Text(syncFooterLine)
                     if let error = syncManager.lastErrorMessage {
                         Text(error)
                             .foregroundStyle(.red)
@@ -547,6 +547,19 @@ extension SettingsView {
             relative,
             timeString
         )
+    }
+
+    private var syncFooterLine: String {
+        if syncManager.lastErrorMessage != nil {
+            return syncManager.lastSyncLine
+        }
+
+        switch syncManager.statusLine {
+        case "Sync: Checking…", "Sync: Downloading…", "Sync: Uploading…", "Sync: Working…":
+            return syncManager.statusLine
+        default:
+            return syncManager.lastSyncLine
+        }
     }
 
     private func formatLastUpdate(date: Date?) -> String {

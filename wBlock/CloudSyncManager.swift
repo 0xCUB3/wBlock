@@ -36,7 +36,7 @@ final class CloudSyncManager: ObservableObject {
     @Published private(set) var isEnabled: Bool
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var statusLine: String = "Sync: Off"
-    @Published private(set) var lastSyncLine: String = "Last Sync: Never"
+    @Published private(set) var lastSyncLine: String = "Not synced yet"
     @Published private(set) var lastErrorMessage: String?
 
     private weak var filterManager: AppFilterManager?
@@ -1072,7 +1072,7 @@ final class CloudSyncManager: ObservableObject {
     private func refreshStatusFromDefaults() {
         if !isEnabled {
             statusLine = "Sync: Off"
-            lastSyncLine = "Last Sync: Never"
+            lastSyncLine = "Not synced yet"
             return
         }
 
@@ -1080,9 +1080,11 @@ final class CloudSyncManager: ObservableObject {
 
         let lastSyncAt = defaults.double(forKey: Keys.lastSyncAt)
         if lastSyncAt > 0 {
-            lastSyncLine = "Last Sync: \(Self.relativeDateString(from: Date(timeIntervalSince1970: lastSyncAt)))"
+            lastSyncLine = CloudSyncTimestampFormatter.lastSyncLine(
+                for: Date(timeIntervalSince1970: lastSyncAt)
+            )
         } else {
-            lastSyncLine = "Last Sync: Never"
+            lastSyncLine = "Not synced yet"
         }
     }
 
@@ -1120,12 +1122,6 @@ final class CloudSyncManager: ObservableObject {
         let allowed = CharacterSet.alphanumerics.union(.init(charactersIn: " -_()[]"))
         let filtered = trimmed.unicodeScalars.map { allowed.contains($0) ? Character($0) : "-" }
         return String(filtered).prefix(60).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func relativeDateString(from date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
-        return formatter.localizedString(for: date, relativeTo: Date())
     }
 
     private static func inlineUserListID(from urlString: String) -> UUID? {
