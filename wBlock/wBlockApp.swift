@@ -44,6 +44,7 @@ struct wBlockApp: App {
 
                         // Run migrations (idempotent - only saves if needed)
                         Task {
+                            await dataManager.migrateLegacyFilterURLs()
                             await dataManager.migrateMultipurposeToAnnoyances()
                             await dataManager.migrateAnnoyancesFilterToSplitFilters()
                             await dataManager.migrateMobileFilterToAdsCategory()

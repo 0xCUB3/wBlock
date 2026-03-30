@@ -10,6 +10,16 @@ internal import SwiftProtobuf
 
 // MARK: - Filter List Management
 extension ProtobufDataManager {
+    private static let adGuardMobileFilterName = "AdGuard Mobile Filter"
+    private static let adGuardMobileLegacyURLFragment = "filter_11_Mobile"
+    private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11.txt"
+
+    private func isAdGuardMobileFilter(_ filter: Wblock_Data_FilterListData) -> Bool {
+        filter.name == Self.adGuardMobileFilterName
+            || filter.url.contains(Self.adGuardMobileLegacyURLFragment)
+            || filter.url == Self.adGuardMobileCurrentURL
+    }
+
     public func updateFilterLists(_ filterLists: [FilterList]) async {
         var updatedData = await latestAppDataSnapshot()
         updatedData.filterLists = filterLists.map { filter in
@@ -35,6 +45,25 @@ extension ProtobufDataManager {
     }
 
     // MARK: - Data Migration
+    public func migrateLegacyFilterURLs() async {
+        var updatedData = appData
+        var needsSave = false
+
+        for i in 0..<updatedData.filterLists.count {
+            if updatedData.filterLists[i].url.contains(Self.adGuardMobileLegacyURLFragment) {
+                updatedData.filterLists[i].url = Self.adGuardMobileCurrentURL
+                needsSave = true
+            }
+        }
+
+        if needsSave {
+            await MainActor.run {
+                appData = updatedData
+            }
+            await saveData()
+        }
+    }
+
     public func migrateMultipurposeToAnnoyances() async {
         var updatedData = appData
         var needsSave = false
@@ -43,7 +72,7 @@ extension ProtobufDataManager {
         for i in 0..<updatedData.filterLists.count {
             if updatedData.filterLists[i].category == .multipurpose {
                 // AdGuard Mobile Filter should be in "ads" category, not "annoyances"
-                if updatedData.filterLists[i].url.contains("filter_11_Mobile") {
+                if isAdGuardMobileFilter(updatedData.filterLists[i]) {
                     updatedData.filterLists[i].category = .ads
                 } else {
                     updatedData.filterLists[i].category = .annoyances
@@ -66,7 +95,7 @@ extension ProtobufDataManager {
         var needsSave = false
 
         for i in 0..<updatedData.filterLists.count {
-            if updatedData.filterLists[i].url.contains("filter_11_Mobile") && updatedData.filterLists[i].category != .ads {
+            if isAdGuardMobileFilter(updatedData.filterLists[i]) && updatedData.filterLists[i].category != .ads {
                 updatedData.filterLists[i].category = .ads
                 needsSave = true
             }

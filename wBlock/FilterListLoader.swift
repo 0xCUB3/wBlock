@@ -45,6 +45,8 @@ class FilterListLoader {
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
+            URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
     ]
 
     func localFileURL(for filter: FilterList) -> URL? {
@@ -651,7 +653,7 @@ class FilterListLoader {
                     id: UUID(), name: "AdGuard Mobile Filter",
                     url: URL(
                         string:
-                            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt"
+                            "https://filters.adtidy.org/ios/filters/11.txt"
                     )!, category: FilterListCategory.ads, isSelected: true,
                     description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         #endif
