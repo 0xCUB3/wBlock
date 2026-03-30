@@ -60,6 +60,7 @@ final class CloudSyncManager: ObservableObject {
     private var pendingUploadTask: Task<Void, Never>?
     private var pendingSyncTask: Task<Void, Never>?
     private var isApplyingRemoteChanges: Bool = false
+    private var uploadCoordinator = CloudSyncUploadCoordinator()
     private let deletedMarkerTTLDays: Double = 90
 
     private init() {
@@ -243,23 +244,44 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func scheduleUpload(trigger: String) {
-        pendingUploadTask?.cancel()
-        pendingUploadTask = Task { [weak self] in
-            guard let self else { return }
-            try? await Task.sleep(for: .seconds(2))
-            await self.uploadLatestPayload(trigger: trigger)
+        switch uploadCoordinator.actionForUploadRequest(trigger: trigger, isSyncing: isSyncing) {
+        case .deferUntilIdle:
+            logger.info("Deferring upload until current sync finishes (\(trigger, privacy: .public))")
+            return
+        case let .startNow(immediateTrigger):
+            pendingUploadTask?.cancel()
+            pendingUploadTask = Task { [weak self] in
+                guard let self else { return }
+                try? await Task.sleep(for: .seconds(2))
+                await self.uploadLatestPayload(trigger: immediateTrigger)
+            }
         }
     }
 
-    private func uploadLatestPayload(trigger: String) async {
+    private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false) async {
         guard isEnabled else { return }
+
+        if !withinSyncSession {
+            switch uploadCoordinator.actionForUploadRequest(trigger: trigger, isSyncing: isSyncing) {
+            case .deferUntilIdle:
+                logger.info("Skipping overlapping upload, queued for later (\(trigger, privacy: .public))")
+                return
+            case .startNow:
+                isSyncing = true
+                statusLine = "Sync: Uploading…"
+            }
+        }
+
+        defer {
+            if !withinSyncSession {
+                finishSyncCycle()
+            }
+        }
+
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
 
         do {
-            isSyncing = true
-            statusLine = "Sync: Uploading…"
-
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
 
             if let remotePayload = try? decodePayload(from: record) {
@@ -277,7 +299,6 @@ final class CloudSyncManager: ObservableObject {
                 defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
                 refreshStatusFromDefaults()
                 statusLine = "Sync: Up to date"
-                isSyncing = false
                 return
             }
 
@@ -298,8 +319,6 @@ final class CloudSyncManager: ObservableObject {
             statusLine = "Sync: Error"
             logger.error("❌ Upload failed: \(error.localizedDescription, privacy: .public)")
         }
-
-        isSyncing = false
     }
 
     // MARK: - Two-way sync
@@ -313,6 +332,7 @@ final class CloudSyncManager: ObservableObject {
         isSyncing = true
         statusLine = "Sync: Checking…"
         lastErrorMessage = nil
+        defer { finishSyncCycle() }
 
         do {
             let localPayload = buildPayload()
@@ -320,15 +340,13 @@ final class CloudSyncManager: ObservableObject {
 
             guard let remoteRecord = try await fetchRecord() else {
                 statusLine = "Sync: Uploading…"
-                await uploadLatestPayload(trigger: "\(trigger)-NoRemote")
-                isSyncing = false
+                await uploadLatestPayload(trigger: "\(trigger)-NoRemote", withinSyncSession: true)
                 return
             }
 
             guard let remotePayload = try decodePayload(from: remoteRecord) else {
                 statusLine = "Sync: Uploading…"
-                await uploadLatestPayload(trigger: "\(trigger)-BadRemote")
-                isSyncing = false
+                await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
                 return
             }
 
@@ -336,7 +354,6 @@ final class CloudSyncManager: ObservableObject {
                 defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
                 refreshStatusFromDefaults()
                 statusLine = "Sync: Up to date"
-                isSyncing = false
                 return
             }
 
@@ -345,15 +362,13 @@ final class CloudSyncManager: ObservableObject {
                 await applyRemotePayload(remotePayload, trigger: trigger)
             } else {
                 statusLine = "Sync: Uploading…"
-                await uploadLatestPayload(trigger: "\(trigger)-LocalNewer")
+                await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
             }
         } catch {
             lastErrorMessage = error.localizedDescription
             statusLine = "Sync: Error"
             logger.error("❌ Sync failed: \(error.localizedDescription, privacy: .public)")
         }
-
-        isSyncing = false
     }
 
     private func applyRemotePayload(_ payload: SyncPayload, trigger: String) async {
@@ -1072,6 +1087,14 @@ final class CloudSyncManager: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    private func finishSyncCycle() {
+        isSyncing = false
+
+        guard let deferredTrigger = uploadCoordinator.takeDeferredTrigger() else { return }
+        logger.info("Scheduling deferred upload (\(deferredTrigger, privacy: .public))")
+        scheduleUpload(trigger: deferredTrigger)
+    }
 
     private enum Keys {
         static let enabled = "cloudSyncEnabled"
