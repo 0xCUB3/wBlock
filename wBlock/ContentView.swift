@@ -323,23 +323,17 @@ struct ContentView: View {
 
     private var userscriptsView: some View {
         NavigationStack {
-            UserScriptManagerView(userScriptManager: userScriptManager)
+            UserScriptManagerView(
+                userScriptManager: userScriptManager,
+                hasPendingChanges: hasPendingChanges,
+                isApplyingChanges: filterManager.isLoading,
+                onApplyChanges: applyPendingChanges
+            )
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             applyChangesToolbarButton
-                        }
-                    }
-                #elseif os(macOS)
-                    .toolbar {
-                        ToolbarItem(placement: .automatic) {
-                            applyChangesToolbarButton
-                                .help(
-                                    hasPendingChanges
-                                        ? "Apply your pending changes"
-                                        : "Apply changes"
-                                )
                         }
                     }
                 #endif

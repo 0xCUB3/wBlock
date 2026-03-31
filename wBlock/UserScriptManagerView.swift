@@ -16,14 +16,11 @@ import AppKit
 
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
+    let hasPendingChanges: Bool
+    let isApplyingChanges: Bool
+    let onApplyChanges: () -> Void
 
     @State private var scripts: [UserScript] = []
-    @State private var isLoading: Bool = false
-    @State private var isRefreshing: Bool = false
-    @State private var refreshProgress: Double = 0.0
-    @State private var refreshStatus: String = ""
-    @State private var showingRefreshProgress = false
-    @State private var statusDescription: String = ""
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: UserScript?
     @State private var showOnlyEnabled = false
@@ -39,6 +36,21 @@ struct UserScriptManagerView: View {
 
     private var enabledScriptsCount: Int {
         scripts.filter(\.isEnabled).count
+    }
+
+    private var applyChangesToolbarButton: some View {
+        Button {
+            onApplyChanges()
+        } label: {
+            if hasPendingChanges {
+                Text("Apply")
+                    .fontWeight(.semibold)
+            } else {
+                Image(systemName: "arrow.triangle.2.circlepath")
+            }
+        }
+        .disabled(isApplyingChanges)
+        .accessibilityLabel("Apply Changes")
     }
 
     private var trimmedSearchText: String {
@@ -95,27 +107,6 @@ struct UserScriptManagerView: View {
         } message: {
             Text(dropErrorMessage ?? "")
         }
-        .overlay {
-            if showingRefreshProgress {
-                ZStack {
-                    Color.black.opacity(0.1).ignoresSafeArea()
-                    VStack(spacing: 12) {
-                        ProgressView(value: refreshProgress)
-                            .progressViewStyle(.linear)
-                            .frame(width: 200)
-                        Text(refreshStatus)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("\(Int(refreshProgress * 100))%")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(20)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    .shadow(radius: 10)
-                }
-            }
-        }
     }
 
     @ViewBuilder
@@ -154,14 +145,6 @@ struct UserScriptManagerView: View {
                     } label: {
                         Image(systemName: "magnifyingglass")
                     }
-                }
-                if !scripts.filter(\.isDownloaded).isEmpty {
-                    Button {
-                        refreshAllUserScripts()
-                    } label: {
-                        Image(systemName: "arrow.down.circle")
-                    }
-                    .disabled(isRefreshing)
                 }
                 Button {
                     showingAddScriptSheet = true
@@ -241,14 +224,13 @@ struct UserScriptManagerView: View {
                 )
 
                 if !showSearch {
-                    if !scripts.filter(\.isDownloaded).isEmpty {
-                        Button {
-                            refreshAllUserScripts()
-                        } label: {
-                            Label("Check for Updates", systemImage: "arrow.down.circle")
-                        }
-                        .disabled(isRefreshing)
-                    }
+
+                    applyChangesToolbarButton
+                        .help(
+                            hasPendingChanges
+                                ? "Apply your pending changes"
+                                : "Apply changes"
+                        )
 
                     Button {
                         showingAddScriptSheet = true
@@ -274,54 +256,6 @@ struct UserScriptManagerView: View {
 
     private func refreshScripts() {
         scripts = userScriptManager.userScripts
-        statusDescription = userScriptManager.statusDescription
-        isLoading = userScriptManager.isLoading
-    }
-
-    private func refreshAllUserScripts() {
-        let downloadedScripts = scripts.filter { $0.isDownloaded }
-        guard !downloadedScripts.isEmpty else { return }
-
-        isRefreshing = true
-        showingRefreshProgress = true
-        refreshProgress = 0.0
-        refreshStatus = "Starting refresh..."
-
-        Task {
-            await ConcurrentLogManager.shared.info(.userScript, "Starting userscript refresh", metadata: ["count": "\(downloadedScripts.count)"])
-
-            for (index, script) in downloadedScripts.enumerated() {
-                await MainActor.run {
-                    refreshStatus = "Updating \(script.name)..."
-                    refreshProgress = Double(index) / Double(downloadedScripts.count)
-                }
-
-                await ConcurrentLogManager.shared.debug(.userScript, "Updating userscript", metadata: ["script": script.name])
-                await userScriptManager.updateUserScript(script)
-
-                try? await Task.sleep(nanoseconds: 100_000_000)
-            }
-
-            await MainActor.run {
-                refreshProgress = 1.0
-                refreshStatus = "Refresh complete!"
-
-                scripts = userScriptManager.userScripts
-                statusDescription = userScriptManager.statusDescription
-                isLoading = userScriptManager.isLoading
-            }
-
-            await ConcurrentLogManager.shared.info(.userScript, "Userscript refresh completed successfully", metadata: [:])
-
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-
-            await MainActor.run {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    showingRefreshProgress = false
-                    isRefreshing = false
-                }
-            }
-        }
     }
 
     #if os(macOS)
@@ -501,22 +435,6 @@ struct UserScriptManagerView: View {
                     #endif
                 }
 
-                if script.isDownloaded {
-                    Button {
-                        Task {
-                            await ConcurrentLogManager.shared.debug(.userScript, "Updating userscript", metadata: ["script": script.name])
-                            await userScriptManager.updateUserScript(script)
-                            await ConcurrentLogManager.shared.info(.userScript, "Successfully updated userscript", metadata: ["script": script.name])
-                            refreshScripts()
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(.borderless)
-                    #if os(macOS)
-                    .help("Update Script")
-                    #endif
-                }
 
                 Toggle("", isOn: Binding(
                     get: { script.isEnabled },
@@ -556,16 +474,6 @@ struct UserScriptManagerView: View {
                 }
             }
             #endif
-            if script.isDownloaded {
-                Button {
-                    Task {
-                        await userScriptManager.updateUserScript(script)
-                        refreshScripts()
-                    }
-                } label: {
-                    Label("Update", systemImage: "arrow.clockwise")
-                }
-            }
             if !userScriptManager.isDefaultUserScript(script) {
                 Button(role: .destructive) {
                     Task {
