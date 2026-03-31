@@ -56,6 +56,7 @@ struct wBlockApp: App {
                         }
                     }
                     #if os(macOS)
+                    .handlesExternalEvents(preferring: Set(["open"]), allowing: Set(["*"]))
                     .confirmationDialog(
                         "Restart Onboarding?",
                         isPresented: $showingRestartConfirmation,
@@ -72,6 +73,9 @@ struct wBlockApp: App {
                     }
                     #endif
         }
+        #if os(macOS)
+        .handlesExternalEvents(matching: Set(["open"]))
+        #endif
         #if os(macOS)
         .commands {
             CommandGroup(after: .appInfo) {
