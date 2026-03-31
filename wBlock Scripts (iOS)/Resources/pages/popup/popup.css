@@ -18,6 +18,10 @@
     --btn: rgba(84, 84, 88, 0.55);
     --pill: rgba(84, 84, 88, 0.55);
   }
+
+  .app-icon {
+    filter: invert(1);
+  }
 }
 
 html, body {
