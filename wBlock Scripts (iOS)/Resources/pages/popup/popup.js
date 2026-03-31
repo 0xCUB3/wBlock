@@ -337,12 +337,23 @@ async function reloadActiveTab(tabId) {
     }
 }
 
+async function shouldShowOpenAppButton() {
+    try {
+        const info = await browser.runtime.getPlatformInfo();
+        return typeof info?.os === 'string' && info.os === 'mac';
+    } catch (error) {
+        console.warn('[wBlock] Failed to get platform info:', error);
+        return false;
+    }
+}
+
 function setupListeners() {
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const rulesContainer = document.getElementById('zapper-rules');
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const zapperClear = document.getElementById('zapper-clear');
+    const openAppButton = document.getElementById('open-app');
 
     if (rulesToggle) {
         rulesToggle.addEventListener('click', async () => {
@@ -422,6 +433,29 @@ function setupListeners() {
         });
     }
 
+    if (openAppButton) {
+        openAppButton.addEventListener('click', async () => {
+            try {
+                setError('');
+                openAppButton.disabled = true;
+                const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+                    action: 'openContainingApp',
+                });
+                if (response && response.opened) {
+                    window.close();
+                    return;
+                }
+
+                setError((response && response.error) || 'Failed to open the app.');
+            } catch (error) {
+                console.error('[wBlock] Failed to open app:', error);
+                setError('Failed to open the app.');
+            } finally {
+                openAppButton.disabled = false;
+            }
+        });
+    }
+
     if (zapperClear) {
         zapperClear.addEventListener('click', async () => {
             try {
@@ -449,7 +483,11 @@ async function refreshUi() {
     const disableToggle = document.getElementById('disable-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
+    const openAppButton = document.getElementById('open-app');
 
+    if (openAppButton) {
+        openAppButton.hidden = !(await shouldShowOpenAppButton());
+    }
     tab = await getActiveTab();
     host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
 

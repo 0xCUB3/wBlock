@@ -12,5 +12,16 @@
 		<string>com.alexanderskula.wblock.filter-update</string>
 		<string>com.alexanderskula.wblock.filter-processing</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.alexanderskula.wblock.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wblockapp</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

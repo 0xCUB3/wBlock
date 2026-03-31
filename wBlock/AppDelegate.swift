@@ -266,6 +266,11 @@ extension AppDelegate: NSApplicationDelegate {
         }
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard urls.contains(where: { $0.scheme == "wblockapp" }) else { return }
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     /// Handle silent push on macOS
     func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
         os_log("Silent push received for filterList (macOS)", type: .info)

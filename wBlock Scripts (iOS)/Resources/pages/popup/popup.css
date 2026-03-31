@@ -308,6 +308,11 @@ body {
   margin-top: 2px;
 }
 
+.footer-btn {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
 .error {
   margin-top: 0;
   font-size: 13px;

@@ -6,6 +6,9 @@
 //
 
 internal import FilterEngine
+#if os(macOS)
+import AppKit
+#endif
 import SafariServices
 import os.log
 
@@ -69,6 +72,9 @@ public enum WebExtensionRequestHandler {
                 return
             case "getZapperRules":
                 handleGetZapperRules(message: message!, context: context)
+                return
+            case "openContainingApp":
+                handleOpenContainingApp(context: context)
                 return
             default:
                 break
@@ -332,6 +338,25 @@ public enum WebExtensionRequestHandler {
             ])
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func handleOpenContainingApp(context: NSExtensionContext) {
+        let opened: Bool
+        let error: String?
+
+        #if os(macOS)
+        opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
+        error = opened ? nil : "Failed to open the app"
+        #else
+        opened = false
+        error = "Unavailable on iOS"
+        #endif
+
+        let response = createResponse(with: [
+            "opened": opened,
+            "error": error
+        ])
+        context.completeRequest(returningItems: [response])
     }
 
     private static func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 5) async -> Bool {
