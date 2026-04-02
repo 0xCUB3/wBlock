@@ -237,10 +237,6 @@ struct SettingsView: View {
                 #endif
 
             #if os(macOS)
-            LabeledContent("Background Agent") {
-                Text(launchAgentStatusLine)
-            }
-
             if launchAgentNeedsApproval {
                 Button("Open Login Items") {
                     AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
@@ -265,13 +261,10 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
                     Text("\(compactStatusLine) · \(lastUpdateLine)")
+                    #if os(macOS)
+                    Text(launchAgentStatusLine)
+                    #endif
                 }
-
-                #if os(iOS)
-                Text("iOS background checks are best-effort. Safari opening does not trigger filter updates.")
-                #else
-                Text("macOS uses a bundled launch agent that wakes wBlock in background-update mode when auto-update is enabled. Safari opening does not trigger filter updates.")
-                #endif
             }
         }
     }
