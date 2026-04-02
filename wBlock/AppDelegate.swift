@@ -183,25 +183,6 @@ extension AppDelegate: NSApplicationDelegate {
 
     /// Register for remote notifications upon launch
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if CommandLine.arguments.contains("--background-filter-update") {
-            NSApp.setActivationPolicy(.prohibited)
-            Task {
-                await SharedAutoUpdateManager.shared.recordProcessWake(
-                    source: "LaunchAgent",
-                    message: "Background app launch started"
-                )
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "LaunchAgent")
-                await SharedAutoUpdateManager.shared.recordProcessWake(
-                    source: "LaunchAgent",
-                    message: "Background app launch finished"
-                )
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    NSApp.terminate(nil)
-                }
-            }
-            return
-        }
-
         os_log("macOS app finished launching; registering for remote notifications", type: .info)
         NSApp.registerForRemoteNotifications()
         

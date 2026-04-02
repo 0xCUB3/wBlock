@@ -1450,11 +1450,6 @@ public actor SharedAutoUpdateManager {
         return size.int64Value
     }
 
-    public func recordProcessWake(source: String, message: String) async {
-        await ProtobufDataManager.shared.waitUntilLoaded()
-        appendSharedLog("\(source): \(message)")
-    }
-
 
     // MARK: - Shared Log (File-Based for Extensions)
     private func appendSharedLog(_ line: String) {

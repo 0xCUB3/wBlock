@@ -112,11 +112,11 @@ wBlock may perform background tasks on your device:
 
 ### Auto-Update Service (Optional)
 - **What:** Automatic filter list checks and downloads
-- **When:** If enabled by you, macOS can use a bundled launch agent that wakes wBlock in background-update mode while the app is closed. On iOS and iPadOS, checks use Apple's background task and silent-push systems, which are best-effort and may be delayed until the system wakes wBlock or you reopen it
+- **When:** If enabled by you, macOS can use a bundled launch agent and background update service while the app is closed. On iOS and iPadOS, checks use Apple's background task and silent-push systems, which are best-effort and may be delayed until the system wakes wBlock or you reopen it
 - **Privacy:** Update checks are simple HTTP requests to filter list URLs and do not transmit your browsing data
 
 ### Launch Agent (macOS)
-- **What:** A bundled launch agent that wakes wBlock for background filter checks
+- **What:** A bundled launch agent that triggers the background filter update service
 - **When:** Registered only while auto-update is enabled
 - **Privacy:** Operates locally on your device without transmitting your data
 
@@ -169,7 +169,7 @@ wBlock uses an App Group Container (`group.skula.wBlock`) to share data between:
 
 - The main wBlock app
 - Safari content blocker extensions
-- The background launch-agent path that wakes the app for filter updates
+- The background filter update service
 
 This sharing happens only locally on your device and is necessary for the app to function. No data leaves your device through this mechanism.
 
