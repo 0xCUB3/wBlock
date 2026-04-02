@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 import os.log
 #if os(macOS)
 import Cocoa
@@ -42,6 +43,8 @@ class AppDelegate: NSObject {
     private var backgroundScheduler: NSBackgroundActivityScheduler?
     /// Periodic timer for regular update checks
     private var periodicUpdateTimer: Timer?
+    private var autoUpdateSaveObserver: AnyCancellable?
+    private var lastObservedAutoUpdateEnabled: Bool?
     #endif
 
     #if os(iOS)
@@ -180,11 +183,35 @@ extension AppDelegate: NSApplicationDelegate {
 
     /// Register for remote notifications upon launch
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if CommandLine.arguments.contains("--background-filter-update") {
+            NSApp.setActivationPolicy(.prohibited)
+            Task {
+                await SharedAutoUpdateManager.shared.recordProcessWake(
+                    source: "LaunchAgent",
+                    message: "Background app launch started"
+                )
+                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "LaunchAgent")
+                await SharedAutoUpdateManager.shared.recordProcessWake(
+                    source: "LaunchAgent",
+                    message: "Background app launch finished"
+                )
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    NSApp.terminate(nil)
+                }
+            }
+            return
+        }
+
         os_log("macOS app finished launching; registering for remote notifications", type: .info)
         NSApp.registerForRemoteNotifications()
         
         // Setup periodic auto-update system for macOS
         setupMacOSAutoUpdate()
+        observeMacOSAutoUpdateSettingSaves()
+        Task { @MainActor in
+            await reconcileMacOSLaunchAgentRegistration(reason: "Launch")
+        }
+
 
         // Opportunistic update on app launch
         Task {
@@ -247,6 +274,32 @@ extension AppDelegate: NSApplicationDelegate {
         }
         self.backgroundScheduler = scheduler
     }
+
+    @MainActor private func observeMacOSAutoUpdateSettingSaves() {
+        autoUpdateSaveObserver = ProtobufDataManager.shared.didSaveData
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                Task { @MainActor in
+                    await self?.reconcileMacOSLaunchAgentRegistration(reason: "SavedSettings")
+                }
+            }
+    }
+
+    @MainActor private func reconcileMacOSLaunchAgentRegistration(reason: String) async {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        let enabled = ProtobufDataManager.shared.autoUpdateEnabled
+        guard lastObservedAutoUpdateEnabled != enabled || reason == "Launch" else { return }
+        lastObservedAutoUpdateEnabled = enabled
+
+        let status = AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(enabled)
+        os_log(
+            "Launch agent reconciliation (%{public}@): %{public}@",
+            type: .info,
+            reason,
+            status.detail
+        )
+    }
+
 
     private func runMacOSBackgroundUpdate(trigger: String) async {
         // Check if update is overdue
@@ -318,12 +371,15 @@ extension AppDelegate: UIApplicationDelegate {
         // Silent pushes may launch the app in the background without constructing SwiftUI scenes,
         // meaning `filterManager` may be nil. Use SharedAutoUpdateManager so pushes always work.
         Task {
+            await ProtobufDataManager.shared.recordAutoUpdateSilentPushReceived()
             let updateResult = await runForcedAutoUpdateWithTimeout(trigger: "SilentPush(iOS)")
             switch updateResult {
             case .completed:
+                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: .completed)
                 completionHandler(.newData)
             case .timedOut:
                 os_log("Silent push auto-update timed out before completion handler deadline", type: .error)
+                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: .timedOut)
                 completionHandler(.failed)
             }
         }
@@ -337,7 +393,9 @@ extension AppDelegate: UIApplicationDelegate {
 
             // If overdue or due soon, force update
             if status.isOverdue || (isDueSoon && !status.isRunning) {
+                let catchUpReason: AutoUpdateDiagnosticResult = status.isOverdue ? .overdue : .dueSoon
                 os_log("App became active with overdue/due update - forcing update", type: .info)
+                await ProtobufDataManager.shared.recordAutoUpdateForegroundCatchUp(reason: catchUpReason)
                 await runForcedAutoUpdate(trigger: "BecomeActive")
             } else {
                 // Normal opportunistic update
@@ -387,6 +445,13 @@ extension AppDelegate: UIApplicationDelegate {
             }
             self.handleBackgroundFilterUpdate(task: refreshTask)
         }
+        Task { @MainActor in
+            await ProtobufDataManager.shared.recordAutoUpdateTaskRegistration(
+                .appRefresh,
+                success: refreshRegistered,
+                error: refreshRegistered ? nil : "BGTaskScheduler.register returned false"
+            )
+        }
         if !refreshRegistered {
             os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundTaskIdentifier)
         }
@@ -403,6 +468,13 @@ extension AppDelegate: UIApplicationDelegate {
                 return
             }
             self.handleBackgroundProcessingUpdate(task: processingTask)
+        }
+        Task { @MainActor in
+            await ProtobufDataManager.shared.recordAutoUpdateTaskRegistration(
+                .processing,
+                success: processingRegistered,
+                error: processingRegistered ? nil : "BGTaskScheduler.register returned false"
+            )
         }
         if !processingRegistered {
             os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundProcessingIdentifier)
@@ -423,7 +495,14 @@ extension AppDelegate: UIApplicationDelegate {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
             try BGTaskScheduler.shared.submit(request)
             os_log("Background filter update task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+            Task { @MainActor in
+                await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
+                    .appRefresh,
+                    result: .submitted
+                )
+            }
         } catch let error as NSError {
+            let details = taskScheduleFailureDetails(for: error)
             if error.domain == "BGTaskSchedulerErrorDomain" {
                 switch error.code {
                 case 1: os_log("BGTaskScheduler: Identifier not in Info.plist", type: .error)
@@ -433,6 +512,13 @@ extension AppDelegate: UIApplicationDelegate {
                 }
             } else {
                 os_log("Failed to schedule background filter update: %{public}@", type: .error, error.localizedDescription)
+            }
+            Task { @MainActor in
+                await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
+                    .appRefresh,
+                    result: details.result,
+                    error: details.message
+                )
             }
         }
     }
@@ -451,7 +537,14 @@ extension AppDelegate: UIApplicationDelegate {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingIdentifier)
             try BGTaskScheduler.shared.submit(request)
             os_log("Background processing task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+            Task { @MainActor in
+                await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
+                    .processing,
+                    result: .submitted
+                )
+            }
         } catch let error as NSError {
+            let details = taskScheduleFailureDetails(for: error)
             if error.domain == "BGTaskSchedulerErrorDomain" {
                 switch error.code {
                 case 1: os_log("BGTaskScheduler: Processing identifier not in Info.plist", type: .error)
@@ -462,13 +555,39 @@ extension AppDelegate: UIApplicationDelegate {
             } else {
                 os_log("Failed to schedule background processing task: %{public}@", type: .error, error.localizedDescription)
             }
+            Task { @MainActor in
+                await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
+                    .processing,
+                    result: details.result,
+                    error: details.message
+                )
+            }
         }
     }
     
+    private func taskScheduleFailureDetails(for error: NSError) -> (result: AutoUpdateDiagnosticResult, message: String) {
+        guard error.domain == "BGTaskSchedulerErrorDomain" else {
+            return (.submitFailed, error.localizedDescription)
+        }
+
+        switch error.code {
+        case 1:
+            return (.infoPlistMissing, "Identifier not in Info.plist")
+        case 2:
+            return (.tooManyPending, "Too many pending tasks")
+        case 3:
+            return (.unavailable, "Background tasks unavailable")
+        default:
+            return (.schedulerError, error.localizedDescription)
+        }
+    }
+
+
     private func handleBackgroundFilterUpdate(task: BGAppRefreshTask) {
         handleForcedBackgroundTask(
             task: task,
             taskLabel: "Background filter update task",
+            kind: .appRefresh,
             trigger: "BGAppRefreshTask",
             onSuccess: { delegate in
                 delegate.scheduleBackgroundFilterUpdate()
@@ -485,6 +604,7 @@ extension AppDelegate: UIApplicationDelegate {
         handleForcedBackgroundTask(
             task: task,
             taskLabel: "Background processing update task",
+            kind: .processing,
             trigger: "BGProcessingTask",
             onSuccess: { delegate in
                 delegate.scheduleBackgroundFilterUpdate()
@@ -499,6 +619,7 @@ extension AppDelegate: UIApplicationDelegate {
     private func handleForcedBackgroundTask(
         task: BGTask,
         taskLabel: String,
+        kind: AutoUpdateDiagnosticTaskKind,
         trigger: String,
         onSuccess: @escaping @MainActor (AppDelegate) -> Void,
         onExpiration: @escaping @MainActor (AppDelegate) -> Void
@@ -506,10 +627,12 @@ extension AppDelegate: UIApplicationDelegate {
         os_log("%{public}@ started", type: .info, taskLabel)
         let completionState = BGTaskCompletionState()
         let updateTask = Task {
+            await ProtobufDataManager.shared.recordAutoUpdateTaskStart(kind)
             await self.runForcedAutoUpdate(trigger: trigger)
 
             guard await completionState.claimCompletion() else { return }
             os_log("%{public}@ completed successfully", type: .info, taskLabel)
+            await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .completed)
             task.setTaskCompleted(success: true)
             await MainActor.run {
                 onSuccess(self)
@@ -526,6 +649,7 @@ extension AppDelegate: UIApplicationDelegate {
 
             Task { [weak self] in
                 guard await completionState.claimCompletion() else { return }
+                await ProtobufDataManager.shared.recordAutoUpdateTaskExpiration(kind)
                 task.setTaskCompleted(success: false)
                 guard let self else { return }
                 await MainActor.run {

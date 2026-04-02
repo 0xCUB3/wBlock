@@ -9,9 +9,12 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
-    @State private var lastUpdateLine = String(localized: "Last: Never")
     @State private var isOverdue = false
     @State private var timer: Timer?
+    #if os(macOS)
+    @State private var launchAgentStatusLine = String(localized: "Checking background agent…")
+    @State private var launchAgentNeedsApproval = false
+    #endif
     @State private var showingRestartConfirmation = false
     @State private var isRestarting = false
     @State private var showingImportDialog = false
@@ -35,11 +38,31 @@ struct SettingsView: View {
         dataManager.autoUpdateIntervalHours
     }
 
+    private var autoUpdateDiagnostics: AutoUpdateDiagnosticsSnapshot {
+        dataManager.autoUpdateDiagnostics
+    }
+
+    private var overdueWaitLine: String {
+        #if os(iOS)
+        return String(localized: "Waiting for iOS background wake or app open")
+        #else
+        return String(localized: "Waiting for background agent or app open")
+        #endif
+    }
+
     private var compactStatusLine: String {
         if isOverdue {
-            return String(localized: "Waiting for iOS background wake or app open")
+            return overdueWaitLine
         }
         return nextScheduleLine
+    }
+
+    private var footerStatusLine: String {
+        #if os(macOS)
+        return "\(compactStatusLine) · \(launchAgentStatusLine)"
+        #else
+        return compactStatusLine
+        #endif
     }
 
     var body: some View {
@@ -220,26 +243,98 @@ struct SettingsView: View {
                 .toggleStyle(.switch)
                 #endif
 
+            #if os(macOS)
+            if launchAgentNeedsApproval {
+                Button("Open Login Items") {
+                    AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
+                }
+            }
+            #endif
+
             if autoUpdateEnabled {
                 Picker("Update Interval", selection: autoUpdateIntervalBinding) {
                     ForEach(Self.autoUpdateIntervalPresets, id: \.self) { hours in
                         Text(intervalDescription(hours: hours)).tag(hours)
                     }
                 }
+
+                #if os(iOS)
+                iOSAutoUpdateDiagnosticsView
+                #endif
             }
         } header: {
             Text("Filter Auto-Update")
         } footer: {
-            if autoUpdateEnabled {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(compactStatusLine) · \(lastUpdateLine)")
-                    #if os(iOS)
-                    Text("iOS background refresh is best-effort; checks may run later than scheduled.")
-                    #endif
+            VStack(alignment: .leading, spacing: 2) {
+                if autoUpdateEnabled {
+                    Text(footerStatusLine)
                 }
             }
         }
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var iOSAutoUpdateDiagnosticsView: some View {
+        DisclosureGroup("Background Diagnostics") {
+            VStack(alignment: .leading, spacing: 8) {
+                backgroundTaskDiagnosticsView(
+                    title: "BGAppRefresh",
+                    diagnostics: autoUpdateDiagnostics.bgAppRefresh
+                )
+                backgroundTaskDiagnosticsView(
+                    title: "BGProcessing",
+                    diagnostics: autoUpdateDiagnostics.bgProcessing
+                )
+                diagnosticDetailView(title: "Silent Push", detail: silentPushDiagnosticsLine)
+                diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
+            }
+            .padding(.top, 6)
+        }
+    }
+    #endif
+
+    @ViewBuilder
+    private func backgroundTaskDiagnosticsView(
+        title: String,
+        diagnostics: BackgroundTaskDiagnosticsSnapshot
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(
+                "Registration: " + diagnosticEventLine(
+                    timestamp: diagnostics.lastRegistrationTime,
+                    result: diagnostics.lastRegistrationResult,
+                    error: diagnostics.lastRegistrationError,
+                    fallback: "Not recorded"
+                )
+            )
+            Text(
+                "Scheduling: " + diagnosticEventLine(
+                    timestamp: diagnostics.lastScheduleAttemptTime,
+                    result: diagnostics.lastScheduleResult,
+                    error: diagnostics.lastScheduleError,
+                    fallback: "No submit attempt yet"
+                )
+            )
+            Text("Execution: \(backgroundTaskExecutionLine(diagnostics))")
+        }
+        .font(.footnote)
+    }
+
+    @ViewBuilder
+    private func diagnosticDetailView(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(detail)
+                .font(.footnote)
+        }
+    }
+
 
     @ViewBuilder
     private var syncSection: some View {
@@ -416,20 +511,13 @@ extension SettingsView {
         case .success(let urls):
             guard let url = urls.first else { return }
             Task { @MainActor in
-                var didAccess = false
-                #if os(iOS)
-                    didAccess = url.startAccessingSecurityScopedResource()
-                #endif
-                defer {
-                    #if os(iOS)
-                        if didAccess { url.stopAccessingSecurityScopedResource() }
-                    #endif
-                }
                 do {
-                    let data = try Data(contentsOf: url)
-                    let backup = try BackupManager.importData(from: data)
-                    pendingBackup = backup
-                    showingRestoreBackupConfirmation = true
+                    try url.withSecurityScopedAccess { accessibleURL in
+                        let data = try Data(contentsOf: accessibleURL)
+                        let backup = try BackupManager.importData(from: data)
+                        pendingBackup = backup
+                        showingRestoreBackupConfirmation = true
+                    }
                 } catch {
                     backupStatusMessage = "Failed to read backup: \(error.localizedDescription)"
                     showingBackupStatus = true
@@ -528,7 +616,7 @@ extension SettingsView {
         }
 
         if isOverdue || remaining <= 0 {
-            return String(localized: "Waiting for iOS background wake or app open")
+            return overdueWaitLine
         }
 
         let componentsFormatter = DateComponentsFormatter()
@@ -549,6 +637,112 @@ extension SettingsView {
         )
     }
 
+    private var silentPushDiagnosticsLine: String {
+        let diagnostics = autoUpdateDiagnostics.silentPush
+        guard diagnostics.lastReceivedTime > 0 else {
+            return String(localized: "No silent push received yet")
+        }
+
+        if diagnostics.lastCompletionTime > 0 {
+            return "Received \(formatDiagnosticTime(diagnostics.lastReceivedTime)), \(humanReadableDiagnosticResult(diagnostics.lastResult)) \(formatDiagnosticTime(diagnostics.lastCompletionTime))"
+        }
+
+        return "Received \(formatDiagnosticTime(diagnostics.lastReceivedTime)), waiting for completion"
+    }
+
+    private var foregroundCatchUpDiagnosticsLine: String {
+        let timestamp = autoUpdateDiagnostics.lastForegroundCatchUpTime
+        guard timestamp > 0 else {
+            return String(localized: "No foreground catch-up recorded")
+        }
+
+        return "\(humanReadableDiagnosticResult(autoUpdateDiagnostics.lastForegroundCatchUpReason)) \(formatDiagnosticTime(timestamp))"
+    }
+
+    private func formatDiagnosticTime(_ timestamp: Int64) -> String {
+        guard timestamp > 0 else { return String(localized: "never") }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(
+            for: Date(timeIntervalSince1970: TimeInterval(timestamp)),
+            relativeTo: Date()
+        )
+    }
+
+    private func diagnosticEventLine(
+        timestamp: Int64,
+        result: String,
+        error: String,
+        fallback: String
+    ) -> String {
+        guard timestamp > 0 else { return fallback }
+        let normalizedResult = result.isEmpty ? AutoUpdateDiagnosticResult.recorded.rawValue : result
+        let status = humanReadableDiagnosticResult(normalizedResult)
+        if error.isEmpty {
+            return "\(status) \(formatDiagnosticTime(timestamp))"
+        }
+        return "\(status) \(formatDiagnosticTime(timestamp)), \(error)"
+    }
+
+    private func backgroundTaskExecutionLine(_ diagnostics: BackgroundTaskDiagnosticsSnapshot) -> String {
+        if diagnostics.lastExpirationTime >= diagnostics.lastCompletionTime,
+           diagnostics.lastExpirationTime >= diagnostics.lastStartTime,
+           diagnostics.lastExpirationTime > 0
+        {
+            return "Expired \(formatDiagnosticTime(diagnostics.lastExpirationTime))"
+        }
+
+        if diagnostics.lastCompletionTime > 0 {
+            return "\(humanReadableDiagnosticResult(diagnostics.lastCompletionResult)) \(formatDiagnosticTime(diagnostics.lastCompletionTime))"
+        }
+
+        if diagnostics.lastStartTime > 0 {
+            return "Started \(formatDiagnosticTime(diagnostics.lastStartTime))"
+        }
+
+        return String(localized: "No background run recorded")
+    }
+
+    private func humanReadableDiagnosticResult(_ value: String) -> String {
+        guard let result = AutoUpdateDiagnosticResult(
+            rawValue: value.isEmpty ? AutoUpdateDiagnosticResult.recorded.rawValue : value
+        ) else {
+            return value.replacingOccurrences(of: "_", with: " ").localizedCapitalized
+        }
+
+        switch result {
+        case .registered:
+            return String(localized: "Registered")
+        case .failed:
+            return String(localized: "Failed")
+        case .submitted:
+            return String(localized: "Submitted")
+        case .infoPlistMissing:
+            return String(localized: "Info.plist missing")
+        case .tooManyPending:
+            return String(localized: "Too many pending tasks")
+        case .unavailable:
+            return String(localized: "Unavailable")
+        case .schedulerError:
+            return String(localized: "Scheduler error")
+        case .submitFailed:
+            return String(localized: "Submit failed")
+        case .completed:
+            return String(localized: "Completed")
+        case .timedOut:
+            return String(localized: "Timed out")
+        case .overdue:
+            return String(localized: "Overdue catch-up")
+        case .dueSoon:
+            return String(localized: "Due soon catch-up")
+        case .recorded:
+            return String(localized: "Recorded")
+        @unknown default:
+            return value.replacingOccurrences(of: "_", with: " ").localizedCapitalized
+        }
+    }
+
+
     private var syncFooterLine: String {
         if syncManager.lastErrorMessage != nil {
             return syncManager.lastSyncLine
@@ -562,44 +756,22 @@ extension SettingsView {
         }
     }
 
-    private func formatLastUpdate(date: Date?) -> String {
-        guard let date else {
-            return String(localized: "Never checked")
-        }
-
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
-
-        if interval < 60 {
-            return String(localized: "Checked just now")
-        }
-
-        let componentsFormatter = DateComponentsFormatter()
-        componentsFormatter.allowedUnits = [.day, .hour, .minute]
-        componentsFormatter.unitsStyle = .short
-        componentsFormatter.maximumUnitCount = 1
-        if let relative = componentsFormatter.string(from: interval) {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("Checked %@ ago", comment: "Last update relative time"),
-                relative
-            )
-        }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .short
-        dateFormatter.timeStyle = .short
-        return String.localizedStringWithFormat(
-            NSLocalizedString("Checked %@", comment: "Last update date"),
-            dateFormatter.string(from: date)
-        )
-    }
 
     private func updateScheduleLine(shouldTriggerOverdue: Bool = true) async {
+        #if os(macOS)
+        let launchAgentStatus = await MainActor.run {
+            AutoUpdateLaunchAgentManager.shared.currentStatus()
+        }
+        #endif
+
         guard autoUpdateEnabled else {
             await MainActor.run {
                 nextScheduleLine = String(localized: "Disabled")
-                lastUpdateLine = String(localized: "N/A")
                 isOverdue = false
+                #if os(macOS)
+                launchAgentStatusLine = launchAgentStatus.detail
+                launchAgentNeedsApproval = launchAgentStatus.needsApproval
+                #endif
             }
             return
         }
@@ -609,12 +781,13 @@ extension SettingsView {
         let scheduleDescription = formatSchedule(
             scheduledAt: status.scheduledAt, remaining: status.remaining,
             isOverdue: status.isOverdue)
-        let lastDescription = formatLastUpdate(date: status.lastCheckTime)
-
         await MainActor.run {
             nextScheduleLine = scheduleDescription
-            lastUpdateLine = lastDescription
             isOverdue = status.isOverdue
+            #if os(macOS)
+            launchAgentStatusLine = launchAgentStatus.detail
+            launchAgentNeedsApproval = launchAgentStatus.needsApproval
+            #endif
         }
 
         // Trigger overdue updates ONLY on first call (not recursive)

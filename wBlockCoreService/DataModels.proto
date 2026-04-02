@@ -151,6 +151,25 @@ message TabData {
 }
 
 // Auto-update metadata and scheduling
+message BackgroundTaskDiagnostics {
+  int64 last_registration_time = 1;
+  string last_registration_result = 2;
+  string last_registration_error = 3;
+  int64 last_schedule_attempt_time = 4;
+  string last_schedule_result = 5;
+  string last_schedule_error = 6;
+  int64 last_start_time = 7;
+  int64 last_completion_time = 8;
+  string last_completion_result = 9;
+  int64 last_expiration_time = 10;
+}
+
+message SilentPushDiagnostics {
+  int64 last_received_time = 1;
+  int64 last_completion_time = 2;
+  string last_result = 3;
+}
+
 message AutoUpdateMetadata {
   bool enabled = 1;
   double interval_hours = 2;
@@ -163,4 +182,9 @@ message AutoUpdateMetadata {
   map<string, string> filter_etags = 9;  // UUID -> ETag header value
   map<string, string> filter_last_modified = 10;  // UUID -> Last-Modified header value
   bool userscripts_initial_setup_completed = 11;
+  BackgroundTaskDiagnostics bg_app_refresh = 12;
+  BackgroundTaskDiagnostics bg_processing = 13;
+  SilentPushDiagnostics silent_push = 14;
+  int64 last_foreground_catch_up_time = 15;
+  string last_foreground_catch_up_reason = 16;
 }

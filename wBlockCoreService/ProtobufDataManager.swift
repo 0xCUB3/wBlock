@@ -185,6 +185,55 @@ private actor ProtobufDiskStore {
 
 /// Centralized data manager using Protocol Buffers for efficient, type-safe data storage
 /// Replaces UserDefaults and SwiftData
+public enum AutoUpdateDiagnosticTaskKind: Sendable {
+    case appRefresh
+    case processing
+}
+
+public enum AutoUpdateDiagnosticResult: String, Sendable {
+    case registered = "registered"
+    case failed = "failed"
+    case submitted = "submitted"
+    case infoPlistMissing = "info_plist_missing"
+    case tooManyPending = "too_many_pending"
+    case unavailable = "unavailable"
+    case schedulerError = "scheduler_error"
+    case submitFailed = "submit_failed"
+    case completed = "completed"
+    case timedOut = "timed_out"
+    case overdue = "overdue"
+    case dueSoon = "due_soon"
+    case recorded = "recorded"
+}
+
+public struct BackgroundTaskDiagnosticsSnapshot: Sendable {
+    public let lastRegistrationTime: Int64
+    public let lastRegistrationResult: String
+    public let lastRegistrationError: String
+    public let lastScheduleAttemptTime: Int64
+    public let lastScheduleResult: String
+    public let lastScheduleError: String
+    public let lastStartTime: Int64
+    public let lastCompletionTime: Int64
+    public let lastCompletionResult: String
+    public let lastExpirationTime: Int64
+}
+
+public struct SilentPushDiagnosticsSnapshot: Sendable {
+    public let lastReceivedTime: Int64
+    public let lastCompletionTime: Int64
+    public let lastResult: String
+}
+
+public struct AutoUpdateDiagnosticsSnapshot: Sendable {
+    public let bgAppRefresh: BackgroundTaskDiagnosticsSnapshot
+    public let bgProcessing: BackgroundTaskDiagnosticsSnapshot
+    public let silentPush: SilentPushDiagnosticsSnapshot
+    public let lastForegroundCatchUpTime: Int64
+    public let lastForegroundCatchUpReason: String
+}
+
+
 @MainActor
 public class ProtobufDataManager: ObservableObject {
     /// Publishes after a successful on-disk save of the protobuf file.
@@ -482,6 +531,139 @@ public class ProtobufDataManager: ObservableObject {
     public func setUserscriptsInitialSetupCompleted(_ value: Bool) async {
         await updateData { $0.autoUpdate.userscriptsInitialSetupCompleted = value }
     }
+
+    public var autoUpdateDiagnostics: AutoUpdateDiagnosticsSnapshot {
+        AutoUpdateDiagnosticsSnapshot(
+            bgAppRefresh: backgroundTaskDiagnosticsSnapshot(from: appData.autoUpdate.bgAppRefresh),
+            bgProcessing: backgroundTaskDiagnosticsSnapshot(from: appData.autoUpdate.bgProcessing),
+            silentPush: SilentPushDiagnosticsSnapshot(
+                lastReceivedTime: appData.autoUpdate.silentPush.lastReceivedTime,
+                lastCompletionTime: appData.autoUpdate.silentPush.lastCompletionTime,
+                lastResult: appData.autoUpdate.silentPush.lastResult
+            ),
+            lastForegroundCatchUpTime: appData.autoUpdate.lastForegroundCatchUpTime,
+            lastForegroundCatchUpReason: appData.autoUpdate.lastForegroundCatchUpReason
+        )
+    }
+
+    @MainActor
+    public func recordAutoUpdateTaskRegistration(
+        _ kind: AutoUpdateDiagnosticTaskKind,
+        success: Bool,
+        error: String? = nil
+    ) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateBackgroundTaskDiagnostics(kind) { diagnostics in
+            diagnostics.lastRegistrationTime = timestamp
+            diagnostics.lastRegistrationResult = (success ? AutoUpdateDiagnosticResult.registered : .failed).rawValue
+            diagnostics.lastRegistrationError = error ?? ""
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateTaskScheduleAttempt(
+        _ kind: AutoUpdateDiagnosticTaskKind,
+        result: AutoUpdateDiagnosticResult,
+        error: String? = nil
+    ) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateBackgroundTaskDiagnostics(kind) { diagnostics in
+            diagnostics.lastScheduleAttemptTime = timestamp
+            diagnostics.lastScheduleResult = result.rawValue
+            diagnostics.lastScheduleError = error ?? ""
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateTaskStart(_ kind: AutoUpdateDiagnosticTaskKind) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateBackgroundTaskDiagnostics(kind) { diagnostics in
+            diagnostics.lastStartTime = timestamp
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateTaskCompletion(
+        _ kind: AutoUpdateDiagnosticTaskKind,
+        result: AutoUpdateDiagnosticResult
+    ) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateBackgroundTaskDiagnostics(kind) { diagnostics in
+            diagnostics.lastCompletionTime = timestamp
+            diagnostics.lastCompletionResult = result.rawValue
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateTaskExpiration(_ kind: AutoUpdateDiagnosticTaskKind) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateBackgroundTaskDiagnostics(kind) { diagnostics in
+            diagnostics.lastExpirationTime = timestamp
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateSilentPushReceived() async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateData { data in
+            data.autoUpdate.silentPush.lastReceivedTime = timestamp
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateSilentPushCompletion(result: AutoUpdateDiagnosticResult) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateData { data in
+            data.autoUpdate.silentPush.lastCompletionTime = timestamp
+            data.autoUpdate.silentPush.lastResult = result.rawValue
+        }
+    }
+
+    @MainActor
+    public func recordAutoUpdateForegroundCatchUp(reason: AutoUpdateDiagnosticResult) async {
+        let timestamp = Self.currentUnixTimestamp()
+        await updateData { data in
+            data.autoUpdate.lastForegroundCatchUpTime = timestamp
+            data.autoUpdate.lastForegroundCatchUpReason = reason.rawValue
+        }
+    }
+
+    private static func currentUnixTimestamp() -> Int64 {
+        Int64(Date().timeIntervalSince1970)
+    }
+
+    private func backgroundTaskDiagnosticsSnapshot(
+        from diagnostics: Wblock_Data_BackgroundTaskDiagnostics
+    ) -> BackgroundTaskDiagnosticsSnapshot {
+        BackgroundTaskDiagnosticsSnapshot(
+            lastRegistrationTime: diagnostics.lastRegistrationTime,
+            lastRegistrationResult: diagnostics.lastRegistrationResult,
+            lastRegistrationError: diagnostics.lastRegistrationError,
+            lastScheduleAttemptTime: diagnostics.lastScheduleAttemptTime,
+            lastScheduleResult: diagnostics.lastScheduleResult,
+            lastScheduleError: diagnostics.lastScheduleError,
+            lastStartTime: diagnostics.lastStartTime,
+            lastCompletionTime: diagnostics.lastCompletionTime,
+            lastCompletionResult: diagnostics.lastCompletionResult,
+            lastExpirationTime: diagnostics.lastExpirationTime
+        )
+    }
+
+    @MainActor
+    private func updateBackgroundTaskDiagnostics(
+        _ kind: AutoUpdateDiagnosticTaskKind,
+        mutate: (inout Wblock_Data_BackgroundTaskDiagnostics) -> Void
+    ) async {
+        await updateData { data in
+            switch kind {
+            case .appRefresh:
+                mutate(&data.autoUpdate.bgAppRefresh)
+            case .processing:
+                mutate(&data.autoUpdate.bgProcessing)
+            }
+        }
+    }
+
 
     // MARK: - Extension Data (Tab Tracking)
 

@@ -526,38 +526,156 @@ struct Wblock_Data_TabData: Sendable {
 }
 
 /// Auto-update metadata and scheduling
-struct Wblock_Data_AutoUpdateMetadata: Sendable {
+struct Wblock_Data_BackgroundTaskDiagnostics: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var enabled: Bool = false
+  var lastRegistrationTime: Int64 = 0
 
-  var intervalHours: Double = 0
+  var lastRegistrationResult: String = String()
 
-  var lastCheckTime: Int64 = 0
+  var lastRegistrationError: String = String()
 
-  var lastSuccessfulTime: Int64 = 0
+  var lastScheduleAttemptTime: Int64 = 0
 
-  var nextEligibleTime: Int64 = 0
+  var lastScheduleResult: String = String()
 
-  var forceNext: Bool = false
+  var lastScheduleError: String = String()
 
-  var isRunning: Bool = false
+  var lastStartTime: Int64 = 0
 
-  var runningSinceTimestamp: Int64 = 0
+  var lastCompletionTime: Int64 = 0
 
-  /// UUID -> ETag header value
-  var filterEtags: Dictionary<String,String> = [:]
+  var lastCompletionResult: String = String()
 
-  /// UUID -> Last-Modified header value
-  var filterLastModified: Dictionary<String,String> = [:]
-
-  var userscriptsInitialSetupCompleted: Bool = false
+  var lastExpirationTime: Int64 = 0
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
+}
+
+struct Wblock_Data_SilentPushDiagnostics: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var lastReceivedTime: Int64 = 0
+
+  var lastCompletionTime: Int64 = 0
+
+  var lastResult: String = String()
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
+struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var enabled: Bool {
+    get {_storage._enabled}
+    set {_uniqueStorage()._enabled = newValue}
+  }
+
+  var intervalHours: Double {
+    get {_storage._intervalHours}
+    set {_uniqueStorage()._intervalHours = newValue}
+  }
+
+  var lastCheckTime: Int64 {
+    get {_storage._lastCheckTime}
+    set {_uniqueStorage()._lastCheckTime = newValue}
+  }
+
+  var lastSuccessfulTime: Int64 {
+    get {_storage._lastSuccessfulTime}
+    set {_uniqueStorage()._lastSuccessfulTime = newValue}
+  }
+
+  var nextEligibleTime: Int64 {
+    get {_storage._nextEligibleTime}
+    set {_uniqueStorage()._nextEligibleTime = newValue}
+  }
+
+  var forceNext: Bool {
+    get {_storage._forceNext}
+    set {_uniqueStorage()._forceNext = newValue}
+  }
+
+  var isRunning: Bool {
+    get {_storage._isRunning}
+    set {_uniqueStorage()._isRunning = newValue}
+  }
+
+  var runningSinceTimestamp: Int64 {
+    get {_storage._runningSinceTimestamp}
+    set {_uniqueStorage()._runningSinceTimestamp = newValue}
+  }
+
+  /// UUID -> ETag header value
+  var filterEtags: Dictionary<String,String> {
+    get {_storage._filterEtags}
+    set {_uniqueStorage()._filterEtags = newValue}
+  }
+
+  /// UUID -> Last-Modified header value
+  var filterLastModified: Dictionary<String,String> {
+    get {_storage._filterLastModified}
+    set {_uniqueStorage()._filterLastModified = newValue}
+  }
+
+  var userscriptsInitialSetupCompleted: Bool {
+    get {_storage._userscriptsInitialSetupCompleted}
+    set {_uniqueStorage()._userscriptsInitialSetupCompleted = newValue}
+  }
+
+  var bgAppRefresh: Wblock_Data_BackgroundTaskDiagnostics {
+    get {_storage._bgAppRefresh ?? Wblock_Data_BackgroundTaskDiagnostics()}
+    set {_uniqueStorage()._bgAppRefresh = newValue}
+  }
+  /// Returns true if `bgAppRefresh` has been explicitly set.
+  var hasBgAppRefresh: Bool {_storage._bgAppRefresh != nil}
+  /// Clears the value of `bgAppRefresh`. Subsequent reads from it will return its default value.
+  mutating func clearBgAppRefresh() {_uniqueStorage()._bgAppRefresh = nil}
+
+  var bgProcessing: Wblock_Data_BackgroundTaskDiagnostics {
+    get {_storage._bgProcessing ?? Wblock_Data_BackgroundTaskDiagnostics()}
+    set {_uniqueStorage()._bgProcessing = newValue}
+  }
+  /// Returns true if `bgProcessing` has been explicitly set.
+  var hasBgProcessing: Bool {_storage._bgProcessing != nil}
+  /// Clears the value of `bgProcessing`. Subsequent reads from it will return its default value.
+  mutating func clearBgProcessing() {_uniqueStorage()._bgProcessing = nil}
+
+  var silentPush: Wblock_Data_SilentPushDiagnostics {
+    get {_storage._silentPush ?? Wblock_Data_SilentPushDiagnostics()}
+    set {_uniqueStorage()._silentPush = newValue}
+  }
+  /// Returns true if `silentPush` has been explicitly set.
+  var hasSilentPush: Bool {_storage._silentPush != nil}
+  /// Clears the value of `silentPush`. Subsequent reads from it will return its default value.
+  mutating func clearSilentPush() {_uniqueStorage()._silentPush = nil}
+
+  var lastForegroundCatchUpTime: Int64 {
+    get {_storage._lastForegroundCatchUpTime}
+    set {_uniqueStorage()._lastForegroundCatchUpTime = newValue}
+  }
+
+  var lastForegroundCatchUpReason: String {
+    get {_storage._lastForegroundCatchUpReason}
+    set {_uniqueStorage()._lastForegroundCatchUpReason = newValue}
+  }
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -1334,9 +1452,9 @@ extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
   }
 }
 
-extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{3}userscripts_initial_setup_completed\0")
+extension Wblock_Data_BackgroundTaskDiagnostics: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".BackgroundTaskDiagnostics"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_registration_time\0\u{3}last_registration_result\0\u{3}last_registration_error\0\u{3}last_schedule_attempt_time\0\u{3}last_schedule_result\0\u{3}last_schedule_error\0\u{3}last_start_time\0\u{3}last_completion_time\0\u{3}last_completion_result\0\u{3}last_expiration_time\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1344,71 +1462,281 @@ extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularBoolField(value: &self.enabled) }()
-      case 2: try { try decoder.decodeSingularDoubleField(value: &self.intervalHours) }()
-      case 3: try { try decoder.decodeSingularInt64Field(value: &self.lastCheckTime) }()
-      case 4: try { try decoder.decodeSingularInt64Field(value: &self.lastSuccessfulTime) }()
-      case 5: try { try decoder.decodeSingularInt64Field(value: &self.nextEligibleTime) }()
-      case 6: try { try decoder.decodeSingularBoolField(value: &self.forceNext) }()
-      case 7: try { try decoder.decodeSingularBoolField(value: &self.isRunning) }()
-      case 8: try { try decoder.decodeSingularInt64Field(value: &self.runningSinceTimestamp) }()
-      case 9: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.filterEtags) }()
-      case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &self.filterLastModified) }()
-      case 11: try { try decoder.decodeSingularBoolField(value: &self.userscriptsInitialSetupCompleted) }()
+      case 1: try { try decoder.decodeSingularInt64Field(value: &self.lastRegistrationTime) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.lastRegistrationResult) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.lastRegistrationError) }()
+      case 4: try { try decoder.decodeSingularInt64Field(value: &self.lastScheduleAttemptTime) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self.lastScheduleResult) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.lastScheduleError) }()
+      case 7: try { try decoder.decodeSingularInt64Field(value: &self.lastStartTime) }()
+      case 8: try { try decoder.decodeSingularInt64Field(value: &self.lastCompletionTime) }()
+      case 9: try { try decoder.decodeSingularStringField(value: &self.lastCompletionResult) }()
+      case 10: try { try decoder.decodeSingularInt64Field(value: &self.lastExpirationTime) }()
       default: break
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.enabled != false {
-      try visitor.visitSingularBoolField(value: self.enabled, fieldNumber: 1)
+    if self.lastRegistrationTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastRegistrationTime, fieldNumber: 1)
     }
-    if self.intervalHours.bitPattern != 0 {
-      try visitor.visitSingularDoubleField(value: self.intervalHours, fieldNumber: 2)
+    if !self.lastRegistrationResult.isEmpty {
+      try visitor.visitSingularStringField(value: self.lastRegistrationResult, fieldNumber: 2)
     }
-    if self.lastCheckTime != 0 {
-      try visitor.visitSingularInt64Field(value: self.lastCheckTime, fieldNumber: 3)
+    if !self.lastRegistrationError.isEmpty {
+      try visitor.visitSingularStringField(value: self.lastRegistrationError, fieldNumber: 3)
     }
-    if self.lastSuccessfulTime != 0 {
-      try visitor.visitSingularInt64Field(value: self.lastSuccessfulTime, fieldNumber: 4)
+    if self.lastScheduleAttemptTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastScheduleAttemptTime, fieldNumber: 4)
     }
-    if self.nextEligibleTime != 0 {
-      try visitor.visitSingularInt64Field(value: self.nextEligibleTime, fieldNumber: 5)
+    if !self.lastScheduleResult.isEmpty {
+      try visitor.visitSingularStringField(value: self.lastScheduleResult, fieldNumber: 5)
     }
-    if self.forceNext != false {
-      try visitor.visitSingularBoolField(value: self.forceNext, fieldNumber: 6)
+    if !self.lastScheduleError.isEmpty {
+      try visitor.visitSingularStringField(value: self.lastScheduleError, fieldNumber: 6)
     }
-    if self.isRunning != false {
-      try visitor.visitSingularBoolField(value: self.isRunning, fieldNumber: 7)
+    if self.lastStartTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastStartTime, fieldNumber: 7)
     }
-    if self.runningSinceTimestamp != 0 {
-      try visitor.visitSingularInt64Field(value: self.runningSinceTimestamp, fieldNumber: 8)
+    if self.lastCompletionTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastCompletionTime, fieldNumber: 8)
     }
-    if !self.filterEtags.isEmpty {
-      try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: self.filterEtags, fieldNumber: 9)
+    if !self.lastCompletionResult.isEmpty {
+      try visitor.visitSingularStringField(value: self.lastCompletionResult, fieldNumber: 9)
     }
-    if !self.filterLastModified.isEmpty {
-      try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: self.filterLastModified, fieldNumber: 10)
+    if self.lastExpirationTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastExpirationTime, fieldNumber: 10)
     }
-    if self.userscriptsInitialSetupCompleted != false {
-      try visitor.visitSingularBoolField(value: self.userscriptsInitialSetupCompleted, fieldNumber: 11)
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Wblock_Data_BackgroundTaskDiagnostics, rhs: Wblock_Data_BackgroundTaskDiagnostics) -> Bool {
+    if lhs.lastRegistrationTime != rhs.lastRegistrationTime {return false}
+    if lhs.lastRegistrationResult != rhs.lastRegistrationResult {return false}
+    if lhs.lastRegistrationError != rhs.lastRegistrationError {return false}
+    if lhs.lastScheduleAttemptTime != rhs.lastScheduleAttemptTime {return false}
+    if lhs.lastScheduleResult != rhs.lastScheduleResult {return false}
+    if lhs.lastScheduleError != rhs.lastScheduleError {return false}
+    if lhs.lastStartTime != rhs.lastStartTime {return false}
+    if lhs.lastCompletionTime != rhs.lastCompletionTime {return false}
+    if lhs.lastCompletionResult != rhs.lastCompletionResult {return false}
+    if lhs.lastExpirationTime != rhs.lastExpirationTime {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".SilentPushDiagnostics"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_received_time\0\u{3}last_completion_time\0\u{3}last_result\0")
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt64Field(value: &self.lastReceivedTime) }()
+      case 2: try { try decoder.decodeSingularInt64Field(value: &self.lastCompletionTime) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.lastResult) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.lastReceivedTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastReceivedTime, fieldNumber: 1)
+    }
+    if self.lastCompletionTime != 0 {
+      try visitor.visitSingularInt64Field(value: self.lastCompletionTime, fieldNumber: 2)
+    }
+    if !self.lastResult.isEmpty {
+      try visitor.visitSingularStringField(value: self.lastResult, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Wblock_Data_SilentPushDiagnostics, rhs: Wblock_Data_SilentPushDiagnostics) -> Bool {
+    if lhs.lastReceivedTime != rhs.lastReceivedTime {return false}
+    if lhs.lastCompletionTime != rhs.lastCompletionTime {return false}
+    if lhs.lastResult != rhs.lastResult {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{3}userscripts_initial_setup_completed\0\u{3}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0")
+
+  fileprivate class _StorageClass {
+    var _enabled: Bool = false
+    var _intervalHours: Double = 0
+    var _lastCheckTime: Int64 = 0
+    var _lastSuccessfulTime: Int64 = 0
+    var _nextEligibleTime: Int64 = 0
+    var _forceNext: Bool = false
+    var _isRunning: Bool = false
+    var _runningSinceTimestamp: Int64 = 0
+    var _filterEtags: Dictionary<String,String> = [:]
+    var _filterLastModified: Dictionary<String,String> = [:]
+    var _userscriptsInitialSetupCompleted: Bool = false
+    var _bgAppRefresh: Wblock_Data_BackgroundTaskDiagnostics? = nil
+    var _bgProcessing: Wblock_Data_BackgroundTaskDiagnostics? = nil
+    var _silentPush: Wblock_Data_SilentPushDiagnostics? = nil
+    var _lastForegroundCatchUpTime: Int64 = 0
+    var _lastForegroundCatchUpReason: String = String()
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _enabled = source._enabled
+      _intervalHours = source._intervalHours
+      _lastCheckTime = source._lastCheckTime
+      _lastSuccessfulTime = source._lastSuccessfulTime
+      _nextEligibleTime = source._nextEligibleTime
+      _forceNext = source._forceNext
+      _isRunning = source._isRunning
+      _runningSinceTimestamp = source._runningSinceTimestamp
+      _filterEtags = source._filterEtags
+      _filterLastModified = source._filterLastModified
+      _userscriptsInitialSetupCompleted = source._userscriptsInitialSetupCompleted
+      _bgAppRefresh = source._bgAppRefresh
+      _bgProcessing = source._bgProcessing
+      _silentPush = source._silentPush
+      _lastForegroundCatchUpTime = source._lastForegroundCatchUpTime
+      _lastForegroundCatchUpReason = source._lastForegroundCatchUpReason
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularBoolField(value: &_storage._enabled) }()
+        case 2: try { try decoder.decodeSingularDoubleField(value: &_storage._intervalHours) }()
+        case 3: try { try decoder.decodeSingularInt64Field(value: &_storage._lastCheckTime) }()
+        case 4: try { try decoder.decodeSingularInt64Field(value: &_storage._lastSuccessfulTime) }()
+        case 5: try { try decoder.decodeSingularInt64Field(value: &_storage._nextEligibleTime) }()
+        case 6: try { try decoder.decodeSingularBoolField(value: &_storage._forceNext) }()
+        case 7: try { try decoder.decodeSingularBoolField(value: &_storage._isRunning) }()
+        case 8: try { try decoder.decodeSingularInt64Field(value: &_storage._runningSinceTimestamp) }()
+        case 9: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &_storage._filterEtags) }()
+        case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &_storage._filterLastModified) }()
+        case 11: try { try decoder.decodeSingularBoolField(value: &_storage._userscriptsInitialSetupCompleted) }()
+        case 12: try { try decoder.decodeSingularMessageField(value: &_storage._bgAppRefresh) }()
+        case 13: try { try decoder.decodeSingularMessageField(value: &_storage._bgProcessing) }()
+        case 14: try { try decoder.decodeSingularMessageField(value: &_storage._silentPush) }()
+        case 15: try { try decoder.decodeSingularInt64Field(value: &_storage._lastForegroundCatchUpTime) }()
+        case 16: try { try decoder.decodeSingularStringField(value: &_storage._lastForegroundCatchUpReason) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if _storage._enabled != false {
+        try visitor.visitSingularBoolField(value: _storage._enabled, fieldNumber: 1)
+      }
+      if _storage._intervalHours.bitPattern != 0 {
+        try visitor.visitSingularDoubleField(value: _storage._intervalHours, fieldNumber: 2)
+      }
+      if _storage._lastCheckTime != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._lastCheckTime, fieldNumber: 3)
+      }
+      if _storage._lastSuccessfulTime != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._lastSuccessfulTime, fieldNumber: 4)
+      }
+      if _storage._nextEligibleTime != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._nextEligibleTime, fieldNumber: 5)
+      }
+      if _storage._forceNext != false {
+        try visitor.visitSingularBoolField(value: _storage._forceNext, fieldNumber: 6)
+      }
+      if _storage._isRunning != false {
+        try visitor.visitSingularBoolField(value: _storage._isRunning, fieldNumber: 7)
+      }
+      if _storage._runningSinceTimestamp != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._runningSinceTimestamp, fieldNumber: 8)
+      }
+      if !_storage._filterEtags.isEmpty {
+        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: _storage._filterEtags, fieldNumber: 9)
+      }
+      if !_storage._filterLastModified.isEmpty {
+        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: _storage._filterLastModified, fieldNumber: 10)
+      }
+      if _storage._userscriptsInitialSetupCompleted != false {
+        try visitor.visitSingularBoolField(value: _storage._userscriptsInitialSetupCompleted, fieldNumber: 11)
+      }
+      try { if let v = _storage._bgAppRefresh {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+      } }()
+      try { if let v = _storage._bgProcessing {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
+      } }()
+      try { if let v = _storage._silentPush {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 14)
+      } }()
+      if _storage._lastForegroundCatchUpTime != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._lastForegroundCatchUpTime, fieldNumber: 15)
+      }
+      if !_storage._lastForegroundCatchUpReason.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._lastForegroundCatchUpReason, fieldNumber: 16)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Wblock_Data_AutoUpdateMetadata, rhs: Wblock_Data_AutoUpdateMetadata) -> Bool {
-    if lhs.enabled != rhs.enabled {return false}
-    if lhs.intervalHours != rhs.intervalHours {return false}
-    if lhs.lastCheckTime != rhs.lastCheckTime {return false}
-    if lhs.lastSuccessfulTime != rhs.lastSuccessfulTime {return false}
-    if lhs.nextEligibleTime != rhs.nextEligibleTime {return false}
-    if lhs.forceNext != rhs.forceNext {return false}
-    if lhs.isRunning != rhs.isRunning {return false}
-    if lhs.runningSinceTimestamp != rhs.runningSinceTimestamp {return false}
-    if lhs.filterEtags != rhs.filterEtags {return false}
-    if lhs.filterLastModified != rhs.filterLastModified {return false}
-    if lhs.userscriptsInitialSetupCompleted != rhs.userscriptsInitialSetupCompleted {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._enabled != rhs_storage._enabled {return false}
+        if _storage._intervalHours != rhs_storage._intervalHours {return false}
+        if _storage._lastCheckTime != rhs_storage._lastCheckTime {return false}
+        if _storage._lastSuccessfulTime != rhs_storage._lastSuccessfulTime {return false}
+        if _storage._nextEligibleTime != rhs_storage._nextEligibleTime {return false}
+        if _storage._forceNext != rhs_storage._forceNext {return false}
+        if _storage._isRunning != rhs_storage._isRunning {return false}
+        if _storage._runningSinceTimestamp != rhs_storage._runningSinceTimestamp {return false}
+        if _storage._filterEtags != rhs_storage._filterEtags {return false}
+        if _storage._filterLastModified != rhs_storage._filterLastModified {return false}
+        if _storage._userscriptsInitialSetupCompleted != rhs_storage._userscriptsInitialSetupCompleted {return false}
+        if _storage._bgAppRefresh != rhs_storage._bgAppRefresh {return false}
+        if _storage._bgProcessing != rhs_storage._bgProcessing {return false}
+        if _storage._silentPush != rhs_storage._silentPush {return false}
+        if _storage._lastForegroundCatchUpTime != rhs_storage._lastForegroundCatchUpTime {return false}
+        if _storage._lastForegroundCatchUpReason != rhs_storage._lastForegroundCatchUpReason {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
