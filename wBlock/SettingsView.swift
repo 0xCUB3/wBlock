@@ -57,6 +57,14 @@ struct SettingsView: View {
         return nextScheduleLine
     }
 
+    private var footerStatusLine: String {
+        #if os(macOS)
+        return "\(compactStatusLine) · \(launchAgentStatusLine)"
+        #else
+        return compactStatusLine
+        #endif
+    }
+
     var body: some View {
         settingsContent
         .task {
@@ -259,10 +267,7 @@ struct SettingsView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
-                    Text(compactStatusLine)
-                    #if os(macOS)
-                    Text(launchAgentStatusLine)
-                    #endif
+                    Text(footerStatusLine)
                 }
             }
         }
