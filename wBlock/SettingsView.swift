@@ -276,23 +276,21 @@ struct SettingsView: View {
     #if os(iOS)
     @ViewBuilder
     private var iOSAutoUpdateDiagnosticsView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Background Diagnostics")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            backgroundTaskDiagnosticsView(
-                title: "BGAppRefresh",
-                diagnostics: autoUpdateDiagnostics.bgAppRefresh
-            )
-            backgroundTaskDiagnosticsView(
-                title: "BGProcessing",
-                diagnostics: autoUpdateDiagnostics.bgProcessing
-            )
-            diagnosticDetailView(title: "Silent Push", detail: silentPushDiagnosticsLine)
-            diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
+        DisclosureGroup("Background Diagnostics") {
+            VStack(alignment: .leading, spacing: 8) {
+                backgroundTaskDiagnosticsView(
+                    title: "BGAppRefresh",
+                    diagnostics: autoUpdateDiagnostics.bgAppRefresh
+                )
+                backgroundTaskDiagnosticsView(
+                    title: "BGProcessing",
+                    diagnostics: autoUpdateDiagnostics.bgProcessing
+                )
+                diagnosticDetailView(title: "Silent Push", detail: silentPushDiagnosticsLine)
+                diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
+            }
+            .padding(.top, 6)
         }
-        .padding(.top, 4)
     }
     #endif
 
