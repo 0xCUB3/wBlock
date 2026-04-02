@@ -268,6 +268,9 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
                     Text(footerStatusLine)
+                    #if os(iOS)
+                    Text("iOS manages background updates automatically. Filters will update even if the app isn't open, but timing is approximate.")
+                    #endif
                 }
             }
         }
