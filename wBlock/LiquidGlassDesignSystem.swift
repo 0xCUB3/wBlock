@@ -133,6 +133,13 @@ struct ToolbarSearchField: View {
                         }
                         .buttonStyle(.plain)
                     }
+
+                    Button { collapse() } label: {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Close search")
                 }
                 .padding(.leading, 8)
                 .frame(width: 220)
