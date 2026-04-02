@@ -135,13 +135,13 @@ struct ToolbarSearchField: View {
                     }
 
                     Button { collapse() } label: {
-                        Image(systemName: "magnifyingglass")
+                        Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("Close search")
                 }
-                .padding(.leading, 8)
+                .padding(.horizontal, 8)
                 .frame(width: 220)
                 .transition(.blurReplace)
                 .task {
