@@ -269,7 +269,7 @@ struct SettingsView: View {
                 if autoUpdateEnabled {
                     Text(footerStatusLine)
                     #if os(iOS)
-                    Text("iOS manages background updates automatically. Filters will update even if the app isn't open, but timing is approximate.")
+                    Text("Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.")
                     #endif
                 }
             }
