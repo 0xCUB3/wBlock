@@ -78,7 +78,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 - **Pop-up and redirect prevention**
 
 ### Configuration
-- **Auto-updates** from every hour to every 7 days, or manual — with background refresh on iOS
+- **Auto-updates** from every hour to every 7 days, or manual. macOS can keep checking through a bundled launch agent that wakes wBlock in background mode, iOS background checks are best-effort
 - **Per-site controls** — disable blocking on specific sites from the Safari toolbar
 - **Blocked request logger** (macOS) — see what's being blocked on each page
 - **Whitelist** for trusted domains
@@ -224,7 +224,7 @@ Yes. The userscript engine implements the Greasemonkey API (GM_getValue, GM_setV
 <details>
 <summary><b>How often do filters update?</b></summary>
 <br>
-Auto-update intervals are configurable from 1 hour to 7 days, or manually triggered. Updates use HTTP conditional requests (If-Modified-Since/ETag headers) to minimize bandwidth usage.
+Auto-update intervals are configurable from 1 hour to 7 days, or manually triggered. On macOS, enabling auto-update registers a bundled launch agent that wakes wBlock in background-update mode while the app is closed. On iOS and iPadOS, background checks are best-effort and may wait until the system wakes wBlock or you reopen it. Opening Safari does not trigger updates. Updates use HTTP conditional requests (If-Modified-Since/ETag headers) to minimize bandwidth usage.
 </details>
 
 <details>

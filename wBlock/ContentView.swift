@@ -860,24 +860,17 @@ struct AddFilterListView: View {
                 guard let url = urls.first else { return }
                 Task { @MainActor in
                     isSaving = true
-                    var didAccess = false
-                    #if os(iOS)
-                        didAccess = url.startAccessingSecurityScopedResource()
-                    #endif
-                    defer {
-                        #if os(iOS)
-                            if didAccess { url.stopAccessingSecurityScopedResource() }
-                        #endif
-                    }
+                    defer { isSaving = false }
 
                     let title = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                     let description = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                    filterManager.addUserListFromFile(
-                        url,
-                        nameOverride: title,
-                        description: description.isEmpty ? nil : description
-                    )
-                    isSaving = false
+                    url.withSecurityScopedAccess { accessibleURL in
+                        filterManager.addUserListFromFile(
+                            accessibleURL,
+                            nameOverride: title,
+                            description: description.isEmpty ? nil : description
+                        )
+                    }
                     if !filterManager.hasError {
                         dismiss()
                     } else {

@@ -40,7 +40,6 @@ struct wBlockApp: App {
                             appDelegate.hasPendingApplyNotification = false
                             NotificationCenter.default.post(name: .applyWBlockChangesNotification, object: nil)
                         }
-                        handleLaunchArguments()
 
                         // Run migrations (idempotent - only saves if needed)
                         Task {
@@ -85,20 +84,5 @@ struct wBlockApp: App {
             }
         }
         #endif
-    }
-    
-    private func handleLaunchArguments() {
-        let arguments = CommandLine.arguments
-        if arguments.contains("--background-filter-update") {
-            Task {
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "LaunchAgent")
-                // Exit after background update completes
-                #if os(macOS)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    NSApp.terminate(nil)
-                }
-                #endif
-            }
-        }
     }
 }
