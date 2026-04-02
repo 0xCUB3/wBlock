@@ -9,7 +9,6 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
-    @State private var lastUpdateLine = String(localized: "Last: Never")
     @State private var isOverdue = false
     @State private var timer: Timer?
     #if os(macOS)
@@ -260,7 +259,7 @@ struct SettingsView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
-                    Text("\(compactStatusLine) · \(lastUpdateLine)")
+                    Text(compactStatusLine)
                     #if os(macOS)
                     Text(launchAgentStatusLine)
                     #endif
@@ -754,37 +753,6 @@ extension SettingsView {
         }
     }
 
-    private func formatLastUpdate(date: Date?) -> String {
-        guard let date else {
-            return String(localized: "Never checked")
-        }
-
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
-
-        if interval < 60 {
-            return String(localized: "Checked just now")
-        }
-
-        let componentsFormatter = DateComponentsFormatter()
-        componentsFormatter.allowedUnits = [.day, .hour, .minute]
-        componentsFormatter.unitsStyle = .short
-        componentsFormatter.maximumUnitCount = 1
-        if let relative = componentsFormatter.string(from: interval) {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("Checked %@ ago", comment: "Last update relative time"),
-                relative
-            )
-        }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .short
-        dateFormatter.timeStyle = .short
-        return String.localizedStringWithFormat(
-            NSLocalizedString("Checked %@", comment: "Last update date"),
-            dateFormatter.string(from: date)
-        )
-    }
 
     private func updateScheduleLine(shouldTriggerOverdue: Bool = true) async {
         #if os(macOS)
@@ -796,7 +764,6 @@ extension SettingsView {
         guard autoUpdateEnabled else {
             await MainActor.run {
                 nextScheduleLine = String(localized: "Disabled")
-                lastUpdateLine = String(localized: "N/A")
                 isOverdue = false
                 #if os(macOS)
                 launchAgentStatusLine = launchAgentStatus.detail
@@ -811,11 +778,8 @@ extension SettingsView {
         let scheduleDescription = formatSchedule(
             scheduledAt: status.scheduledAt, remaining: status.remaining,
             isOverdue: status.isOverdue)
-        let lastDescription = formatLastUpdate(date: status.lastCheckTime)
-
         await MainActor.run {
             nextScheduleLine = scheduleDescription
-            lastUpdateLine = lastDescription
             isOverdue = status.isOverdue
             #if os(macOS)
             launchAgentStatusLine = launchAgentStatus.detail
