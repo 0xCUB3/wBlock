@@ -375,11 +375,11 @@ extension AppDelegate: UIApplicationDelegate {
             let updateResult = await runForcedAutoUpdateWithTimeout(trigger: "SilentPush(iOS)")
             switch updateResult {
             case .completed:
-                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: "completed")
+                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: .completed)
                 completionHandler(.newData)
             case .timedOut:
                 os_log("Silent push auto-update timed out before completion handler deadline", type: .error)
-                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: "timed_out")
+                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: .timedOut)
                 completionHandler(.failed)
             }
         }
@@ -393,7 +393,7 @@ extension AppDelegate: UIApplicationDelegate {
 
             // If overdue or due soon, force update
             if status.isOverdue || (isDueSoon && !status.isRunning) {
-                let catchUpReason = status.isOverdue ? "overdue" : "due_soon"
+                let catchUpReason: AutoUpdateDiagnosticResult = status.isOverdue ? .overdue : .dueSoon
                 os_log("App became active with overdue/due update - forcing update", type: .info)
                 await ProtobufDataManager.shared.recordAutoUpdateForegroundCatchUp(reason: catchUpReason)
                 await runForcedAutoUpdate(trigger: "BecomeActive")
@@ -498,7 +498,7 @@ extension AppDelegate: UIApplicationDelegate {
             Task { @MainActor in
                 await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
                     .appRefresh,
-                    result: "submitted"
+                    result: .submitted
                 )
             }
         } catch let error as NSError {
@@ -540,7 +540,7 @@ extension AppDelegate: UIApplicationDelegate {
             Task { @MainActor in
                 await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
                     .processing,
-                    result: "submitted"
+                    result: .submitted
                 )
             }
         } catch let error as NSError {
@@ -565,20 +565,20 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
     
-    private func taskScheduleFailureDetails(for error: NSError) -> (result: String, message: String) {
+    private func taskScheduleFailureDetails(for error: NSError) -> (result: AutoUpdateDiagnosticResult, message: String) {
         guard error.domain == "BGTaskSchedulerErrorDomain" else {
-            return ("submit_failed", error.localizedDescription)
+            return (.submitFailed, error.localizedDescription)
         }
 
         switch error.code {
         case 1:
-            return ("info_plist_missing", "Identifier not in Info.plist")
+            return (.infoPlistMissing, "Identifier not in Info.plist")
         case 2:
-            return ("too_many_pending", "Too many pending tasks")
+            return (.tooManyPending, "Too many pending tasks")
         case 3:
-            return ("unavailable", "Background tasks unavailable")
+            return (.unavailable, "Background tasks unavailable")
         default:
-            return ("scheduler_error", error.localizedDescription)
+            return (.schedulerError, error.localizedDescription)
         }
     }
 
@@ -632,7 +632,7 @@ extension AppDelegate: UIApplicationDelegate {
 
             guard await completionState.claimCompletion() else { return }
             os_log("%{public}@ completed successfully", type: .info, taskLabel)
-            await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: "completed")
+            await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .completed)
             task.setTaskCompleted(success: true)
             await MainActor.run {
                 onSuccess(self)

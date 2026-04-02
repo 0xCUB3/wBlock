@@ -681,7 +681,8 @@ extension SettingsView {
         fallback: String
     ) -> String {
         guard timestamp > 0 else { return fallback }
-        let status = humanReadableDiagnosticResult(result.isEmpty ? "recorded" : result)
+        let normalizedResult = result.isEmpty ? AutoUpdateDiagnosticResult.recorded.rawValue : result
+        let status = humanReadableDiagnosticResult(normalizedResult)
         if error.isEmpty {
             return "\(status) \(formatDiagnosticTime(timestamp))"
         }
@@ -708,36 +709,40 @@ extension SettingsView {
     }
 
     private func humanReadableDiagnosticResult(_ value: String) -> String {
-        switch value {
-        case "":
-            return String(localized: "Recorded")
-        case "registered":
+        guard let result = AutoUpdateDiagnosticResult(
+            rawValue: value.isEmpty ? AutoUpdateDiagnosticResult.recorded.rawValue : value
+        ) else {
+            return value.replacingOccurrences(of: "_", with: " ").localizedCapitalized
+        }
+
+        switch result {
+        case .registered:
             return String(localized: "Registered")
-        case "failed":
+        case .failed:
             return String(localized: "Failed")
-        case "submitted":
+        case .submitted:
             return String(localized: "Submitted")
-        case "info_plist_missing":
+        case .infoPlistMissing:
             return String(localized: "Info.plist missing")
-        case "too_many_pending":
+        case .tooManyPending:
             return String(localized: "Too many pending tasks")
-        case "unavailable":
+        case .unavailable:
             return String(localized: "Unavailable")
-        case "scheduler_error":
+        case .schedulerError:
             return String(localized: "Scheduler error")
-        case "submit_failed":
+        case .submitFailed:
             return String(localized: "Submit failed")
-        case "completed":
+        case .completed:
             return String(localized: "Completed")
-        case "timed_out":
+        case .timedOut:
             return String(localized: "Timed out")
-        case "overdue":
+        case .overdue:
             return String(localized: "Overdue catch-up")
-        case "due_soon":
+        case .dueSoon:
             return String(localized: "Due soon catch-up")
-        case "recorded":
+        case .recorded:
             return String(localized: "Recorded")
-        default:
+        @unknown default:
             return value.replacingOccurrences(of: "_", with: " ").localizedCapitalized
         }
     }

@@ -190,6 +190,22 @@ public enum AutoUpdateDiagnosticTaskKind: Sendable {
     case processing
 }
 
+public enum AutoUpdateDiagnosticResult: String, Sendable {
+    case registered = "registered"
+    case failed = "failed"
+    case submitted = "submitted"
+    case infoPlistMissing = "info_plist_missing"
+    case tooManyPending = "too_many_pending"
+    case unavailable = "unavailable"
+    case schedulerError = "scheduler_error"
+    case submitFailed = "submit_failed"
+    case completed = "completed"
+    case timedOut = "timed_out"
+    case overdue = "overdue"
+    case dueSoon = "due_soon"
+    case recorded = "recorded"
+}
+
 public struct BackgroundTaskDiagnosticsSnapshot: Sendable {
     public let lastRegistrationTime: Int64
     public let lastRegistrationResult: String
@@ -539,7 +555,7 @@ public class ProtobufDataManager: ObservableObject {
         let timestamp = Self.currentUnixTimestamp()
         await updateBackgroundTaskDiagnostics(kind) { diagnostics in
             diagnostics.lastRegistrationTime = timestamp
-            diagnostics.lastRegistrationResult = success ? "registered" : "failed"
+            diagnostics.lastRegistrationResult = (success ? AutoUpdateDiagnosticResult.registered : .failed).rawValue
             diagnostics.lastRegistrationError = error ?? ""
         }
     }
@@ -547,13 +563,13 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func recordAutoUpdateTaskScheduleAttempt(
         _ kind: AutoUpdateDiagnosticTaskKind,
-        result: String,
+        result: AutoUpdateDiagnosticResult,
         error: String? = nil
     ) async {
         let timestamp = Self.currentUnixTimestamp()
         await updateBackgroundTaskDiagnostics(kind) { diagnostics in
             diagnostics.lastScheduleAttemptTime = timestamp
-            diagnostics.lastScheduleResult = result
+            diagnostics.lastScheduleResult = result.rawValue
             diagnostics.lastScheduleError = error ?? ""
         }
     }
@@ -569,12 +585,12 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func recordAutoUpdateTaskCompletion(
         _ kind: AutoUpdateDiagnosticTaskKind,
-        result: String
+        result: AutoUpdateDiagnosticResult
     ) async {
         let timestamp = Self.currentUnixTimestamp()
         await updateBackgroundTaskDiagnostics(kind) { diagnostics in
             diagnostics.lastCompletionTime = timestamp
-            diagnostics.lastCompletionResult = result
+            diagnostics.lastCompletionResult = result.rawValue
         }
     }
 
@@ -595,20 +611,20 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     @MainActor
-    public func recordAutoUpdateSilentPushCompletion(result: String) async {
+    public func recordAutoUpdateSilentPushCompletion(result: AutoUpdateDiagnosticResult) async {
         let timestamp = Self.currentUnixTimestamp()
         await updateData { data in
             data.autoUpdate.silentPush.lastCompletionTime = timestamp
-            data.autoUpdate.silentPush.lastResult = result
+            data.autoUpdate.silentPush.lastResult = result.rawValue
         }
     }
 
     @MainActor
-    public func recordAutoUpdateForegroundCatchUp(reason: String) async {
+    public func recordAutoUpdateForegroundCatchUp(reason: AutoUpdateDiagnosticResult) async {
         let timestamp = Self.currentUnixTimestamp()
         await updateData { data in
             data.autoUpdate.lastForegroundCatchUpTime = timestamp
-            data.autoUpdate.lastForegroundCatchUpReason = reason
+            data.autoUpdate.lastForegroundCatchUpReason = reason.rawValue
         }
     }
 

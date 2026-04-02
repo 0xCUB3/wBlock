@@ -5,10 +5,14 @@ import os.log
 let logger = Logger(subsystem: "skula.wBlock.FilterUpdateAgent", category: "AutoUpdate")
 let helperURL = Bundle.main.executableURL?.resolvingSymlinksInPath()
     ?? URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
-let appBundleURL = helperURL
-    .deletingLastPathComponent()
-    .deletingLastPathComponent()
-    .deletingLastPathComponent()
+
+guard let appBundleURL = sequence(first: helperURL, next: { url in
+    let parent = url.deletingLastPathComponent()
+    return parent.path == url.path ? nil : parent
+}).first(where: { $0.pathExtension == "app" }) else {
+    logger.critical("Could not find app bundle URL from helper path: \(helperURL.path, privacy: .public)")
+    exit(EXIT_FAILURE)
+}
 
 let process = Process()
 process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
