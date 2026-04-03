@@ -319,7 +319,7 @@ extension AppFilterManager {
         }
 
         let overallReloadStartTime = Date()
-        let reloadSummary = await reloadContentBlockersInParallel(platformTargets)
+        let reloadSummary = await reloadContentBlockers(platformTargets)
         let allReloadsSuccessful = reloadSummary.allSuccessful
 
         // Log reload summary
@@ -724,23 +724,25 @@ extension AppFilterManager {
         try destinationHandle.write(contentsOf: newlineData)
     }
 
-    func reloadContentBlockersInParallel(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
+    func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
 
-        await boundedConcurrentForEach(targets, operation: { target in
+        for target in targets {
+            let name = target.displayName
+
+            await MainActor.run {
+                self.applyProgressViewModel.updateCurrentFilter(name)
+            }
+
             let reloadResult = await ContentBlockerService.reloadWithRetry(
                 identifier: target.bundleIdentifier
             )
-            return (target, reloadResult)
-        }, onResult: { (target, reloadResult) in
-            let name = target.displayName
 
             await MainActor.run {
                 self.processedFiltersCount += 1
                 self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
-                self.applyProgressViewModel.updateCurrentFilter(name)
 
                 self.progress =
                     0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
@@ -763,7 +765,7 @@ extension AppFilterManager {
                 )
             )
             allSuccessful = allSuccessful && reloadResult.success
-        })
+        }
 
         return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
     }

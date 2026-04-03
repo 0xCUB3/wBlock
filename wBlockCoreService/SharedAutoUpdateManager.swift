@@ -1021,7 +1021,7 @@ public actor SharedAutoUpdateManager {
                 return false
             }
 
-            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 10)
+            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
             let reloaded = reloadResult.success
             allReloaded = allReloaded && reloaded
             if !reloaded {
@@ -1192,7 +1192,7 @@ public actor SharedAutoUpdateManager {
                 advancedRulesSnippets.append(adv)
             }
 
-            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 10)
+            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
             let targetMetric = RebuildTargetMetrics(
                 targetName: target.displayName,
                 cacheHit: usedCache,

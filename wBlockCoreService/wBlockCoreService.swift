@@ -164,7 +164,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
 
     public static func reloadWithRetry(
         identifier: String,
-        maxRetries: Int = 10
+        maxRetries: Int = 5
     ) async -> ReloadAttemptResult {
         let startTime = Date()
         let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
@@ -191,7 +191,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
                 break
             }
 
-            let delayMs = min(500 * attempt, 2500)
+            let delayMs = min(200 * attempt, 1500)
             do {
                 try await Task.sleep(for: .milliseconds(delayMs))
             } catch {
