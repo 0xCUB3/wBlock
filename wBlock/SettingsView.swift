@@ -42,18 +42,7 @@ struct SettingsView: View {
         dataManager.autoUpdateDiagnostics
     }
 
-    private var overdueWaitLine: String {
-        #if os(iOS)
-        return String(localized: "Waiting for iOS background wake or app open")
-        #else
-        return String(localized: "Waiting for background agent or app open")
-        #endif
-    }
-
     private var compactStatusLine: String {
-        if isOverdue {
-            return overdueWaitLine
-        }
         return nextScheduleLine
     }
 
@@ -611,7 +600,7 @@ extension SettingsView {
         )
     }
 
-    private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool)
+    private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool, isRunning: Bool)
         -> String
     {
         guard let scheduledAt, let remaining else {
@@ -619,7 +608,10 @@ extension SettingsView {
         }
 
         if isOverdue || remaining <= 0 {
-            return overdueWaitLine
+            if isRunning {
+                return String(localized: "Updating…")
+            }
+            return String(localized: "due now")
         }
 
         let componentsFormatter = DateComponentsFormatter()
@@ -783,7 +775,7 @@ extension SettingsView {
 
         let scheduleDescription = formatSchedule(
             scheduledAt: status.scheduledAt, remaining: status.remaining,
-            isOverdue: status.isOverdue)
+            isOverdue: status.isOverdue, isRunning: status.isRunning)
         await MainActor.run {
             nextScheduleLine = scheduleDescription
             isOverdue = status.isOverdue
