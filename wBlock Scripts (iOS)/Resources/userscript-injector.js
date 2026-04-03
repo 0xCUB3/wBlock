@@ -905,7 +905,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         },
 
         xmlHttpRequest: function(details) {
-            return this.xmlhttpRequest(details);
+            return GM.xmlhttpRequest(details);
         },
 
         // Provide access to the real page window object
@@ -930,7 +930,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_openInTab = GM.openInTab;
     window.GM_notification = GM.notification;
     window.GM_xmlhttpRequest = GM.xmlhttpRequest;
-    window.GM_xmlhttpRequest = GM.xmlHttpRequest;
     window.GM_registerMenuCommand = GM.registerMenuCommand;
     window.GM_unregisterMenuCommand = GM.unregisterMenuCommand;
 
