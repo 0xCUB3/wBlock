@@ -904,6 +904,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
             `}
         },
 
+        xmlHttpRequest: function(details) {
+            return GM.xmlhttpRequest(details);
+        },
+
         // Provide access to the real page window object
         unsafeWindow: unsafeWindow
     };
