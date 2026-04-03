@@ -848,9 +848,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     details.onerror({ error: errorMsg, statusText: errorMsg });
                 }
             };
-            xmlHttpRequest: function(details) {
-                return this.xmlhttpRequest(details);
-            },
 
             const requestPayload = {
                 url: details.url,
@@ -905,6 +902,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
             };
             `}
+        },
+
+        xmlHttpRequest: function(details) {
+            return this.xmlhttpRequest(details);
         },
 
         // Provide access to the real page window object
