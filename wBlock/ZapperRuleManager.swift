@@ -140,10 +140,17 @@ final class ZapperRuleManager: ObservableObject {
         source.setEventHandler { [weak self] in
             guard let self else { return }
             self.pendingRefreshTask?.cancel()
-            self.pendingRefreshTask = Task { @MainActor [weak self] in
+            var task: Task<Void, Never>?
+            task = Task { @MainActor [weak self] in
+                defer {
+                    if let self, let task, self.pendingRefreshTask == task {
+                        self.pendingRefreshTask = nil
+                    }
+                }
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 await self?.refreshFromDisk()
             }
+            self.pendingRefreshTask = task
         }
 
         source.setCancelHandler { [weak self] in

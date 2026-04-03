@@ -320,7 +320,13 @@ public class UserScriptManager: ObservableObject {
         logger.info("✅ Using ProtobufDataManager for userscript persistence")
 
         // Initialize userscripts after data manager finishes loading saved data
-        initialLoadTask = Task { @MainActor [weak self] in
+        var task: Task<Void, Never>?
+        task = Task { @MainActor [weak self] in
+            defer {
+                if let self, let task, self.initialLoadTask == task {
+                    self.initialLoadTask = nil
+                }
+            }
             guard let self else { return }
             await dataManager.waitUntilLoaded()
             // Load existing scripts
@@ -339,10 +345,11 @@ public class UserScriptManager: ObservableObject {
                         await self?.syncFromDataManager()
                     }
                 }
-                .store(in: &cancellables)
+            .store(in: &cancellables)
             logger.info("✅ UserScriptManager data sync observer setup complete")
             self.isReady = true
         }
+        initialLoadTask = task
     }
 
     /// Waits until the manager has finished loading and initial setup has run.

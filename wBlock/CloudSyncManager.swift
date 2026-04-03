@@ -133,10 +133,17 @@ final class CloudSyncManager: ObservableObject {
     func syncNow(trigger: String) async {
         guard isEnabled else { return }
         pendingSyncTask?.cancel()
-        pendingSyncTask = Task { [weak self] in
+        var task: Task<Void, Never>?
+        task = Task { @MainActor [weak self] in
+            defer {
+                if let self, let task, self.pendingSyncTask == task {
+                    self.pendingSyncTask = nil
+                }
+            }
             guard let self else { return }
             await self.performTwoWaySync(trigger: trigger)
         }
+        pendingSyncTask = task
     }
 
     struct RemoteConfigProbe: Sendable {
@@ -250,11 +257,18 @@ final class CloudSyncManager: ObservableObject {
             return
         case let .startNow(immediateTrigger):
             pendingUploadTask?.cancel()
-            pendingUploadTask = Task { [weak self] in
+            var task: Task<Void, Never>?
+            task = Task { @MainActor [weak self] in
+                defer {
+                    if let self, let task, self.pendingUploadTask == task {
+                        self.pendingUploadTask = nil
+                    }
+                }
                 guard let self else { return }
                 try? await Task.sleep(for: .seconds(2))
                 await self.uploadLatestPayload(trigger: immediateTrigger)
             }
+            pendingUploadTask = task
         }
     }
 

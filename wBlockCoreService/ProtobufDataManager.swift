@@ -985,9 +985,16 @@ public class ProtobufDataManager: ObservableObject {
     private init() {
         logger.info("🔧 ProtobufDataManager initializing...")
         setupDataDirectory()
-        initialLoadTask = Task { [weak self] in
+        var task: Task<Void, Never>?
+        task = Task { @MainActor [weak self] in
+            defer {
+                if let self, let task, self.initialLoadTask == task {
+                    self.initialLoadTask = nil
+                }
+            }
             await self?.loadData()
         }
+        initialLoadTask = task
     }
 
     /// Waits for the initial protobuf load to complete.
@@ -1254,7 +1261,13 @@ public class ProtobufDataManager: ObservableObject {
     public func saveData() {
         pendingSaveTask?.cancel()
         let delay = saveDebounceDelay
-        pendingSaveTask = Task { [weak self] in
+        var task: Task<Void, Never>?
+        task = Task { @MainActor [weak self] in
+            defer {
+                if let self, let task, self.pendingSaveTask == task {
+                    self.pendingSaveTask = nil
+                }
+            }
             do {
                 try await Task.sleep(for: delay)
             } catch {
@@ -1263,6 +1276,7 @@ public class ProtobufDataManager: ObservableObject {
             guard let self else { return }
             await self.performSaveData()
         }
+        pendingSaveTask = task
     }
 
     /// Saves data immediately without debounce delay

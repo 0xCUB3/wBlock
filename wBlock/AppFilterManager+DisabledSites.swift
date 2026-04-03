@@ -46,10 +46,17 @@ extension AppFilterManager {
         source.setEventHandler { [weak self] in
             guard let self else { return }
             self.pendingDisabledSitesCheckTask?.cancel()
-            self.pendingDisabledSitesCheckTask = Task {
+            var task: Task<Void, Never>?
+            task = Task { @MainActor [weak self] in
+                defer {
+                    if let self, let task, self.pendingDisabledSitesCheckTask == task {
+                        self.pendingDisabledSitesCheckTask = nil
+                    }
+                }
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 await self.checkForDisabledSitesChanges()
             }
+            self.pendingDisabledSitesCheckTask = task
         }
 
         source.setCancelHandler { [weak self] in

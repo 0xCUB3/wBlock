@@ -132,11 +132,20 @@ class AppFilterManager: ObservableObject {
 
     func saveFilterListsCoalesced() {
         pendingSaveTask?.cancel()
-        pendingSaveTask = Task {
-            try? await Task.sleep(nanoseconds: 50_000_000)
+        let delay = 50_000_000
+        var task: Task<Void, Never>?
+        task = Task { @MainActor [weak self] in
+            defer {
+                if let self, let task, self.pendingSaveTask == task {
+                    self.pendingSaveTask = nil
+                }
+            }
+            try? await Task.sleep(nanoseconds: delay)
             guard !Task.isCancelled else { return }
-            await saveFilterLists()
+            guard let self else { return }
+            await self.saveFilterLists()
         }
+        pendingSaveTask = task
     }
 
     func flushPendingSave() {
