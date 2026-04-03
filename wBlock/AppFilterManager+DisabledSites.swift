@@ -164,7 +164,7 @@ extension AppFilterManager {
             return 1
             #endif
         }(), operation: { target in
-            await Self.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 5).success
+            await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier).success
         }, onResult: { success in
             if success { successCount += 1 }
         })

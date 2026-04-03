@@ -98,11 +98,6 @@ public actor SharedAutoUpdateManager {
         case contentBlockerReloadFailed(identifier: String)
     }
 
-    private struct ReloadAttemptResult {
-        let success: Bool
-        let attempts: Int
-        let durationMs: Int
-    }
 
     private struct RebuildTargetMetrics {
         let targetName: String
@@ -985,42 +980,6 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private func reloadContentBlockerWithRetryWithMetrics(
-        identifier: String,
-        maxRetries: Int = 6
-    ) async -> ReloadAttemptResult {
-        let start = Date()
-        for attempt in 1...maxRetries {
-            if Task.isCancelled {
-                return ReloadAttemptResult(
-                    success: false,
-                    attempts: max(0, attempt - 1),
-                    durationMs: Int(Date().timeIntervalSince(start) * 1000)
-                )
-            }
-
-            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
-            if case .success = result {
-                return ReloadAttemptResult(
-                    success: true,
-                    attempts: attempt,
-                    durationMs: Int(Date().timeIntervalSince(start) * 1000)
-                )
-            }
-
-            if attempt < maxRetries {
-                // Back off quickly; WKErrorDomain error 6 is often transient right after writes.
-                let delayMs = min(200 * attempt, 1500)
-                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
-            }
-        }
-
-        return ReloadAttemptResult(
-            success: false,
-            attempts: maxRetries,
-            durationMs: Int(Date().timeIntervalSince(start) * 1000)
-        )
-    }
 
     private func contentBlockerOutputsNeedRepair() -> Bool {
         #if os(iOS)
@@ -1062,7 +1021,7 @@ public actor SharedAutoUpdateManager {
                 return false
             }
 
-            let reloadResult = await reloadContentBlockerWithRetryWithMetrics(identifier: target.bundleIdentifier)
+            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 10)
             let reloaded = reloadResult.success
             allReloaded = allReloaded && reloaded
             if !reloaded {
@@ -1233,7 +1192,7 @@ public actor SharedAutoUpdateManager {
                 advancedRulesSnippets.append(adv)
             }
 
-            let reloadResult = await reloadContentBlockerWithRetryWithMetrics(identifier: target.bundleIdentifier)
+            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 10)
             let targetMetric = RebuildTargetMetrics(
                 targetName: target.displayName,
                 cacheHit: usedCache,

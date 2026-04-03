@@ -359,21 +359,6 @@ public enum WebExtensionRequestHandler {
         context.completeRequest(returningItems: [response])
     }
 
-    private static func reloadContentBlockerWithRetry(identifier: String, maxRetries: Int = 5) async -> Bool {
-        for attempt in 1...maxRetries {
-            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
-            if case .success = result {
-                return true
-            }
-
-            if attempt < maxRetries {
-                // WKErrorDomain error 6 is often transient immediately after writing JSON files.
-                let delayMs = min(200 * attempt, 1500)
-                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
-            }
-        }
-        return false
-    }
 
     private static func applyDisabledSitesFastPath(disabledSites: [String], platform: Platform) async -> (
         reloadedTargets: Int,
@@ -413,35 +398,18 @@ public enum WebExtensionRequestHandler {
         reloadedTargets: Int,
         failedTargets: Int
     ) {
-        #if os(macOS)
-        let maxConcurrent = 3
-        #else
-        let maxConcurrent = 1
-        #endif
+        var reloadedTargets = 0
+        var failedTargets = 0
 
-        var iterator = targets.makeIterator()
-        var outcomes: [Bool] = []
-
-        await withTaskGroup(of: Bool.self) { group in
-            func enqueueNext() {
-                guard let nextTarget = iterator.next() else { return }
-                group.addTask {
-                    await reloadContentBlockerWithRetry(identifier: nextTarget.bundleIdentifier)
-                }
-            }
-
-            for _ in 0..<min(maxConcurrent, targets.count) {
-                enqueueNext()
-            }
-
-            while let success = await group.next() {
-                outcomes.append(success)
-                enqueueNext()
+        for target in targets {
+            let result = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier)
+            if result.success {
+                reloadedTargets += 1
+            } else {
+                failedTargets += 1
             }
         }
 
-        let reloadedTargets = outcomes.filter { $0 }.count
-        let failedTargets = outcomes.count - reloadedTargets
         return (reloadedTargets: reloadedTargets, failedTargets: failedTargets)
     }
 

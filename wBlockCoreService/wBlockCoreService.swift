@@ -112,6 +112,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         )
     }
 
+    public struct ReloadAttemptResult: Sendable {
+        public let success: Bool
+        public let attempts: Int
+        public let durationMs: Int
+    }
+
+
     /// Reloads the Safari content blocker extension with the specified identifier.
     ///
     /// - Parameters:
@@ -153,6 +160,54 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
 
         return result
+    }
+
+    public static func reloadWithRetry(
+        identifier: String,
+        maxRetries: Int = 10
+    ) async -> ReloadAttemptResult {
+        let startTime = Date()
+        let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
+
+        for attempt in 1...maxRetries {
+            if Task.isCancelled {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: max(0, attempt - 1),
+                    durationMs: elapsedMs()
+                )
+            }
+
+            let result = await reloadContentBlocker(withIdentifier: identifier)
+            if case .success = result {
+                return ReloadAttemptResult(
+                    success: true,
+                    attempts: attempt,
+                    durationMs: elapsedMs()
+                )
+            }
+
+            guard attempt < maxRetries else {
+                break
+            }
+
+            let delayMs = min(500 * attempt, 2500)
+            do {
+                try await Task.sleep(for: .milliseconds(delayMs))
+            } catch {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: attempt,
+                    durationMs: elapsedMs()
+                )
+            }
+        }
+
+        return ReloadAttemptResult(
+            success: false,
+            attempts: maxRetries,
+            durationMs: elapsedMs()
+        )
     }
 
     /// Saves the provided JSON content to the content blocker file in the shared container

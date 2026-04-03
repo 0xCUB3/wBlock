@@ -5,42 +5,6 @@ import wBlockCoreService
 extension AppFilterManager {
     // MARK: - Helper Methods
 
-    /// Attempts to reload a content blocker with up to 5 retry attempts
-    /// Returns true if successful, false if all attempts failed
-    func reloadContentBlockerWithRetry(targetInfo: ContentBlockerTargetInfo) async -> Bool {
-        let blockerName = targetInfo.displayName
-        let reloadResult = await Self.reloadWithRetry(
-            identifier: targetInfo.bundleIdentifier,
-            maxRetries: 5
-        )
-
-        if reloadResult.success {
-            if reloadResult.attempts > 1 {
-                await ConcurrentLogManager.shared.info(
-                    .filterApply,
-                    "Content blocker reloaded after retry",
-                    metadata: [
-                        "blocker": blockerName,
-                        "attempts": "\(reloadResult.attempts)",
-                        "durationMs": "\(reloadResult.durationMs)",
-                    ]
-                )
-            }
-            return true
-        }
-
-        await ConcurrentLogManager.shared.error(
-            .filterApply,
-            "Content blocker reload failed after retries",
-            metadata: [
-                "blocker": blockerName,
-                "attempts": "\(reloadResult.attempts)",
-                "maxRetries": "5",
-                "durationMs": "\(reloadResult.durationMs)",
-            ]
-        )
-        return false
-    }
 
     // MARK: - Delegated methods
 
@@ -167,7 +131,7 @@ extension AppFilterManager {
                         groupIdentifier: GroupIdentifier.shared.value,
                         targetRulesFilename: targetInfo.rulesFilename
                     )
-                    _ = await self.reloadContentBlockerWithRetry(targetInfo: targetInfo)
+                    _ = await ContentBlockerService.reloadWithRetry(identifier: targetInfo.bundleIdentifier)
                 }
             }.value
 
@@ -646,11 +610,6 @@ extension AppFilterManager {
         let durationMs: Int
     }
 
-    struct ReloadAttemptResult {
-        let success: Bool
-        let attempts: Int
-        let durationMs: Int
-    }
 
     struct TargetReloadMetrics {
         let blockerName: String
@@ -771,9 +730,8 @@ extension AppFilterManager {
         var metrics: [TargetReloadMetrics] = []
 
         await boundedConcurrentForEach(targets, operation: { target in
-            let reloadResult = await Self.reloadWithRetry(
-                identifier: target.bundleIdentifier,
-                maxRetries: 5
+            let reloadResult = await ContentBlockerService.reloadWithRetry(
+                identifier: target.bundleIdentifier
             )
             return (target, reloadResult)
         }, onResult: { (target, reloadResult) in
@@ -810,31 +768,4 @@ extension AppFilterManager {
         return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
     }
 
-    nonisolated static func reloadWithRetry(
-        identifier: String,
-        maxRetries: Int
-    ) async -> ReloadAttemptResult {
-        let start = Date()
-        for attempt in 1...maxRetries {
-            let result = await ContentBlockerService.reloadContentBlocker(withIdentifier: identifier)
-            if case .success = result {
-                return ReloadAttemptResult(
-                    success: true,
-                    attempts: attempt,
-                    durationMs: Int(Date().timeIntervalSince(start) * 1000)
-                )
-            }
-
-            if attempt < maxRetries {
-                // Back off quickly; WKErrorDomain error 6 is often transient right after writes.
-                let delayMs = min(200 * attempt, 1500)
-                try? await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
-            }
-        }
-        return ReloadAttemptResult(
-            success: false,
-            attempts: maxRetries,
-            durationMs: Int(Date().timeIntervalSince(start) * 1000)
-        )
-    }
 }
