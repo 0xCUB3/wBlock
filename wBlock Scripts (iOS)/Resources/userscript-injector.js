@@ -925,7 +925,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_addStyle = GM.addStyle;
     window.GM_openInTab = GM.openInTab;
     window.GM_notification = GM.notification;
-    window.GM_xmlhttpRequest = GM.xmlhttpRequest;
+    window.GM_xmlhttpRequest = GM.xmlHttpRequest;
     window.GM_registerMenuCommand = GM.registerMenuCommand;
     window.GM_unregisterMenuCommand = GM.unregisterMenuCommand;
 
