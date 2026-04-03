@@ -733,7 +733,13 @@ extension AppFilterManager {
             let name = target.displayName
 
             await MainActor.run {
+                self.processedFiltersCount += 1
                 self.applyProgressViewModel.updateCurrentFilter(name)
+                self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
+
+                self.progress =
+                    0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
+                self.applyProgressViewModel.updateProgress(self.progress)
             }
 
             let reloadResult = await ContentBlockerService.reloadWithRetry(
@@ -741,13 +747,6 @@ extension AppFilterManager {
             )
 
             await MainActor.run {
-                self.processedFiltersCount += 1
-                self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
-
-                self.progress =
-                    0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
-                self.applyProgressViewModel.updateProgress(self.progress)
-
                 if !reloadResult.success {
                     if !self.hasError {
                         self.statusDescription = "Failed to reload \(name)."
