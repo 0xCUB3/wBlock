@@ -391,12 +391,16 @@ final class CloudSyncManager: ObservableObject {
         defer { isApplyingRemoteChanges = false }
 
         // Settings
+        let autoUpdateConfigChanged = dataManager.autoUpdateEnabled != payload.settings.autoUpdateEnabled
+            || dataManager.autoUpdateIntervalHours != payload.settings.autoUpdateIntervalHours
         await dataManager.setSelectedBlockingLevel(payload.settings.selectedBlockingLevel)
         await dataManager.setIsBadgeCounterEnabled(payload.settings.isBadgeCounterEnabled)
         await dataManager.setAutoUpdateEnabled(payload.settings.autoUpdateEnabled)
         await dataManager.setAutoUpdateIntervalHours(payload.settings.autoUpdateIntervalHours)
+        if autoUpdateConfigChanged {
+            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+        }
         dataManager.setUserScriptShowEnabledOnly(payload.settings.userScriptShowEnabledOnly)
-
         let currentExcluded = Set(dataManager.getExcludedDefaultUserScriptURLs())
         let desiredExcluded = Set(payload.settings.excludedDefaultUserScriptURLs)
         for url in desiredExcluded.subtracting(currentExcluded) {
