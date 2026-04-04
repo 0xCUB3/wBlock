@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock" width="120"/>
+<picture><img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock" width="120"/></picture>
 
 # wBlock
 
@@ -8,9 +8,10 @@
 
 <br>
 
-<a href="https://apps.apple.com/app/wblock/id6746388723">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on the App Store" width="240"/>
+<a href="https://apps.apple.com/us/app/wblock/id6746388723?itscg=30200&itsct=apps_box_badge&mttnsubad=6746388723">
+  <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1760313600" alt="Download on the App Store" width="245" height="82" />
 </a>
+    
 
 <br>
 <br>
@@ -144,7 +145,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
 **Core Architecture**
 - Protocol Buffers (libprotobuf) with LZ4 compression for filter serialization
@@ -154,7 +155,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 - SafariServices framework integration for declarative content blocking
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
 **Dependencies & Standards**
 - SafariConverterLib v4.2.1 for AdGuard to Safari rule conversion
