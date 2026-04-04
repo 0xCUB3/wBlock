@@ -54,6 +54,7 @@ extension AppFilterManager {
                     }
                 }
                 try? await Task.sleep(nanoseconds: 250_000_000)
+                guard let self else { return }
                 await self.checkForDisabledSitesChanges()
             }
             self.pendingDisabledSitesCheckTask = task

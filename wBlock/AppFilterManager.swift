@@ -132,7 +132,7 @@ class AppFilterManager: ObservableObject {
 
     func saveFilterListsCoalesced() {
         pendingSaveTask?.cancel()
-        let delay = 50_000_000
+        let delay: UInt64 = 50_000_000
         var task: Task<Void, Never>?
         task = Task { @MainActor [weak self] in
             defer {
