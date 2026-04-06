@@ -433,8 +433,6 @@
       undoLastZap().catch(() => {});
     };
     undoButton.addEventListener('click', onUndo);
-    undoButton.addEventListener('pointerup', onUndo, true);
-    undoButton.addEventListener('touchend', onUndo, { passive: false });
 
     const manualButton = document.createElement('button');
     manualButton.type = 'button';
@@ -448,8 +446,6 @@
       addManualRuleFromPrompt().catch(() => {});
     };
     manualButton.addEventListener('click', onManualRule);
-    manualButton.addEventListener('pointerup', onManualRule, true);
-    manualButton.addEventListener('touchend', onManualRule, { passive: false });
 
     const doneButton = document.createElement('button');
     doneButton.type = 'button';
@@ -464,8 +460,6 @@
       finalizeSessionAndReload().catch(() => {});
     };
     doneButton.addEventListener('click', onDone);
-    doneButton.addEventListener('pointerup', onDone, true);
-    doneButton.addEventListener('touchend', onDone, { passive: false });
 
     const defaultGroup = document.createElement('span');
     defaultGroup.className = 'wblock-default';
@@ -487,8 +481,6 @@
       navigateParent();
     };
     parentButton.addEventListener('click', onParent);
-    parentButton.addEventListener('pointerup', onParent, true);
-    parentButton.addEventListener('touchend', onParent, { passive: false });
 
     const childButton = document.createElement('button');
     childButton.type = 'button';
@@ -500,8 +492,6 @@
       navigateChild();
     };
     childButton.addEventListener('click', onChild);
-    childButton.addEventListener('pointerup', onChild, true);
-    childButton.addEventListener('touchend', onChild, { passive: false });
 
     const hideButton = document.createElement('button');
     hideButton.type = 'button';
@@ -511,8 +501,6 @@
       confirmHide();
     };
     hideButton.addEventListener('click', onHide);
-    hideButton.addEventListener('pointerup', onHide, true);
-    hideButton.addEventListener('touchend', onHide, { passive: false });
 
     navGroup.appendChild(parentButton);
     navGroup.appendChild(childButton);
