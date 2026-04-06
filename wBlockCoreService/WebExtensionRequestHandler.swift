@@ -29,6 +29,13 @@ public enum WebExtensionRequestHandler {
         ]
     }
 
+    @MainActor
+    private static func currentDisabledSites() async -> [String] {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
+        return ProtobufDataManager.shared.disabledSites
+    }
+
     /// Processes an extension request and provides content blocking configuration.
     ///
     /// This method extracts the URL from the request, looks up the appropriate blocking
@@ -86,10 +93,8 @@ public enum WebExtensionRequestHandler {
             if let url = URL(string: urlString) {
                 // Respect per-site disable immediately for both content blockers and scripts.
                 Task { @MainActor in
-                    await ProtobufDataManager.shared.waitUntilLoaded()
-                    let disabledSites = ProtobufDataManager.shared.disabledSites
+                    let disabledSites = await currentDisabledSites()
                     let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
-
                     if disabled {
                         message?["payload"] = emptyRulesPayload()
                     } else {
@@ -261,8 +266,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
-            let disabledSites = ProtobufDataManager.shared.disabledSites
+            let disabledSites = await currentDisabledSites()
             let disabled = HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled])
             context.completeRequest(returningItems: [response])
@@ -280,9 +284,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
-
-            var list = ProtobufDataManager.shared.disabledSites
+            var list = await currentDisabledSites()
             let previousList = list
             if disabled {
                 if !list.contains(host) { list.append(host) }
@@ -422,9 +424,8 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
+            let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
-                let disabledSites = ProtobufDataManager.shared.disabledSites
                 if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
                     let response = createResponse(with: ["userScripts": []])
                     context.completeRequest(returningItems: [response])

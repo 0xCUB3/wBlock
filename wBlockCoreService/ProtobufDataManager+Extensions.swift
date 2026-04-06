@@ -363,39 +363,33 @@ extension ProtobufDataManager {
         return appData.whitelist.disabledSites
     }
     
+    private func persistWhitelistedDomains(_ update: @escaping @Sendable (inout [String]) -> Bool) async {
+        await updateDataImmediately { data in
+            guard update(&data.whitelist.disabledSites) else { return }
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+    
     public func addWhitelistedDomain(_ domain: String) async {
-        var updatedData = appData
-        if !updatedData.whitelist.disabledSites.contains(domain) {
-            updatedData.whitelist.disabledSites.append(domain)
-            updatedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
-            
-            await MainActor.run {
-                appData = updatedData
-            }
-            await saveData()
+        await persistWhitelistedDomains { disabledSites in
+            guard !disabledSites.contains(domain) else { return false }
+            disabledSites.append(domain)
+            return true
         }
     }
     
     public func removeWhitelistedDomain(_ domain: String) async {
-        var updatedData = appData
-        updatedData.whitelist.disabledSites.removeAll { $0 == domain }
-        updatedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
-        
-        await MainActor.run {
-            appData = updatedData
+        await persistWhitelistedDomains { disabledSites in
+            disabledSites.removeAll { $0 == domain }
+            return true
         }
-        await saveData()
     }
     
     public func setWhitelistedDomains(_ domains: [String]) async {
-        var updatedData = appData
-        updatedData.whitelist.disabledSites = domains
-        updatedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
-        
-        await MainActor.run {
-            appData = updatedData
+        await persistWhitelistedDomains { disabledSites in
+            disabledSites = domains
+            return true
         }
-        await saveData()
     }
     
     // MARK: - App Settings

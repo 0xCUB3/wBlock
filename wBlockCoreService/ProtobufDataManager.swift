@@ -1024,7 +1024,7 @@ public class ProtobufDataManager: ObservableObject {
 
     /// Writes immediately for cross-process paths that need deterministic visibility.
     @MainActor
-    private func updateDataImmediately(with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async {
+    func updateDataImmediately(with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async {
         pendingSaveTask?.cancel()
 
         do {
