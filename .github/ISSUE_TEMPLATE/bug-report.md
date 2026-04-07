@@ -27,5 +27,10 @@ If applicable, add screenshots to help explain your problem.
  - wBlock Version: [e.g. 2.0.2]
  - Intel or Apple Silicon (macOS only): [e.g. Apple M2]
 
+### Troubleshooting checklist
+- [ ] I enabled all 5 wBlock Content Blocker extensions in Safari.
+- [ ] I enabled `wBlock Scripts` and set it to `Allow` on all websites (`Always Allow on Every Website` in Safari settings).
+- [ ] I opened wBlock and tapped `Apply Changes` after changing filters, userscripts, whitelist, or extension settings.
+
 ### Additional context
 Add any other context about the problem here.
