@@ -1,6 +1,8 @@
 <div align="center">
 
-<picture><img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock" width="120"/></picture>
+<picture>
+  <img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock Logo" width="120"/>
+</picture>
 
 # wBlock
 
@@ -28,7 +30,7 @@
 <br>
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/3fd411ac-f781-4db5-bd4e-4cea82edf3d7" alt="wBlock Interface" width="900"/>
+  <img src="https://github.com/user-attachments/assets/3fd411ac-f781-4db5-bd4e-4cea82edf3d7" alt="wBlock Interface" width="900"/>
 </div>
 
 <br>
@@ -105,7 +107,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 <table>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Userscript Management" width="700"/>
+<img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Userscript Management Screenshot" width="700"/>
 <br><br>
 <strong>Userscript Management</strong><br>
 <em>Manage paywalls, YouTube Dislikes, and more</em>
@@ -113,7 +115,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 </tr>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings" width="700"/>
+<img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings Screenshot" width="700"/>
 <br><br>
 <strong>Settings & Customization</strong><br>
 <em>Configure auto-updates, notifications, and preferences</em>
@@ -121,7 +123,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 </tr>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/d8aafe2d-8ec2-493e-9a04-aa6d7bf9fb1f" alt="iOS" width="350"/>
+<img src="https://github.com/user-attachments/assets/ec518eed-0cd7-47ba-8a41-63813fc4fbd2" alt="iOS Screenshot" width="350"/>
 <br><br>
 <strong>iOS Interface</strong><br>
 <em>Full-featured blocking on iPhone and iPad</em>
@@ -181,7 +183,7 @@ wBlock is free and open source. If you want to support the project:
 <br>
 
 <a href="https://opencollective.com/skula/projects/wblock">
-  <img src="https://opencollective.com/about-this-hack/donate/button@2x.png?color=blue" width="250" />
+  <img src="https://opencollective.com/about-this-hack/donate/button@2x.png?color=blue" alt="Donate Button" width="250" />
 </a>
 
 </div>
@@ -201,7 +203,7 @@ wBlock is free and open source. If you want to support the project:
 <details>
 <summary><b>How does wBlock compare to other ad blockers?</b></summary>
 <br>
-Check out our <a href="Adblock_Comparison.md">comparison guide</a> vs uBlock Origin Lite, AdGuard, and Wipr.
+Check out our <a href="Adblock_Comparison.md">comparison guide</a> vs uBlock Origin Lite, Wipr 2, and AdGuard Mini.
 </details>
 
 <details>
@@ -254,18 +256,24 @@ Yes. Open the wBlock extension popup in Safari and tap <i>Activate Element Zappe
 
 <br>
 
-## Star History
-
-<a href="https://www.star-history.com/?repos=0xCUB3%2FwBlock&type=date&legend=bottom-right">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&theme=dark&legend=bottom-right" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&legend=bottom-right" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&legend=bottom-right" />
- </picture>
-</a>
+Developed by [0xCUB3](https://github.com/0xCUB3)
 
 <br>
 
-Developed by [0xCUB3](https://github.com/0xCUB3)
+</div>
+
+---
+
+<br>
+
+<div align="center">
+
+<a href="https://www.star-history.com/?repos=0xCUB3%2FwBlock&type=date&legend=bottom-right">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&theme=dark&legend=bottom-right" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&legend=bottom-right" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&legend=bottom-right" />
+  </picture>
+</a>
 
 </div>
