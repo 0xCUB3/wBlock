@@ -27,9 +27,7 @@ extension AppFilterManager {
             return
         }
 
-        if category == .custom, CloudSyncManager.shared.isEnabled {
-            CloudSyncManager.shared.clearDeletedCustomListURL(url.absoluteString)
-        }
+        CloudSyncManager.shared.clearDeletedCustomListURL(url.absoluteString)
 
         let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let newFilter = FilterList(
@@ -203,7 +201,7 @@ extension AppFilterManager {
     }
 
     func removeCustomFilterList(_ filter: FilterList) {
-        if filter.isCustom, CloudSyncManager.shared.isEnabled {
+        if filter.isCustom {
             CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)
         }
 

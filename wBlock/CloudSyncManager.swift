@@ -236,16 +236,7 @@ final class CloudSyncManager: ObservableObject {
             guard let self else { return }
             await self.dataManager.waitUntilLoaded()
             await self.userScriptManager.waitUntilReady()
-
-            let localContent = self.buildPayloadContent()
-            guard let localContentData = try? JSONEncoder.sorted.encode(localContent) else { return }
-            let localHash = Self.sha256Hex(localContentData)
-
-            if localHash != self.defaults.string(forKey: Keys.lastLocalHash) {
-                self.defaults.set(localHash, forKey: Keys.lastLocalHash)
-                self.defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-            }
-
+            self.refreshLocalSnapshotStateIfNeeded()
             self.scheduleUpload(trigger: "LocalSave")
         }
     }
@@ -294,6 +285,7 @@ final class CloudSyncManager: ObservableObject {
 
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
+        refreshLocalSnapshotStateIfNeeded()
 
         do {
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
@@ -341,6 +333,7 @@ final class CloudSyncManager: ObservableObject {
         guard isEnabled else { return }
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
+        refreshLocalSnapshotStateIfNeeded()
 
         if isSyncing { return }
         isSyncing = true
@@ -439,8 +432,25 @@ final class CloudSyncManager: ObservableObject {
 
     private func applyRemoteFilters(_ filters: SyncPayload.Filters) async {
         let remoteDeleted = Set(filters.deletedCustomURLs ?? [])
-        if !remoteDeleted.isEmpty {
-            mergeDeletedCustomListURLs(remoteDeleted)
+        let remoteCustomURLs = Set(filters.customLists.map(\.url))
+        let localCustomURLs = currentLocalCustomURLs()
+
+        let deletedURLsToClear = CloudSyncCustomFilterReconciler.deletedURLsToClearDuringReconciliation(
+            existingDeletedURLs: deletedCustomURLSet(),
+            remoteCustomURLs: remoteCustomURLs,
+            localCustomURLs: localCustomURLs
+        )
+        if !deletedURLsToClear.isEmpty {
+            clearDeletedCustomListURLs(deletedURLsToClear)
+        }
+
+        let remoteDeletedToMerge = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringRemoteApply(
+            remoteDeletedURLs: remoteDeleted,
+            remoteCustomURLs: remoteCustomURLs,
+            localCustomURLs: localCustomURLs
+        )
+        if !remoteDeletedToMerge.isEmpty {
+            mergeDeletedCustomListURLs(remoteDeletedToMerge)
         }
         let deletedCustomURLs = deletedCustomURLSet()
 
@@ -724,10 +734,21 @@ final class CloudSyncManager: ObservableObject {
         // Import missing custom filter lists and userscripts before uploading so we don't
         // accidentally drop them from the single shared CloudKit payload.
 
-        let localCustomURLs: Set<String> = Set(dataManager.getCustomFilterLists().map { $0.url.absoluteString })
+        let localCustomURLs = currentLocalCustomURLs()
+        let remoteCustomURLs = Set(remotePayload.filters.customLists.map(\.url))
+
+        let deletedURLsToClear = CloudSyncCustomFilterReconciler.deletedURLsToClearDuringReconciliation(
+            existingDeletedURLs: deletedCustomURLSet(),
+            remoteCustomURLs: remoteCustomURLs,
+            localCustomURLs: localCustomURLs
+        )
+        if !deletedURLsToClear.isEmpty {
+            clearDeletedCustomListURLs(deletedURLsToClear)
+        }
+
         let remoteDeleted = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
             remoteDeletedURLs: Set(remotePayload.filters.deletedCustomURLs ?? []),
-            localCustomURLs: localCustomURLs
+            localCustomURLs: localCustomURLs.union(remoteCustomURLs)
         )
         if !remoteDeleted.isEmpty {
             mergeDeletedCustomListURLs(remoteDeleted)
@@ -923,7 +944,7 @@ final class CloudSyncManager: ObservableObject {
             excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted()
         )
 
-        let filterLists = dataManager.getFilterLists()
+        let filterLists = currentFilterLists()
         let knownURLs = filterLists
             .filter { !$0.isCustom }
             .map { $0.url.absoluteString }
@@ -934,7 +955,8 @@ final class CloudSyncManager: ObservableObject {
             .map { $0.url.absoluteString }
             .sorted()
 
-        let customLists = dataManager.getCustomFilterLists()
+        let customLists = filterLists
+            .filter(\.isCustom)
             .filter { !deletedCustomURLSet().contains($0.url.absoluteString) }
             .map { list in
                 SyncPayload.CustomFilterList(
@@ -994,6 +1016,28 @@ final class CloudSyncManager: ObservableObject {
             whitelistDomains: whitelistDomains,
             zapperRules: zapperRules
         )
+    }
+
+    private func currentFilterLists() -> [FilterList] {
+        if let filterManager {
+            return filterManager.filterLists
+        }
+        return dataManager.getFilterLists()
+    }
+
+    private func currentLocalCustomURLs() -> Set<String> {
+        Set(currentFilterLists().filter(\.isCustom).map { $0.url.absoluteString })
+    }
+
+    private func refreshLocalSnapshotStateIfNeeded() {
+        let localContent = buildPayloadContent()
+        guard let localContentData = try? JSONEncoder.sorted.encode(localContent) else { return }
+        let localHash = Self.sha256Hex(localContentData)
+
+        if localHash != defaults.string(forKey: Keys.lastLocalHash) {
+            defaults.set(localHash, forKey: Keys.lastLocalHash)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        }
     }
 
     private static func normalizedZapperRules(_ rulesByDomain: [String: [String]]) -> [String: [String]] {
@@ -1219,6 +1263,22 @@ final class CloudSyncManager: ObservableObject {
     private func saveDeletedCustomURLMarkers(_ markers: [String: TimeInterval]) {
         let pruned = pruneDeletedCustomURLMarkers(markers)
         defaults.set(pruned, forKey: Keys.deletedCustomURLs)
+    }
+
+    private func clearDeletedCustomListURLs(_ urls: Set<String>) {
+        guard !urls.isEmpty else { return }
+        var markers = loadDeletedCustomURLMarkers()
+        var changed = false
+        for url in urls {
+            let normalized = CloudSyncCustomFilterReconciler.normalizedURL(url)
+            guard !normalized.isEmpty else { continue }
+            if markers.removeValue(forKey: normalized) != nil {
+                changed = true
+            }
+        }
+        if changed {
+            saveDeletedCustomURLMarkers(markers)
+        }
     }
 
     private func mergeDeletedCustomListURLs(_ urls: Set<String>) {
