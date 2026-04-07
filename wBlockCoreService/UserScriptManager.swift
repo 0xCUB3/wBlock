@@ -134,6 +134,81 @@ public class UserScriptManager: ObservableObject {
         return nil
     }
 
+    private func resourceMIMEType(from response: URLResponse?, sourceURL: URL) -> String {
+        if let mimeType = response?.mimeType, !mimeType.isEmpty {
+            return mimeType
+        }
+
+        switch sourceURL.pathExtension.lowercased() {
+        case "css":
+            return "text/css"
+        case "js", "mjs":
+            return "text/javascript"
+        case "json":
+            return "application/json"
+        case "xml":
+            return "application/xml"
+        case "svg":
+            return "image/svg+xml"
+        case "png":
+            return "image/png"
+        case "jpg", "jpeg":
+            return "image/jpeg"
+        case "gif":
+            return "image/gif"
+        case "webp":
+            return "image/webp"
+        case "mp3":
+            return "audio/mpeg"
+        case "ogg":
+            return "audio/ogg"
+        case "wav":
+            return "audio/wav"
+        case "woff2":
+            return "font/woff2"
+        case "woff":
+            return "font/woff"
+        case "ttf":
+            return "font/ttf"
+        default:
+            return "application/octet-stream"
+        }
+    }
+
+    private func isTextResource(response: URLResponse?, sourceURL: URL) -> Bool {
+        let mimeType = resourceMIMEType(from: response, sourceURL: sourceURL).lowercased()
+        if mimeType.hasPrefix("text/") {
+            return true
+        }
+
+        switch mimeType {
+        case "application/json", "application/javascript", "application/x-javascript",
+            "application/xml", "image/svg+xml":
+            return true
+        default:
+            break
+        }
+
+        switch sourceURL.pathExtension.lowercased() {
+        case "css", "js", "mjs", "json", "txt", "html", "xml", "svg":
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func decodedTextResource(from data: Data, response: URLResponse?, sourceURL: URL) -> String? {
+        guard isTextResource(response: response, sourceURL: sourceURL) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private func encodedResourcePayload(from data: Data, response: URLResponse?, sourceURL: URL) -> String {
+        let mimeType = resourceMIMEType(from: response, sourceURL: sourceURL)
+        return "data:\(mimeType);base64,\(data.base64EncodedString())"
+    }
+
     public func ensureResourceContent(forScriptId scriptId: UUID, resourceName: String) async -> String? {
         guard let index = indexOfUserScript(withId: scriptId) else {
             return nil
@@ -168,20 +243,24 @@ public class UserScriptManager: ObservableObject {
                 "📥 Downloading on-demand @resource '\(resourceName)' from \(resourceURLString)"
             )
 
-            let (responseData, _) = try await self.urlSession.data(from: url)
+            let (responseData, response) = try await self.urlSession.data(from: url)
 
-            guard let resourceContent = String(data: responseData, encoding: .utf8) else {
-                self.logger.error(
-                    "❌ Failed to decode on-demand @resource '\(resourceName)' from: \(resourceURLString)"
-                )
-                return nil
-            }
-            if self.isDDoSProtectionPage(resourceContent) {
+            if let resourceText = self.decodedTextResource(
+                from: responseData,
+                response: response,
+                sourceURL: url
+            ), self.isDDoSProtectionPage(resourceText) {
                 self.logger.error(
                     "❌ Received DDoS protection page for on-demand @resource: \(resourceURLString)"
                 )
                 return nil
             }
+
+            let resourceContent = self.encodedResourcePayload(
+                from: responseData,
+                response: response,
+                sourceURL: url
+            )
 
             self.userScripts[index].resourceContents[resourceName] = resourceContent
             _ = self.writeUserScriptResources(self.userScripts[index])
@@ -1047,21 +1126,26 @@ public class UserScriptManager: ObservableObject {
             do {
                 logger.info("📥 Downloading resource: \(resourceName) from \(resourceURL)")
 
-                let (responseData, _) = try await urlSession.data(from: url)
+                let (responseData, response) = try await urlSession.data(from: url)
 
-                if let resourceContent = String(data: responseData, encoding: .utf8) {
-                    // Check for DDoS protection page
-                    if isDDoSProtectionPage(resourceContent) {
-                        logger.error(
-                            "❌ Received DDoS protection page for @resource: \(resourceURL)")
-                        continue
-                    }
-                    resources[resourceName] = resourceContent
-                    logger.info(
-                        "✅ Downloaded resource '\(resourceName)' (\(resourceContent.count) chars)")
-                } else {
-                    logger.error("❌ Failed to decode resource from: \(resourceURL)")
+                if let resourceText = decodedTextResource(
+                    from: responseData,
+                    response: response,
+                    sourceURL: url
+                ), isDDoSProtectionPage(resourceText) {
+                    logger.error(
+                        "❌ Received DDoS protection page for @resource: \(resourceURL)")
+                    continue
                 }
+
+                let resourceContent = encodedResourcePayload(
+                    from: responseData,
+                    response: response,
+                    sourceURL: url
+                )
+                resources[resourceName] = resourceContent
+                logger.info(
+                    "✅ Downloaded resource '\(resourceName)' (\(responseData.count) bytes)")
             } catch {
                 logger.error(
                     "❌ Failed to download @resource '\(resourceName)' from \(resourceURL): \(error)"

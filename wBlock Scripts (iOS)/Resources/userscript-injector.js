@@ -621,25 +621,136 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const scriptResources = ${resourcesJSON};
 
     // Storage change listeners registry
-    const storageListeners = new Map(); // key -> Set of callbacks
+    const storageListeners = new Map(); // key -> Map(listenerId, callback)
     let listenerIdCounter = 0;
+
+    const parseStoredValue = (rawValue) => {
+        if (rawValue === null || typeof rawValue === 'undefined') {
+            return undefined;
+        }
+        try {
+            return JSON.parse(rawValue);
+        } catch (error) {
+            wBlockWarn('[wBlock] Failed to parse stored GM value, returning raw string:', error);
+            return rawValue;
+        }
+    };
+
+    const notifyStorageListeners = (key, oldValue, newValue, remote) => {
+        const listeners = storageListeners.get(key);
+        if (!listeners || listeners.size === 0) {
+            return;
+        }
+
+        listeners.forEach((callback) => {
+            try {
+                callback(key, oldValue, newValue, remote);
+            } catch (error) {
+                wBlockError('[wBlock] Storage listener error:', error);
+            }
+        });
+    };
+
+    const inferResourceMimeType = (resourceName, resourceValue) => {
+        const lowerName = String(resourceName || '').toLowerCase();
+        if (lowerName.endsWith('.css')) return 'text/css';
+        if (lowerName.endsWith('.js') || lowerName.endsWith('.mjs')) return 'text/javascript';
+        if (lowerName.endsWith('.json')) return 'application/json';
+        if (lowerName.endsWith('.xml')) return 'application/xml';
+        if (lowerName.endsWith('.svg')) return 'image/svg+xml';
+        if (lowerName.endsWith('.png')) return 'image/png';
+        if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) return 'image/jpeg';
+        if (lowerName.endsWith('.gif')) return 'image/gif';
+        if (lowerName.endsWith('.webp')) return 'image/webp';
+        if (lowerName.endsWith('.mp3')) return 'audio/mpeg';
+        if (lowerName.endsWith('.ogg')) return 'audio/ogg';
+        if (lowerName.endsWith('.wav')) return 'audio/wav';
+        if (lowerName.endsWith('.woff2')) return 'font/woff2';
+        if (lowerName.endsWith('.woff')) return 'font/woff';
+        if (lowerName.endsWith('.ttf')) return 'font/ttf';
+
+        const trimmedValue = typeof resourceValue === 'string' ? resourceValue.trim() : '';
+        if (!trimmedValue) return 'text/plain';
+        if (
+            (trimmedValue.startsWith('{') && trimmedValue.endsWith('}'))
+            || (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'))
+        ) {
+            return 'application/json';
+        }
+        if (trimmedValue.startsWith('<svg')) {
+            return 'image/svg+xml';
+        }
+        if (/(^|\\n)\s*(?:const|let|var|function|class|export|import)\b/.test(trimmedValue) || trimmedValue.includes('=>')) {
+            return 'text/javascript';
+        }
+        if (/(^|\\n)\s*[@.#a-zA-Z0-9_-]+\s*\{/.test(trimmedValue) || /:\s*[^;]+;/.test(trimmedValue)) {
+            return 'text/css';
+        }
+        return 'text/plain';
+    };
+
+    const isProbablyTextMimeType = (mimeType) => {
+        const normalized = String(mimeType || '').toLowerCase();
+        return normalized.startsWith('text/')
+            || normalized.includes('json')
+            || normalized.includes('javascript')
+            || normalized.includes('xml')
+            || normalized === 'image/svg+xml';
+    };
+
+    const decodeDataUrlText = (dataUrl) => {
+        const match = String(dataUrl || '').match(/^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,([\s\S]*)$/i);
+        if (!match) {
+            return undefined;
+        }
+
+        const mimeType = match[1] || 'text/plain';
+        if (!isProbablyTextMimeType(mimeType)) {
+            return undefined;
+        }
+
+        try {
+            if (match[2]) {
+                const binary = atob(match[3] || '');
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            }
+            return decodeURIComponent(match[3] || '');
+        } catch (error) {
+            wBlockWarn('[wBlock] Failed to decode data URL resource text:', error);
+            return undefined;
+        }
+    };
+
+    const resolveResourceValue = (resourceName) => {
+        if (!scriptResources || !Object.prototype.hasOwnProperty.call(scriptResources, resourceName)) {
+            return undefined;
+        }
+        return scriptResources[resourceName];
+    };
+
+    const makeResourceURL = (resourceName) => {
+        const resourceValue = resolveResourceValue(resourceName);
+        if (typeof resourceValue !== 'string' || resourceValue.length === 0) {
+            return undefined;
+        }
+
+        if (/^(data:|blob:|https?:)/i.test(resourceValue)) {
+            return resourceValue;
+        }
+
+        const mimeType = inferResourceMimeType(resourceName, resourceValue);
+        return 'data:' + mimeType + ';charset=utf-8,' + encodeURIComponent(resourceValue);
+    };
 
     // Listen for storage events from other tabs/windows
     window.addEventListener('storage', (e) => {
         if (e.key && e.key.startsWith('wblock_gm_')) {
             const actualKey = e.key.substring('wblock_gm_'.length);
-            if (storageListeners.has(actualKey)) {
-                const callbacks = storageListeners.get(actualKey);
-                const oldValue = e.oldValue ? JSON.parse(e.oldValue) : undefined;
-                const newValue = e.newValue ? JSON.parse(e.newValue) : undefined;
-                callbacks.forEach(cb => {
-                    try {
-                        cb(actualKey, oldValue, newValue, false);
-                    } catch (err) {
-                        wBlockError('[wBlock] Storage listener error:', err);
-                    }
-                });
-            }
+            notifyStorageListeners(actualKey, parseStoredValue(e.oldValue), parseStoredValue(e.newValue), true);
         }
     });
 
@@ -662,7 +773,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         getValue: function(key, defaultValue) {
             try {
                 const stored = localStorage.getItem('wblock_gm_' + key);
-                return stored !== null ? JSON.parse(stored) : defaultValue;
+                return stored !== null ? parseStoredValue(stored) : defaultValue;
             } catch (e) {
                 wBlockWarn('[wBlock] Failed to get value for key:', key, e);
                 return defaultValue;
@@ -671,7 +782,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         setValue: function(key, value) {
             try {
-                localStorage.setItem('wblock_gm_' + key, JSON.stringify(value));
+                const storageKey = 'wblock_gm_' + key;
+                const oldValue = parseStoredValue(localStorage.getItem(storageKey));
+                localStorage.setItem(storageKey, JSON.stringify(value));
+                notifyStorageListeners(key, oldValue, value, false);
             } catch (e) {
                 wBlockWarn('[wBlock] Failed to save value for key:', key, e);
             }
@@ -679,7 +793,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         deleteValue: function(key) {
             try {
-                localStorage.removeItem('wblock_gm_' + key);
+                const storageKey = 'wblock_gm_' + key;
+                const oldValue = parseStoredValue(localStorage.getItem(storageKey));
+                localStorage.removeItem(storageKey);
+                notifyStorageListeners(key, oldValue, undefined, false);
             } catch (e) {
                 wBlockWarn('[wBlock] Failed to delete value for key:', key, e);
             }
@@ -703,16 +820,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
         },
 
         getResourceURL: function(resourceName) {
-            // For basic compatibility, return the resource name as-is
-            // In a full implementation, this would resolve @resource directives
-            wBlockWarn('[wBlock] GM_getResourceURL called with:', resourceName);
-            return resourceName;
+            const resolvedURL = makeResourceURL(resourceName);
+            if (resolvedURL) {
+                return resolvedURL;
+            }
+            wBlockWarn('[wBlock] Resource URL not found:', resourceName);
+            return undefined;
+        },
+
+        getResourceUrl: function(resourceName) {
+            return GM.getResourceURL(resourceName);
         },
 
         getResourceText: function(resourceName) {
             wBlockLog('[wBlock] GM_getResourceText called with:', resourceName);
-            if (scriptResources && scriptResources[resourceName]) {
-                return scriptResources[resourceName];
+            const resourceValue = resolveResourceValue(resourceName);
+            if (typeof resourceValue === 'string') {
+                if (/^data:/i.test(resourceValue)) {
+                    return decodeDataUrlText(resourceValue);
+                }
+                return resourceValue;
             }
             wBlockWarn('[wBlock] Resource not found:', resourceName);
             return undefined;
@@ -729,6 +856,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                             element.textContent = value;
                         } else if (key === 'innerHTML') {
                             element.innerHTML = value;
+                        } else if (key === 'parentNode') {
+                            continue;
                         } else {
                             element.setAttribute(key, value);
                         }
@@ -797,6 +926,47 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         },
 
+        setClipboard: function(data, info, callback) {
+            const text = typeof data === 'string' ? data : String(data ?? '');
+            const finish = () => {
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            };
+
+            const fallbackCopy = () => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', 'readonly');
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                (document.body || document.documentElement).appendChild(textarea);
+                if (typeof textarea.select === 'function') {
+                    textarea.select();
+                }
+                if (typeof textarea.setSelectionRange === 'function') {
+                    textarea.setSelectionRange(0, text.length);
+                }
+                if (typeof document.execCommand === 'function') {
+                    document.execCommand('copy');
+                }
+                textarea.remove();
+                finish();
+            };
+
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                return navigator.clipboard.writeText(text)
+                    .then(() => finish())
+                    .catch((error) => {
+                        wBlockWarn('[wBlock] navigator.clipboard.writeText failed, falling back:', error);
+                        fallbackCopy();
+                    });
+            }
+
+            fallbackCopy();
+            return Promise.resolve();
+        },
+
         openInTab: function(url, options) {
             const openInBackground = options && options.active === false;
             const newWindow = window.open(url, '_blank');
@@ -814,6 +984,45 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } else if (options && options.text) {
                 wBlockLog('[wBlock] Notification:', options.text);
             }
+        },
+
+        download: function(details, name) {
+            const normalized = typeof details === 'string'
+                ? { url: details, name: name }
+                : (details || {});
+            const downloadURL = normalized.url || normalized.href;
+            const fileName = normalized.name || normalized.filename || name || '';
+
+            if (!downloadURL) {
+                const error = new Error('GM_download requires a URL');
+                if (typeof normalized.onerror === 'function') {
+                    normalized.onerror(error);
+                }
+                throw error;
+            }
+
+            const link = document.createElement('a');
+            link.href = downloadURL;
+            if (fileName) {
+                link.download = fileName;
+            }
+            link.rel = 'noopener';
+            link.style.display = 'none';
+            (document.body || document.documentElement).appendChild(link);
+            if (typeof link.click === 'function') {
+                link.click();
+            }
+            link.remove();
+
+            if (typeof normalized.onload === 'function') {
+                setTimeout(() => normalized.onload(), 0);
+            }
+
+            return {
+                abort: function() {
+                    wBlockLog('[wBlock] GM_download abort requested for:', downloadURL);
+                }
+            };
         },
 
         xmlhttpRequest: function(details) {
@@ -912,26 +1121,51 @@ if (window.wBlockUserscriptInjectorHasRun) {
         unsafeWindow: unsafeWindow
     };
 
+    const GM_info = GM.info;
+    const GM_getValue = GM.getValue;
+    const GM_setValue = GM.setValue;
+    const GM_deleteValue = GM.deleteValue;
+    const GM_listValues = GM.listValues;
+    const GM_getResourceURL = GM.getResourceURL;
+    const GM_getResourceUrl = GM.getResourceUrl;
+    const GM_getResourceText = GM.getResourceText;
+    const GM_addElement = GM.addElement;
+    const GM_addValueChangeListener = GM.addValueChangeListener;
+    const GM_removeValueChangeListener = GM.removeValueChangeListener;
+    const GM_addStyle = GM.addStyle;
+    const GM_setClipboard = GM.setClipboard;
+    const GM_openInTab = GM.openInTab;
+    const GM_notification = GM.notification;
+    const GM_download = GM.download;
+    const GM_xmlhttpRequest = GM.xmlhttpRequest;
+    const GM_registerMenuCommand = GM.registerMenuCommand;
+    const GM_unregisterMenuCommand = GM.unregisterMenuCommand;
+
     // Make sure unsafeWindow is defined at the global scope first
     window.unsafeWindow = unsafeWindow;
 
-    window.GM_info = GM.info;
+    window.GM_info = GM_info;
     window.GM = GM; // Expose the GM object
 
     // Legacy GM function aliases
-    window.GM_getValue = GM.getValue;
-    window.GM_setValue = GM.setValue;
-    window.GM_deleteValue = GM.deleteValue;
-    window.GM_listValues = GM.listValues;
-    window.GM_getResourceURL = GM.getResourceURL;
-    window.GM_getResourceText = GM.getResourceText;
-    window.GM_addElement = GM.addElement;
-    window.GM_addStyle = GM.addStyle;
-    window.GM_openInTab = GM.openInTab;
-    window.GM_notification = GM.notification;
-    window.GM_xmlhttpRequest = GM.xmlhttpRequest;
-    window.GM_registerMenuCommand = GM.registerMenuCommand;
-    window.GM_unregisterMenuCommand = GM.unregisterMenuCommand;
+    window.GM_getValue = GM_getValue;
+    window.GM_setValue = GM_setValue;
+    window.GM_deleteValue = GM_deleteValue;
+    window.GM_listValues = GM_listValues;
+    window.GM_getResourceURL = GM_getResourceURL;
+    window.GM_getResourceUrl = GM_getResourceUrl;
+    window.GM_getResourceText = GM_getResourceText;
+    window.GM_addElement = GM_addElement;
+    window.GM_addValueChangeListener = GM_addValueChangeListener;
+    window.GM_removeValueChangeListener = GM_removeValueChangeListener;
+    window.GM_addStyle = GM_addStyle;
+    window.GM_setClipboard = GM_setClipboard;
+    window.GM_openInTab = GM_openInTab;
+    window.GM_notification = GM_notification;
+    window.GM_download = GM_download;
+    window.GM_xmlhttpRequest = GM_xmlhttpRequest;
+    window.GM_registerMenuCommand = GM_registerMenuCommand;
+    window.GM_unregisterMenuCommand = GM_unregisterMenuCommand;
 
     try {
         ${script.content}
