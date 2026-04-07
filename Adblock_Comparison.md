@@ -21,7 +21,7 @@ You can see exactly what's happening with detailed statistics showing X source r
 The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Scripts provides additional filtering capabilities like cosmetic rules and scriptlet injection.
 
 <div align="center">
-<img width="398" height="489" alt="Safari Element Zapper" src="https://github.com/user-attachments/assets/da409a19-b562-48fc-8a8e-4a4962339ded" />
+<img width="377" alt="Safari Element Zapper" src="https://github.com/user-attachments/assets/58c368a4-2b3e-4bc0-9e7b-d448b84d22d1" />
 </div>
 
 What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, wBlock includes several userscripts like AdGuard Extra (enabled by default), Bypass Paywalls Clean, Return YouTube Dislike, and YouTube Classic, but you can add almost any script you want!
