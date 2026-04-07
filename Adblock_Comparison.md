@@ -9,17 +9,22 @@ The interface is clean and native, built with SwiftUI. Both the iOS and macOS ve
 
 You can examine detailed statistics for source rules and how they’re converted for Safari, complete with conversion and reload times.
 
+<div align="center">
 <img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/bd3ca8aa-ee72-44e6-8b1c-7a5563c25976" />
-
+</div>
+<div align="center">
 <img width="812" height="732" alt="image" src="https://github.com/user-attachments/assets/db0d8dcb-9ed3-4f7c-9efb-53d1079514b0" />
+</div>
 
 You can see exactly what's happening with detailed statistics showing X source rules converted to Y Safari rules, complete with conversion and reload times. If you're into these kind of things, it's great to have the numbers right in front of you.
 
 The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Scripts provides additional filtering capabilities like cosmetic rules and scriptlet injection.
 
-<img width="318" height="326" alt="CleanShot 2025-08-20 at 18 18 11" src="https://github.com/user-attachments/assets/3bf5b7ed-a0d6-49e1-b729-a32033fff59c" />
+<div align="center">
+<img width="398" height="489" alt="Safari Element Zapper" src="https://github.com/user-attachments/assets/da409a19-b562-48fc-8a8e-4a4962339ded" />
+</div>
 
-What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, you have Return YouTube Dislike and Bypass Paywalls Clean, but you can add almost any script you want!
+What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, wBlock includes several userscripts like AdGuard Extra (enabled by default), Bypass Paywalls Clean, Return YouTube Dislike, and YouTube Classic, but you can add almost any script you want!
 
 Other recent additions include iCloud sync for filter selections, custom lists, userscripts, and whitelist across all your devices; configurable auto-updates from every hour to every 7 days with HTTP conditional requests to minimize bandwidth; a filter preprocessor that handles AdGuard's `!#include` directives; and auto-detection of custom filter list titles from `! Title` metadata.
 
@@ -35,7 +40,9 @@ uBlock Origin Lite is the lobotomized version of uBlock Origin, rebuilt from scr
 
 The interface keeps things simple. The main popup has an intuitive blocking level slider where you can adjust from "basic" to "optimal" to "complete" without understanding technical details, though its lack of verbosity leaves something to be desired for more advanced users. This is marginally more approachable than original uBlock Origin's power-user matrix interface.
 
+<div align="center">
 <img width="1112" height="762" alt="image" src="https://github.com/user-attachments/assets/79f99d54-a6b6-4c54-b9d4-51fa57c34865" />
+</div>
 
 The popup shows real-time blocking stats when you're on a website. You can see it actively blocking content with clear indicators for different blocked content types, though just like with wBlock, the toolbar item doesn't update immediately. Settings are cleanly organized with categorized filter lists you can toggle based on your needs, though as a webpage rather than an app.
 
@@ -55,7 +62,9 @@ Wipr 2 is tailored for users seeking no-config, dependable ad blocking. Installa
 
 The interface is intentionally simple with clean SwiftUI design. The setup screens have friendly copy like "Welcome to Wipr!" with clear explanations.
 
+<div align="center">
 <img width="908" height="578" alt="CleanShot 2025-08-20 at 18 28 16" src="https://github.com/user-attachments/assets/e28bd3a2-276d-43ac-9870-965fcdd7eb92" />
+</div>
 
 Wipr dynamically allocates rule lists across multiple extensions (Wipr 1–3 and Extra) to accommodate Safari’s 150,000-rule ceiling. This process is handled automatically, requiring no intervention.
 
@@ -73,7 +82,9 @@ Sources: [App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), [All Ab
 
 AdGuard Mini represents a major rework of AdGuard for Safari, released in December 2025 with significant improvements. The rebranding clarifies AdGuard's product line: "Mini" denotes browser extension-based blockers, while "AdGuard Ad Blocker" refers to system-wide apps. Note that AdGuard Mini is macOS-only; AdGuard for iOS is a separate product.
 
+<div align="center">
 <img width="1536" height="1184" alt="image" src="https://github.com/user-attachments/assets/6a768683-5abf-4334-88ac-70b0dd49e722" />
+</div>
 
 The Safari Extensions panel shows seven different extensions working together, each handling different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity—very similar to wBlock's setup. The interface is feature-rich with statistics, logging, custom filter editing, element blocking tools, and configuration aplenty. Multi-language support remains impressive with 20+ language filter lists.
 
@@ -172,7 +183,7 @@ Allows running or installing custom scripts (like Greasemonkey/Tampermonkey)—f
 <sup>15</sup> AdGuard's userscript support is available only in its paid standalone AdGuard for Mac application, not in AdGuard Mini (the Safari browser extension).
 
 <sup>16</sup> **AdBlock Tester Score**:  
-AdBlock Tester scores (adblocktester.com, etc.) depend mostly on which filter lists you enable—extension features matter less. Even simple ad blockers can score 100/100 if using up-to-date and comprehensive lists; heavy, feature-rich blockers may score lower if filters are incomplete or outdated.
+AdBlock Tester scores (adblocktester.com, etc.) depend mostly on which filter lists you enable—extension features matter less. Even simple ad blockers can score 100/100 if using up-to-date and comprehensive lists; heavy, feature-rich blockers may score lower if filters are incomplete or outdated. It is important to note that the scores provided by this website should not be considered a reliable measure of effectiveness, as highlighted by several ad blocker developers. These scores may not fully capture the nuanced performance or impact of the tools being tested and should therefore be interpreted with caution.
 
 <sup>17</sup> **Foreign Language Filter Support**:
 Reflects whether ad blockers have official filter lists for multiple languages/regions. AdGuard Mini supports 20+ languages with official filters; uBlock Origin Lite permits more than 15; wBlock can load manual lists but the app itself is limited to English for now.
