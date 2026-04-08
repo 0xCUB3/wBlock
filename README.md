@@ -45,7 +45,7 @@
 
 <p align="center">
 A Safari content blocker for macOS, iOS, and iPadOS.<br>
-750,000 rules across 5 extensions, Protocol Buffer storage, LZ4 compression, iCloud sync.
+750,000 rules across 5 extensions, Protocol Buffer storage, LZ4 compression, and iCloud sync.
 </p>
 
 <br>
@@ -120,9 +120,10 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
     <source media="(prefers-color-scheme: light)" srcset="docs/media/img/userscripts_macos_light.png" width="700" />
     <img src="docs/media/img/userscripts_macos_light.png" alt="Userscript Management Screenshot" width="700" />
   </picture>
-<br><br>
+<br><!-- single <br> as screenshot has whitespace -->
 <strong>Userscript Management</strong><br>
 <em>Manage paywalls, YouTube Dislikes, and more</em>
+<br><br>
 </td>
 </tr>
 <tr>
@@ -132,9 +133,10 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
     <source media="(prefers-color-scheme: light)" srcset="docs/media/img/settings_macos_light.png" width="700" />
     <img src="docs/media/img/settings_macos_light.png" alt="Settings Screenshot" width="700" />
   </picture>
-<br><br>
+<br><!-- single <br> as screenshot has whitespace -->
 <strong>Settings & Customization</strong><br>
 <em>Configure auto-updates, notifications, and preferences</em>
+<br><br>
 </td>
 </tr>
 <tr>
@@ -147,6 +149,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 <br><br>
 <strong>iOS Interface</strong><br>
 <em>Full-featured blocking on iPhone</em>
+<br><br>
 </td>
 </tr>
 <tr>
@@ -159,6 +162,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 <br><br>
 <strong>iPadOS Interface</strong><br>
 <em>Full-featured blocking on iPad</em>
+<br><br>
 </td>
 </tr>
 </table>
@@ -210,7 +214,8 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 
 ## Support Development
 
-wBlock is free and open source. If you want to support the project:
+wBlock is free and open source.<br>
+If you want to support the project:
 
 <br>
 
