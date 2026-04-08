@@ -133,7 +133,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
     <source media="(prefers-color-scheme: light)" srcset="docs/media/img/settings_macos_light.png" width="700" />
     <img src="docs/media/img/settings_macos_light.png" alt="Settings Screenshot" width="700" />
   </picture>
-<br><!-- single <br> as screenshot has whitespace -->
+<br>
 <strong>Settings & Customization</strong><br>
 <em>Configure auto-updates, notifications, and preferences</em>
 <br><br>
