@@ -1,7 +1,7 @@
 <div align="center">
 
 <picture>
-  <img src="https://github.com/user-attachments/assets/eaa6e163-0230-4458-a690-5c67e03df46a" alt="wBlock Logo" width="120"/>
+  <img src="docs/media/img/wblock_logo.png" alt="wBlock Logo" width="120" />
 </picture>
 
 # wBlock
@@ -11,7 +11,11 @@
 <br>
 
 <a href="https://apps.apple.com/us/app/wblock/id6746388723?itscg=30200&itsct=apps_box_badge&mttnsubad=6746388723">
-  <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1760313600" alt="Download on the App Store" width="245" height="82" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/white/en-us?releaseDate=1760313600" width="245" height="82" />
+    <source media="(prefers-color-scheme: light)" srcset="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1760313600" width="245" height="82" />
+    <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1760313600" alt="Download on the App Store" width="245" height="82" />
+  </picture>
 </a>
     
 
@@ -30,7 +34,11 @@
 <br>
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/3fd411ac-f781-4db5-bd4e-4cea82edf3d7" alt="wBlock Interface" width="900"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/hero_image_dark.png" width="900" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/hero_image_light.png" width="900" />
+    <img src="docs/media/img/hero_image_light.png" alt="wBlock Interface" width="900" />
+  </picture>
 </div>
 
 <br>
@@ -107,7 +115,11 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 <table>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/09c4cec5-14a0-4d12-a0de-1f6544162ceb" alt="Userscript Management Screenshot" width="700"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/userscripts_macos_dark.png" width="700" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/userscripts_macos_light.png" width="700" />
+    <img src="docs/media/img/userscripts_macos_light.png" alt="Userscript Management Screenshot" width="700" />
+  </picture>
 <br><br>
 <strong>Userscript Management</strong><br>
 <em>Manage paywalls, YouTube Dislikes, and more</em>
@@ -115,7 +127,11 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 </tr>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/0a9d0da5-b94a-42e6-880c-f0f9425b38a2" alt="Settings Screenshot" width="700"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/settings_macos_dark.png" width="700" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/settings_macos_light.png" width="700" />
+    <img src="docs/media/img/settings_macos_light.png" alt="Settings Screenshot" width="700" />
+  </picture>
 <br><br>
 <strong>Settings & Customization</strong><br>
 <em>Configure auto-updates, notifications, and preferences</em>
@@ -123,10 +139,26 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 </tr>
 <tr>
 <td align="center">
-<img src="https://github.com/user-attachments/assets/ec518eed-0cd7-47ba-8a41-63813fc4fbd2" alt="iOS Screenshot" width="350"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/filters_ios_dark.png" width="350" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/filters_ios_light.png" width="350" />
+    <img src="docs/media/img/filters_ios_light.png" alt="iOS Screenshot" width="350" />
+  </picture>
 <br><br>
 <strong>iOS Interface</strong><br>
-<em>Full-featured blocking on iPhone and iPad</em>
+<em>Full-featured blocking on iPhone</em>
+</td>
+</tr>
+<tr>
+<td align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/filters_ipados_dark.png" width="700" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/filters_ipados_light.png" width="700" />
+    <img src="docs/media/img/filters_ipados_light.png" alt="iPadOS Screenshot" width="700" />
+  </picture>
+<br><br>
+<strong>iPadOS Interface</strong><br>
+<em>Full-featured blocking on iPad</em>
 </td>
 </tr>
 </table>
@@ -219,9 +251,9 @@ No. wBlock uses Safari's native declarative content blocking API, which processe
 </details>
 
 <details>
-<summary><b>Do userscripts work on iOS?</b></summary>
+<summary><b>Do userscripts work on iOS and iPadOS?</b></summary>
 <br>
-Yes. The userscript engine implements the Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest, GM_addStyle) on both iOS and macOS via Safari Web Extensions.
+Yes. The userscript engine implements the Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest, GM_addStyle) on iOS, iPadOS, and macOS via Safari Web Extensions.
 </details>
 
 <details>
@@ -231,7 +263,7 @@ Auto-update intervals are configurable from 1 hour to 7 days, or manually trigge
 </details>
 
 <details>
-<summary><b>Is the element zapper available on iOS?</b></summary>
+<summary><b>Is the element zapper available on iOS and iPadOS?</b></summary>
 <br>
 Yes. Open the wBlock extension popup in Safari and tap <i>Activate Element Zapper</i>.
 </details>
