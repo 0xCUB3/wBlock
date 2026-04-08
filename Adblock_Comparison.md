@@ -5,23 +5,28 @@
 
 wBlock is what Safari ad blocking arguably ought to be. Setup is efficient: enable all the Safari extensions, follow the onboarding, and you’re running. 
 
-The interface is clean and native, built with SwiftUI. Both the iOS and macOS version employ Content Blocker Extensions, which are Apple's remarkably efficient frameworks for static ad blocking. Since they run in near constant time, memory usage doesn't balloon with large lists as it might with other content blockers. Indeed, on my M2 Pro MacBook Pro, wBlock consumes little more than a few dozen megabytes of memory at any time. 
+The interface is clean and native, built with SwiftUI. Both the iOS/iPadOS and macOS versions employ Content Blocker Extensions, which are Apple's remarkably efficient frameworks for static ad blocking. Since they run in near constant time, memory usage doesn't balloon with large lists as it might with other content blockers. Indeed, on my M2 Pro MacBook Pro, wBlock consumes little more than a few dozen megabytes of memory at any time. 
 
 You can examine detailed statistics for source rules and how they’re converted for Safari, complete with conversion and reload times.
 
 <div align="center">
-<img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/bd3ca8aa-ee72-44e6-8b1c-7a5563c25976" />
-</div>
-<div align="center">
-<img width="812" height="732" alt="image" src="https://github.com/user-attachments/assets/db0d8dcb-9ed3-4f7c-9efb-53d1079514b0" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/apply_changes_dark.png" width="700" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/apply_changes_light.png" width="700" />
+    <img src="docs/media/img/apply_changes_light.png" alt="Apply Changes Screenshot" width="700" />
+  </picture>
 </div>
 
-You can see exactly what's happening with detailed statistics showing X source rules converted to Y Safari rules, complete with conversion and reload times. If you're into these kind of things, it's great to have the numbers right in front of you.
+You can see exactly what's happening with detailed statistics showing X source rules converted to Y Safari rules, complete with conversion and reload times. If you're into these kinds of things, it's great to have the numbers right in front of you.
 
 The main settings screen shows your enabled filter lists with toggle switches. Each list shows rule counts, and you can see categories like Ads, Privacy, and Security clearly organized. wBlock Scripts provides additional filtering capabilities like cosmetic rules and scriptlet injection.
 
 <div align="center">
-<img width="377" alt="Safari Element Zapper" src="https://github.com/user-attachments/assets/58c368a4-2b3e-4bc0-9e7b-d448b84d22d1" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/zapper_dark.png" width="350" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/zapper_light.png" width="350" />
+    <img src="docs/media/img/zapper_light.png" alt="Element Zapper" width="350" />
+  </picture>
 </div>
 
 What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, wBlock includes several userscripts like AdGuard Extra (enabled by default), Bypass Paywalls Clean, Return YouTube Dislike, and YouTube Classic, but you can add almost any script you want!
@@ -41,7 +46,7 @@ uBlock Origin Lite is the lobotomized version of uBlock Origin, rebuilt from scr
 The interface keeps things simple. The main popup has an intuitive blocking level slider where you can adjust from "basic" to "optimal" to "complete" without understanding technical details, though its lack of verbosity leaves something to be desired for more advanced users. This is marginally more approachable than original uBlock Origin's power-user matrix interface.
 
 <div align="center">
-<img width="1112" height="762" alt="image" src="https://github.com/user-attachments/assets/79f99d54-a6b6-4c54-b9d4-51fa57c34865" />
+  <img src="docs/media/img/adblock_comparison/ublock_origin_lite.png" alt="uBlock Origin Lite Screenshot" width="700" />
 </div>
 
 The popup shows real-time blocking stats when you're on a website. You can see it actively blocking content with clear indicators for different blocked content types, though just like with wBlock, the toolbar item doesn't update immediately. Settings are cleanly organized with categorized filter lists you can toggle based on your needs, though as a webpage rather than an app.
@@ -63,7 +68,11 @@ Wipr 2 is tailored for users seeking no-config, dependable ad blocking. Installa
 The interface is intentionally simple with clean SwiftUI design. The setup screens have friendly copy like "Welcome to Wipr!" with clear explanations.
 
 <div align="center">
-<img width="908" height="578" alt="CleanShot 2025-08-20 at 18 28 16" src="https://github.com/user-attachments/assets/e28bd3a2-276d-43ac-9870-965fcdd7eb92" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/adblock_comparison/wipr_2_dark.png" width="700" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/adblock_comparison/wipr_2_light.png" width="700" />
+    <img src="docs/media/img/adblock_comparison/wipr_2_light.png" alt="Wipr 2 Screenshot" width="700" />
+  </picture>
 </div>
 
 Wipr dynamically allocates rule lists across multiple extensions (Wipr 1–3 and Extra) to accommodate Safari’s 150,000-rule ceiling. This process is handled automatically, requiring no intervention.
@@ -83,7 +92,11 @@ Sources: [App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), [All Ab
 AdGuard Mini represents a major rework of AdGuard for Safari, released in December 2025 with significant improvements. The rebranding clarifies AdGuard's product line: "Mini" denotes browser extension-based blockers, while "AdGuard Ad Blocker" refers to system-wide apps. Note that AdGuard Mini is macOS-only; AdGuard for iOS is a separate product.
 
 <div align="center">
-<img width="1536" height="1184" alt="image" src="https://github.com/user-attachments/assets/6a768683-5abf-4334-88ac-70b0dd49e722" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/adblock_comparison/adguard_mini_dark.png" width="700" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/adblock_comparison/adguard_mini_light.png" width="700" />
+    <img src="docs/media/img/adblock_comparison/adguard_mini_light.png" alt="AdGuard Mini Screenshot" width="700" />
+  </picture>
 </div>
 
 The Safari Extensions panel shows seven different extensions working together, each handling different rule categories to work within Safari's per-extension limits while maximizing total filtering capacity—very similar to wBlock's setup. The interface is feature-rich with statistics, logging, custom filter editing, element blocking tools, and configuration aplenty. Multi-language support remains impressive with 20+ language filter lists.
@@ -100,8 +113,8 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 
 # Feature Comparison
 
-| Feature                 | wBlock<sup>1</sup>                | uBlock Origin Lite<sup>2</sup> | Wipr 2<sup>3</sup>                 | AdGuard Mini<sup>4</sup>     |
-|-------------------------|-----------------------------------|----------------------|-----------------------|-----------------------|
+| **Feature**             | **wBlock**<sup>1</sup>            | **uBlock Origin Lite**<sup>2</sup> | **Wipr 2**<sup>3</sup> | **AdGuard Mini**<sup>4</sup>     |
+|:------------------------|:---------------------------------:|:---------------------:|:---------------------:|:---------------------:|
 | macOS Support           | ✅      | ✅          | ✅               | ✅               |
 | iOS Support             | ✅      | ✅          | ✅               | ❌<sup>20</sup>               |
 | RAM Usage (MB)          | 40MB<sup>6</sup>                  | 120MB<sup>6</sup>   | 50MB<sup>6</sup>     | ~100MB<sup>6</sup>     |
@@ -129,7 +142,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-safari/overview.html), [A
 | Cost                    | Free                              | Free                 | $4.99 one-time        | Free (Pro available)                 |
 | Subscription Model      | ❌                                 | ❌                   | ❌                    | ❌                   |
 | Active Development      | ✅                                 | ✅                   | ✅                    | ✅                   |
-| Community Size          | Growing (2.3k stars)              | Large (cross-browser)| Small/Independent     | Large (35M users)    |
+| Community Size          | Growing (2.4k stars)              | Large (cross-browser)| Small/Independent     | Large (35M users)    |
 | Per-Site Disable        | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Whitelist Management    | ✅                                 | ✅                   | ✅                    | ✅                   |
 | Logging/Debugging       | ✅                                 | ❌                   | ❌                    | ✅                   |
