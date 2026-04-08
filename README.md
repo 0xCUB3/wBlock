@@ -120,7 +120,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
     <source media="(prefers-color-scheme: light)" srcset="docs/media/img/userscripts_macos_light.png" width="700" />
     <img src="docs/media/img/userscripts_macos_light.png" alt="Userscript Management Screenshot" width="700" />
   </picture>
-<br><!-- single <br> as screenshot has whitespace -->
+<br>
 <strong>Userscript Management</strong><br>
 <em>Manage paywalls, YouTube Dislikes, and more</em>
 <br><br>
