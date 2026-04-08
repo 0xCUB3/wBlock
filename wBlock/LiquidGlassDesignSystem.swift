@@ -113,7 +113,7 @@ extension View {
 struct ToolbarSearchField: View {
     @Binding var text: String
     @Binding var isExpanded: Bool
-    var prompt: String = "Search"
+    var prompt: LocalizedStringKey = "Search"
 
     @FocusState private var isFocused: Bool
 
@@ -139,7 +139,7 @@ struct ToolbarSearchField: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .help("Close search")
+                    .help(String(localized: "Close search"))
                 }
                 .padding(.horizontal, 8)
                 .frame(width: 220)

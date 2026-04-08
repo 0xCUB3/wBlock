@@ -141,7 +141,12 @@ struct ApplyChangesProgressView: View {
             }
 
             if !summary.blockersApproachingLimit.isEmpty {
-                Text("Near Safari limit: \(summary.blockersApproachingLimit.sorted().joined(separator: ", "))")
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString("Near Safari limit: %@", comment: "Apply changes near-limit warning"),
+                        summary.blockersApproachingLimit.sorted().joined(separator: ", ")
+                    )
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

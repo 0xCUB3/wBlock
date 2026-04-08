@@ -311,3 +311,87 @@
 "Source Rules" = "Κανόνες Πηγής";
 "Conversion" = "Μετατροπή";
 "Reload" = "Επαναφόρτωση";
+
+"Apply" = "Εφαρμογή";
+"Apply changes" = "Εφαρμογή αλλαγών";
+"Apply your pending changes" = "Εφαρμογή των εκκρεμών αλλαγών σου";
+"Background Diagnostics" = "Διαγνωστικά παρασκηνίου";
+"Backup" = "Αντίγραφο ασφαλείας";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Αντίγραφο ασφαλείας από %@ (έκδοση εφαρμογής %@, %@ φίλτρα). Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή.";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "Έλεγχος πράκτορα παρασκηνίου…";
+"Close search" = "Κλείσιμο αναζήτησης";
+"Completed" = "Ολοκληρώθηκε";
+"Due soon catch-up" = "Επίκειται σύντομα ανάκτηση";
+"Edit" = "Επεξεργασία";
+"Element Zapper Rules" = "Κανόνες στοιχειο-αφανιστή";
+"Execution: %@" = "Εκτέλεση: %@";
+"Expired %@" = "Έληξε %@";
+"Export Settings" = "Εξαγωγή ρυθμίσεων";
+"Export failed: %@" = "Η εξαγωγή απέτυχε: %@";
+"Failed" = "Απέτυχε";
+"Failed to create backup." = "Αποτυχία δημιουργίας αντιγράφου ασφαλείας.";
+"Failed to read backup: %@" = "Αποτυχία ανάγνωσης αντιγράφου ασφαλείας: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Τα φίλτρα ενημερώνονται στο παρασκήνιο, αλλά ο χρονισμός είναι κατά προσέγγιση. Αν κλείσεις αναγκαστικά το wBlock από τον εναλλάκτη εφαρμογών, οι ενημερώσεις παρασκηνίου μπορεί να σταματήσουν μέχρι να ανοίξεις ξανά την εφαρμογή.";
+"Foreground Catch-up" = "Ανάκτηση στο προσκήνιο";
+"Import Settings" = "Εισαγωγή ρυθμίσεων";
+"Import failed: %@" = "Η εισαγωγή απέτυχε: %@";
+"Info.plist missing" = "Λείπει το Info.plist";
+"Near Safari limit: %@" = "Κοντά στο όριο του Safari: %@";
+"No Element Zapper Rules" = "Δεν υπάρχουν κανόνες στοιχειο-αφανιστή";
+"No background run recorded" = "Δεν έχει καταγραφεί εκτέλεση παρασκηνίου";
+"No foreground catch-up recorded" = "Δεν έχει καταγραφεί ανάκτηση στο προσκήνιο";
+"No silent push received yet" = "Δεν έχει ληφθεί ακόμη σιωπηλή ειδοποίηση push";
+"No submit attempt yet" = "Δεν υπάρχει ακόμη προσπάθεια υποβολής";
+"Not recorded" = "Δεν καταγράφηκε";
+"Only community-maintained lists available. Enable them if you're comfortable." = "Διατίθενται μόνο λίστες που συντηρούνται από την κοινότητα. Ενεργοποίησέ τες αν νιώθεις άνετα.";
+"Open Login Items" = "Άνοιγμα στοιχείων σύνδεσης";
+"Overdue catch-up" = "Καθυστερημένη ανάκτηση";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js ή .js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
+"Recorded" = "Καταγράφηκε";
+"Received %@, %@ %@" = "Ελήφθη %@, %@ %@";
+"Received %@, waiting for completion" = "Ελήφθη %@, αναμονή για ολοκλήρωση";
+"Refresh rules" = "Ανανέωση κανόνων";
+"Registered" = "Καταχωρήθηκε";
+"Registration: %@" = "Καταχώριση: %@";
+"Reminders" = "Υπενθυμίσεις";
+"Restore" = "Επαναφορά";
+"Restore Settings?" = "Επαναφορά ρυθμίσεων;";
+"Rule deleted" = "Ο κανόνας διαγράφηκε";
+"Scheduler error" = "Σφάλμα προγραμματιστή";
+"Scheduling: %@" = "Προγραμματισμός: %@";
+"Settings restored. Tap Apply Changes to activate." = "Οι ρυθμίσεις επαναφέρθηκαν. Πάτησε Εφαρμογή αλλαγών για ενεργοποίηση.";
+"Show Enabled Only" = "Εμφάνιση μόνο ενεργών";
+"Silent Push" = "Σιωπηλή ειδοποίηση push";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Ορισμένα φίλτρα απενεργοποιήθηκαν αυτόματα επειδή ξεπεράστηκαν τα όρια κανόνων του Safari.";
+"Start Fresh" = "Νέα αρχή";
+"Started %@" = "Ξεκίνησε %@";
+"Submitted" = "Υποβλήθηκε";
+"Submit failed" = "Η υποβολή απέτυχε";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Αυτό θα αφαιρέσει όλα τα φίλτρα, τα userscripts και τις προτιμήσεις και έπειτα θα ξεκινήσει ξανά τη ροή αρχικής ρύθμισης.";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή με τις ρυθμίσεις του αντιγράφου ασφαλείας.";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "Τα ακόλουθα φίλτρα απενεργοποιήθηκαν αυτόματα:
+
+%@
+
+Για να τα ενεργοποιήσεις ξανά, απενεργοποίησε άλλα μεγάλα φίλτρα και εφάρμοσε ξανά τις αλλαγές.";
+"Timed out" = "Έληξε ο χρόνος";
+"Too many pending tasks" = "Πάρα πολλές εκκρεμείς εργασίες";
+"Unavailable" = "Μη διαθέσιμο";
+"Undo" = "Αναίρεση";
+"Updating…" = "Γίνεται ενημέρωση…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Εξαφάνισε στοιχεία σε οποιονδήποτε ιστότοπο με την επέκταση wBlock στο Safari και διαχειρίσου τα εδώ.";
+"due now" = "λήγει τώρα";
+"never" = "ποτέ";
+"%d rule" = "%d κανόνας";
+"%d rules" = "%d κανόνες";
+"(%@ rules)" = "(%@ κανόνες)";
+"(%@ source → %@ expanded rules)" = "(%@ κανόνες πηγής → %@ αναπτυγμένοι κανόνες)";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "Βρέθηκε υπάρχουσα διαμόρφωση του wBlock στο iCloud (%@). Θέλεις να την υιοθετήσεις ή να ξεκινήσεις από την αρχή και να ανεβάσεις την τρέχουσα ρύθμισή σου;";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "Βρέθηκε υπάρχουσα διαμόρφωση του wBlock στο iCloud. Θέλεις να την υιοθετήσεις ή να ξεκινήσεις από την αρχή και να ανεβάσεις την τρέχουσα ρύθμισή σου;";
+"%@ %@, %@" = "%@ %@, %@";

@@ -311,3 +311,87 @@
 "Source Rules" = "Quellregeln";
 "Conversion" = "Konvertierung";
 "Reload" = "Neu laden";
+
+"Apply" = "Anwenden";
+"Apply changes" = "Änderungen anwenden";
+"Apply your pending changes" = "Ausstehende Änderungen anwenden";
+"Background Diagnostics" = "Hintergrunddiagnose";
+"Backup" = "Backup";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup von %@ (App v%@, %@ Filter). Dadurch werden deine aktuellen Filterauswahlen, die Whitelist und die Regeln des Element-Entferners ersetzt.";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "Hintergrundagent wird geprüft…";
+"Close search" = "Suche schließen";
+"Completed" = "Abgeschlossen";
+"Due soon catch-up" = "Bald fällige Aufholung";
+"Edit" = "Bearbeiten";
+"Element Zapper Rules" = "Regeln des Element-Entferners";
+"Execution: %@" = "Ausführung: %@";
+"Expired %@" = "Abgelaufen %@";
+"Export Settings" = "Einstellungen exportieren";
+"Export failed: %@" = "Export fehlgeschlagen: %@";
+"Failed" = "Fehlgeschlagen";
+"Failed to create backup." = "Backup konnte nicht erstellt werden.";
+"Failed to read backup: %@" = "Backup konnte nicht gelesen werden: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Filter werden im Hintergrund aktualisiert, der Zeitpunkt ist aber nur ungefähr. Wenn du wBlock im App-Umschalter zwangsweise beendest, werden Hintergrundaktualisierungen möglicherweise blockiert, bis du die App erneut öffnest.";
+"Foreground Catch-up" = "Nachholen im Vordergrund";
+"Import Settings" = "Einstellungen importieren";
+"Import failed: %@" = "Import fehlgeschlagen: %@";
+"Info.plist missing" = "Info.plist fehlt";
+"Near Safari limit: %@" = "Nahe am Safari-Limit: %@";
+"No Element Zapper Rules" = "Keine Regeln des Element-Entferners";
+"No background run recorded" = "Kein Hintergrundlauf aufgezeichnet";
+"No foreground catch-up recorded" = "Kein Nachholen im Vordergrund aufgezeichnet";
+"No silent push received yet" = "Noch kein stiller Push empfangen";
+"No submit attempt yet" = "Noch kein Sendeversuch";
+"Not recorded" = "Nicht aufgezeichnet";
+"Only community-maintained lists available. Enable them if you're comfortable." = "Es sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn dir das recht ist.";
+"Open Login Items" = "Anmeldeobjekte öffnen";
+"Overdue catch-up" = "Überfällige Aufholung";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Füge den direkten .user.js- oder .js-Link ein. wBlock lädt ihn herunter und installiert ihn für dich.";
+"Recorded" = "Aufgezeichnet";
+"Received %@, %@ %@" = "Empfangen %@, %@ %@";
+"Received %@, waiting for completion" = "Empfangen %@, warte auf Abschluss";
+"Refresh rules" = "Regeln aktualisieren";
+"Registered" = "Registriert";
+"Registration: %@" = "Registrierung: %@";
+"Reminders" = "Erinnerungen";
+"Restore" = "Wiederherstellen";
+"Restore Settings?" = "Einstellungen wiederherstellen?";
+"Rule deleted" = "Regel gelöscht";
+"Scheduler error" = "Planungsfehler";
+"Scheduling: %@" = "Planung: %@";
+"Settings restored. Tap Apply Changes to activate." = "Einstellungen wiederhergestellt. Tippe auf Änderungen anwenden, um sie zu aktivieren.";
+"Show Enabled Only" = "Nur aktivierte anzeigen";
+"Silent Push" = "Stiller Push";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Einige Filter wurden automatisch deaktiviert, weil Safaris Regellimits überschritten wurden.";
+"Start Fresh" = "Neu beginnen";
+"Started %@" = "Gestartet %@";
+"Submitted" = "Eingereicht";
+"Submit failed" = "Einreichen fehlgeschlagen";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Dadurch werden alle Filter, Userscripts und Einstellungen entfernt und der Einrichtungsablauf neu gestartet.";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Dadurch werden deine aktuellen Filterauswahlen, die Whitelist und die Regeln des Element-Entferners durch die gesicherten Einstellungen ersetzt.";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "Die folgenden Filter wurden automatisch deaktiviert:
+
+%@
+
+Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende die Änderungen erneut an.";
+"Timed out" = "Zeitüberschreitung";
+"Too many pending tasks" = "Zu viele ausstehende Aufgaben";
+"Unavailable" = "Nicht verfügbar";
+"Undo" = "Rückgängig";
+"Updating…" = "Wird aktualisiert…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Entferne Elemente auf beliebigen Websites mit der wBlock-Erweiterung in Safari und verwalte sie dann hier.";
+"due now" = "jetzt fällig";
+"never" = "nie";
+"%d rule" = "%d Regel";
+"%d rules" = "%d Regeln";
+"(%@ rules)" = "(%@ Regeln)";
+"(%@ source → %@ expanded rules)" = "(%@ Quellregeln → %@ erweiterte Regeln)";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "In iCloud wurde eine vorhandene wBlock-Konfiguration gefunden (%@). Möchtest du sie übernehmen oder neu beginnen und deine aktuelle Einrichtung hochladen?";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "In iCloud wurde eine vorhandene wBlock-Konfiguration gefunden. Möchtest du sie übernehmen oder neu beginnen und deine aktuelle Einrichtung hochladen?";
+"%@ %@, %@" = "%@ %@, %@";

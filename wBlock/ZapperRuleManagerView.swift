@@ -101,7 +101,7 @@ struct ZapperRuleManagerView: View {
 
                 Spacer()
 
-                Text("\(count) \(count == 1 ? "rule" : "rules")")
+                Text(localizedRuleCount(count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.trailing, 4)
@@ -221,5 +221,13 @@ struct ZapperRuleManagerView: View {
                 expandedDomains.insert(domain)
             }
         }
+    }
+
+    private func localizedRuleCount(_ count: Int) -> String {
+        let key = count == 1 ? "%d rule" : "%d rules"
+        return String.localizedStringWithFormat(
+            NSLocalizedString(key, comment: "Element zapper rule count"),
+            count
+        )
     }
 }

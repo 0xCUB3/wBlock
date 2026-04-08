@@ -75,7 +75,17 @@ struct SettingsView: View {
         } message: {
             if let backup = pendingBackup {
                 let dateStr = backup.createdAt.formatted(date: .abbreviated, time: .shortened)
-                Text("Backup from \(dateStr) (app v\(backup.appVersion), \(backup.filterSelections.count) filters). This will replace your current filter selections, whitelist, and element zapper rules.")
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString(
+                            "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.",
+                            comment: "Restore backup confirmation message"
+                        ),
+                        dateStr,
+                        backup.appVersion,
+                        backup.filterSelections.count.formatted()
+                    )
+                )
             } else {
                 Text("This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.")
             }
@@ -100,7 +110,10 @@ struct SettingsView: View {
             defaultFilename: exportFilename()
         ) { result in
             if case .failure(let error) = result {
-                backupStatusMessage = "Export failed: \(error.localizedDescription)"
+                backupStatusMessage = String.localizedStringWithFormat(
+                    NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
+                    error.localizedDescription
+                )
                 showingBackupStatus = true
             }
         }
@@ -127,7 +140,15 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             if let syncAdoptTimestamp {
-                Text("An existing wBlock configuration was found in iCloud (\(syncAdoptTimestamp)). Would you like to adopt it, or start fresh and upload your current setup?")
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString(
+                            "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?",
+                            comment: "iCloud setup adoption prompt"
+                        ),
+                        syncAdoptTimestamp
+                    )
+                )
             } else {
                 Text("An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?")
             }
@@ -292,26 +313,37 @@ struct SettingsView: View {
         diagnostics: BackgroundTaskDiagnosticsSnapshot
     ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(
-                "Registration: " + diagnosticEventLine(
-                    timestamp: diagnostics.lastRegistrationTime,
-                    result: diagnostics.lastRegistrationResult,
-                    error: diagnostics.lastRegistrationError,
-                    fallback: "Not recorded"
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Registration: %@", comment: "Background task diagnostics"),
+                    diagnosticEventLine(
+                        timestamp: diagnostics.lastRegistrationTime,
+                        result: diagnostics.lastRegistrationResult,
+                        error: diagnostics.lastRegistrationError,
+                        fallback: String(localized: "Not recorded")
+                    )
                 )
             )
             Text(
-                "Scheduling: " + diagnosticEventLine(
-                    timestamp: diagnostics.lastScheduleAttemptTime,
-                    result: diagnostics.lastScheduleResult,
-                    error: diagnostics.lastScheduleError,
-                    fallback: "No submit attempt yet"
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Scheduling: %@", comment: "Background task diagnostics"),
+                    diagnosticEventLine(
+                        timestamp: diagnostics.lastScheduleAttemptTime,
+                        result: diagnostics.lastScheduleResult,
+                        error: diagnostics.lastScheduleError,
+                        fallback: String(localized: "No submit attempt yet")
+                    )
                 )
             )
-            Text("Execution: \(backgroundTaskExecutionLine(diagnostics))")
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Execution: %@", comment: "Background task diagnostics"),
+                    backgroundTaskExecutionLine(diagnostics)
+                )
+            )
         }
         .font(.footnote)
     }
@@ -319,7 +351,7 @@ struct SettingsView: View {
     @ViewBuilder
     private func diagnosticDetailView(title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(detail)
@@ -474,7 +506,7 @@ extension SettingsView {
     private func exportBackup() {
         let backup = BackupManager.createBackup(filterManager: filterManager)
         guard let data = try? BackupManager.exportData(backup: backup) else {
-            backupStatusMessage = "Failed to create backup."
+            backupStatusMessage = String(localized: "Failed to create backup.")
             showingBackupStatus = true
             return
         }
@@ -488,7 +520,10 @@ extension SettingsView {
             do {
                 try data.write(to: url, options: .atomic)
             } catch {
-                backupStatusMessage = "Export failed: \(error.localizedDescription)"
+                backupStatusMessage = String.localizedStringWithFormat(
+                    NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
+                    error.localizedDescription
+                )
                 showingBackupStatus = true
             }
         }
@@ -511,12 +546,18 @@ extension SettingsView {
                         showingRestoreBackupConfirmation = true
                     }
                 } catch {
-                    backupStatusMessage = "Failed to read backup: \(error.localizedDescription)"
+                    backupStatusMessage = String.localizedStringWithFormat(
+                        NSLocalizedString("Failed to read backup: %@", comment: "Backup import read failure"),
+                        error.localizedDescription
+                    )
                     showingBackupStatus = true
                 }
             }
         case .failure(let error):
-            backupStatusMessage = "Import failed: \(error.localizedDescription)"
+            backupStatusMessage = String.localizedStringWithFormat(
+                NSLocalizedString("Import failed: %@", comment: "Backup import failure"),
+                error.localizedDescription
+            )
             showingBackupStatus = true
         }
     }
@@ -526,7 +567,7 @@ extension SettingsView {
         pendingBackup = nil
         Task {
             await BackupManager.restoreBackup(backup, filterManager: filterManager)
-            backupStatusMessage = "Settings restored. Tap Apply Changes to activate."
+            backupStatusMessage = String(localized: "Settings restored. Tap Apply Changes to activate.")
             showingBackupStatus = true
         }
     }
@@ -639,10 +680,18 @@ extension SettingsView {
         }
 
         if diagnostics.lastCompletionTime > 0 {
-            return "Received \(formatDiagnosticTime(diagnostics.lastReceivedTime)), \(humanReadableDiagnosticResult(diagnostics.lastResult)) \(formatDiagnosticTime(diagnostics.lastCompletionTime))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Received %@, %@ %@", comment: "Silent push diagnostics"),
+                formatDiagnosticTime(diagnostics.lastReceivedTime),
+                humanReadableDiagnosticResult(diagnostics.lastResult),
+                formatDiagnosticTime(diagnostics.lastCompletionTime)
+            )
         }
 
-        return "Received \(formatDiagnosticTime(diagnostics.lastReceivedTime)), waiting for completion"
+        return String.localizedStringWithFormat(
+            NSLocalizedString("Received %@, waiting for completion", comment: "Silent push diagnostics"),
+            formatDiagnosticTime(diagnostics.lastReceivedTime)
+        )
     }
 
     private var foregroundCatchUpDiagnosticsLine: String {
@@ -651,7 +700,11 @@ extension SettingsView {
             return String(localized: "No foreground catch-up recorded")
         }
 
-        return "\(humanReadableDiagnosticResult(autoUpdateDiagnostics.lastForegroundCatchUpReason)) \(formatDiagnosticTime(timestamp))"
+        return String.localizedStringWithFormat(
+            NSLocalizedString("%@ %@", comment: "Diagnostic event summary"),
+            humanReadableDiagnosticResult(autoUpdateDiagnostics.lastForegroundCatchUpReason),
+            formatDiagnosticTime(timestamp)
+        )
     }
 
     private func formatDiagnosticTime(_ timestamp: Int64) -> String {
@@ -674,9 +727,18 @@ extension SettingsView {
         let normalizedResult = result.isEmpty ? AutoUpdateDiagnosticResult.recorded.rawValue : result
         let status = humanReadableDiagnosticResult(normalizedResult)
         if error.isEmpty {
-            return "\(status) \(formatDiagnosticTime(timestamp))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ %@", comment: "Diagnostic event summary"),
+                status,
+                formatDiagnosticTime(timestamp)
+            )
         }
-        return "\(status) \(formatDiagnosticTime(timestamp)), \(error)"
+        return String.localizedStringWithFormat(
+            NSLocalizedString("%@ %@, %@", comment: "Diagnostic event summary with error"),
+            status,
+            formatDiagnosticTime(timestamp),
+            error
+        )
     }
 
     private func backgroundTaskExecutionLine(_ diagnostics: BackgroundTaskDiagnosticsSnapshot) -> String {
@@ -684,15 +746,25 @@ extension SettingsView {
            diagnostics.lastExpirationTime >= diagnostics.lastStartTime,
            diagnostics.lastExpirationTime > 0
         {
-            return "Expired \(formatDiagnosticTime(diagnostics.lastExpirationTime))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Expired %@", comment: "Background task execution status"),
+                formatDiagnosticTime(diagnostics.lastExpirationTime)
+            )
         }
 
         if diagnostics.lastCompletionTime > 0 {
-            return "\(humanReadableDiagnosticResult(diagnostics.lastCompletionResult)) \(formatDiagnosticTime(diagnostics.lastCompletionTime))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ %@", comment: "Diagnostic event summary"),
+                humanReadableDiagnosticResult(diagnostics.lastCompletionResult),
+                formatDiagnosticTime(diagnostics.lastCompletionTime)
+            )
         }
 
         if diagnostics.lastStartTime > 0 {
-            return "Started \(formatDiagnosticTime(diagnostics.lastStartTime))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Started %@", comment: "Background task execution status"),
+                formatDiagnosticTime(diagnostics.lastStartTime)
+            )
         }
 
         return String(localized: "No background run recorded")

@@ -147,7 +147,7 @@
 "Cancel" = "Отмена";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Большой файл - прокрутка может быть медленной";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "Для блокировки рекламы на YouTube необходимо включить wBlock Scripts и установить «Always Allow on All Websites».";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "Для блокировки рекламы на YouTube необходимо включить wBlock Scripts и установить «Всегда разрешать на всех веб-сайтах».";
 "Privacy" = "Конфиденциальность";
 "Rules" = "Правила";
 "Enabled Lists" = "Включенные списки";
@@ -194,7 +194,7 @@
 "Default filters for balanced blocking and compatibility." = "Фильтры по умолчанию для сбалансированной блокировки и совместимости.";
 "Network" = "Сеть";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "Для блокировки рекламы на YouTube необходимо включить wBlock Scripts и установить «Allow» на всех сайтах.";
+"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "Для блокировки рекламы на YouTube необходимо включить wBlock Scripts и установить «Разрешить» на всех сайтах.";
 "Blocked: 1" = "Заблокировано: 1";
 "Checked %@" = "Проверено %@";
 "Actions" = "Действия";
@@ -311,3 +311,87 @@
 "Source Rules" = "Исходные правила";
 "Conversion" = "Конвертация";
 "Reload" = "Перезагрузка";
+
+"Apply" = "Применить";
+"Apply changes" = "Применить изменения";
+"Apply your pending changes" = "Применить ожидающие изменения";
+"Background Diagnostics" = "Диагностика в фоне";
+"Backup" = "Резервная копия";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Резервная копия от %@ (версия приложения %@, фильтров: %@). Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов.";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "Проверка фонового агента…";
+"Close search" = "Закрыть поиск";
+"Completed" = "Завершено";
+"Due soon catch-up" = "Скоро потребуется догоняющий запуск";
+"Edit" = "Изменить";
+"Element Zapper Rules" = "Правила скрытия элементов";
+"Execution: %@" = "Выполнение: %@";
+"Expired %@" = "Истекло %@";
+"Export Settings" = "Экспортировать настройки";
+"Export failed: %@" = "Ошибка экспорта: %@";
+"Failed" = "Не удалось";
+"Failed to create backup." = "Не удалось создать резервную копию.";
+"Failed to read backup: %@" = "Не удалось прочитать резервную копию: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Фильтры обновляются в фоне, но время приблизительное. Принудительное закрытие wBlock через переключатель приложений может помешать фоновым обновлениям, пока вы снова не откроете приложение.";
+"Foreground Catch-up" = "Догоняющий запуск в активном режиме";
+"Import Settings" = "Импортировать настройки";
+"Import failed: %@" = "Ошибка импорта: %@";
+"Info.plist missing" = "Отсутствует Info.plist";
+"Near Safari limit: %@" = "Близко к лимиту Safari: %@";
+"No Element Zapper Rules" = "Нет правил скрытия элементов";
+"No background run recorded" = "Нет записей о фоновом запуске";
+"No foreground catch-up recorded" = "Нет записей о догоняющем запуске в активном режиме";
+"No silent push received yet" = "Тихий push ещё не получен";
+"No submit attempt yet" = "Попыток отправки ещё не было";
+"Not recorded" = "Не записано";
+"Only community-maintained lists available. Enable them if you're comfortable." = "Доступны только списки, поддерживаемые сообществом. Включайте их, если вам это подходит.";
+"Open Login Items" = "Открыть элементы входа";
+"Overdue catch-up" = "Просроченный догоняющий запуск";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js или .js. wBlock скачает и установит её за вас.";
+"Recorded" = "Записано";
+"Received %@, %@ %@" = "Получено %@, %@ %@";
+"Received %@, waiting for completion" = "Получено %@, ожидание завершения";
+"Refresh rules" = "Обновить правила";
+"Registered" = "Зарегистрировано";
+"Registration: %@" = "Регистрация: %@";
+"Reminders" = "Напоминания";
+"Restore" = "Восстановить";
+"Restore Settings?" = "Восстановить настройки?";
+"Rule deleted" = "Правило удалено";
+"Scheduler error" = "Ошибка планировщика";
+"Scheduling: %@" = "Планирование: %@";
+"Settings restored. Tap Apply Changes to activate." = "Настройки восстановлены. Нажмите «Применить изменения», чтобы активировать их.";
+"Show Enabled Only" = "Показывать только включённые";
+"Silent Push" = "Тихий push";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Некоторые фильтры были автоматически отключены, потому что были превышены лимиты правил Safari.";
+"Start Fresh" = "Начать заново";
+"Started %@" = "Запущено %@";
+"Submitted" = "Отправлено";
+"Submit failed" = "Не удалось отправить";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Это удалит все фильтры, пользовательские скрипты и настройки, а затем заново запустит начальную настройку.";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов настройками из резервной копии.";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "Следующие фильтры были автоматически отключены:
+
+%@
+
+Чтобы включить их снова, отключите другие крупные фильтры и ещё раз примените изменения.";
+"Timed out" = "Время ожидания истекло";
+"Too many pending tasks" = "Слишком много ожидающих задач";
+"Unavailable" = "Недоступно";
+"Undo" = "Отменить";
+"Updating…" = "Обновление…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Скрывайте элементы на любом сайте с помощью расширения wBlock в Safari, а затем управляйте ими здесь.";
+"due now" = "пора выполнить сейчас";
+"never" = "никогда";
+"%d rule" = "%d правило";
+"%d rules" = "%d правил";
+"(%@ rules)" = "(%@ правил)";
+"(%@ source → %@ expanded rules)" = "(%@ исходных правил → %@ развёрнутых правил)";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "В iCloud найдена существующая конфигурация wBlock (%@). Хотите использовать её или начать заново и загрузить текущую настройку?";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "В iCloud найдена существующая конфигурация wBlock. Хотите использовать её или начать заново и загрузить текущую настройку?";
+"%@ %@, %@" = "%@ %@, %@";

@@ -147,7 +147,7 @@
 "Cancel" = "取消";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "文件较大，滚动可能较慢";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其设置为 'Always Allow on All Websites'。";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其设置为 '始终允许在所有网站上'。";
 "Privacy" = "隐私";
 "Rules" = "规则";
 "Enabled Lists" = "已启用列表";
@@ -194,7 +194,7 @@
 "Default filters for balanced blocking and compatibility." = "用于平衡拦截效果与兼容性的默认过滤器。";
 "Network" = "网络";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其在所有网站上设置为 'Allow'。";
+"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其在所有网站上设置为 '允许'。";
 "Blocked: 1" = "已拦截：1";
 "Checked %@" = "已检查 %@";
 "Actions" = "操作";
@@ -311,3 +311,87 @@
 "Source Rules" = "源规则";
 "Conversion" = "转换";
 "Reload" = "重新加载";
+
+"Apply" = "应用";
+"Apply changes" = "应用更改";
+"Apply your pending changes" = "应用待处理更改";
+"Background Diagnostics" = "后台诊断";
+"Backup" = "备份";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "来自 %@ 的备份（应用 v%@，%@ 个过滤器）。这将替换你当前的过滤器选择、白名单和元素清除规则。";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "正在检查后台代理…";
+"Close search" = "关闭搜索";
+"Completed" = "已完成";
+"Due soon catch-up" = "即将到期的补跑";
+"Edit" = "编辑";
+"Element Zapper Rules" = "元素清除规则";
+"Execution: %@" = "执行：%@";
+"Expired %@" = "已过期 %@";
+"Export Settings" = "导出设置";
+"Export failed: %@" = "导出失败：%@";
+"Failed" = "失败";
+"Failed to create backup." = "无法创建备份。";
+"Failed to read backup: %@" = "无法读取备份：%@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "过滤器会在后台更新，但时间只能大致保证。从应用切换器强制退出 wBlock 可能会阻止后台更新，直到你重新打开应用。";
+"Foreground Catch-up" = "前台补跑";
+"Import Settings" = "导入设置";
+"Import failed: %@" = "导入失败：%@";
+"Info.plist missing" = "缺少 Info.plist";
+"Near Safari limit: %@" = "接近 Safari 限制：%@";
+"No Element Zapper Rules" = "没有元素清除规则";
+"No background run recorded" = "没有记录到后台运行";
+"No foreground catch-up recorded" = "没有记录到前台补跑";
+"No silent push received yet" = "尚未收到静默推送";
+"No submit attempt yet" = "尚未尝试提交";
+"Not recorded" = "未记录";
+"Only community-maintained lists available. Enable them if you're comfortable." = "目前只有社区维护的列表可用。如果你愿意，可以启用它们。";
+"Open Login Items" = "打开登录项";
+"Overdue catch-up" = "逾期补跑";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "粘贴直接的 .user.js 或 .js 链接。wBlock 会为你下载并安装。";
+"Recorded" = "已记录";
+"Received %@, %@ %@" = "已收到 %@，%@ %@";
+"Received %@, waiting for completion" = "已收到 %@，等待完成";
+"Refresh rules" = "刷新规则";
+"Registered" = "已注册";
+"Registration: %@" = "注册：%@";
+"Reminders" = "提醒";
+"Restore" = "恢复";
+"Restore Settings?" = "恢复设置？";
+"Rule deleted" = "规则已删除";
+"Scheduler error" = "调度器错误";
+"Scheduling: %@" = "调度：%@";
+"Settings restored. Tap Apply Changes to activate." = "设置已恢复。点按“应用更改”以启用。";
+"Show Enabled Only" = "仅显示已启用项";
+"Silent Push" = "静默推送";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "由于超过 Safari 的规则限制，一些过滤器已被自动禁用。";
+"Start Fresh" = "重新开始";
+"Started %@" = "已开始 %@";
+"Submitted" = "已提交";
+"Submit failed" = "提交失败";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "这将移除所有过滤器、用户脚本和偏好设置，然后重新启动引导流程。";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "这将用备份中的设置替换你当前的过滤器选择、白名单和元素清除规则。";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "以下过滤器已被自动禁用：
+
+%@
+
+如需重新启用这些过滤器，请禁用其他较大的过滤器，然后再次应用更改。";
+"Timed out" = "超时";
+"Too many pending tasks" = "待处理任务过多";
+"Unavailable" = "不可用";
+"Undo" = "撤销";
+"Updating…" = "正在更新…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "使用 Safari 中的 wBlock 扩展在任意网站隐藏元素，然后在这里管理它们。";
+"due now" = "现在到期";
+"never" = "从不";
+"%d rule" = "%d 条规则";
+"%d rules" = "%d 条规则";
+"(%@ rules)" = "（%@ 条规则）";
+"(%@ source → %@ expanded rules)" = "（%@ 条源规则 → %@ 条展开规则）";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "在 iCloud 中发现了现有的 wBlock 配置（%@）。你想采用它，还是重新开始并上传当前设置？";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "在 iCloud 中发现了现有的 wBlock 配置。你想采用它，还是重新开始并上传当前设置？";
+"%@ %@, %@" = "%@ %@，%@";

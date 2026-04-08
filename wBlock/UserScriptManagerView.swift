@@ -228,8 +228,8 @@ struct UserScriptManagerView: View {
                     applyChangesToolbarButton
                         .help(
                             hasPendingChanges
-                                ? "Apply your pending changes"
-                                : "Apply changes"
+                                ? String(localized: "Apply your pending changes")
+                                : String(localized: "Apply changes")
                         )
 
                     Button {

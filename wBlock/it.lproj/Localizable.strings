@@ -147,7 +147,7 @@
 "Cancel" = "Annulla";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "File grande - lo scorrimento potrebbe essere lento";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts deve essere abilitato e impostato su 'Always Allow on All Websites' per bloccare gli annunci su YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts deve essere abilitato e impostato su 'Consenti sempre su tutti i siti web' per bloccare gli annunci su YouTube.";
 "Privacy" = "Privacy";
 "Rules" = "Regole";
 "Enabled Lists" = "Liste abilitate";
@@ -194,7 +194,7 @@
 "Default filters for balanced blocking and compatibility." = "Filtri predefiniti per un blocco bilanciato e una buona compatibilità.";
 "Network" = "Rete";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "wBlock Scripts deve essere abilitato e impostato su 'Allow' su tutti i siti web per bloccare gli annunci su YouTube.";
+"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "wBlock Scripts deve essere abilitato e impostato su 'Consenti' su tutti i siti web per bloccare gli annunci su YouTube.";
 "Blocked: 1" = "Bloccati: 1";
 "Checked %@" = "Controllato %@";
 "Actions" = "Azioni";
@@ -311,3 +311,87 @@
 "Source Rules" = "Regole sorgente";
 "Conversion" = "Conversione";
 "Reload" = "Ricarica";
+
+"Apply" = "Applica";
+"Apply changes" = "Applica modifiche";
+"Apply your pending changes" = "Applica le modifiche in sospeso";
+"Background Diagnostics" = "Diagnostica in background";
+"Backup" = "Backup";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup da %@ (app v%@, %@ filtri). Questo sostituirà le selezioni filtro attuali, la whitelist e le regole dello zapper elementi.";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "Controllo dell’agente in background…";
+"Close search" = "Chiudi ricerca";
+"Completed" = "Completato";
+"Due soon catch-up" = "Recupero in scadenza a breve";
+"Edit" = "Modifica";
+"Element Zapper Rules" = "Regole dello zapper elementi";
+"Execution: %@" = "Esecuzione: %@";
+"Expired %@" = "Scaduto %@";
+"Export Settings" = "Esporta impostazioni";
+"Export failed: %@" = "Esportazione non riuscita: %@";
+"Failed" = "Non riuscito";
+"Failed to create backup." = "Impossibile creare il backup.";
+"Failed to read backup: %@" = "Impossibile leggere il backup: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "I filtri si aggiornano in background, ma la tempistica è approssimativa. Forzare la chiusura di wBlock dal selettore app potrebbe impedire gli aggiornamenti in background finché non riapri l’app.";
+"Foreground Catch-up" = "Recupero in primo piano";
+"Import Settings" = "Importa impostazioni";
+"Import failed: %@" = "Importazione non riuscita: %@";
+"Info.plist missing" = "Info.plist mancante";
+"Near Safari limit: %@" = "Vicino al limite di Safari: %@";
+"No Element Zapper Rules" = "Nessuna regola dello zapper elementi";
+"No background run recorded" = "Nessuna esecuzione in background registrata";
+"No foreground catch-up recorded" = "Nessun recupero in primo piano registrato";
+"No silent push received yet" = "Nessuna notifica push silenziosa ricevuta finora";
+"No submit attempt yet" = "Nessun tentativo di invio finora";
+"Not recorded" = "Non registrato";
+"Only community-maintained lists available. Enable them if you're comfortable." = "Sono disponibili solo liste mantenute dalla community. Abilitale se ti va bene.";
+"Open Login Items" = "Apri elementi di login";
+"Overdue catch-up" = "Recupero in ritardo";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Incolla il link diretto .user.js o .js. wBlock lo scaricherà e installerà per te.";
+"Recorded" = "Registrato";
+"Received %@, %@ %@" = "Ricevuto %@, %@ %@";
+"Received %@, waiting for completion" = "Ricevuto %@, in attesa del completamento";
+"Refresh rules" = "Aggiorna regole";
+"Registered" = "Registrato";
+"Registration: %@" = "Registrazione: %@";
+"Reminders" = "Promemoria";
+"Restore" = "Ripristina";
+"Restore Settings?" = "Ripristinare le impostazioni?";
+"Rule deleted" = "Regola eliminata";
+"Scheduler error" = "Errore dello scheduler";
+"Scheduling: %@" = "Pianificazione: %@";
+"Settings restored. Tap Apply Changes to activate." = "Impostazioni ripristinate. Tocca Applica modifiche per attivarle.";
+"Show Enabled Only" = "Mostra solo gli elementi abilitati";
+"Silent Push" = "Push silenzioso";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Alcuni filtri sono stati disattivati automaticamente perché sono stati superati i limiti di Safari.";
+"Start Fresh" = "Ricomincia da zero";
+"Started %@" = "Avviato %@";
+"Submitted" = "Inviato";
+"Submit failed" = "Invio non riuscito";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Questo rimuoverà tutti i filtri, gli userscript e le preferenze, quindi riavvierà il flusso di onboarding.";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Questo sostituirà le selezioni filtro attuali, la whitelist e le regole dello zapper elementi con le impostazioni del backup.";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "I seguenti filtri sono stati disattivati automaticamente:
+
+%@
+
+Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche.";
+"Timed out" = "Tempo scaduto";
+"Too many pending tasks" = "Troppi task in sospeso";
+"Unavailable" = "Non disponibile";
+"Undo" = "Annulla";
+"Updating…" = "Aggiornamento…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Nascondi elementi su qualsiasi sito con l’estensione wBlock in Safari, poi gestiscili qui.";
+"due now" = "in scadenza ora";
+"never" = "mai";
+"%d rule" = "%d regola";
+"%d rules" = "%d regole";
+"(%@ rules)" = "(%@ regole)";
+"(%@ source → %@ expanded rules)" = "(%@ regole sorgente → %@ regole espanse)";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "È stata trovata una configurazione wBlock esistente in iCloud (%@). Vuoi adottarla o ricominciare da zero e caricare la configurazione attuale?";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "È stata trovata una configurazione wBlock esistente in iCloud. Vuoi adottarla o ricominciare da zero e caricare la configurazione attuale?";
+"%@ %@, %@" = "%@ %@, %@";

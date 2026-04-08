@@ -147,7 +147,7 @@
 "Cancel" = "Anulează";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Fișier mare - derularea poate fi lentă";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts trebuie activat și setat la 'Always Allow on All Websites' pentru a bloca reclamele YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts trebuie activat și setat la 'Permite întotdeauna pe toate site-urile web' pentru a bloca reclamele YouTube.";
 "Privacy" = "Confidențialitate";
 "Rules" = "Reguli";
 "Enabled Lists" = "Liste activate";
@@ -194,7 +194,7 @@
 "Default filters for balanced blocking and compatibility." = "Filtre implicite pentru blocare echilibrată și compatibilitate.";
 "Network" = "Rețea";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "wBlock Scripts trebuie activat și setat la 'Allow' pe toate site-urile web pentru a bloca reclamele YouTube.";
+"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "wBlock Scripts trebuie activat și setat la 'Permite' pe toate site-urile web pentru a bloca reclamele YouTube.";
 "Blocked: 1" = "Blocat: 1";
 "Checked %@" = "Verificat %@";
 "Actions" = "Acțiuni";
@@ -311,3 +311,87 @@
 "Source Rules" = "Reguli sursă";
 "Conversion" = "Conversie";
 "Reload" = "Reîncărcare";
+
+"Apply" = "Aplică";
+"Apply changes" = "Aplică modificările";
+"Apply your pending changes" = "Aplică modificările în așteptare";
+"Background Diagnostics" = "Diagnostic de fundal";
+"Backup" = "Copie de rezervă";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Copie de rezervă din %@ (app v%@, %@ filtre). Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente.";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "Se verifică agentul de fundal…";
+"Close search" = "Închide căutarea";
+"Completed" = "Finalizat";
+"Due soon catch-up" = "Recuperare scadentă în curând";
+"Edit" = "Editează";
+"Element Zapper Rules" = "Reguli pentru eliminatorul de elemente";
+"Execution: %@" = "Executare: %@";
+"Expired %@" = "Expirat %@";
+"Export Settings" = "Exportă setările";
+"Export failed: %@" = "Exportul a eșuat: %@";
+"Failed" = "Eșuat";
+"Failed to create backup." = "Nu s-a putut crea copia de rezervă.";
+"Failed to read backup: %@" = "Nu s-a putut citi copia de rezervă: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Filtrele se actualizează în fundal, dar momentul este aproximativ. Închiderea forțată a wBlock din comutatorul de aplicații poate împiedica actualizările de fundal până când redeschizi aplicația.";
+"Foreground Catch-up" = "Recuperare în prim-plan";
+"Import Settings" = "Importă setările";
+"Import failed: %@" = "Importul a eșuat: %@";
+"Info.plist missing" = "Lipsește Info.plist";
+"Near Safari limit: %@" = "Aproape de limita Safari: %@";
+"No Element Zapper Rules" = "Nicio regulă pentru eliminatorul de elemente";
+"No background run recorded" = "Nicio rulare în fundal înregistrată";
+"No foreground catch-up recorded" = "Nicio recuperare în prim-plan înregistrată";
+"No silent push received yet" = "Nu a fost primit încă niciun push silențios";
+"No submit attempt yet" = "Nicio încercare de trimitere încă";
+"Not recorded" = "Neînregistrat";
+"Only community-maintained lists available. Enable them if you're comfortable." = "Sunt disponibile doar liste întreținute de comunitate. Activează-le dacă ești confortabil cu asta.";
+"Open Login Items" = "Deschide elementele de autentificare";
+"Overdue catch-up" = "Recuperare întârziată";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Lipește linkul direct .user.js sau .js. wBlock îl va descărca și instala pentru tine.";
+"Recorded" = "Înregistrat";
+"Received %@, %@ %@" = "Primit %@, %@ %@";
+"Received %@, waiting for completion" = "Primit %@, în așteptarea finalizării";
+"Refresh rules" = "Reîmprospătează regulile";
+"Registered" = "Înregistrat";
+"Registration: %@" = "Înregistrare: %@";
+"Reminders" = "Mementouri";
+"Restore" = "Restaurează";
+"Restore Settings?" = "Restaurezi setările?";
+"Rule deleted" = "Regulă ștearsă";
+"Scheduler error" = "Eroare de planificare";
+"Scheduling: %@" = "Programare: %@";
+"Settings restored. Tap Apply Changes to activate." = "Setările au fost restaurate. Atinge Aplică modificările pentru a le activa.";
+"Show Enabled Only" = "Arată doar elementele activate";
+"Silent Push" = "Push silențios";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Unele filtre au fost dezactivate automat deoarece au fost depășite limitele de reguli Safari.";
+"Start Fresh" = "Pornește de la zero";
+"Started %@" = "Pornit %@";
+"Submitted" = "Trimis";
+"Submit failed" = "Trimiterea a eșuat";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Aceasta va elimina toate filtrele, userscripturile și preferințele, apoi va relansa fluxul de configurare inițială.";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente cu setările din copia de rezervă.";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "Următoarele filtre au fost dezactivate automat:
+
+%@
+
+Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modificările.";
+"Timed out" = "Timp expirat";
+"Too many pending tasks" = "Prea multe sarcini în așteptare";
+"Unavailable" = "Indisponibil";
+"Undo" = "Anulează";
+"Updating…" = "Se actualizează…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Ascunde elemente pe orice site folosind extensia wBlock din Safari, apoi gestionează-le aici.";
+"due now" = "scadent acum";
+"never" = "niciodată";
+"%d rule" = "%d regulă";
+"%d rules" = "%d reguli";
+"(%@ rules)" = "(%@ reguli)";
+"(%@ source → %@ expanded rules)" = "(%@ reguli sursă → %@ reguli extinse)";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "A fost găsită o configurație wBlock existentă în iCloud (%@). Vrei să o adopți sau să pornești de la zero și să încarci configurarea actuală?";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "A fost găsită o configurație wBlock existentă în iCloud. Vrei să o adopți sau să pornești de la zero și să încarci configurarea actuală?";
+"%@ %@, %@" = "%@ %@, %@";

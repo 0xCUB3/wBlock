@@ -311,3 +311,88 @@
 "Source Rules" = "Source Rules";
 "Conversion" = "Conversion";
 "Reload" = "Reload";
+
+"Apply" = "Apply";
+"Apply changes" = "Apply changes";
+"Apply your pending changes" = "Apply your pending changes";
+"Background Diagnostics" = "Background Diagnostics";
+"Backup" = "Backup";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "Checking background agent…";
+"Close search" = "Close search";
+"Completed" = "Completed";
+"Due soon catch-up" = "Due soon catch-up";
+"Edit" = "Edit";
+"Element Zapper Rules" = "Element Zapper Rules";
+"Execution: %@" = "Execution: %@";
+"Expired %@" = "Expired %@";
+"Export Settings" = "Export Settings";
+"Export failed: %@" = "Export failed: %@";
+"Failed" = "Failed";
+"Failed to create backup." = "Failed to create backup.";
+"Failed to read backup: %@" = "Failed to read backup: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.";
+"Foreground Catch-up" = "Foreground Catch-up";
+"Import Settings" = "Import Settings";
+"Import failed: %@" = "Import failed: %@";
+"Info.plist missing" = "Info.plist missing";
+"Near Safari limit: %@" = "Near Safari limit: %@";
+"No Element Zapper Rules" = "No Element Zapper Rules";
+"No background run recorded" = "No background run recorded";
+"No foreground catch-up recorded" = "No foreground catch-up recorded";
+"No silent push received yet" = "No silent push received yet";
+"No submit attempt yet" = "No submit attempt yet";
+"Not recorded" = "Not recorded";
+"Open Login Items" = "Open Login Items";
+"Overdue catch-up" = "Overdue catch-up";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Paste the direct .user.js or .js link. wBlock will download and install it for you.";
+"Recorded" = "Recorded";
+"Received %@, %@ %@" = "Received %@, %@ %@";
+"Received %@, waiting for completion" = "Received %@, waiting for completion";
+"Refresh rules" = "Refresh rules";
+"Registered" = "Registered";
+"Registration: %@" = "Registration: %@";
+"Reminders" = "Reminders";
+"Restore" = "Restore";
+"Restore Settings?" = "Restore Settings?";
+"Rule deleted" = "Rule deleted";
+"Scheduler error" = "Scheduler error";
+"Scheduling: %@" = "Scheduling: %@";
+"Show Enabled Only" = "Show Enabled Only";
+"Silent Push" = "Silent Push";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Some filters were automatically disabled because Safari's rule limits were exceeded.";
+"Start Fresh" = "Start Fresh";
+"Started %@" = "Started %@";
+"Submitted" = "Submitted";
+"Submit failed" = "Submit failed";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again.";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.";
+"Timed out" = "Timed out";
+"Too many pending tasks" = "Too many pending tasks";
+"Undo" = "Undo";
+"Unavailable" = "Unavailable";
+"Updating…" = "Updating…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Zap elements on any website using the wBlock extension in Safari, then manage them here.";
+"due now" = "due now";
+"never" = "never";
+"%d rule" = "%d rule";
+"%d rules" = "%d rules";
+"(%@ rules)" = "(%@ rules)";
+"(%@ source → %@ expanded rules)" = "(%@ source → %@ expanded rules)";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?";
+"Settings restored. Tap Apply Changes to activate." = "Settings restored. Tap Apply Changes to activate.";
+
+"Only community-maintained lists available. Enable them if you're comfortable." = "Only community-maintained lists available. Enable them if you're comfortable.";
+"%@ %@, %@" = "%@ %@, %@";

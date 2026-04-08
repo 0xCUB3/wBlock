@@ -224,11 +224,11 @@ struct ContentView: View {
 
                     if !showFilterSearch {
                         applyChangesToolbarButton
-                        .help(
-                            hasPendingChanges
-                                ? "Apply your pending changes"
-                                : "Apply changes"
-                        )
+                            .help(
+                                hasPendingChanges
+                                    ? String(localized: "Apply your pending changes")
+                                    : String(localized: "Apply changes")
+                            )
 
                         Button {
                             showingAddFilterSheet = true
@@ -527,13 +527,27 @@ struct FilterRowView: View {
                    let expandedCount = filter.sourceRuleCount,
                    rawCount != expandedCount {
                     // Both counts available and different — show expansion
-                    Text("(\(rawCount.formatted()) source \u{2192} \(expandedCount.formatted()) expanded rules)")
+                    Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString(
+                                "(%@ source → %@ expanded rules)",
+                                comment: "Filter rule expansion summary"
+                            ),
+                            rawCount.formatted(),
+                            expandedCount.formatted()
+                        )
+                    )
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let count = filter.sourceRuleCount, count > 0 {
                     // Single count (no expansion, counts match, or rawSourceRuleCount is nil after restart)
-                    Text("(\(count.formatted()) rules)")
+                    Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
+                            count.formatted()
+                        )
+                    )
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -656,12 +670,17 @@ struct ContentModifiers: ViewModifier {
                 Button("OK", role: .cancel) {}
             } message: {
                 if filterManager.autoDisabledFilters.isEmpty {
-                    Text(
-                        "Some filters were automatically disabled because Safari's rule limits were exceeded."
-                    )
+                    Text("Some filters were automatically disabled because Safari's rule limits were exceeded.")
                 } else {
+                    let filterNames = filterManager.autoDisabledFilters.map(\.name).joined(separator: "\n")
                     Text(
-                        "The following filters were automatically disabled:\n\n\(filterManager.autoDisabledFilters.map { $0.name }.joined(separator: "\n"))\n\nTo re-enable these filters, disable other large filters and apply changes again."
+                        String.localizedStringWithFormat(
+                            NSLocalizedString(
+                                "The following filters were automatically disabled:\n\n%@\n\nTo re-enable these filters, disable other large filters and apply changes again.",
+                                comment: "Auto-disabled filters alert"
+                            ),
+                            filterNames
+                        )
                     )
                 }
             }

@@ -311,3 +311,87 @@
 "Source Rules" = "ソースルール";
 "Conversion" = "変換";
 "Reload" = "再読み込み";
+
+"Apply" = "適用";
+"Apply changes" = "変更を適用";
+"Apply your pending changes" = "保留中の変更を適用";
+"Background Diagnostics" = "バックグラウンド診断";
+"Backup" = "バックアップ";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 個のフィルター）です。現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがこれで置き換えられます。";
+"BGAppRefresh" = "BGAppRefresh";
+"BGProcessing" = "BGProcessing";
+"Checking background agent…" = "バックグラウンドエージェントを確認中…";
+"Close search" = "検索を閉じる";
+"Completed" = "完了";
+"Due soon catch-up" = "まもなく期限の追いつき実行";
+"Edit" = "編集";
+"Element Zapper Rules" = "要素ザッパーのルール";
+"Execution: %@" = "実行: %@";
+"Expired %@" = "期限切れ %@";
+"Export Settings" = "設定を書き出す";
+"Export failed: %@" = "書き出しに失敗しました: %@";
+"Failed" = "失敗";
+"Failed to create backup." = "バックアップの作成に失敗しました。";
+"Failed to read backup: %@" = "バックアップの読み込みに失敗しました: %@";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "フィルターはバックグラウンドで更新されますが、タイミングはおおよそです。アプリスイッチャーから wBlock を強制終了すると、再度開くまでバックグラウンド更新が行われないことがあります。";
+"Foreground Catch-up" = "フォアグラウンド追いつき実行";
+"Import Settings" = "設定を読み込む";
+"Import failed: %@" = "読み込みに失敗しました: %@";
+"Info.plist missing" = "Info.plist が見つかりません";
+"Near Safari limit: %@" = "Safari の上限に近づいています: %@";
+"No Element Zapper Rules" = "要素ザッパーのルールはありません";
+"No background run recorded" = "バックグラウンド実行の記録がありません";
+"No foreground catch-up recorded" = "フォアグラウンド追いつき実行の記録がありません";
+"No silent push received yet" = "まだサイレントプッシュを受信していません";
+"No submit attempt yet" = "まだ送信の試行がありません";
+"Not recorded" = "記録なし";
+"Only community-maintained lists available. Enable them if you're comfortable." = "コミュニティ管理のリストのみ利用できます。問題なければ有効にしてください。";
+"Open Login Items" = "ログイン項目を開く";
+"Overdue catch-up" = "期限超過の追いつき実行";
+"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "直接の .user.js または .js リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
+"Recorded" = "記録済み";
+"Received %@, %@ %@" = "%@ に受信、%@ %@";
+"Received %@, waiting for completion" = "%@ に受信、完了待ち";
+"Refresh rules" = "ルールを更新";
+"Registered" = "登録済み";
+"Registration: %@" = "登録: %@";
+"Reminders" = "リマインダー";
+"Restore" = "復元";
+"Restore Settings?" = "設定を復元しますか？";
+"Rule deleted" = "ルールを削除しました";
+"Scheduler error" = "スケジューラエラー";
+"Scheduling: %@" = "スケジュール: %@";
+"Settings restored. Tap Apply Changes to activate." = "設定を復元しました。有効にするには「変更を適用」をタップしてください。";
+"Show Enabled Only" = "有効なものだけ表示";
+"Silent Push" = "サイレントプッシュ";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Safari のルール上限を超えたため、一部のフィルターが自動的に無効になりました。";
+"Start Fresh" = "最初から始める";
+"Started %@" = "開始 %@";
+"Submitted" = "送信済み";
+"Submit failed" = "送信に失敗しました";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "これにより、すべてのフィルター、ユーザースクリプト、設定が削除され、初期設定フローが再起動されます。";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがバックアップ設定に置き換えられます。";
+"The following filters were automatically disabled:
+
+%@
+
+To re-enable these filters, disable other large filters and apply changes again." = "次のフィルターは自動的に無効になりました:
+
+%@
+
+再度有効にするには、他の大きなフィルターを無効にしてからもう一度変更を適用してください。";
+"Timed out" = "タイムアウト";
+"Too many pending tasks" = "保留中のタスクが多すぎます";
+"Unavailable" = "利用できません";
+"Undo" = "元に戻す";
+"Updating…" = "更新中…";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari の wBlock 拡張機能で任意のサイトの要素を消し、ここで管理できます。";
+"due now" = "今すぐ実行";
+"never" = "なし";
+"%d rule" = "%d 件のルール";
+"%d rules" = "%d 件のルール";
+"(%@ rules)" = "（%@ 件のルール）";
+"(%@ source → %@ expanded rules)" = "（元 %@ 件 → 展開後 %@ 件のルール）";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "iCloud に既存の wBlock 設定が見つかりました（%@）。これを採用しますか、それとも最初から始めて現在の設定をアップロードしますか？";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "iCloud に既存の wBlock 設定が見つかりました。これを採用しますか、それとも最初から始めて現在の設定をアップロードしますか？";
+"%@ %@, %@" = "%@ %@, %@";
