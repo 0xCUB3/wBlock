@@ -3481,7 +3481,7 @@
 			repositoryURL = "https://github.com/AdguardTeam/SafariConverterLib";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.2.1;
+				minimumVersion = 4.2.2;
 			};
 		};
 		C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
