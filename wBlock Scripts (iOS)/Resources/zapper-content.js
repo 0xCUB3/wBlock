@@ -391,6 +391,14 @@
       #${UI_ROOT_ID} button:disabled { opacity: 0.5; }
       #${UI_ROOT_ID} .wblock-nav { display: none; gap: 10px; }
       #${UI_ROOT_ID} .wblock-nav.wblock-active { display: flex; }
+      #${UI_ROOT_ID} .wblock-nav.wblock-active .wblock-hide-btn { background: rgba(249,115,22,0.88); animation: wblock-hide-pulse 1.8s ease-in-out 0.3s 2; }
+      @keyframes wblock-hide-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.25); } }
+      #${UI_ROOT_ID} .wblock-refine-active .wblock-done-btn { opacity: 0.45; }
+      #${UI_ROOT_ID} .wblock-more-btn { padding: 10px 8px; font-size: 16px; letter-spacing: 1px; line-height: 1; }
+      #${UI_ROOT_ID} .wblock-overflow { position: absolute; bottom: calc(100% + 8px); right: 0; min-width: 160px; padding: 4px; border-radius: 12px; backdrop-filter: blur(16px); background: rgba(30, 30, 32, 0.88); box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transform: translateY(4px) scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
+      #${UI_ROOT_ID} .wblock-overflow.wblock-open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+      #${UI_ROOT_ID} .wblock-overflow button { width: 100%; text-align: left; justify-content: flex-start; border-radius: 8px; padding: 10px 12px; min-height: 36px; font-size: 13px; font-weight: 500; background: transparent; }
+      #${UI_ROOT_ID} .wblock-overflow button:active { background: rgba(255,255,255,0.1); }
       @media (max-width: 430px) {
         #${UI_ROOT_ID} .wblock-bar { flex-direction: column; align-items: stretch; }
         #${UI_ROOT_ID} .wblock-status { font-size: 14px; }
@@ -434,21 +442,58 @@
     };
     undoButton.addEventListener('click', onUndo);
 
+    // --- Overflow menu (···) ---
+    const overflowWrap = document.createElement('span');
+    overflowWrap.style.position = 'relative';
+
+    const moreButton = document.createElement('button');
+    moreButton.type = 'button';
+    moreButton.className = 'wblock-more-btn';
+    moreButton.textContent = '\u00B7\u00B7\u00B7';
+    moreButton.title = 'More options';
+
+    const overflowMenu = document.createElement('div');
+    overflowMenu.className = 'wblock-overflow';
+
     const manualButton = document.createElement('button');
     manualButton.type = 'button';
-    manualButton.textContent = 'Add Rule';
+    manualButton.textContent = 'Add custom CSS rule\u2026';
     const onManualRule = (e) => {
       if (e) {
         e.preventDefault();
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       }
+      closeOverflow();
       addManualRuleFromPrompt().catch(() => {});
     };
     manualButton.addEventListener('click', onManualRule);
 
+    overflowMenu.appendChild(manualButton);
+    overflowWrap.appendChild(moreButton);
+    overflowWrap.appendChild(overflowMenu);
+
+    function closeOverflow() {
+      overflowMenu.classList.remove('wblock-open');
+    }
+
+    const onMoreClick = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
+      overflowMenu.classList.toggle('wblock-open');
+    };
+    moreButton.addEventListener('click', onMoreClick);
+
+    const onOverflowOutside = (e) => {
+      if (!overflowMenu.classList.contains('wblock-open')) return;
+      if (overflowWrap.contains(e.target)) return;
+      closeOverflow();
+    };
+    document.addEventListener('pointerdown', onOverflowOutside, true);
+    state.cleanupFns.push(() => document.removeEventListener('pointerdown', onOverflowOutside, true));
+
     const doneButton = document.createElement('button');
     doneButton.type = 'button';
+    doneButton.className = 'wblock-done-btn';
     doneButton.textContent = 'Done';
     const onDone = (e) => {
       if (e) {
@@ -466,7 +511,7 @@
     defaultGroup.style.display = 'flex';
     defaultGroup.style.gap = '10px';
     defaultGroup.appendChild(undoButton);
-    defaultGroup.appendChild(manualButton);
+    defaultGroup.appendChild(overflowWrap);
 
     const navGroup = document.createElement('span');
     navGroup.className = 'wblock-nav';
@@ -495,6 +540,7 @@
 
     const hideButton = document.createElement('button');
     hideButton.type = 'button';
+    hideButton.className = 'wblock-hide-btn';
     hideButton.textContent = '\u2713 Hide';
     const onHide = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
@@ -824,6 +870,8 @@
     setHighlightForElement(element);
     if (state.ui.navGroup) state.ui.navGroup.classList.add('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'none';
+    const actionsEl = state.ui.doneButton && state.ui.doneButton.parentElement;
+    if (actionsEl) actionsEl.classList.add('wblock-refine-active');
     updateRefineStatus();
   }
 
@@ -833,6 +881,8 @@
     clearHighlight();
     if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
+    const actionsEl = state.ui.doneButton && state.ui.doneButton.parentElement;
+    if (actionsEl) actionsEl.classList.remove('wblock-refine-active');
     if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
   }
 
@@ -840,7 +890,7 @@
     const el = state.candidateElement;
     if (!el) return;
     const label = elementLabel(el);
-    if (state.ui.statusText) state.ui.statusText.textContent = `${label} — ▲▼ to adjust, ✓ to hide`;
+    if (state.ui.statusText) state.ui.statusText.textContent = `${label} — ▲▼ to adjust, tap Hide to save`;
     const parent = el.parentElement;
     const atTop = !parent || parent === document.body || parent === document.documentElement;
     if (state.ui.parentButton) state.ui.parentButton.disabled = atTop;
