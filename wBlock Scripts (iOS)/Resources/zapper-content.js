@@ -1149,6 +1149,13 @@
   browser.runtime.onMessage.addListener((message) => {
     if (!message || typeof message !== 'object') return;
 
+    if (message.type === 'wblock:pageSupportProbe') {
+      return Promise.resolve({
+        ok: true,
+        host: safeHostname(),
+        protocol: typeof location !== 'undefined' ? location.protocol : '',
+      });
+    }
     if (message.type === 'wblock:zapper:activate') {
       activateZapper();
       return;

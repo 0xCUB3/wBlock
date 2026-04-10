@@ -1,6 +1,28 @@
 const NATIVE_HOST_ID = 'application.id';
 const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 const ZAPPER_META_PREFIX = 'wblock.zapperMeta.v1:';
+const SUPPORT_PROBE_TIMEOUT_MS = 800;
+
+function normalizeDiagnosticFields(fields) {
+    return Object.fromEntries(
+        Object.entries(fields)
+            .filter(([, value]) => value !== undefined && value !== null && value !== '')
+            .map(([key, value]) => [key, String(value)])
+    );
+}
+
+async function logExtensionDiagnostic(fields) {
+    const normalizedFields = normalizeDiagnosticFields(fields);
+    console.info('[wBlock] Support diagnostic', normalizedFields);
+    try {
+        await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+            action: 'logExtensionDiagnostic',
+            fields: normalizedFields,
+        });
+    } catch (error) {
+        console.warn('[wBlock] Failed to forward support diagnostic to native log:', error, normalizedFields);
+    }
+}
 
 function normalizeRules(rules) {
     return Array.from(new Set((rules || [])
@@ -179,13 +201,43 @@ async function getActiveTab() {
     return tabs && tabs.length ? tabs[0] : null;
 }
 
-function hostnameFromUrl(urlString) {
-    try {
-        const url = new URL(urlString);
-        return url.hostname || '';
-    } catch {
-        return '';
+function getPageSupport(tab) {
+    if (!tab || !tab.id || typeof tab.url !== 'string' || tab.url.length === 0) {
+        return { supported: false, host: '' };
     }
+
+    try {
+        const url = new URL(tab.url);
+        const supported = (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname);
+        return {
+            supported,
+            host: supported ? url.hostname : '',
+        };
+    } catch {
+        return { supported: false, host: '' };
+    }
+}
+
+async function probeTabSupport(tabId) {
+    if (!tabId) return false;
+
+    const probePromise = browser.tabs.sendMessage(tabId, {
+        type: 'wblock:pageSupportProbe',
+    })
+        .then((response) => Boolean(
+            response &&
+            response.ok === true &&
+            (response.protocol === 'http:' || response.protocol === 'https:') &&
+            typeof response.host === 'string' &&
+            response.host.length > 0
+        ))
+        .catch(() => false);
+
+    const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve(false), SUPPORT_PROBE_TIMEOUT_MS);
+    });
+
+    return Promise.race([probePromise, timeoutPromise]);
 }
 
 function zapperStorageKey(host) {
@@ -489,15 +541,26 @@ async function refreshUi() {
         openAppButton.hidden = !(await shouldShowOpenAppButton());
     }
     tab = await getActiveTab();
-    host = tab && tab.url ? hostnameFromUrl(tab.url) : '';
+    const pageSupport = getPageSupport(tab);
+    const contentScriptReachable = pageSupport.supported ? await probeTabSupport(tab.id) : false;
+    host = contentScriptReachable ? pageSupport.host : '';
 
     if (hostEl) hostEl.textContent = host || '—';
 
-    if (!tab || !tab.id || !host) {
-        setStatus('Unavailable', 'neutral');
+    if (!pageSupport.supported || !contentScriptReachable) {
+        setStatus('Unsupported', 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
+        await logExtensionDiagnostic({
+            event: 'popup_support_fallback',
+            source: 'popup',
+            outcome: 'unsupported',
+            reason: !pageSupport.supported ? 'url_unsupported' : 'probe_unreachable',
+            tabId: tab && tab.id ? tab.id : '',
+            url: tab && typeof tab.url === 'string' ? tab.url : '',
+            host: pageSupport.host,
+        });
         await updateZapperCount('');
         setRulesExpanded(false);
         return;

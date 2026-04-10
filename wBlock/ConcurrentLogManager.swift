@@ -235,6 +235,11 @@ public actor ConcurrentLogManager {
             .appendingPathComponent("auto_update.log")
     }
 
+    private func sharedWebExtensionLogURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)?
+            .appendingPathComponent("web_extension.log")
+    }
+
     public func ingestSharedAutoUpdateLog() {
         guard let url = sharedAutoUpdateLogURL(),
               FileManager.default.fileExists(atPath: url.path),
@@ -258,7 +263,32 @@ public actor ConcurrentLogManager {
         try? FileManager.default.removeItem(at: url)
     }
 
+    public func ingestSharedWebExtensionLog() {
+        guard let url = sharedWebExtensionLogURL(),
+              FileManager.default.fileExists(atPath: url.path),
+              let content = try? String(contentsOf: url, encoding: .utf8),
+              !content.isEmpty else {
+            return
+        }
+
+        let lines = content.split(separator: "\n").map(String.init)
+        for line in lines {
+            if let fields = parseSharedFieldsLine(line, prefix: "diagnostic ") {
+                let event = fields["event"]?.replacingOccurrences(of: "_", with: " ") ?? "diagnostic"
+                log(.debug, .system, "Web extension \(event)", metadata: fields)
+            } else {
+                log(.debug, .system, line, metadata: ["source": "web-extension"])
+            }
+        }
+
+        try? FileManager.default.removeItem(at: url)
+    }
+
     private func parseTelemetryLine(_ line: String) -> [String: String]? {
+        parseSharedFieldsLine(line, prefix: "telemetry ")
+    }
+
+    private func parseSharedFieldsLine(_ line: String, prefix: String) -> [String: String]? {
         let body: String
         if let bracketEnd = line.firstIndex(of: "]") {
             let afterTimestamp = line.index(after: bracketEnd)
@@ -267,8 +297,8 @@ public actor ConcurrentLogManager {
             body = line
         }
 
-        guard body.hasPrefix("telemetry ") else { return nil }
-        let payload = body.dropFirst("telemetry ".count)
+        guard body.hasPrefix(prefix) else { return nil }
+        let payload = body.dropFirst(prefix.count)
         var metadata: [String: String] = [:]
 
         for token in payload.split(separator: " ") {

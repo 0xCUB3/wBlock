@@ -19,6 +19,8 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
+    private static let sharedWebExtensionLogFilename = "web_extension.log"
+
     private static func emptyRulesPayload() -> [String: Any] {
         [
             "css": [],
@@ -82,6 +84,9 @@ public enum WebExtensionRequestHandler {
                 return
             case "openContainingApp":
                 handleOpenContainingApp(context: context)
+                return
+            case "logExtensionDiagnostic":
+                handleLogExtensionDiagnostic(message: message!, context: context)
                 return
             default:
                 break
@@ -359,6 +364,59 @@ public enum WebExtensionRequestHandler {
             "error": error
         ])
         context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleLogExtensionDiagnostic(message: [String: Any?], context: NSExtensionContext) {
+        let rawFields = message["fields"] as? [String: Any]
+        let fields = rawFields?.reduce(into: [String: String]()) { partial, entry in
+            partial[entry.key] = String(describing: entry.value)
+        } ?? [:]
+
+        if !fields.isEmpty {
+            appendSharedWebExtensionDiagnostic(fields)
+            os_log(.info, "Web extension diagnostic: %@", fields.description)
+        }
+
+        let response = createResponse(with: ["ok": true])
+        context.completeRequest(returningItems: [response])
+    }
+
+    private static func appendSharedWebExtensionDiagnostic(_ fields: [String: String]) {
+        let payload = fields
+            .map { key, value in
+                let normalized = value.replacingOccurrences(of: " ", with: "_")
+                return "\(key)=\(normalized)"
+            }
+            .sorted()
+            .joined(separator: " ")
+        appendSharedWebExtensionLog("diagnostic \(payload)")
+    }
+
+    private static func appendSharedWebExtensionLog(_ line: String) {
+        guard let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            return
+        }
+
+        let logURL = base.appendingPathComponent(sharedWebExtensionLogFilename)
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let fullLine = "[\(timestamp)] \(line)\n"
+
+        guard let data = fullLine.data(using: .utf8) else {
+            return
+        }
+
+        if FileManager.default.fileExists(atPath: logURL.path) {
+            do {
+                let handle = try FileHandle(forWritingTo: logURL)
+                defer { try? handle.close() }
+                try handle.seekToEnd()
+                try handle.write(contentsOf: data)
+            } catch {
+                try? data.write(to: logURL, options: .atomic)
+            }
+        } else {
+            try? data.write(to: logURL)
+        }
     }
 
 

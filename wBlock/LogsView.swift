@@ -257,6 +257,7 @@ struct LogsView: View {
 
     private func loadLogs() async {
         await ConcurrentLogManager.shared.ingestSharedAutoUpdateLog()
+        await ConcurrentLogManager.shared.ingestSharedWebExtensionLog()
         entries = await ConcurrentLogManager.shared.getEntries()
     }
 

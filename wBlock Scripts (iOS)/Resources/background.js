@@ -18321,6 +18321,232 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return response;
   };
+  const POPUP_PATH = "pages/popup/popup.html";
+  const SUPPORTED_PAGE_PROTOCOLS = new Set(["http:", "https:"]);
+  const SUPPORT_PROBE_TIMEOUT_MS = 800;
+  const canControlActionState = typeof browser !== "undefined" && !!(browser.action && browser.action.enable && browser.action.disable);
+  const canSetActionPopup = typeof browser !== "undefined" && !!(browser.action && browser.action.setPopup);
+  const canObserveTabs = typeof browser !== "undefined" && !!browser.tabs;
+  const supportStateByTab = new Map();
+  const normalizeDiagnosticFields = fields => {
+    const entries = Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && value !== "");
+    return Object.fromEntries(entries.map(([key, value]) => [key, String(value)]));
+  };
+  const logSupportDiagnostic = async fields => {
+    const normalizedFields = normalizeDiagnosticFields(fields);
+    console.info("[wBlock] Support diagnostic", normalizedFields);
+    try {
+      await browser.runtime.sendNativeMessage("application.id", {
+        action: "logExtensionDiagnostic",
+        fields: normalizedFields
+      });
+    } catch (error) {
+      console.warn("[wBlock] Failed to forward support diagnostic to native log:", error, normalizedFields);
+    }
+  };
+  const isSupportedActionUrl = urlString => {
+    if (typeof urlString !== "string" || urlString.length === 0) {
+      return {
+        supported: false,
+        reason: "missing_url",
+        url: ""
+      };
+    }
+    try {
+      const url = new URL(urlString);
+      if (!SUPPORTED_PAGE_PROTOCOLS.has(url.protocol)) {
+        return {
+          supported: false,
+          reason: "unsupported_scheme",
+          url: urlString,
+          protocol: url.protocol,
+          host: url.hostname || ""
+        };
+      }
+      if (url.hostname.length === 0) {
+        return {
+          supported: false,
+          reason: "missing_hostname",
+          url: urlString,
+          protocol: url.protocol
+        };
+      }
+      return {
+        supported: true,
+        reason: "url_supported",
+        url: urlString,
+        protocol: url.protocol,
+        host: url.hostname
+      };
+    } catch (_unused) {
+      return {
+        supported: false,
+        reason: "invalid_url",
+        url: urlString
+      };
+    }
+  };
+  const probeTabSupport = async tabId => {
+    if (!canObserveTabs || !browser.tabs.sendMessage || typeof tabId !== "number") {
+      return {
+        reachable: false,
+        reason: "probe_unavailable"
+      };
+    }
+    const probePromise = browser.tabs.sendMessage(tabId, {
+      type: "wblock:pageSupportProbe"
+    }).then(response => {
+      if (response && response.ok === true && SUPPORTED_PAGE_PROTOCOLS.has(response.protocol) && typeof response.host === "string" && response.host.length > 0) {
+        return {
+          reachable: true,
+          reason: "probe_ok",
+          protocol: response.protocol,
+          host: response.host
+        };
+      }
+      return {
+        reachable: false,
+        reason: "probe_invalid_response"
+      };
+    }).catch(error => ({
+      reachable: false,
+      reason: "probe_unreachable",
+      error: String(error && error.message ? error.message : error)
+    }));
+    const timeoutPromise = new Promise(resolve => {
+      setTimeout(() => resolve({
+        reachable: false,
+        reason: "probe_timeout"
+      }), SUPPORT_PROBE_TIMEOUT_MS);
+    });
+    return Promise.race([probePromise, timeoutPromise]);
+  };
+  const resolveTabSupport = async tab => {
+    if (!tab || typeof tab.id !== "number") {
+      return {
+        supported: false,
+        reason: "missing_tab"
+      };
+    }
+    const urlSupport = isSupportedActionUrl(tab.url);
+    if (!urlSupport.supported) {
+      return {
+        ...urlSupport,
+        tabId: tab.id
+      };
+    }
+    const probeResult = await probeTabSupport(tab.id);
+    if (!probeResult.reachable) {
+      return {
+        supported: false,
+        reason: probeResult.reason,
+        tabId: tab.id,
+        url: urlSupport.url,
+        protocol: urlSupport.protocol,
+        host: urlSupport.host,
+        error: probeResult.error
+      };
+    }
+    return {
+      supported: true,
+      reason: "supported",
+      tabId: tab.id,
+      url: urlSupport.url,
+      protocol: probeResult.protocol || urlSupport.protocol,
+      host: probeResult.host || urlSupport.host
+    };
+  };
+  const syncActionStateForTab = async tab => {
+    if (!tab || typeof tab.id !== "number") {
+      return;
+    }
+    const support = await resolveTabSupport(tab);
+    const supported = support.supported;
+    const updates = [];
+    if (canControlActionState) {
+      updates.push((supported ? browser.action.enable(tab.id) : browser.action.disable(tab.id)).catch(error => {
+        console.warn("[wBlock] Failed to update action enabled state:", error);
+      }));
+    }
+    if (canSetActionPopup) {
+      updates.push(browser.action.setPopup({
+        tabId: tab.id,
+        popup: supported ? POPUP_PATH : ""
+      }).catch(error => {
+        console.warn("[wBlock] Failed to update action popup:", error);
+      }));
+    }
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
+    const fingerprint = JSON.stringify({
+      supported: support.supported,
+      reason: support.reason,
+      protocol: support.protocol || "",
+      host: support.host || "",
+      url: support.url || "",
+      error: support.error || ""
+    });
+    if (supportStateByTab.get(tab.id) !== fingerprint) {
+      supportStateByTab.set(tab.id, fingerprint);
+      await logSupportDiagnostic({
+        event: "support_decision",
+        source: "background",
+        outcome: support.supported ? "supported" : "unsupported",
+        reason: support.reason,
+        tabId: tab.id,
+        protocol: support.protocol,
+        host: support.host,
+        url: support.url,
+        error: support.error
+      });
+    }
+  };
+  const refreshActionStateForAllTabs = async () => {
+    if (!canObserveTabs || !browser.tabs.query) {
+      return;
+    }
+    try {
+      const tabs = await browser.tabs.query({});
+      await Promise.all(tabs.map(syncActionStateForTab));
+    } catch (error) {
+      console.warn("[wBlock] Failed to refresh action state for tabs:", error);
+    }
+  };
+  if (canObserveTabs) {
+    if (browser.tabs.onUpdated) {
+      browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+        if (!tab) {
+          return;
+        }
+        if (changeInfo && changeInfo.status && changeInfo.status !== "complete" && !changeInfo.url) {
+          return;
+        }
+        syncActionStateForTab(tab);
+      });
+    }
+    if (browser.tabs.onActivated && browser.tabs.get) {
+      browser.tabs.onActivated.addListener(async activeInfo => {
+        try {
+          const tab = await browser.tabs.get(activeInfo.tabId);
+          await syncActionStateForTab(tab);
+        } catch (error) {
+          console.warn("[wBlock] Failed to sync action state for active tab:", error);
+        }
+      });
+    }
+    if (browser.tabs.onCreated) {
+      browser.tabs.onCreated.addListener(tab => {
+        syncActionStateForTab(tab);
+      });
+    }
+    if (browser.tabs.onRemoved) {
+      browser.tabs.onRemoved.addListener(tabId => {
+        supportStateByTab.delete(tabId);
+      });
+    }
+  }
+  refreshActionStateForAllTabs();
   // Start handling messages from content scripts.
   browser.runtime.onMessage.addListener(handleMessages);
 })(browser);
