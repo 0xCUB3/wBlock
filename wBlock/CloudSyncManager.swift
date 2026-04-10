@@ -206,7 +206,7 @@ final class CloudSyncManager: ObservableObject {
             logger.info("✅ Applied remote sync payload (\(trigger, privacy: .public))")
             return true
         } catch {
-            lastErrorMessage = error.localizedDescription
+            setLastSyncError(error)
             statusLine = "Sync: Error"
             logger.error("❌ Download/apply failed: \(error.localizedDescription, privacy: .public)")
             return false
@@ -313,6 +313,59 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
+    private func setLastSyncError(_ error: Error) {
+        lastErrorMessage = userFacingErrorMessage(for: error)
+    }
+
+    private func userFacingErrorMessage(for error: Error) -> String {
+        guard let ckError = error as? CKError else {
+            return error.localizedDescription
+        }
+
+        let description = ckError.localizedDescription.lowercased()
+        if description.contains("pcs") || description.contains("oplock") {
+            return "iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync."
+        }
+
+        switch ckError.code {
+        case .networkUnavailable, .networkFailure:
+            return "iCloud Sync couldn't reach iCloud. Check your connection and try again."
+        case .serviceUnavailable, .requestRateLimited, .zoneBusy:
+            return "iCloud Sync is temporarily unavailable. Try again in a moment."
+        case .notAuthenticated:
+            return "iCloud Sync needs an active iCloud account on this device."
+        case .quotaExceeded:
+            return "iCloud Sync couldn't save because your iCloud storage is full."
+        case .permissionFailure:
+            return "iCloud Sync doesn't have permission to write to your iCloud account."
+        case .serverRejectedRequest, .internalError:
+            return "iCloud Sync hit an iCloud server error. Try again in a moment."
+        default:
+            return ckError.localizedDescription
+        }
+    }
+
+    private func retryDelay(for error: CKError) -> Duration? {
+        if let retryAfter = error.userInfo[CKErrorRetryAfterKey] as? TimeInterval, retryAfter > 0 {
+            return .milliseconds(max(250, Int(retryAfter * 1000)))
+        }
+
+        let description = error.localizedDescription.lowercased()
+        if description.contains("pcs") || description.contains("oplock") {
+            return .seconds(3)
+        }
+
+        switch error.code {
+        case .networkUnavailable, .networkFailure:
+            return .seconds(2)
+        case .serviceUnavailable, .requestRateLimited, .zoneBusy, .internalError,
+            .serverRejectedRequest:
+            return .seconds(3)
+        default:
+            return nil
+        }
+    }
+
     private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false) async {
         guard isEnabled else { return }
 
@@ -371,7 +424,7 @@ final class CloudSyncManager: ObservableObject {
 
             logger.info("✅ Uploaded sync payload (\(trigger, privacy: .public))")
         } catch {
-            lastErrorMessage = error.localizedDescription
+            setLastSyncError(error)
             statusLine = "Sync: Error"
             logger.error("❌ Upload failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -422,7 +475,7 @@ final class CloudSyncManager: ObservableObject {
                 await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
             }
         } catch {
-            lastErrorMessage = error.localizedDescription
+            setLastSyncError(error)
             statusLine = "Sync: Error"
             logger.error("❌ Sync failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -1228,7 +1281,8 @@ final class CloudSyncManager: ObservableObject {
 
     private func saveRecord(
         _ record: CKRecord,
-        retryPayload: SyncPayload? = nil
+        retryPayload: SyncPayload? = nil,
+        retryCount: Int = 0
     ) async throws -> CKRecord {
         guard let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
@@ -1247,7 +1301,22 @@ final class CloudSyncManager: ObservableObject {
             var mutableRecord = serverRecord
             let payloadURL = try await applyPayloadFields(retryPayload, to: &mutableRecord)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
-            return try await saveRecord(mutableRecord)
+            return try await saveRecord(
+                mutableRecord,
+                retryPayload: retryPayload,
+                retryCount: retryCount
+            )
+        } catch let ckError as CKError {
+            guard retryCount < 2, let delay = retryDelay(for: ckError) else { throw ckError }
+            logger.info(
+                "CloudKit save failed with retryable error \(ckError.code.rawValue, privacy: .public), retrying in \(String(describing: delay), privacy: .public)"
+            )
+            try await Task.sleep(for: delay)
+            return try await saveRecord(
+                record,
+                retryPayload: retryPayload,
+                retryCount: retryCount + 1
+            )
         }
     }
 
