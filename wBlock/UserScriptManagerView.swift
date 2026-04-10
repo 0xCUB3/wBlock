@@ -88,17 +88,6 @@ struct UserScriptManagerView: View {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
         }
-        .alert("Duplicate Userscripts Found", isPresented: $userScriptManager.showingDuplicatesAlert) {
-            Button("Remove Older Versions", role: .destructive) {
-                userScriptManager.confirmDuplicateRemoval()
-                refreshScripts()
-            }
-            Button("Keep All", role: .cancel) {
-                userScriptManager.cancelDuplicateRemoval()
-            }
-        } message: {
-            Text(userScriptManager.duplicatesMessage)
-        }
         .alert("Import Failed", isPresented: Binding(
             get: { dropErrorMessage != nil },
             set: { newValue in if !newValue { dropErrorMessage = nil } }

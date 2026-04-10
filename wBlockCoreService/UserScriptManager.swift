@@ -34,10 +34,16 @@ public extension Notification.Name {
         "UserScriptManagerDidImportLocalUserScript")
     static let userScriptManagerDidRemoveLocalUserScript = Notification.Name(
         "UserScriptManagerDidRemoveLocalUserScript")
+    static let userScriptManagerDidUpsertUserScript = Notification.Name(
+        "UserScriptManagerDidUpsertUserScript")
+    static let userScriptManagerDidRemoveUserScript = Notification.Name(
+        "UserScriptManagerDidRemoveUserScript")
 }
 
 public enum UserScriptManagerNotificationKey {
     public static let name = "name"
+    public static let url = "url"
+    public static let isLocal = "isLocal"
 }
 
 @MainActor
@@ -669,6 +675,14 @@ public class UserScriptManager: ObservableObject {
 
         if !duplicatePairs.isEmpty {
             let duplicatesToRemove = duplicatePairs.map { $0.older }
+            let pendingDuplicateIDs = Set(pendingDuplicatesToRemove.map(\.id))
+            let duplicateIDs = Set(duplicatesToRemove.map(\.id))
+
+            if showingDuplicatesAlert && pendingDuplicateIDs == duplicateIDs {
+                logger.info("📋 Duplicate removal dialog already showing for current duplicates")
+                return
+            }
+
             pendingDuplicatesToRemove = duplicatesToRemove
 
             let duplicateNames = duplicatePairs.map { pair in
@@ -729,6 +743,19 @@ public class UserScriptManager: ObservableObject {
         }
 
         removeUserScriptResourcesFile(userScript)
+    }
+
+    private func userScriptNotificationInfo(for userScript: UserScript) -> [String: Any] {
+        var info: [String: Any] = [
+            UserScriptManagerNotificationKey.name: userScript.name,
+            UserScriptManagerNotificationKey.isLocal: userScript.isLocal,
+        ]
+
+        if let url = userScript.url?.absoluteString {
+            info[UserScriptManagerNotificationKey.url] = url
+        }
+
+        return info
     }
 
     private func setup() async {
@@ -1360,6 +1387,12 @@ public class UserScriptManager: ObservableObject {
             _ = writeUserScriptContent(newUserScript)
             _ = writeUserScriptResources(newUserScript)
 
+            NotificationCenter.default.post(
+                name: .userScriptManagerDidUpsertUserScript,
+                object: self,
+                userInfo: userScriptNotificationInfo(for: newUserScript)
+            )
+
             // Check for duplicates after adding a script
             checkForDuplicatesAndAskForConfirmation()
 
@@ -1476,6 +1509,11 @@ public class UserScriptManager: ObservableObject {
                 name: .userScriptManagerDidImportLocalUserScript,
                 object: self,
                 userInfo: [UserScriptManagerNotificationKey.name: newUserScript.name]
+            )
+            NotificationCenter.default.post(
+                name: .userScriptManagerDidUpsertUserScript,
+                object: self,
+                userInfo: userScriptNotificationInfo(for: newUserScript)
             )
 
             checkForDuplicatesAndAskForConfirmation()
@@ -1638,24 +1676,31 @@ public class UserScriptManager: ObservableObject {
         }
 
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
+            let removedScript = userScripts[index]
+
             // Remove file
-            removeUserScriptFile(userScript)
+            removeUserScriptFile(removedScript)
 
             // Remove from memory
             userScripts.remove(at: index)
             saveUserScripts()
 
-            if userScript.isLocal {
+            if removedScript.isLocal {
                 NotificationCenter.default.post(
                     name: .userScriptManagerDidRemoveLocalUserScript,
                     object: self,
-                    userInfo: [UserScriptManagerNotificationKey.name: userScript.name]
+                    userInfo: [UserScriptManagerNotificationKey.name: removedScript.name]
                 )
             }
+            NotificationCenter.default.post(
+                name: .userScriptManagerDidRemoveUserScript,
+                object: self,
+                userInfo: userScriptNotificationInfo(for: removedScript)
+            )
 
-            statusDescription = "Removed \(userScript.name)"
+            statusDescription = "Removed \(removedScript.name)"
 
-            logger.info("🗑️ Removed userscript: '\(userScript.name)'")
+            logger.info("🗑️ Removed userscript: '\(removedScript.name)'")
         }
     }
 
