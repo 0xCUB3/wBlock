@@ -1328,7 +1328,7 @@ public actor SharedAutoUpdateManager {
         let title = rawMetadata.title?.replacingOccurrences(of: "/", with: " & ")
         let description = rawMetadata.description?.replacingOccurrences(of: "/", with: " & ")
 
-        let normalizedVersion = rawMetadata.version?.replacingOccurrences(of: "/", with: " & ")
+        let normalizedVersion = rawMetadata.version
         let version: String?
         if let normalizedVersion,
            normalizedVersion.contains("%"),

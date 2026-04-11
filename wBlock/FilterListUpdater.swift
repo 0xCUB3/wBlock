@@ -171,7 +171,7 @@ final class FilterListUpdater: @unchecked Sendable {
             .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
         let normalizedVersion =
             rawMetadata.version
-            .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
+            .map { sanitizeMetadata($0) }
 
         let version: String?
         if let normalizedVersion,
