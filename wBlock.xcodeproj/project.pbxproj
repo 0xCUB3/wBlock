@@ -1333,6 +1333,7 @@
 				de,
 				ko,
 				ro,
+				tr,
 				"zh-Hant",
 			);
 			mainGroup = C1A41C242DE0897C0056F63D;
