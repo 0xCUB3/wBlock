@@ -4,7 +4,195 @@
     "description": "The display name for the extension."
   },
   "extension_description": {
-    "message": "阻止最烦人的广告和跟踪方法，包括 YouTube。",
+    "message": "拦截最烦人的广告和跟踪方式，包括 YouTube。",
     "description": "Description of what the extension does."
+  },
+  "popup_status_loading": {
+    "message": "加载中…",
+    "description": "Popup status shown while loading state is being resolved."
+  },
+  "popup_disable_on_site": {
+    "message": "在此网站禁用",
+    "description": "Label for the site-specific disable toggle in the popup."
+  },
+  "popup_element_zapper": {
+    "message": "元素清除器",
+    "description": "Section title for the element zapper controls in the popup."
+  },
+  "popup_button_activate": {
+    "message": "启用",
+    "description": "Button label to activate element zapper mode."
+  },
+  "popup_button_clear": {
+    "message": "清除",
+    "description": "Button label to clear all zapper rules for the current site."
+  },
+  "popup_hint_tap_to_hide": {
+    "message": "点按页面上的元素即可隐藏。若需手动选择器，请在清除器中使用“添加规则”。",
+    "description": "Help text shown in the popup for how to use the element zapper."
+  },
+  "popup_rules": {
+    "message": "规则",
+    "description": "Label for the disclosure button that expands saved zapper rules."
+  },
+  "popup_button_open_app": {
+    "message": "打开 wBlock 应用",
+    "description": "Button label to open the containing native app from the popup."
+  },
+  "popup_rules_empty": {
+    "message": "没有规则",
+    "description": "Empty-state text shown when no zapper rules exist for the current site."
+  },
+  "popup_rule_delete_aria": {
+    "message": "删除规则",
+    "description": "Accessible label for deleting a saved zapper rule."
+  },
+  "popup_error_load_rules": {
+    "message": "加载规则失败。",
+    "description": "Error shown when popup fails to load zapper rules."
+  },
+  "popup_error_delete_rule": {
+    "message": "删除规则失败。",
+    "description": "Error shown when popup fails to delete a zapper rule."
+  },
+  "popup_status_disabling": {
+    "message": "正在禁用…",
+    "description": "Transient status shown while disabling blocking on the current site."
+  },
+  "popup_status_enabling": {
+    "message": "正在启用…",
+    "description": "Transient status shown while enabling blocking on the current site."
+  },
+  "popup_status_disabled": {
+    "message": "已禁用",
+    "description": "Status label indicating blocking is disabled on the current site."
+  },
+  "popup_status_active": {
+    "message": "已启用",
+    "description": "Status label indicating blocking is active on the current site."
+  },
+  "popup_error_update_site_setting": {
+    "message": "更新网站设置失败。",
+    "description": "Error shown when popup fails to update per-site enabled state."
+  },
+  "popup_error_zapper_unavailable": {
+    "message": "此页面无法使用元素清除器。",
+    "description": "Error shown when zapper cannot be activated on the current tab."
+  },
+  "popup_error_open_app": {
+    "message": "打开应用失败。",
+    "description": "Error shown when popup fails to open the containing app."
+  },
+  "popup_error_clear_rules": {
+    "message": "清除元素清除规则失败。",
+    "description": "Error shown when popup fails to clear zapper rules for the current site."
+  },
+  "popup_status_unsupported": {
+    "message": "不支持",
+    "description": "Status label indicating current page does not support popup actions."
+  },
+  "popup_status_checking": {
+    "message": "正在检查…",
+    "description": "Status label shown while popup checks current page and state."
+  },
+  "popup_error_load_popup": {
+    "message": "加载弹窗失败。",
+    "description": "Error shown if popup initialization fails."
+  },
+  "zapper_aria_label": {
+    "message": "wBlock 元素清除器",
+    "description": "Accessible label for the in-page element zapper toolbar."
+  },
+  "zapper_status_tap_to_hide": {
+    "message": "元素清除器：点按元素即可隐藏。",
+    "description": "Default status text in the in-page element zapper toolbar."
+  },
+  "zapper_button_undo": {
+    "message": "撤销",
+    "description": "Button label to undo last zapper action."
+  },
+  "zapper_button_more": {
+    "message": "更多选项",
+    "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_add_custom_rule": {
+    "message": "添加自定义 CSS 规则…",
+    "description": "Menu item label for adding a manual CSS selector rule."
+  },
+  "zapper_button_done": {
+    "message": "完成",
+    "description": "Button label to finish zapper mode."
+  },
+  "zapper_button_select_parent": {
+    "message": "选择父元素",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "选择子元素",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
+  "zapper_button_hide": {
+    "message": "隐藏",
+    "description": "Button label for confirming hide action in refine mode."
+  },
+  "zapper_error_enter_selector": {
+    "message": "请输入 CSS 选择器。",
+    "description": "Validation error shown when manual selector input is empty."
+  },
+  "zapper_error_rule_syntax_invalid": {
+    "message": "CSS 规则语法无效。",
+    "description": "Validation error shown when manual CSS rule syntax is invalid."
+  },
+  "zapper_error_selector_too_long": {
+    "message": "选择器过长。",
+    "description": "Validation error shown when manual selector exceeds max length."
+  },
+  "zapper_error_selector_syntax_invalid": {
+    "message": "选择器语法无效。",
+    "description": "Validation error shown when selector cannot be parsed."
+  },
+  "zapper_toast_rule_exists": {
+    "message": "规则已存在。",
+    "description": "Toast shown when trying to add a duplicate manual rule."
+  },
+  "zapper_toast_already_hidden": {
+    "message": "已隐藏。",
+    "description": "Toast shown when picked element is already hidden by existing rule."
+  },
+  "zapper_toast_rule_saved": {
+    "message": "规则已保存到此网站。",
+    "description": "Toast shown after successfully adding a manual rule."
+  },
+  "zapper_toast_hidden_and_saved": {
+    "message": "已隐藏。规则已保存到此网站。",
+    "description": "Toast shown after hiding selected element and saving generated rule."
+  },
+  "zapper_prompt_enter_selector": {
+    "message": "请输入此网站的 CSS 选择器",
+    "description": "Prompt text shown when user adds a manual selector rule."
+  },
+  "zapper_toast_undone": {
+    "message": "已撤销。",
+    "description": "Toast shown after undoing the last zapper action."
+  },
+  "zapper_status_refine": {
+    "message": "$1 — ▲▼ 调整，点按 $2 保存",
+    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_toast_unable_create_rule": {
+    "message": "无法为该元素创建规则。",
+    "description": "Toast shown when selector generation fails for selected element."
+  },
+  "zapper_toast_enabled": {
+    "message": "元素清除器已启用。",
+    "description": "Toast shown when zapper mode is enabled."
+  },
+  "zapper_toast_disabled": {
+    "message": "元素清除器已禁用。",
+    "description": "Toast shown when zapper mode is disabled."
+  },
+  "zapper_status_off": {
+    "message": "元素清除器：关闭",
+    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   }
 }

@@ -4,7 +4,195 @@
     "description": "The display name for the extension."
   },
   "extension_description": {
-    "message": "YouTube를 포함하여 가장 성가신 광고 및 추적 방법을 차단합니다.",
+    "message": "YouTube를 포함해 가장 성가신 광고와 추적 방식을 차단합니다.",
     "description": "Description of what the extension does."
+  },
+  "popup_status_loading": {
+    "message": "로딩 중…",
+    "description": "Popup status shown while loading state is being resolved."
+  },
+  "popup_disable_on_site": {
+    "message": "이 사이트에서 비활성화",
+    "description": "Label for the site-specific disable toggle in the popup."
+  },
+  "popup_element_zapper": {
+    "message": "요소 제거기",
+    "description": "Section title for the element zapper controls in the popup."
+  },
+  "popup_button_activate": {
+    "message": "활성화",
+    "description": "Button label to activate element zapper mode."
+  },
+  "popup_button_clear": {
+    "message": "지우기",
+    "description": "Button label to clear all zapper rules for the current site."
+  },
+  "popup_hint_tap_to_hide": {
+    "message": "페이지의 요소를 탭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
+    "description": "Help text shown in the popup for how to use the element zapper."
+  },
+  "popup_rules": {
+    "message": "규칙",
+    "description": "Label for the disclosure button that expands saved zapper rules."
+  },
+  "popup_button_open_app": {
+    "message": "wBlock 앱 열기",
+    "description": "Button label to open the containing native app from the popup."
+  },
+  "popup_rules_empty": {
+    "message": "규칙 없음",
+    "description": "Empty-state text shown when no zapper rules exist for the current site."
+  },
+  "popup_rule_delete_aria": {
+    "message": "규칙 삭제",
+    "description": "Accessible label for deleting a saved zapper rule."
+  },
+  "popup_error_load_rules": {
+    "message": "규칙을 불러오지 못했습니다.",
+    "description": "Error shown when popup fails to load zapper rules."
+  },
+  "popup_error_delete_rule": {
+    "message": "규칙을 삭제하지 못했습니다.",
+    "description": "Error shown when popup fails to delete a zapper rule."
+  },
+  "popup_status_disabling": {
+    "message": "비활성화 중…",
+    "description": "Transient status shown while disabling blocking on the current site."
+  },
+  "popup_status_enabling": {
+    "message": "활성화 중…",
+    "description": "Transient status shown while enabling blocking on the current site."
+  },
+  "popup_status_disabled": {
+    "message": "비활성화됨",
+    "description": "Status label indicating blocking is disabled on the current site."
+  },
+  "popup_status_active": {
+    "message": "활성",
+    "description": "Status label indicating blocking is active on the current site."
+  },
+  "popup_error_update_site_setting": {
+    "message": "사이트 설정을 업데이트하지 못했습니다.",
+    "description": "Error shown when popup fails to update per-site enabled state."
+  },
+  "popup_error_zapper_unavailable": {
+    "message": "이 페이지에서는 요소 제거기를 사용할 수 없습니다.",
+    "description": "Error shown when zapper cannot be activated on the current tab."
+  },
+  "popup_error_open_app": {
+    "message": "앱을 열지 못했습니다.",
+    "description": "Error shown when popup fails to open the containing app."
+  },
+  "popup_error_clear_rules": {
+    "message": "요소 제거기 규칙을 지우지 못했습니다.",
+    "description": "Error shown when popup fails to clear zapper rules for the current site."
+  },
+  "popup_status_unsupported": {
+    "message": "지원되지 않음",
+    "description": "Status label indicating current page does not support popup actions."
+  },
+  "popup_status_checking": {
+    "message": "확인 중…",
+    "description": "Status label shown while popup checks current page and state."
+  },
+  "popup_error_load_popup": {
+    "message": "팝업을 불러오지 못했습니다.",
+    "description": "Error shown if popup initialization fails."
+  },
+  "zapper_aria_label": {
+    "message": "wBlock 요소 제거기",
+    "description": "Accessible label for the in-page element zapper toolbar."
+  },
+  "zapper_status_tap_to_hide": {
+    "message": "요소 제거기: 요소를 탭해 숨기세요.",
+    "description": "Default status text in the in-page element zapper toolbar."
+  },
+  "zapper_button_undo": {
+    "message": "실행 취소",
+    "description": "Button label to undo last zapper action."
+  },
+  "zapper_button_more": {
+    "message": "추가 옵션",
+    "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_add_custom_rule": {
+    "message": "사용자 지정 CSS 규칙 추가…",
+    "description": "Menu item label for adding a manual CSS selector rule."
+  },
+  "zapper_button_done": {
+    "message": "완료",
+    "description": "Button label to finish zapper mode."
+  },
+  "zapper_button_select_parent": {
+    "message": "상위 요소 선택",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "하위 요소 선택",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
+  "zapper_button_hide": {
+    "message": "숨기기",
+    "description": "Button label for confirming hide action in refine mode."
+  },
+  "zapper_error_enter_selector": {
+    "message": "CSS 선택자를 입력하세요.",
+    "description": "Validation error shown when manual selector input is empty."
+  },
+  "zapper_error_rule_syntax_invalid": {
+    "message": "CSS 규칙 구문이 올바르지 않습니다.",
+    "description": "Validation error shown when manual CSS rule syntax is invalid."
+  },
+  "zapper_error_selector_too_long": {
+    "message": "선택자가 너무 깁니다.",
+    "description": "Validation error shown when manual selector exceeds max length."
+  },
+  "zapper_error_selector_syntax_invalid": {
+    "message": "선택자 구문이 올바르지 않습니다.",
+    "description": "Validation error shown when selector cannot be parsed."
+  },
+  "zapper_toast_rule_exists": {
+    "message": "규칙이 이미 존재합니다.",
+    "description": "Toast shown when trying to add a duplicate manual rule."
+  },
+  "zapper_toast_already_hidden": {
+    "message": "이미 숨겨져 있습니다.",
+    "description": "Toast shown when picked element is already hidden by existing rule."
+  },
+  "zapper_toast_rule_saved": {
+    "message": "이 사이트에 대한 규칙이 저장되었습니다.",
+    "description": "Toast shown after successfully adding a manual rule."
+  },
+  "zapper_toast_hidden_and_saved": {
+    "message": "숨김 처리됨. 이 사이트에 대한 규칙이 저장되었습니다.",
+    "description": "Toast shown after hiding selected element and saving generated rule."
+  },
+  "zapper_prompt_enter_selector": {
+    "message": "이 사이트의 CSS 선택자를 입력하세요",
+    "description": "Prompt text shown when user adds a manual selector rule."
+  },
+  "zapper_toast_undone": {
+    "message": "되돌렸습니다.",
+    "description": "Toast shown after undoing the last zapper action."
+  },
+  "zapper_status_refine": {
+    "message": "$1 — ▲▼로 조정하고, 저장하려면 $2 탭",
+    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_toast_unable_create_rule": {
+    "message": "해당 요소에 대한 규칙을 만들 수 없습니다.",
+    "description": "Toast shown when selector generation fails for selected element."
+  },
+  "zapper_toast_enabled": {
+    "message": "요소 제거기가 활성화되었습니다.",
+    "description": "Toast shown when zapper mode is enabled."
+  },
+  "zapper_toast_disabled": {
+    "message": "요소 제거기가 비활성화되었습니다.",
+    "description": "Toast shown when zapper mode is disabled."
+  },
+  "zapper_status_off": {
+    "message": "요소 제거기: 꺼짐",
+    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   }
 }
