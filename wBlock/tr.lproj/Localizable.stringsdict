@@ -13,9 +13,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string></string>
+			<string>%d güncelleme indirildi</string>
 			<key>other</key>
-			<string></string>
+			<string>%d güncelleme indirildi</string>
 		</dict>
 	</dict>
 	<key>Updated %d scripts</key>
@@ -29,9 +29,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string></string>
+			<string>%d script güncellendi</string>
 			<key>other</key>
-			<string></string>
+			<string>%d script güncellendi</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -45,9 +45,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string></string>
+			<string>%d genişletme hazırlanıyor</string>
 			<key>other</key>
-			<string></string>
+			<string>%d genişletme hazırlanıyor</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -61,9 +61,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string></string>
+			<string>Her 1 günde</string>
 			<key>other</key>
-			<string></string>
+			<string>Her %d günde</string>
 		</dict>
 	</dict>
 	<key>Every %d hours</key>
@@ -77,9 +77,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string></string>
+			<string>Her 1 saatte</string>
 			<key>other</key>
-			<string></string>
+			<string>Her %d saatte</string>
 		</dict>
 	</dict>
 </dict>
