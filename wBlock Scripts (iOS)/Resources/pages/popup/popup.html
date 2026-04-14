@@ -13,7 +13,7 @@
             <div class="top-text">
                 <div class="title-row">
                     <div class="title">wBlock</div>
-                    <div id="blocking-status" class="pill">Loading…</div>
+                    <div id="blocking-status" class="pill" data-i18n="popup_status_loading">Loading…</div>
                 </div>
                 <div class="subtitle" id="site-host">—</div>
             </div>
@@ -21,7 +21,7 @@
 
         <div class="section">
             <label class="toggle-row" for="disable-toggle">
-                <span class="label">Disable on this site</span>
+                <span class="label" data-i18n="popup_disable_on_site">Disable on this site</span>
                 <span class="switch">
                     <input id="disable-toggle" type="checkbox" />
                     <span class="slider" aria-hidden="true"></span>
@@ -31,24 +31,24 @@
 
         <div class="section">
             <div class="row">
-                <div class="label">Element zapper</div>
+                <div class="label" data-i18n="popup_element_zapper">Element zapper</div>
                 <div id="zapper-count" class="value">0</div>
             </div>
             <div class="button-row">
-                <button id="zapper-activate" class="btn btn-primary" type="button">Activate</button>
-                <button id="zapper-clear" class="btn btn-secondary" type="button" disabled>Clear</button>
+                <button id="zapper-activate" class="btn btn-primary" type="button" data-i18n="popup_button_activate">Activate</button>
+                <button id="zapper-clear" class="btn btn-secondary" type="button" disabled data-i18n="popup_button_clear">Clear</button>
             </div>
-            <div class="hint">Tap an element on the page to hide it. Use "Add Rule" in the zapper for manual selectors.</div>
+            <div class="hint" data-i18n="popup_hint_tap_to_hide">Tap an element on the page to hide it. Use "Add Rule" in the zapper for manual selectors.</div>
 
             <button id="zapper-rules-toggle" class="disclosure" type="button" aria-expanded="false">
-                <span>Rules</span>
+                <span data-i18n="popup_rules">Rules</span>
                 <span id="zapper-rules-chevron" class="chevron" aria-hidden="true">▾</span>
             </button>
             <div id="zapper-rules" class="rules" hidden></div>
         </div>
 
         <footer class="footer">
-            <button id="open-app" class="btn footer-btn" type="button" hidden>Open wBlock App</button>
+            <button id="open-app" class="btn footer-btn" type="button" hidden data-i18n="popup_button_open_app">Open wBlock App</button>
             <div id="error" class="error" hidden></div>
         </footer>
     </div>

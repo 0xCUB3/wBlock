@@ -6,5 +6,193 @@
   "extension_description": {
     "message": "Bloque les publicités et les méthodes de suivi les plus embêtantes, y compris YouTube.",
     "description": "Description of what the extension does."
+  },
+  "popup_status_loading": {
+    "message": "Chargement…",
+    "description": "Popup status shown while loading state is being resolved."
+  },
+  "popup_disable_on_site": {
+    "message": "Désactiver sur ce site",
+    "description": "Label for the site-specific disable toggle in the popup."
+  },
+  "popup_element_zapper": {
+    "message": "Zappeur d’éléments",
+    "description": "Section title for the element zapper controls in the popup."
+  },
+  "popup_button_activate": {
+    "message": "Activer",
+    "description": "Button label to activate element zapper mode."
+  },
+  "popup_button_clear": {
+    "message": "Effacer",
+    "description": "Button label to clear all zapper rules for the current site."
+  },
+  "popup_hint_tap_to_hide": {
+    "message": "Touchez un élément de la page pour le masquer. Utilisez « Ajouter une règle » dans le zappeur pour les sélecteurs manuels.",
+    "description": "Help text shown in the popup for how to use the element zapper."
+  },
+  "popup_rules": {
+    "message": "Règles",
+    "description": "Label for the disclosure button that expands saved zapper rules."
+  },
+  "popup_button_open_app": {
+    "message": "Ouvrir l’app wBlock",
+    "description": "Button label to open the containing native app from the popup."
+  },
+  "popup_rules_empty": {
+    "message": "Aucune règle",
+    "description": "Empty-state text shown when no zapper rules exist for the current site."
+  },
+  "popup_rule_delete_aria": {
+    "message": "Supprimer la règle",
+    "description": "Accessible label for deleting a saved zapper rule."
+  },
+  "popup_error_load_rules": {
+    "message": "Impossible de charger les règles.",
+    "description": "Error shown when popup fails to load zapper rules."
+  },
+  "popup_error_delete_rule": {
+    "message": "Impossible de supprimer la règle.",
+    "description": "Error shown when popup fails to delete a zapper rule."
+  },
+  "popup_status_disabling": {
+    "message": "Désactivation…",
+    "description": "Transient status shown while disabling blocking on the current site."
+  },
+  "popup_status_enabling": {
+    "message": "Activation…",
+    "description": "Transient status shown while enabling blocking on the current site."
+  },
+  "popup_status_disabled": {
+    "message": "Désactivé",
+    "description": "Status label indicating blocking is disabled on the current site."
+  },
+  "popup_status_active": {
+    "message": "Actif",
+    "description": "Status label indicating blocking is active on the current site."
+  },
+  "popup_error_update_site_setting": {
+    "message": "Impossible de mettre à jour le paramètre du site.",
+    "description": "Error shown when popup fails to update per-site enabled state."
+  },
+  "popup_error_zapper_unavailable": {
+    "message": "Le zappeur d’éléments n’est pas disponible sur cette page.",
+    "description": "Error shown when zapper cannot be activated on the current tab."
+  },
+  "popup_error_open_app": {
+    "message": "Impossible d’ouvrir l’app.",
+    "description": "Error shown when popup fails to open the containing app."
+  },
+  "popup_error_clear_rules": {
+    "message": "Impossible d’effacer les règles du zappeur.",
+    "description": "Error shown when popup fails to clear zapper rules for the current site."
+  },
+  "popup_status_unsupported": {
+    "message": "Non pris en charge",
+    "description": "Status label indicating current page does not support popup actions."
+  },
+  "popup_status_checking": {
+    "message": "Vérification…",
+    "description": "Status label shown while popup checks current page and state."
+  },
+  "popup_error_load_popup": {
+    "message": "Impossible de charger le popup.",
+    "description": "Error shown if popup initialization fails."
+  },
+  "zapper_aria_label": {
+    "message": "Zappeur d’éléments wBlock",
+    "description": "Accessible label for the in-page element zapper toolbar."
+  },
+  "zapper_status_tap_to_hide": {
+    "message": "Zappeur d’éléments : touchez un élément pour le masquer.",
+    "description": "Default status text in the in-page element zapper toolbar."
+  },
+  "zapper_button_undo": {
+    "message": "Annuler",
+    "description": "Button label to undo last zapper action."
+  },
+  "zapper_button_more": {
+    "message": "Plus d’options",
+    "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_add_custom_rule": {
+    "message": "Ajouter une règle CSS personnalisée…",
+    "description": "Menu item label for adding a manual CSS selector rule."
+  },
+  "zapper_button_done": {
+    "message": "Terminé",
+    "description": "Button label to finish zapper mode."
+  },
+  "zapper_button_select_parent": {
+    "message": "Sélectionner l’élément parent",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Sélectionner l’élément enfant",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
+  "zapper_button_hide": {
+    "message": "Masquer",
+    "description": "Button label for confirming hide action in refine mode."
+  },
+  "zapper_error_enter_selector": {
+    "message": "Saisissez un sélecteur CSS.",
+    "description": "Validation error shown when manual selector input is empty."
+  },
+  "zapper_error_rule_syntax_invalid": {
+    "message": "La syntaxe de la règle CSS est invalide.",
+    "description": "Validation error shown when manual CSS rule syntax is invalid."
+  },
+  "zapper_error_selector_too_long": {
+    "message": "Le sélecteur est trop long.",
+    "description": "Validation error shown when manual selector exceeds max length."
+  },
+  "zapper_error_selector_syntax_invalid": {
+    "message": "La syntaxe du sélecteur est invalide.",
+    "description": "Validation error shown when selector cannot be parsed."
+  },
+  "zapper_toast_rule_exists": {
+    "message": "La règle existe déjà.",
+    "description": "Toast shown when trying to add a duplicate manual rule."
+  },
+  "zapper_toast_already_hidden": {
+    "message": "Déjà masqué.",
+    "description": "Toast shown when picked element is already hidden by existing rule."
+  },
+  "zapper_toast_rule_saved": {
+    "message": "Règle enregistrée pour ce site.",
+    "description": "Toast shown after successfully adding a manual rule."
+  },
+  "zapper_toast_hidden_and_saved": {
+    "message": "Masqué. Règle enregistrée pour ce site.",
+    "description": "Toast shown after hiding selected element and saving generated rule."
+  },
+  "zapper_prompt_enter_selector": {
+    "message": "Saisissez un sélecteur CSS pour ce site",
+    "description": "Prompt text shown when user adds a manual selector rule."
+  },
+  "zapper_toast_undone": {
+    "message": "Annulé.",
+    "description": "Toast shown after undoing the last zapper action."
+  },
+  "zapper_status_refine": {
+    "message": "$1 — ▲▼ pour ajuster, touchez $2 pour enregistrer",
+    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_toast_unable_create_rule": {
+    "message": "Impossible de créer une règle pour cet élément.",
+    "description": "Toast shown when selector generation fails for selected element."
+  },
+  "zapper_toast_enabled": {
+    "message": "Zappeur d’éléments activé.",
+    "description": "Toast shown when zapper mode is enabled."
+  },
+  "zapper_toast_disabled": {
+    "message": "Zappeur d’éléments désactivé.",
+    "description": "Toast shown when zapper mode is disabled."
+  },
+  "zapper_status_off": {
+    "message": "Zappeur d’éléments : Désactivé",
+    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   }
 }

@@ -17,6 +17,14 @@
   const MAX_RULES_PER_SITE = 200;
   const RULE_SYNC_INTERVAL_MS = 5000;
 
+  function t(key, substitutions, fallback = '') {
+    const message = browser.i18n.getMessage(key, substitutions);
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+    return fallback;
+  }
+
   const state = {
     active: false,
     host: '',
@@ -413,7 +421,7 @@
     const root = document.createElement('div');
     root.id = UI_ROOT_ID;
     root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-label', 'wBlock Element Zapper');
+    root.setAttribute('aria-label', t('zapper_aria_label', undefined, 'wBlock Element Zapper'));
 
     const dragHint = document.createElement('div');
     dragHint.className = 'wblock-drag-hint';
@@ -423,14 +431,14 @@
 
     const status = document.createElement('div');
     status.className = 'wblock-status';
-    status.textContent = 'Element Zapper: Tap an element to hide it.';
+    status.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
 
     const actions = document.createElement('div');
     actions.className = 'wblock-actions';
 
     const undoButton = document.createElement('button');
     undoButton.type = 'button';
-    undoButton.textContent = 'Undo';
+    undoButton.textContent = t('zapper_button_undo', undefined, 'Undo');
     undoButton.disabled = true;
     const onUndo = (e) => {
       if (e) {
@@ -450,14 +458,14 @@
     moreButton.type = 'button';
     moreButton.className = 'wblock-more-btn';
     moreButton.textContent = '\u00B7\u00B7\u00B7';
-    moreButton.title = 'More options';
+    moreButton.title = t('zapper_button_more', undefined, 'More options');
 
     const overflowMenu = document.createElement('div');
     overflowMenu.className = 'wblock-overflow';
 
     const manualButton = document.createElement('button');
     manualButton.type = 'button';
-    manualButton.textContent = 'Add custom CSS rule\u2026';
+    manualButton.textContent = t('zapper_button_add_custom_rule', undefined, 'Add custom CSS rule\u2026');
     const onManualRule = (e) => {
       if (e) {
         e.preventDefault();
@@ -494,7 +502,7 @@
     const doneButton = document.createElement('button');
     doneButton.type = 'button';
     doneButton.className = 'wblock-done-btn';
-    doneButton.textContent = 'Done';
+    doneButton.textContent = t('zapper_button_done', undefined, 'Done');
     const onDone = (e) => {
       if (e) {
         e.preventDefault();
@@ -519,7 +527,7 @@
     const parentButton = document.createElement('button');
     parentButton.type = 'button';
     parentButton.textContent = '\u25B2';
-    parentButton.title = 'Select parent element';
+    parentButton.title = t('zapper_button_select_parent', undefined, 'Select parent element');
     parentButton.disabled = true;
     const onParent = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
@@ -530,7 +538,7 @@
     const childButton = document.createElement('button');
     childButton.type = 'button';
     childButton.textContent = '\u25BC';
-    childButton.title = 'Select child element';
+    childButton.title = t('zapper_button_select_child', undefined, 'Select child element');
     childButton.disabled = true;
     const onChild = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
@@ -541,7 +549,7 @@
     const hideButton = document.createElement('button');
     hideButton.type = 'button';
     hideButton.className = 'wblock-hide-btn';
-    hideButton.textContent = '\u2713 Hide';
+    hideButton.textContent = `\u2713 ${t('zapper_button_hide', undefined, 'Hide')}`;
     const onHide = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
       confirmHide();
@@ -720,7 +728,7 @@
   function parseManualRuleInput(input) {
     const raw = String(input || '').trim();
     if (!raw) {
-      return { selector: '', error: 'Enter a CSS selector.' };
+      return { selector: '', error: t('zapper_error_enter_selector', undefined, 'Enter a CSS selector.') };
     }
 
     let selector = raw;
@@ -728,24 +736,24 @@
       const openIndex = raw.indexOf('{');
       const closeIndex = raw.lastIndexOf('}');
       if (closeIndex <= openIndex) {
-        return { selector: '', error: 'CSS rule syntax is invalid.' };
+        return { selector: '', error: t('zapper_error_rule_syntax_invalid', undefined, 'CSS rule syntax is invalid.') };
       }
       if (raw.slice(closeIndex + 1).trim().length > 0) {
-        return { selector: '', error: 'CSS rule syntax is invalid.' };
+        return { selector: '', error: t('zapper_error_rule_syntax_invalid', undefined, 'CSS rule syntax is invalid.') };
       }
       selector = raw.slice(0, openIndex).trim();
     } else if (raw.includes('}')) {
-      return { selector: '', error: 'CSS rule syntax is invalid.' };
+      return { selector: '', error: t('zapper_error_rule_syntax_invalid', undefined, 'CSS rule syntax is invalid.') };
     }
 
     if (!selector) {
-      return { selector: '', error: 'Enter a CSS selector.' };
+      return { selector: '', error: t('zapper_error_enter_selector', undefined, 'Enter a CSS selector.') };
     }
     if (selector.length > 512) {
-      return { selector: '', error: 'Selector is too long.' };
+      return { selector: '', error: t('zapper_error_selector_too_long', undefined, 'Selector is too long.') };
     }
     if (!isValidCssSelector(selector)) {
-      return { selector: '', error: 'Selector syntax is invalid.' };
+      return { selector: '', error: t('zapper_error_selector_syntax_invalid', undefined, 'Selector syntax is invalid.') };
     }
 
     return { selector, error: '' };
@@ -755,7 +763,9 @@
     const normalized = (selector || '').trim();
     if (!normalized) return;
     if (state.rules.includes(normalized)) {
-      showToast(options.manual ? 'Rule already exists.' : 'Already hidden.');
+      showToast(options.manual
+        ? t('zapper_toast_rule_exists', undefined, 'Rule already exists.')
+        : t('zapper_toast_already_hidden', undefined, 'Already hidden.'));
       return;
     }
     state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
@@ -763,11 +773,13 @@
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
     applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
-    showToast(options.manual ? 'Rule saved for this site.' : 'Hidden. Rule saved for this site.');
+    showToast(options.manual
+      ? t('zapper_toast_rule_saved', undefined, 'Rule saved for this site.')
+      : t('zapper_toast_hidden_and_saved', undefined, 'Hidden. Rule saved for this site.'));
   }
 
   async function addManualRuleFromPrompt() {
-    const rawInput = window.prompt('Enter CSS selector for this site');
+    const rawInput = window.prompt(t('zapper_prompt_enter_selector', undefined, 'Enter CSS selector for this site'));
     if (rawInput === null) return;
 
     const parsed = parseManualRuleInput(rawInput);
@@ -786,7 +798,7 @@
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
     applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
-    showToast('Undone.');
+    showToast(t('zapper_toast_undone', undefined, 'Undone.'));
   }
 
   function addCleanup(fn) {
@@ -883,14 +895,22 @@
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
     const actionsEl = state.ui.doneButton && state.ui.doneButton.parentElement;
     if (actionsEl) actionsEl.classList.remove('wblock-refine-active');
-    if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
+    if (state.ui.statusText) {
+      state.ui.statusText.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
+    }
   }
 
   function updateRefineStatus() {
     const el = state.candidateElement;
     if (!el) return;
     const label = elementLabel(el);
-    if (state.ui.statusText) state.ui.statusText.textContent = `${label} — ▲▼ to adjust, tap Hide to save`;
+    if (state.ui.statusText) {
+      state.ui.statusText.textContent = t(
+        'zapper_status_refine',
+        [label, t('zapper_button_hide', undefined, 'Hide')],
+        `${label} — ▲▼ to adjust, tap Hide to save`
+      );
+    }
     const parent = el.parentElement;
     const atTop = !parent || parent === document.body || parent === document.documentElement;
     if (state.ui.parentButton) state.ui.parentButton.disabled = atTop;
@@ -921,7 +941,7 @@
     if (!el) return;
     const selector = selectorForElement(el);
     if (!selector) {
-      showToast('Unable to create a rule for that element.');
+      showToast(t('zapper_toast_unable_create_rule', undefined, 'Unable to create a rule for that element.'));
       exitRefineMode();
       return;
     }
@@ -943,8 +963,10 @@
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
     if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
-    if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Tap an element to hide it.';
-    showToast('Element Zapper enabled.');
+    if (state.ui.statusText) {
+      state.ui.statusText.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
+    }
+    showToast(t('zapper_toast_enabled', undefined, 'Element Zapper enabled.'));
 
     // After the popup closes, keyboard focus stays on Safari's chrome.
     // Without explicit focus, keydown events (like Escape) never reach our
@@ -1083,8 +1105,8 @@
       return;
     }
 
-    showToast('Element Zapper disabled.');
-    if (state.ui.statusText) state.ui.statusText.textContent = 'Element Zapper: Off';
+    showToast(t('zapper_toast_disabled', undefined, 'Element Zapper disabled.'));
+    if (state.ui.statusText) state.ui.statusText.textContent = t('zapper_status_off', undefined, 'Element Zapper: Off');
   }
 
   async function refreshRulesFromNativeIfNeeded() {

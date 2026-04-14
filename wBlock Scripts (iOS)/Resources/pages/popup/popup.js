@@ -3,6 +3,25 @@ const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 const ZAPPER_META_PREFIX = 'wblock.zapperMeta.v1:';
 const SUPPORT_PROBE_TIMEOUT_MS = 800;
 
+function t(key, substitutions, fallback = '') {
+    const message = browser.i18n.getMessage(key, substitutions);
+    if (typeof message === 'string' && message.length > 0) {
+        return message;
+    }
+    return fallback;
+}
+
+function localizeStaticPopupText() {
+    const nodes = document.querySelectorAll('[data-i18n]');
+    for (const node of nodes) {
+        const key = node.getAttribute('data-i18n');
+        if (!key) continue;
+        const localized = t(key, undefined, '');
+        if (!localized) continue;
+        node.textContent = localized;
+    }
+}
+
 function normalizeDiagnosticFields(fields) {
     return Object.fromEntries(
         Object.entries(fields)
@@ -322,7 +341,7 @@ function renderZapperRules(rules) {
     if (!rules.length) {
         const empty = document.createElement('div');
         empty.className = 'rule-empty';
-        empty.textContent = 'No rules';
+        empty.textContent = t('popup_rules_empty', undefined, 'No rules');
         container.appendChild(empty);
         return;
     }
@@ -340,7 +359,7 @@ function renderZapperRules(rules) {
         del.type = 'button';
         del.className = 'rule-delete';
         del.setAttribute('data-index', String(index));
-        del.setAttribute('aria-label', 'Delete rule');
+        del.setAttribute('aria-label', t('popup_rule_delete_aria', undefined, 'Delete rule'));
         del.textContent = '✕';
 
         row.appendChild(text);
@@ -417,7 +436,7 @@ function setupListeners() {
                 renderZapperRules(currentZapperRules);
             } catch (error) {
                 console.error('[wBlock] Failed to toggle rules:', error);
-                setError('Failed to load rules.');
+                setError(t('popup_error_load_rules', undefined, 'Failed to load rules.'));
             }
         });
     }
@@ -440,7 +459,7 @@ function setupListeners() {
                 await notifyZapperRulesChanged(tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to delete rule:', error);
-                setError('Failed to delete rule.');
+                setError(t('popup_error_delete_rule', undefined, 'Failed to delete rule.'));
             }
         });
     }
@@ -451,7 +470,9 @@ function setupListeners() {
                 setError('');
                 disableToggle.disabled = true;
                 const next = disableToggle.checked;
-                setStatus(next ? 'Disabling…' : 'Enabling…', 'neutral');
+                setStatus(next
+                    ? t('popup_status_disabling', undefined, 'Disabling…')
+                    : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
                 const updateResult = await setSiteDisabledState(host, next);
                 try {
                     await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
@@ -460,11 +481,14 @@ function setupListeners() {
                 }
                 const settleMs = updateResult && updateResult.failedTargets > 0 ? 1200 : 350;
                 await sleep(settleMs);
-                setStatus(next ? 'Disabled' : 'Active', next ? 'disabled' : 'active');
+                setStatus(next
+                    ? t('popup_status_disabled', undefined, 'Disabled')
+                    : t('popup_status_active', undefined, 'Active'),
+                next ? 'disabled' : 'active');
                 await reloadActiveTab(tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to update disabled state:', error);
-                setError('Failed to update site setting.');
+                setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 disableToggle.checked = !disableToggle.checked;
             } finally {
                 disableToggle.disabled = false;
@@ -480,7 +504,7 @@ function setupListeners() {
                 window.close();
             } catch (error) {
                 console.error('[wBlock] Failed to activate zapper:', error);
-                setError('Element Zapper is unavailable on this page.');
+                setError(t('popup_error_zapper_unavailable', undefined, 'Element Zapper is unavailable on this page.'));
             }
         });
     }
@@ -498,10 +522,10 @@ function setupListeners() {
                     return;
                 }
 
-                setError((response && response.error) || 'Failed to open the app.');
+                setError((response && response.error) || t('popup_error_open_app', undefined, 'Failed to open the app.'));
             } catch (error) {
                 console.error('[wBlock] Failed to open app:', error);
-                setError('Failed to open the app.');
+                setError(t('popup_error_open_app', undefined, 'Failed to open the app.'));
             } finally {
                 openAppButton.disabled = false;
             }
@@ -522,7 +546,7 @@ function setupListeners() {
                 await reloadActiveTab(tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to clear zaps:', error);
-                setError('Failed to clear zapper rules.');
+                setError(t('popup_error_clear_rules', undefined, 'Failed to clear zapper rules.'));
             }
         });
     }
@@ -548,7 +572,7 @@ async function refreshUi() {
     if (hostEl) hostEl.textContent = host || '—';
 
     if (!pageSupport.supported || !contentScriptReachable) {
-        setStatus('Unsupported', 'neutral');
+        setStatus(t('popup_status_unsupported', undefined, 'Unsupported'), 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
@@ -566,14 +590,17 @@ async function refreshUi() {
         return;
     }
 
-    setStatus('Checking…', 'neutral');
+    setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
     const disabled = await getSiteDisabledState(host);
     if (disableToggle) {
         disableToggle.checked = disabled;
         disableToggle.disabled = false;
     }
-    setStatus(disabled ? 'Disabled' : 'Active', disabled ? 'disabled' : 'active');
+    setStatus(disabled
+        ? t('popup_status_disabled', undefined, 'Disabled')
+        : t('popup_status_active', undefined, 'Active'),
+    disabled ? 'disabled' : 'active');
 
     if (rulesToggle) {
         rulesToggle.disabled = false;
@@ -587,9 +614,10 @@ async function refreshUi() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    localizeStaticPopupText();
     setupListeners();
     refreshUi().catch((error) => {
         console.error('[wBlock] Popup init failed:', error);
-        setError('Failed to load popup.');
+        setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
     });
 });

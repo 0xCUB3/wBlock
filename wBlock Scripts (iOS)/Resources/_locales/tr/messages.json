@@ -4,195 +4,195 @@
     "description": "The display name for the extension."
   },
   "extension_description": {
-    "message": "Блокирует самую надоедливую рекламу и методы отслеживания, включая YouTube.",
+    "message": "YouTube dahil en can sıkıcı reklamları ve takip yöntemlerini engeller.",
     "description": "Description of what the extension does."
   },
   "popup_status_loading": {
-    "message": "Загрузка…",
+    "message": "Yükleniyor…",
     "description": "Popup status shown while loading state is being resolved."
   },
   "popup_disable_on_site": {
-    "message": "Отключить на этом сайте",
+    "message": "Bu sitede devre dışı bırak",
     "description": "Label for the site-specific disable toggle in the popup."
   },
   "popup_element_zapper": {
-    "message": "Скрытие элементов",
+    "message": "Öğe Zaplayıcı",
     "description": "Section title for the element zapper controls in the popup."
   },
   "popup_button_activate": {
-    "message": "Включить",
+    "message": "Etkinleştir",
     "description": "Button label to activate element zapper mode."
   },
   "popup_button_clear": {
-    "message": "Очистить",
+    "message": "Temizle",
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Нажмите на элемент на странице, чтобы скрыть его. Используйте «Добавить правило» в скрытии элементов для ручных селекторов.",
+    "message": "Gizlemek için sayfadaki bir öğeye dokun. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_rules": {
-    "message": "Правила",
+    "message": "Kurallar",
     "description": "Label for the disclosure button that expands saved zapper rules."
   },
   "popup_button_open_app": {
-    "message": "Открыть приложение wBlock",
+    "message": "wBlock Uygulamasını Aç",
     "description": "Button label to open the containing native app from the popup."
   },
   "popup_rules_empty": {
-    "message": "Нет правил",
+    "message": "Öğe Zaplayıcı Kuralı Yok",
     "description": "Empty-state text shown when no zapper rules exist for the current site."
   },
   "popup_rule_delete_aria": {
-    "message": "Удалить правило",
+    "message": "Kuralı sil",
     "description": "Accessible label for deleting a saved zapper rule."
   },
   "popup_error_load_rules": {
-    "message": "Не удалось загрузить правила.",
+    "message": "Kurallar yüklenemedi.",
     "description": "Error shown when popup fails to load zapper rules."
   },
   "popup_error_delete_rule": {
-    "message": "Не удалось удалить правило.",
+    "message": "Kural silinemedi.",
     "description": "Error shown when popup fails to delete a zapper rule."
   },
   "popup_status_disabling": {
-    "message": "Отключение…",
+    "message": "Devre dışı bırakılıyor…",
     "description": "Transient status shown while disabling blocking on the current site."
   },
   "popup_status_enabling": {
-    "message": "Включение…",
+    "message": "Etkinleştiriliyor…",
     "description": "Transient status shown while enabling blocking on the current site."
   },
   "popup_status_disabled": {
-    "message": "Отключено",
+    "message": "Devre Dışı",
     "description": "Status label indicating blocking is disabled on the current site."
   },
   "popup_status_active": {
-    "message": "Активно",
+    "message": "Aktif",
     "description": "Status label indicating blocking is active on the current site."
   },
   "popup_error_update_site_setting": {
-    "message": "Не удалось обновить настройку сайта.",
+    "message": "Site ayarı güncellenemedi.",
     "description": "Error shown when popup fails to update per-site enabled state."
   },
   "popup_error_zapper_unavailable": {
-    "message": "Скрытие элементов недоступно на этой странице.",
+    "message": "Öğe Zaplayıcı bu sayfada kullanılamıyor.",
     "description": "Error shown when zapper cannot be activated on the current tab."
   },
   "popup_error_open_app": {
-    "message": "Не удалось открыть приложение.",
+    "message": "Uygulama açılamadı.",
     "description": "Error shown when popup fails to open the containing app."
   },
   "popup_error_clear_rules": {
-    "message": "Не удалось очистить правила скрытия элементов.",
+    "message": "Zaplayıcı kuralları temizlenemedi.",
     "description": "Error shown when popup fails to clear zapper rules for the current site."
   },
   "popup_status_unsupported": {
-    "message": "Не поддерживается",
+    "message": "Desteklenmiyor",
     "description": "Status label indicating current page does not support popup actions."
   },
   "popup_status_checking": {
-    "message": "Проверка…",
+    "message": "Kontrol ediliyor…",
     "description": "Status label shown while popup checks current page and state."
   },
   "popup_error_load_popup": {
-    "message": "Не удалось загрузить всплывающее окно.",
+    "message": "Açılır pencere yüklenemedi.",
     "description": "Error shown if popup initialization fails."
   },
   "zapper_aria_label": {
-    "message": "Скрытие элементов wBlock",
+    "message": "wBlock Öğe Zaplayıcı",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
   "zapper_status_tap_to_hide": {
-    "message": "Скрытие элементов: нажмите на элемент, чтобы скрыть его.",
+    "message": "Öğe Zaplayıcı: Gizlemek için bir öğeye dokun.",
     "description": "Default status text in the in-page element zapper toolbar."
   },
   "zapper_button_undo": {
-    "message": "Отменить",
+    "message": "Geri Al",
     "description": "Button label to undo last zapper action."
   },
   "zapper_button_more": {
-    "message": "Больше опций",
+    "message": "Daha fazla seçenek",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
   },
   "zapper_button_add_custom_rule": {
-    "message": "Добавить пользовательское правило CSS…",
+    "message": "Özel CSS kuralı ekle…",
     "description": "Menu item label for adding a manual CSS selector rule."
   },
   "zapper_button_done": {
-    "message": "Готово",
+    "message": "Bitti",
     "description": "Button label to finish zapper mode."
   },
   "zapper_button_select_parent": {
-    "message": "Выбрать родительский элемент",
+    "message": "Üst öğeyi seç",
     "description": "Tooltip for choosing the parent element in refine mode."
   },
   "zapper_button_select_child": {
-    "message": "Выбрать дочерний элемент",
+    "message": "Alt öğeyi seç",
     "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_hide": {
-    "message": "Скрыть",
+    "message": "Gizle",
     "description": "Button label for confirming hide action in refine mode."
   },
   "zapper_error_enter_selector": {
-    "message": "Введите CSS-селектор.",
+    "message": "Bir CSS seçicisi gir.",
     "description": "Validation error shown when manual selector input is empty."
   },
   "zapper_error_rule_syntax_invalid": {
-    "message": "Некорректный синтаксис правила CSS.",
+    "message": "CSS kuralı söz dizimi geçersiz.",
     "description": "Validation error shown when manual CSS rule syntax is invalid."
   },
   "zapper_error_selector_too_long": {
-    "message": "Селектор слишком длинный.",
+    "message": "Seçici çok uzun.",
     "description": "Validation error shown when manual selector exceeds max length."
   },
   "zapper_error_selector_syntax_invalid": {
-    "message": "Некорректный синтаксис селектора.",
+    "message": "Seçici söz dizimi geçersiz.",
     "description": "Validation error shown when selector cannot be parsed."
   },
   "zapper_toast_rule_exists": {
-    "message": "Правило уже существует.",
+    "message": "Kural zaten var.",
     "description": "Toast shown when trying to add a duplicate manual rule."
   },
   "zapper_toast_already_hidden": {
-    "message": "Уже скрыто.",
+    "message": "Zaten gizli.",
     "description": "Toast shown when picked element is already hidden by existing rule."
   },
   "zapper_toast_rule_saved": {
-    "message": "Правило сохранено для этого сайта.",
+    "message": "Kural bu site için kaydedildi.",
     "description": "Toast shown after successfully adding a manual rule."
   },
   "zapper_toast_hidden_and_saved": {
-    "message": "Скрыто. Правило сохранено для этого сайта.",
+    "message": "Gizlendi. Kural bu site için kaydedildi.",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
   "zapper_prompt_enter_selector": {
-    "message": "Введите CSS-селектор для этого сайта",
+    "message": "Bu site için CSS seçicisi gir",
     "description": "Prompt text shown when user adds a manual selector rule."
   },
   "zapper_toast_undone": {
-    "message": "Отменено.",
+    "message": "Geri alındı.",
     "description": "Toast shown after undoing the last zapper action."
   },
   "zapper_status_refine": {
-    "message": "$1 — ▲▼ для настройки, нажмите $2, чтобы сохранить",
+    "message": "$1 — ▲▼ ile ayarla, kaydetmek için $2 öğesine dokun",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
-    "message": "Не удалось создать правило для этого элемента.",
+    "message": "Bu öğe için kural oluşturulamadı.",
     "description": "Toast shown when selector generation fails for selected element."
   },
   "zapper_toast_enabled": {
-    "message": "Скрытие элементов включено.",
+    "message": "Öğe Zaplayıcı etkinleştirildi.",
     "description": "Toast shown when zapper mode is enabled."
   },
   "zapper_toast_disabled": {
-    "message": "Скрытие элементов отключено.",
+    "message": "Öğe Zaplayıcı devre dışı bırakıldı.",
     "description": "Toast shown when zapper mode is disabled."
   },
   "zapper_status_off": {
-    "message": "Скрытие элементов: Выкл.",
+    "message": "Öğe Zaplayıcı: Kapalı",
     "description": "Status text shown after disabling zapper while keeping toolbar visible."
   }
 }
