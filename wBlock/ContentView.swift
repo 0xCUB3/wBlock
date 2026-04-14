@@ -93,8 +93,8 @@ struct ContentView: View {
             let searched = query.isEmpty
                 ? filters
                 : filters.filter { filter in
-                    filter.name.localizedCaseInsensitiveContains(query)
-                        || filter.description.localizedCaseInsensitiveContains(query)
+                    filter.localizedDisplayName.localizedCaseInsensitiveContains(query)
+                        || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
                         || filter.url.absoluteString.localizedCaseInsensitiveContains(query)
                 }
             if !searched.isEmpty {
@@ -516,7 +516,7 @@ struct FilterRowView: View {
                     if let flags = filter.flagEmojis {
                         Text(flags)
                     }
-                    Text(filter.name)
+                    Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -553,8 +553,8 @@ struct FilterRowView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if !filter.description.isEmpty {
-                    Text(filter.description)
+                if !filter.localizedDisplayDescription.isEmpty {
+                    Text(filter.localizedDisplayDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(nil)
@@ -578,7 +578,13 @@ struct FilterRowView: View {
 
                 HStack(spacing: 4) {
                     if !filter.version.isEmpty {
-                        Text("Version \(filter.version)")
+                        Text(
+                            LocalizedStrings.format(
+                                "Version %@",
+                                comment: "Filter version label",
+                                filter.version
+                            )
+                        )
                             .font(.caption2)
                             .foregroundStyle(.gray)
                     }
@@ -672,7 +678,9 @@ struct ContentModifiers: ViewModifier {
                 if filterManager.autoDisabledFilters.isEmpty {
                     Text("Some filters were automatically disabled because Safari's rule limits were exceeded.")
                 } else {
-                    let filterNames = filterManager.autoDisabledFilters.map(\.name).joined(separator: "\n")
+                    let filterNames = filterManager.autoDisabledFilters
+                        .map(\.localizedDisplayName)
+                        .joined(separator: "\n")
                     Text(
                         String.localizedStringWithFormat(
                             NSLocalizedString(

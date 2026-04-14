@@ -5,50 +5,65 @@ enum CloudSyncTimestampFormatter {
         for date: Date?,
         relativeTo now: Date = Date(),
         calendar: Calendar = .autoupdatingCurrent,
-        locale: Locale = .autoupdatingCurrent,
+        locale: Locale = .appCurrent,
         timeZone: TimeZone = .autoupdatingCurrent
     ) -> String {
         guard let date else {
-            return "Not synced yet"
+            return String(localized: "Not synced yet")
         }
 
         let interval = now.timeIntervalSince(date)
         if abs(interval) < 60 {
-            return "Synced just now"
+            return String(localized: "Synced just now")
         }
 
-        if interval > 0, interval < 6 * 60 * 60, let relative = relativeIntervalString(from: interval, locale: locale) {
-            return "Synced \(relative) ago"
+        if interval > 0,
+           interval < 6 * 60 * 60,
+           let relative = relativeString(for: date, relativeTo: now, locale: locale)
+        {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Synced %@", comment: "Cloud sync status"),
+                relative
+            )
         }
 
         if calendar.isDate(date, inSameDayAs: now) {
-            return "Synced today at \(timeString(for: date, locale: locale, timeZone: timeZone))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Synced today at %@", comment: "Cloud sync status"),
+                timeString(for: date, locale: locale, timeZone: timeZone)
+            )
         }
 
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
            calendar.isDate(date, inSameDayAs: yesterday)
         {
-            return "Synced yesterday at \(timeString(for: date, locale: locale, timeZone: timeZone))"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Synced yesterday at %@", comment: "Cloud sync status"),
+                timeString(for: date, locale: locale, timeZone: timeZone)
+            )
         }
 
         if interval > 0,
-           let dayCount = dayDifference(from: date, to: now, calendar: calendar),
-           dayCount <= 6
+           let days = dayDifference(from: date, to: now, calendar: calendar),
+           days <= 6,
+           let relative = relativeString(for: date, relativeTo: now, locale: locale)
         {
-            return "Synced \(dayCount) \(dayCount == 1 ? "day" : "days") ago"
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Synced %@", comment: "Cloud sync status"),
+                relative
+            )
         }
 
-        return "Synced \(dateTimeString(for: date, locale: locale, timeZone: timeZone))"
+        return String.localizedStringWithFormat(
+            NSLocalizedString("Synced %@", comment: "Cloud sync status"),
+            dateTimeString(for: date, locale: locale, timeZone: timeZone)
+        )
     }
 
-    private static func relativeIntervalString(from interval: TimeInterval, locale: Locale) -> String? {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = interval >= 3600 ? [.hour] : [.minute]
-        formatter.unitsStyle = .full
-        formatter.maximumUnitCount = 1
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.calendar?.locale = locale
-        return formatter.string(from: interval)
+    private static func relativeString(for date: Date, relativeTo now: Date, locale: Locale) -> String? {
+        let formatter = LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .full)
+        formatter.locale = locale
+        return formatter.localizedString(for: date, relativeTo: now)
     }
 
     private static func dayDifference(from date: Date, to now: Date, calendar: Calendar) -> Int? {
@@ -61,20 +76,16 @@ enum CloudSyncTimestampFormatter {
     }
 
     private static func timeString(for date: Date, locale: Locale, timeZone: TimeZone) -> String {
-        let formatter = DateFormatter()
+        let formatter = LocalizedFormatting.timeFormatter()
         formatter.locale = locale
         formatter.timeZone = timeZone
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 
     private static func dateTimeString(for date: Date, locale: Locale, timeZone: TimeZone) -> String {
-        let formatter = DateFormatter()
+        let formatter = LocalizedFormatting.dateTimeFormatter()
         formatter.locale = locale
         formatter.timeZone = timeZone
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 }

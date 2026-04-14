@@ -100,7 +100,10 @@ extension AppFilterManager {
     func fastApplyDisabledSitesChanges() async {
         await MainActor.run {
             self.isLoading = true
-            self.statusDescription = "Updating disabled sites..."
+            self.statusDescription = LocalizedStrings.text(
+                "Updating disabled sites...",
+                comment: "Disabled sites update status"
+            )
         }
 
         await ConcurrentLogManager.shared.info(
@@ -144,11 +147,20 @@ extension AppFilterManager {
             self.isLoading = false
 
             if successCount == targetsToReload.count {
-                self.statusDescription =
-                    "✅ Disabled sites updated successfully in \(reloadTime) (fast update #\(self.fastUpdateCount))"
+                self.statusDescription = LocalizedStrings.format(
+                    "Disabled sites updated successfully in %@ (fast update #%d)",
+                    comment: "Disabled sites update success status",
+                    reloadTime,
+                    self.fastUpdateCount
+                )
             } else {
-                self.statusDescription =
-                    "⚠️ Updated \(successCount)/\(targetsToReload.count) extensions in \(reloadTime)"
+                self.statusDescription = LocalizedStrings.format(
+                    "Updated %d/%d extensions in %@",
+                    comment: "Disabled sites partial update status",
+                    successCount,
+                    targetsToReload.count,
+                    reloadTime
+                )
             }
         }
 

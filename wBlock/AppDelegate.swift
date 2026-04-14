@@ -143,11 +143,27 @@ extension AppDelegate: NSApplicationDelegate {
         }
 
         let alert = NSAlert()
-        alert.messageText = "Unapplied Filter Changes"
-        alert.informativeText = "You have unapplied filter changes. Do you want to apply them before quitting?"
-        alert.addButton(withTitle: "Apply Changes and Quit")
-        alert.addButton(withTitle: "Quit Without Applying")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = LocalizedStrings.text(
+            "Unapplied Filter Changes",
+            comment: "Quit confirmation title"
+        )
+        alert.informativeText = LocalizedStrings.text(
+            "You have unapplied filter changes. Do you want to apply them before quitting?",
+            comment: "Quit confirmation message"
+        )
+        alert.addButton(
+            withTitle: LocalizedStrings.text(
+                "Apply Changes and Quit",
+                comment: "Quit confirmation primary action"
+            )
+        )
+        alert.addButton(
+            withTitle: LocalizedStrings.text(
+                "Quit Without Applying",
+                comment: "Quit confirmation destructive action"
+            )
+        )
+        alert.addButton(withTitle: LocalizedStrings.text("Cancel", comment: "Quit confirmation cancel action"))
         alert.alertStyle = .warning
 
         let response = alert.runModal()

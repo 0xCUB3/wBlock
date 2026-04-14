@@ -125,10 +125,6 @@ struct ProgressViewWithStatus: View {
         self.description = description
     }
 
-    private var progressPercentage: Int {
-        Int(round(progress * 100))
-    }
-
     var body: some View {
         VStack(spacing: 16) {
             VStack(spacing: 8) {
@@ -137,11 +133,11 @@ struct ProgressViewWithStatus: View {
                     .scaleEffect(y: 1.2)
                     .animation(.easeInOut(duration: 0.2), value: progress)
 
-                Text("\(progressPercentage)%")
+                Text(statusText)
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(.secondary)
-                    .animation(.easeInOut(duration: 0.2), value: progressPercentage)
+                    .animation(.easeInOut(duration: 0.2), value: statusText)
             }
             .padding(.horizontal)
 

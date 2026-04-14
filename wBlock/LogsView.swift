@@ -172,7 +172,8 @@ struct LogsView: View {
                             selectedLevel = level
                         } label: {
                             HStack {
-                                Text("\(level.emoji) \(level.localizedName)")
+                                Text(level.emoji)
+                                Text(level.localizedName)
                                 if selectedLevel == level {
                                     Image(systemName: "checkmark")
                                 }
@@ -231,7 +232,13 @@ struct LogsView: View {
                 }
 
                 // Stats
-                Text("\(filteredEntries.count) entries")
+                Text(
+                    LocalizedStrings.format(
+                        "%d entries",
+                        comment: "Log entry count label",
+                        filteredEntries.count
+                    )
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.leading, 8)

@@ -32,16 +32,14 @@ struct UpdatePopupView: View {
         self._selectedCategories = State(initialValue: categories)
     }
     
-    private var progressPercentage: Int {
-        Int(round(filterManager.progress * 100))
-    }
-    
     var body: some View {
         SheetContainer {
             VStack(spacing: 0) {
                 // Header
                 SheetHeader(
-                    title: filterManager.isLoading ? "Downloading Updates" : "Available Updates",
+                    title: filterManager.isLoading
+                        ? LocalizedStrings.text("Downloading Updates", comment: "Update popup title")
+                        : LocalizedStrings.text("Available Updates", comment: "Update popup title"),
                     isLoading: filterManager.isLoading
                 ) {
                     isPresented = false
@@ -53,8 +51,11 @@ struct UpdatePopupView: View {
                     // Download progress view
                     ProgressViewWithStatus(
                         progress: Double(filterManager.progress),
-                        statusText: "\(progressPercentage)%",
-                        description: "After downloading, filter lists will be applied automatically."
+                        statusText: LocalizedFormatting.percent(Double(filterManager.progress)),
+                        description: LocalizedStrings.text(
+                            "After downloading, filter lists will be applied automatically.",
+                            comment: "Update popup progress description"
+                        )
                     )
                 } else {
                     // Filter selection list
@@ -73,10 +74,10 @@ struct UpdatePopupView: View {
                                             Image(systemName: selectedFilters.contains(filter.id) ? "checkmark.circle.fill" : "circle")
                                                 .foregroundStyle(selectedFilters.contains(filter.id) ? .blue : .gray)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text(filter.name)
+                                                Text(filter.localizedDisplayName)
                                                     .font(.body)
-                                                if !filter.description.isEmpty {
-                                                    Text(filter.description)
+                                                if !filter.localizedDisplayDescription.isEmpty {
+                                                    Text(filter.localizedDisplayDescription)
                                                         .font(.caption)
                                                         .foregroundStyle(.gray)
                                                         .lineLimit(1)
@@ -111,10 +112,10 @@ struct UpdatePopupView: View {
                                             Image(systemName: selectedScripts.contains(script.id) ? "checkmark.circle.fill" : "circle")
                                                 .foregroundStyle(selectedScripts.contains(script.id) ? .blue : .gray)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text(script.name)
+                                                Text(script.localizedDisplayName)
                                                     .font(.body)
-                                                if !script.description.isEmpty {
-                                                    Text(script.description)
+                                                if !script.localizedDisplayDescription.isEmpty {
+                                                    Text(script.localizedDisplayDescription)
                                                         .font(.caption)
                                                         .foregroundStyle(.gray)
                                                         .lineLimit(1)

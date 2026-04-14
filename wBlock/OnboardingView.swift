@@ -120,13 +120,19 @@ struct OnboardingView: View {
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
         "return youtube dislike":
-            "Return of the YouTube Dislike.",
+            LocalizedStrings.text("Return of the YouTube Dislike.", comment: "Default userscript description"),
         "bypass paywalls clean":
-            "Bypass paywalls of news sites.",
+            LocalizedStrings.text("Bypass paywalls of news sites.", comment: "Default userscript description"),
         "youtube classic":
-            "Reverts YouTube to its classic design and behavior.",
+            LocalizedStrings.text(
+                "Reverts YouTube to its classic design and behavior.",
+                comment: "Default userscript description"
+            ),
         "adguard extra":
-            "Handles advanced anti-adblock cases that filter rules miss."
+            LocalizedStrings.text(
+                "Handles advanced anti-adblock cases that filter rules miss.",
+                comment: "Default userscript description"
+            )
     ]
 
     private var defaultUserScripts: [OnboardingUserScriptItem] {
@@ -225,7 +231,13 @@ struct OnboardingView: View {
             Button("Continue Setup", role: .cancel) {}
         } message: {
             if let remoteConfigUpdatedAtText {
-                Text("We found an existing wBlock configuration in iCloud (\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.")
+                Text(
+                    LocalizedStrings.format(
+                        "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead.",
+                        comment: "Onboarding iCloud setup adoption prompt",
+                        remoteConfigUpdatedAtText
+                    )
+                )
             } else {
                 Text("We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead.")
             }
@@ -247,7 +259,14 @@ struct OnboardingView: View {
 
                 Spacer()
 
-                Text("\(step.rawValue + 1)/\(OnboardingStep.allCases.count)")
+                Text(
+                    LocalizedStrings.format(
+                        "%d/%d",
+                        comment: "Onboarding step counter",
+                        step.rawValue + 1,
+                        OnboardingStep.allCases.count
+                    )
+                )
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
@@ -493,11 +512,11 @@ struct OnboardingView: View {
                     .font(.title3)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(filter.name)
+                    Text(filter.localizedDisplayName)
                         .font(.headline)
 
-                    if !filter.description.isEmpty {
-                        Text(filter.description)
+                    if !filter.localizedDisplayDescription.isEmpty {
+                        Text(filter.localizedDisplayDescription)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -544,7 +563,14 @@ struct OnboardingView: View {
                         .font(.title3)
                         .symbolRenderingMode(.multicolor)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("The \(bypassScript.name) userscript requires the \(filterName)")
+                        Text(
+                            LocalizedStrings.format(
+                                "The %@ userscript requires the %@",
+                                comment: "Bypass paywalls userscript requirement warning",
+                                bypassScript.name,
+                                filterName
+                            )
+                        )
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
@@ -722,7 +748,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(script.name)
                         .font(.headline)
-                    Text(script.description)
+                    Text(LocalizedStrings.text(script.description, comment: "Userscript description"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -854,8 +880,7 @@ struct OnboardingView: View {
             guard !wantsCloudSync else { return }
 
             if let updatedAt = probe.updatedAt {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .short
+                let formatter = LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .short)
                 let date = Date(timeIntervalSince1970: updatedAt)
                 remoteConfigUpdatedAtText = String.localizedStringWithFormat(
                     NSLocalizedString("last updated %@", comment: "Remote config update timestamp"),

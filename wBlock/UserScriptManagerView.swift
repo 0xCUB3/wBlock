@@ -64,8 +64,8 @@ struct UserScriptManagerView: View {
         }
 
         return filteredByEnabled.filter { script in
-            script.name.localizedCaseInsensitiveContains(trimmedSearchText)
-                || script.description.localizedCaseInsensitiveContains(trimmedSearchText)
+            script.localizedDisplayName.localizedCaseInsensitiveContains(trimmedSearchText)
+                || script.localizedDisplayDescription.localizedCaseInsensitiveContains(trimmedSearchText)
                 || (script.url?.absoluteString.localizedCaseInsensitiveContains(trimmedSearchText)
                     ?? false)
                 || (script.updateURL?.localizedCaseInsensitiveContains(trimmedSearchText) ?? false)
@@ -347,14 +347,14 @@ struct UserScriptManagerView: View {
     private func scriptRowView(script: UserScript) -> some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(script.name)
+                Text(script.localizedDisplayName)
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !script.description.isEmpty {
-                    Text(script.description)
+                if !script.localizedDisplayDescription.isEmpty {
+                    Text(script.localizedDisplayDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -363,7 +363,13 @@ struct UserScriptManagerView: View {
 
                 HStack(spacing: 4) {
                     if !script.version.isEmpty {
-                        Text("Version \(script.version)")
+                        Text(
+                            LocalizedStrings.format(
+                                "Version %@",
+                                comment: "Userscript version label",
+                                script.version
+                            )
+                        )
                             .font(.caption2)
                             .foregroundStyle(.gray)
                     }
@@ -520,9 +526,9 @@ private struct ScriptNameAndDescriptionView: View {
     let script: UserScript
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(script.name).font(.title2).fontWeight(.semibold).foregroundStyle(.primary).textSelection(.enabled)
-            if !script.description.isEmpty {
-                Text(script.description).font(.body).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            Text(script.localizedDisplayName).font(.title2).fontWeight(.semibold).foregroundStyle(.primary).textSelection(.enabled)
+            if !script.localizedDisplayDescription.isEmpty {
+                Text(script.localizedDisplayDescription).font(.body).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -534,7 +540,14 @@ private struct ScriptStatusBadgesView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 if !script.version.isEmpty {
-                    Badge(text: "v\(script.version)", color: .blue)
+                    Badge(
+                        text: LocalizedStrings.format(
+                            "v%@",
+                            comment: "Userscript version badge",
+                            script.version
+                        ),
+                        color: .blue
+                    )
                 }
                 Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
             }
@@ -578,7 +591,13 @@ private struct ScriptMatchPatternRowView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
-            Text("\(index + 1).")
+            Text(
+                LocalizedStrings.format(
+                    "%d.",
+                    comment: "Userscript URL pattern row index",
+                    index + 1
+                )
+            )
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .frame(width: 18, alignment: .trailing)
@@ -605,7 +624,13 @@ private struct ScriptMatchPatternsView: View {
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Text("URL Patterns (\(script.matches.count))")
+                    Text(
+                        LocalizedStrings.format(
+                            "URL Patterns (%d)",
+                            comment: "Userscript URL pattern section title",
+                            script.matches.count
+                        )
+                    )
                         .font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
                     Spacer()
                     Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
@@ -670,7 +695,14 @@ struct ScriptContentMainView: View {
                     if !isEditing && !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle").font(.caption2).foregroundStyle(.orange)
-                            Text("Showing preview (\(formatFileSize(previewLength)) of \(formatFileSize(script.content.count)))")
+                            Text(
+                                LocalizedStrings.format(
+                                    "Showing preview (%@ of %@)",
+                                    comment: "Userscript content preview status",
+                                    formatFileSize(previewLength),
+                                    formatFileSize(script.content.count)
+                                )
+                            )
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     } else if !isEditing && showFullContent && script.content.count > previewLength {
@@ -727,7 +759,11 @@ struct ScriptContentMainView: View {
                                     Text(showFullContent ? "Show Preview" : "Show All")
                                 }
                             }.buttonStyle(.borderless).disabled(isLoadingContent)
-                             .help(showFullContent ? "Show preview only" : "Load full content")
+                             .help(
+                                showFullContent
+                                    ? LocalizedStrings.text("Show preview only", comment: "Userscript content toggle help")
+                                    : LocalizedStrings.text("Load full content", comment: "Userscript content toggle help")
+                             )
                         }
                     }
                 }
@@ -842,7 +878,7 @@ struct UserScriptContentView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle(script.name)
+            .navigationTitle(script.localizedDisplayName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if isEditing {

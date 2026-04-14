@@ -19,9 +19,9 @@ import wBlockCoreService
 class AppFilterManager: ObservableObject {
     @Published var filterLists: [FilterList] = []
     @Published var isLoading: Bool = false
-    @Published var statusDescription: String = "Ready."
-    @Published var lastConversionTime: String = "N/A"
-    @Published var lastReloadTime: String = "N/A"
+    @Published var statusDescription: String = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+    @Published var lastConversionTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
+    @Published var lastReloadTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
     @Published var lastRuleCount: Int = 0
     @Published var hasError: Bool = false
     @Published var progress: Float = 0
@@ -45,7 +45,7 @@ class AppFilterManager: ObservableObject {
     @Published var ruleLimitWarningTitle = ""
 
     // Performance tracking
-    @Published var lastFastUpdateTime: String = "N/A"
+    @Published var lastFastUpdateTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
     @Published var fastUpdateCount: Int = 0
 
     // New ViewModel-based progress tracking
@@ -176,7 +176,7 @@ class AppFilterManager: ObservableObject {
     @MainActor
     func resetForOnboarding() async {
         isLoading = true
-        statusDescription = "Resetting…"
+        statusDescription = LocalizedStrings.text("Resetting…", comment: "Filter manager reset status")
         markCurrentStateApplied()
         showingApplyProgressSheet = false
         showingUpdatePopup = false
@@ -188,7 +188,7 @@ class AppFilterManager: ObservableObject {
         ruleLimitWarningMessage = ""
         ruleLimitWarningTitle = ""
         lastRuleCount = 0
-        lastFastUpdateTime = "N/A"
+        lastFastUpdateTime = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
         fastUpdateCount = 0
         sourceRulesCount = 0
         processedFiltersCount = 0
@@ -209,7 +209,7 @@ class AppFilterManager: ObservableObject {
 
         ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
 
-        statusDescription = "Ready."
+        statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
         isLoading = false
     }
 
@@ -318,7 +318,11 @@ class AppFilterManager: ObservableObject {
         setupDisabledSitesObserver()
 
         markCurrentStateApplied()
-        statusDescription = "Initialized with \(filterLists.count) filter list(s)."
+        statusDescription = LocalizedStrings.format(
+            "Initialized with %d filter list(s).",
+            comment: "Filter manager initialization status",
+            filterLists.count
+        )
         // Update versions and counts in background without applying changes
         Task { await updateVersionsAndCounts() }
     }
@@ -505,14 +509,28 @@ class AppFilterManager: ObservableObject {
         if let filter, let reason = filter.limitExceededReason, !reason.isEmpty {
             message = reason
         } else {
-            message = """
-            Safari limits each content blocker extension to \(ruleLimitPerBlocker.formatted()) rules.
-            Total capacity (all wBlock blockers): \(totalCapacity.formatted()) rules.
+            let currentRulesLine: String
+            if totalRules >= totalWarningThreshold {
+                currentRulesLine = LocalizedStrings.format(
+                    "Current Safari rules: %@ (near limit)",
+                    comment: "Rule limit warning current rules line when near limit",
+                    totalRules.formatted()
+                )
+            } else {
+                currentRulesLine = LocalizedStrings.format(
+                    "Current Safari rules: %@",
+                    comment: "Rule limit warning current rules line",
+                    totalRules.formatted()
+                )
+            }
 
-            Current Safari rules: \(totalRules.formatted())\(totalRules >= totalWarningThreshold ? " (near limit)" : "")
-
-            wBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.
-            """
+            message = LocalizedStrings.format(
+                "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
+                comment: "Rule limit warning body",
+                ruleLimitPerBlocker.formatted(),
+                totalCapacity.formatted(),
+                currentRulesLine
+            )
         }
 
         let perBlockerWarningThreshold = Int(Double(ruleLimitPerBlocker) * 0.8)
@@ -524,13 +542,28 @@ class AppFilterManager: ObservableObject {
             .sorted { $0.count > $1.count }
 
         if !nearLimitBlockers.isEmpty {
-            message += "\n\nBlockers near the per-extension limit:\n" + nearLimitBlockers
-                .map { "\($0.name): \($0.count.formatted())" }
+            message += "\n\n"
+            message += LocalizedStrings.text(
+                "Blockers near the per-extension limit:",
+                comment: "Rule limit warning section header"
+            )
+            message += "\n"
+            message += nearLimitBlockers
+                .map {
+                    LocalizedStrings.format(
+                        "%@: %@",
+                        comment: "Rule limit warning blocker row",
+                        $0.name,
+                        $0.count.formatted()
+                    )
+                }
                 .joined(separator: "\n")
         }
 
         let isNearLimit = totalRules >= totalWarningThreshold || !nearLimitBlockers.isEmpty
-        ruleLimitWarningTitle = isNearLimit ? "Rule Limit Warning" : "Rule Capacity"
+        ruleLimitWarningTitle = isNearLimit
+            ? LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")
+            : LocalizedStrings.text("Rule Capacity", comment: "Rule capacity title")
         ruleLimitWarningMessage = message
         showingRuleLimitWarningAlert = true
     }

@@ -482,8 +482,7 @@ struct SettingsView: View {
             }
 
             if let updatedAt = probe.updatedAt {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .short
+                let formatter = LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .short)
                 let date = Date(timeIntervalSince1970: updatedAt)
                 syncAdoptTimestamp = formatter.localizedString(for: date, relativeTo: Date())
             } else {
@@ -624,10 +623,16 @@ extension SettingsView {
             if remainingHours == 0 {
                 return localizedIntervalCount("Every %d days", count: days)
             }
+            let duration = TimeInterval(hours * 3600)
+            let formattedDuration = LocalizedFormatting.dateComponentsFormatter(
+                allowedUnits: [.day, .hour],
+                unitsStyle: .abbreviated,
+                maximumUnitCount: 2
+            ).string(from: duration)
+
             return String.localizedStringWithFormat(
-                NSLocalizedString("Every %dd %dh", comment: "Auto-update interval"),
-                days,
-                remainingHours
+                NSLocalizedString("Every %@", comment: "Auto-update interval"),
+                formattedDuration ?? "\(days) \(remainingHours)"
             )
         }
 
@@ -655,15 +660,14 @@ extension SettingsView {
             return String(localized: "due now")
         }
 
-        let componentsFormatter = DateComponentsFormatter()
-        componentsFormatter.allowedUnits = [.day, .hour, .minute]
-        componentsFormatter.unitsStyle = .short
-        componentsFormatter.maximumUnitCount = 2
+        let componentsFormatter = LocalizedFormatting.dateComponentsFormatter(
+            allowedUnits: [.day, .hour, .minute],
+            unitsStyle: .short,
+            maximumUnitCount: 2
+        )
         let relative = componentsFormatter.string(from: remaining) ?? String(localized: "soon")
 
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateStyle = .none
-        timeFormatter.timeStyle = .short
+        let timeFormatter = LocalizedFormatting.timeFormatter()
         let timeString = timeFormatter.string(from: scheduledAt)
 
         return String.localizedStringWithFormat(
@@ -709,8 +713,7 @@ extension SettingsView {
 
     private func formatDiagnosticTime(_ timestamp: Int64) -> String {
         guard timestamp > 0 else { return String(localized: "never") }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
+        let formatter = LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .short)
         return formatter.localizedString(
             for: Date(timeIntervalSince1970: TimeInterval(timestamp)),
             relativeTo: Date()
@@ -815,8 +818,8 @@ extension SettingsView {
             return syncManager.lastSyncLine
         }
 
-        switch syncManager.statusLine {
-        case "Sync: Checking…", "Sync: Downloading…", "Sync: Uploading…", "Sync: Working…":
+        switch syncManager.status {
+        case .checking, .downloading, .uploading, .working:
             return syncManager.statusLine
         default:
             return syncManager.lastSyncLine

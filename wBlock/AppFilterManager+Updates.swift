@@ -48,7 +48,7 @@ extension AppFilterManager {
 
     func checkForUpdates() async {
         isLoading = true
-        statusDescription = "Checking for updates..."
+        statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
         // Ensure counts are up-to-date before checking for updates
         await updateVersionsAndCounts()
 
@@ -67,10 +67,14 @@ extension AppFilterManager {
 
         if !availableUpdates.isEmpty {
             showingUpdatePopup = true
-            statusDescription = "Found \(availableUpdates.count) update(s) available."
+            statusDescription = LocalizedStrings.format(
+                "Found %d update(s) available.",
+                comment: "Updates found status",
+                availableUpdates.count
+            )
         } else {
             showingNoUpdatesAlert = true
-            statusDescription = "No updates available."
+            statusDescription = LocalizedStrings.text("No updates available.", comment: "No updates status")
             Task {
                 await ConcurrentLogManager.shared.info(
                     .autoUpdate, "No updates available", metadata: [:])
@@ -84,7 +88,10 @@ extension AppFilterManager {
         isLoading = true
         progress = 0
         if showProgressSheet {
-            statusDescription = "Downloading filter updates..."
+            statusDescription = LocalizedStrings.text(
+                "Downloading filter updates...",
+                comment: "Filter update download status"
+            )
         }
 
         let successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(

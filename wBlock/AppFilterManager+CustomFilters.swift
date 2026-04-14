@@ -6,7 +6,11 @@ extension AppFilterManager {
     func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom, hasUserProvidedName: Bool = false) {
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines))
         else {
-            statusDescription = "Invalid URL provided: \(urlString)"
+            statusDescription = LocalizedStrings.format(
+                "Invalid URL provided: %@",
+                comment: "Custom filter validation error",
+                urlString
+            )
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
@@ -17,7 +21,11 @@ extension AppFilterManager {
         }
 
         if filterLists.contains(where: { $0.url == url }) {
-            statusDescription = "Filter list with this URL already exists: \(url.absoluteString)"
+            statusDescription = LocalizedStrings.format(
+                "Filter list with this URL already exists: %@",
+                comment: "Custom filter duplicate URL error",
+                url.absoluteString
+            )
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
@@ -32,12 +40,12 @@ extension AppFilterManager {
         let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let newFilter = FilterList(
             id: UUID(),
-            name: newName.isEmpty ? (url.host ?? "Custom Filter") : newName,
+            name: newName.isEmpty ? (url.host ?? LocalizedStrings.text("Custom Filter", comment: "Default custom filter name")) : newName,
             url: url,
             category: category,
             isCustom: true,
             isSelected: true,
-            description: "User-added filter list.",
+            description: LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
             sourceRuleCount: nil,
             hasUserProvidedName: hasUserProvidedName)
         addCustomFilterList(newFilter)
@@ -49,20 +57,23 @@ extension AppFilterManager {
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !trimmedName.isEmpty else {
-            statusDescription = "Title is required."
+            statusDescription = LocalizedStrings.text("Title is required.", comment: "User list validation error")
             hasError = true
             return
         }
 
         guard !trimmedContent.isEmpty else {
-            statusDescription = "User list is empty."
+            statusDescription = LocalizedStrings.text("User list is empty.", comment: "User list validation error")
             hasError = true
             return
         }
 
         let lower = trimmedContent.lowercased()
         if lower.hasPrefix("<!doctype html") || lower.hasPrefix("<html") {
-            statusDescription = "That doesn't look like a filter list."
+            statusDescription = LocalizedStrings.text(
+                "That doesn't look like a filter list.",
+                comment: "User list validation error"
+            )
             hasError = true
             return
         }
@@ -78,12 +89,17 @@ extension AppFilterManager {
             category: .custom,
             isCustom: true,
             isSelected: isSelected,
-            description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "User list.",
+            description: trimmedDescription?.isEmpty == false
+                ? trimmedDescription!
+                : LocalizedStrings.text("User list.", comment: "Default user list description"),
             sourceRuleCount: Self.countRulesInUserListContent(trimmedContent)
         )
 
         guard let destinationURL = loader.localFileURL(for: newFilter) else {
-            statusDescription = "Failed to access shared storage."
+            statusDescription = LocalizedStrings.text(
+                "Failed to access shared storage.",
+                comment: "Shared storage access error"
+            )
             hasError = true
             return
         }
@@ -91,7 +107,7 @@ extension AppFilterManager {
         do {
             try trimmedContent.write(to: destinationURL, atomically: true, encoding: .utf8)
         } catch {
-            statusDescription = "Failed to save user list."
+            statusDescription = LocalizedStrings.text("Failed to save user list.", comment: "User list save error")
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
@@ -105,7 +121,10 @@ extension AppFilterManager {
 
         addCustomFilterListWithoutFetch(newFilter)
         refreshPendingChanges()
-        statusDescription = "✅ User list added. Apply changes to enable it."
+        statusDescription = LocalizedStrings.text(
+            "User list added. Apply changes to enable it.",
+            comment: "User list added status"
+        )
         hasError = false
     }
 
@@ -115,7 +134,7 @@ extension AppFilterManager {
             let name = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             addUserList(name: name, description: description, content: content, isSelected: isSelected)
         } catch {
-            statusDescription = "Failed to read file."
+            statusDescription = LocalizedStrings.text("Failed to read file.", comment: "File read error")
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
@@ -157,12 +176,15 @@ extension AppFilterManager {
                     await ConcurrentLogManager.shared.info(
                         .filterUpdate, "Successfully downloaded custom filter",
                         metadata: ["filter": currentName])
-                    await MainActor.run {
-                        self.refreshPendingChanges()
-                        self.statusDescription =
-                            "✅ Filter '\(currentName)' added successfully. Apply changes to enable it."
-                        self.hasError = false
-                    }
+                        await MainActor.run {
+                            self.refreshPendingChanges()
+                            self.statusDescription = LocalizedStrings.format(
+                                "Filter '%@' added successfully. Apply changes to enable it.",
+                                comment: "Custom filter added status",
+                                currentName
+                            )
+                            self.hasError = false
+                        }
                     saveFilterListsCoalesced()
                 } else {
                     await ConcurrentLogManager.shared.error(
@@ -170,8 +192,10 @@ extension AppFilterManager {
                         metadata: ["filter": newFilterToAdd.name])
                     await MainActor.run {
                         removeCustomFilterList(newFilterToAdd)
-                        self.statusDescription =
-                            "❌ Failed to add filter. The URL may be invalid or the content is not a valid filter list."
+                        self.statusDescription = LocalizedStrings.text(
+                            "Failed to add filter. The URL may be invalid or the content is not a valid filter list.",
+                            comment: "Custom filter add failure"
+                        )
                         self.hasError = true
                     }
                 }
@@ -240,7 +264,10 @@ extension AppFilterManager {
         if filterLists.contains(where: {
             $0.id != id && $0.name.caseInsensitiveCompare(trimmed) == .orderedSame
         }) {
-            statusDescription = "A filter list with this name already exists."
+            statusDescription = LocalizedStrings.text(
+                "A filter list with this name already exists.",
+                comment: "Custom filter duplicate name error"
+            )
             hasError = true
             return
         }
@@ -263,26 +290,29 @@ extension AppFilterManager {
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !trimmedName.isEmpty else {
-            statusDescription = "Title is required."
+            statusDescription = LocalizedStrings.text("Title is required.", comment: "User list validation error")
             hasError = true
             return
         }
 
         guard !trimmedContent.isEmpty else {
-            statusDescription = "User list is empty."
+            statusDescription = LocalizedStrings.text("User list is empty.", comment: "User list validation error")
             hasError = true
             return
         }
 
         guard let index = filterListIndexByID[id], filterLists[index].isCustom else {
-            statusDescription = "User list not found."
+            statusDescription = LocalizedStrings.text("User list not found.", comment: "User list lookup error")
             hasError = true
             return
         }
 
         let filter = filterLists[index]
         guard filter.isInlineUserList else {
-            statusDescription = "Only pasted user lists can be edited."
+            statusDescription = LocalizedStrings.text(
+                "Only pasted user lists can be edited.",
+                comment: "User list edit restriction"
+            )
             hasError = true
             return
         }
@@ -290,14 +320,20 @@ extension AppFilterManager {
         if filterLists.contains(where: {
             $0.id != id && $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
         }) {
-            statusDescription = "A filter list with this name already exists."
+            statusDescription = LocalizedStrings.text(
+                "A filter list with this name already exists.",
+                comment: "Custom filter duplicate name error"
+            )
             hasError = true
             return
         }
 
         loader.migrateCustomFilterFileIfNeeded(filter)
         guard let destinationURL = loader.localFileURL(for: filter) else {
-            statusDescription = "Failed to access shared storage."
+            statusDescription = LocalizedStrings.text(
+                "Failed to access shared storage.",
+                comment: "Shared storage access error"
+            )
             hasError = true
             return
         }
@@ -305,7 +341,7 @@ extension AppFilterManager {
         do {
             try trimmedContent.write(to: destinationURL, atomically: true, encoding: .utf8)
         } catch {
-            statusDescription = "Failed to save user list."
+            statusDescription = LocalizedStrings.text("Failed to save user list.", comment: "User list save error")
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
@@ -323,7 +359,10 @@ extension AppFilterManager {
 
         saveFilterListsCoalesced()
         markNonSelectionChangesPending()
-        statusDescription = "✅ User list updated. Apply changes to enable it."
+        statusDescription = LocalizedStrings.text(
+            "User list updated. Apply changes to enable it.",
+            comment: "User list updated status"
+        )
         hasError = false
     }
 
@@ -351,7 +390,10 @@ extension AppFilterManager {
         }
 
         saveFilterListsCoalesced()
-        statusDescription = "Reverted to essential filters to stay under Safari's 150k rule limit."
+        statusDescription = LocalizedStrings.text(
+            "Reverted to essential filters to stay under Safari's 150k rule limit.",
+            comment: "Essential filter reset status"
+        )
 
         await MainActor.run {
             self.prepareApplyRunState()

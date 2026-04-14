@@ -28,8 +28,10 @@ extension AppFilterManager {
 
         // First, check for and download updates for enabled filters
         await MainActor.run {
-            self.statusDescription = "Checking for updates..."
-            self.applyProgressViewModel.updateStageDescription("Checking for updates...")
+            self.statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
+            self.applyProgressViewModel.updateStageDescription(
+                LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline stage")
+            )
             self.applyProgressViewModel.updatePhaseCompletion(updating: false)  // Mark as active
         }
 
@@ -45,9 +47,18 @@ extension AppFilterManager {
 
             if !updatedFilters.isEmpty {
                 await MainActor.run {
-                    self.statusDescription = "Downloading \(updatedFilters.count) update(s)..."
+                    self.statusDescription = LocalizedStrings.format(
+                        "Downloading %d update(s)...",
+                        comment: "Apply pipeline update download status",
+                        updatedFilters.count
+                    )
                     self.applyProgressViewModel.updateStageDescription(
-                        "Downloading \(updatedFilters.count) update(s)...")
+                        LocalizedStrings.format(
+                            "Downloading %d update(s)...",
+                            comment: "Apply pipeline update download stage",
+                            updatedFilters.count
+                        )
+                    )
                 }
 
                 await ConcurrentLogManager.shared.info(
@@ -73,8 +84,13 @@ extension AppFilterManager {
         // Mark updating phase as complete
         await MainActor.run {
             self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
-            self.statusDescription = "Applying filters...\n(This may take a while)"
-            self.applyProgressViewModel.updateStageDescription("Applying filters...")
+            self.statusDescription = LocalizedStrings.text(
+                "Applying filters...\n(This may take a while)",
+                comment: "Apply pipeline filter application status"
+            )
+            self.applyProgressViewModel.updateStageDescription(
+                LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
+            )
         }
 
         // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
@@ -108,8 +124,10 @@ extension AppFilterManager {
 
         if allSelectedFilters.isEmpty && generatedZapperRules.isEmpty {
             await MainActor.run {
-                self.statusDescription =
-                    "No filter lists selected. Clearing rules from all extensions."
+                self.statusDescription = LocalizedStrings.text(
+                    "No filter lists selected. Clearing rules from all extensions.",
+                    comment: "Apply pipeline no filters status"
+                )
             }
             await ConcurrentLogManager.shared.info(
                 .filterApply, "No filters selected - clearing all extensions", metadata: [:])
@@ -163,12 +181,17 @@ extension AppFilterManager {
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
             self.applyProgressViewModel.updateConvertingDone(0)
             self.applyProgressViewModel.updateReloadingDone(0)
-            self.applyProgressViewModel.updateStageDescription("Starting conversion...")
+            self.applyProgressViewModel.updateStageDescription(
+                LocalizedStrings.text("Starting conversion...", comment: "Apply pipeline stage")
+            )
         }
 
         if totalFiltersCount == 0 {
             await MainActor.run {
-                self.statusDescription = "No matching extensions for selected filters."
+                self.statusDescription = LocalizedStrings.text(
+                    "No matching extensions for selected filters.",
+                    comment: "Apply pipeline no matching extensions status"
+                )
                 self.isLoading = false
                 self.showingApplyProgressSheet = false
             }
@@ -203,7 +226,13 @@ extension AppFilterManager {
             let conversionStart = Date()
 
             await MainActor.run {
-                self.applyProgressViewModel.updateStageDescription("Converting \(blockerName)…")
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.format(
+                        "Converting %@…",
+                        comment: "Apply pipeline converting stage",
+                        blockerName
+                    )
+                )
             }
 
             // Yield to prevent main thread starvation on iOS
@@ -312,7 +341,9 @@ extension AppFilterManager {
 
             // Update ViewModel - starting reload phase
             self.applyProgressViewModel.updatePhaseCompletion(saving: true, reloading: false)
-            self.applyProgressViewModel.updateStageDescription("Reloading Safari extensions...")
+            self.applyProgressViewModel.updateStageDescription(
+                LocalizedStrings.text("Reloading Safari extensions...", comment: "Apply pipeline stage")
+            )
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
             self.applyProgressViewModel.updateReloadingDone(0)
             self.applyProgressViewModel.updateCurrentFilter("")
@@ -371,7 +402,9 @@ extension AppFilterManager {
 
         if !advancedRulesByTarget.isEmpty {
             await MainActor.run {
-                self.applyProgressViewModel.updateStageDescription("Building combined filter engine...")
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text("Building combined filter engine...", comment: "Apply pipeline stage")
+                )
             }
 
             // Run engine building on background thread
@@ -467,7 +500,7 @@ extension AppFilterManager {
         isLoading = true
         hasError = false
         progress = 0
-        statusDescription = "Checking for updates..."
+        statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
 
         applyProgressViewModel.reset()
         applyProgressViewModel.updateIsLoading(true)
@@ -483,7 +516,7 @@ extension AppFilterManager {
     {
         isLoading = true
         hasError = false
-        statusDescription = "Downloading filter lists..."
+        statusDescription = LocalizedStrings.text("Downloading filter lists...", comment: "Apply pipeline status")
         progress(0)
 
         // Download selected filters using existing updater logic
@@ -500,12 +533,15 @@ extension AppFilterManager {
         saveFilterListsCoalesced()
 
         // Apply changes (conversion, reload, etc)
-        statusDescription = "Applying filters...\n(This may take a while)"
+        statusDescription = LocalizedStrings.text(
+            "Applying filters...\n(This may take a while)",
+            comment: "Apply pipeline filter application status"
+        )
         await applyChanges()
 
         isLoading = false
         progress(1)
-        statusDescription = "Ready."
+        statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
     }
 
     // MARK: - Static helpers
@@ -749,7 +785,11 @@ extension AppFilterManager {
             await MainActor.run {
                 if !reloadResult.success {
                     if !self.hasError {
-                        self.statusDescription = "Failed to reload \(name)."
+                        self.statusDescription = LocalizedStrings.format(
+                            "Failed to reload %@.",
+                            comment: "Apply pipeline reload failure status",
+                            name
+                        )
                     }
                     self.hasError = true
                 }

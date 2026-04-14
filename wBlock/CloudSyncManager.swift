@@ -19,6 +19,38 @@ private enum CloudSyncError: LocalizedError {
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
+    enum SyncStatus {
+        case off
+        case on
+        case working
+        case downloading
+        case error
+        case uploading
+        case upToDate
+        case checking
+
+        var localizedTitle: String {
+            switch self {
+            case .off:
+                return String(localized: "Sync: Off")
+            case .on:
+                return String(localized: "Sync: On")
+            case .working:
+                return String(localized: "Sync: Working…")
+            case .downloading:
+                return String(localized: "Sync: Downloading…")
+            case .error:
+                return String(localized: "Sync: Error")
+            case .uploading:
+                return String(localized: "Sync: Uploading…")
+            case .upToDate:
+                return String(localized: "Sync: Up to date")
+            case .checking:
+                return String(localized: "Sync: Checking…")
+            }
+        }
+    }
+
     static let shared = CloudSyncManager()
 
     /// Check whether the running binary was signed with the iCloud entitlement.
@@ -35,8 +67,9 @@ final class CloudSyncManager: ObservableObject {
 
     @Published private(set) var isEnabled: Bool
     @Published private(set) var isSyncing: Bool = false
-    @Published private(set) var statusLine: String = "Sync: Off"
-    @Published private(set) var lastSyncLine: String = "Not synced yet"
+    @Published private(set) var status: SyncStatus = .off
+    @Published private(set) var statusLine: String = String(localized: "Sync: Off")
+    @Published private(set) var lastSyncLine: String = String(localized: "Not synced yet")
     @Published private(set) var lastErrorMessage: String?
 
     private weak var filterManager: AppFilterManager?
@@ -198,7 +231,7 @@ final class CloudSyncManager: ObservableObject {
 
             if isSyncing { return false }
             isSyncing = true
-            statusLine = "Sync: Downloading…"
+            setStatus(.downloading)
             lastErrorMessage = nil
             defer { isSyncing = false }
 
@@ -207,7 +240,7 @@ final class CloudSyncManager: ObservableObject {
             return true
         } catch {
             setLastSyncError(error)
-            statusLine = "Sync: Error"
+            setStatus(.error)
             logger.error("❌ Download/apply failed: \(error.localizedDescription, privacy: .public)")
             return false
         }
@@ -324,22 +357,43 @@ final class CloudSyncManager: ObservableObject {
 
         let description = ckError.localizedDescription.lowercased()
         if description.contains("pcs") || description.contains("oplock") {
-            return "iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync."
+            return LocalizedStrings.text(
+                "iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync.",
+                comment: "iCloud sync account error"
+            )
         }
 
         switch ckError.code {
         case .networkUnavailable, .networkFailure:
-            return "iCloud Sync couldn't reach iCloud. Check your connection and try again."
+            return LocalizedStrings.text(
+                "iCloud Sync couldn't reach iCloud. Check your connection and try again.",
+                comment: "iCloud sync network error"
+            )
         case .serviceUnavailable, .requestRateLimited, .zoneBusy:
-            return "iCloud Sync is temporarily unavailable. Try again in a moment."
+            return LocalizedStrings.text(
+                "iCloud Sync is temporarily unavailable. Try again in a moment.",
+                comment: "iCloud sync temporary outage"
+            )
         case .notAuthenticated:
-            return "iCloud Sync needs an active iCloud account on this device."
+            return LocalizedStrings.text(
+                "iCloud Sync needs an active iCloud account on this device.",
+                comment: "iCloud sync authentication error"
+            )
         case .quotaExceeded:
-            return "iCloud Sync couldn't save because your iCloud storage is full."
+            return LocalizedStrings.text(
+                "iCloud Sync couldn't save because your iCloud storage is full.",
+                comment: "iCloud sync quota error"
+            )
         case .permissionFailure:
-            return "iCloud Sync doesn't have permission to write to your iCloud account."
+            return LocalizedStrings.text(
+                "iCloud Sync doesn't have permission to write to your iCloud account.",
+                comment: "iCloud sync permission error"
+            )
         case .serverRejectedRequest, .internalError:
-            return "iCloud Sync hit an iCloud server error. Try again in a moment."
+            return LocalizedStrings.text(
+                "iCloud Sync hit an iCloud server error. Try again in a moment.",
+                comment: "iCloud sync server error"
+            )
         default:
             return ckError.localizedDescription
         }
@@ -376,7 +430,7 @@ final class CloudSyncManager: ObservableObject {
                 return
             case .startNow:
                 isSyncing = true
-                statusLine = "Sync: Uploading…"
+                setStatus(.uploading)
             }
         }
 
@@ -407,7 +461,7 @@ final class CloudSyncManager: ObservableObject {
             if payloadHash == defaults.string(forKey: Keys.lastUploadedHash) {
                 defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
                 refreshStatusFromDefaults()
-                statusLine = "Sync: Up to date"
+                setStatus(.upToDate)
                 return
             }
 
@@ -425,7 +479,7 @@ final class CloudSyncManager: ObservableObject {
             logger.info("✅ Uploaded sync payload (\(trigger, privacy: .public))")
         } catch {
             setLastSyncError(error)
-            statusLine = "Sync: Error"
+            setStatus(.error)
             logger.error("❌ Upload failed: \(error.localizedDescription, privacy: .public)")
         }
     }
@@ -440,7 +494,7 @@ final class CloudSyncManager: ObservableObject {
 
         if isSyncing { return }
         isSyncing = true
-        statusLine = "Sync: Checking…"
+        setStatus(.checking)
         lastErrorMessage = nil
         defer { finishSyncCycle() }
 
@@ -449,13 +503,13 @@ final class CloudSyncManager: ObservableObject {
             let localUpdatedAt = localPayload.updatedAt
 
             guard let remoteRecord = try await fetchRecord() else {
-                statusLine = "Sync: Uploading…"
+                setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-NoRemote", withinSyncSession: true)
                 return
             }
 
             guard let remotePayload = try decodePayload(from: remoteRecord) else {
-                statusLine = "Sync: Uploading…"
+                setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
                 return
             }
@@ -463,20 +517,20 @@ final class CloudSyncManager: ObservableObject {
             if remotePayload.contentHash == localPayload.contentHash {
                 defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
                 refreshStatusFromDefaults()
-                statusLine = "Sync: Up to date"
+                setStatus(.upToDate)
                 return
             }
 
             if remotePayload.updatedAt > localUpdatedAt {
-                statusLine = "Sync: Downloading…"
+                setStatus(.downloading)
                 await applyRemotePayload(remotePayload, trigger: trigger)
             } else {
-                statusLine = "Sync: Uploading…"
+                setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
             }
         } catch {
             setLastSyncError(error)
-            statusLine = "Sync: Error"
+            setStatus(.error)
             logger.error("❌ Sync failed: \(error.localizedDescription, privacy: .public)")
         }
     }
@@ -1343,12 +1397,12 @@ final class CloudSyncManager: ObservableObject {
 
     private func refreshStatusFromDefaults() {
         if !isEnabled {
-            statusLine = "Sync: Off"
-            lastSyncLine = "Not synced yet"
+            setStatus(.off)
+            lastSyncLine = String(localized: "Not synced yet")
             return
         }
 
-        statusLine = isSyncing ? "Sync: Working…" : "Sync: On"
+        setStatus(isSyncing ? .working : .on)
 
         let lastSyncAt = defaults.double(forKey: Keys.lastSyncAt)
         if lastSyncAt > 0 {
@@ -1356,8 +1410,13 @@ final class CloudSyncManager: ObservableObject {
                 for: Date(timeIntervalSince1970: lastSyncAt)
             )
         } else {
-            lastSyncLine = "Not synced yet"
+            lastSyncLine = String(localized: "Not synced yet")
         }
+    }
+
+    private func setStatus(_ status: SyncStatus) {
+        self.status = status
+        statusLine = status.localizedTitle
     }
 
     // MARK: - Helpers

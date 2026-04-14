@@ -61,7 +61,11 @@ final class AutoUpdateLaunchAgentManager {
             }
             return RegistrationStatus(
                 state: .unavailable,
-                detail: "Background agent error: \(error.localizedDescription)"
+                detail: LocalizedStrings.format(
+                    "Background agent error: %@",
+                    comment: "Background auto-update agent status detail",
+                    error.localizedDescription
+                )
             )
         }
 
@@ -75,18 +79,45 @@ final class AutoUpdateLaunchAgentManager {
     private func status(from serviceStatus: SMAppService.Status) -> RegistrationStatus {
         switch serviceStatus {
         case .enabled:
-            return RegistrationStatus(state: .enabled, detail: "Background agent registered")
+            return RegistrationStatus(
+                state: .enabled,
+                detail: LocalizedStrings.text(
+                    "Background agent registered",
+                    comment: "Background auto-update agent status detail"
+                )
+            )
         case .requiresApproval:
             return RegistrationStatus(
                 state: .requiresApproval,
-                detail: "Background agent needs approval in Login Items"
+                detail: LocalizedStrings.text(
+                    "Background agent needs approval in Login Items",
+                    comment: "Background auto-update agent status detail"
+                )
             )
         case .notRegistered:
-            return RegistrationStatus(state: .notRegistered, detail: "Background agent not registered")
+            return RegistrationStatus(
+                state: .notRegistered,
+                detail: LocalizedStrings.text(
+                    "Background agent not registered",
+                    comment: "Background auto-update agent status detail"
+                )
+            )
         case .notFound:
-            return RegistrationStatus(state: .notFound, detail: "Bundled background agent missing from app build")
+            return RegistrationStatus(
+                state: .notFound,
+                detail: LocalizedStrings.text(
+                    "Bundled background agent missing from app build",
+                    comment: "Background auto-update agent status detail"
+                )
+            )
         @unknown default:
-            return RegistrationStatus(state: .unavailable, detail: "Background agent status unavailable")
+            return RegistrationStatus(
+                state: .unavailable,
+                detail: LocalizedStrings.text(
+                    "Background agent status unavailable",
+                    comment: "Background auto-update agent status detail"
+                )
+            )
         }
     }
 }
