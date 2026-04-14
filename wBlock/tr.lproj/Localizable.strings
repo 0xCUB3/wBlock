@@ -87,7 +87,7 @@
 "Whitelist" = "Beyaz Liste";
 "Next" = "Sonraki";
 "Sync settings across devices" = "Ayarları cihazlar arasında senkronize et";
-"1h" = "1h";
+"1h" = "1s";
 "Warning" = "Uyarı";
 "Annoyances" = "Rahatsızlıklar";
 "Requirements" = "Gereksinimler";
@@ -140,7 +140,7 @@
 "Remove" = "Kaldır";
 "No Updates Found" = "Güncelleme Bulunamadı";
 "Applied" = "Uygulandı";
-"7d" = "7d";
+"7d" = "7g";
 "Critical Setup Required" = "Kritik Kurulum Gerekli";
 "No Whitelisted Domains" = "Beyaz Listede Alan Adı Yok";
 "Paste" = "Yapıştır";
@@ -173,7 +173,7 @@
 "No Content Available" = "İçerik Yok";
 "For complete ad blocking" = "Tam reklam engelleme için";
 "The %@ userscript requires the %@" = "%@ userscript, %@ gerektirir";
-"Every %dd %dh" = "Her %dd %dh";
+"Every %dd %dh" = "Her %dg %ds";
 "User List" = "Kullanıcı Listesi";
 "All Levels" = "Tüm Seviyeler";
 "Downloading and applying filter lists…" = "Filtre listeleri indiriliyor ve uygulanıyor…";
