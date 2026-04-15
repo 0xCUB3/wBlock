@@ -7,7 +7,7 @@ assignees: ''
 ---
 
 ### Describe the bug
-A clear and concise description of what the bug is.
+<!-- A clear and concise description of what the bug is. -->
 
 ### To reproduce
 Steps to reproduce the behavior:
@@ -17,20 +17,23 @@ Steps to reproduce the behavior:
 4. See error
 
 ### Expected behavior
-A clear and concise description of what you expected to happen.
+<!-- A clear and concise description of what you expected to happen. -->
 
-### Screenshots
-If applicable, add screenshots to help explain your problem.
+### Screenshot or video
+<!-- If applicable, add screenshots or a video to help explain your problem. -->
 
-### Environment (please complete the following information)
+### Environment 
+<!-- Please complete the following information. -->
  - OS: [e.g. iOS 26.5, macOS 26.5]
  - wBlock Version: [e.g. 2.0.2]
  - Intel or Apple Silicon (macOS only): [e.g. Apple M2]
 
 ### Troubleshooting checklist
-- [ ] I enabled all 5 wBlock Content Blocker extensions in Safari.
-- [ ] I enabled `wBlock Scripts` and set it to `Allow` on all websites (`Always Allow on Every Website` in Safari settings).
-- [ ] I opened wBlock and tapped `Apply Changes` after changing filters, userscripts, whitelist, or extension settings.
+<!-- To check an item, remove the space inside the brackets and place an 'x': [x]. Otherwise, leave them as [ ]. -->
+- [ ] I have enabled all 5 wBlock Content Blocker extensions in Safari _(including Profiles, if applicable)_.
+- [ ] I have enabled `wBlock Scripts` and set it to `Allow` on all websites (`Always Allow on Every Website`) in Safari settings.
+- [ ] I have opened wBlock and pressed `Apply Changes` after changing filters, userscripts, whitelist, and/or extension settings.
+- [ ] For filtering issues, I have restarted iOS/iPadOS and/or macOS, opened wBlock, manually checked for updates 🔄, and reopened Safari. _(Optional)_
 
 ### Additional context
-Add any other context about the problem here.
+<!-- Add any other context about the problem here. -->
