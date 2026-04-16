@@ -163,7 +163,6 @@ extension AppDelegate: NSApplicationDelegate {
                 comment: "Quit confirmation destructive action"
             )
         )
-        alert.addButton(withTitle: LocalizedStrings.text("Cancel", comment: "Quit confirmation cancel action"))
         alert.alertStyle = .warning
 
         let response = alert.runModal()
@@ -180,8 +179,8 @@ extension AppDelegate: NSApplicationDelegate {
             return .terminateLater
         case .alertSecondButtonReturn: // Quit Without Applying
             return .terminateNow
-        default: // Cancel
-            return .terminateCancel
+        default:
+            return .terminateNow
         }
     }
 
