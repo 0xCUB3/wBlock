@@ -114,6 +114,17 @@ public class UserScriptManager: ObservableObject {
         return userScripts[index]
     }
 
+    public func userScriptEditorSnapshot(withId id: UUID) async -> UserScript? {
+        guard let script = userScript(withId: id) else { return nil }
+        guard script.content.isEmpty else { return script }
+
+        return await Task.detached { [script] in
+            var hydratedScript = script
+            hydratedScript.content = Self.readUserScriptContentOffMain(script) ?? ""
+            return hydratedScript
+        }.value
+    }
+
     private func extractResourceURL(forResourceName name: String, from userScriptContent: String) -> String? {
         var inMetadata = false
         for line in userScriptContent.split(whereSeparator: \.isNewline) {
@@ -467,7 +478,7 @@ public class UserScriptManager: ObservableObject {
             guard let self = self else { return scriptsToLoad }
             var scripts = scriptsToLoad
             for i in 0..<scripts.count {
-                if let content = await self.readUserScriptContentOffMain(scripts[i]) {
+                if let content = await Self.readUserScriptContentOffMain(scripts[i]) {
                     scripts[i].content = content
                 }
             }
@@ -482,7 +493,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     /// Read userscript content off the main thread
-    nonisolated private func readUserScriptContentOffMain(_ userScript: UserScript) -> String? {
+    nonisolated private static func readUserScriptContentOffMain(_ userScript: UserScript) -> String? {
         // Try fallback directory first
         if let fallbackURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("wBlock").appendingPathComponent("userscripts") {

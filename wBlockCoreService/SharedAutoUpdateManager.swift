@@ -93,9 +93,18 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private enum AutoUpdateError: Error {
+    private enum AutoUpdateError: LocalizedError {
         case sharedContainerUnavailable
-        case contentBlockerReloadFailed(identifier: String)
+        case contentBlockerReloadFailed(identifiers: [String], names: [String])
+
+        var errorDescription: String? {
+            switch self {
+            case .sharedContainerUnavailable:
+                return "Shared app group container unavailable."
+            case let .contentBlockerReloadFailed(_, names):
+                return "Failed to reload \(names.joined(separator: ", "))."
+            }
+        }
     }
 
 
@@ -689,7 +698,9 @@ public actor SharedAutoUpdateManager {
     // MARK: - Loading / Saving
     private func loadFilterListsFromProtobuf() async -> ([FilterList], [FilterList]) {
         await ProtobufDataManager.shared.waitUntilLoaded()
-        let allFilters = await ProtobufDataManager.shared.getFilterLists()
+        let allFilters = await hydrateMissingSourceRuleCountsIfNeeded(
+            await ProtobufDataManager.shared.getFilterLists()
+        )
         let selectedFilters = allFilters.filter { $0.isSelected }
 
         return (allFilters, selectedFilters)
@@ -697,6 +708,39 @@ public actor SharedAutoUpdateManager {
 
     private func saveFilterListsToProtobuf(_ lists: [FilterList]) async {
         await ProtobufDataManager.shared.updateFilterLists(lists)
+    }
+
+    private func hydrateMissingSourceRuleCountsIfNeeded(_ filters: [FilterList]) async -> [FilterList] {
+        guard filters.contains(where: { $0.sourceRuleCount == nil }) else {
+            return filters
+        }
+
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
+        ) else {
+            return filters
+        }
+
+        var hydratedFilters = filters
+        var didHydrate = false
+
+        for index in hydratedFilters.indices where hydratedFilters[index].sourceRuleCount == nil {
+            guard let localData = localDataForComparison(
+                filter: hydratedFilters[index],
+                containerURL: containerURL
+            ) else {
+                continue
+            }
+
+            hydratedFilters[index].sourceRuleCount = countRulesInData(data: localData)
+            didHydrate = true
+        }
+
+        if didHydrate {
+            await saveFilterListsToProtobuf(hydratedFilters)
+        }
+
+        return hydratedFilters
     }
 
     // MARK: - Update Detection & Fetch
@@ -1087,6 +1131,8 @@ public actor SharedAutoUpdateManager {
             )
         }
         var targetMetrics: [RebuildTargetMetrics] = []
+        var failedReloadIdentifiers: [String] = []
+        var failedReloadNames: [String] = []
 
         for target in targets {
             try Task.checkCancellation()
@@ -1206,14 +1252,22 @@ public actor SharedAutoUpdateManager {
             targetMetrics.append(targetMetric)
 
             if !reloadResult.success {
-                appendSharedLog(
-                    "Rebuild failed reloading \(target.displayName) after \(reloadResult.attempts) attempt(s)"
-                )
-                throw AutoUpdateError.contentBlockerReloadFailed(identifier: target.bundleIdentifier)
+                failedReloadIdentifiers.append(target.bundleIdentifier)
+                failedReloadNames.append(target.displayName)
             }
         }
 
         try Task.checkCancellation()
+
+        if !failedReloadIdentifiers.isEmpty {
+            appendSharedLog(
+                "Rebuild reload failures: \(failedReloadNames.joined(separator: ", "))"
+            )
+            throw AutoUpdateError.contentBlockerReloadFailed(
+                identifiers: failedReloadIdentifiers,
+                names: failedReloadNames
+            )
+        }
 
         if !advancedRulesSnippets.isEmpty {
             ContentBlockerService.buildCombinedFilterEngine(

@@ -14,15 +14,47 @@ import UIKit
 import AppKit
 #endif
 
+private struct UserScriptListItem: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let localizedDisplayName: String
+    let localizedDisplayDescription: String
+    let url: URL?
+    let updateURL: String?
+    let isEnabled: Bool
+    let version: String
+    let lastUpdatedFormatted: String?
+    let isLocal: Bool
+    let isDownloaded: Bool
+
+    init(script: UserScript) {
+        id = script.id
+        name = script.name
+        localizedDisplayName = script.localizedDisplayName
+        localizedDisplayDescription = script.localizedDisplayDescription
+        url = script.url
+        updateURL = script.updateURL
+        isEnabled = script.isEnabled
+        version = script.version
+        lastUpdatedFormatted = script.lastUpdatedFormatted
+        isLocal = script.isLocal
+        isDownloaded = script.isDownloaded
+    }
+}
+
+private struct SelectedUserScript: Identifiable {
+    let id: UUID
+}
+
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
     let hasPendingChanges: Bool
     let isApplyingChanges: Bool
     let onApplyChanges: () -> Void
 
-    @State private var scripts: [UserScript] = []
+    @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
-    @State private var selectedScript: UserScript?
+    @State private var selectedScript: SelectedUserScript?
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
     @State private var showSearch = false
@@ -57,7 +89,7 @@ struct UserScriptManagerView: View {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var displayedScripts: [UserScript] {
+    private var displayedScripts: [UserScriptListItem] {
         let filteredByEnabled = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
         guard !trimmedSearchText.isEmpty else {
             return filteredByEnabled.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -81,8 +113,10 @@ struct UserScriptManagerView: View {
                 refreshScripts()
             })
         }
-        .sheet(item: $selectedScript) { script in
-            UserScriptContentView(script: script, userScriptManager: userScriptManager)
+        .sheet(item: $selectedScript, onDismiss: {
+            refreshScripts()
+        }) { selection in
+            UserScriptContentView(scriptId: selection.id, userScriptManager: userScriptManager)
         }
         .onAppear {
             refreshScripts()
@@ -244,7 +278,7 @@ struct UserScriptManagerView: View {
     }
 
     private func refreshScripts() {
-        scripts = userScriptManager.userScripts
+        scripts = userScriptManager.userScripts.map(UserScriptListItem.init)
     }
 
     #if os(macOS)
@@ -344,7 +378,7 @@ struct UserScriptManagerView: View {
     }
     #endif
 
-    private func scriptRowView(script: UserScript) -> some View {
+    private func scriptRowView(script: UserScriptListItem) -> some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(script.localizedDisplayName)
@@ -417,8 +451,9 @@ struct UserScriptManagerView: View {
                 if !script.isDownloaded, !script.isLocal, script.url != nil {
                     Button {
                         Task {
+                            guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
                             await ConcurrentLogManager.shared.debug(.userScript, "Downloading userscript", metadata: ["script": script.name])
-                            await userScriptManager.downloadUserScript(script)
+                            await userScriptManager.downloadUserScript(managedScript)
                             refreshScripts()
                         }
                     } label: {
@@ -435,8 +470,9 @@ struct UserScriptManagerView: View {
                     get: { script.isEnabled },
                     set: { _ in
                         Task {
+                            guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
                             await ConcurrentLogManager.shared.debug(.userScript, "Toggling userscript", metadata: ["script": script.name])
-                            await userScriptManager.toggleUserScript(script)
+                            await userScriptManager.toggleUserScript(managedScript)
                             await MainActor.run {
                                 refreshScripts()
                             }
@@ -455,7 +491,7 @@ struct UserScriptManagerView: View {
             if script.isDownloaded {
                 // Defer to avoid race with context menu dismissal on iOS
                 DispatchQueue.main.async {
-                    selectedScript = script
+                    selectedScript = SelectedUserScript(id: script.id)
                 }
             }
         }
@@ -463,19 +499,22 @@ struct UserScriptManagerView: View {
             #if os(macOS)
             if script.isDownloaded {
                 Button {
-                    selectedScript = script
+                    selectedScript = SelectedUserScript(id: script.id)
                 } label: {
                     Label("View Content", systemImage: "doc.text")
                 }
             }
             #endif
-            if !userScriptManager.isDefaultUserScript(script) {
+            if let managedScript = userScriptManager.userScript(withId: script.id),
+                !userScriptManager.isDefaultUserScript(managedScript)
+            {
                 Button(role: .destructive) {
                     Task {
+                        guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
                         await ConcurrentLogManager.shared.info(.userScript, "Removing userscript", metadata: ["script": script.name])
+                        userScriptManager.removeUserScript(managedScript)
+                        refreshScripts()
                     }
-                    userScriptManager.removeUserScript(script)
-                    refreshScripts()
                 } label: {
                     Label("Remove", systemImage: "trash")
                 }
@@ -536,6 +575,7 @@ private struct ScriptNameAndDescriptionView: View {
 
 private struct ScriptStatusBadgesView: View {
     let script: UserScript
+    let isDownloaded: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -551,9 +591,9 @@ private struct ScriptStatusBadgesView: View {
                 }
                 Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
             }
-            if script.isEnabled && !script.isDownloaded {
+            if script.isEnabled && !isDownloaded {
                 Badge(text: "Not Downloaded", color: .red)
-            } else if script.isDownloaded {
+            } else if isDownloaded {
                 Badge(text: "Downloaded", color: .green)
             }
         }
@@ -561,14 +601,14 @@ private struct ScriptStatusBadgesView: View {
 }
 
 private struct ScriptFileInfoView: View {
-    let script: UserScript
+    let contentLength: Int
     let formatFileSize: (Int) -> String
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("File Information").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
             HStack {
                 Text("Size:").font(.caption2).foregroundStyle(.secondary)
-                Text(formatFileSize(script.content.count)).font(.caption).fontWeight(.medium).foregroundStyle(.primary)
+                Text(formatFileSize(contentLength)).font(.caption).fontWeight(.medium).foregroundStyle(.primary)
                 Spacer()
             }.padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6)
         }
@@ -658,13 +698,16 @@ private struct ScriptMatchPatternsView: View {
 
 struct UserScriptInfoSidebar: View {
     let script: UserScript
+    let contentLength: Int
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScriptNameAndDescriptionView(script: script)
-            ScriptStatusBadgesView(script: script)
-            if !script.content.isEmpty { ScriptFileInfoView(script: script, formatFileSize: formatFileSize) }
+            ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0)
+            if contentLength > 0 {
+                ScriptFileInfoView(contentLength: contentLength, formatFileSize: formatFileSize)
+            }
             if script.url != nil { ScriptURLView(script: script) }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
             Spacer()
@@ -674,129 +717,71 @@ struct UserScriptInfoSidebar: View {
 
 #if os(macOS)
 struct ScriptContentMainView: View {
-    let script: UserScript
-    @Binding var displayedContent: String
-    @Binding var isLoadingContent: Bool
-    @Binding var showFullContent: Bool
-    @Binding var isEditing: Bool
-    @Binding var editableContent: String
-    @Binding var isSaving: Bool
-    var userScriptManager: UserScriptManager
-    let previewLength: Int
+    let previewContent: String
+    let contentLength: Int
     let formatFileSize: (Int) -> String
-    let toggleContentViewAction: () -> Void
-    let onSaved: () -> Void
+    let onShowSource: () -> Void
+    let onEditSource: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Script Content").font(.headline).fontWeight(.medium)
-                    if !isEditing && !script.content.isEmpty && script.content.count > previewLength && !showFullContent {
+                    if contentLength > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle").font(.caption2).foregroundStyle(.orange)
                             Text(
                                 LocalizedStrings.format(
                                     "Showing preview (%@ of %@)",
                                     comment: "Userscript content preview status",
-                                    formatFileSize(previewLength),
-                                    formatFileSize(script.content.count)
+                                    formatFileSize(previewContent.count),
+                                    formatFileSize(contentLength)
                                 )
                             )
                                 .font(.caption).foregroundStyle(.secondary)
-                        }
-                    } else if !isEditing && showFullContent && script.content.count > previewLength {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle").font(.caption2).foregroundStyle(.green)
-                            Text("Full content loaded").font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
                 Spacer()
                 HStack(spacing: 12) {
-                    if isEditing {
-                        Button("Cancel") { isEditing = false }
-                            .buttonStyle(.borderless)
+                    if contentLength > 0 {
                         Button {
-                            isSaving = true
-                            Task {
-                                await userScriptManager.saveEditedContent(for: script.id, newContent: editableContent)
-                                displayedContent = editableContent
-                                isSaving = false
-                                isEditing = false
-                                onSaved()
-                            }
+                            onEditSource()
                         } label: {
                             HStack(spacing: 6) {
-                                if isSaving { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
-                                Text("Save")
+                                Image(systemName: "pencil")
+                                Text("Edit")
                             }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isSaving)
-                    } else {
-                        if !script.content.isEmpty {
-                            Button {
-                                isEditing = true
-                                Task.detached { [content = script.content] in
-                                    await MainActor.run {
-                                        editableContent = content
-                                    }
-                                }
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "pencil")
-                                    Text("Edit")
-                                }
+                        .buttonStyle(.borderless)
+
+                        Button {
+                            onShowSource()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "eye")
+                                Text("Show All")
                             }
-                            .buttonStyle(.borderless)
                         }
-                        if !script.content.isEmpty && script.content.count > previewLength {
-                            Button { toggleContentViewAction() } label: {
-                                HStack(spacing: 6) {
-                                    if isLoadingContent { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
-                                    else { Image(systemName: showFullContent ? "eye.slash" : "eye") }
-                                    Text(showFullContent ? "Show Preview" : "Show All")
-                                }
-                            }.buttonStyle(.borderless).disabled(isLoadingContent)
-                             .help(
-                                showFullContent
-                                    ? LocalizedStrings.text("Show preview only", comment: "Userscript content toggle help")
-                                    : LocalizedStrings.text("Load full content", comment: "Userscript content toggle help")
-                             )
-                        }
+                        .buttonStyle(.borderless)
                     }
                 }
             }.padding(.horizontal, 20).padding(.vertical, 12)
             Divider()
-            if script.content.isEmpty {
+            if contentLength == 0 {
                 VStack(spacing: 16) {
                     Image(systemName: "doc.text").font(.system(size: 48)).foregroundStyle(.secondary.opacity(0.6))
                     Text("No Content Available").font(.headline).foregroundStyle(.secondary)
                     Text("This script hasn't been downloaded yet.").font(.body).foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if isEditing {
-                TextEditor(text: $editableContent)
-                    .font(.system(.body, design: .monospaced))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(8)
-                    .scrollContentBackground(.hidden)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        Text(displayedContent).font(.system(.body, design: .monospaced)).textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(20)
-                    }
-                }
-                .overlay( Group {
-                    if script.content.count > 100000 && showFullContent {
-                        VStack { Spacer(); HStack { Spacer()
-                            HStack(spacing: 6) { Image(systemName: "info.circle.fill").foregroundStyle(.orange)
-                                Text("Large file - scrolling may be slow")
-                            }.padding(.horizontal, 8).padding(.vertical, 4).background(Color.orange.opacity(0.1)).cornerRadius(6).padding()
-                        }}
-                    }
-                }, alignment: .bottomTrailing)
+                MonospacedTextView(
+                    text: Binding(
+                        get: { previewContent },
+                        set: { _ in }
+                    )
+                )
             }
         }
     }
@@ -804,17 +789,16 @@ struct ScriptContentMainView: View {
 #endif
 
 struct UserScriptContentView: View {
-    let script: UserScript
+    let scriptId: UUID
     var userScriptManager: UserScriptManager
     @Environment(\.dismiss) private var dismiss
-    @State private var displayedContent: String = ""
+    @State private var script: UserScript?
+    @State private var loadedContent = ""
+    @State private var previewContent = ""
     @State private var isLoadingContent = false
-    @State private var showFullContent = false
     @State private var sidebarWidth: CGFloat = 280
     @State private var isPatternsExpanded = false
-    @State private var isEditing = false
-    @State private var editableContent = ""
-    @State private var isSaving = false
+    @State private var sourcePresentation: UserScriptSourcePresentation?
 
     private let previewLength = 10000
     #if os(macOS)
@@ -822,172 +806,311 @@ struct UserScriptContentView: View {
     private let maxSidebarWidth: CGFloat = 500
     #endif
 
+    private enum UserScriptSourcePresentation: String, Identifiable {
+        case viewer
+        case editor
+
+        var id: String { rawValue }
+        var startsInEditMode: Bool { self == .editor }
+    }
+
     var body: some View {
-        #if os(iOS)
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+        Group {
+            if let script {
+                #if os(iOS)
+                NavigationView {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            UserScriptInfoSidebar(
+                                script: script,
+                                contentLength: loadedContent.count,
+                                isPatternsExpanded: $isPatternsExpanded,
+                                formatFileSize: formatFileSize
+                            )
+                            .padding(.horizontal)
+
+                            Divider()
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text("Script Content")
+                                        .font(.headline)
+                                        .fontWeight(.medium)
+                                    Spacer()
+                                    if !loadedContent.isEmpty {
+                                        Button("Show All") {
+                                            sourcePresentation = .viewer
+                                        }
+                                        Button("Edit") {
+                                            sourcePresentation = .editor
+                                        }
+                                    }
+                                }
+
+                                if loadedContent.isEmpty {
+                                    VStack(spacing: 16) {
+                                        Image(systemName: "doc.text")
+                                            .font(.system(size: 48))
+                                            .foregroundStyle(.secondary.opacity(0.6))
+                                        Text("No Content Available")
+                                            .font(.headline)
+                                            .foregroundStyle(.secondary)
+                                        Text("This script hasn't been downloaded yet.")
+                                            .font(.body)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 40)
+                                } else {
+                                    MonospacedTextView(
+                                        text: Binding(
+                                            get: { previewContent },
+                                            set: { _ in }
+                                        )
+                                    )
+                                        .frame(minHeight: 300)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.vertical)
+                    }
+                    .navigationTitle(script.localizedDisplayName)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        if !loadedContent.isEmpty {
+                            ToolbarItemGroup(placement: .navigationBarLeading) {
+                                Button("Show All") { sourcePresentation = .viewer }
+                                Button("Edit") { sourcePresentation = .editor }
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+                }
+                #else
+                HSplitView {
                     UserScriptInfoSidebar(
                         script: script,
+                        contentLength: loadedContent.count,
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize
                     )
-                    .padding(.horizontal)
+                    .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)
+                    .padding(20)
 
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Script Content")
-                            .font(.headline)
-                            .fontWeight(.medium)
-
-                        if script.content.isEmpty {
-                            VStack(spacing: 16) {
-                                Image(systemName: "doc.text")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(.secondary.opacity(0.6))
-                                Text("No Content Available")
-                                    .font(.headline)
-                                    .foregroundStyle(.secondary)
-                                Text("This script hasn't been downloaded yet.")
-                                    .font(.body)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        } else if isEditing {
-                            TextEditor(text: $editableContent)
-                                .font(.system(.caption, design: .monospaced))
-                                .frame(minHeight: 300, maxHeight: .infinity)
-                                .frame(maxWidth: .infinity)
-                                .padding(4)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                                .scrollContentBackground(.hidden)
-                        } else {
-                            Text(displayedContent)
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                        }
-                    }
-                    .padding(.horizontal)
+                    ScriptContentMainView(
+                        previewContent: previewContent,
+                        contentLength: loadedContent.count,
+                        formatFileSize: formatFileSize,
+                        onShowSource: { sourcePresentation = .viewer },
+                        onEditSource: { sourcePresentation = .editor }
+                    )
+                    .frame(minWidth: 400)
                 }
-                .padding(.vertical)
-            }
-            .navigationTitle(script.localizedDisplayName)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if isEditing {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") { isEditing = false }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            isSaving = true
-                            Task {
-                                await userScriptManager.saveEditedContent(for: script.id, newContent: editableContent)
-                                displayedContent = editableContent
-                                isSaving = false
-                                isEditing = false
-                            }
-                        } label: {
-                            if isSaving {
-                                ProgressView().scaleEffect(0.8)
-                            } else {
-                                Text("Save").bold()
-                            }
-                        }
-                        .disabled(isSaving)
-                    }
-                } else {
-                    if !script.content.isEmpty {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Edit") {
-                                isEditing = true
-                                showFullContent = true
-                                Task.detached { [content = script.content] in
-                                    await MainActor.run {
-                                        editableContent = content
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") { dismiss() }
-                    }
+                .navigationTitle("")
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+                .frame(width: 1000, height: 700)
+                #endif
+            } else if isLoadingContent {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.secondary)
+                    Text("Unable to load script")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .onAppear { loadInitialContent() }
-        #else
-        HSplitView {
-            UserScriptInfoSidebar(
-                script: script,
-                isPatternsExpanded: $isPatternsExpanded,
-                formatFileSize: formatFileSize
-            )
-            .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)
-            .padding(20)
-
-            ScriptContentMainView(
-                script: script,
-                displayedContent: $displayedContent,
-                isLoadingContent: $isLoadingContent,
-                showFullContent: $showFullContent,
-                isEditing: $isEditing,
-                editableContent: $editableContent,
-                isSaving: $isSaving,
-                userScriptManager: userScriptManager,
-                previewLength: previewLength,
-                formatFileSize: formatFileSize,
-                toggleContentViewAction: toggleContentView,
-                onSaved: {}
-            )
-            .frame(minWidth: 400)
+        .task(id: scriptId) {
+            await loadScript()
         }
-        .navigationTitle("")
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
-        .frame(width: 1000, height: 700)
-        .onAppear { loadInitialContent() }
-        #endif
-    }
-
-    private func loadInitialContent() {
-        if script.content.isEmpty { displayedContent = ""; return }
-        if script.content.count <= previewLength {
-            displayedContent = script.content; showFullContent = true
-        } else {
-            displayedContent = String(script.content.prefix(previewLength)); showFullContent = false
+        .sheet(item: $sourcePresentation) { presentation in
+            if let script {
+                UserScriptSourceSheet(
+                    script: script,
+                    initialContent: loadedContent,
+                    startsInEditMode: presentation.startsInEditMode,
+                    onSave: { newContent in
+                        await userScriptManager.saveEditedContent(for: script.id, newContent: newContent)
+                        await MainActor.run {
+                            loadedContent = newContent
+                            updatePreview()
+                        }
+                    }
+                )
+            }
         }
     }
 
-    private func toggleContentView() {
-        if showFullContent {
-            displayedContent = String(script.content.prefix(previewLength))
-            showFullContent = false
-        } else {
-            isLoadingContent = true
-
-            DispatchQueue.global(qos: .userInitiated).async {
-                let fullContent = script.content
-
-                DispatchQueue.main.async {
-                    displayedContent = fullContent
-                    showFullContent = true
-                    isLoadingContent = false
-                }
-            }
+    @MainActor
+    private func loadScript() async {
+        isLoadingContent = true
+        guard let loadedScript = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) else {
+            script = nil
+            loadedContent = ""
+            previewContent = ""
+            isLoadingContent = false
+            return
         }
+
+        var metadata = loadedScript
+        loadedContent = loadedScript.content
+        metadata.content = ""
+        script = metadata
+        updatePreview()
+        isLoadingContent = false
+    }
+
+    private func updatePreview() {
+        previewContent = String(loadedContent.prefix(previewLength))
     }
 
     private func formatFileSize(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter(); formatter.allowedUnits = [.useKB, .useMB]; formatter.countStyle = .file
         return formatter.string(fromByteCount: Int64(bytes))
+    }
+}
+
+private struct UserScriptSourceSheet: View {
+    let script: UserScript
+    let initialContent: String
+    let startsInEditMode: Bool
+    let onSave: (String) async -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var editorState: MonospacedTextEditorState
+    @State private var isEditing: Bool
+    @State private var isSaving = false
+    @State private var hasChanges = false
+
+    init(
+        script: UserScript,
+        initialContent: String,
+        startsInEditMode: Bool,
+        onSave: @escaping (String) async -> Void
+    ) {
+        self.script = script
+        self.initialContent = initialContent
+        self.startsInEditMode = startsInEditMode
+        self.onSave = onSave
+        _editorState = State(initialValue: MonospacedTextEditorState(text: initialContent))
+        _isEditing = State(initialValue: startsInEditMode)
+    }
+
+    var body: some View {
+        #if os(iOS)
+        NavigationStack {
+            Group {
+                if isEditing {
+                    BufferedMonospacedTextEditor(
+                        state: editorState,
+                        onDirtyStateChange: { hasChanges = $0 }
+                    )
+                } else {
+                    MonospacedTextView(
+                        text: Binding(
+                            get: { initialContent },
+                            set: { _ in }
+                        )
+                    )
+                }
+            }
+                .background(Color(.systemGray6))
+                .navigationTitle("Script Content")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        if isEditing {
+                            Button("Cancel") { dismiss() }
+                        }
+                    }
+                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        if isEditing {
+                            Button {
+                                isSaving = true
+                                Task {
+                                    await onSave(editorState.currentText)
+                                    await MainActor.run {
+                                        isSaving = false
+                                        dismiss()
+                                    }
+                                }
+                            } label: {
+                                if isSaving { ProgressView().scaleEffect(0.8) }
+                                else { Text("Save").bold() }
+                            }
+                            .disabled(isSaving || !hasChanges)
+                        } else {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+                }
+        }
+        #else
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(script.localizedDisplayName)
+                        .font(.headline)
+                    Text("Script Content")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isEditing {
+                    Button("Cancel") { dismiss() }
+                    Button {
+                        isSaving = true
+                        Task {
+                            await onSave(editorState.currentText)
+                            await MainActor.run {
+                                isSaving = false
+                                dismiss()
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isSaving { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
+                            Text("Save")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSaving || !hasChanges)
+                } else {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            if isEditing {
+                BufferedMonospacedTextEditor(
+                    state: editorState,
+                    onDirtyStateChange: { hasChanges = $0 }
+                )
+            } else {
+                MonospacedTextView(
+                    text: Binding(
+                        get: { initialContent },
+                        set: { _ in }
+                    )
+                )
+            }
+        }
+        .frame(width: 1000, height: 700)
+        #endif
     }
 }
 

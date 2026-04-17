@@ -1052,16 +1052,13 @@ struct AddFilterListView: View {
 	                        .font(.caption)
 	                        .foregroundStyle(.secondary)
 
-	                    TextEditor(text: $pastedRules)
-	                        .font(.system(.body, design: .monospaced))
-	                        .frame(minHeight: 260)
-	                        .scrollContentBackground(.hidden)
-	                        .padding(10)
-	                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-	                        .overlay(
-	                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-	                                .stroke(.quaternary, lineWidth: 1)
-	                        )
+                    MonospacedTextView(text: $pastedRules, isEditable: true)
+                        .frame(minHeight: 260)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(.quaternary, lineWidth: 1)
+                        )
 	                }
 	            }
 	            .padding(16)
@@ -1173,13 +1170,12 @@ struct AddFilterListView: View {
 	                    .autocorrectionDisabled()
 	            }
 
-		            Section("Rules") {
-		                TextEditor(text: $pastedRules)
-		                    .font(.system(.body, design: .monospaced))
-		                    .frame(minHeight: 220)
-		            }
-		        }
-		    }
+            Section("Rules") {
+                MonospacedTextView(text: $pastedRules, isEditable: true)
+                    .frame(minHeight: 220)
+            }
+        }
+    }
 
 		    private var fileTab: some View {
 		        Form {
@@ -1728,26 +1724,29 @@ struct EditUserListView: View {
 
     private func loadContent() {
         isLoadingContent = true
-        Task { @MainActor in
-            guard let containerURL = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-            ) else {
-                isLoadingContent = false
-                return
-            }
+        let filterID = filter.id
+        let filterName = filter.name
+        Task {
+            let loadedRules = await Task.detached { () -> String? in
+                guard let containerURL = FileManager.default.containerURL(
+                    forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
+                ) else {
+                    return nil
+                }
 
-            let idBasedURL = containerURL.appendingPathComponent("custom-\(filter.id.uuidString).txt")
-            if let loaded = try? String(contentsOf: idBasedURL, encoding: .utf8) {
-                rules = loaded
-                isLoadingContent = false
-                return
-            }
+                let idBasedURL = containerURL.appendingPathComponent("custom-\(filterID.uuidString).txt")
+                if let loaded = try? String(contentsOf: idBasedURL, encoding: .utf8) {
+                    return loaded
+                }
 
-            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            if let loaded = try? String(contentsOf: legacyURL, encoding: .utf8) {
-                rules = loaded
+                let legacyURL = containerURL.appendingPathComponent("\(filterName).txt")
+                return try? String(contentsOf: legacyURL, encoding: .utf8)
+            }.value
+
+            await MainActor.run {
+                rules = loadedRules ?? ""
+                isLoadingContent = false
             }
-            isLoadingContent = false
         }
     }
 

@@ -764,6 +764,7 @@ extension AppFilterManager {
         let totalCount = targets.count
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
+        var failedNames: [String] = []
 
         for target in targets {
             let name = target.displayName
@@ -782,17 +783,8 @@ extension AppFilterManager {
                 identifier: target.bundleIdentifier
             )
 
-            await MainActor.run {
-                if !reloadResult.success {
-                    if !self.hasError {
-                        self.statusDescription = LocalizedStrings.format(
-                            "Failed to reload %@.",
-                            comment: "Apply pipeline reload failure status",
-                            name
-                        )
-                    }
-                    self.hasError = true
-                }
+            if !reloadResult.success {
+                failedNames.append(name)
             }
 
             metrics.append(
@@ -804,6 +796,18 @@ extension AppFilterManager {
                 )
             )
             allSuccessful = allSuccessful && reloadResult.success
+        }
+
+        await MainActor.run {
+            guard !failedNames.isEmpty else { return }
+            if !self.hasError {
+                self.statusDescription = LocalizedStrings.format(
+                    "Failed to reload %@.",
+                    comment: "Apply pipeline reload failure status",
+                    failedNames.joined(separator: ", ")
+                )
+            }
+            self.hasError = true
         }
 
         return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
