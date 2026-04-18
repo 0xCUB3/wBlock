@@ -40,10 +40,10 @@
 "Import" = "Importálás";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Fájl importálása";
-"Edit User List" = "Felhasználói lista szerkesztése";
+"Edit User List" = "Lista szerkesztése";
 "Community options" = "Közösségi lehetőségek";
 "Version %@" = "Verzió %@";
-"Edit Name" = "Név szerkesztése";
+"Edit Name" = "Lista átnevezése";
 "This may take a while" = "Ez eltarthat egy ideig";
 "soon" = "hamarosan";
 "Custom" = "Egyéni";
@@ -111,7 +111,7 @@
 "Enabled" = "Engedélyezve";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) bejegyzés";
 "Disabled" = "Letiltva";
-"Whitelisted Domains" = "Engedélyezőlistás domainek";
+"Whitelisted Domains" = "Webhely-kivételek";
 "It will be enabled automatically." = "Automatikusan engedélyezve lesz.";
 "Debug" = "Hibakeresés";
 "Next: Loading…" = "Következő: Betöltés…";
@@ -142,7 +142,7 @@
 "Applied" = "Alkalmazva";
 "7d" = "7d";
 "Critical Setup Required" = "Kritikus beállítás szükséges";
-"No Whitelisted Domains" = "Nincsenek engedélyezőlistás domainek";
+"No Whitelisted Domains" = "Nincsenek webhely-kivételek";
 "Paste" = "Beillesztés";
 "Cancel" = "Mégse";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Blokkolva: 1";
 "Checked %@" = "Ellenőrizve: %@";
 "Actions" = "Műveletek";
-"Delete Added List" = "Hozzáadott lista törlése";
+"Delete Added List" = "Lista törlése";
 "Filter Update" = "Szűrőfrissítés";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Csak az AdGuard Base szűrő. A legkönnyebb védelem, legjobb kompatibilitás.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Előnézet megjelenítése (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Ellenőrizve épp most";
 "wBlock will fetch and enable the script automatically." = "A wBlock automatikusan letölti és engedélyezi a szkriptet.";
-"Add domains to disable ad blocking on specific sites" = "Adj hozzá domaineket, ahol ki szeretnéd kapcsolni a hirdetésblokkolást";
+"Add domains to disable ad blocking on specific sites" = "Adj hozzá domaineket, ahol a wBlock kikapcsolva maradjon";
 "1." = "1.";
 "Add Mode" = "Hozzáadási mód";
 "Keep All" = "Összes megtartása";
@@ -265,7 +265,7 @@
 "Summary" = "Összegzés";
 "Blocked: %d" = "Blokkolva: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ esetén csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
-"Remove from Whitelist" = "Eltávolítás az engedélyezőlistáról";
+"Remove from Whitelist" = "Kivétel eltávolítása";
 "Downloaded %d update" = "%d frissítés letöltve";
 "Safari → Settings → Extensions" = "Safari → Beállítások → Bővítmények";
 "Settings → Apps → Safari → Extensions" = "Beállítások → Alkalmazások → Safari → Bővítmények";
@@ -325,7 +325,7 @@
 "Completed" = "Befejezve";
 "Due soon catch-up" = "Hamarosan esedékes felzárkózás";
 "Edit" = "Szerkesztés";
-"Element Zapper Rules" = "Elemeltávolító szabályok";
+"Element Zapper Rules" = "Elemelrejtési szabályok";
 "Execution: %@" = "Végrehajtás: %@";
 "Expired %@" = "Lejárt %@";
 "Export Settings" = "Beállítások exportálása";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "Importálás sikertelen: %@";
 "Info.plist missing" = "Hiányzik az Info.plist";
 "Near Safari limit: %@" = "Közel a Safari korlátjához: %@";
-"No Element Zapper Rules" = "Nincsenek elemeltávolító szabályok";
+"No Element Zapper Rules" = "Nincsenek elemelrejtési szabályok";
 "No background run recorded" = "Nincs rögzített háttérfutás";
 "No foreground catch-up recorded" = "Nincs rögzített előtérbeli felzárkózás";
 "No silent push received yet" = "Még nem érkezett csendes push";
@@ -383,7 +383,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Undo" = "Visszavonás";
 "Unavailable" = "Nem érhető el";
 "Updating…" = "Frissítés…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Tüntesd el az elemeket bármely webhelyen a Safari wBlock bővítményével, majd kezeld őket itt.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Rejts el elemeket a wBlock Safari-bővítményével, majd itt kezeld a szabályokat.";
 "due now" = "most esedékes";
 "never" = "soha";
 "%d rule" = "%d szabály";

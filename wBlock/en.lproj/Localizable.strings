@@ -40,10 +40,10 @@
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import" = "Import";
 "Import File" = "Import File";
-"Edit User List" = "Edit User List";
+"Edit User List" = "Edit List";
 "Community options" = "Community options";
 "Version %@" = "Version %@";
-"Edit Name" = "Edit Name";
+"Edit Name" = "Rename List";
 "This may take a while" = "This may take a while";
 "soon" = "soon";
 "Custom" = "Custom";
@@ -111,7 +111,7 @@
 "Enabled" = "Enabled";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) entries";
 "Disabled" = "Disabled";
-"Whitelisted Domains" = "Whitelisted Domains";
+"Whitelisted Domains" = "Site Exceptions";
 "It will be enabled automatically." = "It will be enabled automatically.";
 "Debug" = "Debug";
 "Next: Loading…" = "Next: Loading…";
@@ -142,7 +142,7 @@
 "Applied" = "Applied";
 "7d" = "7d";
 "Critical Setup Required" = "Critical Setup Required";
-"No Whitelisted Domains" = "No Whitelisted Domains";
+"No Whitelisted Domains" = "No Site Exceptions";
 "Paste" = "Paste";
 "Cancel" = "Cancel";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Blocked: 1";
 "Checked %@" = "Checked %@";
 "Actions" = "Actions";
-"Delete Added List" = "Delete Added List";
+"Delete Added List" = "Delete List";
 "Filter Update" = "Filter Update";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Only AdGuard Base filter. Lightest protection, best compatibility.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Checked just now";
 "wBlock will fetch and enable the script automatically." = "wBlock will fetch and enable the script automatically.";
-"Add domains to disable ad blocking on specific sites" = "Add domains to disable ad blocking on specific sites";
+"Add domains to disable ad blocking on specific sites" = "Add domains where wBlock should stay off";
 "1." = "1.";
 "Add Mode" = "Add Mode";
 "Keep All" = "Keep All";
@@ -265,7 +265,7 @@
 "Summary" = "Summary";
 "Blocked: %d" = "Blocked: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Only community-maintained lists are available for %@. Enable them if you're comfortable.";
-"Remove from Whitelist" = "Remove from Whitelist";
+"Remove from Whitelist" = "Remove Exception";
 "Downloaded %d update" = "Downloaded %d update";
 "Safari → Settings → Extensions" = "Safari → Settings → Extensions";
 "Settings → Apps → Safari → Extensions" = "Settings → Apps → Safari → Extensions";
@@ -325,7 +325,7 @@
 "Completed" = "Completed";
 "Due soon catch-up" = "Due soon catch-up";
 "Edit" = "Edit";
-"Element Zapper Rules" = "Element Zapper Rules";
+"Element Zapper Rules" = "Element Hiding Rules";
 "Execution: %@" = "Execution: %@";
 "Expired %@" = "Expired %@";
 "Export Settings" = "Export Settings";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "Import failed: %@";
 "Info.plist missing" = "Info.plist missing";
 "Near Safari limit: %@" = "Near Safari limit: %@";
-"No Element Zapper Rules" = "No Element Zapper Rules";
+"No Element Zapper Rules" = "No Element Hiding Rules";
 "No background run recorded" = "No background run recorded";
 "No foreground catch-up recorded" = "No foreground catch-up recorded";
 "No silent push received yet" = "No silent push received yet";
@@ -383,7 +383,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Undo" = "Undo";
 "Unavailable" = "Unavailable";
 "Updating…" = "Updating…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Zap elements on any website using the wBlock extension in Safari, then manage them here.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Hide elements with the wBlock extension in Safari, then manage the rules here.";
 "due now" = "due now";
 "never" = "never";
 "%d rule" = "%d rule";

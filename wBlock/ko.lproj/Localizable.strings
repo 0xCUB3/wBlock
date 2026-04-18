@@ -40,10 +40,10 @@
 "Import" = "가져오기";
 "\\(progressPercentage)%" = "\\(진행률)%";
 "Import File" = "파일 가져오기";
-"Edit User List" = "사용자 목록 편집";
+"Edit User List" = "목록 편집";
 "Community options" = "커뮤니티 옵션";
 "Version %@" = "버전 %@";
-"Edit Name" = "이름 편집";
+"Edit Name" = "목록 이름 변경";
 "This may take a while" = "시간이 조금 걸릴 수 있습니다";
 "soon" = "곧";
 "Custom" = "사용자 지정";
@@ -111,7 +111,7 @@
 "Enabled" = "활성화됨";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count)개 항목";
 "Disabled" = "비활성화됨";
-"Whitelisted Domains" = "허용 목록 도메인";
+"Whitelisted Domains" = "사이트 예외";
 "It will be enabled automatically." = "자동으로 활성화됩니다.";
 "Debug" = "디버그";
 "Next: Loading…" = "다음: 로딩 중…";
@@ -142,7 +142,7 @@
 "Applied" = "적용됨";
 "7d" = "7일";
 "Critical Setup Required" = "중요 설정 필요";
-"No Whitelisted Domains" = "허용 목록에 있는 도메인 없음";
+"No Whitelisted Domains" = "사이트 예외가 없습니다";
 "Paste" = "붙여넣기";
 "Cancel" = "취소";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "차단됨: 1";
 "Checked %@" = "%@ 확인됨";
 "Actions" = "동작";
-"Delete Added List" = "추가된 목록 삭제";
+"Delete Added List" = "목록 삭제";
 "Filter Update" = "필터 업데이트";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "AdGuard 기본 필터만 사용. 가장 가벼운 보호, 최고의 호환성.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "미리보기 표시 중 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "방금 확인됨";
 "wBlock will fetch and enable the script automatically." = "wBlock이 자동으로 스크립트를 가져와 활성화합니다.";
-"Add domains to disable ad blocking on specific sites" = "특정 사이트에서 광고 차단을 비활성화하려면 도메인을 추가하세요";
+"Add domains to disable ad blocking on specific sites" = "wBlock을 꺼 둬야 하는 도메인을 추가하세요";
 "1." = "1.";
 "Add Mode" = "추가 모드";
 "Keep All" = "모두 유지";
@@ -265,7 +265,7 @@
 "Summary" = "요약";
 "Blocked: %d" = "차단됨: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@에 대해서는 커뮤니티 관리 목록만 사용할 수 있습니다. 괜찮으시다면 활성화하세요.";
-"Remove from Whitelist" = "허용 목록에서 제거";
+"Remove from Whitelist" = "예외 제거";
 "Downloaded %d update" = "업데이트 %d개 다운로드됨";
 "Safari → Settings → Extensions" = "Safari → 설정 → 확장 프로그램";
 "Settings → Apps → Safari → Extensions" = "설정 → 앱 → Safari → 확장 프로그램";
@@ -325,7 +325,7 @@
 "Completed" = "완료됨";
 "Due soon catch-up" = "곧 기한이 오는 보충 실행";
 "Edit" = "편집";
-"Element Zapper Rules" = "요소 제거 규칙";
+"Element Zapper Rules" = "요소 숨김 규칙";
 "Execution: %@" = "실행: %@";
 "Expired %@" = "만료됨 %@";
 "Export Settings" = "설정 내보내기";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "가져오기 실패: %@";
 "Info.plist missing" = "Info.plist가 없습니다";
 "Near Safari limit: %@" = "Safari 제한에 가까움: %@";
-"No Element Zapper Rules" = "요소 제거 규칙이 없습니다";
+"No Element Zapper Rules" = "요소 숨김 규칙이 없습니다";
 "No background run recorded" = "기록된 백그라운드 실행이 없습니다";
 "No foreground catch-up recorded" = "기록된 포그라운드 보충 실행이 없습니다";
 "No silent push received yet" = "아직 무음 푸시를 받지 못했습니다";
@@ -385,7 +385,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "사용할 수 없음";
 "Undo" = "실행 취소";
 "Updating…" = "업데이트 중…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari의 wBlock 확장 기능으로 어떤 웹사이트에서든 요소를 숨긴 뒤 여기에서 관리하세요.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari의 wBlock 확장으로 요소를 숨기고 여기에서 규칙을 관리하세요.";
 "due now" = "지금 실행 예정";
 "never" = "없음";
 "%d rule" = "규칙 %d개";

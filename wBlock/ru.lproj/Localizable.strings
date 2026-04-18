@@ -40,10 +40,10 @@
 "Import" = "Импорт";
 "\\(progressPercentage)%" = "\\(прогресспроцентаже)%";
 "Import File" = "Импорт файла";
-"Edit User List" = "Изменить пользовательский список";
+"Edit User List" = "Редактировать список";
 "Community options" = "Параметры сообщества";
 "Version %@" = "Версия %@";
-"Edit Name" = "Изменить имя";
+"Edit Name" = "Переименовать список";
 "This may take a while" = "Это может занять некоторое время";
 "soon" = "скоро";
 "Custom" = "Пользовательский";
@@ -111,7 +111,7 @@
 "Enabled" = "Включено";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) записей";
 "Disabled" = "Отключено";
-"Whitelisted Domains" = "Домены в белом списке";
+"Whitelisted Domains" = "Исключения для сайтов";
 "It will be enabled automatically." = "Будет включено автоматически.";
 "Debug" = "Отладка";
 "Next: Loading…" = "Далее: Загрузка…";
@@ -142,7 +142,7 @@
 "Applied" = "Применено";
 "7d" = "7д";
 "Critical Setup Required" = "Требуется критическая настройка";
-"No Whitelisted Domains" = "Нет доменов в белом списке";
+"No Whitelisted Domains" = "Нет исключений для сайтов";
 "Paste" = "Вставить";
 "Cancel" = "Отмена";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Заблокировано: 1";
 "Checked %@" = "Проверено %@";
 "Actions" = "Действия";
-"Delete Added List" = "Удалить добавленный список";
+"Delete Added List" = "Удалить список";
 "Filter Update" = "Обновление фильтров";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Только фильтр AdGuard Base. Минимальная защита, лучшая совместимость.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Показан предпросмотр (\\(formatFileSize(previewLength)) из \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Проверено только что";
 "wBlock will fetch and enable the script automatically." = "wBlock автоматически загрузит и включит скрипт.";
-"Add domains to disable ad blocking on specific sites" = "Добавьте домены, чтобы отключить блокировку рекламы на определенных сайтах";
+"Add domains to disable ad blocking on specific sites" = "Добавьте домены, где wBlock должен оставаться отключенным";
 "1." = "1.";
 "Add Mode" = "Режим добавления";
 "Keep All" = "Оставить все";
@@ -265,7 +265,7 @@
 "Summary" = "Сводка";
 "Blocked: %d" = "Заблокировано: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Для %@ доступны только списки, поддерживаемые сообществом. Включайте их, если вам это подходит.";
-"Remove from Whitelist" = "Удалить из белого списка";
+"Remove from Whitelist" = "Удалить исключение";
 "Downloaded %d update" = "Загружено %d обновление";
 "Safari → Settings → Extensions" = "Safari → Настройки → Расширения";
 "Settings → Apps → Safari → Extensions" = "Настройки → Приложения → Safari → Расширения";
@@ -385,7 +385,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Недоступно";
 "Undo" = "Отменить";
 "Updating…" = "Обновление…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Скрывайте элементы на любом сайте с помощью расширения wBlock в Safari, а затем управляйте ими здесь.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Скрывайте элементы с помощью расширения wBlock в Safari, затем управляйте правилами здесь.";
 "due now" = "пора выполнить сейчас";
 "never" = "никогда";
 "%d rule" = "%d правило";

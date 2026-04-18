@@ -40,10 +40,10 @@
 "Import" = "インポート";
 "\\(progressPercentage)%" = "\\(進捗率)%";
 "Import File" = "ファイルをインポート";
-"Edit User List" = "ユーザーリストを編集";
+"Edit User List" = "リストを編集";
 "Community options" = "コミュニティオプション";
 "Version %@" = "バージョン %@";
-"Edit Name" = "名前を編集";
+"Edit Name" = "リスト名を変更";
 "This may take a while" = "時間がかかる場合があります";
 "soon" = "まもなく";
 "Custom" = "カスタム";
@@ -111,7 +111,7 @@
 "Enabled" = "有効";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 件";
 "Disabled" = "無効";
-"Whitelisted Domains" = "ホワイトリスト登録ドメイン";
+"Whitelisted Domains" = "サイトの例外";
 "It will be enabled automatically." = "自動で有効になります。";
 "Debug" = "デバッグ";
 "Next: Loading…" = "次へ: 読み込み中…";
@@ -142,7 +142,7 @@
 "Applied" = "適用済み";
 "7d" = "7日";
 "Critical Setup Required" = "重要な設定が必要です";
-"No Whitelisted Domains" = "ホワイトリスト登録ドメインはありません";
+"No Whitelisted Domains" = "サイトの例外はありません";
 "Paste" = "貼り付け";
 "Cancel" = "キャンセル";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "ブロック: 1";
 "Checked %@" = "確認 %@";
 "Actions" = "アクション";
-"Delete Added List" = "追加したリストを削除";
+"Delete Added List" = "リストを削除";
 "Filter Update" = "フィルター更新";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "AdGuard Baseフィルターのみ。最も軽い保護で互換性は最高。";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "プレビューを表示中 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "たった今確認";
 "wBlock will fetch and enable the script automatically." = "wBlockがスクリプトを自動で取得して有効化します。";
-"Add domains to disable ad blocking on specific sites" = "特定のサイトで広告ブロックを無効にするドメインを追加";
+"Add domains to disable ad blocking on specific sites" = "wBlock をオフのままにするドメインを追加";
 "1." = "1.";
 "Add Mode" = "追加モード";
 "Keep All" = "すべて保持";
@@ -265,7 +265,7 @@
 "Summary" = "概要";
 "Blocked: %d" = "ブロック: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ではコミュニティ管理のリストのみ利用できます。問題なければ有効にしてください。";
-"Remove from Whitelist" = "ホワイトリストから削除";
+"Remove from Whitelist" = "例外を削除";
 "Downloaded %d update" = "%d件の更新をダウンロード";
 "Safari → Settings → Extensions" = "Safari → 設定 → 機能拡張";
 "Settings → Apps → Safari → Extensions" = "設定 → アプリ → Safari → 機能拡張";
@@ -325,7 +325,7 @@
 "Completed" = "完了";
 "Due soon catch-up" = "まもなく期限の追いつき実行";
 "Edit" = "編集";
-"Element Zapper Rules" = "要素ザッパーのルール";
+"Element Zapper Rules" = "要素非表示ルール";
 "Execution: %@" = "実行: %@";
 "Expired %@" = "期限切れ %@";
 "Export Settings" = "設定を書き出す";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "読み込みに失敗しました: %@";
 "Info.plist missing" = "Info.plist が見つかりません";
 "Near Safari limit: %@" = "Safari の上限に近づいています: %@";
-"No Element Zapper Rules" = "要素ザッパーのルールはありません";
+"No Element Zapper Rules" = "要素非表示ルールはありません";
 "No background run recorded" = "バックグラウンド実行の記録がありません";
 "No foreground catch-up recorded" = "フォアグラウンド追いつき実行の記録がありません";
 "No silent push received yet" = "まだサイレントプッシュを受信していません";
@@ -385,7 +385,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "利用できません";
 "Undo" = "元に戻す";
 "Updating…" = "更新中…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari の wBlock 拡張機能で任意のサイトの要素を消し、ここで管理できます。";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari の wBlock 拡張機能で要素を非表示にして、ここでルールを管理します。";
 "due now" = "今すぐ実行";
 "never" = "なし";
 "%d rule" = "%d 件のルール";

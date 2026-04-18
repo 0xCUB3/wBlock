@@ -40,10 +40,10 @@
 "Import" = "Importă";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Importă fișier";
-"Edit User List" = "Editează lista utilizator";
+"Edit User List" = "Editează lista";
 "Community options" = "Opțiuni ale comunității";
 "Version %@" = "Versiunea %@";
-"Edit Name" = "Editează numele";
+"Edit Name" = "Redenumește lista";
 "This may take a while" = "Acest lucru poate dura";
 "soon" = "în curând";
 "Custom" = "Personalizat";
@@ -111,7 +111,7 @@
 "Enabled" = "Activat";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) intrări";
 "Disabled" = "Dezactivat";
-"Whitelisted Domains" = "Domenii în lista albă";
+"Whitelisted Domains" = "Excepții pentru site-uri";
 "It will be enabled automatically." = "Va fi activat automat.";
 "Debug" = "Depanare";
 "Next: Loading…" = "Următorul: Se încarcă…";
@@ -142,7 +142,7 @@
 "Applied" = "Aplicat";
 "7d" = "7d";
 "Critical Setup Required" = "Configurare critică necesară";
-"No Whitelisted Domains" = "Niciun domeniu în lista albă";
+"No Whitelisted Domains" = "Nicio excepție pentru site-uri";
 "Paste" = "Lipește";
 "Cancel" = "Anulează";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Blocat: 1";
 "Checked %@" = "Verificat %@";
 "Actions" = "Acțiuni";
-"Delete Added List" = "Șterge lista adăugată";
+"Delete Added List" = "Șterge lista";
 "Filter Update" = "Actualizare filtre";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Doar filtrul AdGuard Base. Cea mai ușoară protecție, cea mai bună compatibilitate.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Se afișează previzualizarea (\\(formatFileSize(previewLength)) din \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Verificat chiar acum";
 "wBlock will fetch and enable the script automatically." = "wBlock va prelua și activa scriptul automat.";
-"Add domains to disable ad blocking on specific sites" = "Adaugă domenii pentru a dezactiva blocarea reclamelor pe site-uri specifice";
+"Add domains to disable ad blocking on specific sites" = "Adaugă domenii unde wBlock trebuie să rămână dezactivat";
 "1." = "1.";
 "Add Mode" = "Mod adăugare";
 "Keep All" = "Păstrează tot";
@@ -265,7 +265,7 @@
 "Summary" = "Rezumat";
 "Blocked: %d" = "Blocate: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Pentru %@ sunt disponibile doar liste menținute de comunitate. Activează-le dacă te simți confortabil.";
-"Remove from Whitelist" = "Elimină din lista albă";
+"Remove from Whitelist" = "Elimină excepția";
 "Downloaded %d update" = "S-a descărcat %d actualizare";
 "Safari → Settings → Extensions" = "Safari → Configurări → Extensii";
 "Settings → Apps → Safari → Extensions" = "Configurări → Aplicații → Safari → Extensii";
@@ -325,7 +325,7 @@
 "Completed" = "Finalizat";
 "Due soon catch-up" = "Recuperare scadentă în curând";
 "Edit" = "Editează";
-"Element Zapper Rules" = "Reguli pentru eliminatorul de elemente";
+"Element Zapper Rules" = "Reguli de ascundere a elementelor";
 "Execution: %@" = "Executare: %@";
 "Expired %@" = "Expirat %@";
 "Export Settings" = "Exportă setările";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "Importul a eșuat: %@";
 "Info.plist missing" = "Lipsește Info.plist";
 "Near Safari limit: %@" = "Aproape de limita Safari: %@";
-"No Element Zapper Rules" = "Nicio regulă pentru eliminatorul de elemente";
+"No Element Zapper Rules" = "Nicio regula de ascundere a elementelor";
 "No background run recorded" = "Nicio rulare în fundal înregistrată";
 "No foreground catch-up recorded" = "Nicio recuperare în prim-plan înregistrată";
 "No silent push received yet" = "Nu a fost primit încă niciun push silențios";
@@ -385,7 +385,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Unavailable" = "Indisponibil";
 "Undo" = "Anulează";
 "Updating…" = "Se actualizează…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Ascunde elemente pe orice site folosind extensia wBlock din Safari, apoi gestionează-le aici.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Ascunde elemente cu extensia wBlock în Safari, apoi gestionează regulile aici.";
 "due now" = "scadent acum";
 "never" = "niciodată";
 "%d rule" = "%d regulă";

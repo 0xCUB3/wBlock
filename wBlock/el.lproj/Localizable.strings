@@ -40,10 +40,10 @@
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import" = "Εισαγωγή";
 "Import File" = "Εισαγωγή Αρχείου";
-"Edit User List" = "Επεξεργασία Λίστας Χρηστών";
+"Edit User List" = "Επεξεργασία λίστας";
 "Community options" = "Επιλογές Κοινότητας";
 "Version %@" = "Έκδοση %@";
-"Edit Name" = "Επεξεργασία Ονόματος";
+"Edit Name" = "Μετονομασία λίστας";
 "This may take a while" = "Αυτό μπορεί να διαρκέσει λίγο";
 "soon" = "σύντομα";
 "Custom" = "Προσαρμοσμένο";
@@ -111,7 +111,7 @@
 "Enabled" = "Ενεργοποιημένο";
 "\\(filteredEntries.count) entries" = "\(filteredEntries.count) καταχωρήσεις";
 "Disabled" = "Απενεργοποιημένο";
-"Whitelisted Domains" = "Τομείς στη λίστα επιτρεπόμενων";
+"Whitelisted Domains" = "Εξαιρέσεις ιστότοπων";
 "It will be enabled automatically." = "Θα ενεργοποιηθεί αυτόματα.";
 "Debug" = "Εντοπισμός σφαλμάτων";
 "Next: Loading…" = "Επόμενο: Φόρτωση…";
@@ -142,7 +142,7 @@
 "Applied" = "Εφαρμοσμένο";
 "7d" = "7d";
 "Critical Setup Required" = "Απαιτείται κρίσιμη ρύθμιση";
-"No Whitelisted Domains" = "Δεν υπάρχουν τομείς στη λίστα επιτρεπόμενων";
+"No Whitelisted Domains" = "Δεν υπάρχουν εξαιρέσεις ιστότοπων";
 "Paste" = "Επικόλληση";
 "Cancel" = "Ακύρωση";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Αποκλεισμένο: 1";
 "Checked %@" = "Ελέγχθηκε %@";
 "Actions" = "Ενέργειες";
-"Delete Added List" = "Διαγραφή Προστιθέμενης Λίστας";
+"Delete Added List" = "Διαγραφή λίστας";
 "Filter Update" = "Φίλτρο Ενημέρωσης";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Μόνο το φίλτρο AdGuard Base. Ελαφρύτερη προστασία, καλύτερη συμβατότητα.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Εμφάνιση προεπισκόπησης (\\(formatFileSize(previewLength)) από \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Ελέγχθηκε μόλις τώρα";
 "wBlock will fetch and enable the script automatically." = "το wBlock θα ανακτήσει και θα ενεργοποιήσει αυτόματα τον κώδικα.";
-"Add domains to disable ad blocking on specific sites" = "Προσθήκη τομέων για απενεργοποίηση του αποκλεισμού διαφημίσεων σε συγκεκριμένους ιστότοπους";
+"Add domains to disable ad blocking on specific sites" = "Προσθέστε τομείς όπου το wBlock πρέπει να παραμένει απενεργοποιημένο";
 "1." = "1.";
 "Add Mode" = "Προσθήκη λειτουργίας";
 "Keep All" = "Διατήρηση όλων";
@@ -265,7 +265,7 @@
 "Summary" = "Σύνοψη";
 "Blocked: %d" = "Αποκλεισμένο: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Μόνο λίστες που διατηρούνται από την κοινότητα είναι διαθέσιμες για %@. Ενεργοποιήστε τις αν νιώθετε άνετα.";
-"Remove from Whitelist" = "Κατάργηση από τη λίστα επιτρεπόμενων";
+"Remove from Whitelist" = "Κατάργηση εξαίρεσης";
 "Downloaded %d update" = "Λήψη %d ενημέρωσης";
 "Safari → Settings → Extensions" = "Safari → Ρυθμίσεις → Επεκτάσεις";
 "Settings → Apps → Safari → Extensions" = "Ρυθμίσεις → Εφαρμογές → Safari → Επεκτάσεις";
@@ -325,7 +325,7 @@
 "Completed" = "Ολοκληρώθηκε";
 "Due soon catch-up" = "Επίκειται σύντομα ανάκτηση";
 "Edit" = "Επεξεργασία";
-"Element Zapper Rules" = "Κανόνες στοιχειο-αφανιστή";
+"Element Zapper Rules" = "Κανόνες απόκρυψης στοιχείων";
 "Execution: %@" = "Εκτέλεση: %@";
 "Expired %@" = "Έληξε %@";
 "Export Settings" = "Εξαγωγή ρυθμίσεων";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "Η εισαγωγή απέτυχε: %@";
 "Info.plist missing" = "Λείπει το Info.plist";
 "Near Safari limit: %@" = "Κοντά στο όριο του Safari: %@";
-"No Element Zapper Rules" = "Δεν υπάρχουν κανόνες στοιχειο-αφανιστή";
+"No Element Zapper Rules" = "Δεν υπάρχουν κανόνες απόκρυψης στοιχείων";
 "No background run recorded" = "Δεν έχει καταγραφεί εκτέλεση παρασκηνίου";
 "No foreground catch-up recorded" = "Δεν έχει καταγραφεί ανάκτηση στο προσκήνιο";
 "No silent push received yet" = "Δεν έχει ληφθεί ακόμη σιωπηλή ειδοποίηση push";
@@ -385,7 +385,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Μη διαθέσιμο";
 "Undo" = "Αναίρεση";
 "Updating…" = "Γίνεται ενημέρωση…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Εξαφάνισε στοιχεία σε οποιονδήποτε ιστότοπο με την επέκταση wBlock στο Safari και διαχειρίσου τα εδώ.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Αποκρύψτε στοιχεία με την επέκταση wBlock στο Safari και διαχειριστείτε εδώ τους κανόνες.";
 "due now" = "λήγει τώρα";
 "never" = "ποτέ";
 "%d rule" = "%d κανόνας";

@@ -256,7 +256,6 @@ struct UserScriptManagerView: View {
                 )
 
                 if !showSearch {
-
                     applyChangesToolbarButton
                         .help(
                             hasPendingChanges

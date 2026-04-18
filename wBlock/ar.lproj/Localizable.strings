@@ -40,10 +40,10 @@
 "Import" = "استيراد";
 "\\(progressPercentage)%" = "\\(نسبة التقدم)%";
 "Import File" = "استيراد ملف";
-"Edit User List" = "تعديل قائمة المستخدم";
+"Edit User List" = "تحرير القائمة";
 "Community options" = "خيارات المجتمع";
 "Version %@" = "الإصدار %@";
-"Edit Name" = "تعديل الاسم";
+"Edit Name" = "إعادة تسمية القائمة";
 "This may take a while" = "قد يستغرق هذا بعض الوقت";
 "soon" = "قريبًا";
 "Custom" = "مخصص";
@@ -111,7 +111,7 @@
 "Enabled" = "مفعّل";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) إدخالات";
 "Disabled" = "معطّل";
-"Whitelisted Domains" = "النطاقات المضافة إلى القائمة البيضاء";
+"Whitelisted Domains" = "استثناءات المواقع";
 "It will be enabled automatically." = "سيتم تفعيله تلقائيًا.";
 "Debug" = "تصحيح";
 "Next: Loading…" = "التالي: جارٍ التحميل…";
@@ -142,7 +142,7 @@
 "Applied" = "مطبَّق";
 "7d" = "7d";
 "Critical Setup Required" = "إعداد حرج مطلوب";
-"No Whitelisted Domains" = "لا توجد نطاقات في القائمة البيضاء";
+"No Whitelisted Domains" = "لا توجد استثناءات للمواقع";
 "Paste" = "لصق";
 "Cancel" = "إلغاء";
 "URL" = "الرابط";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "المحظور: 1";
 "Checked %@" = "تم التحقق %@";
 "Actions" = "الإجراءات";
-"Delete Added List" = "حذف القائمة المضافة";
+"Delete Added List" = "حذف القائمة";
 "Filter Update" = "تحديث الفلتر";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "فلتر AdGuard Base فقط. أخف حماية وأفضل توافق.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "عرض معاينة (\\(formatFileSize(previewLength)) من \\(formatFileSize(script.content.count)))";
 "Checked just now" = "تم التحقق للتو";
 "wBlock will fetch and enable the script automatically." = "سيقوم wBlock بجلب السكريبت وتفعيله تلقائيًا.";
-"Add domains to disable ad blocking on specific sites" = "أضف نطاقات لتعطيل حظر الإعلانات في مواقع محددة";
+"Add domains to disable ad blocking on specific sites" = "أضف نطاقات يجب أن يظل wBlock معطلاً عليها";
 "1." = "1.";
 "Add Mode" = "وضع الإضافة";
 "Keep All" = "الاحتفاظ بالكل";
@@ -265,7 +265,7 @@
 "Summary" = "الملخص";
 "Blocked: %d" = "المحظور: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "لا تتوفر لـ %@ إلا القوائم التي يديرها المجتمع. فعّلها إذا كنت مرتاحًا لذلك.";
-"Remove from Whitelist" = "إزالة من القائمة البيضاء";
+"Remove from Whitelist" = "إزالة الاستثناء";
 "Downloaded %d update" = "تم تنزيل %d تحديث";
 "Safari → Settings → Extensions" = "Safari → الإعدادات → الإضافات";
 "Settings → Apps → Safari → Extensions" = "الإعدادات → التطبيقات → Safari → الإضافات";
@@ -325,7 +325,7 @@
 "Completed" = "مكتمل";
 "Due soon catch-up" = "استدراك مستحق قريبًا";
 "Edit" = "تحرير";
-"Element Zapper Rules" = "قواعد أداة إخفاء العناصر";
+"Element Zapper Rules" = "قواعد إخفاء العناصر";
 "Execution: %@" = "التنفيذ: %@";
 "Expired %@" = "انتهت صلاحيته %@";
 "Export Settings" = "تصدير الإعدادات";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "فشل الاستيراد: %@";
 "Info.plist missing" = "ملف Info.plist مفقود";
 "Near Safari limit: %@" = "بالقرب من حد Safari: %@";
-"No Element Zapper Rules" = "لا توجد قواعد لأداة إخفاء العناصر";
+"No Element Zapper Rules" = "لا توجد قواعد لإخفاء العناصر";
 "No background run recorded" = "لم يتم تسجيل أي تشغيل في الخلفية";
 "No foreground catch-up recorded" = "لم يتم تسجيل أي استدراك في الواجهة الأمامية";
 "No silent push received yet" = "لم يتم استلام أي إشعار push صامت بعد";
@@ -385,7 +385,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "غير متاح";
 "Undo" = "تراجع";
 "Updating…" = "جارٍ التحديث…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "أخفِ العناصر على أي موقع باستخدام إضافة wBlock في Safari، ثم أدِرها هنا.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "أخفِ العناصر باستخدام إضافة wBlock في Safari، ثم أدر القواعد من هنا.";
 "due now" = "مستحق الآن";
 "never" = "أبدًا";
 "%d rule" = "%d قاعدة";

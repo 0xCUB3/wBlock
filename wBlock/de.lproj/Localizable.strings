@@ -40,10 +40,10 @@
 "Import" = "Importieren";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
 "Import File" = "Datei importieren";
-"Edit User List" = "Benutzerliste bearbeiten";
+"Edit User List" = "Liste bearbeiten";
 "Community options" = "Community-Optionen";
 "Version %@" = "Version %@";
-"Edit Name" = "Namen bearbeiten";
+"Edit Name" = "Liste umbenennen";
 "This may take a while" = "Das kann eine Weile dauern";
 "soon" = "bald";
 "Custom" = "Benutzerdefiniert";
@@ -111,7 +111,7 @@
 "Enabled" = "Aktiviert";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) Einträge";
 "Disabled" = "Deaktiviert";
-"Whitelisted Domains" = "Whitelist-Domains";
+"Whitelisted Domains" = "Website-Ausnahmen";
 "It will be enabled automatically." = "Es wird automatisch aktiviert.";
 "Debug" = "Debuggen";
 "Next: Loading…" = "Weiter: Laden…";
@@ -142,7 +142,7 @@
 "Applied" = "Angewendet";
 "7d" = "7d";
 "Critical Setup Required" = "Kritische Einrichtung erforderlich";
-"No Whitelisted Domains" = "Keine Domains auf der Whitelist";
+"No Whitelisted Domains" = "Keine Website-Ausnahmen";
 "Paste" = "Einfügen";
 "Cancel" = "Abbrechen";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Blockiert: 1";
 "Checked %@" = "Geprüft %@";
 "Actions" = "Aktionen";
-"Delete Added List" = "Hinzugefügte Liste löschen";
+"Delete Added List" = "Liste löschen";
 "Filter Update" = "Filter-Update";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Nur der AdGuard-Base-Filter. Leichtester Schutz, beste Kompatibilität.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Vorschau (\\(formatFileSize(previewLength)) von \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Gerade eben geprüft";
 "wBlock will fetch and enable the script automatically." = "wBlock lädt das Skript automatisch herunter und aktiviert es.";
-"Add domains to disable ad blocking on specific sites" = "Füge Domains hinzu, um die Werbeblockierung auf bestimmten Websites zu deaktivieren";
+"Add domains to disable ad blocking on specific sites" = "Domains hinzufügen, auf denen wBlock deaktiviert bleiben soll";
 "1." = "1.";
 "Add Mode" = "Hinzufügen-Modus";
 "Keep All" = "Alle behalten";
@@ -265,7 +265,7 @@
 "Summary" = "Zusammenfassung";
 "Blocked: %d" = "Blockiert: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Für %@ sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn du dich damit wohlfühlst.";
-"Remove from Whitelist" = "Von der Whitelist entfernen";
+"Remove from Whitelist" = "Ausnahme entfernen";
 "Downloaded %d update" = "%d Update heruntergeladen";
 "Safari → Settings → Extensions" = "Safari → Einstellungen → Erweiterungen";
 "Settings → Apps → Safari → Extensions" = "Einstellungen → Apps → Safari → Erweiterungen";
@@ -325,7 +325,7 @@
 "Completed" = "Abgeschlossen";
 "Due soon catch-up" = "Bald fällige Aufholung";
 "Edit" = "Bearbeiten";
-"Element Zapper Rules" = "Regeln des Element-Entferners";
+"Element Zapper Rules" = "Regeln zum Ausblenden von Elementen";
 "Execution: %@" = "Ausführung: %@";
 "Expired %@" = "Abgelaufen %@";
 "Export Settings" = "Einstellungen exportieren";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "Import fehlgeschlagen: %@";
 "Info.plist missing" = "Info.plist fehlt";
 "Near Safari limit: %@" = "Nahe am Safari-Limit: %@";
-"No Element Zapper Rules" = "Keine Regeln des Element-Entferners";
+"No Element Zapper Rules" = "Keine Regeln zum Ausblenden von Elementen";
 "No background run recorded" = "Kein Hintergrundlauf aufgezeichnet";
 "No foreground catch-up recorded" = "Kein Nachholen im Vordergrund aufgezeichnet";
 "No silent push received yet" = "Noch kein stiller Push empfangen";
@@ -385,7 +385,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Unavailable" = "Nicht verfügbar";
 "Undo" = "Rückgängig";
 "Updating…" = "Wird aktualisiert…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Entferne Elemente auf beliebigen Websites mit der wBlock-Erweiterung in Safari und verwalte sie dann hier.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Blende Elemente mit der wBlock-Erweiterung in Safari aus und verwalte die Regeln hier.";
 "due now" = "jetzt fällig";
 "never" = "nie";
 "%d rule" = "%d Regel";

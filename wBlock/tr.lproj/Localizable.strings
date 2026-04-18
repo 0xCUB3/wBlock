@@ -40,10 +40,10 @@
 "\\(progressPercentage)%" = "\\(ilerlemeYüzdesi)%";
 "Import" = "İçe Aktar";
 "Import File" = "Dosya İçe Aktar";
-"Edit User List" = "Kullanıcı Listesini Düzenle";
+"Edit User List" = "Listeyi düzenle";
 "Community options" = "Topluluk seçenekleri";
 "Version %@" = "Sürüm %@";
-"Edit Name" = "Adı Düzenle";
+"Edit Name" = "Listeyi yeniden adlandır";
 "This may take a while" = "Bu işlem biraz sürebilir";
 "soon" = "yakında";
 "Custom" = "Özel";
@@ -111,7 +111,7 @@
 "Enabled" = "Etkin";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) girdi";
 "Disabled" = "Devre Dışı";
-"Whitelisted Domains" = "Beyaz Listedeki Alan Adları";
+"Whitelisted Domains" = "Site istisnaları";
 "It will be enabled automatically." = "Otomatik olarak etkinleştirilecek.";
 "Debug" = "Ayıklama";
 "Next: Loading…" = "Sonraki: Yükleniyor…";
@@ -142,7 +142,7 @@
 "Applied" = "Uygulandı";
 "7d" = "7g";
 "Critical Setup Required" = "Kritik Kurulum Gerekli";
-"No Whitelisted Domains" = "Beyaz Listede Alan Adı Yok";
+"No Whitelisted Domains" = "Site istisnası yok";
 "Paste" = "Yapıştır";
 "Cancel" = "İptal";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "Engellenen: 1";
 "Checked %@" = "Kontrol edildi %@";
 "Actions" = "Eylemler";
-"Delete Added List" = "Eklenen Listeyi Sil";
+"Delete Added List" = "Listeyi sil";
 "Filter Update" = "Filtre Güncelleme";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "Yalnızca AdGuard Base filtresi. En hafif koruma, en iyi uyumluluk.";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Önizleme gösteriliyor (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Az önce kontrol edildi";
 "wBlock will fetch and enable the script automatically." = "wBlock script'i otomatik indirip etkinleştirir.";
-"Add domains to disable ad blocking on specific sites" = "Belirli sitelerde reklam engellemeyi kapatmak için alan adları ekle";
+"Add domains to disable ad blocking on specific sites" = "wBlock'un kapalı kalması gereken alan adlarını ekleyin";
 "1." = "1.";
 "Add Mode" = "Ekleme Modu";
 "Keep All" = "Tümünü Koru";
@@ -265,7 +265,7 @@
 "Summary" = "Özet";
 "Blocked: %d" = "Engellenen: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ için yalnızca topluluk tarafından yönetilen listeler mevcut. Uygunsa etkinleştir.";
-"Remove from Whitelist" = "Beyaz Listeden Kaldır";
+"Remove from Whitelist" = "İstisnayı kaldır";
 "Downloaded %d update" = "%d güncelleme indirildi";
 "Safari → Settings → Extensions" = "Safari → Ayarlar → Genişletmeler";
 "Settings → Apps → Safari → Extensions" = "Ayarlar → Uygulamalar → Safari → Genişletmeler";
@@ -325,7 +325,7 @@
 "Completed" = "Tamamlandı";
 "Due soon catch-up" = "Yaklaşan telafi";
 "Edit" = "Düzenle";
-"Element Zapper Rules" = "Öğe Zaplayıcı Kuralları";
+"Element Zapper Rules" = "Öğe gizleme kuralları";
 "Execution: %@" = "Çalıştırma: %@";
 "Expired %@" = "%@ süresi doldu";
 "Export Settings" = "Ayarları Dışa Aktar";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "İçe aktarma başarısız: %@";
 "Info.plist missing" = "Info.plist eksik";
 "Near Safari limit: %@" = "Safari limitine yakın: %@";
-"No Element Zapper Rules" = "Öğe Zaplayıcı Kuralı Yok";
+"No Element Zapper Rules" = "Öğe gizleme kuralı yok";
 "No background run recorded" = "Kayıtlı arka plan çalışması yok";
 "No foreground catch-up recorded" = "Kayıtlı ön plan telafisi yok";
 "No silent push received yet" = "Henüz sessiz bildirim alınmadı";
@@ -383,7 +383,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Undo" = "Geri Al";
 "Unavailable" = "Kullanılamıyor";
 "Updating…" = "Güncelleniyor…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari'de wBlock genişletmesiyle herhangi bir sitede öğeleri zap et, sonra burada yönet.";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari'de wBlock uzantısıyla öğeleri gizleyin, ardından kuralları burada yönetin.";
 "due now" = "vakti geldi";
 "never" = "asla";
 "%d rule" = "%d kural";

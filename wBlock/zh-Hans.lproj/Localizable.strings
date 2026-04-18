@@ -40,10 +40,10 @@
 "Import" = "导入";
 "\\(progressPercentage)%" = "\\(进度百分比)%";
 "Import File" = "导入文件";
-"Edit User List" = "编辑用户列表";
+"Edit User List" = "编辑列表";
 "Community options" = "社区选项";
 "Version %@" = "版本 %@";
-"Edit Name" = "编辑名称";
+"Edit Name" = "重命名列表";
 "This may take a while" = "这可能需要一些时间";
 "soon" = "即将";
 "Custom" = "自定义";
@@ -111,7 +111,7 @@
 "Enabled" = "已启用";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 条目";
 "Disabled" = "已禁用";
-"Whitelisted Domains" = "白名单域名";
+"Whitelisted Domains" = "网站例外";
 "It will be enabled automatically." = "它将自动启用。";
 "Debug" = "调试";
 "Next: Loading…" = "下一步：正在加载…";
@@ -142,7 +142,7 @@
 "Applied" = "已应用";
 "7d" = "7天";
 "Critical Setup Required" = "需要关键设置";
-"No Whitelisted Domains" = "没有白名单域名";
+"No Whitelisted Domains" = "没有网站例外";
 "Paste" = "粘贴";
 "Cancel" = "取消";
 "URL" = "URL";
@@ -198,7 +198,7 @@
 "Blocked: 1" = "已拦截：1";
 "Checked %@" = "已检查 %@";
 "Actions" = "操作";
-"Delete Added List" = "删除已添加列表";
+"Delete Added List" = "删除列表";
 "Filter Update" = "过滤器更新";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Only AdGuard Base filter. Lightest protection, best compatibility." = "仅启用 AdGuard Base 过滤器。防护最轻，兼容性最佳。";
@@ -235,7 +235,7 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "显示预览 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "刚刚检查";
 "wBlock will fetch and enable the script automatically." = "wBlock 会自动获取并启用该脚本。";
-"Add domains to disable ad blocking on specific sites" = "添加域名以在特定网站上禁用广告拦截";
+"Add domains to disable ad blocking on specific sites" = "添加需要保持关闭 wBlock 的域名";
 "1." = "1.";
 "Add Mode" = "添加模式";
 "Keep All" = "全部保留";
@@ -265,7 +265,7 @@
 "Summary" = "摘要";
 "Blocked: %d" = "已拦截：%d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "仅有适用于 %@ 的社区维护列表。若你能接受，请启用它们。";
-"Remove from Whitelist" = "从白名单移除";
+"Remove from Whitelist" = "移除例外";
 "Downloaded %d update" = "已下载 %d 个更新";
 "Safari → Settings → Extensions" = "Safari → 设置 → 扩展";
 "Settings → Apps → Safari → Extensions" = "设置 → 应用 → Safari → 扩展";
@@ -325,7 +325,7 @@
 "Completed" = "已完成";
 "Due soon catch-up" = "即将到期的补跑";
 "Edit" = "编辑";
-"Element Zapper Rules" = "元素清除规则";
+"Element Zapper Rules" = "元素隐藏规则";
 "Execution: %@" = "执行：%@";
 "Expired %@" = "已过期 %@";
 "Export Settings" = "导出设置";
@@ -339,7 +339,7 @@
 "Import failed: %@" = "导入失败：%@";
 "Info.plist missing" = "缺少 Info.plist";
 "Near Safari limit: %@" = "接近 Safari 限制：%@";
-"No Element Zapper Rules" = "没有元素清除规则";
+"No Element Zapper Rules" = "没有元素隐藏规则";
 "No background run recorded" = "没有记录到后台运行";
 "No foreground catch-up recorded" = "没有记录到前台补跑";
 "No silent push received yet" = "尚未收到静默推送";
@@ -385,7 +385,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "不可用";
 "Undo" = "撤销";
 "Updating…" = "正在更新…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "使用 Safari 中的 wBlock 扩展在任意网站隐藏元素，然后在这里管理它们。";
+"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "使用 Safari 中的 wBlock 扩展隐藏元素，然后在这里管理这些规则。";
 "due now" = "现在到期";
 "never" = "从不";
 "%d rule" = "%d 条规则";

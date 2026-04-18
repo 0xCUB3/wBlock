@@ -233,18 +233,18 @@ struct OnboardingView: View {
             Button("Use iCloud Setup") {
                 Task { await adoptRemoteICloudSetup() }
             }
-            Button("Continue Setup", role: .cancel) {}
+            Button("Start Fresh") {}
         } message: {
             if let remoteConfigUpdatedAtText {
                 Text(
                     LocalizedStrings.format(
-                        "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead.",
+                        "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?",
                         comment: "Onboarding iCloud setup adoption prompt",
                         remoteConfigUpdatedAtText
                     )
                 )
             } else {
-                Text("We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead.")
+                Text("An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?")
             }
         }
     }
