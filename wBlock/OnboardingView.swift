@@ -133,7 +133,7 @@ struct OnboardingView: View {
                 "Handles advanced anti-adblock cases that filter rules miss.",
                 comment: "Default userscript description"
             ),
-        "adguard popup blocker (beta)":
+        "adguard popup blocker":
             LocalizedStrings.text(
                 "Blocks pop-up ads on web pages.",
                 comment: "Default userscript description"

@@ -339,7 +339,7 @@ extension ProtobufDataManager {
         
         // Prevent removal of built-in default userscripts.
         if let script = updatedData.userScripts.first(where: { $0.id == id.uuidString }) {
-            if BuiltInUserScripts.protectedURLs.contains(script.url) {
+            if BuiltInUserScripts.allProtectedURLs.contains(script.url) {
                 return
             }
         }

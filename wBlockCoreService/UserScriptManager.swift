@@ -53,6 +53,12 @@ struct BuiltInUserScriptDefinition {
 }
 
 enum BuiltInUserScripts {
+    static let popupBlockerName = "AdGuard Popup Blocker"
+    static let popupBlockerStableURL =
+        "https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js"
+    static let legacyPopupBlockerBetaURL =
+        "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
+
     static let definitions: [BuiltInUserScriptDefinition] = [
         BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
@@ -75,13 +81,15 @@ enum BuiltInUserScripts {
             isEnabledByDefault: true
         ),
         BuiltInUserScriptDefinition(
-            name: "AdGuard Popup Blocker (Beta)",
-            url: "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js",
+            name: popupBlockerName,
+            url: popupBlockerStableURL,
             isEnabledByDefault: false
         )
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
+    static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL])
+    static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
 }
 
 @MainActor
@@ -418,7 +426,7 @@ public class UserScriptManager: ObservableObject {
 
     public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
-        return BuiltInUserScripts.protectedURLs.contains(urlString)
+        return BuiltInUserScripts.allProtectedURLs.contains(urlString)
     }
 
     private init() {
@@ -850,6 +858,8 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
+        await migrateLegacyPopupBlockerIfNeeded()
+
         // Check if this is the first time setup
         hasCompletedInitialSetup = UserDefaults.standard.bool(forKey: initialSetupCompletedKey)
         logger.info("🔧 Initial setup completed: \(self.hasCompletedInitialSetup)")
@@ -971,7 +981,7 @@ public class UserScriptManager: ObservableObject {
             let script = userScripts[i]
 
             // Check if this is a default script that needs downloading
-            let isDefaultScript = script.url.map { BuiltInUserScripts.protectedURLs.contains($0.absoluteString) } ?? false
+            let isDefaultScript = script.url.map { BuiltInUserScripts.allProtectedURLs.contains($0.absoluteString) } ?? false
 
             guard isDefaultScript else { continue }
             guard script.isEnabled else { continue }
@@ -1023,6 +1033,73 @@ public class UserScriptManager: ObservableObject {
                 await persistUserScriptsNow()
                 logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
             }
+        }
+    }
+
+    @MainActor
+    private func migrateLegacyPopupBlockerIfNeeded() async {
+        guard let stableURL = URL(string: BuiltInUserScripts.popupBlockerStableURL) else {
+            logger.error("❌ Invalid stable popup blocker URL: \(BuiltInUserScripts.popupBlockerStableURL)")
+            return
+        }
+
+        let legacyIndices = userScripts.indices.filter {
+            userScripts[$0].url?.absoluteString == BuiltInUserScripts.legacyPopupBlockerBetaURL
+        }
+
+        guard !legacyIndices.isEmpty else { return }
+
+        logger.info("🔁 Migrating \(legacyIndices.count) legacy popup blocker userscript(s) to stable")
+
+        var didChange = false
+        var needsStableDownload = false
+        var scriptsToDeleteFromDisk: [UserScript] = []
+
+        for legacyIndex in legacyIndices.sorted(by: >) {
+            guard userScripts.indices.contains(legacyIndex) else { continue }
+
+            let legacyScript = userScripts[legacyIndex]
+
+            if let stableIndex = userScripts.firstIndex(where: {
+                $0.id != legacyScript.id
+                    && $0.url?.absoluteString == BuiltInUserScripts.popupBlockerStableURL
+            }) {
+                if legacyScript.isEnabled && !userScripts[stableIndex].isEnabled {
+                    userScripts[stableIndex].isEnabled = true
+                    needsStableDownload = true
+                    didChange = true
+                }
+
+                scriptsToDeleteFromDisk.append(legacyScript)
+                userScripts.remove(at: legacyIndex)
+                didChange = true
+                continue
+            }
+
+            userScripts[legacyIndex].name = BuiltInUserScripts.popupBlockerName
+            userScripts[legacyIndex].url = stableURL
+            userScripts[legacyIndex].description = "Default userscript"
+            userScripts[legacyIndex].version = ""
+            userScripts[legacyIndex].updateURL = nil
+            userScripts[legacyIndex].downloadURL = nil
+            userScripts[legacyIndex].content = ""
+            userScripts[legacyIndex].resourceContents = [:]
+
+            scriptsToDeleteFromDisk.append(legacyScript)
+            needsStableDownload = needsStableDownload || legacyScript.isEnabled
+            didChange = true
+        }
+
+        guard didChange else { return }
+
+        for script in scriptsToDeleteFromDisk {
+            removeUserScriptFile(script)
+        }
+
+        await persistUserScriptsNow()
+
+        if needsStableDownload {
+            await downloadMissingDefaultScripts()
         }
     }
 
