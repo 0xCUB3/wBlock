@@ -832,17 +832,48 @@ struct UserScriptContentView: View {
                             Divider()
 
                             VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Text("Script Content")
-                                        .font(.headline)
-                                        .fontWeight(.medium)
-                                    Spacer()
-                                    if !loadedContent.isEmpty {
-                                        Button("Show All") {
-                                            sourcePresentation = .viewer
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(alignment: .center, spacing: 12) {
+                                        Text("Script Content")
+                                            .font(.headline)
+                                            .fontWeight(.medium)
+                                        Spacer()
+                                        if !loadedContent.isEmpty {
+                                            HStack(spacing: 12) {
+                                                Button {
+                                                    sourcePresentation = .editor
+                                                } label: {
+                                                    Label("Edit", systemImage: "pencil")
+                                                }
+                                                .buttonStyle(.plain)
+
+                                                Button {
+                                                    sourcePresentation = .viewer
+                                                } label: {
+                                                    Label("Show All", systemImage: "eye")
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+                                            .font(.body)
+                                            .foregroundStyle(Color.accentColor)
                                         }
-                                        Button("Edit") {
-                                            sourcePresentation = .editor
+                                    }
+
+                                    if !loadedContent.isEmpty {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "info.circle")
+                                                .font(.caption2)
+                                                .foregroundStyle(.orange)
+                                            Text(
+                                                LocalizedStrings.format(
+                                                    "Showing preview (%@ of %@)",
+                                                    comment: "Userscript content preview status",
+                                                    formatFileSize(previewContent.count),
+                                                    formatFileSize(loadedContent.count)
+                                                )
+                                            )
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
                                         }
                                     }
                                 }
@@ -881,12 +912,6 @@ struct UserScriptContentView: View {
                     .navigationTitle(script.localizedDisplayName)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        if !loadedContent.isEmpty {
-                            ToolbarItemGroup(placement: .navigationBarLeading) {
-                                Button("Show All") { sourcePresentation = .viewer }
-                                Button("Edit") { sourcePresentation = .editor }
-                            }
-                        }
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button("Done") { dismiss() }
                         }
