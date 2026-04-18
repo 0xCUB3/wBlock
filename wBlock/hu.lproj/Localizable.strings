@@ -554,6 +554,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "Hagezi Pro Mini" = "Hagezi Pro Mini";
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
+"Blocks pop-up ads on web pages." = "Blokkolja a felugró hirdetéseket a weboldalakon.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a magyar nyelvű webhelyekről.";
 "Hungarian filter" = "Magyar szűrő";

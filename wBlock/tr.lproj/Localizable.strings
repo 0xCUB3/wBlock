@@ -553,6 +553,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "Hagezi Pro Mini" = "Hagezi Pro Mini";
 "Handles advanced anti-adblock cases that filter rules miss." = "Filtre kurallarının kaçırdığı gelişmiş reklam engelleme önleme durumlarını yönetir.";
+"Blocks pop-up ads on web pages." = "Web sayfalarındaki açılır reklamları engeller.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Sayfa içi açılır pencereleri, banner'ları ve diğer istenmeyen sayfa öğelerini gizler.";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufiltre. Macar dilindeki web sitelerindeki reklamları özel olarak kaldıran filtre listesi.";
 "Hungarian filter" = "Macar filtresi";

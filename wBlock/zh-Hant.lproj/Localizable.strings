@@ -553,6 +553,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "Hagezi Pro Mini" = "Hagezi Pro Mini";
 "Handles advanced anti-adblock cases that filter rules miss." = "處理過濾規則遺漏的高級反廣告攔截案例。";
+"Blocks pop-up ads on web pages." = "封鎖網頁上的彈出式廣告。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隱藏頁內彈出視窗、橫幅和其他不必要的頁面元素。";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "胡過濾器。專門刪除匈牙利語網站上的廣告的過濾器清單。";
 "Hungarian filter" = "匈牙利過濾器";

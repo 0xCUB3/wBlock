@@ -46,6 +46,44 @@ public enum UserScriptManagerNotificationKey {
     public static let isLocal = "isLocal"
 }
 
+struct BuiltInUserScriptDefinition {
+    let name: String
+    let url: String
+    let isEnabledByDefault: Bool
+}
+
+enum BuiltInUserScripts {
+    static let definitions: [BuiltInUserScriptDefinition] = [
+        BuiltInUserScriptDefinition(
+            name: "Return YouTube Dislike",
+            url: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
+            isEnabledByDefault: false
+        ),
+        BuiltInUserScriptDefinition(
+            name: "Bypass Paywalls Clean",
+            url: "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js",
+            isEnabledByDefault: false
+        ),
+        BuiltInUserScriptDefinition(
+            name: "YouTube Classic",
+            url: "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js",
+            isEnabledByDefault: false
+        ),
+        BuiltInUserScriptDefinition(
+            name: "AdGuard Extra",
+            url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
+            isEnabledByDefault: true
+        ),
+        BuiltInUserScriptDefinition(
+            name: "AdGuard Popup Blocker (Beta)",
+            url: "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js",
+            isEnabledByDefault: false
+        )
+    ]
+
+    static let protectedURLs = Set(definitions.map(\.url))
+}
+
 @MainActor
 public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = [] {
@@ -376,28 +414,11 @@ public class UserScriptManager: ObservableObject {
     // MARK: - Singleton
     public static let shared = UserScriptManager()
 
-    private let defaultUserScripts: [(name: String, url: String)] = [
-        (
-            "Return YouTube Dislike",
-            "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js"
-        ),
-        (
-            "Bypass Paywalls Clean",
-            "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js"
-        ),
-        (
-            "YouTube Classic",
-            "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"
-        ),
-        (
-            "AdGuard Extra",
-            "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
-        ),
-    ]
+    private let defaultUserScripts = BuiltInUserScripts.definitions
 
     public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
-        return defaultUserScripts.contains(where: { $0.url == urlString })
+        return BuiltInUserScripts.protectedURLs.contains(urlString)
     }
 
     private init() {
@@ -914,9 +935,8 @@ public class UserScriptManager: ObservableObject {
                     continue
                 }
 
-                let adguardExtraURL = "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
                 var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
-                newUserScript.isEnabled = (defaultScript.url == adguardExtraURL)
+                newUserScript.isEnabled = defaultScript.isEnabledByDefault
                 newUserScript.isLocal = false
                 newUserScript.description = "Default userscript"
                 newUserScript.version = ""
@@ -951,9 +971,7 @@ public class UserScriptManager: ObservableObject {
             let script = userScripts[i]
 
             // Check if this is a default script that needs downloading
-            let isDefaultScript = defaultUserScripts.contains { defaultScript in
-                script.name == defaultScript.name || script.url?.absoluteString == defaultScript.url
-            }
+            let isDefaultScript = script.url.map { BuiltInUserScripts.protectedURLs.contains($0.absoluteString) } ?? false
 
             guard isDefaultScript else { continue }
             guard script.isEnabled else { continue }
@@ -987,9 +1005,8 @@ public class UserScriptManager: ObservableObject {
                 continue
             }
 
-            let adguardExtraURL = "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
             var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
-            newUserScript.isEnabled = (defaultScript.url == adguardExtraURL)
+            newUserScript.isEnabled = defaultScript.isEnabledByDefault
             newUserScript.isLocal = false  // Mark as remote
 
             // Add placeholder metadata so they show up in the list

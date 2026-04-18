@@ -339,13 +339,7 @@ extension ProtobufDataManager {
         
         // Prevent removal of built-in default userscripts.
         if let script = updatedData.userScripts.first(where: { $0.id == id.uuidString }) {
-            let protectedDefaultURLs: Set<String> = [
-                "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
-                "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js",
-                "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js",
-                "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
-            ]
-            if protectedDefaultURLs.contains(script.url) {
+            if BuiltInUserScripts.protectedURLs.contains(script.url) {
                 return
             }
         }
