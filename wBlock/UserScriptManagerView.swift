@@ -104,6 +104,15 @@ struct UserScriptManagerView: View {
         }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    private func copyScriptURL(_ url: URL) {
+        #if os(iOS)
+        UIPasteboard.general.string = url.absoluteString
+        #elseif os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        #endif
+    }
+
     var body: some View {
         userScriptContent
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
@@ -505,6 +514,13 @@ struct UserScriptManagerView: View {
                 }
             }
             #endif
+            if let url = script.url {
+                Button {
+                    copyScriptURL(url)
+                } label: {
+                    Label("Copy URL", systemImage: "doc.on.doc")
+                }
+            }
             if let managedScript = userScriptManager.userScript(withId: script.id),
                 !userScriptManager.isDefaultUserScript(managedScript)
             {
