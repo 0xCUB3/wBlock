@@ -815,7 +815,7 @@ extension SettingsView {
 
     private var syncFooterLine: String {
         if syncManager.lastErrorMessage != nil {
-            return syncManager.lastSyncLine
+            return syncManager.statusLine
         }
 
         switch syncManager.status {
