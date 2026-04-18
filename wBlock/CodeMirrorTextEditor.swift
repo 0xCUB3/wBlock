@@ -168,8 +168,18 @@ private extension CodeMirrorTextEditor {
         #if os(macOS)
         webView.setValue(false, forKey: "drawsBackground")
         #elseif os(iOS)
-        webView.scrollView.contentInsetAdjustmentBehavior = .never
-        webView.scrollView.backgroundColor = .clear
+        let scrollView = webView.scrollView
+        scrollView.contentInsetAdjustmentBehavior = .never
+        scrollView.backgroundColor = .clear
+        scrollView.bounces = false
+        scrollView.bouncesZoom = false
+        scrollView.alwaysBounceVertical = false
+        scrollView.alwaysBounceHorizontal = false
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.minimumZoomScale = 1
+        scrollView.maximumZoomScale = 1
+        scrollView.pinchGestureRecognizer?.isEnabled = false
         #endif
 
         webView.navigationDelegate = coordinator

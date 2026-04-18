@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+>
 <title>CodeMirror</title>
 <style>
 :root {
@@ -47,6 +50,7 @@ body {
   margin: 0;
   overflow: hidden;
   background: var(--cm-background);
+  overscroll-behavior: none;
 }
 
 body {
@@ -63,10 +67,34 @@ button,
 input {
   font: inherit;
 }
+
+.cm-panels .cm-search button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: var(--cm-button-background) !important;
+  background-image: none !important;
+  color: var(--cm-foreground) !important;
+  -webkit-text-fill-color: var(--cm-foreground) !important;
+  border: 1px solid var(--cm-border) !important;
+  box-shadow: none !important;
+}
+
+.cm-panels .cm-search button:hover {
+  background: var(--cm-button-hover) !important;
+}
+
+.cm-panels .cm-search button:disabled {
+  opacity: 0.55 !important;
+}
 </style>
 </head>
 <body>
 <div id="editor"></div>
+<script>
+for (const eventName of ["gesturestart", "gesturechange", "gestureend"]) {
+  document.addEventListener(eventName, event => event.preventDefault(), { passive: false });
+}
+</script>
 <script src="codemirror.bundle.js"></script>
 </body>
 </html>
