@@ -60,8 +60,7 @@ struct MonospacedTextView: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
 
-        // Use the document-text path with TextKit 2 rather than the lighter UI-component factory.
-        let textView = NSTextView(usingTextLayoutManager: true)
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         textView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
         textView.delegate = delegate
         configure(textView: textView, isEditable: isEditable)
@@ -88,6 +87,7 @@ struct MonospacedTextView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.minSize = .zero
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.layoutManager?.allowsNonContiguousLayout = true
 
         if let textContainer = textView.textContainer {
             textContainer.lineFragmentPadding = 0
@@ -157,7 +157,7 @@ struct BufferedMonospacedTextEditor: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
 
-        let textView = NSTextView(usingTextLayoutManager: true)
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         textView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
         textView.delegate = delegate
         configure(textView: textView)
@@ -184,6 +184,7 @@ struct BufferedMonospacedTextEditor: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.minSize = .zero
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.layoutManager?.allowsNonContiguousLayout = true
 
         if let textContainer = textView.textContainer {
             textContainer.lineFragmentPadding = 0
@@ -225,7 +226,7 @@ struct MonospacedTextView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView(usingTextLayoutManager: true)
+        let textView = UITextView(frame: .zero, textContainer: nil)
         textView.delegate = context.coordinator
         configure(textView: textView)
         textView.text = text
@@ -254,8 +255,18 @@ struct MonospacedTextView: UIViewRepresentable {
         textView.autocorrectionType = .no
         textView.smartQuotesType = .no
         textView.smartDashesType = .no
+        textView.isScrollEnabled = true
+        textView.alwaysBounceVertical = true
+        textView.alwaysBounceHorizontal = true
+        textView.showsVerticalScrollIndicator = true
+        textView.showsHorizontalScrollIndicator = true
+        textView.layoutManager.allowsNonContiguousLayout = true
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         textView.textContainer.lineFragmentPadding = 0
+        textView.textContainer.widthTracksTextView = false
+        textView.textContainer.heightTracksTextView = false
+        textView.textContainer.size = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer.lineBreakMode = .byClipping
     }
 
     class Coordinator: NSObject, UITextViewDelegate {
@@ -287,7 +298,7 @@ struct BufferedMonospacedTextEditor: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView(usingTextLayoutManager: true)
+        let textView = UITextView(frame: .zero, textContainer: nil)
         textView.delegate = context.coordinator
         configure(textView: textView)
         textView.text = state.initialText
@@ -317,8 +328,18 @@ struct BufferedMonospacedTextEditor: UIViewRepresentable {
         textView.autocorrectionType = .no
         textView.smartQuotesType = .no
         textView.smartDashesType = .no
+        textView.isScrollEnabled = true
+        textView.alwaysBounceVertical = true
+        textView.alwaysBounceHorizontal = true
+        textView.showsVerticalScrollIndicator = true
+        textView.showsHorizontalScrollIndicator = true
+        textView.layoutManager.allowsNonContiguousLayout = true
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         textView.textContainer.lineFragmentPadding = 0
+        textView.textContainer.widthTracksTextView = false
+        textView.textContainer.heightTracksTextView = false
+        textView.textContainer.size = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer.lineBreakMode = .byClipping
     }
 
     class Coordinator: NSObject, UITextViewDelegate {
