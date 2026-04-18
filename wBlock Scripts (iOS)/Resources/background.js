@@ -20725,17 +20725,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     });
     if (supportStateByTab.get(tab.id) !== fingerprint) {
       supportStateByTab.set(tab.id, fingerprint);
-      await logSupportDiagnostic({
-        event: "support_decision",
-        source: "background",
-        outcome: support.supported ? "supported" : "unsupported",
-        reason: support.reason,
-        tabId: tab.id,
-        protocol: support.protocol,
-        host: support.host,
-        url: support.url,
-        error: support.error
-      });
+      if (!support.supported) {
+        await logSupportDiagnostic({
+          event: "support_decision",
+          source: "background",
+          outcome: "unsupported",
+          reason: support.reason,
+          tabId: tab.id,
+          protocol: support.protocol,
+          host: support.host,
+          url: support.url,
+          error: support.error
+        });
+      }
     }
   };
   const refreshActionStateForAllTabs = async () => {
