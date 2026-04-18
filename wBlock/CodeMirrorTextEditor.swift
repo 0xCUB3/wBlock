@@ -249,7 +249,7 @@ extension CodeMirrorTextEditor {
             }
 
             if lastAppliedLineWrapping != lineWrapping {
-                runScript("window.wblockEditor.setLineWrapping(\(lineWrapping ? "true" : "false"))")
+                runScript(Self.lineWrappingScript(enabled: lineWrapping))
                 lastAppliedLineWrapping = lineWrapping
             }
         }
@@ -318,7 +318,10 @@ extension CodeMirrorTextEditor {
                 phrases: CodeMirrorResources.localizedPhrases
             )
             guard let encodedConfig = Self.encodedJSON(config) else { return nil }
-            return "window.wblockEditor.boot(\(encodedConfig))"
+            return """
+            window.wblockEditor.boot(\(encodedConfig));
+            \(Self.lineWrappingScript(enabled: pendingLineWrapping))
+            """
         }
 
         private func runScript(_ script: String) {
@@ -333,6 +336,13 @@ extension CodeMirrorTextEditor {
 
         private static func encodedJSONString(_ value: String) -> String? {
             encodedJSON(value)
+        }
+
+        private static func lineWrappingScript(enabled: Bool) -> String {
+            """
+            window.wblockEditor.setLineWrapping(\(enabled ? "true" : "false"));
+            document.body.classList.toggle("cm-wrap-lines", \(enabled ? "true" : "false"));
+            """
         }
 
         private static func analysis(from payload: [String: Any]) -> CodeMirrorDocumentAnalysis? {
