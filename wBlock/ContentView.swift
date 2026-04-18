@@ -1052,7 +1052,7 @@ struct AddFilterListView: View {
 	                        .font(.caption)
 	                        .foregroundStyle(.secondary)
 
-                    MonospacedTextView(text: $pastedRules, isEditable: true)
+                    SyntaxHighlightingTextView(text: $pastedRules)
                         .frame(minHeight: 260)
                         .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(
@@ -1171,7 +1171,7 @@ struct AddFilterListView: View {
 	            }
 
             Section("Rules") {
-                MonospacedTextView(text: $pastedRules, isEditable: true)
+                SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
             }
         }

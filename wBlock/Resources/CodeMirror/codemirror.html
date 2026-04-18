@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CodeMirror</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --cm-background: #f4f5f7;
+  --cm-foreground: #1f2328;
+  --cm-caret: #0969da;
+  --cm-selection: rgba(9, 105, 218, 0.18);
+  --cm-gutter-background: #eceef2;
+  --cm-gutter-foreground: #667085;
+  --cm-active-line: rgba(9, 105, 218, 0.08);
+  --cm-panel-background: #ffffff;
+  --cm-input-background: #ffffff;
+  --cm-button-background: #f4f5f7;
+  --cm-button-hover: #e7eaee;
+  --cm-border: rgba(15, 23, 42, 0.12);
+  --cm-bracket-match: rgba(251, 191, 36, 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cm-background: #1c1c1e;
+    --cm-foreground: #f5f5f7;
+    --cm-caret: #4da3ff;
+    --cm-selection: rgba(77, 163, 255, 0.26);
+    --cm-gutter-background: #222428;
+    --cm-gutter-foreground: #8f97a4;
+    --cm-active-line: rgba(77, 163, 255, 0.12);
+    --cm-panel-background: #24262b;
+    --cm-input-background: #1c1d21;
+    --cm-button-background: #2f333a;
+    --cm-button-hover: #3b4048;
+    --cm-border: rgba(255, 255, 255, 0.14);
+    --cm-bracket-match: rgba(250, 204, 21, 0.26);
+  }
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--cm-background);
+}
+
+body {
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+#editor {
+  width: 100%;
+  height: 100%;
+}
+
+button,
+input {
+  font: inherit;
+}
+</style>
+</head>
+<body>
+<div id="editor"></div>
+<script src="codemirror.bundle.js"></script>
+</body>
+</html>

@@ -721,7 +721,6 @@ struct ScriptContentMainView: View {
     let contentLength: Int
     let formatFileSize: (Int) -> String
     let onShowSource: () -> Void
-    let onEditSource: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -746,16 +745,6 @@ struct ScriptContentMainView: View {
                 Spacer()
                 HStack(spacing: 12) {
                     if contentLength > 0 {
-                        Button {
-                            onEditSource()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "pencil")
-                                Text("Edit")
-                            }
-                        }
-                        .buttonStyle(.borderless)
-
                         Button {
                             onShowSource()
                         } label: {
@@ -798,21 +787,13 @@ struct UserScriptContentView: View {
     @State private var isLoadingContent = false
     @State private var sidebarWidth: CGFloat = 280
     @State private var isPatternsExpanded = false
-    @State private var sourcePresentation: UserScriptSourcePresentation?
+    @State private var isShowingSourceSheet = false
 
     private let previewLength = 10000
     #if os(macOS)
     private let minSidebarWidth: CGFloat = 250
     private let maxSidebarWidth: CGFloat = 500
     #endif
-
-    private enum UserScriptSourcePresentation: String, Identifiable {
-        case viewer
-        case editor
-
-        var id: String { rawValue }
-        var startsInEditMode: Bool { self == .editor }
-    }
 
     var body: some View {
         Group {
@@ -839,21 +820,12 @@ struct UserScriptContentView: View {
                                             .fontWeight(.medium)
                                         Spacer()
                                         if !loadedContent.isEmpty {
-                                            HStack(spacing: 12) {
-                                                Button {
-                                                    sourcePresentation = .editor
-                                                } label: {
-                                                    Label("Edit", systemImage: "pencil")
-                                                }
-                                                .buttonStyle(.plain)
-
-                                                Button {
-                                                    sourcePresentation = .viewer
-                                                } label: {
-                                                    Label("Show All", systemImage: "eye")
-                                                }
-                                                .buttonStyle(.plain)
+                                            Button {
+                                                isShowingSourceSheet = true
+                                            } label: {
+                                                Label("Show All", systemImage: "eye")
                                             }
+                                            .buttonStyle(.plain)
                                             .font(.body)
                                             .foregroundStyle(Color.accentColor)
                                         }
@@ -932,8 +904,7 @@ struct UserScriptContentView: View {
                         previewContent: previewContent,
                         contentLength: loadedContent.count,
                         formatFileSize: formatFileSize,
-                        onShowSource: { sourcePresentation = .viewer },
-                        onEditSource: { sourcePresentation = .editor }
+                        onShowSource: { isShowingSourceSheet = true }
                     )
                     .frame(minWidth: 400)
                 }
@@ -959,12 +930,11 @@ struct UserScriptContentView: View {
         .task(id: scriptId) {
             await loadScript()
         }
-        .sheet(item: $sourcePresentation) { presentation in
+        .sheet(isPresented: $isShowingSourceSheet) {
             if let script {
                 UserScriptSourceSheet(
                     script: script,
                     initialContent: loadedContent,
-                    startsInEditMode: presentation.startsInEditMode,
                     onSave: { newContent in
                         await userScriptManager.saveEditedContent(for: script.id, newContent: newContent)
                         await MainActor.run {
@@ -1009,81 +979,44 @@ struct UserScriptContentView: View {
 private struct UserScriptSourceSheet: View {
     let script: UserScript
     let initialContent: String
-    let startsInEditMode: Bool
     let onSave: (String) async -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var editorState: MonospacedTextEditorState
+    @StateObject private var editorController: CodeMirrorEditorController
     @State private var isEditing: Bool
+    @State private var isLineWrappingEnabled = false
     @State private var isSaving = false
-    @State private var hasChanges = false
 
     init(
         script: UserScript,
         initialContent: String,
-        startsInEditMode: Bool,
         onSave: @escaping (String) async -> Void
     ) {
         self.script = script
         self.initialContent = initialContent
-        self.startsInEditMode = startsInEditMode
         self.onSave = onSave
-        _editorState = State(initialValue: MonospacedTextEditorState(text: initialContent))
-        _isEditing = State(initialValue: startsInEditMode)
+        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent))
+        _isEditing = State(initialValue: false)
     }
 
     var body: some View {
         #if os(iOS)
         NavigationStack {
-            Group {
-                if isEditing {
-                    BufferedMonospacedTextEditor(
-                        state: editorState,
-                        onDirtyStateChange: { hasChanges = $0 }
-                    )
-                } else {
-                    MonospacedTextView(
-                        text: Binding(
-                            get: { initialContent },
-                            set: { _ in }
-                        )
-                    )
-                }
-            }
+            sourceSheetBody
                 .background(Color(.systemGray6))
                 .navigationTitle("Script Content")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        if isEditing {
-                            Button("Cancel") { dismiss() }
-                        }
-                    }
-                    ToolbarItemGroup(placement: .navigationBarTrailing) {
-                        if isEditing {
-                            Button {
-                                isSaving = true
-                                Task {
-                                    await onSave(editorState.currentText)
-                                    await MainActor.run {
-                                        isSaving = false
-                                        dismiss()
-                                    }
-                                }
-                            } label: {
-                                if isSaving { ProgressView().scaleEffect(0.8) }
-                                else { Text("Save").bold() }
-                            }
-                            .disabled(isSaving || !hasChanges)
-                        } else {
-                            Button("Done") { dismiss() }
-                        }
-                    }
-                }
         }
         #else
+        sourceSheetBody
+            .frame(width: 1000, height: 700)
+        #endif
+    }
+
+    private var sourceSheetBody: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 12) {
+                #if os(macOS)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(script.localizedDisplayName)
                         .font(.headline)
@@ -1091,28 +1024,61 @@ private struct UserScriptSourceSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                #endif
+
+                Button {
+                    editorController.openSearch()
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Search")
+
+                Button {
+                    isLineWrappingEnabled.toggle()
+                } label: {
+                    Image(systemName: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
+                        .frame(width: 28, height: 28)
+                        .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.primary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Wrap Lines")
+
                 Spacer()
+
                 if isEditing {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        handleCancel()
+                    }
+
                     Button {
-                        isSaving = true
                         Task {
-                            await onSave(editorState.currentText)
-                            await MainActor.run {
-                                isSaving = false
-                                dismiss()
-                            }
+                            await saveChanges()
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            if isSaving { ProgressView().scaleEffect(0.8).frame(width: 12, height: 12) }
+                            if isSaving {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .frame(width: 12, height: 12)
+                            }
                             Text("Save")
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(isSaving || !hasChanges)
+                    .disabled(isSaving || !editorController.isDirty)
                 } else {
-                    Button("Done") { dismiss() }
+                    Button("Edit") {
+                        isEditing = true
+                        DispatchQueue.main.async {
+                            editorController.focus()
+                        }
+                    }
+
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -1120,22 +1086,26 @@ private struct UserScriptSourceSheet: View {
 
             Divider()
 
-            if isEditing {
-                BufferedMonospacedTextEditor(
-                    state: editorState,
-                    onDirtyStateChange: { hasChanges = $0 }
-                )
-            } else {
-                MonospacedTextView(
-                    text: Binding(
-                        get: { initialContent },
-                        set: { _ in }
-                    )
-                )
-            }
+            CodeMirrorTextEditor(
+                controller: editorController,
+                isEditable: isEditing,
+                isLineWrappingEnabled: isLineWrappingEnabled
+            )
         }
-        .frame(width: 1000, height: 700)
-        #endif
+    }
+
+    @MainActor
+    private func saveChanges() async {
+        isSaving = true
+        let newContent = await editorController.currentText()
+        await onSave(newContent)
+        isSaving = false
+        dismiss()
+    }
+
+    private func handleCancel() {
+        editorController.discardChanges()
+        isEditing = false
     }
 }
 
