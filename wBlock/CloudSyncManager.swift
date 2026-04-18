@@ -1007,9 +1007,8 @@ final class CloudSyncManager: ObservableObject {
         let remoteDeletedRemoteURLs = Set(remotePayload.userScripts.deletedRemoteURLs ?? [])
 
         let deletedRemoteURLsToClear =
-            CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringReconciliation(
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringUploadReconciliation(
                 existingDeletedURLs: deletedRemoteUserScriptURLSet(),
-                remoteRemoteScriptURLs: remoteRemoteScriptURLs,
                 localRemoteScriptURLs: localRemoteScriptURLs
             )
         if !deletedRemoteURLsToClear.isEmpty {

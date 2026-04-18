@@ -5,6 +5,14 @@ enum CloudSyncRemoteUserScriptReconciler {
         url.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    static func deletedURLsToClearDuringUploadReconciliation(
+        existingDeletedURLs: Set<String>,
+        localRemoteScriptURLs: Set<String>
+    ) -> Set<String> {
+        normalizedURLs(existingDeletedURLs)
+            .intersection(normalizedURLs(localRemoteScriptURLs))
+    }
+
     static func deletedURLsToMergeDuringUploadReconciliation(
         remoteDeletedURLs: Set<String>,
         localRemoteScriptURLs: Set<String>

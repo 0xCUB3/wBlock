@@ -41,6 +41,37 @@ struct CloudSyncRemoteUserScriptTests {
             "a live remote userscript should win over a stale tombstone during remote apply"
         )
 
+        let deletedToKeepDuringUpload =
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringUploadReconciliation(
+                existingDeletedURLs: ["https://example.com/foo.user.js"],
+                localRemoteScriptURLs: []
+            )
+        expect(
+            deletedToKeepDuringUpload.isEmpty,
+            "a local delete marker must survive upload reconciliation while only the stale remote payload still has the userscript"
+        )
+
+        let deletedToClearFromRemoteApply =
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringReconciliation(
+                existingDeletedURLs: ["https://example.com/foo.user.js"],
+                remoteRemoteScriptURLs: ["https://example.com/foo.user.js"],
+                localRemoteScriptURLs: []
+            )
+        expect(
+            deletedToClearFromRemoteApply == ["https://example.com/foo.user.js"],
+            "a live remote userscript should clear a stale local delete marker during remote apply"
+        )
+
+        let deletedToClearAfterLocalReAdd =
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringUploadReconciliation(
+                existingDeletedURLs: ["https://example.com/foo.user.js"],
+                localRemoteScriptURLs: ["https://example.com/foo.user.js"]
+            )
+        expect(
+            deletedToClearAfterLocalReAdd == ["https://example.com/foo.user.js"],
+            "re-adding a remote userscript locally should clear the local delete marker before upload"
+        )
+
         let deletedToClear =
             CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringReconciliation(
                 existingDeletedURLs: ["https://example.com/foo.user.js"],
