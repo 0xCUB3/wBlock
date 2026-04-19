@@ -42,7 +42,6 @@ body:
     id: troubleshooting-checklist
     attributes:
       label: Troubleshooting checklist
-      description: "To check an item, remove the space inside the brackets and place an 'x': [x]. Otherwise, leave them as [ ]."
       options:
         - label: I have enabled all 5 wBlock Content Blocker extensions in Safari _(including Profiles, if applicable)_.
         - label: I have enabled `wBlock Scripts` and set it to `Allow` on all websites (`Always Allow on Every Website`) in Safari settings.
