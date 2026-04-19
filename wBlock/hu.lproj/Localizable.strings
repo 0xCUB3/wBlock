@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "Engedélyezd az extra javításokat, és fejezd be a beállítást.";
 "No userscripts selected" = "Nincs felhasználói szkript kiválasztva";
 "%d userscripts selected" = "%d felhasználói szkript kiválasztva";
-"Choose your blocking baseline. You can fine-tune lists later." = "Válaszd ki a blokkolási alapbeállítást. Később finomhangolhatod a listákat.";
+"Choose filters for websites in other languages. You can fine-tune them later." = "Válassz szűrőket más nyelvű webhelyekhez. Később finomhangolhatod őket.";
 "Best default" = "Legjobb alapértelmezett";
 "Community-maintained options for additional regional coverage." = "Közösség által karbantartott lehetőségek további regionális lefedettséghez.";
 "Choose optional userscripts. These are disabled by default." = "Válassz opcionális felhasználói szkripteket. Ezek alapértelmezetten le vannak tiltva.";

@@ -66,6 +66,8 @@ struct OnboardingView: View {
 #endif
     @State private var hasEnabledContentBlockers = false
     @State private var hasEnabledAdvanced = false
+    @State private var detectedScriptsExtensionEnabled: Bool?
+    @State private var isRefreshingScriptsExtensionState = false
 
     @ObservedObject var filterManager: AppFilterManager
     
@@ -109,6 +111,7 @@ struct OnboardingView: View {
     }
     private let sharedDefaults: UserDefaults
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     struct OnboardingUserScriptItem: Identifiable {
         let id: String
@@ -204,6 +207,7 @@ struct OnboardingView: View {
         )
     #endif
         .onAppear {
+            syncStoredCriticalSetupState()
             updateRegionalRecommendations(for: selectedLanguages)
             probeForExistingICloudSetupIfNeeded()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
@@ -213,6 +217,13 @@ struct OnboardingView: View {
             await userScriptManager.waitUntilReady()
             seedSelectedUserscriptsIfNeeded()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
+            await refreshScriptsExtensionState(retryingWhenDisabled: true)
+        }
+        .onChange(of: scenePhase) { _, newValue in
+            guard newValue == .active else { return }
+            Task {
+                await refreshScriptsExtensionState(retryingWhenDisabled: true)
+            }
         }
         .onChange(of: selectedLanguages) { _, newValue in
             sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
@@ -456,6 +467,10 @@ struct OnboardingView: View {
 
     private var regionStep: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Text("Choose filters for websites in other languages. You can fine-tune them later.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ForEach(availableFilterLanguages) { lang in
                     languageToggle(for: lang)
@@ -542,6 +557,10 @@ struct OnboardingView: View {
 
     private var userscriptStep: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Text("Choose optional userscripts. These are disabled by default.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
             if defaultUserScripts.isEmpty {
                 HStack(spacing: 8) {
                     ProgressView()
@@ -671,23 +690,29 @@ struct OnboardingView: View {
                             Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                            Text("Required for YouTube ad blocking and much more")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                             #else
                             Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                            Text("Required for YouTube ad blocking and much more")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                             #endif
+
+                            Text(
+                                detectedScriptsExtensionEnabled == false && !hasEnabledAdvanced
+                                    ? "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads."
+                                    : "Required for YouTube ad blocking and much more"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(
+                                detectedScriptsExtensionEnabled == false && !hasEnabledAdvanced
+                                    ? .red : .secondary
+                            )
                         }
 
                         Spacer()
 
-                        Toggle("", isOn: $hasEnabledAdvanced)
+                        Toggle("", isOn: advancedSetupBinding)
                             .labelsHidden()
+                            .disabled(isRefreshingScriptsExtensionState)
                     }
                 }
             }
@@ -702,37 +727,65 @@ struct OnboardingView: View {
     }
 
     private func openSafariExtensionsSettings() {
-        #if os(macOS)
-        let runningApps = NSWorkspace.shared.runningApplications
-        if let safariApp = runningApps.first(where: { $0.bundleIdentifier == "com.apple.Safari" }) {
-            safariApp.activate()
-            let script = """
-            tell application "Safari"
-                activate
-            end tell
-            tell application "System Events"
-                tell process "Safari"
-                    click menu item "Settings…" of menu "Safari" of menu bar 1
-                end tell
-            end tell
-            """
-            if let appleScript = NSAppleScript(source: script) {
-                var error: NSDictionary?
-                appleScript.executeAndReturnError(&error)
-                if error != nil {
-                    safariApp.activate()
+        SafariExtensionSetupSupport.openScriptsExtensionSettings()
+    }
+
+    private var advancedSetupBinding: Binding<Bool> {
+        Binding(
+            get: { hasEnabledAdvanced },
+            set: { newValue in
+                guard !isRefreshingScriptsExtensionState else { return }
+                guard newValue else {
+                    hasEnabledAdvanced = false
+                    return
+                }
+                Task {
+                    await confirmAdvancedSetupEnabled()
                 }
             }
-        } else {
-            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Safari.app"))
+        )
+    }
+
+    private func syncStoredCriticalSetupState() {
+        hasEnabledContentBlockers = dataManager.hasEnabledContentBlockers
+        hasEnabledAdvanced =
+            dataManager.hasEnabledPlatformExtension && dataManager.hasSetAllWebsitesPermission
+    }
+
+    @MainActor
+    private func confirmAdvancedSetupEnabled() async {
+        await refreshScriptsExtensionState(retryingWhenDisabled: true)
+        if detectedScriptsExtensionEnabled != false {
+            hasEnabledAdvanced = true
         }
-        #else
-        if let url = URL(string: "App-prefs:SAFARI&path=EXTENSIONS") {
-            UIApplication.shared.open(url)
-        } else if let url = URL(string: "App-prefs:") {
-            UIApplication.shared.open(url)
+    }
+
+    @MainActor
+    private func refreshScriptsExtensionState(retryingWhenDisabled: Bool = false) async {
+        isRefreshingScriptsExtensionState = true
+        defer { isRefreshingScriptsExtensionState = false }
+
+        let maxAttempts = retryingWhenDisabled ? 4 : 1
+        var state: Bool?
+
+        for attempt in 0..<maxAttempts {
+            state = await SafariExtensionSetupSupport.scriptsExtensionEnabledState()
+            if state != false {
+                break
+            }
+            guard attempt < maxAttempts - 1 else { break }
+            try? await Task.sleep(for: .milliseconds(350))
         }
-        #endif
+
+        detectedScriptsExtensionEnabled = state
+        switch state {
+        case true:
+            hasEnabledAdvanced = true
+        case false:
+            hasEnabledAdvanced = false
+        case nil:
+            break
+        }
     }
 
     private func userscriptCard(for script: OnboardingUserScriptItem) -> some View {

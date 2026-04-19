@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "Включите дополнительные исправления и завершите настройку.";
 "No userscripts selected" = "Пользовательские скрипты не выбраны";
 "%d userscripts selected" = "Выбрано пользовательских скриптов: %d";
-"Choose your blocking baseline. You can fine-tune lists later." = "Выберите базовый профиль блокировки. Позже списки можно тонко настроить.";
+"Choose filters for websites in other languages. You can fine-tune them later." = "Выберите фильтры для сайтов на других языках. Позже их можно тонко настроить.";
 "Best default" = "Лучший вариант по умолчанию";
 "Community-maintained options for additional regional coverage." = "Поддерживаемые сообществом варианты для дополнительного регионального покрытия.";
 "Choose optional userscripts. These are disabled by default." = "Выберите дополнительные пользовательские скрипты. По умолчанию они отключены.";

@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "Enable extra fixes and finish setup.";
 "No userscripts selected" = "No userscripts selected";
 "%d userscripts selected" = "%d userscripts selected";
-"Choose your blocking baseline. You can fine-tune lists later." = "Choose your blocking baseline. You can fine-tune lists later.";
+"Choose filters for websites in other languages. You can fine-tune them later." = "Choose filters for websites in other languages. You can fine-tune them later.";
 "Best default" = "Best default";
 "Community-maintained options for additional regional coverage." = "Community-maintained options for additional regional coverage.";
 "Choose optional userscripts. These are disabled by default." = "Choose optional userscripts. These are disabled by default.";

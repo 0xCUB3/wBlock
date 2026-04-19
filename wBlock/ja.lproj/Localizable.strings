@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "追加の修正を有効にして設定を完了します。";
 "No userscripts selected" = "ユーザースクリプトが選択されていません";
 "%d userscripts selected" = "%d 個のユーザースクリプトを選択中";
-"Choose your blocking baseline. You can fine-tune lists later." = "ブロックの基本設定を選択してください。リストは後で細かく調整できます。";
+"Choose filters for websites in other languages. You can fine-tune them later." = "他の言語のウェブサイト向けのフィルターを選択してください。後で細かく調整できます。";
 "Best default" = "おすすめの既定値";
 "Community-maintained options for additional regional coverage." = "地域カバーを強化するコミュニティ管理オプション。";
 "Choose optional userscripts. These are disabled by default." = "任意のユーザースクリプトを選択してください。初期状態では無効です。";

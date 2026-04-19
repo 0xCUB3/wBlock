@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "Ative correções extras e conclua a configuração.";
 "No userscripts selected" = "Nenhum script de usuário selecionado";
 "%d userscripts selected" = "%d scripts de usuário selecionados";
-"Choose your blocking baseline. You can fine-tune lists later." = "Escolha sua base de bloqueio. Você pode ajustar as listas depois.";
+"Choose filters for websites in other languages. You can fine-tune them later." = "Escolha filtros para sites em outros idiomas. Você pode ajustá-los depois.";
 "Best default" = "Melhor padrão";
 "Community-maintained options for additional regional coverage." = "Opções mantidas pela comunidade para cobertura regional adicional.";
 "Choose optional userscripts. These are disabled by default." = "Escolha scripts de usuário opcionais. Eles ficam desativados por padrão.";

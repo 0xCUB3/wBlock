@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "Ενεργοποίηση επιπλέον διορθώσεων και ολοκλήρωση ρύθμισης.";
 "No userscripts selected" = "Δεν έχουν επιλεγεί κώδικες";
 "%d userscripts selected" = "%d επιλεγμένοι κώδικες";
-"Choose your blocking baseline. You can fine-tune lists later." = "Επιλέξτε τη γραμμή βάσης αποκλεισμού. Μπορείτε να βελτιώσετε τις λίστες αργότερα.";
+"Choose filters for websites in other languages. You can fine-tune them later." = "Επιλέξτε φίλτρα για ιστότοπους σε άλλες γλώσσες. Μπορείτε να τα ρυθμίσετε αργότερα.";
 "Best default" = "Καλύτερη προεπιλογή";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά σενάρια χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";

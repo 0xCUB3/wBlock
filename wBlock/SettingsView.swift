@@ -215,6 +215,22 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
+    private var actionsFooterButton: some View {
+        HStack {
+            Button {
+                SafariExtensionSetupSupport.openScriptsExtensionSettings()
+            } label: {
+                Label("Open Safari Settings", systemImage: "gear")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+
+            Spacer()
+        }
+        .padding(.top, 4)
+    }
+
+    @ViewBuilder
     private var backupButtons: some View {
         #if os(macOS)
         LabeledContent {
@@ -437,9 +453,13 @@ struct SettingsView: View {
         #if os(iOS)
         NavigationStack {
             List {
-                Section("Actions") {
+                Section {
                     actionsSection
                     backupButtons
+                } header: {
+                    Text("Actions")
+                } footer: {
+                    actionsFooterButton
                 }
 
                 autoUpdateSection
@@ -453,9 +473,13 @@ struct SettingsView: View {
         #else
         NavigationStack {
             Form {
-                Section("Actions") {
+                Section {
                     actionsSection
                     backupButtons
+                } header: {
+                    Text("Actions")
+                } footer: {
+                    actionsFooterButton
                 }
 
                 autoUpdateSection

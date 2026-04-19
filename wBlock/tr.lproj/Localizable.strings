@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "Ek düzeltmeleri etkinleştir ve kurulumu bitir.";
 "No userscripts selected" = "Userscript seçilmedi";
 "%d userscripts selected" = "%d userscript seçildi";
-"Choose your blocking baseline. You can fine-tune lists later." = "Engelleme temelini seç. Listeleri daha sonra ince ayarlayabilirsin.";
+"Choose filters for websites in other languages. You can fine-tune them later." = "Diğer dillerdeki web siteleri için filtreler seç. Daha sonra ince ayar yapabilirsin.";
 "Best default" = "En iyi varsayılan";
 "Community-maintained options for additional regional coverage." = "Ek bölgesel kapsama için topluluk tarafından yönetilen seçenekler.";
 "Choose optional userscripts. These are disabled by default." = "İsteğe bağlı userscript'leri seç. Bunlar varsayılan olarak kapalıdır.";

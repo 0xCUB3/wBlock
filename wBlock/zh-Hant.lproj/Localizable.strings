@@ -294,7 +294,7 @@
 "Enable extra fixes and finish setup." = "啟用額外修正並完成設定。";
 "No userscripts selected" = "未選取使用者腳本";
 "%d userscripts selected" = "已選取 %d 個使用者腳本";
-"Choose your blocking baseline. You can fine-tune lists later." = "選擇你的基礎封鎖方案。稍後可再微調清單。";
+"Choose filters for websites in other languages. You can fine-tune them later." = "選擇其他語言網站的過濾器。稍後可再微調。";
 "Best default" = "最佳預設";
 "Community-maintained options for additional regional coverage." = "由社群維護的額外區域涵蓋選項。";
 "Choose optional userscripts. These are disabled by default." = "選擇可選的使用者腳本。它們預設為停用。";
