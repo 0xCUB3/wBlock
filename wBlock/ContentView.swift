@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
+    @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @Environment(\.scenePhase) var scenePhase
 
     private var hasCompletedOnboarding: Bool {
@@ -133,6 +134,16 @@ struct ContentView: View {
                 EditUserListView(filterManager: filterManager, filter: filter)
             } else {
                 EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+            }
+        }
+        .onChange(of: dataManager.isForeignFiltersExpanded) { _, newValue in
+            guard isForeignFiltersExpanded != newValue else { return }
+            isForeignFiltersExpanded = newValue
+        }
+        .onChange(of: isForeignFiltersExpanded) { _, newValue in
+            guard dataManager.isForeignFiltersExpanded != newValue else { return }
+            Task {
+                await dataManager.setIsForeignFiltersExpanded(newValue)
             }
         }
     }
@@ -261,32 +272,13 @@ struct ContentView: View {
             ForEach(categorizedFilters, id: \.category) { item in
                 if item.category == .foreign {
                     Section {
-                        if dataManager.isForeignFiltersExpanded {
+                        DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
                             ForEach(item.filters) { filter in
                                 filterRowView(for: filter)
                             }
-                        }
-                    } header: {
-                        Button {
-                            Task {
-                                await dataManager.setIsForeignFiltersExpanded(
-                                    !dataManager.isForeignFiltersExpanded
-                                )
-                            }
                         } label: {
-                            HStack {
-                                Text(item.category.localizedName)
-                                Spacer()
-                                Image(
-                                    systemName: dataManager.isForeignFiltersExpanded
-                                        ? "chevron.down"
-                                        : "chevron.right"
-                                )
-                                .font(.caption)
-                            }
+                            Text(item.category.localizedName)
                         }
-                        .buttonStyle(.plain)
-                        .textCase(nil)
                     }
                 } else {
                     Section(item.category.localizedName) {
@@ -433,29 +425,7 @@ struct ContentView: View {
 
     private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                Task {
-                    await dataManager.setIsForeignFiltersExpanded(
-                        !dataManager.isForeignFiltersExpanded)
-                }
-            } label: {
-                HStack {
-                    Text(FilterListCategory.foreign.localizedName)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Image(
-                        systemName: dataManager.isForeignFiltersExpanded
-                            ? "chevron.down" : "chevron.right"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 4)
-            }
-            .buttonStyle(.plain)
-
-            if dataManager.isForeignFiltersExpanded {
+            DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
                 VStack(spacing: 0) {
                     ForEach(filters) { filter in
                         filterRowView(for: filter)
@@ -466,7 +436,12 @@ struct ContentView: View {
                     }
                 }
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            } label: {
+                Text(FilterListCategory.foreign.localizedName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
             }
+            .padding(.horizontal, 4)
         }
     }
     #endif

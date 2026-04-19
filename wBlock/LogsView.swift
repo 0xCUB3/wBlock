@@ -11,6 +11,17 @@ import AppKit
 #endif
 
 struct LogsView: View {
+    private static let availableCategories: [LogCategory] = [
+        .system,
+        .filterUpdate,
+        .filterApply,
+        .userScript,
+        .network,
+        .whitelist,
+        .autoUpdate,
+        .startup,
+    ]
+
     @State private var entries: [LogEntry] = []
     @State private var selectedLevel: LogLevel? = nil
     @State private var selectedCategory: LogCategory? = nil
@@ -159,93 +170,77 @@ struct LogsView: View {
     }
 
     private var filterToolbar: some View {
+        #if os(macOS)
+        HStack(spacing: 12) {
+            levelFilterPicker
+            categoryFilterPicker
+
+            statsLabel
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        #else
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                // Level filter
-                Menu {
-                    Button("All Levels") {
-                        selectedLevel = nil
-                    }
-                    Divider()
-                    ForEach(LogLevel.allCases, id: \.self) { level in
-                        Button {
-                            selectedLevel = level
-                        } label: {
-                            HStack {
-                                Text(level.emoji)
-                                Text(level.localizedName)
-                                if selectedLevel == level {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        if let level = selectedLevel {
-                            Text(level.emoji)
-                            Text(level.localizedName)
-                        } else {
-                            Text("All Levels")
-                        }
-                        Image(systemName: "chevron.down")
-                            .font(.caption2)
-                    }
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(.regularMaterial, in: Capsule())
-                }
-
-                // Category filter
-                Menu {
-                    Button("All Categories") {
-                        selectedCategory = nil
-                    }
-                    Divider()
-                    ForEach([LogCategory.system, .filterUpdate, .filterApply, .userScript, .network, .whitelist, .autoUpdate, .startup], id: \.self) { category in
-                        Button {
-                            selectedCategory = category
-                        } label: {
-                            HStack {
-                                Text(category.localizedName)
-                                if selectedCategory == category {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        if let category = selectedCategory {
-                            Text(category.localizedName)
-                        } else {
-                            Text("All Categories")
-                        }
-                        Image(systemName: "chevron.down")
-                            .font(.caption2)
-                    }
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(.regularMaterial, in: Capsule())
-                }
+                levelFilterPicker
+                categoryFilterPicker
 
                 // Stats
-                Text(
-                    LocalizedStrings.format(
-                        "%d entries",
-                        comment: "Log entry count label",
-                        filteredEntries.count
-                    )
-                )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                statsLabel
                     .padding(.leading, 8)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
+        #endif
+    }
+
+    private var levelFilterPicker: some View {
+        Picker("All Levels", selection: $selectedLevel) {
+            Text("All Levels").tag(nil as LogLevel?)
+            ForEach(LogLevel.allCases, id: \.self) { level in
+                Text(level.localizedName)
+                    .tag(level as LogLevel?)
+            }
+        }
+        .labelsHidden()
+        .accessibilityLabel("All Levels")
+        #if os(macOS)
+        .controlSize(.small)
+        #else
+        .pickerStyle(.menu)
+        #endif
+    }
+
+    private var categoryFilterPicker: some View {
+        Picker("All Categories", selection: $selectedCategory) {
+            Text("All Categories").tag(nil as LogCategory?)
+            ForEach(Self.availableCategories, id: \.self) { category in
+                Text(category.localizedName)
+                    .tag(category as LogCategory?)
+            }
+        }
+        .labelsHidden()
+        .accessibilityLabel("All Categories")
+        #if os(macOS)
+        .controlSize(.small)
+        #else
+        .pickerStyle(.menu)
+        #endif
+    }
+
+    private var statsLabel: some View {
+        Text(
+            LocalizedStrings.format(
+                "%d entries",
+                comment: "Log entry count label",
+                filteredEntries.count
+            )
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 
     private var emptyStateView: some View {
