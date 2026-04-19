@@ -1,0 +1,55 @@
+name: Bug Report
+description: Create a report to help me improve wBlock.
+title: "[BUG]"
+labels: bug
+assignees: []
+body:
+  - type: textarea
+    id: describe-the-bug
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+  - type: textarea
+    id: to-reproduce
+    attributes:
+      label: To reproduce
+      value: |
+        Steps to reproduce the behavior:
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+  - type: textarea
+    id: screenshot-or-video
+    attributes:
+      label: Screenshot or video
+      description: If applicable, add screenshots or a video to help explain your problem.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please complete the following information.
+      value: |
+         - OS:[e.g. iOS 26.5, macOS 26.5]
+         - wBlock Version:[e.g. 2.0.2]
+         - Intel or Apple Silicon (macOS only):[e.g. Apple M2]
+  - type: checkboxes
+    id: troubleshooting-checklist
+    attributes:
+      label: Troubleshooting checklist
+      description: "To check an item, remove the space inside the brackets and place an 'x': [x]. Otherwise, leave them as [ ]."
+      options:
+        - label: I have enabled all 5 wBlock Content Blocker extensions in Safari _(including Profiles, if applicable)_.
+        - label: I have enabled `wBlock Scripts` and set it to `Allow` on all websites (`Always Allow on Every Website`) in Safari settings.
+        - label: I have opened wBlock and pressed `Apply Changes` after changing filters, userscripts, whitelist, and/or extension settings.
+        - label: For filtering issues, I have restarted iOS/iPadOS and/or macOS, opened wBlock, manually checked for updates 🔄, and reopened Safari. _(Optional)_
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.
