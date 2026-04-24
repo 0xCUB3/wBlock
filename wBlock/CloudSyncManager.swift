@@ -904,10 +904,12 @@ final class CloudSyncManager: ObservableObject {
 
             if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
                 await userScriptManager.setUserScript(existing, isEnabled: remote.isEnabled)
+                await userScriptManager.setUserScript(existing, updatesAutomatically: remote.resolvedUpdatesAutomatically)
             } else {
                 await userScriptManager.addUserScript(from: url)
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                    await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
                 }
             }
         }
@@ -920,7 +922,12 @@ final class CloudSyncManager: ObservableObject {
 
         let deletedLocalNames = deletedLocalUserScriptNameSet()
         let remoteLocalScripts = scripts.local.map {
-            CloudSyncLocalUserScript(name: $0.name, content: $0.content, isEnabled: $0.isEnabled)
+            CloudSyncLocalUserScript(
+                name: $0.name,
+                content: $0.content,
+                isEnabled: $0.isEnabled,
+                updatesAutomatically: $0.updatesAutomatically
+            )
         }
         let localNamesToDelete = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
             localNames: userScriptManager.userScripts.filter(\.isLocal).map(\.name),
@@ -947,6 +954,7 @@ final class CloudSyncManager: ObservableObject {
             }) {
                 if existing.content == local.content {
                     await userScriptManager.setUserScript(existing, isEnabled: local.isEnabled)
+                    await userScriptManager.setUserScript(existing, updatesAutomatically: local.resolvedUpdatesAutomatically)
                     continue
                 }
             }
@@ -968,6 +976,7 @@ final class CloudSyncManager: ObservableObject {
                         == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
             }) {
                 await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
+                await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
             }
         }
     }
@@ -1108,7 +1117,12 @@ final class CloudSyncManager: ObservableObject {
         let remoteLocalScripts = remotePayload.userScripts.local
         let missingLocalScripts = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
             remoteScripts: remoteLocalScripts.map {
-                CloudSyncLocalUserScript(name: $0.name, content: $0.content, isEnabled: $0.isEnabled)
+                CloudSyncLocalUserScript(
+                    name: $0.name,
+                    content: $0.content,
+                    isEnabled: $0.isEnabled,
+                    updatesAutomatically: $0.updatesAutomatically
+                )
             },
             localNames: userScriptManager.userScripts.filter(\.isLocal).map(\.name),
             deletedNames: deletedLocalNames
@@ -1181,6 +1195,7 @@ final class CloudSyncManager: ObservableObject {
             await userScriptManager.addUserScript(from: url)
             if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                 await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
             }
         }
 
@@ -1201,6 +1216,7 @@ final class CloudSyncManager: ObservableObject {
                         == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
             }) {
                 await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
+                await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
             }
         }
 
@@ -1279,14 +1295,23 @@ final class CloudSyncManager: ObservableObject {
             .filter { !$0.isLocal && $0.url != nil }
             .compactMap { script -> SyncPayload.RemoteUserScript? in
                 guard let url = script.url else { return nil }
-                return SyncPayload.RemoteUserScript(url: url.absoluteString, isEnabled: script.isEnabled)
+                return SyncPayload.RemoteUserScript(
+                    url: url.absoluteString,
+                    isEnabled: script.isEnabled,
+                    updatesAutomatically: script.updatesAutomatically
+                )
             }
             .sorted { $0.url < $1.url }
 
         let localScripts = userScriptManager.userScripts
             .filter { $0.isLocal }
             .map { script in
-                SyncPayload.LocalUserScript(name: script.name, content: script.content, isEnabled: script.isEnabled)
+                SyncPayload.LocalUserScript(
+                    name: script.name,
+                    content: script.content,
+                    isEnabled: script.isEnabled,
+                    updatesAutomatically: script.updatesAutomatically
+                )
             }
             .sorted { $0.name < $1.name }
 
@@ -1786,12 +1811,22 @@ private struct SyncPayload: Codable {
     struct RemoteUserScript: Codable {
         let url: String
         let isEnabled: Bool
+        let updatesAutomatically: Bool?
+
+        var resolvedUpdatesAutomatically: Bool {
+            updatesAutomatically ?? true
+        }
     }
 
     struct LocalUserScript: Codable {
         let name: String
         let content: String
         let isEnabled: Bool
+        let updatesAutomatically: Bool?
+
+        var resolvedUpdatesAutomatically: Bool {
+            updatesAutomatically ?? true
+        }
     }
 
     struct UserScripts: Codable {

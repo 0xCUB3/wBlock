@@ -612,7 +612,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks for updates to userscripts and returns those with available updates
     func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
-        let eligibleScripts = scripts.filter { $0.isDownloaded && $0.updateURL != nil }
+        let eligibleScripts = scripts.filter { $0.isDownloaded && $0.updateURL != nil && $0.updatesAutomatically }
         return await boundedConcurrentCompactMap(eligibleScripts) { script in
             let hasUpdate = await self.hasScriptUpdate(for: script)
             return hasUpdate ? script : nil
@@ -703,7 +703,12 @@ final class FilterListUpdater: @unchecked Sendable {
             return []
         }
 
-        let totalSteps = Float(selectedScripts.count)
+        let scriptsToUpdate = selectedScripts.filter(\.updatesAutomatically)
+        guard !scriptsToUpdate.isEmpty else {
+            progressCallback(1.0)
+            return []
+        }
+        let totalSteps = Float(scriptsToUpdate.count)
         #if os(macOS)
         let maxConcurrent = 4
         #else
@@ -713,7 +718,7 @@ final class FilterListUpdater: @unchecked Sendable {
         var completedSteps: Float = 0
         var updatedScripts: [UserScript] = []
 
-        await boundedConcurrentForEach(selectedScripts, maxConcurrent: maxConcurrent, operation: { script in
+        await boundedConcurrentForEach(scriptsToUpdate, maxConcurrent: maxConcurrent, operation: { script in
             let (updatedScript, success) = await self.fetchAndProcessScript(script)
             return (script, updatedScript, success)
         }, onResult: { (script, updatedScript, success) in

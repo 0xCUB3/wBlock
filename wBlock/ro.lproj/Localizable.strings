@@ -657,3 +657,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "replaced $ matches" = "$ potriviri înlocuite";
 "replaced match on line $" = "potrivire înlocuită la linia $";
 "on line" = "la linia";
+
+"Updates Paused" = "Updates Paused";
+"Automatic Updates" = "Automatic Updates";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Failed to update %d script(s)." = "Failed to update %d script(s).";

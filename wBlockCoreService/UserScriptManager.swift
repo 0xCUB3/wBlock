@@ -1513,6 +1513,7 @@ public class UserScriptManager: ObservableObject {
 
             // Check if script already exists
             if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
+                newUserScript.updatesAutomatically = userScripts[existingIndex].updatesAutomatically
                 userScripts[existingIndex] = newUserScript
                 statusDescription = "Updated userscript: \(newUserScript.name)"
             } else {
@@ -1604,6 +1605,7 @@ public class UserScriptManager: ObservableObject {
             var newUserScript = UserScript(
                 id: scriptID, name: canonicalName, url: nil, content: content)
             newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
+            newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
             newUserScript.isLocal = true
             newUserScript.lastUpdated = Date()
 
@@ -1720,6 +1722,20 @@ public class UserScriptManager: ObservableObject {
             await dataManager.updateUserScripts(self.userScripts)
             logger.info("💾 Userscripts saved after setEnabled")
         }
+    }
+
+    /// Sets whether bulk and scheduled updates should include this userscript.
+    public func setUserScript(_ userScript: UserScript, updatesAutomatically: Bool) async {
+        guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
+        guard userScripts[index].updatesAutomatically != updatesAutomatically else { return }
+
+        userScripts[index].updatesAutomatically = updatesAutomatically
+        statusDescription = updatesAutomatically
+            ? "Automatic updates enabled for \(userScript.name)"
+            : "Automatic updates paused for \(userScript.name)"
+        logger.info("💾 Persisting userscript update preference for \(userScript.name): \(updatesAutomatically)")
+        await dataManager.updateUserScripts(self.userScripts)
+        logger.info("💾 Userscripts saved after update preference change")
     }
 
     private func ensureScriptReadyForEnabling(at index: Int) async -> Bool {
@@ -1982,7 +1998,7 @@ public class UserScriptManager: ObservableObject {
         await waitUntilReady()
 
         let candidates = userScripts.filter { script in
-            script.isEnabled && !script.isLocal && script.url != nil
+            script.isEnabled && !script.isLocal && script.url != nil && script.updatesAutomatically
         }
 
         guard !candidates.isEmpty else { return AutoUpdateResult(updated: 0, failed: 0) }

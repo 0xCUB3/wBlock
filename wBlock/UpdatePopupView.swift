@@ -22,12 +22,14 @@ struct UpdatePopupView: View {
         self.filterManager = filterManager
         self.userScriptManager = userScriptManager
         self._isPresented = isPresented
-        self._selectedFilters = State(initialValue: Set(filterManager.availableUpdates.map { $0.id }))
+        self._selectedFilters = State(initialValue: Set(filterManager.availableUpdates.map(\.id)))
+        self._scriptsWithUpdates = State(initialValue: filterManager.availableScriptUpdates)
+        self._selectedScripts = State(initialValue: Set(filterManager.availableScriptUpdates.map(\.id)))
         
         // Initialize selected categories from filters
-        var categories = Set<FilterListCategory>()
-        for filter in filterManager.availableUpdates {
-            categories.insert(filter.category)
+        var categories = Set(filterManager.availableUpdates.map(\.category))
+        if !filterManager.availableScriptUpdates.isEmpty {
+            categories.insert(.scripts)
         }
         self._selectedCategories = State(initialValue: categories)
     }
@@ -197,17 +199,37 @@ struct UpdatePopupView: View {
                                     await filterManager.downloadAndApplySelectedFilters(filtersToUpdate, showProgressSheet: true)
                                 }
 
+                                var shouldDismissAfterScriptOnlyUpdate = filtersToUpdate.isEmpty
                                 // Handle script updates
                                 if let _ = userScriptManager, !selectedScripts.isEmpty {
                                     let scriptsToUpdate = scriptsWithUpdates.filter { selectedScripts.contains($0.id) }
                                     if !scriptsToUpdate.isEmpty {
-                                        _ = await filterManager.filterUpdater.updateSelectedScripts(scriptsToUpdate) { progress in
+                                        let updatedScripts = await filterManager.filterUpdater.updateSelectedScripts(scriptsToUpdate) { progress in
                                             // Update progress for script downloads
                                             if filtersToUpdate.isEmpty {
                                                 filterManager.progress = progress
                                             }
                                         }
+                                        let updatedScriptIDs = Set(updatedScripts.map(\.id))
+                                        let attemptedScriptIDs = Set(scriptsToUpdate.map(\.id))
+                                        let failedScriptIDs = attemptedScriptIDs.subtracting(updatedScriptIDs)
+                                        scriptsWithUpdates.removeAll { updatedScriptIDs.contains($0.id) }
+                                        filterManager.availableScriptUpdates.removeAll { updatedScriptIDs.contains($0.id) }
+                                        selectedScripts.subtract(updatedScriptIDs)
+                                        shouldDismissAfterScriptOnlyUpdate = filtersToUpdate.isEmpty && failedScriptIDs.isEmpty
+                                        if !failedScriptIDs.isEmpty {
+                                            filterManager.statusDescription = LocalizedStrings.format(
+                                                "Failed to update %d script(s).",
+                                                comment: "Userscript update failure status",
+                                                failedScriptIDs.count
+                                            )
+                                        }
                                     }
+                                }
+
+                                if shouldDismissAfterScriptOnlyUpdate {
+                                    isPresented = false
+                                    filterManager.progress = 0
                                 }
                             }
                         } label: {
@@ -234,12 +256,15 @@ struct UpdatePopupView: View {
                     Task {
                         // Check for available script updates
                         scriptsWithUpdates = await filterManager.filterUpdater.checkForScriptUpdates(scripts: scriptManager.userScripts)
+                        filterManager.availableScriptUpdates = scriptsWithUpdates
                         
                         // Initialize selected scripts
                         selectedScripts = Set(scriptsWithUpdates.map { $0.id })
                         
                         // Add scripts category to selected categories if there are script updates
-                        if !scriptsWithUpdates.isEmpty {
+                        if scriptsWithUpdates.isEmpty {
+                            selectedCategories.remove(.scripts)
+                        } else {
                             selectedCategories.insert(.scripts)
                         }
                     }

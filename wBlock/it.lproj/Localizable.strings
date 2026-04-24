@@ -657,3 +657,8 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "replaced $ matches" = "$ corrispondenze sostituite";
 "replaced match on line $" = "corrispondenza sostituita alla riga $";
 "on line" = "alla riga";
+
+"Updates Paused" = "Updates Paused";
+"Automatic Updates" = "Automatic Updates";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Failed to update %d script(s)." = "Failed to update %d script(s).";

@@ -657,3 +657,8 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "replaced $ matches" = "zamieniono $ dopasowań";
 "replaced match on line $" = "zamieniono dopasowanie w wierszu $";
 "on line" = "w wierszu";
+
+"Updates Paused" = "Updates Paused";
+"Automatic Updates" = "Automatic Updates";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Failed to update %d script(s)." = "Failed to update %d script(s).";

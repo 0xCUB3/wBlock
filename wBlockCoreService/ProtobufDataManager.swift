@@ -1646,6 +1646,7 @@ public class ProtobufDataManager: ObservableObject {
                 protoUserScript.isLocal = userScript.isLocal
                 protoUserScript.updateURL = userScript.updateURL ?? ""
                 protoUserScript.downloadURL = userScript.downloadURL ?? ""
+                protoUserScript.updatesAutomatically = true
                 protoUserScript.content = userScript.content
                 protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
                 

@@ -28,6 +28,7 @@ class AppFilterManager: ObservableObject {
     var missingFilters: [FilterList] = []
     var missingUserScripts: [UserScript] = []
     @Published var availableUpdates: [FilterList] = []
+    @Published var availableScriptUpdates: [UserScript] = []
     @Published var showingUpdatePopup = false
     @Published var showingNoUpdatesAlert = false
     @Published var hasUnappliedChanges = false
@@ -182,6 +183,7 @@ class AppFilterManager: ObservableObject {
         showingUpdatePopup = false
         missingFilters = []
         availableUpdates = []
+        availableScriptUpdates = []
         ruleCountsByExtension = [:]
         extensionsApproachingLimit = []
         showingRuleLimitWarningAlert = false

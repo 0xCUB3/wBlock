@@ -57,20 +57,19 @@ extension AppFilterManager {
 
         availableUpdates = updatedFilters
 
-        // Also check for userscript updates
         if let userScriptManager = filterUpdater.userScriptManager {
-            let downloadedScripts = userScriptManager.userScripts.filter { $0.isDownloaded }
-            for script in downloadedScripts {
-                await userScriptManager.updateUserScript(script)
-            }
+            availableScriptUpdates = await filterUpdater.checkForScriptUpdates(scripts: userScriptManager.userScripts)
+        } else {
+            availableScriptUpdates = []
         }
 
-        if !availableUpdates.isEmpty {
+        let totalUpdates = availableUpdates.count + availableScriptUpdates.count
+        if totalUpdates > 0 {
             showingUpdatePopup = true
             statusDescription = LocalizedStrings.format(
                 "Found %d update(s) available.",
                 comment: "Updates found status",
-                availableUpdates.count
+                totalUpdates
             )
         } else {
             showingNoUpdatesAlert = true

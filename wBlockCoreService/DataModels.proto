@@ -91,6 +91,7 @@ message UserScriptData {
   optional string download_url = 16;
   string content = 17;
   int64 last_updated = 18;
+  optional bool updates_automatically = 19;
 }
 
 // Whitelist/disabled sites data

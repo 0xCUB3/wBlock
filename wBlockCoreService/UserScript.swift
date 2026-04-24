@@ -81,6 +81,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var downloadURL: String?
     public var content: String = ""
     public var lastUpdated: Date?
+    public var updatesAutomatically: Bool = true
     
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {

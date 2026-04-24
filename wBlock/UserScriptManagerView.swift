@@ -26,6 +26,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let lastUpdatedFormatted: String?
     let isLocal: Bool
     let isDownloaded: Bool
+    let updatesAutomatically: Bool
 
     init(script: UserScript) {
         id = script.id
@@ -39,6 +40,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         lastUpdatedFormatted = script.lastUpdatedFormatted
         isLocal = script.isLocal
         isDownloaded = script.isDownloaded
+        updatesAutomatically = script.updatesAutomatically
     }
 }
 
@@ -451,6 +453,17 @@ struct UserScriptManagerView: View {
                         .foregroundStyle(.red)
                         .cornerRadius(4)
                 }
+
+                if !script.updatesAutomatically && (script.url != nil || script.updateURL != nil) {
+                    Text("Updates Paused")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundStyle(.orange)
+                        .cornerRadius(4)
+                }
             }
 
             Spacer()
@@ -711,15 +724,47 @@ private struct ScriptMatchPatternsView: View {
 }
 
 
+private struct ScriptUpdateSettingsView: View {
+    let updatesAutomatically: Bool
+    let onChange: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle("Automatic Updates", isOn: Binding(
+                get: { updatesAutomatically },
+                set: onChange
+            ))
+            .toggleStyle(.switch)
+
+            Text("Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(Color.orange.opacity(updatesAutomatically ? 0 : 0.08))
+        .cornerRadius(8)
+    }
+}
+
+
 struct UserScriptInfoSidebar: View {
     let script: UserScript
     let contentLength: Int
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
+    let onUpdatesAutomaticallyChanged: (Bool) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScriptNameAndDescriptionView(script: script)
             ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0)
+            if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
+                ScriptUpdateSettingsView(
+                    updatesAutomatically: script.updatesAutomatically,
+                    onChange: onUpdatesAutomaticallyChanged
+                )
+            }
             if contentLength > 0 {
                 ScriptFileInfoView(contentLength: contentLength, formatFileSize: formatFileSize)
             }
@@ -821,7 +866,8 @@ struct UserScriptContentView: View {
                                 script: script,
                                 contentLength: loadedContent.count,
                                 isPatternsExpanded: $isPatternsExpanded,
-                                formatFileSize: formatFileSize
+                                formatFileSize: formatFileSize,
+                                onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                             )
                             .padding(.horizontal)
 
@@ -910,7 +956,8 @@ struct UserScriptContentView: View {
                         script: script,
                         contentLength: loadedContent.count,
                         isPatternsExpanded: $isPatternsExpanded,
-                        formatFileSize: formatFileSize
+                        formatFileSize: formatFileSize,
+                        onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                     )
                     .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)
                     .padding(20)
@@ -979,6 +1026,16 @@ struct UserScriptContentView: View {
         script = metadata
         updatePreview()
         isLoadingContent = false
+    }
+
+    private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
+        guard var currentScript = script else { return }
+        currentScript.updatesAutomatically = updatesAutomatically
+        script = currentScript
+
+        Task {
+            await userScriptManager.setUserScript(currentScript, updatesAutomatically: updatesAutomatically)
+        }
     }
 
     private func updatePreview() {

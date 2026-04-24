@@ -273,6 +273,7 @@ extension ProtobufDataManager {
             script.isLocal = protoData.isLocal || inferredIsLocalFromURL
             script.updateURL = protoData.updateURL.isEmpty ? nil : protoData.updateURL
             script.downloadURL = protoData.downloadURL.isEmpty ? nil : protoData.downloadURL
+            script.updatesAutomatically = protoData.hasUpdatesAutomatically ? protoData.updatesAutomatically : true
             return script
         }
     }
@@ -298,6 +299,7 @@ extension ProtobufDataManager {
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
+            protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
@@ -322,6 +324,7 @@ extension ProtobufDataManager {
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
+            protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
@@ -654,6 +657,7 @@ extension ProtobufDataManager {
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
             protoUserScript.updateURL = userScript.updateURL ?? ""
             protoUserScript.downloadURL = userScript.downloadURL ?? ""
+            protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
