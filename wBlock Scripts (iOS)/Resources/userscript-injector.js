@@ -876,22 +876,21 @@ if (window.wBlockUserscriptInjectorHasRun) {
 // wBlock Userscript Wrapper for: ${escapeForJS(script.name)} (${context} context)
 (function() {
     ${strictModeDirective}
-    // Debug logging helpers - defined in wrapper scope to be available in injected context
-    const WBLOCK_DEBUG_LOGGING = ${WBLOCK_DEBUG_LOGGING};
-
-    const wBlockLog = (...args) => {
-        if (WBLOCK_DEBUG_LOGGING) {
+    // Debug logging helpers - wrapper-private names avoid collisions with userscript globals.
+    var __wBlockDebugLogging = ${WBLOCK_DEBUG_LOGGING};
+    var wBlockLog = (...args) => {
+        if (__wBlockDebugLogging) {
             console.log(...args);
         }
     };
 
-    const wBlockWarn = (...args) => {
-        if (WBLOCK_DEBUG_LOGGING) {
+    var wBlockWarn = (...args) => {
+        if (__wBlockDebugLogging) {
             console.warn(...args);
         }
     };
 
-    const wBlockError = (...args) => {
+    var wBlockError = (...args) => {
         console.error(...args);
     };
 
@@ -1660,8 +1659,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_unregisterMenuCommand = GM_unregisterMenuCommand;
     ` : ``}
 
-    try {
+    var __wBlockRunUserScript = function() {
         ${script.content}
+    };
+
+    try {
+        __wBlockRunUserScript();
         wBlockLog('[wBlock UserScript] Finished executing: ${escapeForJS(script.name)}');
     } catch (error) {
         wBlockError('[wBlock UserScript Execution Error] in ${escapeForJS(script.name)}:', error);
