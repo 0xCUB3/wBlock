@@ -70,7 +70,8 @@ public enum FilterListMetadataParser {
         else {
             return nil
         }
-        return String(line[valueRange]).trimmingCharacters(in: .whitespaces)
+        let value = String(line[valueRange]).trimmingCharacters(in: .whitespaces)
+        return value.isEmpty ? nil : value
     }
 }
 
