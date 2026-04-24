@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
-        "revision" : "9bbb079b69af9d66470ced85461bf13bb40becac",
-        "version" : "1.35.0"
+        "revision" : "81558271e243f8f47dfe8e9fdd55f3c2b5413f68",
+        "version" : "1.37.0"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ameshkov/swift-psl",
       "state" : {
-        "revision" : "4b108e8fb46f6233099b9aa0f14bb5508856584e",
-        "version" : "1.1.118"
+        "revision" : "5378fcf4670d50dd4d61f235ac8a9c3b736269da",
+        "version" : "1.1.135"
       }
     },
     {
