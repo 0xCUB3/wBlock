@@ -4,22 +4,21 @@
  */
 
 // Debug logging flag - set to false to disable verbose console output
-const WBLOCK_DEBUG_LOGGING = false;
+var WBLOCK_DEBUG_LOGGING = false;
 
-// Debug logging helper
-const wBlockLog = (...args) => {
+var wBlockLog = (...args) => {
     if (WBLOCK_DEBUG_LOGGING) {
         console.log(...args);
     }
 };
 
-const wBlockWarn = (...args) => {
+var wBlockWarn = (...args) => {
     if (WBLOCK_DEBUG_LOGGING) {
         console.warn(...args);
     }
 };
 
-const wBlockError = (...args) => {
+var wBlockError = (...args) => {
     // Always log errors
     console.error(...args);
 };
@@ -41,7 +40,7 @@ function escapeForJS(str) {
 }
 
 // Best-effort CSP nonce detection for script-tag injection on strict CSP pages
-let wBlockCachedCspNonce = null;
+var wBlockCachedCspNonce = null;
 function getCspNonce() {
     if (wBlockCachedCspNonce) return wBlockCachedCspNonce;
     try {
