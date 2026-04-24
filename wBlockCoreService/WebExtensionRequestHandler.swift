@@ -375,11 +375,24 @@ public enum WebExtensionRequestHandler {
         context.completeRequest(returningItems: [response])
     }
 
+    private static func shouldIgnoreExtensionDiagnostic(_ fields: [String: String]) -> Bool {
+        fields["event"] == "support_decision"
+            && fields["source"] == "background"
+            && fields["outcome"] == "unsupported"
+            && fields["reason"] == "missing_url"
+    }
+
+
     private static func handleLogExtensionDiagnostic(message: [String: Any?], context: NSExtensionContext) {
         let rawFields = message["fields"] as? [String: Any]
         let fields = rawFields?.reduce(into: [String: String]()) { partial, entry in
             partial[entry.key] = String(describing: entry.value)
         } ?? [:]
+        guard !shouldIgnoreExtensionDiagnostic(fields) else {
+            let response = createResponse(with: ["ok": true])
+            context.completeRequest(returningItems: [response])
+            return
+        }
 
         if !fields.isEmpty {
             appendSharedWebExtensionDiagnostic(fields)

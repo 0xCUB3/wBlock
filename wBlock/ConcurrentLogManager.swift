@@ -263,6 +263,18 @@ public actor ConcurrentLogManager {
         try? FileManager.default.removeItem(at: url)
     }
 
+    private func shouldIgnoreSharedWebExtensionDiagnostic(_ fields: [String: String]) -> Bool {
+        func normalizedValue(for key: String) -> String {
+            fields[key]?.replacingOccurrences(of: " ", with: "_") ?? ""
+        }
+
+        return normalizedValue(for: "event") == "support_decision"
+            && normalizedValue(for: "source") == "background"
+            && normalizedValue(for: "outcome") == "unsupported"
+            && normalizedValue(for: "reason") == "missing_url"
+    }
+
+
     public func ingestSharedWebExtensionLog() {
         guard let url = sharedWebExtensionLogURL(),
               FileManager.default.fileExists(atPath: url.path),
@@ -274,6 +286,7 @@ public actor ConcurrentLogManager {
         let lines = content.split(separator: "\n").map(String.init)
         for line in lines {
             if let fields = parseSharedFieldsLine(line, prefix: "diagnostic ") {
+                guard !shouldIgnoreSharedWebExtensionDiagnostic(fields) else { continue }
                 let event = fields["event"]?.replacingOccurrences(of: "_", with: " ") ?? "diagnostic"
                 log(.debug, .system, "Web extension \(event)", metadata: fields)
             } else {
