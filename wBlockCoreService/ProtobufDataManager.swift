@@ -207,9 +207,6 @@ public enum AutoUpdateDiagnosticResult: String, Sendable {
 }
 
 public struct BackgroundTaskDiagnosticsSnapshot: Sendable {
-    public let lastRegistrationTime: Int64
-    public let lastRegistrationResult: String
-    public let lastRegistrationError: String
     public let lastScheduleAttemptTime: Int64
     public let lastScheduleResult: String
     public let lastScheduleError: String
@@ -219,20 +216,12 @@ public struct BackgroundTaskDiagnosticsSnapshot: Sendable {
     public let lastExpirationTime: Int64
 }
 
-public struct SilentPushDiagnosticsSnapshot: Sendable {
-    public let lastReceivedTime: Int64
-    public let lastCompletionTime: Int64
-    public let lastResult: String
-}
-
 public struct AutoUpdateDiagnosticsSnapshot: Sendable {
     public let bgAppRefresh: BackgroundTaskDiagnosticsSnapshot
     public let bgProcessing: BackgroundTaskDiagnosticsSnapshot
-    public let silentPush: SilentPushDiagnosticsSnapshot
     public let lastForegroundCatchUpTime: Int64
     public let lastForegroundCatchUpReason: String
 }
-
 
 @MainActor
 public class ProtobufDataManager: ObservableObject {
@@ -536,28 +525,9 @@ public class ProtobufDataManager: ObservableObject {
         AutoUpdateDiagnosticsSnapshot(
             bgAppRefresh: backgroundTaskDiagnosticsSnapshot(from: appData.autoUpdate.bgAppRefresh),
             bgProcessing: backgroundTaskDiagnosticsSnapshot(from: appData.autoUpdate.bgProcessing),
-            silentPush: SilentPushDiagnosticsSnapshot(
-                lastReceivedTime: appData.autoUpdate.silentPush.lastReceivedTime,
-                lastCompletionTime: appData.autoUpdate.silentPush.lastCompletionTime,
-                lastResult: appData.autoUpdate.silentPush.lastResult
-            ),
             lastForegroundCatchUpTime: appData.autoUpdate.lastForegroundCatchUpTime,
             lastForegroundCatchUpReason: appData.autoUpdate.lastForegroundCatchUpReason
         )
-    }
-
-    @MainActor
-    public func recordAutoUpdateTaskRegistration(
-        _ kind: AutoUpdateDiagnosticTaskKind,
-        success: Bool,
-        error: String? = nil
-    ) async {
-        let timestamp = Self.currentUnixTimestamp()
-        await updateBackgroundTaskDiagnostics(kind) { diagnostics in
-            diagnostics.lastRegistrationTime = timestamp
-            diagnostics.lastRegistrationResult = (success ? AutoUpdateDiagnosticResult.registered : .failed).rawValue
-            diagnostics.lastRegistrationError = error ?? ""
-        }
     }
 
     @MainActor
@@ -603,23 +573,6 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     @MainActor
-    public func recordAutoUpdateSilentPushReceived() async {
-        let timestamp = Self.currentUnixTimestamp()
-        await updateData { data in
-            data.autoUpdate.silentPush.lastReceivedTime = timestamp
-        }
-    }
-
-    @MainActor
-    public func recordAutoUpdateSilentPushCompletion(result: AutoUpdateDiagnosticResult) async {
-        let timestamp = Self.currentUnixTimestamp()
-        await updateData { data in
-            data.autoUpdate.silentPush.lastCompletionTime = timestamp
-            data.autoUpdate.silentPush.lastResult = result.rawValue
-        }
-    }
-
-    @MainActor
     public func recordAutoUpdateForegroundCatchUp(reason: AutoUpdateDiagnosticResult) async {
         let timestamp = Self.currentUnixTimestamp()
         await updateData { data in
@@ -636,9 +589,6 @@ public class ProtobufDataManager: ObservableObject {
         from diagnostics: Wblock_Data_BackgroundTaskDiagnostics
     ) -> BackgroundTaskDiagnosticsSnapshot {
         BackgroundTaskDiagnosticsSnapshot(
-            lastRegistrationTime: diagnostics.lastRegistrationTime,
-            lastRegistrationResult: diagnostics.lastRegistrationResult,
-            lastRegistrationError: diagnostics.lastRegistrationError,
             lastScheduleAttemptTime: diagnostics.lastScheduleAttemptTime,
             lastScheduleResult: diagnostics.lastScheduleResult,
             lastScheduleError: diagnostics.lastScheduleError,

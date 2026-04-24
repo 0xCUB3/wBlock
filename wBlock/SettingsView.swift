@@ -315,7 +315,6 @@ struct SettingsView: View {
                     title: "BGProcessing",
                     diagnostics: autoUpdateDiagnostics.bgProcessing
                 )
-                diagnosticDetailView(title: "Silent Push", detail: silentPushDiagnosticsLine)
                 diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
             }
             .padding(.top, 6)
@@ -332,17 +331,6 @@ struct SettingsView: View {
             Text(LocalizedStringKey(title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("Registration: %@", comment: "Background task diagnostics"),
-                    diagnosticEventLine(
-                        timestamp: diagnostics.lastRegistrationTime,
-                        result: diagnostics.lastRegistrationResult,
-                        error: diagnostics.lastRegistrationError,
-                        fallback: String(localized: "Not recorded")
-                    )
-                )
-            )
             Text(
                 String.localizedStringWithFormat(
                     NSLocalizedString("Scheduling: %@", comment: "Background task diagnostics"),
@@ -700,27 +688,6 @@ extension SettingsView {
             NSLocalizedString("in %@ (%@)", comment: "Relative schedule"),
             relative,
             timeString
-        )
-    }
-
-    private var silentPushDiagnosticsLine: String {
-        let diagnostics = autoUpdateDiagnostics.silentPush
-        guard diagnostics.lastReceivedTime > 0 else {
-            return String(localized: "No silent push received yet")
-        }
-
-        if diagnostics.lastCompletionTime > 0 {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("Received %@, %@ %@", comment: "Silent push diagnostics"),
-                formatDiagnosticTime(diagnostics.lastReceivedTime),
-                humanReadableDiagnosticResult(diagnostics.lastResult),
-                formatDiagnosticTime(diagnostics.lastCompletionTime)
-            )
-        }
-
-        return String.localizedStringWithFormat(
-            NSLocalizedString("Received %@, waiting for completion", comment: "Silent push diagnostics"),
-            formatDiagnosticTime(diagnostics.lastReceivedTime)
         )
     }
 

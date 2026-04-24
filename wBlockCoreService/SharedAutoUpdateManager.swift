@@ -534,7 +534,7 @@ public actor SharedAutoUpdateManager {
             let hadErrors = updateResult.hadErrors
 
             guard !updatedFilterSet.isEmpty else {
-                // If this run was forced (BG task / silent push) or outputs are missing, do a
+                // If this run was forced by a background task, or outputs are missing, do a
                 // lightweight reload to keep Safari in sync even when no filter bodies changed.
                 var reloadStatus = "skipped"
                 if shouldForce || contentBlockerOutputsNeedRepair() {

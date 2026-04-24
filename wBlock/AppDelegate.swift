@@ -90,13 +90,6 @@ private actor BGTaskCompletionState {
 }
 #endif
 
-#if os(iOS)
-private enum ForcedBackgroundUpdateResult {
-    case completed
-    case timedOut
-}
-#endif
-
 // MARK: - Shared helper for schedule log formatting (platform-agnostic)
 fileprivate func scheduleMessage(from status: SharedAutoUpdateManager.AutoUpdateStatus) -> String {
     let formatter: DateFormatter = {
@@ -196,18 +189,13 @@ extension AppDelegate: NSApplicationDelegate {
         ProtobufDataManager.shared.saveData()
     }
 
-    /// Register for remote notifications upon launch
     func applicationDidFinishLaunching(_ notification: Notification) {
-        os_log("macOS app finished launching; registering for remote notifications", type: .info)
-        NSApp.registerForRemoteNotifications()
-        
         // Setup periodic auto-update system for macOS
         setupMacOSAutoUpdate()
         observeMacOSAutoUpdateSettingSaves()
         Task { @MainActor in
             await reconcileMacOSLaunchAgentRegistration(reason: "Launch")
         }
-
 
         // Opportunistic update on app launch
         Task {
@@ -320,16 +308,6 @@ extension AppDelegate: NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// Handle silent push on macOS
-    func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
-        os_log("Silent push received for filterList (macOS)", type: .info)
-        guard let updateType = userInfo["update"] as? String, updateType == "filterList" else { return }
-        Task {
-            // Silent pushes may arrive when the UI hasn't been created; use the shared auto-update
-            // path so this works even with no AppFilterManager instance.
-            await runForcedAutoUpdate(trigger: "SilentPush(macOS)")
-        }
-    }
 }
 
 #endif
@@ -338,10 +316,7 @@ extension AppDelegate: NSApplicationDelegate {
 extension AppDelegate: UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
-        // Request silent push capability (no UI notifications) and register
-        UNUserNotificationCenter.current().requestAuthorization(options: []) { _, _ in }
-        application.registerForRemoteNotifications()
-        
+
         // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
 
@@ -354,33 +329,6 @@ extension AppDelegate: UIApplicationDelegate {
         return true
     }
 
-    /// Handle incoming silent pushes to update filter lists in background
-    func application(_ application: UIApplication,
-                     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        os_log("Silent push received for filterList", type: .info)
-        guard let updateType = userInfo["update"] as? String, updateType == "filterList" else {
-            completionHandler(.noData)
-            return
-        }
-
-        // Silent pushes may launch the app in the background without constructing SwiftUI scenes,
-        // meaning `filterManager` may be nil. Use SharedAutoUpdateManager so pushes always work.
-        Task {
-            await ProtobufDataManager.shared.recordAutoUpdateSilentPushReceived()
-            let updateResult = await runForcedAutoUpdateWithTimeout(trigger: "SilentPush(iOS)")
-            switch updateResult {
-            case .completed:
-                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: .completed)
-                completionHandler(.newData)
-            case .timedOut:
-                os_log("Silent push auto-update timed out before completion handler deadline", type: .error)
-                await ProtobufDataManager.shared.recordAutoUpdateSilentPushCompletion(result: .timedOut)
-                completionHandler(.failed)
-            }
-        }
-    }
-    
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Run opportunistic updates only when app is active (not during background launches).
         Task {
@@ -441,13 +389,6 @@ extension AppDelegate: UIApplicationDelegate {
             }
             self.handleBackgroundFilterUpdate(task: refreshTask)
         }
-        Task { @MainActor in
-            await ProtobufDataManager.shared.recordAutoUpdateTaskRegistration(
-                .appRefresh,
-                success: refreshRegistered,
-                error: refreshRegistered ? nil : "BGTaskScheduler.register returned false"
-            )
-        }
         if !refreshRegistered {
             os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundTaskIdentifier)
         }
@@ -464,13 +405,6 @@ extension AppDelegate: UIApplicationDelegate {
                 return
             }
             self.handleBackgroundProcessingUpdate(task: processingTask)
-        }
-        Task { @MainActor in
-            await ProtobufDataManager.shared.recordAutoUpdateTaskRegistration(
-                .processing,
-                success: processingRegistered,
-                error: processingRegistered ? nil : "BGTaskScheduler.register returned false"
-            )
         }
         if !processingRegistered {
             os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundProcessingIdentifier)
@@ -658,40 +592,6 @@ extension AppDelegate: UIApplicationDelegate {
                     onExpiration(self)
                 }
             }
-        }
-    }
-
-    private func runForcedAutoUpdateWithTimeout(
-        trigger: String,
-        timeoutSeconds: UInt64 = 25
-    ) async -> ForcedBackgroundUpdateResult {
-        let result = await withTaskGroup(of: ForcedBackgroundUpdateResult.self) { group in
-            group.addTask {
-                await self.runForcedAutoUpdate(trigger: trigger)
-                return .completed
-            }
-            group.addTask {
-                try? await Task.sleep(nanoseconds: timeoutSeconds * 1_000_000_000)
-                return .timedOut
-            }
-
-            let result = await group.next() ?? .timedOut
-            group.cancelAll()
-            return result
-        }
-
-        switch result {
-        case .completed:
-            return .completed
-        case .timedOut:
-            os_log(
-                "Forced auto-update timed out (%{public}@); clearing running flag and forcing retry",
-                type: .error,
-                trigger
-            )
-            await clearAutoUpdateRunningFlag()
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
-            return .timedOut
         }
     }
 
