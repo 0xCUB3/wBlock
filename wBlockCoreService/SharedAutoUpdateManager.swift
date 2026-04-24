@@ -1435,13 +1435,10 @@ public actor SharedAutoUpdateManager {
         var result: [String] = []
         for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            let lineStr = String(line)
-            guard trimmed.hasPrefix("!#") else {
-                result.append(lineStr)
+            let originalLine = String(line)
+            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
+                result.append(originalLine)
                 continue
-            }
-            if FilterDirectivePolicy.shouldPreserveDirective(trimmed) {
-                result.append(lineStr)
             }
             // Unknown directive: silently omitted (PREP-07)
         }

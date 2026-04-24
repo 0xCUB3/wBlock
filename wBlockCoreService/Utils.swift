@@ -96,16 +96,45 @@ public enum NetworkRequestFactory {
 }
 
 public enum FilterDirectivePolicy {
-    private static let preservedPrefixes: [String] = [
-        "!#include",
-        "!#if",
-        "!#else",
-        "!#endif",
-        "!#safari_cb_affinity",
+    private static let directiveIntroducer = "!#"
+
+    private static let preservedDirectiveNames: Set<String> = [
+        "include",
+        "if",
+        "else",
+        "endif",
+        "safari_cb_affinity",
     ]
 
     public static func shouldPreserveDirective(_ trimmedLine: String) -> Bool {
-        preservedPrefixes.contains { trimmedLine.hasPrefix($0) }
+        guard let directiveName = preprocessorDirectiveName(in: trimmedLine) else { return false }
+
+        return preservedDirectiveNames.contains(directiveName)
+    }
+
+    public static func shouldStripUnsupportedDirective(_ trimmedLine: String) -> Bool {
+        guard let directiveName = preprocessorDirectiveName(in: trimmedLine) else { return false }
+
+        return !preservedDirectiveNames.contains(directiveName)
+    }
+
+    private static func preprocessorDirectiveName(in trimmedLine: String) -> String? {
+        var index = trimmedLine.startIndex
+        guard trimmedLine[index...].hasPrefix(directiveIntroducer) else { return nil }
+
+        index = trimmedLine.index(index, offsetBy: directiveIntroducer.count)
+        guard index < trimmedLine.endIndex, trimmedLine[index].isLetter else { return nil }
+
+        let nameStart = index
+        while index < trimmedLine.endIndex, isDirectiveNameCharacter(trimmedLine[index]) {
+            index = trimmedLine.index(after: index)
+        }
+
+        return String(trimmedLine[nameStart..<index])
+    }
+
+    private static func isDirectiveNameCharacter(_ character: Character) -> Bool {
+        character.isLetter || character.isNumber || character == "_" || character == "-"
     }
 }
 

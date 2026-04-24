@@ -397,30 +397,25 @@ final class FilterListUpdater: @unchecked Sendable {
     /// Strips unknown `!#` directives from downloaded filter content.
     /// Directives used by preprocessing and Safari content blocker affinity are preserved.
     /// Unknown directives (for example `!#diff-path`) are removed and logged.
+    /// Comment lines such as `!##example` are preserved.
     private func stripUnknownDirectives(from content: String) async -> String {
         var result: [String] = []
 
         for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            let lineStr = String(line)
+            let originalLine = String(line)
 
-            // Only process lines starting with "!#"
-            guard trimmed.hasPrefix("!#") else {
-                result.append(lineStr)
+            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
+                result.append(originalLine)
                 continue
             }
 
-            if FilterDirectivePolicy.shouldPreserveDirective(trimmed) {
-                result.append(lineStr)
-            } else {
-                // Strip unknown directive and log at debug level
-                await ConcurrentLogManager.shared.debug(
-                    .filterUpdate,
-                    "Stripped unknown directive",
-                    metadata: ["directive": String(trimmed.prefix(60))]
-                )
-                // Do NOT append — line is stripped from output
-            }
+            await ConcurrentLogManager.shared.debug(
+                .filterUpdate,
+                "Stripped unknown directive",
+                metadata: ["directive": String(trimmed.prefix(60))]
+            )
+            // Do NOT append — line is stripped from output
         }
 
         return result.joined(separator: "\n")
