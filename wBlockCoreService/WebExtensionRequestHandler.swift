@@ -514,6 +514,7 @@ public enum WebExtensionRequestHandler {
             }
 
             let userScriptManager = UserScriptManager.shared
+            await userScriptManager.waitUntilReady()
             let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
 
             var userScriptDescriptors: [[String: Any]] = []
@@ -769,6 +770,7 @@ public enum WebExtensionRequestHandler {
 
         Task { @MainActor in
             let manager = UserScriptManager.shared
+            await manager.waitUntilReady()
             guard let script = manager.userScript(withId: scriptId) else {
                 let response = createResponse(with: ["error": "Userscript not found"])
                 context.completeRequest(returningItems: [response])

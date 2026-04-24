@@ -27,7 +27,7 @@ The main settings screen shows your enabled filter lists with toggle switches. E
   </picture>
 </div>
 
-What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, wBlock includes several userscripts like AdGuard Extra (enabled by default), Bypass Paywalls Clean, Return YouTube Dislike, and YouTube Classic, but you can add almost any script you want!
+What sets wBlock apart is the advanced features. The element zapper runs on macOS, iOS, iPadOS, and visionOS with scroll tracking and parent/child element navigation: point, click, BAM! Gone. The userscript support lets you run custom JavaScript that normally requires additional extensions like Tampermonkey (most of which are not supported on Safari anyway). By default, wBlock includes optional userscripts like AdGuard Extra, Bypass Paywalls Clean, Return YouTube Dislike, and YouTube Classic, but you can add almost any script you want!
 
 Other recent additions include iCloud sync for filter selections, custom lists, userscripts, and whitelist across all your devices; configurable auto-updates from every hour to every 7 days with HTTP conditional requests to minimize bandwidth; a filter preprocessor that handles AdGuard's `!#include` directives; and auto-detection of custom filter list titles from `! Title` metadata.
 

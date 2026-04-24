@@ -78,7 +78,7 @@ enum BuiltInUserScripts {
         BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
-            isEnabledByDefault: true
+            isEnabledByDefault: false
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
