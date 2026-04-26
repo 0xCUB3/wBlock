@@ -8,6 +8,7 @@ struct SettingsView: View {
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
+    private static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
     @State private var isOverdue = false
     @State private var timer: Timer?
@@ -413,6 +414,10 @@ struct SettingsView: View {
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"]
                         as? String ?? "Unknown"
                 )
+            }
+
+            Link(destination: Self.reportIssueURL) {
+                Label("Report an Issue", systemImage: "ladybug")
             }
         }
     }

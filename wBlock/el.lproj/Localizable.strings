@@ -7,6 +7,7 @@
 "Experimental" = "Πειραματικό";
 "Next: \\(compactStatusLine)" = "Επόμενο: \(compactStatusLine)";
 "wBlock Version" = "Έκδοση wBlock";
+"Report an Issue" = "Αναφορά προβλήματος";
 "Userscript" = "Κώδικας χρήστη";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Trust: \\(trust.capitalized)" = "Εμπιστοσύνη: \(trust.capitalized)";
