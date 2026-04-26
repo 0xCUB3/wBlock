@@ -913,14 +913,14 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔧 Initial setup completed: \(self.hasCompletedInitialSetup)")
 
         // Always check for missing default scripts first
-        checkAndAddMissingDefaultScripts()
+        await checkAndAddMissingDefaultScripts()
 
         // Always check for duplicates - simplified approach
         checkForDuplicatesAndAskForConfirmation()
 
         if userScripts.isEmpty {
             logger.info("📖 No userscripts found after default check, loading defaults")
-            loadDefaultUserScripts()
+            await loadDefaultUserScripts()
         } else {
             let hydratedScripts = await hydrateUserScriptsFromDisk(
                 userScripts,
@@ -948,9 +948,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         // Only download scripts that are enabled but missing content (e.g., from migration).
-        Task {
-            await downloadMissingDefaultScripts()
-        }
+        await downloadMissingDefaultScripts()
 
     }
 
@@ -983,7 +981,7 @@ public class UserScriptManager: ObservableObject {
         return (embeddedCount: embeddedCount, failedCount: failedCount)
     }
 
-    private func checkAndAddMissingDefaultScripts() {
+    private func checkAndAddMissingDefaultScripts() async {
         logger.info("🔍 Checking for missing default userscripts...")
         logger.info("🔍 Current userscripts count: \(self.userScripts.count)")
 
@@ -1020,9 +1018,7 @@ public class UserScriptManager: ObservableObject {
 
         if hasAddedNew {
             logger.info("💾 Saving \(self.userScripts.count) userscripts after adding defaults")
-            Task { @MainActor in
-                await persistUserScriptsNow()
-            }
+            await persistUserScriptsNow()
         } else {
             logger.info("ℹ️ No missing default scripts to add")
         }
@@ -1060,7 +1056,7 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func loadDefaultUserScripts() {
+    private func loadDefaultUserScripts() async {
         logger.info("🎯 Loading default userscripts for first-time setup...")
 
         for defaultScript in defaultUserScripts {
@@ -1083,10 +1079,8 @@ public class UserScriptManager: ObservableObject {
 
         if !userScripts.isEmpty {
             logger.info("💾 About to save \(self.userScripts.count) default userscript placeholders")
-            Task { @MainActor in
-                await persistUserScriptsNow()
-                logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
-            }
+            await persistUserScriptsNow()
+            logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
         }
     }
 

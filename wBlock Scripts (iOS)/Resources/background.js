@@ -24952,10 +24952,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       try {
         const response = await browser.runtime.sendNativeMessage("application.id", userScriptRequest);
         const scripts = response && response.userScripts ? response.userScripts : [];
+        if (response && response.error) {
+          return { userScripts: scripts, error: response.error };
+        }
         return { userScripts: scripts };
       } catch (error) {
         console.error("[wBlock] Failed to get userscripts:", error);
-        return { userScripts: [] };
+        return { userScripts: [], error: String(error && error.message ? error.message : error) };
       }
     }
     if (message && (message.action === "setUserScriptStorageValue" || message.action === "deleteUserScriptStorageValue")) {

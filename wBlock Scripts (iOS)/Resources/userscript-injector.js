@@ -94,6 +94,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.menuCommandSequence = 0;
+            this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
             this.init();
         }
@@ -482,16 +483,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (first && first.error) throw new Error(first.error);
 
             const totalChunks = (first && typeof first.totalChunks === 'number') ? first.totalChunks : 1;
+            if (!Number.isInteger(totalChunks) || totalChunks < 1) {
+                throw new Error('Invalid userscript chunk response');
+            }
+
             const chunks = new Array(totalChunks);
+            if (!first || typeof first.chunk !== 'string') {
+                throw new Error('Missing userscript chunk data');
+            }
             chunks[0] = first.chunk;
 
             for (let i = 1; i < totalChunks; i++) {
                 const resp = await this.sendNativeRequest(action, { ...params, chunkIndex: i, chunkSize });
                 if (resp && resp.error) throw new Error(resp.error);
+                if (!resp || typeof resp.chunk !== 'string') {
+                    throw new Error('Missing userscript chunk data');
+                }
                 chunks[i] = resp.chunk;
             }
 
-            const byteArrays = chunks.map(c => this.base64ToBytes(c || ''));
+            const byteArrays = chunks.map(c => this.base64ToBytes(c));
             return decoder.decode(this.concatBytes(byteArrays));
         }
 
@@ -555,12 +566,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         }
 
-        requestUserScripts() {
+        requestUserScripts(attempt = 0) {
             const url = window.location.href;
             wBlockLog(`[wBlock] Requesting userscripts for URL: ${url}`);
 
             this.sendNativeRequest('getUserScripts', { url })
                 .then((response) => {
+                    if (response && response.error) {
+                        throw new Error(response.error);
+                    }
+
                     const scripts = response && response.userScripts ? response.userScripts : [];
                     if (scripts.length === 0) {
                         wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
@@ -569,8 +584,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     this.injectUserScripts(scripts);
                 })
                 .catch((error) => {
-                    wBlockError('[wBlock] Failed to request userscripts:', error);
+                    this.retryUserScriptRequest(attempt, error);
                 });
+        }
+
+        retryUserScriptRequest(attempt, error) {
+            const delay = this.userScriptRequestRetryDelays[attempt];
+            if (typeof delay !== 'number') {
+                wBlockError('[wBlock] Failed to request userscripts:', error);
+                return;
+            }
+
+            setTimeout(() => this.requestUserScripts(attempt + 1), delay);
         }
 
         setupMessageListener() {
