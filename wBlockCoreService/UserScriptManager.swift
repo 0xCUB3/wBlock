@@ -2200,20 +2200,21 @@ public class UserScriptManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: initialSetupCompletedKey)
     }
 
-    /// Debug method to simulate fresh install behavior
-    public func simulateFreshInstall() {
+    public func simulateFreshInstall() async {
         logger.info("🧪 Simulating fresh install for testing")
 
-        // Reset initial setup state
+        isReady = false
+        metadataPrefetchTask?.cancel()
+        metadataPrefetchTask = nil
         resetInitialSetupState()
 
         // Clear all existing userscripts to simulate fresh install
         userScripts.removeAll()
 
-        // Re-run setup as if it's the first time
-        Task { @MainActor in
-            await self.setup()
-        }
+        // Re-run setup as if it's the first time, and do not let onboarding continue
+        // until default script placeholders have been recreated.
+        await setup()
+        isReady = true
 
         logger.info("🧪 Fresh install simulation complete")
     }

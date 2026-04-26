@@ -612,7 +612,7 @@ extension SettingsView {
             await ProtobufDataManager.shared.resetToDefaultData()
             await ProtobufDataManager.shared.setHasCompletedOnboarding(false)
             await filterManager.resetForOnboarding()
-            UserScriptManager.shared.simulateFreshInstall()
+            await UserScriptManager.shared.simulateFreshInstall()
             await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
             await MainActor.run {
                 nextScheduleLine = String(localized: "Next: Loading…")
