@@ -495,7 +495,8 @@ public enum WebExtensionRequestHandler {
         return (reloadedTargets: reloadedTargets, failedTargets: failedTargets)
     }
 
-    /// Returns enabled userscripts for a URL, but without inlining potentially huge `content`/`resources`.
+    /// Returns enabled userscripts for a URL. By default this uses lightweight descriptors,
+    /// but callers can request hydrated payloads to avoid repeated native chunk messages.
     private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         guard let urlString = message["url"] as? String else {
             let response = createResponse(with: ["userScripts": []])
@@ -503,6 +504,7 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let includeContent = message["includeContent"] as? Bool == true
         Task { @MainActor in
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
@@ -533,7 +535,7 @@ public enum WebExtensionRequestHandler {
                 }
                 let injectInto = (script.injectInto == "auto" && hasUnsafeWindowGrant) ? "page" : script.injectInto
 
-                userScriptDescriptors.append([
+                var descriptor: [String: Any] = [
                     "id": script.id.uuidString,
                     "name": script.name,
                     "version": script.version,
@@ -543,7 +545,15 @@ public enum WebExtensionRequestHandler {
                     "injectInto": injectInto,
                     "resourceNames": resourceNames,
                     "storageSnapshot": storageSnapshot
-                ])
+                ]
+                if includeContent, !script.content.isEmpty {
+                    descriptor["content"] = script.content
+                    if !script.resourceContents.isEmpty {
+                        descriptor["resources"] = script.resourceContents
+                    }
+                }
+
+                userScriptDescriptors.append(descriptor)
             }
 
             let response = createResponse(with: ["userScripts": userScriptDescriptors])

@@ -24788,6 +24788,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * in the background.
    */
   const cache = new Map();
+  let nativeMessageQueue = Promise.resolve();
+  const sendQueuedNativeMessage = request => {
+    const response = nativeMessageQueue.then(() => browser.runtime.sendNativeMessage("application.id", request));
+    nativeMessageQueue = response.catch(() => {});
+    return response;
+  };
   /**
    * Returns a cache key for the given URL and top-level URL.
    *
@@ -24812,7 +24818,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       topUrl
     };
     // Send the request to the native messaging host and wait for the response.
-    const response = await browser.runtime.sendNativeMessage('application.id', request);
+    const response = await sendQueuedNativeMessage(request);
     const message = response;
     if (!message || !message.payload) {
       // No configuration received for some reason.
@@ -24915,7 +24921,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { ok: false, error: "Missing hostname", rules: [] };
       }
       try {
-        const response = await browser.runtime.sendNativeMessage("application.id", {
+        const response = await sendQueuedNativeMessage({
           action: "syncZapperRules",
           hostname,
           rules
@@ -24932,7 +24938,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { ok: false, error: "Missing hostname", rules: [] };
       }
       try {
-        const response = await browser.runtime.sendNativeMessage("application.id", {
+        const response = await sendQueuedNativeMessage({
           action: "getZapperRules",
           hostname
         });
@@ -24946,11 +24952,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       const userScriptRequest = {
         action: "getUserScripts",
         url: message.url,
-        requestId: "userscripts-" + Date.now()
+        requestId: "userscripts-" + Date.now(),
+        includeContent: message.includeContent === true
       };
 
       try {
-        const response = await browser.runtime.sendNativeMessage("application.id", userScriptRequest);
+        const response = await sendQueuedNativeMessage(userScriptRequest);
         const scripts = response && response.userScripts ? response.userScripts : [];
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
@@ -24973,7 +24980,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
 
       try {
-        const response = await browser.runtime.sendNativeMessage("application.id", storageRequest);
+        const response = await sendQueuedNativeMessage(storageRequest);
         if (!response || typeof response.ok !== "boolean") {
           return { ok: false, error: "Empty response from native host" };
         }
@@ -25027,7 +25034,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             anonymous: message.anonymous === true,
             responseType: message.responseType || 'text'
           };
-          const nativeResponse = await browser.runtime.sendNativeMessage("application.id", nativeRequest);
+          const nativeResponse = await sendQueuedNativeMessage(nativeRequest);
           return nativeResponse || { error: "Empty response from native host" };
         }
 
@@ -25071,7 +25078,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
 
       try {
-        const response = await browser.runtime.sendNativeMessage("application.id", chunkRequest);
+        const response = await sendQueuedNativeMessage(chunkRequest);
         return response || { error: "Empty response from native host" };
       } catch (error) {
         console.error("[wBlock] Failed to get userscript chunk:", error);
@@ -25212,7 +25219,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const normalizedFields = normalizeDiagnosticFields(fields);
     console.info("[wBlock] Support diagnostic", normalizedFields);
     try {
-      await browser.runtime.sendNativeMessage("application.id", {
+      await sendQueuedNativeMessage({
         action: "logExtensionDiagnostic",
         fields: normalizedFields
       });

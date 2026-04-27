@@ -508,7 +508,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         async ensureScriptPayload(script) {
             if (script && typeof script.content === 'string' && script.content.length > 0) {
-                // Legacy payload (already includes content/resources)
+                // Hydrated payload may already include content/resources.
                 if (script.resources == null && script.resourceContents != null) {
                     script.resources = script.resourceContents;
                 }
@@ -570,7 +570,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const url = window.location.href;
             wBlockLog(`[wBlock] Requesting userscripts for URL: ${url}`);
 
-            this.sendNativeRequest('getUserScripts', { url })
+            this.sendNativeRequest('getUserScripts', { url, includeContent: true })
                 .then((response) => {
                     if (response && response.error) {
                         throw new Error(response.error);
@@ -872,6 +872,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const resourcesJSON = script.resources ? JSON.stringify(script.resources) : '{}';
             const storageSnapshotJSON = script.storageSnapshot ? JSON.stringify(script.storageSnapshot) : '{}';
             const isContentContext = context === 'content';
+            const exposePageGlobals = !isContentContext && script.name === 'AdGuard Popup Blocker';
+            const exposeGMGlobals = isContentContext || exposePageGlobals;
+            const exposeGMGlobalsPrefix = exposePageGlobals
+                ? `if (location.hostname === 'popupblocker.adguard.com' && location.pathname.endsWith('/options.html')) {`
+                : '';
+            const exposeGMGlobalsSuffix = exposePageGlobals ? '}' : '';
 
             // In content context, unsafeWindow is just the content script's window (no page JS access)
             // In page context, we try to access the real page window
@@ -1657,8 +1663,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const GM_registerMenuCommand = GM.registerMenuCommand;
     const GM_unregisterMenuCommand = GM.unregisterMenuCommand;
 
-    ${isContentContext ? `
-    // Expose GM globals only inside the isolated content context.
+    ${exposeGMGlobals ? `
+    ${exposeGMGlobalsPrefix}
+    // Expose GM globals where the page can read them. Content-context scripts keep
+    // these in the isolated world; AdGuard Popup Blocker's options page polls for
+    // page-visible GM_* functions to decide whether the userscript is installed.
     window.unsafeWindow = unsafeWindow;
     window.GM_info = GM_info;
     window.GM = GM;
@@ -1682,6 +1691,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_xmlhttpRequest = GM_xmlhttpRequest;
     window.GM_registerMenuCommand = GM_registerMenuCommand;
     window.GM_unregisterMenuCommand = GM_unregisterMenuCommand;
+    ${exposeGMGlobalsSuffix}
     ` : ``}
 
     var __wBlockRunUserScript = function() {
