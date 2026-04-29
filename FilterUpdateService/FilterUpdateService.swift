@@ -12,7 +12,7 @@ import wBlockCoreService
 class FilterUpdateService: NSObject, FilterUpdateProtocol {
     func updateFilters(_ reply: @escaping (Bool) -> Void) {
         Task {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "XPCService", force: true)
+            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "XPCService")
             reply(true)
         }
     }
