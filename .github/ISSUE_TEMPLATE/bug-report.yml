@@ -36,7 +36,7 @@ body:
       description: Please complete the following information.
       value: |
         - OS: [e.g. iOS 26.5, macOS 26.5]
-        - wBlock Version: [e.g. 2.0.3]
+        - wBlock Version: [e.g. 2.0.4]
         - Intel or Apple Silicon (macOS only): [e.g. Apple M2]
   - type: checkboxes
     id: troubleshooting-checklist

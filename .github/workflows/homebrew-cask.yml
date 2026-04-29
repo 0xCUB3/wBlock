@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to publish to, for example 2.0.3"
+        description: "Release tag to publish to, for example 2.0.4"
         required: false
         type: string
       version:
-        description: "DMG/cask version override, for example 2.0.3"
+        description: "DMG/cask version override, for example 2.0.4"
         required: false
         type: string
 
