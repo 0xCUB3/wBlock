@@ -388,7 +388,7 @@ final class CloudSyncManager: ObservableObject {
                     }
                 }
                 guard let self else { return }
-                try? await Task.sleep(for: .seconds(2))
+                try? await TaskSleep.sleep(for: .seconds(2))
                 await self.uploadLatestPayload(trigger: immediateTrigger)
             }
             pendingUploadTask = task
@@ -448,7 +448,7 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func retryDelay(for error: CKError) -> Duration? {
+    private func retryDelay(for error: CKError) -> AsyncDelay? {
         if let retryAfter = error.userInfo[CKErrorRetryAfterKey] as? TimeInterval, retryAfter > 0 {
             return .milliseconds(max(250, Int(retryAfter * 1000)))
         }
@@ -1452,7 +1452,7 @@ final class CloudSyncManager: ObservableObject {
             logger.info(
                 "CloudKit save failed with retryable error \(ckError.code.rawValue, privacy: .public), retrying in \(String(describing: delay), privacy: .public)"
             )
-            try await Task.sleep(for: delay)
+            try await TaskSleep.sleep(for: delay)
             return try await saveRecord(
                 record,
                 retryPayload: retryPayload,

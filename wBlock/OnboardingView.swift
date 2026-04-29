@@ -94,7 +94,7 @@ struct OnboardingView: View {
         } else {
             // Auto-detect from system preferred languages
             let systemLangs = Locale.preferredLanguages.compactMap {
-                Locale(identifier: $0).language.languageCode?.identifier.lowercased()
+                Locale(identifier: $0).languageCode?.lowercased()
             }
             _selectedLanguages = State(initialValue: Set(systemLangs))
         }
@@ -219,21 +219,21 @@ struct OnboardingView: View {
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             await refreshScriptsExtensionState(retryingWhenDisabled: true)
         }
-        .onChange(of: scenePhase) { _, newValue in
+        .onChangeCompat(of: scenePhase) { _, newValue in
             guard newValue == .active else { return }
             Task {
                 await refreshScriptsExtensionState(retryingWhenDisabled: true)
             }
         }
-        .onChange(of: selectedLanguages) { _, newValue in
+        .onChangeCompat(of: selectedLanguages) { _, newValue in
             sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
             hasManuallyEditedRegionalSelection = false
             updateRegionalRecommendations(for: newValue)
         }
-        .onChange(of: filterManager.filterLists) { _ in
+        .onChangeCompat(of: filterManager.filterLists) { _ in
             updateRegionalRecommendations(for: selectedLanguages)
         }
-        .onChange(of: userScriptManager.userScripts) { _ in
+        .onChangeCompat(of: userScriptManager.userScripts) { _ in
             seedSelectedUserscriptsIfNeeded()
         }
         .confirmationDialog(
@@ -774,7 +774,7 @@ struct OnboardingView: View {
                 break
             }
             guard attempt < maxAttempts - 1 else { break }
-            try? await Task.sleep(for: .milliseconds(350))
+            try? await TaskSleep.sleep(for: .milliseconds(350))
         }
 
         detectedScriptsExtensionEnabled = state

@@ -234,7 +234,7 @@ struct UpdatePopupView: View {
                             }
                         } label: {
                             Label("Update & Apply", systemImage: "arrow.triangle.2.circlepath.circle.fill")
-                                .fontWeight(.semibold)
+                                .font(.body.weight(.semibold))
                         }
                         .primaryActionButtonStyle()
                         .disabled(selectedFilters.isEmpty && selectedScripts.isEmpty)

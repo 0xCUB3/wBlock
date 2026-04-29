@@ -193,7 +193,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
 
             let delayMs = min(200 * attempt, 1500)
             do {
-                try await Task.sleep(for: .milliseconds(delayMs))
+                try await TaskSleep.sleep(for: .milliseconds(delayMs))
             } catch {
                 return ReloadAttemptResult(
                     success: false,

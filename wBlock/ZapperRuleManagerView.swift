@@ -1,4 +1,5 @@
 import SwiftUI
+import wBlockCoreService
 
 struct ZapperRuleManagerView: View {
     @ObservedObject private var ruleManager = ZapperRuleManager.shared
@@ -195,7 +196,7 @@ struct ZapperRuleManagerView: View {
         .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
         .task(id: pendingUndo?.rule) {
             guard pendingUndo != nil else { return }
-            try? await Task.sleep(for: .seconds(5))
+            try? await TaskSleep.sleep(for: .seconds(5))
             await MainActor.run {
                 pendingUndo = nil
             }

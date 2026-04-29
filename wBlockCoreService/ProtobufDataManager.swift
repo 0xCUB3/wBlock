@@ -1210,7 +1210,7 @@ public class ProtobufDataManager: ObservableObject {
     
     // MARK: - Data Saving (debounced)
     private var pendingSaveTask: Task<Void, Never>?
-    private let saveDebounceDelay: Duration = .milliseconds(500)
+    private let saveDebounceDelay: AsyncDelay = .milliseconds(500)
     private var lastSavedData: Data?
 
     public func saveData() {
@@ -1224,7 +1224,7 @@ public class ProtobufDataManager: ObservableObject {
                 }
             }
             do {
-                try await Task.sleep(for: delay)
+                try await TaskSleep.sleep(for: delay)
             } catch {
                 return
             }
