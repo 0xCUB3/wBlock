@@ -520,35 +520,37 @@ extension SettingsView {
     }
 
     private func exportBackup() {
-        let backup = BackupManager.createBackup(filterManager: filterManager)
-        guard let data = try? BackupManager.exportData(backup: backup) else {
-            backupStatusMessage = String(localized: "Failed to create backup.")
-            showingBackupStatus = true
-            return
-        }
-
-        #if os(macOS)
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = exportFilename()
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            do {
-                try url.withSecurityScopedAccess { accessibleURL in
-                    try data.write(to: accessibleURL, options: .atomic)
-                }
-            } catch {
-                backupStatusMessage = String.localizedStringWithFormat(
-                    NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
-                    error.localizedDescription
-                )
+        Task { @MainActor in
+            let backup = await BackupManager.createBackup(filterManager: filterManager)
+            guard let data = try? BackupManager.exportData(backup: backup) else {
+                backupStatusMessage = String(localized: "Failed to create backup.")
                 showingBackupStatus = true
+                return
             }
+
+            #if os(macOS)
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue = exportFilename()
+            panel.begin { response in
+                guard response == .OK, let url = panel.url else { return }
+                do {
+                    try url.withSecurityScopedAccess { accessibleURL in
+                        try data.write(to: accessibleURL, options: .atomic)
+                    }
+                } catch {
+                    backupStatusMessage = String.localizedStringWithFormat(
+                        NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
+                        error.localizedDescription
+                    )
+                    showingBackupStatus = true
+                }
+            }
+            #else
+            backupDocument = BackupDocument(data: data)
+            showingExportSheet = true
+            #endif
         }
-        #else
-        backupDocument = BackupDocument(data: data)
-        showingExportSheet = true
-        #endif
     }
 
     private func handleImportResult(_ result: Result<[URL], Error>) {

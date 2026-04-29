@@ -1469,6 +1469,74 @@ public class UserScriptManager: ObservableObject {
         UserScriptURLSupport.displayName(forFilename: fileURL.lastPathComponent)
     }
 
+    private func backupCopy(of script: UserScript, id: UUID) -> UserScript {
+        var copy = UserScript(id: id, name: script.name, url: script.url, content: script.content)
+        copy.isEnabled = script.isEnabled
+        copy.description = script.description
+        copy.version = script.version
+        copy.matches = script.matches
+        copy.excludeMatches = script.excludeMatches
+        copy.includes = script.includes
+        copy.excludes = script.excludes
+        copy.runAt = script.runAt
+        copy.injectInto = script.injectInto
+        copy.grant = script.grant
+        copy.require = script.require
+        copy.resource = script.resource
+        copy.resourceContents = script.resourceContents
+        copy.noframes = script.noframes
+        copy.isLocal = script.isLocal || script.url == nil || script.url?.isFileURL == true
+        copy.updateURL = script.updateURL
+        copy.downloadURL = script.downloadURL
+        copy.lastUpdated = script.lastUpdated
+        copy.updatesAutomatically = script.updatesAutomatically
+        return copy
+    }
+
+    public func userScriptsForBackup() async -> [UserScript] {
+        await waitUntilReady()
+        return await hydrateUserScriptsFromDisk(userScripts, includeResources: true)
+    }
+
+    public func restoreUserScriptsFromBackup(_ restoredScripts: [UserScript]) async {
+        await waitUntilReady()
+        guard !restoredScripts.isEmpty else { return }
+
+        var mergedScripts = userScripts
+
+        for restoredScript in restoredScripts {
+            let restoredLocalName = restoredScript.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let existingIndex = mergedScripts.firstIndex { script in
+                if let restoredURL = restoredScript.url {
+                    return script.url == restoredURL
+                }
+
+                return script.isLocal
+                    && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == restoredLocalName
+            }
+
+            let targetID = existingIndex.map { mergedScripts[$0].id } ?? restoredScript.id
+            let scriptToRestore = backupCopy(of: restoredScript, id: targetID)
+
+            if let existingIndex {
+                mergedScripts[existingIndex] = scriptToRestore
+            } else {
+                mergedScripts.append(scriptToRestore)
+            }
+
+            _ = writeUserScriptContent(scriptToRestore)
+            _ = writeUserScriptResources(scriptToRestore)
+            NotificationCenter.default.post(
+                name: .userScriptManagerDidUpsertUserScript,
+                object: self,
+                userInfo: userScriptNotificationInfo(for: scriptToRestore)
+            )
+        }
+
+        userScripts = mergedScripts
+        await persistUserScriptsNow()
+    }
+
     // MARK: - Public Methods
 
     public func addUserScript(from url: URL) async {

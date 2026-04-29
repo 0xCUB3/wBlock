@@ -14,6 +14,7 @@ struct WBlockBackup: Codable, Sendable {
     var whitelistedDomains: [String]
     var zapperRules: [String: [String]]
 
+    var userScripts: [UserScriptEntry]
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
@@ -26,6 +27,125 @@ struct WBlockBackup: Codable, Sendable {
         var isSelected: Bool
         var description: String
         var content: String?
+    }
+
+    struct UserScriptEntry: Codable, Sendable {
+        var id: UUID
+        var name: String
+        var url: String?
+        var isEnabled: Bool
+        var description: String
+        var version: String
+        var matches: [String]
+        var excludeMatches: [String]
+        var includes: [String]
+        var excludes: [String]
+        var runAt: String
+        var injectInto: String
+        var grant: [String]
+        var require: [String]
+        var resource: [UserScriptResource]
+        var resourceContents: [String: String]
+        var noframes: Bool
+        var isLocal: Bool
+        var updateURL: String?
+        var downloadURL: String?
+        var content: String
+        var lastUpdated: Date?
+        var updatesAutomatically: Bool
+
+        init(userScript: UserScript) {
+            id = userScript.id
+            name = userScript.name
+            url = userScript.url?.absoluteString
+            isEnabled = userScript.isEnabled
+            description = userScript.description
+            version = userScript.version
+            matches = userScript.matches
+            excludeMatches = userScript.excludeMatches
+            includes = userScript.includes
+            excludes = userScript.excludes
+            runAt = userScript.runAt
+            injectInto = userScript.injectInto
+            grant = userScript.grant
+            require = userScript.require
+            resource = userScript.resource
+            resourceContents = userScript.resourceContents
+            noframes = userScript.noframes
+            isLocal = userScript.isLocal
+            updateURL = userScript.updateURL
+            downloadURL = userScript.downloadURL
+            content = userScript.content
+            lastUpdated = userScript.lastUpdated
+            updatesAutomatically = userScript.updatesAutomatically
+        }
+
+        var userScript: UserScript {
+            var script = UserScript(id: id, name: name, url: url.flatMap(URL.init(string:)), content: content)
+            script.isEnabled = isEnabled
+            script.description = description
+            script.version = version
+            script.matches = matches
+            script.excludeMatches = excludeMatches
+            script.includes = includes
+            script.excludes = excludes
+            script.runAt = runAt
+            script.injectInto = injectInto
+            script.grant = grant
+            script.require = require
+            script.resource = resource
+            script.resourceContents = resourceContents
+            script.noframes = noframes
+            script.isLocal = isLocal || script.url == nil || script.url?.isFileURL == true
+            script.updateURL = updateURL
+            script.downloadURL = downloadURL
+            script.lastUpdated = lastUpdated
+            script.updatesAutomatically = updatesAutomatically
+            return script
+        }
+    }
+
+    init(
+        version: Int,
+        createdAt: Date,
+        appVersion: String,
+        filterSelections: [FilterSelection],
+        customFilterLists: [CustomFilterEntry],
+        whitelistedDomains: [String],
+        zapperRules: [String: [String]],
+        userScripts: [UserScriptEntry]
+    ) {
+        self.version = version
+        self.createdAt = createdAt
+        self.appVersion = appVersion
+        self.filterSelections = filterSelections
+        self.customFilterLists = customFilterLists
+        self.whitelistedDomains = whitelistedDomains
+        self.zapperRules = zapperRules
+        self.userScripts = userScripts
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case version
+        case createdAt
+        case appVersion
+        case filterSelections
+        case customFilterLists
+        case whitelistedDomains
+        case zapperRules
+        case userScripts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        appVersion = try container.decode(String.self, forKey: .appVersion)
+        filterSelections = try container.decode([FilterSelection].self, forKey: .filterSelections)
+        customFilterLists = try container.decode([CustomFilterEntry].self, forKey: .customFilterLists)
+        whitelistedDomains = try container.decode([String].self, forKey: .whitelistedDomains)
+        zapperRules = try container.decode([String: [String]].self, forKey: .zapperRules)
+        userScripts = try container.decodeIfPresent([UserScriptEntry].self, forKey: .userScripts) ?? []
     }
 }
 
@@ -55,7 +175,7 @@ enum BackupManager {
 
     // MARK: - Create
 
-    static func createBackup(filterManager: AppFilterManager) -> WBlockBackup {
+    static func createBackup(filterManager: AppFilterManager) async -> WBlockBackup {
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
         let loader = FilterListLoader()
@@ -83,6 +203,9 @@ enum BackupManager {
                 )
             }
 
+        let userScriptEntries = await UserScriptManager.shared.userScriptsForBackup()
+            .map(WBlockBackup.UserScriptEntry.init(userScript:))
+
         // Whitelist
         let whitelistedDomains = defaults?.stringArray(forKey: "disabledSites") ?? []
 
@@ -103,7 +226,8 @@ enum BackupManager {
             filterSelections: filterSelections,
             customFilterLists: customEntries,
             whitelistedDomains: whitelistedDomains,
-            zapperRules: zapperRules
+            zapperRules: zapperRules,
+            userScripts: userScriptEntries
         )
     }
 
@@ -170,10 +294,14 @@ enum BackupManager {
             await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: rules)
         }
 
-        // 5. Mark unapplied changes so user can apply
+        // 5. Restore userscripts, including custom script content and enabled/update state
+        let userScripts = backup.userScripts.map(\.userScript)
+        await UserScriptManager.shared.restoreUserScriptsFromBackup(userScripts)
+
+        // 6. Mark unapplied changes so user can apply
         filterManager.markNonSelectionChangesPending()
 
-        // 6. Refresh ZapperRuleManager
+        // 7. Refresh ZapperRuleManager
         ZapperRuleManager.shared.refresh()
     }
 }
