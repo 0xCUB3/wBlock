@@ -2,11 +2,13 @@
 import Foundation
 import ServiceManagement
 import os.log
+import wBlockCoreService
 
 @MainActor
 final class AutoUpdateLaunchAgentManager {
     static let shared = AutoUpdateLaunchAgentManager()
     static let plistName = "skula.wBlock.FilterUpdateAgent.plist"
+    static let loginItemBundleIdentifier = "skula.wBlock.FilterUpdateLoginItem"
 
     struct RegistrationStatus: Equatable {
         enum State: Equatable {
@@ -33,16 +35,35 @@ final class AutoUpdateLaunchAgentManager {
 
     private init() {}
 
-    private var service: SMAppService {
-        SMAppService.agent(plistName: Self.plistName)
-    }
-
     func currentStatus() -> RegistrationStatus {
-        status(from: service.status)
+        if #available(macOS 13.0, *) {
+            return status(from: modernService.status)
+        }
+        return legacyStatus()
     }
 
     @discardableResult
     func reconcileWithAutoUpdateSetting(_ enabled: Bool) -> RegistrationStatus {
+        if #available(macOS 13.0, *) {
+            return reconcileModernService(enabled)
+        }
+        return reconcileLegacyLoginItem(enabled)
+    }
+
+    func openLoginItemsSettings() {
+        if #available(macOS 13.0, *) {
+            SMAppService.openSystemSettingsLoginItems()
+        }
+    }
+
+    @available(macOS 13.0, *)
+    private var modernService: SMAppService {
+        SMAppService.agent(plistName: Self.plistName)
+    }
+
+    @available(macOS 13.0, *)
+    private func reconcileModernService(_ enabled: Bool) -> RegistrationStatus {
+        let service = modernService
         let current = service.status
 
         do {
@@ -69,23 +90,45 @@ final class AutoUpdateLaunchAgentManager {
             )
         }
 
-        return currentStatus()
+        return status(from: service.status)
     }
 
-    func openLoginItemsSettings() {
-        SMAppService.openSystemSettingsLoginItems()
+    private func reconcileLegacyLoginItem(_ enabled: Bool) -> RegistrationStatus {
+        guard legacyLoginItemExists else {
+            return notFoundStatus()
+        }
+
+        let succeeded = SMLoginItemSetEnabled(Self.loginItemBundleIdentifier as CFString, enabled)
+        guard succeeded else {
+            logger.error("Legacy login item reconcile failed")
+            return unavailableStatus()
+        }
+
+        return enabled ? enabledStatus() : notRegisteredStatus()
     }
 
+    private func legacyStatus() -> RegistrationStatus {
+        guard legacyLoginItemExists else {
+            return notFoundStatus()
+        }
+
+        return ProtobufDataManager.shared.autoUpdateEnabled ? enabledStatus() : notRegisteredStatus()
+    }
+
+    private var legacyLoginItemExists: Bool {
+        let loginItemURL = Bundle.main.bundleURL
+            .appendingPathComponent("Contents")
+            .appendingPathComponent("Library")
+            .appendingPathComponent("LoginItems")
+            .appendingPathComponent("FilterUpdateLoginItem.app")
+        return FileManager.default.fileExists(atPath: loginItemURL.path)
+    }
+
+    @available(macOS 13.0, *)
     private func status(from serviceStatus: SMAppService.Status) -> RegistrationStatus {
         switch serviceStatus {
         case .enabled:
-            return RegistrationStatus(
-                state: .enabled,
-                detail: LocalizedStrings.text(
-                    "Background agent registered",
-                    comment: "Background auto-update agent status detail"
-                )
-            )
+            return enabledStatus()
         case .requiresApproval:
             return RegistrationStatus(
                 state: .requiresApproval,
@@ -95,30 +138,52 @@ final class AutoUpdateLaunchAgentManager {
                 )
             )
         case .notRegistered:
-            return RegistrationStatus(
-                state: .notRegistered,
-                detail: LocalizedStrings.text(
-                    "Background agent not registered",
-                    comment: "Background auto-update agent status detail"
-                )
-            )
+            return notRegisteredStatus()
         case .notFound:
-            return RegistrationStatus(
-                state: .notFound,
-                detail: LocalizedStrings.text(
-                    "Bundled background agent missing from app build",
-                    comment: "Background auto-update agent status detail"
-                )
-            )
+            return notFoundStatus()
         @unknown default:
-            return RegistrationStatus(
-                state: .unavailable,
-                detail: LocalizedStrings.text(
-                    "Background agent status unavailable",
-                    comment: "Background auto-update agent status detail"
-                )
-            )
+            return unavailableStatus()
         }
+    }
+
+    private func enabledStatus() -> RegistrationStatus {
+        RegistrationStatus(
+            state: .enabled,
+            detail: LocalizedStrings.text(
+                "Background agent registered",
+                comment: "Background auto-update agent status detail"
+            )
+        )
+    }
+
+    private func notRegisteredStatus() -> RegistrationStatus {
+        RegistrationStatus(
+            state: .notRegistered,
+            detail: LocalizedStrings.text(
+                "Background agent not registered",
+                comment: "Background auto-update agent status detail"
+            )
+        )
+    }
+
+    private func notFoundStatus() -> RegistrationStatus {
+        RegistrationStatus(
+            state: .notFound,
+            detail: LocalizedStrings.text(
+                "Bundled background agent missing from app build",
+                comment: "Background auto-update agent status detail"
+            )
+        )
+    }
+
+    private func unavailableStatus() -> RegistrationStatus {
+        RegistrationStatus(
+            state: .unavailable,
+            detail: LocalizedStrings.text(
+                "Background agent status unavailable",
+                comment: "Background auto-update agent status detail"
+            )
+        )
     }
 }
 #endif

@@ -78,6 +78,19 @@ if [[ -n "${TEAM_ID}" ]]; then
       fi
     done
   fi
+
+  # Patch login item plists so shared app-group lookup sees the team prefix
+  if [[ -d "${APP_PATH}/Contents/Library/LoginItems" ]]; then
+    for login_item_plist in "${APP_PATH}/Contents/Library/LoginItems/"*.app/Contents/Info.plist; do
+      if [[ -f "${login_item_plist}" ]]; then
+        if ! /usr/libexec/PlistBuddy -c "Print :AppIdentifierPrefix" "${login_item_plist}" &>/dev/null; then
+          /usr/libexec/PlistBuddy -c "Add :AppIdentifierPrefix string ${TEAM_ID}." "${login_item_plist}"
+        else
+          /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${login_item_plist}"
+        fi
+      fi
+    done
+  fi
 fi
 
 if [[ -n "${SIGNING_IDENTITY}" ]]; then
@@ -191,6 +204,31 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
         sign_item "${helper}"
       fi
     done < <(find "${APP_PATH}/Contents/MacOS" -maxdepth 1 -type f -perm -111 -print0)
+  fi
+
+  # Sign embedded login item apps before signing the outer app.
+  if [[ -d "${APP_PATH}/Contents/Library/LoginItems" ]]; then
+    while IFS= read -r -d '' login_item; do
+      if [[ -d "${login_item}/Contents/Frameworks" ]]; then
+        while IFS= read -r -d '' nested; do
+          sign_item "${nested}"
+        done < <(find "${login_item}/Contents/Frameworks" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) -print0)
+      fi
+
+      login_item_name="$(basename "${login_item}" .app)"
+      entitlements=""
+      case "${login_item_name}" in
+        "FilterUpdateLoginItem") entitlements="${ROOT_DIR}/FilterUpdateLoginItem/FilterUpdateLoginItem.entitlements" ;;
+      esac
+
+      if [[ -n "${entitlements}" && -f "${entitlements}" ]]; then
+        modified_ent="$(prepare_entitlements "${entitlements}")"
+        sign_item "${login_item}" "${modified_ent}"
+        rm -f "${modified_ent}"
+      else
+        sign_item "${login_item}"
+      fi
+    done < <(find "${APP_PATH}/Contents/Library/LoginItems" -maxdepth 1 -name "*.app" -print0)
   fi
 
   # Sign the main app last (outermost)

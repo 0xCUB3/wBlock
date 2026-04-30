@@ -196,7 +196,7 @@ struct UserScriptManagerView: View {
                 }
             }
         }
-        .searchable(
+        .searchableCompat(
             text: $searchText,
             isPresented: $showSearch,
             prompt: "Search scripts"
@@ -1073,7 +1073,7 @@ private struct UserScriptSourceSheet: View {
 
     var body: some View {
         #if os(iOS)
-        NavigationStack {
+        CompatibleNavigationStack {
             sourceSheetBody
                 .background(Color(.systemGray6))
                 .navigationTitle("Script Content")
@@ -1225,11 +1225,11 @@ struct AddUserScriptView: View {
         .onAppear {
             urlFieldFocused = addMode == .url
         }
-        .onChange(of: addMode) { _, newValue in
+        .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
         }
         #endif
-        .onChange(of: urlInput) { _, newValue in
+        .onChangeCompat(of: urlInput) { _, newValue in
             validateInput(newValue)
         }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
@@ -1246,7 +1246,7 @@ struct AddUserScriptView: View {
 
     #if os(iOS)
     private var iosBody: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             addTabs
                 .navigationTitle("Add Userscript")
                 .navigationBarTitleDisplayMode(.inline)
@@ -1267,8 +1267,7 @@ struct AddUserScriptView: View {
                     }
                 }
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .largeSheetPresentationCompat()
     }
 
     private var addTabs: some View {
@@ -1290,7 +1289,7 @@ struct AddUserScriptView: View {
                     TextField(
                         text: $urlInput,
                         prompt: Text(verbatim: "https://example.com/script.user.js")
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.secondary)
                     ) {
                         Text("Script URL")
                     }

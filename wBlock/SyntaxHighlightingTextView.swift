@@ -164,7 +164,12 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView(usingTextLayoutManager: true)
+        let textView: UITextView
+        if #available(iOS 16.0, *) {
+            textView = UITextView(usingTextLayoutManager: true)
+        } else {
+            textView = UITextView()
+        }
         textView.font = UIFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         textView.autocapitalizationType = .none
         textView.autocorrectionType = .no

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import wBlockCoreService
 
 // MARK: - Liquid Glass (wBlock style)
 
@@ -143,9 +144,9 @@ struct ToolbarSearchField: View {
                 }
                 .padding(.horizontal, 8)
                 .frame(width: 220)
-                .transition(.blurReplace)
+                .transition(.blurReplaceCompat)
                 .task {
-                    try? await Task.sleep(for: .milliseconds(350))
+                    try? await TaskSleep.sleep(for: .milliseconds(350))
                     isFocused = true
                 }
             } else {
@@ -154,11 +155,11 @@ struct ToolbarSearchField: View {
                 } label: {
                     Label("Search", systemImage: "magnifyingglass")
                 }
-                .transition(.blurReplace)
+                .transition(.blurReplaceCompat)
             }
         }
         .animation(.smooth(duration: 0.3), value: isExpanded)
-        .onChange(of: isFocused) { _, focused in
+        .onChangeCompat(of: isFocused) { _, focused in
             if !focused && isExpanded {
                 collapse()
             }
