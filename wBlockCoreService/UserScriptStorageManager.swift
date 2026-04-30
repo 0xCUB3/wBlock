@@ -19,7 +19,8 @@ actor UserScriptStorageManager {
     private var lastLoadedVersion: Int64 = 0
 
     private init() {
-        try? fileManager.createDirectory(at: dataDirectoryURL, withIntermediateDirectories: true)
+        let directoryURL = Self.makeDataDirectoryURL(fileManager: fileManager)
+        try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
     }
 
     func snapshot(for scriptID: String) async -> [String: String] {
@@ -79,6 +80,10 @@ actor UserScriptStorageManager {
     }
 
     private var dataDirectoryURL: URL {
+        Self.makeDataDirectoryURL(fileManager: fileManager)
+    }
+
+    private static func makeDataDirectoryURL(fileManager: FileManager) -> URL {
         if let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
             return containerURL.appendingPathComponent("ProtobufData", isDirectory: true)
         }
