@@ -17,6 +17,30 @@ struct CompatibleNavigationStack<Content: View>: View {
     }
 }
 
+private struct OnChangeCompatModifier<Value: Equatable>: ViewModifier {
+    let value: Value
+    let action: (_ oldValue: Value, _ newValue: Value) -> Void
+
+    @State private var previousValue: Value
+
+    init(
+        value: Value,
+        action: @escaping (_ oldValue: Value, _ newValue: Value) -> Void
+    ) {
+        self.value = value
+        self.action = action
+        _previousValue = State(initialValue: value)
+    }
+
+    func body(content: Content) -> some View {
+        content.onChange(of: value) { newValue in
+            let oldValue = previousValue
+            previousValue = newValue
+            action(oldValue, newValue)
+        }
+    }
+}
+
 extension View {
     @ViewBuilder
     func onChangeCompat<Value: Equatable>(
@@ -26,9 +50,7 @@ extension View {
         if #available(iOS 17.0, macOS 14.0, *) {
             onChange(of: value, action)
         } else {
-            onChange(of: value) { newValue in
-                action(value, newValue)
-            }
+            modifier(OnChangeCompatModifier(value: value, action: action))
         }
     }
 
