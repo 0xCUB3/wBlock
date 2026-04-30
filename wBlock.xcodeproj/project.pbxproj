@@ -1024,6 +1024,7 @@
 				C1A41C412DE089C50056F63D /* Sources */,
 				C1A41C422DE089C50056F63D /* Frameworks */,
 				C1A41C432DE089C50056F63D /* Resources */,
+				C1D5F0012F7A000000000001 /* Copy Swift Package Resource Bundles */,
 			);
 			buildRules = (
 			);
@@ -1603,6 +1604,56 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C1D5F0012F7A000000000001 /* Copy Swift Package Resource Bundles */ = {
+			isa = PBXShellScriptBuildPhase;
+			platformFilters = (
+				macos,
+			);
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents/Info.plist",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents/Resources",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents/Resources/asterisk.bin",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents/Resources/common.bin",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents/Resources/negated.bin",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Contents/Resources/version.txt",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/Info.plist",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/asterisk.bin",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/common.bin",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/negated.bin",
+				"$(BUILT_PRODUCTS_DIR)/swift-psl_PublicSuffixList.bundle/version.txt",
+			);
+			name = "Copy Swift Package Resource Bundles";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents/Resources",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents/Resources/asterisk.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents/Resources/common.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents/Resources/negated.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Contents/Resources/version.txt",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/asterisk.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/common.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/negated.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/swift-psl_PublicSuffixList.bundle/version.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\n\nsrc=\"${BUILT_PRODUCTS_DIR}/swift-psl_PublicSuffixList.bundle\"\ndest=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/swift-psl_PublicSuffixList.bundle\"\n\nif [ -f \"${src}/Contents/Info.plist\" ]; then\n    mkdir -p \"${dest}/Contents/Resources\"\n    cp \"${src}/Contents/Info.plist\" \"${dest}/Contents/Info.plist\"\n    cp \"${src}/Contents/Resources/asterisk.bin\" \"${dest}/Contents/Resources/asterisk.bin\"\n    cp \"${src}/Contents/Resources/common.bin\" \"${dest}/Contents/Resources/common.bin\"\n    cp \"${src}/Contents/Resources/negated.bin\" \"${dest}/Contents/Resources/negated.bin\"\n    cp \"${src}/Contents/Resources/version.txt\" \"${dest}/Contents/Resources/version.txt\"\nelif [ -f \"${src}/Info.plist\" ]; then\n    mkdir -p \"${dest}\"\n    cp \"${src}/Info.plist\" \"${dest}/Info.plist\"\n    cp \"${src}/asterisk.bin\" \"${dest}/asterisk.bin\"\n    cp \"${src}/common.bin\" \"${dest}/common.bin\"\n    cp \"${src}/negated.bin\" \"${dest}/negated.bin\"\n    cp \"${src}/version.txt\" \"${dest}/version.txt\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0516AA17D052481D805BAE3E /* Sources */ = {
