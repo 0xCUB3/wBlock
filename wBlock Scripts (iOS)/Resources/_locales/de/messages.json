@@ -135,6 +135,10 @@
     "message": "Ausblenden",
     "description": "Button label for confirming hide action in refine mode."
   },
+  "zapper_button_cancel": {
+    "message": "Abbrechen",
+    "description": "Button label to cancel element selection and exit refine mode without hiding."
+  },
   "zapper_error_enter_selector": {
     "message": "Gib einen CSS-Selektor ein.",
     "description": "Validation error shown when manual selector input is empty."

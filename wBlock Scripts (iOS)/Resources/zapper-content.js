@@ -45,6 +45,7 @@
       parentButton: null,
       childButton: null,
       hideButton: null,
+      cancelButton: null,
       navGroup: null,
       defaultGroup: null,
     },
@@ -393,7 +394,7 @@
       #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); cursor: grab; }
       #${UI_ROOT_ID} .wblock-bar.wblock-dragging { cursor: grabbing; }
       #${UI_ROOT_ID} .wblock-drag-hint { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); margin: 0 auto 6px; }
-      #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 10px; }
       #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0; }
       #${UI_ROOT_ID} button:disabled { opacity: 0.5; }
@@ -409,9 +410,9 @@
       #${UI_ROOT_ID} .wblock-overflow button:active { background: rgba(255,255,255,0.1); }
       @media (max-width: 430px) {
         #${UI_ROOT_ID} .wblock-bar { flex-direction: column; align-items: stretch; }
-        #${UI_ROOT_ID} .wblock-status { font-size: 14px; }
         #${UI_ROOT_ID} .wblock-actions { width: 100%; }
         #${UI_ROOT_ID} .wblock-actions button { flex-grow: 1; min-height: 44px; }
+        #${UI_ROOT_ID} .wblock-overflow { left: 0; right: auto; }
       }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
@@ -546,6 +547,15 @@
     };
     childButton.addEventListener('click', onChild);
 
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.textContent = t('zapper_button_cancel', undefined, 'Cancel');
+    const onCancel = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation(); }
+      exitRefineMode();
+    };
+    cancelButton.addEventListener('click', onCancel);
+
     const hideButton = document.createElement('button');
     hideButton.type = 'button';
     hideButton.className = 'wblock-hide-btn';
@@ -556,6 +566,7 @@
     };
     hideButton.addEventListener('click', onHide);
 
+    navGroup.appendChild(cancelButton);
     navGroup.appendChild(parentButton);
     navGroup.appendChild(childButton);
     navGroup.appendChild(hideButton);
@@ -588,6 +599,7 @@
     state.ui.parentButton = parentButton;
     state.ui.childButton = childButton;
     state.ui.hideButton = hideButton;
+    state.ui.cancelButton = cancelButton;
     state.ui.navGroup = navGroup;
     state.ui.defaultGroup = defaultGroup;
 
@@ -845,6 +857,7 @@
     state.ui.parentButton = null;
     state.ui.childButton = null;
     state.ui.hideButton = null;
+    state.ui.cancelButton = null;
     state.ui.navGroup = null;
     state.ui.defaultGroup = null;
   }

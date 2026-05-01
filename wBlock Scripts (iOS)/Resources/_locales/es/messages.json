@@ -135,6 +135,10 @@
     "message": "Ocultar",
     "description": "Button label for confirming hide action in refine mode."
   },
+  "zapper_button_cancel": {
+    "message": "Cancelar",
+    "description": "Button label to cancel element selection and exit refine mode without hiding."
+  },
   "zapper_error_enter_selector": {
     "message": "Introduce un selector CSS.",
     "description": "Validation error shown when manual selector input is empty."
