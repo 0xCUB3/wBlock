@@ -54,6 +54,9 @@ private actor ProtobufDiskStore {
     }
 
     private func withExclusiveFileLock<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {
+        #if os(iOS)
+        return try withCoordinatedWriteAccess(for: dataURL, operation)
+        #else
         let lockURL = dataURL.appendingPathExtension("lock")
         if !fileExists(at: lockURL) {
             _ = fileManager.createFile(atPath: lockURL.path, contents: Data())
@@ -86,7 +89,140 @@ private actor ProtobufDiskStore {
         }
 
         return try operation()
+        #endif
     }
+
+    private func withCoordinatedWriteAccess<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {
+        let directoryURL = dataURL.deletingLastPathComponent()
+        if !fileExists(at: directoryURL) {
+            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        }
+
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        var coordinationError: NSError?
+        var operationResult: Result<T, Error>?
+
+        coordinator.coordinate(writingItemAt: directoryURL, options: [], error: &coordinationError) { _ in
+            operationResult = Result { try operation() }
+        }
+
+        if let operationResult {
+            return try operationResult.get()
+        }
+
+        if let coordinationError {
+            throw coordinationError
+        }
+
+        throw NSError(
+            domain: "ProtobufDiskStore",
+            code: CocoaError.fileWriteUnknown.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: "File coordination failed before protobuf write"]
+        )
+    }
+
+    private func readCurrentAppData(from dataURL: URL) throws -> (rawData: Data?, appData: Wblock_Data_AppData) {
+        guard fileExists(at: dataURL) else {
+            return (rawData: nil, appData: Wblock_Data_AppData())
+        }
+
+        let rawData = try Data(contentsOf: dataURL)
+        return (rawData: rawData, appData: try Wblock_Data_AppData(serializedData: rawData))
+    }
+
+
+    private func preserveNewerCrossProcessState(
+        in snapshot: inout Wblock_Data_AppData,
+        from persisted: Wblock_Data_AppData
+    ) {
+        if persisted.extensionData.lastUpdated >= snapshot.extensionData.lastUpdated {
+            snapshot.extensionData = persisted.extensionData
+        }
+
+        if persisted.whitelist.lastUpdated >= snapshot.whitelist.lastUpdated {
+            snapshot.whitelist = persisted.whitelist
+        }
+    }
+
+    private func mutateAppDataOnce<Result: Sendable>(
+        at dataURL: URL,
+        versionURL: URL,
+        mutate: @Sendable (inout Wblock_Data_AppData) -> Result
+    ) throws -> (
+        appData: Wblock_Data_AppData,
+        rawData: Data,
+        modificationDate: Date?,
+        version: Int64,
+        didWrite: Bool,
+        result: Result
+    ) {
+        let current = try readCurrentAppData(from: dataURL)
+        var workingData = current.appData
+
+        let mutationResult = mutate(&workingData)
+        let updatedRawData = try workingData.serializedData()
+        let currentVersion = dataVersion(for: versionURL)
+
+        if current.rawData == updatedRawData {
+            return (
+                appData: workingData,
+                rawData: updatedRawData,
+                modificationDate: modificationDate(for: dataURL),
+                version: currentVersion,
+                didWrite: false,
+                result: mutationResult
+            )
+        }
+
+        try writeData(updatedRawData, to: dataURL)
+        let nextVersion = currentVersion + 1
+        try writeDataVersion(nextVersion, to: versionURL)
+
+        return (
+            appData: workingData,
+            rawData: updatedRawData,
+            modificationDate: modificationDate(for: dataURL),
+            version: nextVersion,
+            didWrite: true,
+            result: mutationResult
+        )
+    }
+
+
+    private func writeAppDataIfChangedOnce(
+        appData: Wblock_Data_AppData,
+        previousData: Data?,
+        to dataURL: URL,
+        versionURL: URL
+    ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
+        let current = try readCurrentAppData(from: dataURL)
+        var mergedSnapshot = appData
+
+        if let persistedRawData = current.rawData,
+           let previousData,
+           previousData != persistedRawData {
+            preserveNewerCrossProcessState(in: &mergedSnapshot, from: current.appData)
+        }
+
+        let rawData = try mergedSnapshot.serializedData()
+        if current.rawData == rawData {
+            return (
+                appData: mergedSnapshot,
+                rawData: rawData,
+                modificationDate: modificationDate(for: dataURL),
+                version: dataVersion(for: versionURL),
+                didWrite: false
+            )
+        }
+
+        try writeData(rawData, to: dataURL)
+
+        let nextVersion = dataVersion(for: versionURL) + 1
+        try writeDataVersion(nextVersion, to: versionURL)
+
+        return (appData: mergedSnapshot, rawData: rawData, modificationDate: modificationDate(for: dataURL), version: nextVersion, didWrite: true)
+    }
+
 
     func mutateAppDataAtomically<Result: Sendable>(
         at dataURL: URL,
@@ -100,43 +236,8 @@ private actor ProtobufDiskStore {
         didWrite: Bool,
         result: Result
     ) {
-        try withExclusiveFileLock(for: dataURL) {
-            let persistedRawData = try? Data(contentsOf: dataURL)
-            var workingData: Wblock_Data_AppData
-
-            if let persistedRawData {
-                workingData = try Wblock_Data_AppData(serializedData: persistedRawData)
-            } else {
-                workingData = Wblock_Data_AppData()
-            }
-
-            let mutationResult = mutate(&workingData)
-            let updatedRawData = try workingData.serializedData()
-            let currentVersion = dataVersion(for: versionURL)
-
-            if persistedRawData == updatedRawData {
-                return (
-                    appData: workingData,
-                    rawData: updatedRawData,
-                    modificationDate: modificationDate(for: dataURL),
-                    version: currentVersion,
-                    didWrite: false,
-                    result: mutationResult
-                )
-            }
-
-            try writeData(updatedRawData, to: dataURL)
-            let nextVersion = currentVersion + 1
-            try writeDataVersion(nextVersion, to: versionURL)
-
-            return (
-                appData: workingData,
-                rawData: updatedRawData,
-                modificationDate: modificationDate(for: dataURL),
-                version: nextVersion,
-                didWrite: true,
-                result: mutationResult
-            )
+        return try withExclusiveFileLock(for: dataURL) {
+            try mutateAppDataOnce(at: dataURL, versionURL: versionURL, mutate: mutate)
         }
     }
 
@@ -145,35 +246,14 @@ private actor ProtobufDiskStore {
         previousData: Data?,
         to dataURL: URL,
         versionURL: URL
-    ) throws -> (rawData: Data, modificationDate: Date?, version: Int64)? {
-        try withExclusiveFileLock(for: dataURL) {
-            let persistedRawData = try? Data(contentsOf: dataURL)
-            var mergedSnapshot = appData
-
-            // If another process wrote between our read and this debounced write,
-            // preserve authoritative zapper state from disk to avoid clobbering it.
-            if let persistedRawData,
-               let previousData,
-               previousData != persistedRawData,
-               let persistedAppData = try? Wblock_Data_AppData(serializedData: persistedRawData) {
-                mergedSnapshot.extensionData.zapperRulesByHost = persistedAppData.extensionData.zapperRulesByHost
-                mergedSnapshot.extensionData.lastUpdated = max(
-                    mergedSnapshot.extensionData.lastUpdated,
-                    persistedAppData.extensionData.lastUpdated
-                )
-            }
-
-            let rawData = try mergedSnapshot.serializedData()
-            if let persistedRawData, persistedRawData == rawData {
-                return nil
-            }
-
-            try writeData(rawData, to: dataURL)
-
-            let nextVersion = dataVersion(for: versionURL) + 1
-            try writeDataVersion(nextVersion, to: versionURL)
-
-            return (rawData: rawData, modificationDate: modificationDate(for: dataURL), version: nextVersion)
+    ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
+        return try withExclusiveFileLock(for: dataURL) {
+            try writeAppDataIfChangedOnce(
+                appData: appData,
+                previousData: previousData,
+                to: dataURL,
+                versionURL: versionURL
+            )
         }
     }
 
@@ -1242,8 +1322,19 @@ public class ProtobufDataManager: ObservableObject {
         await performSaveData()
     }
 
+    private func mergeNewerCrossProcessState(from savedData: Wblock_Data_AppData) {
+        if savedData.extensionData.lastUpdated >= appData.extensionData.lastUpdated {
+            appData.extensionData = savedData.extensionData
+        }
+
+        if savedData.whitelist.lastUpdated >= appData.whitelist.lastUpdated {
+            appData.whitelist = savedData.whitelist
+        }
+    }
+
     private func performSaveData() async {
         let snapshot = appData
+        let snapshotRawData = try? snapshot.serializedData()
         let previous = lastSavedData
 
         do {
@@ -1253,12 +1344,19 @@ public class ProtobufDataManager: ObservableObject {
                 to: dataFileURL,
                 versionURL: dataVersionFileURL
             ) {
+                if (try? appData.serializedData()) == snapshotRawData {
+                    appData = result.appData
+                } else {
+                    mergeNewerCrossProcessState(from: result.appData)
+                }
                 lastSavedData = result.rawData
                 lastLoadedDataFileModificationDate = result.modificationDate
                 lastLoadedDataVersion = result.version
                 lastError = nil
-                logger.info("✅ Saved protobuf data (\(result.rawData.count) bytes)")
-                didSaveDataSubject.send()
+                if result.didWrite {
+                    logger.info("✅ Saved protobuf data (\(result.rawData.count) bytes)")
+                    didSaveDataSubject.send()
+                }
             }
         } catch {
             logger.error("❌ Failed to save data: \(error)")

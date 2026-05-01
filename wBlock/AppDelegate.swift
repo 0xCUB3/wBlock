@@ -22,6 +22,41 @@ import wBlockCoreService
 extension Notification.Name {
     static let applyWBlockChangesNotification = Notification.Name("applyWBlockChangesNotification_unique_identifier")
 }
+#if os(iOS)
+@MainActor
+private final class BackgroundTaskHandle {
+    private let application: UIApplication
+    private var identifier: UIBackgroundTaskIdentifier = .invalid
+
+    init(application: UIApplication) {
+        self.application = application
+    }
+
+    @discardableResult
+    func start(name: String) -> Bool {
+        identifier = application.beginBackgroundTask(withName: name) { [weak self] in
+            os_log("Background task expired: %{public}@", type: .error, name)
+            Task { @MainActor in
+                self?.end()
+            }
+        }
+
+        if identifier == .invalid {
+            os_log("Failed to begin background task: %{public}@", type: .error, name)
+            return false
+        }
+
+        return true
+    }
+
+    func end() {
+        guard identifier != .invalid else { return }
+        application.endBackgroundTask(identifier)
+        identifier = .invalid
+    }
+}
+#endif
+
 
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
@@ -361,20 +396,34 @@ extension AppDelegate: UIApplicationDelegate {
         // Flush any pending coalesced filter list saves
         filterManager?.flushPendingSave()
 
-        // Flush any pending protobuf saves when entering background
-        ProtobufDataManager.shared.saveData()
+        // Flush pending protobuf saves with background time instead of leaving a
+        // debounced disk write to race app suspension.
+        flushProtobufDataForBackgroundTransition(reason: "EnterBackground")
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Flush any pending coalesced filter list saves
         filterManager?.flushPendingSave()
 
-        // Flush any pending protobuf saves before termination
-        ProtobufDataManager.shared.saveData()
+        flushProtobufDataForBackgroundTransition(reason: "Terminate")
     }
     
     // MARK: - Background Task Management
     
+    @MainActor
+    private func flushProtobufDataForBackgroundTransition(reason: String) {
+        let application = UIApplication.shared
+
+        let backgroundTask = BackgroundTaskHandle(application: application)
+        backgroundTask.start(name: "wBlock protobuf save: \(reason)")
+
+        Task { @MainActor in
+            await ProtobufDataManager.shared.saveDataImmediately()
+            backgroundTask.end()
+        }
+
+    }
+
     private func registerBackgroundTasks() {
         let refreshRegistered = BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
             guard let refreshTask = task as? BGAppRefreshTask else {
