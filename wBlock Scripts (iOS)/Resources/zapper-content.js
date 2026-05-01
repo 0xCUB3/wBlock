@@ -412,6 +412,7 @@
         #${UI_ROOT_ID} .wblock-bar { flex-direction: column; align-items: stretch; }
         #${UI_ROOT_ID} .wblock-actions { width: 100%; }
         #${UI_ROOT_ID} .wblock-actions button { flex-grow: 1; min-height: 44px; }
+        #${UI_ROOT_ID} .wblock-overflow { left: 0; right: auto; }
       }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
