@@ -409,16 +409,12 @@ public func boundedConcurrentForEach<Item: Sendable, Result: Sendable>(
     }
 }
 
-func measure<T>(label: String, block: () -> T) -> T {
-    let start = DispatchTime.now()  // Start the timer
-
-    let result = block()  // Execute the code block
-
-    let end = DispatchTime.now()  // End the timer
+func measure<T>(label: String, block: () throws -> T) rethrows -> T {
+    let start = DispatchTime.now()
+    let result = try block()
+    let end = DispatchTime.now()
     let elapsedNanoseconds = end.uptimeNanoseconds - start.uptimeNanoseconds
-    let elapsedMilliseconds = Double(elapsedNanoseconds) / 1_000_000  // Convert to milliseconds
-
-    // Pretty print elapsed time
+    let elapsedMilliseconds = Double(elapsedNanoseconds) / 1_000_000
     let formattedTime = String(format: "%.3f", elapsedMilliseconds)
     NSLog("[\(label)] Elapsed Time: \(formattedTime) ms")
 

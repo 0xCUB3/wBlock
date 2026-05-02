@@ -5,6 +5,43 @@ import wBlockCoreService
 extension AppFilterManager {
     // MARK: - Helper Methods
 
+    private enum ApplyPipelineError: LocalizedError {
+        case emptyRulesSaveFailed(targetName: String)
+        case emptyRulesReloadFailed(targetName: String)
+        case sharedContainerUnavailable
+        case conversionFailed(targetName: String, underlying: Error)
+
+        var errorDescription: String? {
+            switch self {
+            case let .emptyRulesSaveFailed(targetName):
+                return "Failed to save cleared rules for \(targetName)."
+            case let .emptyRulesReloadFailed(targetName):
+                return "Failed to reload \(targetName) after clearing rules."
+            case .sharedContainerUnavailable:
+                return "Shared app group container unavailable."
+            case let .conversionFailed(targetName, underlying):
+                return "Failed to convert rules for \(targetName): \(underlying.localizedDescription)"
+            }
+        }
+    }
+
+    nonisolated private static func contentBlockerOutputMatchesEmptyArray(
+        targetRulesFilename: String,
+        groupIdentifier: String
+    ) -> Bool {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return false
+        }
+
+        let rulesURL = containerURL.appendingPathComponent(targetRulesFilename)
+        guard let fileContents = try? String(contentsOf: rulesURL, encoding: .utf8) else {
+            return false
+        }
+
+        return fileContents.trimmingCharacters(in: .whitespacesAndNewlines) == "[]"
+    }
 
     // MARK: - Delegated methods
 
@@ -65,7 +102,7 @@ extension AppFilterManager {
                     .filterApply, "Found and downloading updates before applying",
                     metadata: ["count": "\(updatedFilters.count)"])
 
-                _ = await filterUpdater.updateSelectedFilters(
+                let appliedUpdates = await filterUpdater.updateSelectedFilters(
                     updatedFilters,
                     progressCallback: { prog in
                         Task { @MainActor in
@@ -73,6 +110,32 @@ extension AppFilterManager {
                             self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
                         }
                     })
+                let requestedIDs = Set(updatedFilters.map(\.id))
+                let appliedIDs = Set(appliedUpdates.map(\.id))
+                let missingIDs = requestedIDs.subtracting(appliedIDs)
+                let unexpectedIDs = appliedIDs.subtracting(requestedIDs)
+                guard missingIDs.isEmpty, unexpectedIDs.isEmpty else {
+                    await ConcurrentLogManager.shared.error(
+                        .filterApply,
+                        "Failed to download one or more pre-apply filter updates",
+                        metadata: [
+                            "requested": "\(updatedFilters.count)",
+                            "updated": "\(appliedUpdates.count)",
+                            "missingIDs": missingIDs.map(\.uuidString).joined(separator: ","),
+                            "unexpectedIDs": unexpectedIDs.map(\.uuidString).joined(separator: ","),
+                        ]
+                    )
+                    await MainActor.run {
+                        self.hasError = true
+                        self.statusDescription = LocalizedStrings.text(
+                            "Failed",
+                            comment: "Generic failure status"
+                        )
+                        self.isLoading = false
+                        self.showingApplyProgressSheet = false
+                    }
+                    return
+                }
 
                 await saveFilterLists()
             } else {
@@ -132,35 +195,69 @@ extension AppFilterManager {
             await ConcurrentLogManager.shared.info(
                 .filterApply, "No filters selected - clearing all extensions", metadata: [:])
 
-            // Perform heavy operations on background thread
             let currentPlatform = self.currentPlatform
 
-            await Task.detached {
-                // Clear the filter engine when no filters are selected
-                ContentBlockerService.clearFilterEngine(
-                    groupIdentifier: GroupIdentifier.shared.value)
-
-                // Clear rules for all relevant extensions
-                let platformTargets = ContentBlockerTargetManager.shared.allTargets(
-                    forPlatform: currentPlatform)
-                for targetInfo in platformTargets {
-                    _ = ContentBlockerService.saveContentBlocker(
-                        jsonRules: "[]",
-                        groupIdentifier: GroupIdentifier.shared.value,
-                        targetRulesFilename: targetInfo.rulesFilename
+            do {
+                try await Task.detached {
+                    let groupIdentifier = GroupIdentifier.shared.value
+                    try ContentBlockerService.clearFilterEngine(
+                        groupIdentifier: groupIdentifier
                     )
-                    _ = await ContentBlockerService.reloadWithRetry(identifier: targetInfo.bundleIdentifier)
-                }
-            }.value
 
-            await MainActor.run {
-                self.isLoading = false
-                self.showingApplyProgressSheet = false
-                self.markCurrentStateApplied()
-                self.lastRuleCount = 0
-                self.ruleCountsByExtension.removeAll()
-                self.extensionsApproachingLimit.removeAll()
-                self.saveRuleCounts()
+                    let platformTargets = ContentBlockerTargetManager.shared.allTargets(
+                        forPlatform: currentPlatform
+                    )
+                    for targetInfo in platformTargets {
+                        let savedRuleCount = ContentBlockerService.saveContentBlocker(
+                            jsonRules: "[]",
+                            groupIdentifier: groupIdentifier,
+                            targetRulesFilename: targetInfo.rulesFilename
+                        )
+                        let outputMatchesEmptyArray = Self.contentBlockerOutputMatchesEmptyArray(
+                            targetRulesFilename: targetInfo.rulesFilename,
+                            groupIdentifier: groupIdentifier
+                        )
+                        guard savedRuleCount == 0, outputMatchesEmptyArray else {
+                            throw ApplyPipelineError.emptyRulesSaveFailed(
+                                targetName: targetInfo.displayName
+                            )
+                        }
+
+                        let reloadResult = await ContentBlockerService.reloadWithRetry(
+                            identifier: targetInfo.bundleIdentifier
+                        )
+                        guard reloadResult.success else {
+                            throw ApplyPipelineError.emptyRulesReloadFailed(
+                                targetName: targetInfo.displayName
+                            )
+                        }
+                    }
+                }.value
+
+                await MainActor.run {
+                    self.isLoading = false
+                    self.showingApplyProgressSheet = false
+                    self.markCurrentStateApplied()
+                    self.lastRuleCount = 0
+                    self.ruleCountsByExtension.removeAll()
+                    self.extensionsApproachingLimit.removeAll()
+                    self.saveRuleCounts()
+                }
+            } catch {
+                await ConcurrentLogManager.shared.error(
+                    .filterApply,
+                    "Failed to clear extensions and advanced engine",
+                    metadata: ["error": error.localizedDescription]
+                )
+                await MainActor.run {
+                    self.hasError = true
+                    self.statusDescription = LocalizedStrings.text(
+                        "Failed",
+                        comment: "Generic failure status"
+                    )
+                    self.isLoading = false
+                    self.showingApplyProgressSheet = false
+                }
             }
             return
         }
@@ -251,20 +348,37 @@ extension AppFilterManager {
             // Yield to prevent main thread starvation on iOS
             await Task.yield()
 
-            // Reuse cached conversion output when assigned filter inputs are unchanged.
-            let conversionResult = await Task.detached {
-                Self.convertOrReuseTargetRules(
-                    filters: filters,
-                    orderedSelectedFilters: orderedSelectedFilters,
-                    affinityFilterIDs: affinityFilterIDs,
-                    targetInfo: targetInfo,
-                    allTargets: platformTargets,
-                    disabledSites: disabledSites,
-                    extraRulesText: extraRulesText,
-                    groupIdentifier: GroupIdentifier.shared.value
+            let conversionResult: TargetConversionOutcome
+            do {
+                conversionResult = try await Task.detached {
+                    try Self.convertOrReuseTargetRules(
+                        filters: filters,
+                        orderedSelectedFilters: orderedSelectedFilters,
+                        affinityFilterIDs: affinityFilterIDs,
+                        targetInfo: targetInfo,
+                        allTargets: platformTargets,
+                        disabledSites: disabledSites,
+                        extraRulesText: extraRulesText,
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }.value
+            } catch {
+                await ConcurrentLogManager.shared.error(
+                    .filterApply,
+                    "Failed to convert rules for blocker",
+                    metadata: ["blocker": blockerName, "error": error.localizedDescription]
                 )
-            }.value
-
+                await MainActor.run {
+                    self.hasError = true
+                    self.statusDescription = LocalizedStrings.text(
+                        "Failed",
+                        comment: "Generic failure status"
+                    )
+                    self.isLoading = false
+                    self.showingApplyProgressSheet = false
+                }
+                return
+            }
             let ruleCountForThisTarget = conversionResult.safariRulesCount
 
             if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
@@ -416,49 +530,66 @@ extension AppFilterManager {
             self.applyProgressViewModel.updatePhaseCompletion(reloading: true)
         }
 
-        if !advancedRulesByTarget.isEmpty {
+        let advancedEngineSucceeded: Bool
+        do {
+            if !advancedRulesByTarget.isEmpty {
+                await MainActor.run {
+                    self.applyProgressViewModel.updateStageDescription(
+                        LocalizedStrings.text("Building combined filter engine...", comment: "Apply pipeline stage")
+                    )
+                }
+
+                try await Task.detached {
+                    let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
+                    let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
+                    await ConcurrentLogManager.shared.info(
+                        .filterApply, "Building filter engine",
+                        metadata: [
+                            "targetCount": "\(advancedRulesByTarget.count)",
+                            "totalLines": "\(totalLines)",
+                        ])
+
+                    try ContentBlockerService.buildCombinedFilterEngine(
+                        combinedAdvancedRules: combinedAdvancedRules,
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }.value
+            } else {
+                await ConcurrentLogManager.shared.debug(
+                    .filterApply, "No advanced rules found, clearing filter engine", metadata: [:])
+                try await Task.detached {
+                    try ContentBlockerService.clearFilterEngine(
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }.value
+            }
+            advancedEngineSucceeded = true
+        } catch {
+            advancedEngineSucceeded = false
+            await ConcurrentLogManager.shared.error(
+                .filterApply,
+                "Advanced engine publish failed",
+                metadata: ["error": error.localizedDescription]
+            )
             await MainActor.run {
-                self.applyProgressViewModel.updateStageDescription(
-                    LocalizedStrings.text("Building combined filter engine...", comment: "Apply pipeline stage")
+                self.hasError = true
+                self.statusDescription = LocalizedStrings.text(
+                    "Failed",
+                    comment: "Generic failure status"
                 )
             }
-
-            // Run engine building on background thread
-            await Task.detached {
-                let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
-                let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, "Building filter engine",
-                    metadata: [
-                        "targetCount": "\(advancedRulesByTarget.count)",
-                        "totalLines": "\(totalLines)",
-                    ])
-
-                ContentBlockerService.buildCombinedFilterEngine(
-                    combinedAdvancedRules: combinedAdvancedRules,
-                    groupIdentifier: GroupIdentifier.shared.value
-                )
-            }.value
-
-        } else {
-            await ConcurrentLogManager.shared.debug(
-                .filterApply, "No advanced rules found, clearing filter engine", metadata: [:])
-            // Run on background thread
-            await Task.detached {
-                ContentBlockerService.clearFilterEngine(
-                    groupIdentifier: GroupIdentifier.shared.value)
-            }.value
         }
 
         await MainActor.run {
             self.progress = 1.0
             self.applyProgressViewModel.updateProgress(1.0)
 
-            if allReloadsSuccessful && !self.hasError {
+            let advancedEngineAvailable = advancedEngineSucceeded && !self.hasError
+            if allReloadsSuccessful && advancedEngineAvailable {
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
                 self.markCurrentStateApplied()
-            } else if !self.hasError {
+            } else if advancedEngineAvailable {
                 self.statusDescription =
                     "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
             }
@@ -572,21 +703,19 @@ extension AppFilterManager {
         disabledSites: [String],
         extraRulesText: String?,
         groupIdentifier: String
-    ) -> (safariRulesCount: Int, advancedRulesText: String?) {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
-            return (safariRulesCount: 0, advancedRulesText: nil)
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            throw ApplyPipelineError.sharedContainerUnavailable
         }
 
-        // Create a temporary combined file to avoid keeping large strings in memory
         let tempURL = containerURL.appendingPathComponent("temp_\(targetInfo.bundleIdentifier).txt")
-
         defer {
-            // Clean up temporary file
             try? FileManager.default.removeItem(at: tempURL)
         }
 
         do {
-            // Create temporary file handle for streaming write
             FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
             let fileHandle = try FileHandle(forWritingTo: tempURL)
             defer { try? fileHandle.close() }
@@ -595,7 +724,6 @@ extension AppFilterManager {
             let newlineData = Data("\n".utf8)
             let assignedFilterIDs = Set(filters.map(\.id))
 
-            // Stream each filter's target-specific contribution directly to the temp file
             for filter in orderedSelectedFilters {
                 let includeBaseRules = assignedFilterIDs.contains(filter.id)
                 let hasAffinity = affinityFilterIDs.contains(filter.id)
@@ -644,14 +772,11 @@ extension AppFilterManager {
                 targetRulesFilename: targetInfo.rulesFilename,
                 disabledSites: disabledSites
             )
-
         } catch {
-            Task {
-                await ConcurrentLogManager.shared.error(
-                    .filterApply, "Error in memory-efficient conversion",
-                    metadata: ["error": "\(error)"])
-            }
-            return (safariRulesCount: 0, advancedRulesText: nil)
+            throw ApplyPipelineError.conversionFailed(
+                targetName: targetInfo.displayName,
+                underlying: error
+            )
         }
     }
 
@@ -692,7 +817,7 @@ extension AppFilterManager {
         disabledSites: [String],
         extraRulesText: String?,
         groupIdentifier: String
-    ) -> TargetConversionOutcome {
+    ) throws -> TargetConversionOutcome {
         let rulesFilename = targetInfo.rulesFilename
         let hasAffinityFilters = !affinityFilterIDs.isEmpty
         let currentSignature = hasAffinityFilters
@@ -708,12 +833,11 @@ extension AppFilterManager {
         )
 
         if let currentSignature,
-            currentSignature == storedSignature,
-            ContentBlockerIncrementalCache.hasBaseRulesCache(
+           currentSignature == storedSignature,
+           ContentBlockerIncrementalCache.hasBaseRulesCache(
                 targetRulesFilename: rulesFilename,
                 groupIdentifier: groupIdentifier
-            )
-        {
+           ) {
             let fastUpdate = ContentBlockerService.fastUpdateDisabledSites(
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: rulesFilename,
@@ -740,7 +864,7 @@ extension AppFilterManager {
             )
         }
 
-        let conversion = convertFiltersMemoryEfficient(
+        let conversion = try convertFiltersMemoryEfficient(
             filters: filters,
             orderedSelectedFilters: orderedSelectedFilters,
             affinityFilterIDs: affinityFilterIDs,

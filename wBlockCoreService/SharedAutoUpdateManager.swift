@@ -52,6 +52,84 @@ public actor SharedAutoUpdateManager {
             self.isOverdue = isOverdue
         }
     }
+
+    public struct AutoUpdateExecutionPolicy: Sendable {
+        public let trigger: String
+        public let isBackground: Bool
+        public let deadline: Date?
+        public let minimumTimeForNetwork: TimeInterval
+        public let minimumTimeForConversionTarget: TimeInterval
+        public let minimumTimeForReloadRetry: TimeInterval
+        public let minimumTimeForAdvancedEngine: TimeInterval
+        public let minimumTimeForUserScripts: TimeInterval
+        public let minimumTimeForFinalSave: TimeInterval
+        public let allowsFullRebuild: Bool
+
+        public init(
+            trigger: String,
+            isBackground: Bool = false,
+            deadline: Date? = nil,
+            minimumTimeForNetwork: TimeInterval = 0,
+            minimumTimeForConversionTarget: TimeInterval = 0,
+            minimumTimeForReloadRetry: TimeInterval = 0,
+            minimumTimeForAdvancedEngine: TimeInterval = 0,
+            minimumTimeForUserScripts: TimeInterval = 0,
+            minimumTimeForFinalSave: TimeInterval = 0,
+            allowsFullRebuild: Bool = true
+        ) {
+            self.trigger = trigger
+            self.isBackground = isBackground
+            self.deadline = deadline
+            self.minimumTimeForNetwork = minimumTimeForNetwork
+            self.minimumTimeForConversionTarget = minimumTimeForConversionTarget
+            self.minimumTimeForReloadRetry = minimumTimeForReloadRetry
+            self.minimumTimeForAdvancedEngine = minimumTimeForAdvancedEngine
+            self.minimumTimeForUserScripts = minimumTimeForUserScripts
+            self.minimumTimeForFinalSave = minimumTimeForFinalSave
+            self.allowsFullRebuild = allowsFullRebuild
+        }
+
+        public static func foreground(trigger: String) -> Self {
+            Self(trigger: trigger)
+        }
+
+        public static func background(
+            trigger: String,
+            deadline: Date?,
+            allowsFullRebuild: Bool
+        ) -> Self {
+            Self(
+                trigger: trigger,
+                isBackground: true,
+                deadline: deadline,
+                minimumTimeForNetwork: 15,
+                minimumTimeForConversionTarget: 12,
+                minimumTimeForReloadRetry: 8,
+                minimumTimeForAdvancedEngine: 10,
+                minimumTimeForUserScripts: 8,
+                minimumTimeForFinalSave: 3,
+                allowsFullRebuild: allowsFullRebuild
+            )
+        }
+    }
+
+    public enum AutoUpdateRunOutcome: Sendable {
+        case completed
+        case skipped(reason: String)
+        case cancelled
+        case deferred(phase: String)
+        case failed(message: String)
+
+        public var isSuccessfulForBackgroundTask: Bool {
+            switch self {
+            case .completed, .skipped(_):
+                return true
+            case .cancelled, .deferred(_), .failed(_):
+                return false
+            }
+        }
+    }
+
     private var cachedStatus: AutoUpdateStatus?
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
@@ -96,6 +174,36 @@ public actor SharedAutoUpdateManager {
     private enum AutoUpdateError: LocalizedError {
         case sharedContainerUnavailable
         case contentBlockerReloadFailed(identifiers: [String], names: [String])
+        case advancedEngineOperationFailed(phase: String, underlying: Error)
+        case backgroundBudgetExpired(phase: String, remainingSeconds: Int)
+        case backgroundFullRebuildDeferred(phase: String)
+        case statePersistenceFailed(context: String)
+
+        var failurePhase: String? {
+            switch self {
+            case .sharedContainerUnavailable:
+                return "shared_container"
+            case .contentBlockerReloadFailed:
+                return "content_blocker_reload"
+            case let .advancedEngineOperationFailed(phase, _):
+                return phase
+            case let .backgroundBudgetExpired(phase, _):
+                return phase
+            case let .backgroundFullRebuildDeferred(phase):
+                return phase
+            case let .statePersistenceFailed(context):
+                return context
+            }
+        }
+
+        var isDeferred: Bool {
+            switch self {
+            case .backgroundBudgetExpired, .backgroundFullRebuildDeferred:
+                return true
+            default:
+                return false
+            }
+        }
 
         var errorDescription: String? {
             switch self {
@@ -103,10 +211,93 @@ public actor SharedAutoUpdateManager {
                 return "Shared app group container unavailable."
             case let .contentBlockerReloadFailed(_, names):
                 return "Failed to reload \(names.joined(separator: ", "))."
+            case let .advancedEngineOperationFailed(_, underlying):
+                return underlying.localizedDescription
+            case let .backgroundBudgetExpired(phase, remainingSeconds):
+                return "Background budget expired before \(phase) with \(remainingSeconds)s remaining."
+            case let .backgroundFullRebuildDeferred(phase):
+                return "Background policy deferred \(phase)."
+            case let .statePersistenceFailed(context):
+                return "Failed to persist auto-update state during \(context)."
             }
         }
     }
 
+    private enum AutoUpdateBudgetPhase {
+        static let existingOutputReload = "existing_output_reload"
+        static let networkFetch = "network_fetch"
+        static let fullRebuild = "full_rebuild"
+        static let conversionTarget = "conversion_target"
+        static let reloadRetry = "reload_retry"
+        static let advancedEngineBuild = "advanced_engine_build"
+        static let advancedEngineClear = "advanced_engine_clear"
+        static let userScripts = "userscripts"
+        static let finalStateSave = "final_state_save"
+        static let runStartSave = "run_start_save"
+        static let runCleanupSave = "run_cleanup_save"
+    }
+
+    private func checkBudget(
+        _ policy: AutoUpdateExecutionPolicy,
+        phase: String,
+        requiredTime: TimeInterval
+    ) throws {
+        guard policy.isBackground, let deadline = policy.deadline else { return }
+
+        let remaining = deadline.timeIntervalSinceNow
+        guard remaining >= requiredTime else {
+            throw AutoUpdateError.backgroundBudgetExpired(
+                phase: phase,
+                remainingSeconds: max(0, Int(remaining.rounded(.down)))
+            )
+        }
+    }
+
+    private func requireFullRebuildAllowed(
+        _ policy: AutoUpdateExecutionPolicy,
+        phase: String
+    ) throws {
+        guard policy.isBackground, !policy.allowsFullRebuild else { return }
+        throw AutoUpdateError.backgroundFullRebuildDeferred(phase: phase)
+    }
+
+    private func saveAutoUpdateStateImmediately(context: String) async throws {
+        guard await ProtobufDataManager.shared.saveDataImmediately() else {
+            throw AutoUpdateError.statePersistenceFailed(context: context)
+        }
+    }
+
+    private func publishAdvancedEngine(
+        advancedRulesSnippets: [String],
+        policy: AutoUpdateExecutionPolicy,
+        failureLogPrefix: String
+    ) throws {
+        let phase = advancedRulesSnippets.isEmpty
+            ? AutoUpdateBudgetPhase.advancedEngineClear
+            : AutoUpdateBudgetPhase.advancedEngineBuild
+        try checkBudget(
+            policy,
+            phase: phase,
+            requiredTime: policy.minimumTimeForAdvancedEngine
+        )
+
+        do {
+            if advancedRulesSnippets.isEmpty {
+                try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+            } else {
+                try ContentBlockerService.buildCombinedFilterEngine(
+                    combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
+                    groupIdentifier: GroupIdentifier.shared.value
+                )
+            }
+        } catch {
+            appendSharedLog("\(failureLogPrefix): \(error.localizedDescription)")
+            throw AutoUpdateError.advancedEngineOperationFailed(
+                phase: phase,
+                underlying: error
+            )
+        }
+    }
 
     private struct RebuildTargetMetrics {
         let targetName: String
@@ -204,8 +395,22 @@ public actor SharedAutoUpdateManager {
     }
 
     // Public entry point invoked by extensions.
-    public func maybeRunAutoUpdate(trigger: String, force: Bool = false) async {
-        await runIfNeeded(trigger: trigger, force: force)
+    @discardableResult
+    public func maybeRunAutoUpdate(trigger: String, force: Bool = false) async -> AutoUpdateRunOutcome {
+        await maybeRunAutoUpdate(
+            trigger: trigger,
+            force: force,
+            policy: AutoUpdateExecutionPolicy.foreground(trigger: trigger)
+        )
+    }
+
+    @discardableResult
+    public func maybeRunAutoUpdate(
+        trigger: String,
+        force: Bool = false,
+        policy: AutoUpdateExecutionPolicy
+    ) async -> AutoUpdateRunOutcome {
+        await runIfNeeded(trigger: trigger, force: force, policy: policy)
     }
 
     /// Returns status about the next eligible auto-update time for UI/logging.
@@ -334,11 +539,13 @@ public actor SharedAutoUpdateManager {
         // Check if we have a timestamp for when the flag was set
         let timestamp = await getAutoUpdateRunningSinceTimestamp()
         guard timestamp > 0 else {
-            // No timestamp but flag is set - likely from old version or corruption
-            // Clear it to be safe
             os_log("Running flag set without timestamp - clearing potentially stuck state", log: log, type: .info)
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+            let didPersist = await ProtobufDataManager.shared.saveDataImmediately()
             appendSharedLog("Cleared stuck running flag (no timestamp)")
+            if !didPersist {
+                appendSharedLog("Failed to persist cleared running flag (no timestamp)")
+            }
             return true
         }
 
@@ -346,10 +553,13 @@ public actor SharedAutoUpdateManager {
         let age = now - TimeInterval(timestamp)
 
         if age > runningFlagStalenessThreshold {
-            // Flag has been set for too long - clear it
             os_log("Running flag stale (%.1f seconds old, threshold %.1f) - clearing stuck state", log: log, type: .info, age, runningFlagStalenessThreshold)
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+            let didPersist = await ProtobufDataManager.shared.saveDataImmediately()
             appendSharedLog("Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)")
+            if !didPersist {
+                appendSharedLog("Failed to persist cleared stale running flag")
+            }
             return true
         }
 
@@ -357,7 +567,11 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Core Logic
-    private func runIfNeeded(trigger: String, force: Bool = false) async {
+    private func runIfNeeded(
+        trigger: String,
+        force: Bool = false,
+        policy: AutoUpdateExecutionPolicy
+    ) async -> AutoUpdateRunOutcome {
         await ProtobufDataManager.shared.waitUntilLoaded()
 
         if Self.isAppExtensionProcess {
@@ -374,46 +588,39 @@ public actor SharedAutoUpdateManager {
                 hasLoggedExtensionSafeModeNotice = true
                 appendSkipTelemetry(trigger: trigger, reason: "extension_safe_mode")
             }
-            return
+            return .skipped(reason: "extension_safe_mode")
         }
 
         if Task.isCancelled {
             appendSkipTelemetry(trigger: trigger, reason: "task_cancelled_preflight")
-            return
+            return .cancelled
         }
 
         let now = Date().timeIntervalSince1970
 
-        // Respect enable flag
         let enabled = await getAutoUpdateEnabled()
         if !enabled {
             appendSkipTelemetry(trigger: trigger, reason: "auto_update_disabled")
-            return
+            return .skipped(reason: "auto_update_disabled")
         }
 
-        // Check for and clear stale running flags
         let wasStale = await checkAndClearStaleRunningFlag()
         if wasStale {
             invalidateStatusCache()
         }
 
-        // Prevent overlapping runs (after staleness check)
         let isRunning = await getAutoUpdateIsRunning()
         if isRunning {
             os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
             appendSkipTelemetry(trigger: trigger, reason: "already_running")
-            return
+            return .skipped(reason: "already_running")
         }
 
         let interval = await getAutoUpdateIntervalHours()
-
-        // Check if force flag was set externally
         let forceFlag = await getAutoUpdateForceNext()
         let shouldForce = force || forceFlag
 
-        // Skip throttling if the current trigger is forced or forceNext flag is set
         if !shouldForce {
-            // New jitter-aware scheduling: prefer nextEligibleTime if present
             let nextEligibleInt64 = await getAutoUpdateNextEligibleTime()
             if nextEligibleInt64 > 0 {
                 let nextEligible = TimeInterval(nextEligibleInt64)
@@ -424,10 +631,9 @@ public actor SharedAutoUpdateManager {
                         reason: "throttled_not_eligible",
                         extra: ["remaining_seconds": "\(remainingSeconds)"]
                     )
-                    return // Still inside jittered window
+                    return .skipped(reason: "throttled_not_eligible")
                 }
             } else {
-                // Backward compatibility: if nextEligible not set, fall back to lastCheck logic once
                 let lastCheckInt64 = await getAutoUpdateLastCheckTime()
                 if lastCheckInt64 > 0 {
                     let lastCheck = TimeInterval(lastCheckInt64)
@@ -438,54 +644,79 @@ public actor SharedAutoUpdateManager {
                             reason: "throttled_legacy_interval",
                             extra: ["remaining_seconds": "\(remainingSeconds)"]
                         )
-                        return
+                        return .skipped(reason: "throttled_legacy_interval")
                     }
                 }
             }
         }
 
-        // Clear force flag if it was set
         if forceFlag {
             await ProtobufDataManager.shared.setAutoUpdateForceNext(false)
         }
 
-        // Mark as running with timestamp and invalidate cache
         let startTimestamp = Date().timeIntervalSince1970
         await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
         let heartbeatTask = Task.detached(priority: .utility) {
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 60_000_000_000)  // 60s
+                try? await Task.sleep(nanoseconds: 60_000_000_000)
                 if Task.isCancelled { break }
-                // Refresh the running timestamp so long conversions aren't considered "stuck".
                 await ProtobufDataManager.shared.refreshAutoUpdateRunningTimestamp()
             }
         }
-        defer { heartbeatTask.cancel() }
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
-        await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
-        // Persist the running flag + check timestamp immediately so other processes don't start overlapping runs.
-        await ProtobufDataManager.shared.saveDataImmediately()
-        appendSharedLog(
-            "Auto-update started: trigger=\(trigger), forced=\(shouldForce), intervalHours=\(String(format: "%.1f", interval))"
-        )
-        appendTelemetry(
-            "run_start",
-            fields: [
-                "trigger": trigger,
-                "forced": shouldForce ? "true" : "false",
-                "interval_hours": String(format: "%.1f", interval)
-            ]
-        )
+        func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
+            heartbeatTask.cancel()
+            await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+            let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
+            invalidateStatusCache()
+            let endTimestamp = Date().timeIntervalSince1970
+            let duration = endTimestamp - startTimestamp
+            os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
 
-        // Use do-catch to ensure cleanup always runs
+            guard didPersistCleanup else {
+                appendSharedLog("Auto-update cleanup save failed: context=\(AutoUpdateBudgetPhase.runCleanupSave)")
+                return .failed(
+                    message: AutoUpdateError.statePersistenceFailed(
+                        context: AutoUpdateBudgetPhase.runCleanupSave
+                    ).localizedDescription
+                )
+            }
+
+            return outcome
+        }
+
         do {
+            await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.runStartSave,
+                requiredTime: policy.minimumTimeForFinalSave
+            )
+            try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.runStartSave)
+            appendSharedLog(
+                "Auto-update started: trigger=\(trigger), forced=\(shouldForce), intervalHours=\(String(format: "%.1f", interval))"
+            )
+            appendTelemetry(
+                "run_start",
+                fields: [
+                    "trigger": trigger,
+                    "forced": shouldForce ? "true" : "false",
+                    "interval_hours": String(format: "%.1f", interval)
+                ]
+            )
+
             try throwIfCancelled()
             let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
             try throwIfCancelled()
+
             guard !selectedFilters.isEmpty else {
-                // Still auto-update enabled userscripts even if no filters are selected.
+                try checkBudget(
+                    policy,
+                    phase: AutoUpdateBudgetPhase.userScripts,
+                    requiredTime: policy.minimumTimeForUserScripts
+                )
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
@@ -493,6 +724,11 @@ public actor SharedAutoUpdateManager {
 
                 let completionTime = Date().timeIntervalSince1970
                 let nextEligibleTime = completionTime + interval * 3600
+                try checkBudget(
+                    policy,
+                    phase: AutoUpdateBudgetPhase.finalStateSave,
+                    requiredTime: policy.minimumTimeForFinalSave
+                )
                 await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                 invalidateStatusCache()
 
@@ -516,17 +752,14 @@ public actor SharedAutoUpdateManager {
                     ]
                 )
 
-                // Still record check time even though no filters selected
-                // Clear running flag before return
-                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                await ProtobufDataManager.shared.saveDataImmediately()
-                invalidateStatusCache()
-                let endTimestamp = Date().timeIntervalSince1970
-                let duration = endTimestamp - startTimestamp
-                os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
-                return
+                return await finishStartedRun(.completed)
             }
 
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.networkFetch,
+                requiredTime: policy.minimumTimeForNetwork
+            )
             try throwIfCancelled()
             let updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
             try throwIfCancelled()
@@ -534,26 +767,32 @@ public actor SharedAutoUpdateManager {
             let hadErrors = updateResult.hadErrors
 
             guard !updatedFilterSet.isEmpty else {
-                // If this run was forced by a background task, or outputs are missing, do a
-                // lightweight reload to keep Safari in sync even when no filter bodies changed.
                 var reloadStatus = "skipped"
                 if shouldForce || contentBlockerOutputsNeedRepair() {
+                    try checkBudget(
+                        policy,
+                        phase: AutoUpdateBudgetPhase.existingOutputReload,
+                        requiredTime: max(policy.minimumTimeForReloadRetry, policy.minimumTimeForAdvancedEngine)
+                    )
                     try throwIfCancelled()
-                    let reloaded = await reloadExistingContentBlockers()
+                    let reloaded = try await reloadExistingContentBlockers(policy: policy)
                     reloadStatus = reloaded ? "ok" : "failed"
                 }
 
                 let completionTime = Date().timeIntervalSince1970
                 let nextCheckInSeconds: Int
+                try checkBudget(
+                    policy,
+                    phase: AutoUpdateBudgetPhase.finalStateSave,
+                    requiredTime: policy.minimumTimeForFinalSave
+                )
                 if hadErrors {
-                    // Don't treat network errors as "up to date" – retry sooner.
                     let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
                     let nextEligibleTime = completionTime + retryDelaySeconds
                     await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                     invalidateStatusCache()
                     nextCheckInSeconds = Int(retryDelaySeconds)
                 } else {
-                    // No updates found - still update schedule since check was successful
                     let scheduledSeconds = Int(interval * 3600)
                     let nextEligibleTime = completionTime + Double(scheduledSeconds)
                     await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
@@ -561,7 +800,11 @@ public actor SharedAutoUpdateManager {
                     nextCheckInSeconds = scheduledSeconds
                 }
 
-                // Auto-update enabled userscripts during the same schedule window.
+                try checkBudget(
+                    policy,
+                    phase: AutoUpdateBudgetPhase.userScripts,
+                    requiredTime: policy.minimumTimeForUserScripts
+                )
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
@@ -587,20 +830,20 @@ public actor SharedAutoUpdateManager {
                     ]
                 )
 
-                // Clear running flag before return
-                await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-                await ProtobufDataManager.shared.saveDataImmediately()
-                invalidateStatusCache()
-                let endTimestamp = Date().timeIntervalSince1970
-                let duration = endTimestamp - startTimestamp
-                os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
-                return
+                return await finishStartedRun(.completed)
             }
 
+            try requireFullRebuildAllowed(policy, phase: AutoUpdateBudgetPhase.fullRebuild)
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.fullRebuild,
+                requiredTime: policy.minimumTimeForConversionTarget
+                    + policy.minimumTimeForReloadRetry
+                    + policy.minimumTimeForAdvancedEngine
+            )
             os_log("Found %d filter updates — applying", log: log, type: .info, updatedFilterSet.count)
             let updatedPreview = updatedFilterSet.prefix(3).map(\.name).joined(separator: ", ")
 
-            // Merge updated filters back into full list model
             var merged = allFilters
             for updated in updatedFilterSet {
                 if let idx = merged.firstIndex(where: { $0.id == updated.id }) {
@@ -608,24 +851,37 @@ public actor SharedAutoUpdateManager {
                 }
             }
 
-            // Persist metadata (versions, counts)
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.finalStateSave,
+                requiredTime: policy.minimumTimeForFinalSave
+            )
             await saveFilterListsToProtobuf(merged)
-
-            // Re-convert & reload content blockers. (Rule distribution is slot-based, so updates can affect any target.)
+            try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
-            let rebuildSummary = try await rebuildAndReload(selectedFilters: merged.filter { $0.isSelected })
+            let rebuildSummary = try await rebuildAndReload(
+                selectedFilters: merged.filter { $0.isSelected },
+                policy: policy
+            )
             try throwIfCancelled()
 
-            // Auto-update enabled userscripts during the same schedule window.
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.userScripts,
+                requiredTime: policy.minimumTimeForUserScripts
+            )
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
 
-            // Record successful update and schedule next
             let successTime = Date().timeIntervalSince1970
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.finalStateSave,
+                requiredTime: policy.minimumTimeForFinalSave
+            )
             await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
             var nextEligibleTime = successTime + interval * 3600
             let nextCheckInSeconds: Int
             if hadErrors {
-                // Some filters failed to check; retry sooner than the normal interval.
                 let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
                 nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
                 nextCheckInSeconds = Int(retryDelaySeconds)
@@ -659,6 +915,8 @@ public actor SharedAutoUpdateManager {
                     "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
                 ]
             )
+
+            return await finishStartedRun(.completed)
         } catch is CancellationError {
             os_log("Auto-update cancelled (trigger: %{public}@)", log: log, type: .info, trigger)
             appendSharedLog("Auto-update cancelled: trigger=\(trigger)")
@@ -671,28 +929,52 @@ public actor SharedAutoUpdateManager {
                     "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
                 ]
             )
+            return await finishStartedRun(.cancelled)
+        } catch let autoUpdateError as AutoUpdateError {
+            let isDeferred = autoUpdateError.isDeferred
+            let phase = autoUpdateError.failurePhase ?? "unknown"
+            let result = isDeferred ? "deferred" : "failed"
+
+            if isDeferred {
+                os_log("Auto-update deferred: %{public}@", log: log, type: .info, autoUpdateError.localizedDescription)
+            } else {
+                os_log("Auto-update failed: %{public}@", log: log, type: .error, autoUpdateError.localizedDescription)
+            }
+
+            appendSharedLog(
+                "Auto-update \(result): trigger=\(trigger), phase=\(phase), reason=\(autoUpdateError.localizedDescription)"
+            )
+            appendTelemetry(
+                "run_result",
+                fields: [
+                    "trigger": trigger,
+                    "result": result,
+                    "forced": shouldForce ? "true" : "false",
+                    "phase": phase,
+                    "error": autoUpdateError.localizedDescription,
+                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                ]
+            )
+            let outcome: AutoUpdateRunOutcome = isDeferred
+                ? .deferred(phase: phase)
+                : .failed(message: autoUpdateError.localizedDescription)
+            return await finishStartedRun(outcome)
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
-            appendSharedLog("Auto-update failed: \(error.localizedDescription)")
+            appendSharedLog("Auto-update failed: trigger=\(trigger), phase=unknown, reason=\(error.localizedDescription)")
             appendTelemetry(
                 "run_result",
                 fields: [
                     "trigger": trigger,
                     "result": "failed",
                     "forced": shouldForce ? "true" : "false",
+                    "phase": "unknown",
                     "error": String(describing: error),
                     "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
                 ]
             )
+            return await finishStartedRun(.failed(message: error.localizedDescription))
         }
-
-        // ALWAYS clear running flag after completion (success or failure)
-        await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-        await ProtobufDataManager.shared.saveDataImmediately()
-        invalidateStatusCache()
-        let endTimestamp = Date().timeIntervalSince1970
-        let duration = endTimestamp - startTimestamp
-        os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
     }
 
     // MARK: - Loading / Saving
@@ -1059,7 +1341,9 @@ public actor SharedAutoUpdateManager {
         return false
     }
 
-    private func reloadExistingContentBlockers() async -> Bool {
+    private func reloadExistingContentBlockers(
+        policy: AutoUpdateExecutionPolicy
+    ) async throws -> Bool {
         #if os(iOS)
         let platform: Platform = .iOS
         #else
@@ -1074,9 +1358,12 @@ public actor SharedAutoUpdateManager {
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
 
         for target in targets {
-            if Task.isCancelled {
-                return false
-            }
+            try Task.checkCancellation()
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.reloadRetry,
+                requiredTime: policy.minimumTimeForReloadRetry
+            )
 
             let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
             let reloaded = reloadResult.success
@@ -1091,14 +1378,11 @@ public actor SharedAutoUpdateManager {
             }
         }
 
-        if !advancedRulesSnippets.isEmpty {
-            ContentBlockerService.buildCombinedFilterEngine(
-                combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
-                groupIdentifier: GroupIdentifier.shared.value
-            )
-        } else {
-            ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-        }
+        try publishAdvancedEngine(
+            advancedRulesSnippets: advancedRulesSnippets,
+            policy: policy,
+            failureLogPrefix: "Advanced engine publish failed while reusing existing outputs"
+        )
 
         if !failedTargets.isEmpty {
             appendSharedLog(
@@ -1110,10 +1394,12 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Conversion & Reload
-    private func rebuildAndReload(selectedFilters: [FilterList]) async throws -> RebuildAndReloadSummary {
+    private func rebuildAndReload(
+        selectedFilters: [FilterList],
+        policy: AutoUpdateExecutionPolicy
+    ) async throws -> RebuildAndReloadSummary {
         try Task.checkCancellation()
 
-        // Build rules per target using same slot-based mapping logic as the main app.
         #if os(iOS)
         let detectedPlatform: Platform = .iOS
         #else
@@ -1127,9 +1413,7 @@ public actor SharedAutoUpdateManager {
             throw AutoUpdateError.sharedContainerUnavailable
         }
 
-        // Get disabled sites for injection
         let disabledSites = await getDisabledSites()
-
         let orderedSelectedFilters = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
         let filtersByTarget = ContentBlockerMappingService.distribute(
             selectedFilters: selectedFilters,
@@ -1155,6 +1439,11 @@ public actor SharedAutoUpdateManager {
 
         for target in targets {
             try Task.checkCancellation()
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.conversionTarget,
+                requiredTime: policy.minimumTimeForConversionTarget
+            )
 
             let filtersForTarget = filtersByTarget[target] ?? []
             let assignedFilterIDs = Set(filtersForTarget.map(\.id))
@@ -1201,7 +1490,6 @@ public actor SharedAutoUpdateManager {
                 }
 
                 usedCache = false
-                // Rebuild combined raw rules for this target from assigned filters (streaming + hashed).
                 let tempURL = containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
                 defer { try? FileManager.default.removeItem(at: tempURL) }
 
@@ -1266,11 +1554,15 @@ public actor SharedAutoUpdateManager {
                 in: .whitespacesAndNewlines
             )
             if let adv = (advancedRulesText?.isEmpty == false ? advancedRulesText : cachedAdvancedRules),
-                !adv.isEmpty
-            {
+               !adv.isEmpty {
                 advancedRulesSnippets.append(adv)
             }
 
+            try checkBudget(
+                policy,
+                phase: AutoUpdateBudgetPhase.reloadRetry,
+                requiredTime: policy.minimumTimeForReloadRetry
+            )
             let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
             let targetMetric = RebuildTargetMetrics(
                 targetName: target.displayName,
@@ -1302,14 +1594,11 @@ public actor SharedAutoUpdateManager {
             )
         }
 
-        if !advancedRulesSnippets.isEmpty {
-            ContentBlockerService.buildCombinedFilterEngine(
-                combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
-                groupIdentifier: GroupIdentifier.shared.value
-            )
-        } else {
-            ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-        }
+        try publishAdvancedEngine(
+            advancedRulesSnippets: advancedRulesSnippets,
+            policy: policy,
+            failureLogPrefix: "Advanced engine publish failed after rebuilding content blockers"
+        )
 
         let cacheHits = targetMetrics.filter { $0.cacheHit }.count
         let inputWriteDurationMs = targetMetrics.reduce(0) { $0 + $1.inputWriteMs }

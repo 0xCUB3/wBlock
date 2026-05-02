@@ -281,6 +281,7 @@ public enum AutoUpdateDiagnosticResult: String, Sendable {
     case submitFailed = "submit_failed"
     case completed = "completed"
     case timedOut = "timed_out"
+    case deferred = "deferred"
     case overdue = "overdue"
     case dueSoon = "due_soon"
     case recorded = "recorded"
@@ -1317,9 +1318,10 @@ public class ProtobufDataManager: ObservableObject {
     /// Saves data immediately without debounce delay
     /// Use when changes must be persisted before other cross-process actions
     @MainActor
-    public func saveDataImmediately() async {
+    @discardableResult
+    public func saveDataImmediately() async -> Bool {
         pendingSaveTask?.cancel()
-        await performSaveData()
+        return await performSaveData()
     }
 
     private func mergeNewerCrossProcessState(from savedData: Wblock_Data_AppData) {
@@ -1332,7 +1334,8 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
-    private func performSaveData() async {
+    @discardableResult
+    private func performSaveData() async -> Bool {
         let snapshot = appData
         let snapshotRawData = try? snapshot.serializedData()
         let previous = lastSavedData
@@ -1358,9 +1361,11 @@ public class ProtobufDataManager: ObservableObject {
                     didSaveDataSubject.send()
                 }
             }
+            return true
         } catch {
             logger.error("❌ Failed to save data: \(error)")
             lastError = error
+            return false
         }
     }
     

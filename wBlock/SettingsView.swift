@@ -801,6 +801,8 @@ extension SettingsView {
             return String(localized: "Completed")
         case .timedOut:
             return String(localized: "Timed out")
+        case .deferred:
+            return String(localized: "Failed")
         case .overdue:
             return String(localized: "Overdue catch-up")
         case .dueSoon:

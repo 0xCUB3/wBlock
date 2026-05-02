@@ -101,9 +101,18 @@ class AppDelegate: NSObject {
 }
 
 private extension AppDelegate {
-    func runForcedAutoUpdate(trigger: String) async {
+    @discardableResult
+    func runForcedAutoUpdate(
+        trigger: String,
+        policy: SharedAutoUpdateManager.AutoUpdateExecutionPolicy? = nil
+    ) async -> SharedAutoUpdateManager.AutoUpdateRunOutcome {
         await SharedAutoUpdateManager.shared.forceNextUpdate()
-        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger, force: true)
+        let resolvedPolicy = policy ?? SharedAutoUpdateManager.AutoUpdateExecutionPolicy.foreground(trigger: trigger)
+        return await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+            trigger: trigger,
+            force: true,
+            policy: resolvedPolicy
+        )
     }
 
     @MainActor
@@ -415,13 +424,20 @@ extension AppDelegate: UIApplicationDelegate {
         let application = UIApplication.shared
 
         let backgroundTask = BackgroundTaskHandle(application: application)
-        backgroundTask.start(name: "wBlock protobuf save: \(reason)")
+        let didStartBackgroundTask = backgroundTask.start(name: "wBlock protobuf save: \(reason)")
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.saveDataImmediately()
-            backgroundTask.end()
-        }
+            defer {
+                if didStartBackgroundTask {
+                    backgroundTask.end()
+                }
+            }
 
+            let didSave = await ProtobufDataManager.shared.saveDataImmediately()
+            if !didSave {
+                os_log("Failed to flush protobuf data during %{public}@", type: .error, reason)
+            }
+        }
     }
 
     private func registerBackgroundTasks() {
@@ -561,6 +577,43 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
 
+    @MainActor
+    private func backgroundAutoUpdateDeadline(safetyMargin: TimeInterval = 10) -> Date? {
+        let remaining = UIApplication.shared.backgroundTimeRemaining
+        guard remaining.isFinite, remaining > 0, remaining < .greatestFiniteMagnitude else {
+            return nil
+        }
+        return Date().addingTimeInterval(max(0, remaining - safetyMargin))
+    }
+
+    @MainActor
+    private func backgroundAutoUpdatePolicy(
+        kind: AutoUpdateDiagnosticTaskKind,
+        trigger: String
+    ) -> SharedAutoUpdateManager.AutoUpdateExecutionPolicy {
+        return .background(
+            trigger: trigger,
+            deadline: backgroundAutoUpdateDeadline(),
+            allowsFullRebuild: kind == .processing
+        )
+    }
+
+    private func diagnosticResult(
+        for outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome
+    ) -> AutoUpdateDiagnosticResult {
+        switch outcome {
+        case .completed, .skipped(_):
+            return .completed
+        case .cancelled:
+            return .timedOut
+        case .deferred(_):
+            return .deferred
+        case .failed(_):
+            return .failed
+        @unknown default:
+            return .failed
+        }
+    }
 
     private func handleBackgroundFilterUpdate(task: BGAppRefreshTask) {
         handleForcedBackgroundTask(
@@ -573,7 +626,6 @@ extension AppDelegate: UIApplicationDelegate {
                 delegate.scheduleBackgroundProcessingUpdate()
             },
             onExpiration: { delegate in
-                // Schedule next attempt sooner due to failure.
                 delegate.scheduleBackgroundFilterUpdate()
             }
         )
@@ -604,8 +656,6 @@ extension AppDelegate: UIApplicationDelegate {
         onExpiration: @escaping @MainActor (AppDelegate) -> Void
     ) {
         os_log("%{public}@ started", type: .info, taskLabel)
-        // Queue the next requests immediately so an unexpected termination during this run
-        // does not leave background updates unscheduled until the user opens the app again.
         Task { @MainActor in
             self.scheduleBackgroundFilterUpdate()
             self.scheduleBackgroundProcessingUpdate()
@@ -613,14 +663,33 @@ extension AppDelegate: UIApplicationDelegate {
         let completionState = BGTaskCompletionState()
         let updateTask = Task {
             await ProtobufDataManager.shared.recordAutoUpdateTaskStart(kind)
-            await self.runForcedAutoUpdate(trigger: trigger)
+            let policy = await self.backgroundAutoUpdatePolicy(kind: kind, trigger: trigger)
+            let outcome = await self.runForcedAutoUpdate(trigger: trigger, policy: policy)
+            let success = outcome.isSuccessfulForBackgroundTask
+            let result = diagnosticResult(for: outcome)
+
+            switch outcome {
+            case .completed, .skipped(_):
+                os_log("%{public}@ completed successfully", type: .info, taskLabel)
+            case let .deferred(phase):
+                os_log("%{public}@ deferred at %{public}@", type: .info, taskLabel, phase)
+            case let .failed(message):
+                os_log("%{public}@ failed: %{public}@", type: .error, taskLabel, message)
+            case .cancelled:
+                os_log("%{public}@ cancelled", type: .default, taskLabel)
+            @unknown default:
+                os_log("%{public}@ failed with an unknown outcome", type: .error, taskLabel)
+            }
 
             guard await completionState.claimCompletion() else { return }
-            os_log("%{public}@ completed successfully", type: .info, taskLabel)
-            await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .completed)
-            task.setTaskCompleted(success: true)
+            await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: result)
+            task.setTaskCompleted(success: success)
             await MainActor.run {
-                onSuccess(self)
+                if success {
+                    onSuccess(self)
+                } else {
+                    onExpiration(self)
+                }
             }
         }
 
@@ -628,15 +697,13 @@ extension AppDelegate: UIApplicationDelegate {
             os_log("%{public}@ expired - clearing running flag", type: .default, taskLabel)
             updateTask.cancel()
 
-            Task {
-                await self.clearAutoUpdateRunningFlag()
-            }
-
             Task { [weak self] in
                 guard await completionState.claimCompletion() else { return }
-                await ProtobufDataManager.shared.recordAutoUpdateTaskExpiration(kind)
-                task.setTaskCompleted(success: false)
                 guard let self else { return }
+                await self.clearAutoUpdateRunningFlag(context: taskLabel)
+                await ProtobufDataManager.shared.recordAutoUpdateTaskExpiration(kind)
+                await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .timedOut)
+                task.setTaskCompleted(success: false)
                 await MainActor.run {
                     onExpiration(self)
                 }
@@ -644,10 +711,13 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
 
-    private func clearAutoUpdateRunningFlag() async {
+    private func clearAutoUpdateRunningFlag(context: String) async {
         await ProtobufDataManager.shared.waitUntilLoaded()
         await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-        await ProtobufDataManager.shared.saveDataImmediately()
+        let didSave = await ProtobufDataManager.shared.saveDataImmediately()
+        if !didSave {
+            os_log("Failed to clear auto-update running flag during %{public}@", type: .error, context)
+        }
     }
 
     /// Re-schedules BGTaskScheduler requests using the protobuf-backed settings once loaded.

@@ -547,63 +547,47 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
     /// - Parameters:
     ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
     ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) {
+    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
         guard !combinedAdvancedRules.isEmpty else {
             os_log(.info, "No advanced rules to build filter engine with")
             return
         }
-        
-        measure(label: "Building combined filter engine") {
-            do {
-                #if os(iOS)
-                try buildFilterEngineWithoutAdvisoryLock(
-                    rules: combinedAdvancedRules,
-                    groupIdentifier: groupIdentifier
-                )
-                #else
-                try WebExtensionGate.shared.withLock {
-                    let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                    _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-                }
-                #endif
-                os_log(
-                    .info,
-                    "Successfully built combined filter engine with %d characters of advanced rules",
-                    combinedAdvancedRules.count
-                )
-            } catch {
-                os_log(
-                    .error,
-                    "Failed to build combined filtering engine: %@",
-                    error.localizedDescription
-                )
+
+        try measure(label: "Building combined filter engine") {
+            #if os(iOS)
+            try buildFilterEngineWithoutAdvisoryLock(
+                rules: combinedAdvancedRules,
+                groupIdentifier: groupIdentifier
+            )
+            #else
+            try WebExtensionGate.shared.withLock {
+                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
             }
+            #endif
+            os_log(
+                .info,
+                "Successfully built combined filter engine with %d characters of advanced rules",
+                combinedAdvancedRules.count
+            )
         }
     }
-    
+
     /// Clears the filter engine by building it with empty rules.
     ///
     /// - Parameters:
     ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) {
-        measure(label: "Clearing filter engine") {
-            do {
-                #if os(iOS)
-                try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
-                #else
-                try WebExtensionGate.shared.withLock {
-                    let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                    _ = try webExtension.buildFilterEngine(rules: "")
-                }
-                #endif
-                os_log(.info, "Successfully cleared filter engine")
-            } catch {
-                os_log(
-                    .error,
-                    "Failed to clear filtering engine: %@",
-                    error.localizedDescription
-                )
+    public static func clearFilterEngine(groupIdentifier: String) throws {
+        try measure(label: "Clearing filter engine") {
+            #if os(iOS)
+            try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
+            #else
+            try WebExtensionGate.shared.withLock {
+                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+                _ = try webExtension.buildFilterEngine(rules: "")
             }
+            #endif
+            os_log(.info, "Successfully cleared filter engine")
         }
     }
 

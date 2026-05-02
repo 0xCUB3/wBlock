@@ -209,9 +209,18 @@ class AppFilterManager: ObservableObject {
             identifiersApproachingLimit: []
         )
 
-        ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-
-        statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+        do {
+            try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+            statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+        } catch {
+            await ConcurrentLogManager.shared.error(
+                .filterApply,
+                "Failed to clear filter engine during onboarding reset",
+                metadata: ["error": error.localizedDescription]
+            )
+            hasError = true
+            statusDescription = LocalizedStrings.text("Failed", comment: "Generic failure status")
+        }
         isLoading = false
     }
 
