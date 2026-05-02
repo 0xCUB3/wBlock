@@ -299,6 +299,18 @@ public actor SharedAutoUpdateManager {
         }
     }
 
+    private func clearPersistedRunningFlag(
+        clearedMessage: String,
+        persistFailureMessage: String
+    ) async {
+        await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+        let didPersist = await ProtobufDataManager.shared.saveDataImmediately()
+        appendSharedLog(clearedMessage)
+        if !didPersist {
+            appendSharedLog(persistFailureMessage)
+        }
+    }
+
     private struct RebuildTargetMetrics {
         let targetName: String
         let cacheHit: Bool
@@ -540,12 +552,10 @@ public actor SharedAutoUpdateManager {
         let timestamp = await getAutoUpdateRunningSinceTimestamp()
         guard timestamp > 0 else {
             os_log("Running flag set without timestamp - clearing potentially stuck state", log: log, type: .info)
-            await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-            let didPersist = await ProtobufDataManager.shared.saveDataImmediately()
-            appendSharedLog("Cleared stuck running flag (no timestamp)")
-            if !didPersist {
-                appendSharedLog("Failed to persist cleared running flag (no timestamp)")
-            }
+            await clearPersistedRunningFlag(
+                clearedMessage: "Cleared stuck running flag (no timestamp)",
+                persistFailureMessage: "Failed to persist cleared running flag (no timestamp)"
+            )
             return true
         }
 
@@ -554,12 +564,10 @@ public actor SharedAutoUpdateManager {
 
         if age > runningFlagStalenessThreshold {
             os_log("Running flag stale (%.1f seconds old, threshold %.1f) - clearing stuck state", log: log, type: .info, age, runningFlagStalenessThreshold)
-            await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-            let didPersist = await ProtobufDataManager.shared.saveDataImmediately()
-            appendSharedLog("Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)")
-            if !didPersist {
-                appendSharedLog("Failed to persist cleared stale running flag")
-            }
+            await clearPersistedRunningFlag(
+                clearedMessage: "Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)",
+                persistFailureMessage: "Failed to persist cleared stale running flag"
+            )
             return true
         }
 
@@ -687,13 +695,38 @@ public actor SharedAutoUpdateManager {
             return outcome
         }
 
+        func currentDurationMs() -> String {
+            "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+        }
+
+        func requireBudget(_ phase: String, _ requiredTime: TimeInterval) throws {
+            try checkBudget(policy, phase: phase, requiredTime: requiredTime)
+        }
+
+        func requireFinalSaveBudget() throws {
+            try requireBudget(
+                AutoUpdateBudgetPhase.finalStateSave,
+                policy.minimumTimeForFinalSave
+            )
+        }
+
+        func requireRunStartSaveBudget() throws {
+            try requireBudget(
+                AutoUpdateBudgetPhase.runStartSave,
+                policy.minimumTimeForFinalSave
+            )
+        }
+
+        func requireUserScriptsBudget() throws {
+            try requireBudget(
+                AutoUpdateBudgetPhase.userScripts,
+                policy.minimumTimeForUserScripts
+            )
+        }
+
         do {
             await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.runStartSave,
-                requiredTime: policy.minimumTimeForFinalSave
-            )
+            try requireRunStartSaveBudget()
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.runStartSave)
             appendSharedLog(
                 "Auto-update started: trigger=\(trigger), forced=\(shouldForce), intervalHours=\(String(format: "%.1f", interval))"
@@ -712,11 +745,7 @@ public actor SharedAutoUpdateManager {
             try throwIfCancelled()
 
             guard !selectedFilters.isEmpty else {
-                try checkBudget(
-                    policy,
-                    phase: AutoUpdateBudgetPhase.userScripts,
-                    requiredTime: policy.minimumTimeForUserScripts
-                )
+                try requireUserScriptsBudget()
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
@@ -724,18 +753,14 @@ public actor SharedAutoUpdateManager {
 
                 let completionTime = Date().timeIntervalSince1970
                 let nextEligibleTime = completionTime + interval * 3600
-                try checkBudget(
-                    policy,
-                    phase: AutoUpdateBudgetPhase.finalStateSave,
-                    requiredTime: policy.minimumTimeForFinalSave
-                )
+                try requireFinalSaveBudget()
                 await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                 invalidateStatusCache()
 
                 appendSharedLog(
                     "Auto-update skipped: no selected filters, userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(Int(interval * 3600)))"
                 )
-                let durationMs = Int((completionTime - startTimestamp) * 1000)
+                let durationMs = currentDurationMs()
                 appendTelemetry(
                     "run_result",
                     fields: [
@@ -748,7 +773,7 @@ public actor SharedAutoUpdateManager {
                         "scripts_updated": "\(scriptsResult.updated)",
                         "scripts_failed": "\(scriptsResult.failed)",
                         "next_check_seconds": "\(Int(interval * 3600))",
-                        "duration_ms": "\(durationMs)"
+                        "duration_ms": durationMs
                     ]
                 )
 
@@ -781,11 +806,7 @@ public actor SharedAutoUpdateManager {
 
                 let completionTime = Date().timeIntervalSince1970
                 let nextCheckInSeconds: Int
-                try checkBudget(
-                    policy,
-                    phase: AutoUpdateBudgetPhase.finalStateSave,
-                    requiredTime: policy.minimumTimeForFinalSave
-                )
+                try requireFinalSaveBudget()
                 if hadErrors {
                     let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
                     let nextEligibleTime = completionTime + retryDelaySeconds
@@ -800,11 +821,7 @@ public actor SharedAutoUpdateManager {
                     nextCheckInSeconds = scheduledSeconds
                 }
 
-                try checkBudget(
-                    policy,
-                    phase: AutoUpdateBudgetPhase.userScripts,
-                    requiredTime: policy.minimumTimeForUserScripts
-                )
+                try requireUserScriptsBudget()
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
@@ -812,7 +829,7 @@ public actor SharedAutoUpdateManager {
                 appendSharedLog(
                     "No filter updates: checkErrors=\(hadErrors), reload=\(reloadStatus), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(nextCheckInSeconds))"
                 )
-                let durationMs = Int((completionTime - startTimestamp) * 1000)
+                let durationMs = currentDurationMs()
                 appendTelemetry(
                     "run_result",
                     fields: [
@@ -826,7 +843,7 @@ public actor SharedAutoUpdateManager {
                         "scripts_updated": "\(scriptsResult.updated)",
                         "scripts_failed": "\(scriptsResult.failed)",
                         "next_check_seconds": "\(nextCheckInSeconds)",
-                        "duration_ms": "\(durationMs)"
+                        "duration_ms": durationMs
                     ]
                 )
 
@@ -851,11 +868,7 @@ public actor SharedAutoUpdateManager {
                 }
             }
 
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.finalStateSave,
-                requiredTime: policy.minimumTimeForFinalSave
-            )
+            try requireFinalSaveBudget()
             await saveFilterListsToProtobuf(merged)
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
@@ -865,19 +878,11 @@ public actor SharedAutoUpdateManager {
             )
             try throwIfCancelled()
 
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.userScripts,
-                requiredTime: policy.minimumTimeForUserScripts
-            )
+            try requireUserScriptsBudget()
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
 
             let successTime = Date().timeIntervalSince1970
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.finalStateSave,
-                requiredTime: policy.minimumTimeForFinalSave
-            )
+            try requireFinalSaveBudget()
             await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
             var nextEligibleTime = successTime + interval * 3600
             let nextCheckInSeconds: Int
@@ -900,6 +905,7 @@ public actor SharedAutoUpdateManager {
             if hadErrors {
                 appendSharedLog("Some filter checks failed; using a shorter retry interval.")
             }
+            let durationMs = currentDurationMs()
             appendTelemetry(
                 "run_result",
                 fields: [
@@ -912,7 +918,7 @@ public actor SharedAutoUpdateManager {
                     "scripts_updated": "\(scriptsResult.updated)",
                     "scripts_failed": "\(scriptsResult.failed)",
                     "next_check_seconds": "\(nextCheckInSeconds)",
-                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                    "duration_ms": durationMs
                 ]
             )
 
@@ -920,13 +926,14 @@ public actor SharedAutoUpdateManager {
         } catch is CancellationError {
             os_log("Auto-update cancelled (trigger: %{public}@)", log: log, type: .info, trigger)
             appendSharedLog("Auto-update cancelled: trigger=\(trigger)")
+            let durationMs = currentDurationMs()
             appendTelemetry(
                 "run_result",
                 fields: [
                     "trigger": trigger,
                     "result": "cancelled",
                     "forced": shouldForce ? "true" : "false",
-                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                    "duration_ms": durationMs
                 ]
             )
             return await finishStartedRun(.cancelled)
@@ -944,6 +951,7 @@ public actor SharedAutoUpdateManager {
             appendSharedLog(
                 "Auto-update \(result): trigger=\(trigger), phase=\(phase), reason=\(autoUpdateError.localizedDescription)"
             )
+            let durationMs = currentDurationMs()
             appendTelemetry(
                 "run_result",
                 fields: [
@@ -952,7 +960,7 @@ public actor SharedAutoUpdateManager {
                     "forced": shouldForce ? "true" : "false",
                     "phase": phase,
                     "error": autoUpdateError.localizedDescription,
-                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                    "duration_ms": durationMs
                 ]
             )
             let outcome: AutoUpdateRunOutcome = isDeferred
@@ -962,6 +970,7 @@ public actor SharedAutoUpdateManager {
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
             appendSharedLog("Auto-update failed: trigger=\(trigger), phase=unknown, reason=\(error.localizedDescription)")
+            let durationMs = currentDurationMs()
             appendTelemetry(
                 "run_result",
                 fields: [
@@ -970,7 +979,7 @@ public actor SharedAutoUpdateManager {
                     "forced": shouldForce ? "true" : "false",
                     "phase": "unknown",
                     "error": String(describing: error),
-                    "duration_ms": "\(Int((Date().timeIntervalSince1970 - startTimestamp) * 1000))"
+                    "duration_ms": durationMs
                 ]
             )
             return await finishStartedRun(.failed(message: error.localizedDescription))

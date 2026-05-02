@@ -43,6 +43,54 @@ extension AppFilterManager {
         return fileContents.trimmingCharacters(in: .whitespacesAndNewlines) == "[]"
     }
 
+    private func failApplyRun(
+        logMessage: String,
+        metadata: [String: String] = [:],
+        statusMessage: String? = nil,
+        dismissProgressSheet: Bool = true
+    ) async {
+        await ConcurrentLogManager.shared.error(
+            .filterApply,
+            logMessage,
+            metadata: metadata
+        )
+
+        let resolvedStatusMessage = statusMessage
+            ?? LocalizedStrings.text("Failed", comment: "Generic failure status")
+        await MainActor.run {
+            self.hasError = true
+            self.statusDescription = resolvedStatusMessage
+            self.isLoading = false
+            if dismissProgressSheet {
+                self.showingApplyProgressSheet = false
+            }
+        }
+    }
+
+    private func validatePreApplyUpdates(
+        requested: [FilterList],
+        applied: [FilterList]
+    ) async -> Bool {
+        let requestedIDs = Set(requested.map(\.id))
+        let appliedIDs = Set(applied.map(\.id))
+        let missingIDs = requestedIDs.subtracting(appliedIDs)
+        let unexpectedIDs = appliedIDs.subtracting(requestedIDs)
+        guard missingIDs.isEmpty, unexpectedIDs.isEmpty else {
+            await failApplyRun(
+                logMessage: "Failed to download one or more pre-apply filter updates",
+                metadata: [
+                    "requested": "\(requested.count)",
+                    "updated": "\(applied.count)",
+                    "missingIDs": missingIDs.map(\.uuidString).joined(separator: ","),
+                    "unexpectedIDs": unexpectedIDs.map(\.uuidString).joined(separator: ","),
+                ]
+            )
+            return false
+        }
+
+        return true
+    }
+
     // MARK: - Delegated methods
 
     func applyChanges(allowUserInteraction: Bool = false) async {
@@ -110,30 +158,10 @@ extension AppFilterManager {
                             self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
                         }
                     })
-                let requestedIDs = Set(updatedFilters.map(\.id))
-                let appliedIDs = Set(appliedUpdates.map(\.id))
-                let missingIDs = requestedIDs.subtracting(appliedIDs)
-                let unexpectedIDs = appliedIDs.subtracting(requestedIDs)
-                guard missingIDs.isEmpty, unexpectedIDs.isEmpty else {
-                    await ConcurrentLogManager.shared.error(
-                        .filterApply,
-                        "Failed to download one or more pre-apply filter updates",
-                        metadata: [
-                            "requested": "\(updatedFilters.count)",
-                            "updated": "\(appliedUpdates.count)",
-                            "missingIDs": missingIDs.map(\.uuidString).joined(separator: ","),
-                            "unexpectedIDs": unexpectedIDs.map(\.uuidString).joined(separator: ","),
-                        ]
-                    )
-                    await MainActor.run {
-                        self.hasError = true
-                        self.statusDescription = LocalizedStrings.text(
-                            "Failed",
-                            comment: "Generic failure status"
-                        )
-                        self.isLoading = false
-                        self.showingApplyProgressSheet = false
-                    }
+                guard await validatePreApplyUpdates(
+                    requested: updatedFilters,
+                    applied: appliedUpdates
+                ) else {
                     return
                 }
 
@@ -244,20 +272,10 @@ extension AppFilterManager {
                     self.saveRuleCounts()
                 }
             } catch {
-                await ConcurrentLogManager.shared.error(
-                    .filterApply,
-                    "Failed to clear extensions and advanced engine",
+                await failApplyRun(
+                    logMessage: "Failed to clear extensions and advanced engine",
                     metadata: ["error": error.localizedDescription]
                 )
-                await MainActor.run {
-                    self.hasError = true
-                    self.statusDescription = LocalizedStrings.text(
-                        "Failed",
-                        comment: "Generic failure status"
-                    )
-                    self.isLoading = false
-                    self.showingApplyProgressSheet = false
-                }
             }
             return
         }
@@ -363,20 +381,10 @@ extension AppFilterManager {
                     )
                 }.value
             } catch {
-                await ConcurrentLogManager.shared.error(
-                    .filterApply,
-                    "Failed to convert rules for blocker",
+                await failApplyRun(
+                    logMessage: "Failed to convert rules for blocker",
                     metadata: ["blocker": blockerName, "error": error.localizedDescription]
                 )
-                await MainActor.run {
-                    self.hasError = true
-                    self.statusDescription = LocalizedStrings.text(
-                        "Failed",
-                        comment: "Generic failure status"
-                    )
-                    self.isLoading = false
-                    self.showingApplyProgressSheet = false
-                }
                 return
             }
             let ruleCountForThisTarget = conversionResult.safariRulesCount
@@ -566,20 +574,16 @@ extension AppFilterManager {
             advancedEngineSucceeded = true
         } catch {
             advancedEngineSucceeded = false
-            await ConcurrentLogManager.shared.error(
-                .filterApply,
-                "Advanced engine publish failed",
-                metadata: ["error": error.localizedDescription]
+            await failApplyRun(
+                logMessage: "Advanced engine publish failed",
+                metadata: ["error": error.localizedDescription],
+                dismissProgressSheet: false
             )
-            await MainActor.run {
-                self.hasError = true
-                self.statusDescription = LocalizedStrings.text(
-                    "Failed",
-                    comment: "Generic failure status"
-                )
-            }
         }
 
+        let advancedEngineStatus = advancedRulesByTarget.isEmpty
+            ? "cleared"
+            : "\(advancedRulesByTarget.count) targets combined"
         await MainActor.run {
             self.progress = 1.0
             self.applyProgressViewModel.updateProgress(1.0)
@@ -587,11 +591,11 @@ extension AppFilterManager {
             let advancedEngineAvailable = advancedEngineSucceeded && !self.hasError
             if allReloadsSuccessful && advancedEngineAvailable {
                 self.statusDescription =
-                    "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
+                    "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
                 self.markCurrentStateApplied()
             } else if advancedEngineAvailable {
                 self.statusDescription =
-                    "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined")."
+                    "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedEngineStatus)."
             }
 
             self.isLoading = false
