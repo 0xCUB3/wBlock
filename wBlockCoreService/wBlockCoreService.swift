@@ -554,18 +554,29 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
         
         measure(label: "Building combined filter engine") {
-            WebExtensionGate.shared.withLock {
-                do {
+            do {
+                #if os(iOS)
+                try buildFilterEngineWithoutAdvisoryLock(
+                    rules: combinedAdvancedRules,
+                    groupIdentifier: groupIdentifier
+                )
+                #else
+                try WebExtensionGate.shared.withLock {
                     let webExtension = try WebExtension.shared(groupID: groupIdentifier)
                     _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-                    os_log(.info, "Successfully built combined filter engine with %d characters of advanced rules", combinedAdvancedRules.count)
-                } catch {
-                    os_log(
-                        .error,
-                        "Failed to build combined filtering engine: %@",
-                        error.localizedDescription
-                    )
                 }
+                #endif
+                os_log(
+                    .info,
+                    "Successfully built combined filter engine with %d characters of advanced rules",
+                    combinedAdvancedRules.count
+                )
+            } catch {
+                os_log(
+                    .error,
+                    "Failed to build combined filtering engine: %@",
+                    error.localizedDescription
+                )
             }
         }
     }
@@ -576,21 +587,147 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
     ///   - groupIdentifier: Group ID to use for the shared container.
     public static func clearFilterEngine(groupIdentifier: String) {
         measure(label: "Clearing filter engine") {
-            WebExtensionGate.shared.withLock {
-                do {
+            do {
+                #if os(iOS)
+                try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
+                #else
+                try WebExtensionGate.shared.withLock {
                     let webExtension = try WebExtension.shared(groupID: groupIdentifier)
                     _ = try webExtension.buildFilterEngine(rules: "")
-                    os_log(.info, "Successfully cleared filter engine")
-                } catch {
-                    os_log(
-                        .error,
-                        "Failed to clear filtering engine: %@",
-                        error.localizedDescription
-                    )
                 }
+                #endif
+                os_log(.info, "Successfully cleared filter engine")
+            } catch {
+                os_log(
+                    .error,
+                    "Failed to clear filtering engine: %@",
+                    error.localizedDescription
+                )
             }
         }
     }
+
+    #if os(iOS)
+    private static func buildFilterEngineWithoutAdvisoryLock(
+        rules: String,
+        groupIdentifier: String
+    ) throws {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            throw WebExtension.WebExtensionError.containerURLNotFound(groupID: groupIdentifier)
+        }
+
+        let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        var coordinationError: NSError?
+        var buildResult: Result<Void, Error>?
+
+        coordinator.coordinate(writingItemAt: baseURL, options: [], error: &coordinationError) { _ in
+            buildResult = Result {
+                try buildFilterEngineFiles(rules: rules, baseURL: baseURL)
+            }
+        }
+
+        if let buildResult {
+            try buildResult.get()
+            return
+        }
+
+        if let coordinationError {
+            throw coordinationError
+        }
+
+        throw WebExtension.WebExtensionError.buildEngineFailed(
+            underlyingError: CocoaError(.fileWriteUnknown)
+        )
+    }
+
+    private static func buildFilterEngineFiles(rules: String, baseURL: URL) throws {
+        let fileManager = FileManager.default
+        try fileManager.createDirectory(at: baseURL, withIntermediateDirectories: true)
+
+        let temporaryDirectory = baseURL.appendingPathComponent(
+            "engine-rebuild-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: temporaryDirectory) }
+
+        let temporaryRulesBinURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
+        let temporaryEngineURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
+        let temporaryRulesTextURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
+        let temporaryMetaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
+
+        let storage = try FilterRuleStorage(
+            from: rules.components(separatedBy: "\n"),
+            for: SafariVersion.autodetect(),
+            fileURL: temporaryRulesBinURL
+        )
+        let engine = try FilterEngine(storage: storage)
+        try engine.write(to: temporaryEngineURL)
+        try rules.write(to: temporaryRulesTextURL, atomically: true, encoding: .utf8)
+
+        let meta = EngineMeta(timestamp: Date().timeIntervalSince1970, schemaVersion: Int32(Schema.VERSION))
+        try meta.toData().write(to: temporaryMetaURL, options: .atomic)
+
+        try publishEngineFiles(
+            temporaryRulesBinURL: temporaryRulesBinURL,
+            temporaryEngineURL: temporaryEngineURL,
+            temporaryRulesTextURL: temporaryRulesTextURL,
+            temporaryMetaURL: temporaryMetaURL,
+            baseURL: baseURL
+        )
+
+        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
+        if fileManager.fileExists(atPath: migrationMarkerURL.path) {
+            try? fileManager.removeItem(at: migrationMarkerURL)
+        }
+    }
+
+    private static func publishEngineFiles(
+        temporaryRulesBinURL: URL,
+        temporaryEngineURL: URL,
+        temporaryRulesTextURL: URL,
+        temporaryMetaURL: URL,
+        baseURL: URL
+    ) throws {
+        let lockURL = baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME)
+        guard let fileLock = FileLock(filePath: lockURL.path) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileWriteUnknown)
+            )
+        }
+
+        guard fileLock.lock(before: Date().addingTimeInterval(2)) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileWriteUnknown)
+            )
+        }
+        defer { _ = fileLock.unlock() }
+
+        let existingMetaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
+        if FileManager.default.fileExists(atPath: existingMetaURL.path) {
+            try FileManager.default.removeItem(at: existingMetaURL)
+        }
+
+        try replaceEngineFile(temporaryRulesBinURL, in: baseURL, named: Schema.FILTER_RULE_STORAGE_FILE_NAME)
+        try replaceEngineFile(temporaryEngineURL, in: baseURL, named: Schema.FILTER_ENGINE_INDEX_FILE_NAME)
+        try replaceEngineFile(temporaryRulesTextURL, in: baseURL, named: Schema.RULES_FILE_NAME)
+        try replaceEngineFile(temporaryMetaURL, in: baseURL, named: Schema.ENGINE_META_FILE_NAME)
+    }
+
+    private static func replaceEngineFile(_ sourceURL: URL, in baseURL: URL, named fileName: String) throws {
+        let destinationURL = baseURL.appendingPathComponent(fileName)
+        let fileManager = FileManager.default
+
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            _ = try fileManager.replaceItemAt(destinationURL, withItemAt: sourceURL)
+        } else {
+            try fileManager.moveItem(at: sourceURL, to: destinationURL)
+        }
+    }
+    #endif
     
     /// Backward compatibility function that builds the filter engine immediately (legacy behavior).
     /// This function is deprecated and should not be used for new code.
