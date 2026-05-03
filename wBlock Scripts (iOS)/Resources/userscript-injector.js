@@ -1600,7 +1600,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (!headers || typeof headers !== 'object') return '';
                 return Object.entries(headers)
                     .map(([key, value]) => key + ': ' + value)
-                    .join('\r\n');
+                    .join('\\r\\n');
             };
 
             let completed = false;
