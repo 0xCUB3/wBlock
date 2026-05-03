@@ -543,6 +543,8 @@ public enum WebExtensionRequestHandler {
                     "runAt": script.runAt,
                     "noframes": script.noframes,
                     "injectInto": injectInto,
+                    "updateURL": script.updateURL ?? "",
+                    "downloadURL": script.downloadURL ?? "",
                     "resourceNames": resourceNames,
                     "storageSnapshot": storageSnapshot
                 ]
@@ -615,6 +617,9 @@ public enum WebExtensionRequestHandler {
         } ?? [:]
         let body = message["body"] as? String
         let anonymous = message["anonymous"] as? Bool ?? false
+        let responseType = ((message["responseType"] as? String) ?? "text")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
 
         Task {
             let result = await performNativeGMXmlhttpRequest(
@@ -622,7 +627,8 @@ public enum WebExtensionRequestHandler {
                 method: method.isEmpty ? "GET" : method,
                 headers: headers,
                 body: body,
-                anonymous: anonymous
+                anonymous: anonymous,
+                responseType: responseType
             )
             let response = createResponse(with: result)
             context.completeRequest(returningItems: [response])
@@ -634,7 +640,8 @@ public enum WebExtensionRequestHandler {
         method: String,
         headers: [String: String],
         body: String?,
-        anonymous: Bool
+        anonymous: Bool,
+        responseType: String
     ) async -> [String: Any?] {
         let configuration = anonymous ? URLSessionConfiguration.ephemeral : URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
@@ -664,10 +671,12 @@ public enum WebExtensionRequestHandler {
                 return ["error": "Invalid HTTP response"]
             }
 
-            let responseHeaders = httpResponse.allHeaderFields.reduce(into: [String: String]()) { partial, entry in
-                guard let key = entry.key as? String else { return }
-                partial[key] = String(describing: entry.value)
-            }
+            let responseHeaders = httpResponse.allHeaderFields
+                .compactMap { entry -> String? in
+                    guard let key = entry.key as? String else { return nil }
+                    return "\(key): \(String(describing: entry.value))"
+                }
+                .joined(separator: "\r\n")
             let responseText = decodeNativeGMXmlhttpResponseText(data)
 
             return [
@@ -675,12 +684,23 @@ public enum WebExtensionRequestHandler {
                 "statusText": HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode),
                 "responseHeaders": responseHeaders,
                 "responseText": responseText,
-                "response": responseText,
+                "response": nativeGMXmlhttpResponseObject(data: data, responseText: responseText, responseType: responseType),
                 "finalUrl": httpResponse.url?.absoluteString ?? url.absoluteString
             ]
         } catch {
             return ["error": error.localizedDescription]
         }
+    }
+
+    private static func nativeGMXmlhttpResponseObject(
+        data: Data,
+        responseText: String,
+        responseType: String
+    ) -> Any? {
+        if responseType == "json" {
+            return try? JSONSerialization.jsonObject(with: data, options: [])
+        }
+        return responseText
     }
 
     private static func decodeNativeGMXmlhttpResponseText(_ data: Data) -> String {

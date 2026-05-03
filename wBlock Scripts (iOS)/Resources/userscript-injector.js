@@ -850,6 +850,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 case 'document-end':
                     shouldRun = readyState === 'interactive' || readyState === 'complete';
                     break;
+                case 'document-body':
+                    shouldRun = !!document.body;
+                    break;
                 case 'document-idle':
                     shouldRun = readyState === 'complete';
                     break;
@@ -1255,8 +1258,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 name: '${escapeForJS(script.name || 'Unknown Script')}',
                 version: '${escapeForJS(script.version || '1.0.0')}',
                 description: '${escapeForJS(script.description || '')}',
-                namespace: 'wblock'
+                namespace: 'wblock',
+                updateURL: '${escapeForJS(script.updateURL || '')}',
+                downloadURL: '${escapeForJS(script.downloadURL || '')}'
             },
+            scriptUpdateURL: '${escapeForJS(script.updateURL || '')}',
+            scriptDownloadURL: '${escapeForJS(script.downloadURL || '')}',
             scriptHandler: 'wBlock Injector',
             version: '0.2.0'
         },
@@ -1560,23 +1567,42 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const method = (details.method || 'GET').toUpperCase();
             const requestId = 'gmxhr-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 
+            const normalizeGMResponseHeaders = (headers) => {
+                if (typeof headers === 'string') return headers;
+                if (!headers || typeof headers !== 'object') return '';
+                return Object.entries(headers)
+                    .map(([key, value]) => key + ': ' + value)
+                    .join('\r\n');
+            };
+
             const onResult = (result) => {
-                if (details.onload) {
-                    details.onload({
-                        status: result.status,
-                        statusText: result.statusText,
-                        responseHeaders: result.responseHeaders,
-                        responseText: result.responseText,
-                        response: result.response,
-                        readyState: 4,
-                        finalUrl: result.finalUrl || details.url
-                    });
+                const response = {
+                    status: result.status,
+                    statusText: result.statusText,
+                    responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
+                    responseText: result.responseText,
+                    response: result.response,
+                    readyState: 4,
+                    finalUrl: result.finalUrl || details.url
+                };
+                if (typeof details.onreadystatechange === 'function') {
+                    details.onreadystatechange(response);
+                }
+                if (typeof details.onload === 'function') {
+                    details.onload(response);
+                }
+                if (typeof details.onloadend === 'function') {
+                    details.onloadend(response);
                 }
             };
             const onFail = (errorMsg) => {
                 wBlockError('[wBlock] GM_xmlhttpRequest error:', errorMsg);
-                if (details.onerror) {
-                    details.onerror({ error: errorMsg, statusText: errorMsg });
+                const response = { error: errorMsg, statusText: errorMsg, readyState: 4 };
+                if (typeof details.onerror === 'function') {
+                    details.onerror(response);
+                }
+                if (typeof details.onloadend === 'function') {
+                    details.onloadend(response);
                 }
             };
 
@@ -1586,7 +1612,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 headers: details.headers || {},
                 body: details.data || null,
                 anonymous: !!details.anonymous,
-                responseType: details.responseType || 'text'
+                responseType: details.responseType || 'text',
+                redirect: details.redirect || 'follow'
             };
 
             ${isContentContext ? `
@@ -1643,11 +1670,84 @@ if (window.wBlockUserscriptInjectorHasRun) {
         unsafeWindow: unsafeWindow
     };
 
+    const __wBlockLegacyGM = {
+        getValue: GM.getValue.bind(GM),
+        setValue: GM.setValue.bind(GM),
+        deleteValue: GM.deleteValue.bind(GM),
+        listValues: GM.listValues.bind(GM),
+        xmlhttpRequest: GM.xmlhttpRequest.bind(GM)
+    };
+
+    const __wBlockGMRequestPromise = (details) => {
+        let requestHandle = null;
+        const promise = new Promise((resolve, reject) => {
+            const requestDetails = Object.assign({}, details || {});
+            const originalOnload = requestDetails.onload;
+            const originalOnerror = requestDetails.onerror;
+            const originalOntimeout = requestDetails.ontimeout;
+            const originalOnabort = requestDetails.onabort;
+
+            requestDetails.onload = function(response) {
+                try {
+                    if (typeof originalOnload === 'function') originalOnload.call(this, response);
+                } finally {
+                    resolve(response);
+                }
+            };
+            requestDetails.onerror = function(response) {
+                try {
+                    if (typeof originalOnerror === 'function') originalOnerror.call(this, response);
+                } finally {
+                    reject(response);
+                }
+            };
+            requestDetails.ontimeout = function(response) {
+                try {
+                    if (typeof originalOntimeout === 'function') originalOntimeout.call(this, response);
+                } finally {
+                    reject(response);
+                }
+            };
+            requestDetails.onabort = function(response) {
+                try {
+                    if (typeof originalOnabort === 'function') originalOnabort.call(this, response);
+                } finally {
+                    reject(response);
+                }
+            };
+
+            requestHandle = __wBlockLegacyGM.xmlhttpRequest(requestDetails);
+        });
+        promise.abort = function() {
+            if (requestHandle && typeof requestHandle.abort === 'function') {
+                requestHandle.abort();
+            }
+        };
+        return promise;
+    };
+
+    GM.getValue = function(key, defaultValue) {
+        return Promise.resolve(__wBlockLegacyGM.getValue(key, defaultValue));
+    };
+    GM.setValue = function(key, value) {
+        __wBlockLegacyGM.setValue(key, value);
+        return Promise.resolve();
+    };
+    GM.deleteValue = function(key) {
+        __wBlockLegacyGM.deleteValue(key);
+        return Promise.resolve();
+    };
+    GM.listValues = function() {
+        return Promise.resolve(__wBlockLegacyGM.listValues());
+    };
+    GM.xmlhttpRequest = __wBlockGMRequestPromise;
+    GM.xmlHttpRequest = __wBlockGMRequestPromise;
+
     const GM_info = GM.info;
-    const GM_getValue = GM.getValue;
-    const GM_setValue = GM.setValue;
-    const GM_deleteValue = GM.deleteValue;
-    const GM_listValues = GM.listValues;
+    const GM_getValue = __wBlockLegacyGM.getValue;
+    const GM_setValue = __wBlockLegacyGM.setValue;
+    const GM_deleteValue = __wBlockLegacyGM.deleteValue;
+    const GM_listValues = __wBlockLegacyGM.listValues;
     const GM_getResourceURL = GM.getResourceURL;
     const GM_getResourceUrl = GM.getResourceUrl;
     const GM_getResourceText = GM.getResourceText;
@@ -1659,7 +1759,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const GM_openInTab = GM.openInTab;
     const GM_notification = GM.notification;
     const GM_download = GM.download;
-    const GM_xmlhttpRequest = GM.xmlhttpRequest;
+    const GM_xmlhttpRequest = __wBlockLegacyGM.xmlhttpRequest;
+    const GM_xmlHttpRequest = __wBlockLegacyGM.xmlhttpRequest;
     const GM_registerMenuCommand = GM.registerMenuCommand;
     const GM_unregisterMenuCommand = GM.unregisterMenuCommand;
 
@@ -1689,6 +1790,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     window.GM_notification = GM_notification;
     window.GM_download = GM_download;
     window.GM_xmlhttpRequest = GM_xmlhttpRequest;
+    window.GM_xmlHttpRequest = GM_xmlHttpRequest;
     window.GM_registerMenuCommand = GM_registerMenuCommand;
     window.GM_unregisterMenuCommand = GM_unregisterMenuCommand;
     ${exposeGMGlobalsSuffix}

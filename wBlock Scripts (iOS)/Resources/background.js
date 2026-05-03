@@ -24903,6 +24903,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return FORBIDDEN_GM_XHR_HEADER_NAMES.has(normalized) || normalized.startsWith("proxy-") || normalized.startsWith("sec-");
     });
   };
+  const formatGMResponseHeaders = headers => {
+    if (typeof headers === "string") {
+      return headers;
+    }
+    if (!headers || typeof headers !== "object") {
+      return "";
+    }
+    return Object.entries(headers).map(([key, value]) => `${key}: ${value}`).join("\r\n");
+  };
+  const parseGMResponseBody = (responseText, responseType) => {
+    const normalized = String(responseType || "text").toLowerCase();
+    if (normalized === "json") {
+      try {
+        return JSON.parse(responseText || "null");
+      } catch (_error) {
+        return null;
+      }
+    }
+    return responseText;
+  };
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
@@ -25032,7 +25052,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             headers: requestHeaders,
             body: message.body || null,
             anonymous: message.anonymous === true,
-            responseType: message.responseType || 'text'
+            responseType: message.responseType || 'text',
+            redirect: message.redirect || 'follow'
           };
           const nativeResponse = await sendQueuedNativeMessage(nativeRequest);
           return nativeResponse || { error: "Empty response from native host" };
@@ -25041,7 +25062,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         const fetchOptions = {
           method: message.method || 'GET',
           headers: requestHeaders,
-          credentials: message.anonymous ? 'omit' : 'include'
+          credentials: message.anonymous ? 'omit' : 'include',
+          redirect: message.redirect || 'follow'
         };
         const httpMethod = (message.method || 'GET').toUpperCase();
         if (message.body && httpMethod !== 'GET' && httpMethod !== 'HEAD') {
@@ -25056,9 +25078,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return {
           status: fetchResponse.status,
           statusText: fetchResponse.statusText,
-          responseHeaders: responseHeaders,
+          responseHeaders: formatGMResponseHeaders(responseHeaders),
           responseText: responseText,
-          response: responseText,
+          response: parseGMResponseBody(responseText, message.responseType),
           finalUrl: fetchResponse.url
         };
       } catch (error) {
