@@ -128,9 +128,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const data = event.data;
                 if (!data || data.type !== 'wblock-gm-xhr-request') return;
 
-                const { id, url, method, headers, body, anonymous, responseType } = data;
+                const { id, url, method, headers, body, anonymous, responseType, timeout, redirect } = data;
 
-                this.proxyXhr({ url, method, headers, body, anonymous, responseType })
+                this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect })
                     .then(result => {
                         window.postMessage({
                             type: 'wblock-gm-xhr-response',
@@ -395,7 +395,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     headers: details.headers || {},
                     body: details.body || null,
                     anonymous: !!details.anonymous,
-                    responseType: details.responseType || 'text'
+                    responseType: details.responseType || 'text',
+                    timeout: details.timeout || 0,
+                    redirect: details.redirect || 'follow'
                 });
             }
 
@@ -415,7 +417,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         headers: details.headers || {},
                         body: details.body || null,
                         anonymous: !!details.anonymous,
-                        responseType: details.responseType || 'text'
+                        responseType: details.responseType || 'text',
+                        timeout: details.timeout || 0,
+                        redirect: details.redirect || 'follow'
                     });
                 });
             }
@@ -546,6 +550,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     wBlockLog('[wBlock] Window load event fired, retrying pending scripts.');
                     this.retryPendingScripts();
                 });
+
+                if (!document.body && typeof MutationObserver !== 'undefined') {
+                    const bodyObserver = new MutationObserver(() => {
+                        if (!document.body) return;
+                        bodyObserver.disconnect();
+                        wBlockLog('[wBlock] document.body appeared, retrying pending scripts.');
+                        this.retryPendingScripts();
+                    });
+                    bodyObserver.observe(document.documentElement || document, { childList: true, subtree: true });
+                }
             } else {
                 wBlockLog(`[wBlock] Document already ready (${document.readyState}), no need for event listeners.`);
             }
@@ -570,7 +584,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const url = window.location.href;
             wBlockLog(`[wBlock] Requesting userscripts for URL: ${url}`);
 
-            this.sendNativeRequest('getUserScripts', { url, includeContent: true })
+            this.sendNativeRequest('getUserScripts', {
+                url,
+                includeContent: true,
+                maxInlineContentBytes: 128 * 1024
+            })
                 .then((response) => {
                     if (response && response.error) {
                         throw new Error(response.error);
@@ -1358,8 +1376,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return undefined;
         },
 
-        addElement: function(tagName, attributes) {
+        addElement: function(parentOrTagName, tagNameOrAttributes, maybeAttributes) {
             try {
+                let parent = null;
+                let tagName = parentOrTagName;
+                let attributes = tagNameOrAttributes;
+
+                if (parentOrTagName && typeof parentOrTagName.appendChild === 'function') {
+                    parent = parentOrTagName;
+                    tagName = tagNameOrAttributes;
+                    attributes = maybeAttributes;
+                }
+
                 wBlockLog('[wBlock] GM_addElement called:', tagName, attributes);
                 const element = document.createElement(tagName);
 
@@ -1377,7 +1405,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
                 }
 
-                const parent = attributes && attributes.parentNode ? attributes.parentNode : (document.head || document.documentElement);
+                parent = parent || (attributes && attributes.parentNode ? attributes.parentNode : (document.head || document.documentElement));
                 if (parent) {
                     parent.appendChild(element);
                 }
@@ -1575,16 +1603,32 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     .join('\r\n');
             };
 
+            let completed = false;
+            let timeoutId = null;
+
+            const clearRequestTimeout = () => {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+            };
+
+            const makeResponse = (result) => ({
+                status: result.status,
+                statusText: result.statusText,
+                responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
+                responseText: result.responseText,
+                response: result.response,
+                readyState: 4,
+                finalUrl: result.finalUrl || details.url,
+                responseURL: result.finalUrl || details.url
+            });
+
             const onResult = (result) => {
-                const response = {
-                    status: result.status,
-                    statusText: result.statusText,
-                    responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
-                    responseText: result.responseText,
-                    response: result.response,
-                    readyState: 4,
-                    finalUrl: result.finalUrl || details.url
-                };
+                if (completed) return;
+                completed = true;
+                clearRequestTimeout();
+                const response = makeResponse(result);
                 if (typeof details.onreadystatechange === 'function') {
                     details.onreadystatechange(response);
                 }
@@ -1595,10 +1639,15 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     details.onloadend(response);
                 }
             };
-            const onFail = (errorMsg) => {
+            const onFail = (errorMsg, callbackName = 'onerror') => {
+                if (completed) return;
+                completed = true;
+                clearRequestTimeout();
                 wBlockError('[wBlock] GM_xmlhttpRequest error:', errorMsg);
                 const response = { error: errorMsg, statusText: errorMsg, readyState: 4 };
-                if (typeof details.onerror === 'function') {
+                if (typeof details[callbackName] === 'function') {
+                    details[callbackName](response);
+                } else if (callbackName !== 'onerror' && typeof details.onerror === 'function') {
                     details.onerror(response);
                 }
                 if (typeof details.onloadend === 'function') {
@@ -1613,8 +1662,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 body: details.data || null,
                 anonymous: !!details.anonymous,
                 responseType: details.responseType || 'text',
-                redirect: details.redirect || 'follow'
+                redirect: details.redirect || 'follow',
+                timeout: details.timeout || 0
             };
+
+            const timeoutMs = Number(details.timeout || 0);
+            if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+                timeoutId = setTimeout(() => {
+                    onFail('GM_xmlhttpRequest timed out', 'ontimeout');
+                }, timeoutMs);
+            }
 
             ${isContentContext ? `
             // Content context: send directly via browser.runtime.sendMessage
@@ -1634,7 +1691,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
             })();
 
-            return { abort: function() { wBlockLog('[wBlock] GM_xmlhttpRequest abort called'); } };
+            return { abort: function() { wBlockLog('[wBlock] GM_xmlhttpRequest abort called'); onFail('GM_xmlhttpRequest aborted', 'onabort'); } };
             ` : `
             // Page context: proxy through the content script via postMessage
             const responseHandler = (event) => {
@@ -1657,6 +1714,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 abort: function() {
                     window.removeEventListener('message', responseHandler);
                     wBlockLog('[wBlock] GM_xmlhttpRequest abort called');
+                    onFail('GM_xmlhttpRequest aborted', 'onabort');
                 }
             };
             `}
@@ -1675,6 +1733,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
         setValue: GM.setValue.bind(GM),
         deleteValue: GM.deleteValue.bind(GM),
         listValues: GM.listValues.bind(GM),
+        getResourceURL: GM.getResourceURL.bind(GM),
+        getResourceUrl: GM.getResourceUrl.bind(GM),
+        getResourceText: GM.getResourceText.bind(GM),
         xmlhttpRequest: GM.xmlhttpRequest.bind(GM)
     };
 
@@ -1740,6 +1801,15 @@ if (window.wBlockUserscriptInjectorHasRun) {
     GM.listValues = function() {
         return Promise.resolve(__wBlockLegacyGM.listValues());
     };
+    GM.getResourceURL = function(resourceName) {
+        return Promise.resolve(__wBlockLegacyGM.getResourceURL(resourceName));
+    };
+    GM.getResourceUrl = function(resourceName) {
+        return Promise.resolve(__wBlockLegacyGM.getResourceUrl(resourceName));
+    };
+    GM.getResourceText = function(resourceName) {
+        return Promise.resolve(__wBlockLegacyGM.getResourceText(resourceName));
+    };
     GM.xmlhttpRequest = __wBlockGMRequestPromise;
     GM.xmlHttpRequest = __wBlockGMRequestPromise;
 
@@ -1748,9 +1818,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const GM_setValue = __wBlockLegacyGM.setValue;
     const GM_deleteValue = __wBlockLegacyGM.deleteValue;
     const GM_listValues = __wBlockLegacyGM.listValues;
-    const GM_getResourceURL = GM.getResourceURL;
-    const GM_getResourceUrl = GM.getResourceUrl;
-    const GM_getResourceText = GM.getResourceText;
+    const GM_getResourceURL = __wBlockLegacyGM.getResourceURL;
+    const GM_getResourceUrl = __wBlockLegacyGM.getResourceUrl;
+    const GM_getResourceText = __wBlockLegacyGM.getResourceText;
     const GM_addElement = GM.addElement;
     const GM_addValueChangeListener = GM.addValueChangeListener;
     const GM_removeValueChangeListener = GM.removeValueChangeListener;

@@ -24973,7 +24973,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         action: "getUserScripts",
         url: message.url,
         requestId: "userscripts-" + Date.now(),
-        includeContent: message.includeContent === true
+        includeContent: message.includeContent === true,
+        maxInlineContentBytes: message.maxInlineContentBytes || 0
       };
 
       try {
@@ -25053,23 +25054,40 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             body: message.body || null,
             anonymous: message.anonymous === true,
             responseType: message.responseType || 'text',
-            redirect: message.redirect || 'follow'
+            redirect: message.redirect || 'follow',
+            timeout: message.timeout || 0
           };
           const nativeResponse = await sendQueuedNativeMessage(nativeRequest);
           return nativeResponse || { error: "Empty response from native host" };
         }
 
+        const timeoutMs = Number(message.timeout || 0);
+        const abortController = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
+        let timeoutId = null;
+        if (abortController) {
+          timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+        }
         const fetchOptions = {
           method: message.method || 'GET',
           headers: requestHeaders,
           credentials: message.anonymous ? 'omit' : 'include',
           redirect: message.redirect || 'follow'
         };
+        if (abortController) {
+          fetchOptions.signal = abortController.signal;
+        }
         const httpMethod = (message.method || 'GET').toUpperCase();
         if (message.body && httpMethod !== 'GET' && httpMethod !== 'HEAD') {
           fetchOptions.body = message.body;
         }
-        const fetchResponse = await fetch(message.url, fetchOptions);
+        let fetchResponse;
+        try {
+          fetchResponse = await fetch(message.url, fetchOptions);
+        } finally {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        }
         const responseHeaders = {};
         fetchResponse.headers.forEach((value, key) => {
           responseHeaders[key] = value;

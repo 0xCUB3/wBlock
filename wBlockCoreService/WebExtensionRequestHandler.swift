@@ -505,6 +505,7 @@ public enum WebExtensionRequestHandler {
         }
 
         let includeContent = message["includeContent"] as? Bool == true
+        let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
         Task { @MainActor in
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
@@ -549,9 +550,13 @@ public enum WebExtensionRequestHandler {
                     "storageSnapshot": storageSnapshot
                 ]
                 if includeContent, !script.content.isEmpty {
-                    descriptor["content"] = script.content
-                    if !script.resourceContents.isEmpty {
-                        descriptor["resources"] = script.resourceContents
+                    let inlinePayloadBytes = script.content.utf8.count
+                        + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
+                    if inlinePayloadBytes <= maxInlineContentBytes {
+                        descriptor["content"] = script.content
+                        if !script.resourceContents.isEmpty {
+                            descriptor["resources"] = script.resourceContents
+                        }
                     }
                 }
 
@@ -620,6 +625,9 @@ public enum WebExtensionRequestHandler {
         let responseType = ((message["responseType"] as? String) ?? "text")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
+        let timeoutMilliseconds = message["timeout"] as? Double
+            ?? (message["timeout"] as? Int).map(Double.init)
+            ?? 0
 
         Task {
             let result = await performNativeGMXmlhttpRequest(
@@ -628,7 +636,8 @@ public enum WebExtensionRequestHandler {
                 headers: headers,
                 body: body,
                 anonymous: anonymous,
-                responseType: responseType
+                responseType: responseType,
+                timeoutMilliseconds: timeoutMilliseconds
             )
             let response = createResponse(with: result)
             context.completeRequest(returningItems: [response])
@@ -641,11 +650,13 @@ public enum WebExtensionRequestHandler {
         headers: [String: String],
         body: String?,
         anonymous: Bool,
-        responseType: String
+        responseType: String,
+        timeoutMilliseconds: Double
     ) async -> [String: Any?] {
+        let timeoutSeconds = timeoutMilliseconds > 0 ? max(timeoutMilliseconds / 1000, 0.1) : 30
         let configuration = anonymous ? URLSessionConfiguration.ephemeral : URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = timeoutSeconds
+        configuration.timeoutIntervalForResource = max(timeoutSeconds, 60)
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.urlCache = nil
         if anonymous {
@@ -656,7 +667,7 @@ public enum WebExtensionRequestHandler {
         let session = URLSession(configuration: configuration)
         defer { session.finishTasksAndInvalidate() }
 
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeoutSeconds)
         request.httpMethod = method
         headers.forEach { key, value in
             request.setValue(value, forHTTPHeaderField: key)
