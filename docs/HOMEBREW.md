@@ -1,49 +1,61 @@
-# Homebrew Cask (Signed + Notarized)
+# Homebrew cask release
 
-This repo ships a Homebrew cask (`Casks/wblock.rb`) that downloads `wBlock.dmg` from GitHub Releases.
+wBlock is distributed through the dedicated tap repo `0xCUB3/homebrew-wblock`.
+The cask downloads the signed and notarized DMG from GitHub Releases.
 
-## Installing via Homebrew
-
-Homebrew “taps” use a naming convention: when you run `brew tap USER/TAP`, Homebrew tries to clone `https://github.com/USER/homebrew-TAP`.
-
-Since the cask lives inside this repository (`0xCUB3/wBlock`), you have two options:
-
-### Option A (works today): tap this repo by URL
-
-```sh
-brew tap 0xcub3/wblock https://github.com/0xCUB3/wBlock
-brew install --cask wblock
-```
-
-### Option B (more standard): create a dedicated tap repo
-
-Create a GitHub repo named `0xCUB3/homebrew-wblock` and put the cask at `Casks/wblock.rb`.
-Then users can do:
+## Install
 
 ```sh
 brew tap 0xcub3/wblock
 brew install --cask wblock
 ```
 
-## Releasing a notarized DMG (GitHub Actions)
+To upgrade later:
 
-The workflow `.github/workflows/homebrew-cask.yml` runs on tags like `v1.2.3` and:
-- builds `wBlock.app` with Developer ID signing
-- creates `wBlock.dmg`
-- notarizes + staples the DMG
-- uploads `wBlock.dmg` to the GitHub Release for the tag
+```sh
+brew update
+brew upgrade --cask wblock
+```
 
-### Required GitHub Actions secrets
+## Release flow
 
-**Developer ID certificate**
-- `MACOS_CERT_P12_B64`: base64 of your exported `.p12` (Developer ID Application cert + private key)
+The workflow `.github/workflows/homebrew-cask.yml` builds and publishes the Homebrew DMG. It runs when a version tag is pushed, or manually through `workflow_dispatch`.
+
+Accepted tag styles:
+
+- `v2.0.4`
+- `2.0.4`
+
+The workflow:
+
+1. extracts `VERSION` from the tag, stripping a leading `v` when present
+2. imports the Developer ID certificate
+3. optionally installs a macOS provisioning profile
+4. builds `build/homebrew/wBlock-${VERSION}.dmg` with `scripts/build-dmg.sh`
+5. notarizes and staples the DMG
+6. uploads it to the matching GitHub Release
+7. updates `Casks/wblock.rb` in `0xCUB3/homebrew-wblock` with the new version and SHA-256
+
+## Required GitHub Actions secrets
+
+Signing:
+
+- `MACOS_CERT_P12_B64`: base64-encoded exported `.p12` for the Developer ID Application certificate and private key
 - `MACOS_CERT_PASSWORD`: password used when exporting the `.p12`
+- `MACOS_PROFILE_APP_B64`: optional base64-encoded provisioning profile
 
-**App Store Connect API key (for notarization)**
-- `APPLE_API_KEY_ID`: Key ID (e.g. `ABC123DEFG`)
-- `APPLE_API_ISSUER_ID`: Issuer ID (UUID)
-- `APPLE_API_KEY_P8_B64`: base64 of the downloaded `.p8` API key
+Notarization:
 
-### Notes
-- The signing identity used is `Developer ID Application: Alexander Skula (DNP7DGUB7B)`.
-- The release asset name must be exactly `wBlock.dmg` (the cask downloads `releases/latest/download/wBlock.dmg`).
+- `APPLE_API_KEY_ID`: App Store Connect API key ID
+- `APPLE_API_ISSUER_ID`: App Store Connect issuer UUID
+- `APPLE_API_KEY_P8_B64`: base64-encoded `.p8` API key
+
+Tap update:
+
+- `HOMEBREW_TAP_TOKEN`: token with push access to `0xCUB3/homebrew-wblock`
+
+## Notes
+
+- Signing uses `Developer ID Application: Alexander Skula (DNP7DGUB7B)`.
+- Release assets are versioned as `wBlock-${VERSION}.dmg`.
+- The in-repo `Casks/wblock.rb` is kept as a copy/reference; the install path uses the dedicated tap.
