@@ -488,8 +488,8 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Recommended")
                         .font(.headline)
-                    ForEach(recommendedRegionalFilters) { filter in
-                        regionalToggle(for: filter, expandsCommunity: false)
+                    ForEach(ForeignFilterOrganizer.groups(for: recommendedRegionalFilters, preferredLanguages: selectedLanguages)) { group in
+                        regionalFilterGroup(group, expandsCommunity: false)
                     }
                 }
             }
@@ -497,8 +497,8 @@ struct OnboardingView: View {
             if !optionalRegionalFilters.isEmpty {
                 DisclosureGroup(isExpanded: $isCommunityExpanded) {
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(optionalRegionalFilters) { filter in
-                            regionalToggle(for: filter, expandsCommunity: false)
+                        ForEach(ForeignFilterOrganizer.groups(for: optionalRegionalFilters, preferredLanguages: selectedLanguages)) { group in
+                            regionalFilterGroup(group, expandsCommunity: false)
                         }
                     }
                     .padding(.top, 8)
@@ -508,6 +508,20 @@ struct OnboardingView: View {
                 }
                 .padding(14)
                 .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+            }
+        }
+    }
+
+    private func regionalFilterGroup(_ group: ForeignFilterGroup, expandsCommunity: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(group.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 4)
+
+            ForEach(group.filters) { filter in
+                regionalToggle(for: filter, expandsCommunity: expandsCommunity)
             }
         }
     }
@@ -988,7 +1002,11 @@ struct OnboardingView: View {
         let matchingFilters = foreignFilters.compactMap { filter -> FilterList? in
             let filterLanguages = resolvedLanguages(for: filter)
             guard !filterLanguages.isEmpty && !filterLanguages.isDisjoint(with: languages) else { return nil }
-            return filter
+            var hydrated = filter
+            if hydrated.languages.isEmpty {
+                hydrated.languages = Array(filterLanguages).sorted()
+            }
+            return hydrated
         }
 
         guard !matchingFilters.isEmpty else {
@@ -1001,10 +1019,16 @@ struct OnboardingView: View {
             return
         }
 
-        let primary = matchingFilters.filter { (resolvedTrustLevel(for: $0) ?? "").lowercased() != "low" }
-            .sorted { $0.name < $1.name }
-        let secondary = matchingFilters.filter { (resolvedTrustLevel(for: $0) ?? "").lowercased() == "low" }
-            .sorted { $0.name < $1.name }
+        let hydratedMatches = matchingFilters.map { filter -> FilterList in
+            var hydrated = filter
+            if hydrated.trustLevel == nil || hydrated.trustLevel?.isEmpty == true {
+                hydrated.trustLevel = resolvedTrustLevel(for: filter)
+            }
+            return hydrated
+        }
+        let buckets = ForeignFilterOrganizer.recommendationBuckets(from: hydratedMatches)
+        let primary = buckets.recommended
+        let secondary = buckets.optional
 
         recommendedRegionalFilters = primary
         optionalRegionalFilters = secondary

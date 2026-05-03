@@ -27,6 +27,122 @@ enum LocalizedStrings {
     }
 }
 
+struct ForeignFilterGroup: Identifiable {
+    let languageCode: String
+    let title: String
+    let sortTitle: String
+    let filters: [FilterList]
+
+    var id: String { languageCode }
+}
+
+enum ForeignFilterOrganizer {
+    private static let ungroupedLanguageCode = "__foreign__"
+
+    static func groups(
+        for filters: [FilterList],
+        preferredLanguages: Set<String>? = nil
+    ) -> [ForeignFilterGroup] {
+        let preferred = preferredLanguages.map { Set($0.map { $0.lowercased() }) }
+        var filtersByLanguage: [String: [FilterList]] = [:]
+
+        for filter in filters {
+            var languageCodes = Set(filter.languages.map { $0.lowercased() })
+            if let preferred {
+                languageCodes = languageCodes.intersection(preferred)
+            }
+            if languageCodes.isEmpty {
+                languageCodes = [ungroupedLanguageCode]
+            }
+
+            for languageCode in languageCodes {
+                filtersByLanguage[languageCode, default: []].append(filter)
+            }
+        }
+
+        return filtersByLanguage.map { languageCode, filters in
+            ForeignFilterGroup(
+                languageCode: languageCode,
+                title: languageTitle(for: languageCode),
+                sortTitle: languageSortTitle(for: languageCode),
+                filters: sortedFilters(filters)
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.languageCode == ungroupedLanguageCode { return false }
+            if rhs.languageCode == ungroupedLanguageCode { return true }
+            return lhs.sortTitle.localizedCaseInsensitiveCompare(rhs.sortTitle) == .orderedAscending
+        }
+    }
+
+    static func sortedFilters(_ filters: [FilterList]) -> [FilterList] {
+        filters.sorted { lhs, rhs in
+            let lhsRank = filterPriority(lhs)
+            let rhsRank = filterPriority(rhs)
+            if lhsRank != rhsRank { return lhsRank < rhsRank }
+
+            let nameComparison = lhs.localizedDisplayName.localizedCaseInsensitiveCompare(rhs.localizedDisplayName)
+            if nameComparison != .orderedSame { return nameComparison == .orderedAscending }
+
+            return lhs.url.absoluteString < rhs.url.absoluteString
+        }
+    }
+
+    static func recommendationBuckets(from filters: [FilterList]) -> (recommended: [FilterList], optional: [FilterList]) {
+        let recommended = filters.filter { filter in
+            trustRank(for: filter) < trustRank(forTrustLevel: "low") && !isSuperseded(filter)
+        }
+        let optional = filters.filter { filter in
+            trustRank(for: filter) >= trustRank(forTrustLevel: "low") || isSuperseded(filter)
+        }
+        return (sortedFilters(recommended), sortedFilters(optional))
+    }
+
+    static func isSuperseded(_ filter: FilterList) -> Bool {
+        filter.description.range(of: "Already included in", options: [.caseInsensitive, .diacriticInsensitive]) != nil
+    }
+
+    private static func filterPriority(_ filter: FilterList) -> Int {
+        var priority = trustRank(for: filter)
+        if isSuperseded(filter) {
+            priority += 10
+        }
+        return priority
+    }
+
+    private static func trustRank(for filter: FilterList) -> Int {
+        trustRank(forTrustLevel: filter.trustLevel)
+    }
+
+    private static func trustRank(forTrustLevel trustLevel: String?) -> Int {
+        switch trustLevel?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "full": return 0
+        case "high": return 1
+        case "medium": return 2
+        case "low": return 4
+        default: return 3
+        }
+    }
+
+    private static func languageTitle(for languageCode: String) -> String {
+        guard languageCode != ungroupedLanguageCode else {
+            return LocalizedStrings.text("Foreign", comment: "Filter list category")
+        }
+
+        let name = languageSortTitle(for: languageCode)
+        guard let flag = FilterList.languageToFlag[languageCode], !flag.isEmpty else { return name }
+        return "\(flag) \(name)"
+    }
+
+    private static func languageSortTitle(for languageCode: String) -> String {
+        guard languageCode != ungroupedLanguageCode else {
+            return LocalizedStrings.text("Foreign", comment: "Filter list category")
+        }
+
+        return Locale.current.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
+    }
+}
+
 enum LocalizedFormatting {
     static func percent(_ value: Double) -> String {
         value.formatted(

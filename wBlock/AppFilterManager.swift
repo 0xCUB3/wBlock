@@ -269,10 +269,15 @@ class AppFilterManager: ObservableObject {
         }
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
+        let defaultLists = loader.getDefaultFilterLists()
+        var addedDefaultFilters = false
+        let originalURLsByID = Dictionary(
+            storedFilterLists.map { ($0.id, $0.url) },
+            uniquingKeysWith: { first, _ in first }
+        )
 
         // Merge any new default filters added in app updates
         if !migratedFilterLists.isEmpty {
-            let defaultLists = loader.getDefaultFilterLists()
             let existingURLs = Set(migratedFilterLists.map { $0.url })
 
             for defaultFilter in defaultLists {
@@ -281,9 +286,12 @@ class AppFilterManager: ObservableObject {
                     var newFilter = defaultFilter
                     newFilter.isSelected = false
                     migratedFilterLists.append(newFilter)
+                    addedDefaultFilters = true
                 }
             }
         }
+
+        migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
 
         filterLists = migratedFilterLists
         markCurrentStateApplied()
@@ -295,21 +303,14 @@ class AppFilterManager: ObservableObject {
             }
         }
 
-        // Persist migrated filter URLs to the data store when needed
-        if storedFilterLists != migratedFilterLists {
-            Task {
-                for migrated in migratedFilterLists {
-                    if let original = storedFilterLists.first(where: { $0.id == migrated.id }),
-                        original.url != migrated.url
-                    {
-                        await self.dataManager.updateFilterList(migrated)
-                    }
-                }
-                // Also persist any newly added filters
-                if migratedFilterLists.count > storedFilterLists.count {
-                    await self.saveFilterLists()
-                }
-            }
+        // Persist URL migrations and newly added defaults. Catalog metadata is hydrated in memory
+        // because older app data does not store languages/trust levels.
+        let hasURLMigrations = migratedFilterLists.contains { filter in
+            guard let originalURL = originalURLsByID[filter.id] else { return false }
+            return originalURL != filter.url
+        }
+        if hasURLMigrations || addedDefaultFilters {
+            Task { await self.saveFilterLists() }
         }
 
         // Only load defaults if truly no data exists
@@ -343,6 +344,27 @@ class AppFilterManager: ObservableObject {
         if disabledSitesDirectoryFileDescriptor >= 0 {
             close(disabledSitesDirectoryFileDescriptor)
             disabledSitesDirectoryFileDescriptor = -1
+        }
+    }
+
+    private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
+        let defaultsByURL = Dictionary(
+            defaultLists.map { ($0.url, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return filters.map { filter in
+            guard !filter.isCustom, let catalogFilter = defaultsByURL[filter.url] else {
+                return filter
+            }
+
+            var hydrated = filter
+            hydrated.name = catalogFilter.name
+            hydrated.category = catalogFilter.category
+            hydrated.description = catalogFilter.description
+            hydrated.languages = catalogFilter.languages
+            hydrated.trustLevel = catalogFilter.trustLevel
+            return hydrated
         }
     }
 

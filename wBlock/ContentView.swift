@@ -273,8 +273,11 @@ struct ContentView: View {
                 if item.category == .foreign {
                     Section {
                         DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
-                            ForEach(item.filters) { filter in
-                                filterRowView(for: filter)
+                            ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
+                                foreignFilterGroupHeader(group.title)
+                                ForEach(group.filters) { filter in
+                                    filterRowView(for: filter)
+                                }
                             }
                         } label: {
                             Text(item.category.localizedName)
@@ -387,6 +390,14 @@ struct ContentView: View {
         .padding(.horizontal)
     }
 
+    private func foreignFilterGroupHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
+            .padding(.top, 6)
+    }
+
     private func filterRowView(for filter: FilterList) -> some View {
         FilterRowView(
             filter: filter,
@@ -427,11 +438,23 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
                 VStack(spacing: 0) {
-                    ForEach(filters) { filter in
-                        filterRowView(for: filter)
-                        if filter.id != filters.last?.id {
-                            Divider()
-                                .padding(.leading, 16)
+                    ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
+                        HStack {
+                            Text(group.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+
+                        ForEach(group.filters) { filter in
+                            filterRowView(for: filter)
+                            if filter.id != group.filters.last?.id {
+                                Divider()
+                                    .padding(.leading, 16)
+                            }
                         }
                     }
                 }
