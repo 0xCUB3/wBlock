@@ -27,7 +27,8 @@ public enum WebExtensionRequestHandler {
             "extendedCss": [],
             "js": [],
             "scriptlets": [],
-            "userScripts": []
+            "userScripts": [],
+            "engineTimestamp": 0
         ]
     }
 
@@ -205,6 +206,7 @@ public enum WebExtensionRequestHandler {
         }
 
         payload["scriptlets"] = scriptlets
+        payload["engineTimestamp"] = configuration.engineTimestamp
 
         return payload
     }
