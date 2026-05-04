@@ -17,6 +17,7 @@ struct OnboardingView: View {
     enum OnboardingStep: Int, CaseIterable, Identifiable {
         case protection
         case region
+        case regionalFilters
         case userscripts
         case sync
         case setup
@@ -54,7 +55,6 @@ struct OnboardingView: View {
     @State private var optionalRegionalFilters: [FilterList] = []
     @State private var regionInfoMessage: String?
     @State private var hasManuallyEditedRegionalSelection = false
-    @State private var isLanguagePickerExpanded = false
     @State private var isCommunityExpanded = false
     @State private var wantsCloudSync: Bool = false
     @State private var hasProbedRemoteConfig: Bool = false
@@ -261,6 +261,19 @@ struct OnboardingView: View {
         }
     }
 
+    private var activeOnboardingSteps: [OnboardingStep] {
+        var steps: [OnboardingStep] = [.protection, .region]
+        if !selectedFilterLanguageOptions.isEmpty {
+            steps.append(.regionalFilters)
+        }
+        steps.append(contentsOf: [.userscripts, .sync, .setup])
+        return steps
+    }
+
+    private var currentStepIndex: Int {
+        activeOnboardingSteps.firstIndex(of: step) ?? 0
+    }
+
     private var onboardingHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
@@ -280,8 +293,8 @@ struct OnboardingView: View {
                     LocalizedStrings.format(
                         "%d/%d",
                         comment: "Onboarding step counter",
-                        step.rawValue + 1,
-                        OnboardingStep.allCases.count
+                        currentStepIndex + 1,
+                        activeOnboardingSteps.count
                     )
                 )
                 .font(.caption)
@@ -298,6 +311,8 @@ struct OnboardingView: View {
             blockingLevelStep
         case .region:
             regionStep
+        case .regionalFilters:
+            regionalFiltersStep
         case .userscripts:
             userscriptStep
         case .sync:
@@ -345,16 +360,18 @@ struct OnboardingView: View {
     }
 
     private func advanceToNextStep() {
-        guard let next = OnboardingStep(rawValue: step.rawValue + 1) else { return }
+        let steps = activeOnboardingSteps
+        guard let currentIndex = steps.firstIndex(of: step), currentIndex < steps.index(before: steps.endIndex) else { return }
         withAnimation(.easeInOut(duration: 0.2)) {
-            step = next
+            step = steps[steps.index(after: currentIndex)]
         }
     }
 
     private func retreatToPreviousStep() {
-        guard let previous = OnboardingStep(rawValue: step.rawValue - 1) else { return }
+        let steps = activeOnboardingSteps
+        guard let currentIndex = steps.firstIndex(of: step), currentIndex > steps.startIndex else { return }
         withAnimation(.easeInOut(duration: 0.2)) {
-            step = previous
+            step = steps[steps.index(before: currentIndex)]
         }
     }
 
@@ -437,10 +454,6 @@ struct OnboardingView: View {
         availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
     }
 
-    private var selectedLanguageSummary: String {
-        selectedFilterLanguageOptions.map(\.name).joined(separator: ", ")
-    }
-
     private var languagePickerGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
             ForEach(availableFilterLanguages) { lang in
@@ -454,12 +467,8 @@ struct OnboardingView: View {
         return Button {
             if isOn {
                 selectedLanguages.remove(lang.code)
-                let remainingAvailableLanguages = Set(availableFilterLanguages.map(\.code))
-                    .intersection(selectedLanguages)
-                isLanguagePickerExpanded = remainingAvailableLanguages.isEmpty
             } else {
                 selectedLanguages.insert(lang.code)
-                isLanguagePickerExpanded = false
             }
         } label: {
             HStack(spacing: 6) {
@@ -488,29 +497,26 @@ struct OnboardingView: View {
 
     private var regionStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose filters for websites in other languages. You can fine-tune them later.")
+            Text("Choose the languages you browse in. wBlock will recommend matching filters next.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            if selectedFilterLanguageOptions.isEmpty {
-                languagePickerGrid
-            } else {
-                DisclosureGroup(isExpanded: $isLanguagePickerExpanded) {
-                    languagePickerGrid
-                        .padding(.top, 8)
-                } label: {
-                    Text(
-                        LocalizedStrings.format(
-                            "Languages: %@",
-                            comment: "Selected regional filter languages summary",
-                            selectedLanguageSummary
-                        )
-                    )
-                    .font(.headline)
-                }
-                .padding(14)
-                .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+            languagePickerGrid
+
+            if !selectedFilterLanguageOptions.isEmpty {
+                Text("Next: review matching filters.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
             }
+        }
+    }
+
+    private var regionalFiltersStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Choose filters for websites in other languages. You can fine-tune them later.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             if let message = regionInfoMessage {
                 Text(message)
