@@ -244,6 +244,12 @@ Check out our <a href="Adblock_Comparison.md">comparison guide</a> vs uBlock Ori
 </details>
 
 <details>
+<summary><b>Should I install wBlock from the App Store or the DMG/Homebrew release?</b></summary>
+<br>
+The App Store version is generally preferred because it provides automatic app updates. The DMG/Homebrew release has the same features and is available for users who prefer installing outside the App Store.
+</details>
+
+<details>
 <summary><b>Can I use my own filter lists?</b></summary>
 <br>
 Yes. You can add any AdGuard-compatible filter list by URL, paste rules directly, or import from a file.

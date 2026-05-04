@@ -3,6 +3,9 @@
 wBlock is distributed through the dedicated tap repo `0xCUB3/homebrew-wblock`.
 The cask downloads the signed and notarized DMG from GitHub Releases.
 
+> [!NOTE]
+> The App Store version is generally preferred because it provides automatic app updates. This DMG/Homebrew release has the same features and is available for users who prefer installing outside the App Store.
+
 ## Install
 
 ```sh
