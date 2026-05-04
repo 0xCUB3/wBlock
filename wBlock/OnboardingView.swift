@@ -54,6 +54,7 @@ struct OnboardingView: View {
     @State private var optionalRegionalFilters: [FilterList] = []
     @State private var regionInfoMessage: String?
     @State private var hasManuallyEditedRegionalSelection = false
+    @State private var isLanguagePickerExpanded = false
     @State private var isCommunityExpanded = false
     @State private var wantsCloudSync: Bool = false
     @State private var hasProbedRemoteConfig: Bool = false
@@ -432,13 +433,33 @@ struct OnboardingView: View {
         return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    private var selectedFilterLanguageOptions: [LanguageOption] {
+        availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
+    }
+
+    private var selectedLanguageSummary: String {
+        selectedFilterLanguageOptions.map(\.name).joined(separator: ", ")
+    }
+
+    private var languagePickerGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(availableFilterLanguages) { lang in
+                languageToggle(for: lang)
+            }
+        }
+    }
+
     private func languageToggle(for lang: LanguageOption) -> some View {
         let isOn = selectedLanguages.contains(lang.code)
         return Button {
             if isOn {
                 selectedLanguages.remove(lang.code)
+                let remainingAvailableLanguages = Set(availableFilterLanguages.map(\.code))
+                    .intersection(selectedLanguages)
+                isLanguagePickerExpanded = remainingAvailableLanguages.isEmpty
             } else {
                 selectedLanguages.insert(lang.code)
+                isLanguagePickerExpanded = false
             }
         } label: {
             HStack(spacing: 6) {
@@ -471,10 +492,24 @@ struct OnboardingView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(availableFilterLanguages) { lang in
-                    languageToggle(for: lang)
+            if selectedFilterLanguageOptions.isEmpty {
+                languagePickerGrid
+            } else {
+                DisclosureGroup(isExpanded: $isLanguagePickerExpanded) {
+                    languagePickerGrid
+                        .padding(.top, 8)
+                } label: {
+                    Text(
+                        LocalizedStrings.format(
+                            "Languages: %@",
+                            comment: "Selected regional filter languages summary",
+                            selectedLanguageSummary
+                        )
+                    )
+                    .font(.headline)
                 }
+                .padding(14)
+                .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
             }
 
             if let message = regionInfoMessage {
