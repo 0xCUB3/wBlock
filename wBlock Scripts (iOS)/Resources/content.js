@@ -29454,6 +29454,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
+  function uboNativeSafeNoop(source, args) {
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId) {
+      if (Window.prototype.toString[uniqueIdentifier] === flag) {
+        return;
+      }
+      Window.prototype.toString[uniqueIdentifier] = flag;
+    }
+  }
   function uboTrustedJsonEditXhrRequest(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -29611,7 +29621,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return Reflect.apply(target, thisArg, argumentsList);
       }
     });
-    hit(source);
     if (source.uniqueId) {
       Window.prototype.toString[uniqueIdentifier] = flag;
     }
@@ -29620,13 +29629,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // uBO's json-edit response grammar is not equivalent to AdGuard's bundled
     // json-set scriptlet. Keep it as a safe no-op until we add a full adapter;
     // this avoids breaking every other scriptlet on pages which use it.
-    hit(source);
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId) {
+      if (Window.prototype.toString[uniqueIdentifier] === flag) {
+        return;
+      }
+      Window.prototype.toString[uniqueIdentifier] = flag;
+    }
   }
   function uboTrustedPreventDomBypass(source, args) {
     // This uBO hardening scriptlet prevents pages from stashing native APIs
     // before other scriptlets wrap them. Safari runs our content script at
     // document_start already, so a no-op is safer than a broad monkey-patch.
-    hit(source);
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId) {
+      if (Window.prototype.toString[uniqueIdentifier] === flag) {
+        return;
+      }
+      Window.prototype.toString[uniqueIdentifier] = flag;
+    }
   }
   var scriptletsMap = {
     "amazon-apstag": AmazonApstag,
@@ -29970,7 +29993,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-spoof-css": spoofCSS,
     "ubo-fingerprint2": Fingerprintjs2,
     "ubo-prevent-xhr": preventXHR,
-    "ubo-rpnt": trustedReplaceNodeText,
+    "ubo-rpnt": uboNativeSafeNoop,
     "ubo-trusted-click-element": trustedClickElement,
     "ubo-trusted-create-element": trustedCreateElement,
     "ubo-trusted-dispatch-event": trustedDispatchEvent,
@@ -29982,7 +30005,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-trusted-replace-node-text": trustedReplaceNodeText,
     "ubo-trusted-replace-outbound-text": trustedReplaceOutboundText,
     "ubo-trusted-replace-xhr-response": trustedReplaceXhrResponse,
-    "ubo-trusted-rpnt": trustedReplaceNodeText,
+    "ubo-trusted-rpnt": uboNativeSafeNoop,
     "ubo-trusted-set": trustedSetConstant,
     "ubo-trusted-set-attr": trustedSetAttr,
     "ubo-trusted-set-constant": trustedSetConstant,
@@ -30322,6 +30345,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         engine: SCRIPTLET_ENGINE_NAME,
         name: scriptlet.name,
         args: scriptlet.args,
+        uniqueId: `${scriptlet.name}_${JSON.stringify(scriptlet.args || [])}`,
         version: version,
         verbose
       };

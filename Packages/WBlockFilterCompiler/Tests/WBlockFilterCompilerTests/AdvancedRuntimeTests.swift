@@ -30,6 +30,26 @@ import Testing
     #expect(other.scriptlets == [AdvancedScriptlet(name: "ubo-aopr", args: ["adBlockDetected"])])
 }
 
+@Test func scriptletArgumentParserPreservesSelectorAttributeQuotes() throws {
+    let source = FilterSource(
+        identifier: "quoted-selector-scriptlet",
+        displayName: "Quoted selector scriptlet",
+        text: "example.com##+js(trusted-click-element, .dialog button[aria-label=\"Reject all\"], , 1000)"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+
+    #expect(result.advancedRules.scriptlets == [
+        AdvancedScriptletRule(
+            scope: AdvancedDomainScope(ifDomains: ["example.com"]),
+            name: "ubo-trusted-click-element",
+            args: [".dialog button[aria-label=\"Reject all\"]", "", "1000"]
+        )
+    ])
+}
+
 @Test func styleActionCosmeticsCompileToAdvancedRuntimeOnly() throws {
     let source = FilterSource(
         identifier: "style-action",

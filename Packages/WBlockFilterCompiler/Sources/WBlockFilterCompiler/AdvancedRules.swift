@@ -304,7 +304,11 @@ enum AdvancedRuleParser {
                 continue
             }
             if character == "'" || character == "\"" || character == "`" {
-                quote = character
+                if current.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    quote = character
+                } else {
+                    current.append(character)
+                }
                 continue
             }
             if character == "," {
