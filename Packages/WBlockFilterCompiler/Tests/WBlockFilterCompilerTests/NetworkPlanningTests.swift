@@ -86,6 +86,82 @@ import Testing
     #expect(rules[0].trigger.ifDomain == ["adblock-tester.com"])
 }
 
+@Test func strictPartyOptionsMapToNearestSafariLoadType() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: """
+        ||first.example^$strict1p
+        ||third.example^$strict3p
+        """
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 2)
+    #expect(rules[0].trigger.loadType == ["first-party"])
+    #expect(rules[1].trigger.loadType == ["third-party"])
+}
+
+@Test func denyAllowExpandsToScopedSafariExceptions() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: "*$script,3p,denyallow=google.com|gstatic.com,domain=example.com"
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 3)
+    #expect(rules[0].action.type == "block")
+    #expect(rules[0].trigger.urlFilter == ".*")
+    #expect(rules[0].trigger.ifDomain == ["example.com"])
+    #expect(rules[1].action.type == "ignore-previous-rules")
+    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?google\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[2].action.type == "ignore-previous-rules")
+    #expect(rules[2].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?gstatic\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+}
+
+@Test func wildcardToDomainsExpandToDestinationRules() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: "*$xhr,to=amazon.*|x.com"
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 2)
+    #expect(rules.map { $0.action.type } == ["block", "block"])
+    #expect(rules.map { $0.trigger.resourceType ?? [] } == [["raw"], ["raw"]])
+    #expect(rules[0].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?amazon\..*(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?x\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+}
+
+@Test func mixedBlockingDomainOptionsEmitContextException() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: "||ads.example^$script,domain=example.com|~accounts.example.com"
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 2)
+    #expect(rules[0].action.type == "block")
+    #expect(rules[0].trigger.ifDomain == ["example.com"])
+    #expect(rules[1].action.type == "ignore-previous-rules")
+    #expect(rules[1].trigger.ifDomain == ["accounts.example.com"])
+}
+
 @Test func importantBlockingRulesAreEmittedAfterNormalExceptions() throws {
     let source = FilterSource(
         identifier: "fixture",

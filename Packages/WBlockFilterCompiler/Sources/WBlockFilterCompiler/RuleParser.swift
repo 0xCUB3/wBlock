@@ -47,6 +47,8 @@ enum RuleParser {
             loadType: nil,
             ifDomains: [],
             unlessDomains: [],
+            toDomains: [],
+            denyAllowDomains: [],
             matchCase: false,
             important: false,
             isBadfilter: false,
@@ -68,6 +70,8 @@ enum RuleParser {
         var loadType: SafariLoadType?
         var ifDomains: [String] = []
         var unlessDomains: [String] = []
+        var toDomains: [String] = []
+        var denyAllowDomains: [String] = []
         var matchCase = false
         var important = false
         var isBadfilter = false
@@ -107,9 +111,19 @@ enum RuleParser {
                 canonicalOptions.append("first-party")
                 continue
             }
+            if lower == "strict1p" {
+                loadType = .firstParty
+                canonicalOptions.append("strict1p")
+                continue
+            }
             if lower == "~first-party" || lower == "~1p" {
                 loadType = .thirdParty
                 canonicalOptions.append("~first-party")
+                continue
+            }
+            if lower == "strict3p" {
+                loadType = .thirdParty
+                canonicalOptions.append("strict3p")
                 continue
             }
             if lower == "all" {
@@ -148,7 +162,36 @@ enum RuleParser {
             }
 
             if lower.hasPrefix("denyallow=") {
-                return .unsupported(.denyAllowNeedsPlanner)
+                guard !isException else { return .unsupported(.denyAllowNeedsPlanner) }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                let domains = parseDomainList(value)
+                guard !domains.positive.isEmpty, domains.negative.isEmpty else { return .unsupported(.denyAllowNeedsPlanner) }
+                denyAllowDomains.append(contentsOf: domains.positive)
+                canonicalOptions.append("denyallow=\(domains.positive.joined(separator: "|"))")
+                continue
+            }
+
+            if lower.hasPrefix("to=") {
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                let domains = parseDomainList(value)
+                guard pattern == "*" else { return .unsupported(.noSafariEquivalent) }
+                if !domains.positive.isEmpty, domains.negative.isEmpty {
+                    toDomains.append(contentsOf: domains.positive)
+                    canonicalOptions.append("to=\(domains.positive.joined(separator: "|"))")
+                    continue
+                }
+                if domains.positive.isEmpty, !domains.negative.isEmpty, !isException {
+                    denyAllowDomains.append(contentsOf: domains.negative)
+                    canonicalOptions.append("to=\(domains.negative.map { "~\($0)" }.joined(separator: "|"))")
+                    continue
+                }
+                return .unsupported(.noSafariEquivalent)
             }
 
             if lower.hasPrefix("redirect=") {
@@ -167,7 +210,7 @@ enum RuleParser {
                 continue
             }
 
-            if lower.hasPrefix("to=") || lower.hasPrefix("method=") || lower == "strict1p" || lower == "strict3p" || lower == "inline-script" || lower == "inline-font" || lower == "elemhide" || lower == "generichide" || lower == "genericblock" || lower == "jsinject" || lower == "shide" || lower == "ehide" || lower == "ghide" || lower == "specifichide" || lower == "cname" || lower.hasPrefix("cname=") {
+            if lower.hasPrefix("method=") || lower == "inline-script" || lower == "inline-font" || lower == "elemhide" || lower == "generichide" || lower == "genericblock" || lower == "jsinject" || lower == "shide" || lower == "ehide" || lower == "ghide" || lower == "specifichide" || lower == "cname" || lower.hasPrefix("cname=") {
                 return .unsupported(.noSafariEquivalent)
             }
 
@@ -179,7 +222,7 @@ enum RuleParser {
             resourceTypes = resourceTypes.isEmpty ? expanded : resourceTypes.subtracting(excludedResourceTypes)
         }
 
-        if !ifDomains.isEmpty && !unlessDomains.isEmpty {
+        if isException && !ifDomains.isEmpty && !unlessDomains.isEmpty {
             return .unsupported(.mixedDomainOptionsNeedSplitting)
         }
 
@@ -194,6 +237,8 @@ enum RuleParser {
                 loadType: loadType,
                 ifDomains: Array(Set(ifDomains)).sorted(),
                 unlessDomains: Array(Set(unlessDomains)).sorted(),
+                toDomains: Array(Set(toDomains)).sorted(),
+                denyAllowDomains: Array(Set(denyAllowDomains)).sorted(),
                 matchCase: matchCase,
                 important: important,
                 isBadfilter: isBadfilter,

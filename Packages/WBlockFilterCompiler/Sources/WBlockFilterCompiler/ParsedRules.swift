@@ -18,6 +18,8 @@ struct NetworkRule: Equatable {
     var loadType: SafariLoadType?
     var ifDomains: [String]
     var unlessDomains: [String]
+    var toDomains: [String]
+    var denyAllowDomains: [String]
     var matchCase: Bool
     var important: Bool
     var isBadfilter: Bool

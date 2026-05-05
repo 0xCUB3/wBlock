@@ -78,6 +78,7 @@ public struct NativeFilterCompiler: FilterCompiling {
         }
 
         let filteredNetworkRules = networkRules.filter { !badfilterIdentities.contains($0.canonicalIdentity) }
+        let expandedNetworkRules = expandNetworkRules(filteredNetworkRules)
         let plannedCosmeticRules = applyCosmeticExceptions(cosmeticRules, exceptions: cosmeticExceptionRules)
         let runtimeCosmeticRules = plannedCosmeticRules
             .filter { !$0.ifDomains.isEmpty || !$0.unlessDomains.isEmpty }
@@ -99,7 +100,7 @@ public struct NativeFilterCompiler: FilterCompiling {
             scriptletExceptions: dedupeAdvancedScriptletRules(advancedScriptletExceptionRules)
         )
         let groupedCosmeticRules = groupCosmeticRules(plannedCosmeticRules)
-        let safariRules = planSafariRules(networkRules: filteredNetworkRules, cosmeticRules: groupedCosmeticRules)
+        let safariRules = planSafariRules(networkRules: expandedNetworkRules, cosmeticRules: groupedCosmeticRules)
         let safariJSON = configuration.target == .diagnosticsOnly ? "[]" : try SafariRuleWriter.write(safariRules)
         let safariRuleCount = configuration.target == .diagnosticsOnly ? 0 : safariRules.count
         diagnostics.emittedSafariRules = safariRuleCount
@@ -256,6 +257,64 @@ public struct NativeFilterCompiler: FilterCompiling {
             output.append(rule)
         }
         return output
+    }
+
+    private func expandNetworkRules(_ rules: [NetworkRule]) -> [NetworkRule] {
+        rules.flatMap(expandNetworkRule)
+    }
+
+    private func expandNetworkRule(_ rule: NetworkRule) -> [NetworkRule] {
+        var scopedRules: [NetworkRule]
+        if !rule.isException, !rule.ifDomains.isEmpty, !rule.unlessDomains.isEmpty {
+            var primary = rule
+            primary.unlessDomains = []
+
+            var contextException = rule
+            contextException.isException = true
+            contextException.ifDomains = rule.unlessDomains
+            contextException.unlessDomains = []
+            contextException.toDomains = []
+            contextException.denyAllowDomains = []
+            contextException.canonicalIdentity += "\u{1f}mixed-domain-exclusion"
+            scopedRules = [primary, contextException]
+        } else {
+            scopedRules = [rule]
+        }
+
+        return scopedRules
+            .flatMap(expandToDomainRule)
+            .flatMap(expandDenyAllowRule)
+    }
+
+    private func expandToDomainRule(_ rule: NetworkRule) -> [NetworkRule] {
+        guard !rule.toDomains.isEmpty else { return [rule] }
+
+        return rule.toDomains.map { domain in
+            var copy = rule
+            copy.pattern = "||\(domain)^"
+            copy.toDomains = []
+            copy.canonicalIdentity += "\u{1f}to=\(domain)"
+            return copy
+        }
+    }
+
+    private func expandDenyAllowRule(_ rule: NetworkRule) -> [NetworkRule] {
+        guard !rule.denyAllowDomains.isEmpty else { return [rule] }
+
+        var primary = rule
+        primary.denyAllowDomains = []
+
+        let exceptions = rule.denyAllowDomains.map { domain in
+            var copy = rule
+            copy.isException = true
+            copy.pattern = "||\(domain)^"
+            copy.denyAllowDomains = []
+            copy.toDomains = []
+            copy.canonicalIdentity += "\u{1f}denyallow=\(domain)"
+            return copy
+        }
+
+        return [primary] + exceptions
     }
 
     private func planSafariRules(networkRules: [NetworkRule], cosmeticRules: [CosmeticRule]) -> [SafariContentBlockerRule] {
