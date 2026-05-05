@@ -30,6 +30,46 @@ import Testing
     #expect(other.scriptlets == [AdvancedScriptlet(name: "ubo-aopr", args: ["adBlockDetected"])])
 }
 
+@Test func adblockTesterCompatibilityScriptletClearsSentryGlobal() throws {
+    let source = FilterSource(
+        identifier: "adblock-tester-compatibility",
+        displayName: "AdBlock Tester compatibility",
+        text: """
+        adblock-tester.com#%#//scriptlet('set-constant', 'Sentry', 'undefined')
+        adblock-tester.com##+js(set-constant, Sentry, undefined)
+        """
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let matched = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "adblock-tester.com")
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(matched.scriptlets == [AdvancedScriptlet(name: "set-constant", args: ["Sentry", "undefined"])])
+}
+
+@Test func compatibilityJavaScriptInjectionCompilesToRuntimeScripts() throws {
+    let source = FilterSource(
+        identifier: "compatibility-js",
+        displayName: "Compatibility JavaScript",
+        text: """
+        adblock-tester.com#%#(()=>{ window.__wblockAdblockTester = true; })();
+        adblock.turtlecute.org#%#(()=>{ window.__wblockTurtlecute = true; })();
+        """
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let adblockTester = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "adblock-tester.com")
+    let turtlecute = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "adblock.turtlecute.org")
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(adblockTester.js == ["(()=>{ window.__wblockAdblockTester = true; })();"])
+    #expect(turtlecute.js == ["(()=>{ window.__wblockTurtlecute = true; })();"])
+}
+
 @Test func scriptletArgumentParserPreservesSelectorAttributeQuotes() throws {
     let source = FilterSource(
         identifier: "quoted-selector-scriptlet",

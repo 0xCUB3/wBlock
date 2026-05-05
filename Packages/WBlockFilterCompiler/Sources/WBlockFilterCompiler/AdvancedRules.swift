@@ -414,6 +414,9 @@ enum AdvancedRuleParser {
         if let parsed = parseScriptlet(text, delimiter: "##+js(", uboSyntax: true, exception: false) {
             return parsed
         }
+        if let parsed = parseJavaScriptInjection(text) {
+            return parsed
+        }
         if let parsed = parseCSSInjection(text) {
             return parsed
         }
@@ -421,6 +424,14 @@ enum AdvancedRuleParser {
             return parsed
         }
         return nil
+    }
+
+    private static func parseJavaScriptInjection(_ text: String) -> AdvancedParsedRule? {
+        guard let range = text.range(of: "#%#") else { return nil }
+        let domainPart = String(text[..<range.lowerBound])
+        let content = String(text[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return nil }
+        return .js(AdvancedStyleRule(scope: parseScope(domainPart), content: content))
     }
 
     private static func parseScriptlet(_ text: String, delimiter: String, uboSyntax: Bool, exception: Bool) -> AdvancedParsedRule? {

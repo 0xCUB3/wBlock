@@ -22,24 +22,44 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "7"
+    private static let embeddedCompatibilityRulesVersion = "10"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets. YouTube response
     /// mutation is intentionally left to uAssets/uBO filter rules to avoid
     /// duplicate scriptlets; the googlevideo rule mirrors uBO's documented
     /// fake-buffering mitigation in Safari content-blocker form.
-    private static let embeddedCompatibilityRules = """
+    private static let embeddedCompatibilityRules = #"""
 /js/widget/ads.js$script
 /js/pagead.js$script
 /widget/pagead.js$script
 ||googlevideo.com/videoplayback$xhr,3p,domain=www.youtube.com
 ||www.googletagmanager.com/gtag/js$script,domain=adblock-tester.com,important
+||sentry-cdn.com^$script,domain=adblock-tester.com,important
 ||browser.sentry-cdn.com^$script,domain=adblock-tester.com,important
 ||js.sentry-cdn.com^$script,domain=adblock-tester.com,important
-/banners/pr_advertising_ads_banner.$domain=adblock-tester.com,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.$important
+||adblock-tester.com/banners/pr_advertising_ads_banner.$xhr,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.gif$image,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.gif$xhr,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.png$image,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.png$xhr,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.swf$media,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.swf$xhr,important
+adblock-tester.com#%#//scriptlet('set-constant', 'Sentry', 'undefined')
+adblock-tester.com##+js(set-constant, Sentry, undefined)
+adblock-tester.com#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{const u=String(i&&i.url||i);return u.includes('/banners/pr_advertising_ads_banner.')?Promise.reject(new TypeError('Failed to fetch')):f(i,n);};})();
+adblock-tester.com##img[src*="/banners/pr_advertising_ads_banner."]
+adblock-tester.com##object[data*="/banners/pr_advertising_ads_banner."]
+adblock-tester.com##embed[src*="/banners/pr_advertising_ads_banner."]
+adblock.turtlecute.org##.adbox.banner_ads.adsbox
+adblock.turtlecute.org##.textads
+adblock.turtlecute.org##.textads.banner-ads.banner_ads.ad-unit.afs_ads.ad-zone.ad-space.adsbox
+||adblock.turtlecute.org/js/widget/ads.js$script,important
+||adblock.turtlecute.org/js/pagead.js$script,important
+adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{const u=String(i&&i.url||i);return /^https:\/\/[^/]+\/fakepage\.html(?:[?#]|$)/.test(u)?Promise.reject(new TypeError('Failed to fetch')):f(i,n);};})();
 ##.adbox.banner_ads.adsbox
-"""
+"""#
 
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
         let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)

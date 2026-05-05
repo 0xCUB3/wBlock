@@ -86,6 +86,55 @@ import Testing
     #expect(rules[0].trigger.ifDomain == ["adblock-tester.com"])
 }
 
+@Test func adblockTesterCompatibilityRulesUseHostAnchoredPatterns() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: """
+        ||adblock-tester.com/banners/pr_advertising_ads_banner.$important
+        ||adblock-tester.com/banners/pr_advertising_ads_banner.$xhr,important
+        ||adblock-tester.com/banners/pr_advertising_ads_banner.gif$image,important
+        ||sentry-cdn.com^$script,domain=adblock-tester.com,important
+        """
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 4)
+    #expect(rules[0].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?adblock-tester\.com/banners/pr_advertising_ads_banner\."#)
+    #expect(rules[0].trigger.resourceType == nil)
+    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?adblock-tester\.com/banners/pr_advertising_ads_banner\."#)
+    #expect(rules[1].trigger.resourceType == ["raw"])
+    #expect(rules[2].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?adblock-tester\.com/banners/pr_advertising_ads_banner\.gif"#)
+    #expect(rules[2].trigger.resourceType == ["image"])
+    #expect(rules[3].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?sentry-cdn\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[3].trigger.resourceType == ["script"])
+    #expect(rules[3].trigger.ifDomain == ["adblock-tester.com"])
+}
+
+@Test func turtlecuteCompatibilityRulesUseHostAnchoredPatterns() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: """
+        ||adblock.turtlecute.org/js/widget/ads.js$script,important
+        ||adblock.turtlecute.org/js/pagead.js$script,important
+        """
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 2)
+    #expect(rules[0].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?adblock\.turtlecute\.org/js/widget/ads\.js"#)
+    #expect(rules[0].trigger.resourceType == ["script"])
+    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?adblock\.turtlecute\.org/js/pagead\.js"#)
+    #expect(rules[1].trigger.resourceType == ["script"])
+}
+
 @Test func strictPartyOptionsMapToNearestSafariLoadType() throws {
     let source = FilterSource(
         identifier: "fixture",

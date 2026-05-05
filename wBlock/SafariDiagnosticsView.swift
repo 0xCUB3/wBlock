@@ -7,57 +7,39 @@ struct SafariDiagnosticsView: View {
     @State private var isRunning = false
 
     var body: some View {
-        List {
-            Section {
-                Button {
-                    runChecks()
-                } label: {
-                    Label(isRunning ? "Running Checks…" : "Run Checks", systemImage: "stethoscope")
-                }
-                .disabled(isRunning)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                actionButtons
 
-                #if os(macOS)
-                Button {
-                    SafariExtensionSetupSupport.openScriptsExtensionSettings()
-                } label: {
-                    Label("Open Safari Extension Settings", systemImage: "gear")
-                }
-                #else
-                Button {
-                    SafariExtensionSetupSupport.openScriptsExtensionSettings()
-                } label: {
-                    Label("Open Safari Extension Settings", systemImage: "gear")
-                }
-                #endif
-            } footer: {
                 Text("Checks whether Safari sees wBlock extensions, whether generated rules exist, and whether the Scripts extension recently synced dynamic DNR rules.")
-            }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            Section("Status") {
-                ForEach(result.items) { item in
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: item.status.systemImage)
-                            .foregroundStyle(item.status.color)
-                            .frame(width: 20)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(item.title)
-                                .font(.body)
-                            Text(item.detail)
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(result.items) { item in
+                        SafariDiagnosticRow(item: item)
+                    }
+                }
+
+                if !result.recommendations.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recommendations")
+                            .font(.headline)
+                        ForEach(result.recommendations, id: \.self) { recommendation in
+                            Text(recommendation)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .padding(.vertical, 2)
+                    .padding(.top, 4)
                 }
             }
-
-            if !result.recommendations.isEmpty {
-                Section("Recommendations") {
-                    ForEach(result.recommendations, id: \.self) { recommendation in
-                        Text(recommendation)
-                    }
-                }
-            }
+            .frame(maxWidth: 980, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle("Safari Diagnostics")
         .task {
@@ -65,6 +47,47 @@ struct SafariDiagnosticsView: View {
                 runChecks()
             }
         }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        #if os(macOS)
+        HStack(spacing: 10) {
+            runChecksButton
+                .frame(width: 220)
+            openSafariSettingsButton
+                .frame(width: 280)
+            Spacer(minLength: 0)
+        }
+        #else
+        VStack(spacing: 10) {
+            runChecksButton
+            openSafariSettingsButton
+        }
+        #endif
+    }
+
+    private var runChecksButton: some View {
+        Button {
+            runChecks()
+        } label: {
+            Label(isRunning ? "Running Checks…" : "Run Checks", systemImage: "stethoscope")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .disabled(isRunning)
+    }
+
+    private var openSafariSettingsButton: some View {
+        Button {
+            SafariExtensionSetupSupport.openScriptsExtensionSettings()
+        } label: {
+            Label("Open Safari Extension Settings", systemImage: "gear")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
     }
 
     private func runChecks() {
@@ -120,6 +143,29 @@ private struct SafariDiagnosticItem: Identifiable, Equatable {
 
     static func == (lhs: SafariDiagnosticItem, rhs: SafariDiagnosticItem) -> Bool {
         lhs.title == rhs.title && lhs.detail == rhs.detail && lhs.status == rhs.status
+    }
+}
+
+private struct SafariDiagnosticRow: View {
+    let item: SafariDiagnosticItem
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: item.status.systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(item.status.color)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title)
+                    .font(.body)
+                Text(item.detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
