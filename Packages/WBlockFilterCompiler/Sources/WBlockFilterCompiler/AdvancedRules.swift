@@ -174,7 +174,7 @@ public struct AdvancedRuleRuntime: Sendable, Equatable {
             }
         }
         for rule in bundle.scriptlets where rule.scope.matches(host: host) {
-            let key = "scriptlet\u{1f}\(rule.name)\u{1f}\(rule.args.joined(separator: "\u{1e}"))"
+            let key = "scriptlet\u{1f}\(Self.canonicalScriptletNameForDeduplication(rule.name))\u{1f}\(rule.args.joined(separator: "\u{1e}"))"
             if seen.insert(key).inserted {
                 scriptlets.append(AdvancedScriptlet(name: rule.name, args: rule.args))
             }
@@ -187,6 +187,27 @@ public struct AdvancedRuleRuntime: Sendable, Equatable {
             scriptlets: scriptlets,
             engineTimestamp: bundle.engineTimestamp
         )
+    }
+
+    private static func canonicalScriptletNameForDeduplication(_ name: String) -> String {
+        switch name {
+        case "ubo-set", "ubo-set.js", "ubo-set-constant", "ubo-set-constant.js", "ubo-trusted-set", "ubo-trusted-set.js", "ubo-trusted-set-constant", "ubo-trusted-set-constant.js", "trusted-set-constant", "trusted-set-constant.js":
+            return "set-constant"
+        case "ubo-trusted-replace-fetch-response", "ubo-trusted-replace-fetch-response.js", "trusted-replace-fetch-response.js":
+            return "trusted-replace-fetch-response"
+        case "ubo-trusted-replace-xhr-response", "ubo-trusted-replace-xhr-response.js", "trusted-replace-xhr-response.js":
+            return "trusted-replace-xhr-response"
+        case "ubo-json-prune", "ubo-json-prune.js", "json-prune.js":
+            return "json-prune"
+        case "ubo-json-prune-fetch-response", "ubo-json-prune-fetch-response.js", "json-prune-fetch-response.js":
+            return "json-prune-fetch-response"
+        case "ubo-json-prune-xhr-response", "ubo-json-prune-xhr-response.js", "json-prune-xhr-response.js":
+            return "json-prune-xhr-response"
+        case "ubo-rpnt", "ubo-rpnt.js", "ubo-trusted-rpnt", "ubo-trusted-rpnt.js", "ubo-trusted-replace-node-text", "ubo-trusted-replace-node-text.js", "trusted-rpnt", "trusted-rpnt.js", "trusted-replace-node-text.js":
+            return "trusted-replace-node-text"
+        default:
+            return name
+        }
     }
 }
 
@@ -287,7 +308,12 @@ enum AdvancedRuleParser {
 
         for character in text {
             if escaped {
-                current.append(character)
+                if character == "," || quote == character {
+                    current.append(character)
+                } else {
+                    current.append("\\")
+                    current.append(character)
+                }
                 escaped = false
                 continue
             }
@@ -319,6 +345,9 @@ enum AdvancedRuleParser {
             }
         }
 
+        if escaped {
+            current.append("\\")
+        }
         args.append(current.trimmingCharacters(in: .whitespacesAndNewlines))
         return args
     }

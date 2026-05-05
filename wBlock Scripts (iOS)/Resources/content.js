@@ -30148,7 +30148,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-trusted-prevent-dom-bypass": uboTrustedPreventDomBypass,
     "ubo-trusted-replace-argument": trustedReplaceArgument,
     "ubo-trusted-replace-fetch-response": trustedReplaceFetchResponse,
-    "ubo-trusted-replace-node-text": trustedReplaceNodeText,
+    "ubo-trusted-replace-node-text": uboTrustedReplaceNodeText,
     "ubo-trusted-replace-outbound-text": trustedReplaceOutboundText,
     "ubo-trusted-replace-xhr-response": trustedReplaceXhrResponse,
     "ubo-trusted-rpnt": uboTrustedReplaceNodeText,

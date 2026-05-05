@@ -50,6 +50,26 @@ import Testing
     ])
 }
 
+@Test func scriptletArgumentParserPreservesRegexEscapesAndEscapedCommas() throws {
+    let source = FilterSource(
+        identifier: "escaped-scriptlet",
+        displayName: "Escaped scriptlet",
+        text: #"example.com##+js(trusted-rpnt, script, (function serverContract(), (()=>{const t=e.replace?.(/(Mozilla\/5\.0 \([^)]+)/\,"$1; channel")})();(function serverContract(), sedCount, 1)"#
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+
+    #expect(result.advancedRules.scriptlets == [
+        AdvancedScriptletRule(
+            scope: AdvancedDomainScope(ifDomains: ["example.com"]),
+            name: "ubo-trusted-rpnt",
+            args: ["script", "(function serverContract()", "(()=>{const t=e.replace?.(/(Mozilla\\/5\\.0 \\([^)]+)/,\"$1; channel\")})();(function serverContract()", "sedCount", "1"]
+        )
+    ])
+}
+
 @Test func styleActionCosmeticsCompileToAdvancedRuntimeOnly() throws {
     let source = FilterSource(
         identifier: "style-action",
