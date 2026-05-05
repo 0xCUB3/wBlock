@@ -93,6 +93,34 @@ import Testing
     #expect(runtime.lookup(host: "example.org").js.isEmpty)
 }
 
+@Test func removeHeaderAndCSPRulesCompileToDynamicDNR() throws {
+    let source = FilterSource(
+        identifier: "headers",
+        displayName: "Headers",
+        text: """
+        ||headers.example^$removeheader=set-cookie
+        ||headers.example^$removeheader=request:cookie
+        ||headers.example^$doc,csp=script-src 'none'
+        ||headers.example^$doc,permissions=geolocation=()
+        """
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+    configuration.enabledCapabilities.insert(.headerModification)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let dnr = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "headers.example").dnrRules
+
+    #expect(result.safariRuleCount == 0)
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(dnr.count == 4)
+    #expect(dnr[0].action.type == "modifyHeaders")
+    #expect(dnr[0].action.responseHeaders == [AdvancedDNRModifyHeader(header: "set-cookie", operation: "remove")])
+    #expect(dnr[1].action.requestHeaders == [AdvancedDNRModifyHeader(header: "cookie", operation: "remove")])
+    #expect(dnr[2].action.responseHeaders == [AdvancedDNRModifyHeader(header: "content-security-policy", operation: "set", value: "script-src 'none'")])
+    #expect(dnr[3].action.responseHeaders == [AdvancedDNRModifyHeader(header: "permissions-policy", operation: "set", value: "geolocation=()")])
+}
+
 @Test func redirectRulesCompileToDynamicDNRWhenResourceIsKnown() throws {
     let source = FilterSource(
         identifier: "redirect",

@@ -138,6 +138,7 @@ do {
         configuration.enabledCapabilities.insert(.advancedScriptlets)
         configuration.enabledCapabilities.insert(.proceduralCosmetics)
         configuration.enabledCapabilities.insert(.redirects)
+        configuration.enabledCapabilities.insert(.headerModification)
     }
 
     let result = try NativeFilterCompiler().compile(sources, configuration: configuration)

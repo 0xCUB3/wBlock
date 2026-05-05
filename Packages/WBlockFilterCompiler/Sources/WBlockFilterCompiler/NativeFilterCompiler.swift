@@ -300,6 +300,10 @@ public struct NativeFilterCompiler: FilterCompiling {
             rules.append(redirectRule)
             nextID += 1
         }
+        if let modifyHeadersRule = dnrModifyHeadersRule(for: rule, id: nextID) {
+            rules.append(modifyHeadersRule)
+            nextID += 1
+        }
         return rules
     }
 
@@ -332,6 +336,33 @@ public struct NativeFilterCompiler: FilterCompiling {
             action: AdvancedDNRAction(
                 type: "redirect",
                 redirect: AdvancedDNRRedirect(extensionPath: extensionPath)
+            ),
+            condition: condition
+        )
+    }
+
+    private func dnrModifyHeadersRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
+        let requestHeaders = rule.removeRequestHeaders.map {
+            AdvancedDNRModifyHeader(header: $0, operation: "remove")
+        }
+        var responseHeaders = rule.removeResponseHeaders.map {
+            AdvancedDNRModifyHeader(header: $0, operation: "remove")
+        }
+        responseHeaders.append(contentsOf: rule.cspDirectives.map {
+            AdvancedDNRModifyHeader(header: "content-security-policy", operation: "set", value: $0)
+        })
+        responseHeaders.append(contentsOf: rule.permissionsPolicies.map {
+            AdvancedDNRModifyHeader(header: "permissions-policy", operation: "set", value: $0)
+        })
+        guard !requestHeaders.isEmpty || !responseHeaders.isEmpty,
+              let condition = dnrCondition(for: rule) else { return nil }
+        return AdvancedDNRRule(
+            id: id,
+            priority: rule.important ? 80_000 : 8_000,
+            action: AdvancedDNRAction(
+                type: "modifyHeaders",
+                requestHeaders: requestHeaders.isEmpty ? nil : requestHeaders,
+                responseHeaders: responseHeaders.isEmpty ? nil : responseHeaders
             ),
             condition: condition
         )
@@ -404,6 +435,16 @@ public struct NativeFilterCompiler: FilterCompiling {
             return "/web_accessible_resources/noop.txt"
         case "blank-html", "noop.html", "empty.html":
             return "/web_accessible_resources/noop.html"
+        case "1x1.gif", "empty.gif", "transparent.gif":
+            return "/web_accessible_resources/1x1.gif"
+        case "1x1.png", "2x2.png", "3x2.png", "empty.png", "transparent.png":
+            return "/web_accessible_resources/1x1.png"
+        case "noopmp4", "noop.mp4", "blank-mp4", "empty.mp4":
+            return "/web_accessible_resources/noop.mp4"
+        case "google-analytics_analytics.js", "google-analytics_ga.js":
+            return "/web_accessible_resources/google-analytics_analytics.js"
+        case "googletagmanager_gtm.js", "googletagmanager_gtm.js:5", "googletagmanager_gtag.js":
+            return "/web_accessible_resources/googletagmanager_gtm.js"
         default:
             return nil
         }

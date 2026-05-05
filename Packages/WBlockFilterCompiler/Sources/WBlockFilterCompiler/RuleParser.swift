@@ -53,6 +53,10 @@ enum RuleParser {
             urlSkipSteps: nil,
             uriTransform: nil,
             redirectResource: nil,
+            removeRequestHeaders: [],
+            removeResponseHeaders: [],
+            cspDirectives: [],
+            permissionsPolicies: [],
             matchCase: false,
             important: false,
             isBadfilter: false,
@@ -81,6 +85,10 @@ enum RuleParser {
         var urlSkipSteps: String?
         var uriTransform: String?
         var redirectResource: String?
+        var removeRequestHeaders: [String] = []
+        var removeResponseHeaders: [String] = []
+        var cspDirectives: [String] = []
+        var permissionsPolicies: [String] = []
         var matchCase = false
         var important = false
         var isBadfilter = false
@@ -222,6 +230,64 @@ enum RuleParser {
                 continue
             }
 
+            if lower.hasPrefix("removeheader=") {
+                guard configuration.enabledCapabilities.contains(.headerModification), !isException else {
+                    return .unsupported(.responseHeaderFiltering)
+                }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard let header = parseRemoveHeader(value) else { return .unsupported(.responseHeaderFiltering) }
+                if header.isRequest {
+                    removeRequestHeaders.append(header.name)
+                } else {
+                    removeResponseHeaders.append(header.name)
+                }
+                canonicalOptions.append("removeheader=\(header.isRequest ? "request:" : "")\(header.name)")
+                continue
+            }
+
+            if lower == "removeheader" {
+                return .unsupported(.responseHeaderFiltering)
+            }
+
+            if lower.hasPrefix("csp=") {
+                guard configuration.enabledCapabilities.contains(.headerModification), !isException else {
+                    return .unsupported(.headerModificationNeedsAdvancedRuntime)
+                }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard isUsableHeaderValue(value) else { return .unsupported(.headerModificationNeedsAdvancedRuntime) }
+                cspDirectives.append(value)
+                canonicalOptions.append("csp=\(value.lowercased())")
+                continue
+            }
+
+            if lower == "csp" {
+                return .unsupported(.headerModificationNeedsAdvancedRuntime)
+            }
+
+            if lower.hasPrefix("permissions=") {
+                guard configuration.enabledCapabilities.contains(.headerModification), !isException else {
+                    return .unsupported(.headerModificationNeedsAdvancedRuntime)
+                }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard isUsableHeaderValue(value) else { return .unsupported(.headerModificationNeedsAdvancedRuntime) }
+                permissionsPolicies.append(value)
+                canonicalOptions.append("permissions=\(value.lowercased())")
+                continue
+            }
+
+            if lower == "permissions" {
+                return .unsupported(.headerModificationNeedsAdvancedRuntime)
+            }
+
             if lower.hasPrefix("removeparam=") || lower.hasPrefix("queryprune=") {
                 guard configuration.enabledCapabilities.contains(.advancedScriptlets) || configuration.enabledCapabilities.contains(.removeQueryParameters) else {
                     return .unsupported(.removeParamRequiresAdvancedRuntime)
@@ -328,6 +394,10 @@ enum RuleParser {
                 urlSkipSteps: urlSkipSteps,
                 uriTransform: uriTransform,
                 redirectResource: redirectResource,
+                removeRequestHeaders: Array(Set(removeRequestHeaders)).sorted(),
+                removeResponseHeaders: Array(Set(removeResponseHeaders)).sorted(),
+                cspDirectives: Array(Set(cspDirectives)).sorted(),
+                permissionsPolicies: Array(Set(permissionsPolicies)).sorted(),
                 matchCase: matchCase,
                 important: important,
                 isBadfilter: isBadfilter,
@@ -384,6 +454,34 @@ enum RuleParser {
             index = text.index(after: index)
         }
         return nil
+    }
+
+    private static func parseRemoveHeader(_ value: String) -> (isRequest: Bool, name: String)? {
+        var raw = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return nil }
+        let isRequest: Bool
+        if raw.lowercased().hasPrefix("request:") {
+            isRequest = true
+            raw = String(raw.dropFirst("request:".count))
+        } else if raw.lowercased().hasPrefix("response:") {
+            isRequest = false
+            raw = String(raw.dropFirst("response:".count))
+        } else {
+            isRequest = false
+        }
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard isUsableHeaderName(name) else { return nil }
+        return (isRequest, name)
+    }
+
+    private static func isUsableHeaderName(_ name: String) -> Bool {
+        guard !name.isEmpty else { return false }
+        return name.range(of: #"^[!#$%&'*+.^_`|~0-9a-z-]+$"#, options: .regularExpression) != nil
+    }
+
+    private static func isUsableHeaderValue(_ value: String) -> Bool {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && !trimmed.contains("\n") && !trimmed.contains("\r")
     }
 
     private static func parseDomainList(_ value: String) -> (positive: [String], negative: [String]) {

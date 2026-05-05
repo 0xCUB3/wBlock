@@ -24,6 +24,10 @@ struct NetworkRule: Equatable {
     var urlSkipSteps: String?
     var uriTransform: String?
     var redirectResource: String?
+    var removeRequestHeaders: [String]
+    var removeResponseHeaders: [String]
+    var cspDirectives: [String]
+    var permissionsPolicies: [String]
     var matchCase: Bool
     var important: Bool
     var isBadfilter: Bool
@@ -62,6 +66,13 @@ enum NetworkAction: Equatable {
 
 extension NetworkRule {
     var requiresAdvancedURLHandling: Bool {
-        !removeParameters.isEmpty || urlSkipSteps != nil || uriTransform != nil || redirectResource != nil
+        !removeParameters.isEmpty ||
+            urlSkipSteps != nil ||
+            uriTransform != nil ||
+            redirectResource != nil ||
+            !removeRequestHeaders.isEmpty ||
+            !removeResponseHeaders.isEmpty ||
+            !cspDirectives.isEmpty ||
+            !permissionsPolicies.isEmpty
     }
 }

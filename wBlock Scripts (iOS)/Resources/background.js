@@ -5734,6 +5734,11 @@ function normalizeDynamicDNRRules(rules) {
     if (!rule || typeof rule !== 'object') continue;
     if (!rule.action || !rule.condition) continue;
     const copy = JSON.parse(JSON.stringify(rule));
+    if (copy.action && copy.action.redirect && copy.action.redirect.extensionPath && browser.runtime && browser.runtime.getURL) {
+      const path = String(copy.action.redirect.extensionPath).replace(/^\//, '');
+      copy.action.redirect.url = browser.runtime.getURL(path);
+      delete copy.action.redirect.extensionPath;
+    }
     copy.id = nextId++;
     if (copy.id > WBLOCK_DNR_DYNAMIC_ID_MAX) break;
     normalized.push(copy);

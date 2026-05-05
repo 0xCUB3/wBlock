@@ -88,9 +88,8 @@ enum RuleClassifier {
         for token in tokens {
             let name = token.split(separator: "=", maxSplits: 1).first.map(String.init) ?? token
             switch name.trimmingCharacters(in: .whitespaces) {
-            case "header", "removeheader": return .responseHeaderFiltering
+            case "header": return .responseHeaderFiltering
             case "replace": return .responseBodyReplacement
-            case "csp", "permissions": return .headerModificationNeedsAdvancedRuntime
             default: continue
             }
         }
