@@ -5748,7 +5748,7 @@ function normalizeDynamicDNRRules(rules) {
 
 function logDNRSyncDiagnostic(fields) {
   browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
-    type: 'logExtensionDiagnostic',
+    action: 'logExtensionDiagnostic',
     fields: { source: 'background', event: 'dnr_sync', ...fields }
   }).catch(() => {});
 }

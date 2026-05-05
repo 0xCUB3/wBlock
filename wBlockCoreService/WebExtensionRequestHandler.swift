@@ -61,7 +61,7 @@ public enum WebExtensionRequestHandler {
         let nativeStart = Int64(Date().timeIntervalSince1970 * 1000)
         
         // Check if this is a userscript-related request
-        if let action = message?["action"] as? String {
+        if let action = (message?["action"] as? String) ?? (message?["type"] as? String) {
             switch action {
             case "getUserScripts":
                 handleGetUserScriptsRequest(message: message!, context: context)
