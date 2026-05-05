@@ -376,6 +376,56 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
     }
     
+    /// Experimental native conversion path. This is intentionally not used by the default
+    /// app pipeline yet; it exists so internal builds and tests can exercise the modular
+    /// WBlockFilterCompiler package without touching SafariConverterLib-backed caches.
+    public static func convertFilterNativeExperimental(
+        rules: String,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]? = nil
+    ) -> (safariRulesCount: Int, advancedRulesText: String?, unsupportedRuleCount: Int) {
+        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+        let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
+
+        do {
+            let result = try NativeFilterCompilerAdapter.convert(
+                rules: effectiveRules,
+                sourceIdentifier: targetRulesFilename,
+                displayName: targetRulesFilename
+            )
+            let finalJSON = injectIgnoreRulesForDisabledSites(
+                json: result.safariRulesJSON,
+                disabledSites: sitesToUse
+            )
+            saveBlockerListFile(
+                contents: finalJSON,
+                groupIdentifier: groupIdentifier,
+                filename: targetRulesFilename
+            )
+            os_log(
+                .info,
+                "Native experimental conversion for %@ emitted %d Safari rules and %d unsupported rules",
+                targetRulesFilename,
+                result.safariRulesCount,
+                result.unsupportedRuleCount
+            )
+            return (
+                safariRulesCount: result.safariRulesCount + sitesToUse.count,
+                advancedRulesText: result.advancedRulesText,
+                unsupportedRuleCount: result.unsupportedRuleCount
+            )
+        } catch {
+            os_log(
+                .error,
+                "Native experimental conversion failed for %@: %@",
+                targetRulesFilename,
+                error.localizedDescription
+            )
+            return (safariRulesCount: 0, advancedRulesText: nil, unsupportedRuleCount: 0)
+        }
+    }
+
     /// Fast update for disabled sites changes only - skips SafariConverterLib conversion
     /// Reads existing JSON files and re-injects ignore rules without full conversion
     ///

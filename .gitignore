@@ -7,6 +7,7 @@ build/
 *.xcuserstate
 **/xcuserdata/
 DerivedData/
+**/.build/
 scripts/.mock_filter_server.log
 
 # GSD planning

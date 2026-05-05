@@ -1,0 +1,87 @@
+import Foundation
+import Testing
+@testable import WBlockFilterCompiler
+
+@Test func regexRuleOptionsSplitAtTrailingDelimiter() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: #"/ads-[0-9]+\.js$/$script,1p,domain=example.com"#
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 1)
+    #expect(rules[0].trigger.urlFilter == #"ads-[0-9]+\.js$"#)
+    #expect(rules[0].trigger.resourceType == ["script"])
+    #expect(rules[0].trigger.loadType == ["first-party"])
+    #expect(rules[0].trigger.ifDomain == ["example.com"])
+}
+
+@Test func cookieRulesEmitSafariBlockCookiesAction() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: "||tracker.example^$cookie,third-party"
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.safariRuleCount == 1)
+    #expect(rules[0].action.type == "block-cookies")
+}
+
+@Test func importantBlockingRulesAreEmittedAfterNormalExceptions() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: """
+        ||ads.example^
+        @@||ads.example^
+        ||ads.example^$important
+        """
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedNetworkRules(result.safariRulesJSON)
+
+    #expect(rules.map { $0.action.type } == ["block", "ignore-previous-rules", "block"])
+}
+
+private struct DecodedNetworkRule: Decodable {
+    let action: DecodedNetworkAction
+}
+
+private struct DecodedDetailedNetworkRule: Decodable {
+    let action: DecodedNetworkAction
+    let trigger: DecodedNetworkTrigger
+}
+
+private struct DecodedNetworkAction: Decodable {
+    let type: String
+}
+
+private struct DecodedNetworkTrigger: Decodable {
+    let urlFilter: String
+    let resourceType: [String]?
+    let loadType: [String]?
+    let ifDomain: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case urlFilter = "url-filter"
+        case resourceType = "resource-type"
+        case loadType = "load-type"
+        case ifDomain = "if-domain"
+    }
+}
+
+private func decodedNetworkRules(_ json: String) throws -> [DecodedNetworkRule] {
+    try JSONDecoder().decode([DecodedNetworkRule].self, from: Data(json.utf8))
+}
+
+private func decodedDetailedNetworkRules(_ json: String) throws -> [DecodedDetailedNetworkRule] {
+    try JSONDecoder().decode([DecodedDetailedNetworkRule].self, from: Data(json.utf8))
+}
