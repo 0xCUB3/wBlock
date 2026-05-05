@@ -115,16 +115,6 @@ public struct FilterCompilationResult: Sendable, Equatable {
     }
 }
 
-public struct AdvancedRuleBundle: Sendable, Equatable {
-    public var formatVersion: String
-    public var ruleCount: Int
-
-    public init(formatVersion: String = "wblock-advanced-rules-v1", ruleCount: Int = 0) {
-        self.formatVersion = formatVersion
-        self.ruleCount = ruleCount
-    }
-}
-
 public struct CompilationDiagnostics: Sendable, Equatable {
     public var totalLines: Int
     public var emittedSafariRules: Int

@@ -329,6 +329,7 @@ extension AppFilterManager {
 
         // Collect advanced rules by target bundle ID (single storage)
         var advancedRulesByTarget: [String: String] = [:]  // bundleIdentifier -> advanced rules
+        let useNativeFilterCompilerExperimental = Self.useNativeFilterCompilerExperimental()
 
         let ruleLimit = 150_000
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
@@ -377,7 +378,8 @@ extension AppFilterManager {
                         allTargets: platformTargets,
                         disabledSites: disabledSites,
                         extraRulesText: extraRulesText,
-                        groupIdentifier: GroupIdentifier.shared.value
+                        groupIdentifier: GroupIdentifier.shared.value,
+                        useNativeFilterCompilerExperimental: useNativeFilterCompilerExperimental
                     )
                 }.value
             } catch {
@@ -548,19 +550,32 @@ extension AppFilterManager {
                 }
 
                 try await Task.detached {
-                    let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
-                    let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
-                    await ConcurrentLogManager.shared.info(
-                        .filterApply, "Building filter engine",
-                        metadata: [
-                            "targetCount": "\(advancedRulesByTarget.count)",
-                            "totalLines": "\(totalLines)",
-                        ])
+                    if useNativeFilterCompilerExperimental {
+                        await ConcurrentLogManager.shared.info(
+                            .filterApply, "Building native advanced runtime",
+                            metadata: ["targetCount": "\(advancedRulesByTarget.count)"])
+                        try ContentBlockerService.buildCombinedNativeAdvancedRuntime(
+                            advancedRuleBundles: Array(advancedRulesByTarget.values),
+                            groupIdentifier: GroupIdentifier.shared.value
+                        )
+                        try? ContentBlockerService.clearLegacyFilterEngine(
+                            groupIdentifier: GroupIdentifier.shared.value
+                        )
+                    } else {
+                        let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
+                        let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
+                        await ConcurrentLogManager.shared.info(
+                            .filterApply, "Building filter engine",
+                            metadata: [
+                                "targetCount": "\(advancedRulesByTarget.count)",
+                                "totalLines": "\(totalLines)",
+                            ])
 
-                    try ContentBlockerService.buildCombinedFilterEngine(
-                        combinedAdvancedRules: combinedAdvancedRules,
-                        groupIdentifier: GroupIdentifier.shared.value
-                    )
+                        try ContentBlockerService.buildCombinedFilterEngine(
+                            combinedAdvancedRules: combinedAdvancedRules,
+                            groupIdentifier: GroupIdentifier.shared.value
+                        )
+                    }
                 }.value
             } else {
                 await ConcurrentLogManager.shared.debug(
@@ -697,6 +712,14 @@ extension AppFilterManager {
 
     // MARK: - Static helpers
 
+    nonisolated private static func useNativeFilterCompilerExperimental() -> Bool {
+        let environment = ProcessInfo.processInfo.environment
+        if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "1" {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "wBlockUseNativeFilterCompilerExperimental")
+    }
+
     /// Memory-efficient conversion that combines filter files using streaming I/O
     nonisolated private static func convertFiltersMemoryEfficient(
         filters: [FilterList],
@@ -706,7 +729,8 @@ extension AppFilterManager {
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
-        groupIdentifier: String
+        groupIdentifier: String,
+        useNativeFilterCompilerExperimental: Bool = false
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -769,6 +793,19 @@ extension AppFilterManager {
             let digest = hasher.finalize()
             let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
+            if useNativeFilterCompilerExperimental {
+                let conversion = ContentBlockerService.convertFilterNativeExperimentalFromFile(
+                    rulesFileURL: tempURL,
+                    groupIdentifier: groupIdentifier,
+                    targetRulesFilename: targetInfo.rulesFilename,
+                    disabledSites: disabledSites
+                )
+                return (
+                    safariRulesCount: conversion.safariRulesCount,
+                    advancedRulesText: conversion.advancedRulesText
+                )
+            }
+
             return ContentBlockerService.convertFilterFromFile(
                 rulesFileURL: tempURL,
                 rulesSHA256Hex: rulesSHA256Hex,
@@ -820,11 +857,12 @@ extension AppFilterManager {
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
-        groupIdentifier: String
+        groupIdentifier: String,
+        useNativeFilterCompilerExperimental: Bool = false
     ) throws -> TargetConversionOutcome {
         let rulesFilename = targetInfo.rulesFilename
         let hasAffinityFilters = !affinityFilterIDs.isEmpty
-        let currentSignature = hasAffinityFilters
+        let currentSignature = (hasAffinityFilters || useNativeFilterCompilerExperimental)
             ? nil
             : ContentBlockerIncrementalCache.computeInputSignature(
                 filters: filters,
@@ -876,7 +914,8 @@ extension AppFilterManager {
             allTargets: allTargets,
             disabledSites: disabledSites,
             extraRulesText: extraRulesText,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            useNativeFilterCompilerExperimental: useNativeFilterCompilerExperimental
         )
 
         if let currentSignature {

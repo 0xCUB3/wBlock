@@ -37,6 +37,8 @@ print(result.unsupportedRules.count)
 swift run wblock-filter-compiler --pretty list.txt
 swift run wblock-filter-compiler --diagnostics-only --ubo-compat list.txt
 swift run wblock-filter-compiler --output content-blocker.json list.txt
+swift run wblock-filter-compiler --advanced-runtime --advanced-output advanced-runtime.json list.txt
+swift run wblock-filter-compiler --ubo-compat --lookup https://example.com list.txt
 ```
 
 ## Current implementation status
@@ -53,11 +55,13 @@ Implemented:
 - exact cosmetic exceptions and generic-rule `unless-domain` planning
 - Safari JSON emission
 - diagnostics and unsupported-rule accounting
+- experimental WebExtension advanced-rule bundle for scriptlets and procedural cosmetics
+- uBO `##+js(...)` scriptlet-name compatibility mapping to the bundled WebExtension scriptlet engine
 
 Still incomplete:
 
-- advanced scriptlet runtime
-- procedural cosmetics runtime
+- production advanced-rule runtime parity with SafariConverterLib `FilterEngine`
+- scriptlet/procedural-cosmetic exception planning
 - redirect/removeparam/header/csp support
 - mixed positive/negative domain splitting
 - full uBO parity

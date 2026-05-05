@@ -22,7 +22,10 @@ enum NativeFilterCompilerAdapter {
         rules: String,
         sourceIdentifier: String = "inline",
         displayName: String = "Inline rules",
-        configuration: FilterCompilerConfiguration = FilterCompilerConfiguration()
+        configuration: FilterCompilerConfiguration = FilterCompilerConfiguration(
+            platform: .uBlockOriginCompatibility,
+            enabledCapabilities: [.nativeCosmeticRules, .advancedScriptlets, .proceduralCosmetics]
+        )
     ) throws -> ConversionResult {
         let source = FilterSource(
             identifier: sourceIdentifier,
@@ -34,7 +37,7 @@ enum NativeFilterCompilerAdapter {
         return ConversionResult(
             safariRulesJSON: result.safariRulesJSON,
             safariRulesCount: result.safariRuleCount,
-            advancedRulesText: result.advancedRules.ruleCount > 0 ? "" : nil,
+            advancedRulesText: result.advancedRules.ruleCount > 0 ? try result.advancedRules.jsonString() : nil,
             unsupportedRuleCount: result.unsupportedRules.count,
             diagnostics: result.diagnostics
         )

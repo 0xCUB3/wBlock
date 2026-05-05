@@ -119,15 +119,24 @@ public enum WebExtensionRequestHandler {
                                 topUrl = URL(string: topUrlString)
                             }
 
-                            let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
-                                let webExtension = try WebExtension.shared(
-                                    groupID: GroupIdentifier.shared.value
-                                )
-                                return webExtension.lookup(pageUrl: url, topUrl: topUrl)
-                            }
+                            let groupIdentifier = GroupIdentifier.shared.value
+                            if let nativePayload = NativeAdvancedRuntimeAdapter.lookupPayload(
+                                pageURL: url,
+                                topURL: topUrl,
+                                groupIdentifier: groupIdentifier
+                            ) {
+                                message?["payload"] = nativePayload
+                            } else {
+                                let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
+                                    let webExtension = try WebExtension.shared(
+                                        groupID: groupIdentifier
+                                    )
+                                    return webExtension.lookup(pageUrl: url, topUrl: topUrl)
+                                }
 
-                            if let configuration {
-                                message?["payload"] = convertToPayload(configuration)
+                                if let configuration {
+                                    message?["payload"] = convertToPayload(configuration)
+                                }
                             }
                         } catch {
                             os_log(

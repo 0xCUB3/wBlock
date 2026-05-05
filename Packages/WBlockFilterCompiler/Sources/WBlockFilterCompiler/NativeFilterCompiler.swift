@@ -12,6 +12,12 @@ public struct NativeFilterCompiler: FilterCompiling {
         var networkRules: [NetworkRule] = []
         var cosmeticRules: [CosmeticRule] = []
         var cosmeticExceptionRules: [CosmeticRule] = []
+        var advancedCSSRules: [AdvancedStyleRule] = []
+        var advancedExtendedCSSRules: [AdvancedStyleRule] = []
+        var advancedExtendedCSSExceptionRules: [AdvancedStyleRule] = []
+        var advancedJSRules: [AdvancedStyleRule] = []
+        var advancedScriptletRules: [AdvancedScriptletRule] = []
+        var advancedScriptletExceptionRules: [AdvancedScriptletRule] = []
         var badfilterIdentities = Set<String>()
 
         for source in sources {
@@ -25,6 +31,24 @@ public struct NativeFilterCompiler: FilterCompiling {
             for line in lines {
                 let kind = RuleClassifier.classify(line.text)
                 diagnostics.classifiedRules[kind, default: 0] += 1
+
+                let advancedRule = AdvancedRuleParser.parse(line)
+                if let advancedRule, advancedRuleIsEnabled(advancedRule, configuration: configuration) {
+                    switch advancedRule {
+                    case .css(let rule):
+                        advancedCSSRules.append(rule)
+                    case .extendedCss(let rule):
+                        advancedExtendedCSSRules.append(rule)
+                    case .extendedCssException(let rule):
+                        advancedExtendedCSSExceptionRules.append(rule)
+                    case .js(let rule):
+                        advancedJSRules.append(rule)
+                    case .scriptlet(let rule):
+                        advancedScriptletRules.append(rule)
+                    case .scriptletException(let rule):
+                        advancedScriptletExceptionRules.append(rule)
+                    }
+                }
 
                 switch RuleParser.parse(line, configuration: configuration) {
                 case .comment, .preprocessor:
@@ -44,11 +68,19 @@ public struct NativeFilterCompiler: FilterCompiling {
                 case .cosmeticException(let rule):
                     cosmeticExceptionRules.append(rule)
                 case .unsupported(let reason):
-                    unsupportedRules.append(unsupportedRule(line: line, reason: reason))
+                    if advancedRule == nil || !advancedRuleIsEnabled(advancedRule!, configuration: configuration) {
+                        unsupportedRules.append(unsupportedRule(line: line, reason: reason))
+                    }
                 }
             }
         }
 
+        let advancedBundle = AdvancedRuleBundle(
+            css: dedupeAdvancedStyleRules(advancedCSSRules),
+            extendedCss: dedupeAdvancedStyleRules(applyAdvancedStyleExceptions(advancedExtendedCSSRules, exceptions: advancedExtendedCSSExceptionRules)),
+            js: dedupeAdvancedStyleRules(advancedJSRules),
+            scriptlets: dedupeAdvancedScriptletRules(applyAdvancedScriptletExceptions(advancedScriptletRules, exceptions: advancedScriptletExceptionRules))
+        )
         let filteredNetworkRules = networkRules.filter { !badfilterIdentities.contains($0.canonicalIdentity) }
         let plannedCosmeticRules = applyCosmeticExceptions(cosmeticRules, exceptions: cosmeticExceptionRules)
         let groupedCosmeticRules = groupCosmeticRules(plannedCosmeticRules)
@@ -60,7 +92,7 @@ public struct NativeFilterCompiler: FilterCompiling {
         return FilterCompilationResult(
             safariRulesJSON: safariJSON,
             safariRuleCount: safariRuleCount,
-            advancedRules: AdvancedRuleBundle(),
+            advancedRules: advancedBundle,
             diagnostics: diagnostics,
             unsupportedRules: unsupportedRules,
             fingerprints: CompilationFingerprints()
@@ -151,6 +183,64 @@ public struct NativeFilterCompiler: FilterCompiling {
 
     private func cosmeticScopeKey(_ rule: CosmeticRule) -> String {
         [rule.ifDomains.sorted().joined(separator: "|"), rule.unlessDomains.sorted().joined(separator: "|")].joined(separator: "\u{1f}")
+    }
+
+    private func advancedRuleIsEnabled(_ rule: AdvancedParsedRule, configuration: FilterCompilerConfiguration) -> Bool {
+        switch rule {
+        case .css, .js:
+            return true
+        case .extendedCss, .extendedCssException:
+            return configuration.enabledCapabilities.contains(.proceduralCosmetics)
+        case .scriptlet, .scriptletException:
+            return configuration.enabledCapabilities.contains(.advancedScriptlets)
+        }
+    }
+
+    private func applyAdvancedStyleExceptions(_ rules: [AdvancedStyleRule], exceptions: [AdvancedStyleRule]) -> [AdvancedStyleRule] {
+        guard !exceptions.isEmpty else { return rules }
+        let exceptionKeys = Set(exceptions.map(advancedStyleKey))
+        return rules.filter { !exceptionKeys.contains(advancedStyleKey($0)) }
+    }
+
+    private func applyAdvancedScriptletExceptions(_ rules: [AdvancedScriptletRule], exceptions: [AdvancedScriptletRule]) -> [AdvancedScriptletRule] {
+        guard !exceptions.isEmpty else { return rules }
+        let exceptionKeys = Set(exceptions.map(advancedScriptletKey))
+        return rules.filter { !exceptionKeys.contains(advancedScriptletKey($0)) }
+    }
+
+    private func advancedStyleKey(_ rule: AdvancedStyleRule) -> String {
+        [
+            rule.content,
+            rule.scope.ifDomains.joined(separator: "|"),
+            rule.scope.unlessDomains.joined(separator: "|")
+        ].joined(separator: "\u{1f}")
+    }
+
+    private func advancedScriptletKey(_ rule: AdvancedScriptletRule) -> String {
+        [
+            rule.name,
+            rule.args.joined(separator: "\u{1e}"),
+            rule.scope.ifDomains.joined(separator: "|"),
+            rule.scope.unlessDomains.joined(separator: "|")
+        ].joined(separator: "\u{1f}")
+    }
+
+    private func dedupeAdvancedStyleRules(_ rules: [AdvancedStyleRule]) -> [AdvancedStyleRule] {
+        var seen = Set<AdvancedStyleRule>()
+        var output: [AdvancedStyleRule] = []
+        for rule in rules where seen.insert(rule).inserted {
+            output.append(rule)
+        }
+        return output
+    }
+
+    private func dedupeAdvancedScriptletRules(_ rules: [AdvancedScriptletRule]) -> [AdvancedScriptletRule] {
+        var seen = Set<AdvancedScriptletRule>()
+        var output: [AdvancedScriptletRule] = []
+        for rule in rules where seen.insert(rule).inserted {
+            output.append(rule)
+        }
+        return output
     }
 
     private func planSafariRules(networkRules: [NetworkRule], cosmeticRules: [CosmeticRule]) -> [SafariContentBlockerRule] {

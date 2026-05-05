@@ -379,6 +379,21 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
     /// Experimental native conversion path. This is intentionally not used by the default
     /// app pipeline yet; it exists so internal builds and tests can exercise the modular
     /// WBlockFilterCompiler package without touching SafariConverterLib-backed caches.
+    public static func convertFilterNativeExperimentalFromFile(
+        rulesFileURL: URL,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]? = nil
+    ) -> (safariRulesCount: Int, advancedRulesText: String?, unsupportedRuleCount: Int) {
+        let rules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
+        return convertFilterNativeExperimental(
+            rules: rules,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            disabledSites: disabledSites
+        )
+    }
+
     public static func convertFilterNativeExperimental(
         rules: String,
         groupIdentifier: String,
@@ -592,6 +607,130 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
     }
     
+    /// Builds the experimental native advanced runtime from WBlockFilterCompiler JSON bundles.
+    /// This does not replace SafariConverterLib's FilterEngine in the default pipeline yet.
+    ///
+    /// - Parameters:
+    ///   - advancedRuleBundles: JSON-encoded WBlockFilterCompiler advanced-rule bundles.
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    public static func buildCombinedNativeAdvancedRuntime(advancedRuleBundles: [String], groupIdentifier: String) throws {
+        try measure(label: "Building native advanced runtime") {
+            try NativeAdvancedRuntimeAdapter.build(
+                jsonBundleSnippets: advancedRuleBundles,
+                groupIdentifier: groupIdentifier
+            )
+        }
+    }
+
+    /// Clears the experimental native advanced runtime.
+    ///
+    /// - Parameter groupIdentifier: Group ID to use for the shared container.
+    public static func clearNativeAdvancedRuntime(groupIdentifier: String) throws {
+        try NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
+    }
+
+    public struct AdvancedRuntimePayloadCounts: Codable, Sendable, Equatable {
+        public let css: Int
+        public let extendedCss: Int
+        public let js: Int
+        public let scriptlets: Int
+    }
+
+    public struct AdvancedRuntimeLookupDebugReport: Codable, Sendable, Equatable {
+        public let pageURL: String
+        public let topURL: String?
+        public let nativeAvailable: Bool
+        public let legacyAvailable: Bool
+        public let nativeCounts: AdvancedRuntimePayloadCounts
+        public let legacyCounts: AdvancedRuntimePayloadCounts
+        public let missingInNative: [String: [String]]
+        public let extraInNative: [String: [String]]
+    }
+
+    /// Compares the installed native advanced runtime against the installed SafariConverterLib engine
+    /// for a single URL. This is a debug/parity harness and does not mutate either runtime.
+    public static func debugCompareAdvancedRuntimeLookup(
+        pageURL: URL,
+        topURL: URL? = nil,
+        groupIdentifier: String
+    ) throws -> AdvancedRuntimeLookupDebugReport {
+        let nativePayload = NativeAdvancedRuntimeAdapter.lookupPayload(
+            pageURL: pageURL,
+            topURL: topURL,
+            groupIdentifier: groupIdentifier
+        )
+
+        let legacyConfiguration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
+            let webExtension = try WebExtension.shared(groupID: groupIdentifier)
+            return webExtension.lookup(pageUrl: pageURL, topUrl: topURL)
+        }
+        let legacyPayload = legacyConfiguration.map(payloadFromLegacyConfiguration)
+
+        let categories = ["css", "extendedCss", "js", "scriptlets"]
+        var missingInNative: [String: [String]] = [:]
+        var extraInNative: [String: [String]] = [:]
+        for category in categories {
+            let nativeEntries = Set(canonicalEntries(in: nativePayload, category: category))
+            let legacyEntries = Set(canonicalEntries(in: legacyPayload, category: category))
+            let missing = legacyEntries.subtracting(nativeEntries).sorted()
+            let extra = nativeEntries.subtracting(legacyEntries).sorted()
+            if !missing.isEmpty { missingInNative[category] = missing }
+            if !extra.isEmpty { extraInNative[category] = extra }
+        }
+
+        return AdvancedRuntimeLookupDebugReport(
+            pageURL: pageURL.absoluteString,
+            topURL: topURL?.absoluteString,
+            nativeAvailable: nativePayload != nil,
+            legacyAvailable: legacyPayload != nil,
+            nativeCounts: payloadCounts(nativePayload),
+            legacyCounts: payloadCounts(legacyPayload),
+            missingInNative: missingInNative,
+            extraInNative: extraInNative
+        )
+    }
+
+    private static func payloadFromLegacyConfiguration(_ configuration: WebExtension.Configuration) -> [String: Any] {
+        [
+            "css": configuration.css,
+            "extendedCss": configuration.extendedCss,
+            "js": configuration.js,
+            "scriptlets": configuration.scriptlets.map { scriptlet in
+                ["name": scriptlet.name, "args": scriptlet.args]
+            },
+            "engineTimestamp": configuration.engineTimestamp,
+        ]
+    }
+
+    private static func payloadCounts(_ payload: [String: Any]?) -> AdvancedRuntimePayloadCounts {
+        AdvancedRuntimePayloadCounts(
+            css: stringArray(in: payload, key: "css").count,
+            extendedCss: stringArray(in: payload, key: "extendedCss").count,
+            js: stringArray(in: payload, key: "js").count,
+            scriptlets: scriptletEntries(in: payload).count
+        )
+    }
+
+    private static func canonicalEntries(in payload: [String: Any]?, category: String) -> [String] {
+        if category == "scriptlets" {
+            return scriptletEntries(in: payload)
+        }
+        return stringArray(in: payload, key: category).sorted()
+    }
+
+    private static func stringArray(in payload: [String: Any]?, key: String) -> [String] {
+        payload?[key] as? [String] ?? []
+    }
+
+    private static func scriptletEntries(in payload: [String: Any]?) -> [String] {
+        guard let scriptlets = payload?["scriptlets"] as? [[String: Any]] else { return [] }
+        return scriptlets.map { scriptlet in
+            let name = scriptlet["name"] as? String ?? ""
+            let args = scriptlet["args"] as? [String] ?? []
+            return "\(name)(\(args.joined(separator: "\u{1f}")))"
+        }.sorted()
+    }
+
     /// Builds the filter engine with combined advanced rules from all filter groups.
     ///
     /// - Parameters:
@@ -623,12 +762,12 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
     }
 
-    /// Clears the filter engine by building it with empty rules.
+    /// Clears SafariConverterLib's legacy filter engine without removing the native runtime.
+    /// Used by the experimental native path so stale legacy rules are not used as fallback.
     ///
-    /// - Parameters:
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) throws {
-        try measure(label: "Clearing filter engine") {
+    /// - Parameter groupIdentifier: Group ID to use for the shared container.
+    public static func clearLegacyFilterEngine(groupIdentifier: String) throws {
+        try measure(label: "Clearing legacy filter engine") {
             #if os(iOS)
             try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
             #else
@@ -637,6 +776,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
                 _ = try webExtension.buildFilterEngine(rules: "")
             }
             #endif
+            os_log(.info, "Successfully cleared legacy filter engine")
+        }
+    }
+
+    /// Clears the filter engine by building it with empty rules.
+    ///
+    /// - Parameters:
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    public static func clearFilterEngine(groupIdentifier: String) throws {
+        try measure(label: "Clearing filter engine") {
+            try clearLegacyFilterEngine(groupIdentifier: groupIdentifier)
+            try? NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
             os_log(.info, "Successfully cleared filter engine")
         }
     }
