@@ -367,6 +367,7 @@
 				Resources/manifest.json,
 				Resources/pages,
 				Resources/rules/csp_strip_rules.json,
+				Resources/web_accessible_resources,
 				"Resources/userscript-injector.js",
 				"Resources/zapper-content.js",
 			);
@@ -541,6 +542,7 @@
 				Resources/_locales,
 				Resources/assets,
 				Resources/pages,
+				Resources/web_accessible_resources,
 			);
 			path = "wBlock Scripts (iOS)";
 			sourceTree = "<group>";

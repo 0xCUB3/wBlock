@@ -9,8 +9,9 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
     public var js: [AdvancedStyleRule]
     public var scriptlets: [AdvancedScriptletRule]
     public var scriptletExceptions: [AdvancedScriptletRule]
+    public var dnrRules: [AdvancedDNRRule]
 
-    public var ruleCount: Int { css.count + extendedCss.count + js.count + scriptlets.count }
+    public var ruleCount: Int { css.count + extendedCss.count + js.count + scriptlets.count + dnrRules.count }
     public var exceptionRuleCount: Int { extendedCssExceptions.count + scriptletExceptions.count }
 
     public init(
@@ -21,7 +22,8 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
         extendedCssExceptions: [AdvancedStyleRule] = [],
         js: [AdvancedStyleRule] = [],
         scriptlets: [AdvancedScriptletRule] = [],
-        scriptletExceptions: [AdvancedScriptletRule] = []
+        scriptletExceptions: [AdvancedScriptletRule] = [],
+        dnrRules: [AdvancedDNRRule] = []
     ) {
         self.formatVersion = formatVersion
         self.engineTimestamp = engineTimestamp
@@ -31,6 +33,7 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
         self.js = js
         self.scriptlets = scriptlets
         self.scriptletExceptions = scriptletExceptions
+        self.dnrRules = dnrRules
     }
 
     enum CodingKeys: String, CodingKey {
@@ -42,6 +45,7 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
         case js
         case scriptlets
         case scriptletExceptions
+        case dnrRules
     }
 
     public init(from decoder: Decoder) throws {
@@ -54,6 +58,7 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
         self.js = try container.decodeIfPresent([AdvancedStyleRule].self, forKey: .js) ?? []
         self.scriptlets = try container.decodeIfPresent([AdvancedScriptletRule].self, forKey: .scriptlets) ?? []
         self.scriptletExceptions = try container.decodeIfPresent([AdvancedScriptletRule].self, forKey: .scriptletExceptions) ?? []
+        self.dnrRules = try container.decodeIfPresent([AdvancedDNRRule].self, forKey: .dnrRules) ?? []
     }
 
     public func jsonString(prettyPrinted: Bool = false) throws -> String {
@@ -74,6 +79,7 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
         var js: [AdvancedStyleRule] = []
         var scriptlets: [AdvancedScriptletRule] = []
         var scriptletExceptions: [AdvancedScriptletRule] = []
+        var dnrRules: [AdvancedDNRRule] = []
         for bundle in bundles {
             css.append(contentsOf: bundle.css)
             extendedCss.append(contentsOf: bundle.extendedCss)
@@ -81,6 +87,7 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
             js.append(contentsOf: bundle.js)
             scriptlets.append(contentsOf: bundle.scriptlets)
             scriptletExceptions.append(contentsOf: bundle.scriptletExceptions)
+            dnrRules.append(contentsOf: bundle.dnrRules)
         }
         return AdvancedRuleBundle(
             css: dedupe(css),
@@ -88,7 +95,8 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
             extendedCssExceptions: dedupe(extendedCssExceptions),
             js: dedupe(js),
             scriptlets: dedupe(applyScriptletExceptions(scriptlets, exceptions: scriptletExceptions)),
-            scriptletExceptions: dedupe(scriptletExceptions)
+            scriptletExceptions: dedupe(scriptletExceptions),
+            dnrRules: dedupe(dnrRules)
         )
     }
 
@@ -177,6 +185,92 @@ public struct AdvancedScriptletRule: Sendable, Equatable, Codable, Hashable {
     }
 }
 
+public struct AdvancedDNRRule: Sendable, Equatable, Codable, Hashable {
+    public var id: Int
+    public var priority: Int
+    public var action: AdvancedDNRAction
+    public var condition: AdvancedDNRCondition
+
+    public init(id: Int, priority: Int = 1, action: AdvancedDNRAction, condition: AdvancedDNRCondition) {
+        self.id = id
+        self.priority = priority
+        self.action = action
+        self.condition = condition
+    }
+}
+
+public struct AdvancedDNRAction: Sendable, Equatable, Codable, Hashable {
+    public var type: String
+    public var redirect: AdvancedDNRRedirect?
+    public var requestHeaders: [AdvancedDNRModifyHeader]?
+    public var responseHeaders: [AdvancedDNRModifyHeader]?
+
+    public init(type: String, redirect: AdvancedDNRRedirect? = nil, requestHeaders: [AdvancedDNRModifyHeader]? = nil, responseHeaders: [AdvancedDNRModifyHeader]? = nil) {
+        self.type = type
+        self.redirect = redirect
+        self.requestHeaders = requestHeaders
+        self.responseHeaders = responseHeaders
+    }
+}
+
+public struct AdvancedDNRRedirect: Sendable, Equatable, Codable, Hashable {
+    public var extensionPath: String?
+    public var regexSubstitution: String?
+    public var transform: AdvancedDNRURLTransform?
+    public var url: String?
+
+    public init(extensionPath: String? = nil, regexSubstitution: String? = nil, transform: AdvancedDNRURLTransform? = nil, url: String? = nil) {
+        self.extensionPath = extensionPath
+        self.regexSubstitution = regexSubstitution
+        self.transform = transform
+        self.url = url
+    }
+}
+
+public struct AdvancedDNRURLTransform: Sendable, Equatable, Codable, Hashable {
+    public var queryTransform: AdvancedDNRQueryTransform?
+
+    public init(queryTransform: AdvancedDNRQueryTransform? = nil) {
+        self.queryTransform = queryTransform
+    }
+}
+
+public struct AdvancedDNRQueryTransform: Sendable, Equatable, Codable, Hashable {
+    public var removeParams: [String]?
+
+    public init(removeParams: [String]? = nil) {
+        self.removeParams = removeParams
+    }
+}
+
+public struct AdvancedDNRModifyHeader: Sendable, Equatable, Codable, Hashable {
+    public var header: String
+    public var operation: String
+    public var value: String?
+
+    public init(header: String, operation: String, value: String? = nil) {
+        self.header = header
+        self.operation = operation
+        self.value = value
+    }
+}
+
+public struct AdvancedDNRCondition: Sendable, Equatable, Codable, Hashable {
+    public var regexFilter: String?
+    public var urlFilter: String?
+    public var resourceTypes: [String]?
+    public var excludedResourceTypes: [String]?
+    public var isUrlFilterCaseSensitive: Bool?
+
+    public init(regexFilter: String? = nil, urlFilter: String? = nil, resourceTypes: [String]? = nil, excludedResourceTypes: [String]? = nil, isUrlFilterCaseSensitive: Bool? = nil) {
+        self.regexFilter = regexFilter
+        self.urlFilter = urlFilter
+        self.resourceTypes = resourceTypes
+        self.excludedResourceTypes = excludedResourceTypes
+        self.isUrlFilterCaseSensitive = isUrlFilterCaseSensitive
+    }
+}
+
 public struct AdvancedScriptlet: Sendable, Equatable, Codable, Hashable {
     public var name: String
     public var args: [String]
@@ -192,6 +286,7 @@ public struct AdvancedWebExtensionConfiguration: Sendable, Equatable, Codable {
     public var extendedCss: [String]
     public var js: [String]
     public var scriptlets: [AdvancedScriptlet]
+    public var dnrRules: [AdvancedDNRRule]
     public var engineTimestamp: Double
 
     public init(
@@ -199,12 +294,14 @@ public struct AdvancedWebExtensionConfiguration: Sendable, Equatable, Codable {
         extendedCss: [String] = [],
         js: [String] = [],
         scriptlets: [AdvancedScriptlet] = [],
+        dnrRules: [AdvancedDNRRule] = [],
         engineTimestamp: Double = 0
     ) {
         self.css = css
         self.extendedCss = extendedCss
         self.js = js
         self.scriptlets = scriptlets
+        self.dnrRules = dnrRules
         self.engineTimestamp = engineTimestamp
     }
 }
@@ -255,6 +352,7 @@ public struct AdvancedRuleRuntime: Sendable, Equatable {
             extendedCss: extendedCss,
             js: js,
             scriptlets: scriptlets,
+            dnrRules: bundle.dnrRules,
             engineTimestamp: bundle.engineTimestamp
         )
     }

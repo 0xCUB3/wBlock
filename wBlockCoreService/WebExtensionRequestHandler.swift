@@ -27,6 +27,7 @@ public enum WebExtensionRequestHandler {
             "extendedCss": [],
             "js": [],
             "scriptlets": [],
+            "dnrRules": [],
             "userScripts": [],
             "engineTimestamp": 0
         ]

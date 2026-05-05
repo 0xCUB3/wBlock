@@ -137,6 +137,7 @@ do {
     if options.advancedRuntime {
         configuration.enabledCapabilities.insert(.advancedScriptlets)
         configuration.enabledCapabilities.insert(.proceduralCosmetics)
+        configuration.enabledCapabilities.insert(.redirects)
     }
 
     let result = try NativeFilterCompiler().compile(sources, configuration: configuration)

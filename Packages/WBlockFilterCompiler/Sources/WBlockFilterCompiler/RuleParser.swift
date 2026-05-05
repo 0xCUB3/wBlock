@@ -52,6 +52,7 @@ enum RuleParser {
             removeParameters: [],
             urlSkipSteps: nil,
             uriTransform: nil,
+            redirectResource: nil,
             matchCase: false,
             important: false,
             isBadfilter: false,
@@ -79,6 +80,7 @@ enum RuleParser {
         var removeParameters: [String] = []
         var urlSkipSteps: String?
         var uriTransform: String?
+        var redirectResource: String?
         var matchCase = false
         var important = false
         var isBadfilter = false
@@ -260,11 +262,30 @@ enum RuleParser {
 
             if lower.hasPrefix("redirect=") {
                 guard !isException else { return .unsupported(.noSafariEquivalent) }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                if configuration.enabledCapabilities.contains(.redirects), !value.isEmpty {
+                    redirectResource = value
+                }
                 canonicalOptions.append(lower)
                 continue
             }
 
-            if lower.hasPrefix("redirect-rule=") || lower == "redirect" || lower == "redirect-rule" {
+            if lower.hasPrefix("redirect-rule=") {
+                guard !isException else { return .unsupported(.noSafariEquivalent) }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard configuration.enabledCapabilities.contains(.redirects), !value.isEmpty else { return .unsupported(.noSafariEquivalent) }
+                redirectResource = value
+                canonicalOptions.append(lower)
+                continue
+            }
+
+            if lower == "redirect" || lower == "redirect-rule" {
                 return .unsupported(.noSafariEquivalent)
             }
 
@@ -306,6 +327,7 @@ enum RuleParser {
                 removeParameters: Array(Set(removeParameters)).sorted(),
                 urlSkipSteps: urlSkipSteps,
                 uriTransform: uriTransform,
+                redirectResource: redirectResource,
                 matchCase: matchCase,
                 important: important,
                 isBadfilter: isBadfilter,

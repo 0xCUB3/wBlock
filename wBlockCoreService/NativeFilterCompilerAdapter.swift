@@ -24,7 +24,7 @@ enum NativeFilterCompilerAdapter {
         displayName: String = "Inline rules",
         configuration: FilterCompilerConfiguration = FilterCompilerConfiguration(
             platform: .uBlockOriginCompatibility,
-            enabledCapabilities: [.nativeCosmeticRules, .advancedScriptlets, .proceduralCosmetics]
+            enabledCapabilities: [.nativeCosmeticRules, .advancedScriptlets, .proceduralCosmetics, .redirects]
         )
     ) throws -> ConversionResult {
         let source = FilterSource(

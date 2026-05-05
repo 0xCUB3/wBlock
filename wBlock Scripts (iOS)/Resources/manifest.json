@@ -59,10 +59,21 @@
         "unlimitedStorage",
         "scripting",
         "tabs",
-        "declarativeNetRequest"
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess"
     ],
     "host_permissions": [
         "<all_urls>"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "web_accessible_resources/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
     ],
     "declarative_net_request": {
         "rule_resources": [

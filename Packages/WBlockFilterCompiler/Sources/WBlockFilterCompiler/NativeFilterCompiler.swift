@@ -18,6 +18,8 @@ public struct NativeFilterCompiler: FilterCompiling {
         var advancedJSRules: [AdvancedStyleRule] = []
         var advancedScriptletRules: [AdvancedScriptletRule] = []
         var advancedScriptletExceptionRules: [AdvancedScriptletRule] = []
+        var advancedDNRRules: [AdvancedDNRRule] = []
+        var nextDNRRuleID = 1
         var badfilterIdentities = Set<String>()
 
         for source in sources {
@@ -59,7 +61,14 @@ public struct NativeFilterCompiler: FilterCompiling {
                     if rule.isBadfilter {
                         badfilterIdentities.insert(rule.canonicalIdentity)
                     } else if rule.requiresAdvancedURLHandling {
-                        advancedJSRules.append(contentsOf: advancedURLHandlingScripts(for: rule))
+                        let jsRules = advancedURLHandlingScripts(for: rule)
+                        let dnrRules = advancedDNRRulesForURLHandling(rule, nextID: &nextDNRRuleID)
+                        if jsRules.isEmpty, dnrRules.isEmpty, rule.redirectResource != nil {
+                            networkRules.append(rule)
+                        } else {
+                            advancedJSRules.append(contentsOf: jsRules)
+                            advancedDNRRules.append(contentsOf: dnrRules)
+                        }
                     } else {
                         networkRules.append(rule)
                     }
@@ -99,7 +108,8 @@ public struct NativeFilterCompiler: FilterCompiling {
             extendedCssExceptions: dedupeAdvancedStyleRules(advancedExtendedCSSExceptionRules),
             js: dedupeAdvancedStyleRules(advancedJSRules),
             scriptlets: dedupeAdvancedScriptletRules(applyAdvancedScriptletExceptions(advancedScriptletRules, exceptions: advancedScriptletExceptionRules)),
-            scriptletExceptions: dedupeAdvancedScriptletRules(advancedScriptletExceptionRules)
+            scriptletExceptions: dedupeAdvancedScriptletRules(advancedScriptletExceptionRules),
+            dnrRules: dedupeAdvancedDNRRules(advancedDNRRules)
         )
         let groupedCosmeticRules = groupCosmeticRules(plannedCosmeticRules)
         let safariRules = planSafariRules(networkRules: expandedNetworkRules, cosmeticRules: groupedCosmeticRules)
@@ -259,6 +269,163 @@ public struct NativeFilterCompiler: FilterCompiling {
             output.append(rule)
         }
         return output
+    }
+
+    private func dedupeAdvancedDNRRules(_ rules: [AdvancedDNRRule]) -> [AdvancedDNRRule] {
+        var seen = Set<String>()
+        var output: [AdvancedDNRRule] = []
+        var nextID = 1
+        for rule in rules {
+            let key = dnrRuleKey(rule)
+            guard seen.insert(key).inserted else { continue }
+            var copy = rule
+            copy.id = nextID
+            nextID += 1
+            output.append(copy)
+        }
+        return output
+    }
+
+    private func dnrRuleKey(_ rule: AdvancedDNRRule) -> String {
+        jsonLiteral(rule)
+    }
+
+    private func advancedDNRRulesForURLHandling(_ rule: NetworkRule, nextID: inout Int) -> [AdvancedDNRRule] {
+        var rules: [AdvancedDNRRule] = []
+        if let removeParamRule = dnrRemoveParamRule(for: rule, id: nextID) {
+            rules.append(removeParamRule)
+            nextID += 1
+        }
+        if let redirectRule = dnrRedirectRule(for: rule, id: nextID) {
+            rules.append(redirectRule)
+            nextID += 1
+        }
+        return rules
+    }
+
+    private func dnrRemoveParamRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
+        let params = exactRemoveParameters(rule.removeParameters)
+        guard !params.isEmpty else { return nil }
+        guard let condition = dnrCondition(for: rule) else { return nil }
+        return AdvancedDNRRule(
+            id: id,
+            priority: rule.important ? 100_000 : 10_000,
+            action: AdvancedDNRAction(
+                type: "redirect",
+                redirect: AdvancedDNRRedirect(
+                    transform: AdvancedDNRURLTransform(
+                        queryTransform: AdvancedDNRQueryTransform(removeParams: params)
+                    )
+                )
+            ),
+            condition: condition
+        )
+    }
+
+    private func dnrRedirectRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
+        guard let resource = rule.redirectResource,
+              let extensionPath = extensionRedirectPath(for: resource),
+              let condition = dnrCondition(for: rule) else { return nil }
+        return AdvancedDNRRule(
+            id: id,
+            priority: rule.important ? 90_000 : 9_000,
+            action: AdvancedDNRAction(
+                type: "redirect",
+                redirect: AdvancedDNRRedirect(extensionPath: extensionPath)
+            ),
+            condition: condition
+        )
+    }
+
+    private func dnrCondition(for rule: NetworkRule) -> AdvancedDNRCondition? {
+        let urlRegex: String
+        if rule.pattern == "*", !rule.toDomains.isEmpty {
+            urlRegex = dnrRegexForDomains(rule.toDomains)
+        } else {
+            urlRegex = SafariURLFilterTranslator.translate(rule.pattern)
+        }
+        guard !urlRegex.isEmpty else { return nil }
+        return AdvancedDNRCondition(
+            regexFilter: urlRegex,
+            resourceTypes: dnrResourceTypes(for: rule),
+            isUrlFilterCaseSensitive: rule.matchCase ? true : nil
+        )
+    }
+
+    private func dnrRegexForDomains(_ domains: [String]) -> String {
+        let alternatives = domains
+            .map { domain in
+                domain
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                    .lowercased()
+            }
+            .filter { !$0.isEmpty }
+            .map { dnrRegexEscapedDomain($0) }
+            .joined(separator: "|")
+        return "^[^:]+://([^/?#]+\\.)?(?:\(alternatives))(?:[/?#:]|$)"
+    }
+
+    private func dnrRegexEscapedDomain(_ domain: String) -> String {
+        var output = ""
+        for character in domain {
+            if character == "*" {
+                output += "[^/?#:]*"
+            } else if ".+?^${}()|[]\\".contains(character) {
+                output += "\\\(character)"
+            } else {
+                output.append(character)
+            }
+        }
+        return output
+    }
+
+    private func exactRemoveParameters(_ parameters: [String]) -> [String] {
+        Array(Set(parameters.flatMap { value in
+            value.split(separator: "|", omittingEmptySubsequences: true).map(String.init)
+        }.filter { parameter in
+            !parameter.isEmpty && parameter != "*" && !parameter.hasPrefix("/") && !parameter.contains("*")
+        })).sorted()
+    }
+
+    private func extensionRedirectPath(for resource: String) -> String? {
+        let normalized = resource
+            .split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+            .first
+            .map(String.init)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        switch normalized {
+        case "noop.js", "noopjs", "empty.js", "empty-script":
+            return "/web_accessible_resources/noop.js"
+        case "noop.css", "empty.css", "empty-style":
+            return "/web_accessible_resources/noop.css"
+        case "noop.txt", "nooptext", "empty", "empty.txt":
+            return "/web_accessible_resources/noop.txt"
+        case "blank-html", "noop.html", "empty.html":
+            return "/web_accessible_resources/noop.html"
+        default:
+            return nil
+        }
+    }
+
+    private func dnrResourceTypes(for rule: NetworkRule) -> [String]? {
+        let mapped = Set(rule.resourceTypes.flatMap(dnrResourceTypes(for:)))
+        return mapped.isEmpty ? nil : mapped.sorted()
+    }
+
+    private func dnrResourceTypes(for type: SafariResourceType) -> [String] {
+        switch type {
+        case .document: return ["main_frame", "sub_frame"]
+        case .image: return ["image"]
+        case .styleSheet: return ["stylesheet"]
+        case .script: return ["script"]
+        case .font: return ["font"]
+        case .raw: return ["xmlhttprequest", "ping", "websocket", "other"]
+        case .svgDocument: return ["image"]
+        case .media: return ["media"]
+        case .popup: return ["main_frame"]
+        }
     }
 
     private func advancedURLHandlingScripts(for rule: NetworkRule) -> [AdvancedStyleRule] {

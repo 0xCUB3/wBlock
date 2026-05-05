@@ -87,7 +87,30 @@ import Testing
     #expect(result.unsupportedRules.isEmpty)
     #expect(matched.js.count == 1)
     #expect(matched.js[0].contains("utm_source|utm_medium"))
+    #expect(matched.dnrRules.count == 1)
+    #expect(matched.dnrRules[0].action.type == "redirect")
+    #expect(matched.dnrRules[0].action.redirect?.transform?.queryTransform?.removeParams == ["utm_medium", "utm_source"])
     #expect(runtime.lookup(host: "example.org").js.isEmpty)
+}
+
+@Test func redirectRulesCompileToDynamicDNRWhenResourceIsKnown() throws {
+    let source = FilterSource(
+        identifier: "redirect",
+        displayName: "Redirect",
+        text: "||cdn.example/ad.js$script,redirect=noopjs"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+    configuration.enabledCapabilities.insert(.redirects)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let runtime = AdvancedRuleRuntime(bundle: result.advancedRules)
+    let matched = runtime.lookup(host: "unrelated.example")
+
+    #expect(result.safariRuleCount == 0)
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(matched.dnrRules.count == 1)
+    #expect(matched.dnrRules[0].action.redirect?.extensionPath == "/web_accessible_resources/noop.js")
 }
 
 @Test func urlSkipAndUriTransformCompileToAdvancedRuntimeScripts() throws {
@@ -191,4 +214,5 @@ import Testing
 
     #expect(decoded.extendedCssExceptions.isEmpty)
     #expect(decoded.scriptletExceptions.isEmpty)
+    #expect(decoded.dnrRules.isEmpty)
 }

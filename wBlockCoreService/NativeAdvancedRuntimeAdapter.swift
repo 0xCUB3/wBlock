@@ -116,9 +116,21 @@ enum NativeAdvancedRuntimeAdapter {
         payload["scriptlets"] = configuration.scriptlets.map { scriptlet in
             ["name": scriptlet.name, "args": scriptlet.args]
         }
+        payload["dnrRules"] = configuration.dnrRules.map { rule in
+            dnrRuleDictionary(rule)
+        }
         payload["userScripts"] = []
         payload["engineTimestamp"] = configuration.engineTimestamp
         return payload
+    }
+
+    private static func dnrRuleDictionary(_ rule: AdvancedDNRRule) -> [String: Any] {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.withoutEscapingSlashes]
+        guard let data = try? encoder.encode(rule),
+              let object = try? JSONSerialization.jsonObject(with: data),
+              let dictionary = object as? [String: Any] else { return [:] }
+        return dictionary
     }
 
     private static func loadBundle(groupIdentifier: String) -> AdvancedRuleBundle? {

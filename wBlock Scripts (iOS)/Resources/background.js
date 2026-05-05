@@ -5711,6 +5711,9 @@ function wBlockApplyConfiguration(configuration) {
 }
 
 let engineTimestamp = 0;
+let dnrRulesTimestamp = 0;
+const WBLOCK_DNR_DYNAMIC_ID_MIN = 2000000;
+const WBLOCK_DNR_DYNAMIC_ID_MAX = 2999999;
 const cache = new Map();
 let nativeMessageQueue = Promise.resolve();
 const menuCommandsByTab = new Map();
@@ -5723,6 +5726,43 @@ const sendQueuedNativeMessage = request => {
 
 const cacheKey = (url, topUrl) => `${url}#${topUrl || ''}`;
 
+function normalizeDynamicDNRRules(rules) {
+  if (!Array.isArray(rules)) return [];
+  const normalized = [];
+  let nextId = WBLOCK_DNR_DYNAMIC_ID_MIN;
+  for (const rule of rules) {
+    if (!rule || typeof rule !== 'object') continue;
+    if (!rule.action || !rule.condition) continue;
+    const copy = JSON.parse(JSON.stringify(rule));
+    copy.id = nextId++;
+    if (copy.id > WBLOCK_DNR_DYNAMIC_ID_MAX) break;
+    normalized.push(copy);
+  }
+  return normalized;
+}
+
+async function syncDynamicDNRRules(configuration) {
+  const timestamp = configuration && configuration.engineTimestamp || 0;
+  if (timestamp === dnrRulesTimestamp) return;
+  if (!browser.declarativeNetRequest || !browser.declarativeNetRequest.updateDynamicRules) return;
+  const rules = normalizeDynamicDNRRules(configuration && configuration.dnrRules);
+  try {
+    let removeRuleIds = [];
+    if (browser.declarativeNetRequest.getDynamicRules) {
+      const existing = await browser.declarativeNetRequest.getDynamicRules();
+      removeRuleIds = existing
+        .map(rule => rule && rule.id)
+        .filter(id => Number.isInteger(id) && id >= WBLOCK_DNR_DYNAMIC_ID_MIN && id <= WBLOCK_DNR_DYNAMIC_ID_MAX);
+    } else {
+      removeRuleIds = Array.from({ length: WBLOCK_DNR_DYNAMIC_ID_MAX - WBLOCK_DNR_DYNAMIC_ID_MIN + 1 }, (_, i) => WBLOCK_DNR_DYNAMIC_ID_MIN + i);
+    }
+    await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules });
+    dnrRulesTimestamp = timestamp;
+  } catch (error) {
+    console.warn('[wBlock] Dynamic DNR sync failed:', error);
+  }
+}
+
 async function requestConfiguration(originalRequest, url, topUrl) {
   const request = { ...(originalRequest || {}), payload: { url, topUrl } };
   const response = await sendQueuedNativeMessage(request);
@@ -5732,6 +5772,7 @@ async function requestConfiguration(originalRequest, url, topUrl) {
     cache.clear();
     engineTimestamp = configuration.engineTimestamp || 0;
   }
+  await syncDynamicDNRRules(configuration);
   cache.set(cacheKey(url, topUrl), configuration);
   return configuration;
 }
