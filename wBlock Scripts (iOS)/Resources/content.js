@@ -29454,6 +29454,180 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
+  function uboTrustedJsonEditXhrRequest(source, args) {
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId) {
+      if (Window.prototype.toString[uniqueIdentifier] === flag) {
+        return;
+      }
+    }
+    function asRegExp(pattern) {
+      if (typeof pattern !== "string") {
+        return null;
+      }
+      if (pattern.length > 1 && pattern[0] === "/") {
+        var lastSlash = pattern.lastIndexOf("/");
+        if (lastSlash > 0) {
+          try {
+            return new RegExp(pattern.slice(1, lastSlash), pattern.slice(lastSlash + 1));
+          } catch (e) {
+            return null;
+          }
+        }
+      }
+      return null;
+    }
+    function urlMatches(url, matcher) {
+      if (!matcher || matcher === "*") {
+        return true;
+      }
+      var regex = asRegExp(matcher);
+      if (regex) {
+        return regex.test(url);
+      }
+      return String(url || "").includes(matcher);
+    }
+    function walk(value, visitor, seen) {
+      if (!value || typeof value !== "object") {
+        return;
+      }
+      seen = seen || new WeakSet();
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+      visitor(value);
+      if (Array.isArray(value)) {
+        value.forEach(function (item) { return walk(item, visitor, seen); });
+        return;
+      }
+      Object.keys(value).forEach(function (key) { return walk(value[key], visitor, seen); });
+    }
+    function hasUserAgent(root, token) {
+      var found = false;
+      var regex = asRegExp(token);
+      walk(root, function (node) {
+        if (found || typeof node.userAgent !== "string") {
+          return;
+        }
+        found = regex ? regex.test(node.userAgent) : node.userAgent.includes(token);
+      });
+      return found;
+    }
+    function hasGraftUrlList(root) {
+      var found = false;
+      walk(root, function (node) {
+        if (!found && typeof node.graftUrl === "string" && node.graftUrl.includes("&list=")) {
+          found = true;
+        }
+      });
+      return found;
+    }
+    function setClientScreen(root, value) {
+      walk(root, function (node) {
+        if (node.clientName === "WEB") {
+          node.clientScreen = value;
+        }
+      });
+    }
+    function replaceReferer(root) {
+      walk(root, function (node) {
+        if (typeof node.referer === "string" && !node.referer.includes("#reloadxhr")) {
+          node.referer += "#reloadxhr";
+        }
+      });
+    }
+    function mergeWhere(root, predicate, patch) {
+      walk(root, function (node) {
+        if (predicate(node)) {
+          Object.keys(patch).forEach(function (key) {
+            if (patch[key] && typeof patch[key] === "object" && !Array.isArray(patch[key])) {
+              node[key] = Object.assign({}, node[key] || {}, patch[key]);
+            } else {
+              node[key] = patch[key];
+            }
+          });
+        }
+      });
+    }
+    function editRequestBody(body, expression) {
+      if (typeof body !== "string" || !body) {
+        return body;
+      }
+      var data;
+      try {
+        data = JSON.parse(body);
+      } catch (e) {
+        return body;
+      }
+      var changed = false;
+      if (expression.includes("userAgent*=channel") && hasUserAgent(data, "channel")) {
+        setClientScreen(data, "CHANNEL");
+        changed = true;
+      }
+      if (expression.includes("userAgent*=adunit") && hasUserAgent(data, "adunit")) {
+        setClientScreen(data, "ADUNIT");
+        changed = true;
+      }
+      if (expression.includes("userAgent*=lactmilli") && hasUserAgent(data, "lactmilli") && hasGraftUrlList(data)) {
+        mergeWhere(data, function (node) { return typeof node.graftUrl === "string" && node.graftUrl.includes("&list="); }, { params: "8AUB" });
+        changed = true;
+      }
+      if (expression.includes("userAgent*=instream") && hasUserAgent(data, "instream")) {
+        mergeWhere(data, function (node) { return node && typeof node === "object" && Object.prototype.hasOwnProperty.call(node, "contentPlaybackContext"); }, { adPlaybackContext: { adType: "AD_TYPE_INSTREAM" } });
+        changed = true;
+      }
+      if (expression.includes("userAgent*=eafg") && hasUserAgent(data, "eafg")) {
+        if (data && typeof data === "object") {
+          data.params = "eAFgAQ";
+          changed = true;
+        }
+      }
+      if (expression.includes("userAgent=/adunit|channel|lactmilli|instream|eafg/") && hasUserAgent(data, "/adunit|channel|lactmilli|instream|eafg/")) {
+        replaceReferer(data);
+        changed = true;
+      }
+      return changed ? JSON.stringify(data) : body;
+    }
+    var expression = args && args[0] || "";
+    var propsToMatchIndex = args ? args.indexOf("propsToMatch") : -1;
+    var matcher = propsToMatchIndex >= 0 ? args[propsToMatchIndex + 1] : args && args[2];
+    var nativeOpen = XMLHttpRequest.prototype.open;
+    var nativeSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.open = new Proxy(nativeOpen, {
+      apply: function apply(target, thisArg, argumentsList) {
+        thisArg.__wblockNativeFilterCompilerUrl = argumentsList && argumentsList[1] || "";
+        return Reflect.apply(target, thisArg, argumentsList);
+      }
+    });
+    XMLHttpRequest.prototype.send = new Proxy(nativeSend, {
+      apply: function apply(target, thisArg, argumentsList) {
+        try {
+          if (urlMatches(thisArg.__wblockNativeFilterCompilerUrl, matcher) && argumentsList && argumentsList.length > 0) {
+            argumentsList[0] = editRequestBody(argumentsList[0], expression);
+          }
+        } catch (e) {}
+        return Reflect.apply(target, thisArg, argumentsList);
+      }
+    });
+    hit(source);
+    if (source.uniqueId) {
+      Window.prototype.toString[uniqueIdentifier] = flag;
+    }
+  }
+  function uboTrustedJsonEditXhrResponse(source, args) {
+    // uBO's json-edit response grammar is not equivalent to AdGuard's bundled
+    // json-set scriptlet. Keep it as a safe no-op until we add a full adapter;
+    // this avoids breaking every other scriptlet on pages which use it.
+    hit(source);
+  }
+  function uboTrustedPreventDomBypass(source, args) {
+    // This uBO hardening scriptlet prevents pages from stashing native APIs
+    // before other scriptlets wrap them. Safari runs our content script at
+    // document_start already, so a no-op is safer than a broad monkey-patch.
+    hit(source);
+  }
   var scriptletsMap = {
     "amazon-apstag": AmazonApstag,
     "ubo-amazon_apstag.js": AmazonApstag,
@@ -29794,6 +29968,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "spoof-css.js": spoofCSS,
     "ubo-spoof-css.js": spoofCSS,
     "ubo-spoof-css": spoofCSS,
+    "ubo-fingerprint2": Fingerprintjs2,
+    "ubo-prevent-xhr": preventXHR,
+    "ubo-rpnt": trustedReplaceNodeText,
+    "ubo-trusted-click-element": trustedClickElement,
+    "ubo-trusted-create-element": trustedCreateElement,
+    "ubo-trusted-dispatch-event": trustedDispatchEvent,
+    "ubo-trusted-json-edit-xhr-request": uboTrustedJsonEditXhrRequest,
+    "ubo-trusted-json-edit-xhr-response": uboTrustedJsonEditXhrResponse,
+    "ubo-trusted-prevent-dom-bypass": uboTrustedPreventDomBypass,
+    "ubo-trusted-replace-argument": trustedReplaceArgument,
+    "ubo-trusted-replace-fetch-response": trustedReplaceFetchResponse,
+    "ubo-trusted-replace-node-text": trustedReplaceNodeText,
+    "ubo-trusted-replace-outbound-text": trustedReplaceOutboundText,
+    "ubo-trusted-replace-xhr-response": trustedReplaceXhrResponse,
+    "ubo-trusted-rpnt": trustedReplaceNodeText,
+    "ubo-trusted-set": trustedSetConstant,
+    "ubo-trusted-set-attr": trustedSetAttr,
+    "ubo-trusted-set-constant": trustedSetConstant,
+    "ubo-trusted-set-cookie": trustedSetCookie,
+    "ubo-trusted-set-cookie-reload": trustedSetCookieReload,
+    "ubo-trusted-set-local-storage-item": trustedSetLocalStorageItem,
+    "ubo-trusted-set-session-storage-item": trustedSetSessionStorageItem,
+    "ubo-trusted-suppress-native-method": trustedSuppressNativeMethod,
     "trusted-click-element": trustedClickElement,
     "trusted-create-element": trustedCreateElement,
     "trusted-dispatch-event": trustedDispatchEvent,
