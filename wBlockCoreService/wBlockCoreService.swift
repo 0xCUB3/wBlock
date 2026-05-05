@@ -22,24 +22,19 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "2"
+    private static let embeddedCompatibilityRulesVersion = "6"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
-    /// patterns and dynamic ad containers across filter sets.
-    ///
-    /// YouTube rules use trusted-replace-fetch-response for pre-parse string
-    /// replacement (faster than json-prune-fetch-response which works post-parse).
-    /// Sourced from uAssets, translated to AdGuard syntax.
+    /// patterns and dynamic ad containers across filter sets. YouTube response
+    /// mutation is intentionally left to uAssets/uBO filter rules to avoid
+    /// duplicate scriptlets; the googlevideo rule mirrors uBO's documented
+    /// fake-buffering mitigation in Safari content-blocker form.
     private static let embeddedCompatibilityRules = """
 /js/widget/ads.js$script
 /js/pagead.js$script
 /widget/pagead.js$script
+||googlevideo.com/videoplayback$xhr,3p,domain=www.youtube.com
 ##.adbox.banner_ads.adsbox
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
 """
 
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {

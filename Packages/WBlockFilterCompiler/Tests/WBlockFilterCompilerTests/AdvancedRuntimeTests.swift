@@ -126,3 +126,28 @@ import Testing
     #expect(unrelated.css.isEmpty)
     #expect(unrelated.scriptlets.isEmpty)
 }
+
+@Test func advancedBundleCombineAppliesExceptionsAcrossBundles() throws {
+    let scope = AdvancedDomainScope(ifDomains: ["www.youtube.com"])
+    let disabledQuickFix = AdvancedScriptletRule(
+        scope: scope,
+        name: "ubo-trusted-rpnt",
+        args: ["script", "needle", "replacement", "sedCount", "1"]
+    )
+    let activeBundle = AdvancedRuleBundle(scriptlets: [disabledQuickFix])
+    let exceptionBundle = AdvancedRuleBundle(scriptletExceptions: [disabledQuickFix])
+
+    let combined = AdvancedRuleBundle.combine([activeBundle, exceptionBundle])
+
+    #expect(combined.scriptlets.isEmpty)
+    #expect(combined.scriptletExceptions == [disabledQuickFix])
+}
+
+@Test func advancedRuleBundleDecodesLegacyJSONWithoutExceptionFields() throws {
+    let legacyJSON = #"{"css":[],"engineTimestamp":1,"extendedCss":[],"formatVersion":"wblock-advanced-rules-v1","js":[],"scriptlets":[]}"#
+
+    let decoded = try AdvancedRuleBundle.decode(jsonString: legacyJSON)
+
+    #expect(decoded.extendedCssExceptions.isEmpty)
+    #expect(decoded.scriptletExceptions.isEmpty)
+}

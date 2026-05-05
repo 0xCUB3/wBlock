@@ -89,32 +89,39 @@ class FilterListLoader {
         )
     }
 
-    /// Migrates legacy custom filter filenames (`<name>.txt`) to the current ID-based filename.
-    func migrateCustomFilterFileIfNeeded(_ filter: FilterList) {
-        guard filter.isCustom else { return }
+    /// Migrates legacy filter filenames to the current stable filename.
+    /// Custom filters used to be stored as `<name>.txt`; built-in filters also
+    /// used name-only filenames before URL fingerprints were added.
+    func migrateFilterFileIfNeeded(_ filter: FilterList) {
         guard let containerURL = getSharedContainerURL() else { return }
 
         let newURL = containerURL.appendingPathComponent(
             ContentBlockerIncrementalCache.localFilename(for: filter)
         )
-        let oldURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        let oldURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.legacyLocalFilename(for: filter)
+        )
 
         guard !FileManager.default.fileExists(atPath: newURL.path),
             FileManager.default.fileExists(atPath: oldURL.path)
         else { return }
 
         do {
-            try FileManager.default.moveItem(at: oldURL, to: newURL)
+            if filter.isCustom {
+                try FileManager.default.moveItem(at: oldURL, to: newURL)
+            } else {
+                try FileManager.default.copyItem(at: oldURL, to: newURL)
+            }
             Task {
                 await ConcurrentLogManager.shared.info(
-                    .system, "Migrated custom filter filename",
+                    .system, "Migrated filter filename",
                     metadata: ["filter": filter.name, "to": newURL.lastPathComponent]
                 )
             }
         } catch {
             Task {
                 await ConcurrentLogManager.shared.error(
-                    .system, "Failed migrating custom filter filename",
+                    .system, "Failed migrating filter filename",
                     metadata: ["filter": filter.name, "error": "\(error)"]
                 )
             }
@@ -831,8 +838,12 @@ class FilterListLoader {
 
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
-        guard let fileURL = localFileURL(for: filter) else { return false }
-        return FileManager.default.fileExists(atPath: fileURL.path)
+        guard let containerURL = getSharedContainerURL() else { return false }
+        let fileURLs = [
+            containerURL.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter)),
+            containerURL.appendingPathComponent(ContentBlockerIncrementalCache.legacyLocalFilename(for: filter))
+        ]
+        return fileURLs.contains { FileManager.default.fileExists(atPath: $0.path) }
     }
 
     /// Gets the URL for the shared container
@@ -843,17 +854,23 @@ class FilterListLoader {
 
     /// Reads the content of a filter list from the local file system
     func readLocalFilterContent(_ filter: FilterList) -> String? {
-        guard let fileURL = localFileURL(for: filter) else { return nil }
+        guard let containerURL = getSharedContainerURL() else { return nil }
+        let fileURLs = [
+            containerURL.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter)),
+            containerURL.appendingPathComponent(ContentBlockerIncrementalCache.legacyLocalFilename(for: filter))
+        ]
 
-        do {
-            return try String(contentsOf: fileURL, encoding: .utf8)
-        } catch {
-            Task {
-                await ConcurrentLogManager.shared.error(
-                    .filterUpdate, "Failed to read filter content",
-                    metadata: ["filter": filter.name, "error": "\(error)"])
+        for fileURL in fileURLs {
+            if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                return content
             }
-            return nil
         }
+
+        Task {
+            await ConcurrentLogManager.shared.error(
+                .filterUpdate, "Failed to read filter content",
+                metadata: ["filter": filter.name])
+        }
+        return nil
     }
 }

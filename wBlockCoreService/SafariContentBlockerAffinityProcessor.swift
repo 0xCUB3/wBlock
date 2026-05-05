@@ -22,8 +22,9 @@ public enum SafariContentBlockerAffinityProcessor {
             return primaryURL
         }
 
-        guard filter.isCustom else { return nil }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        let legacyURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.legacyLocalFilename(for: filter)
+        )
         guard FileManager.default.fileExists(atPath: legacyURL.path) else { return nil }
         return legacyURL
     }

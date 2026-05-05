@@ -300,10 +300,10 @@ class AppFilterManager: ObservableObject {
         filterLists = migratedFilterLists
         markCurrentStateApplied()
 
-        // Ensure custom filter files use ID-based filenames so users can rename lists safely.
+        // Ensure filter files use stable filenames and migrate legacy name-only files.
         Task.detached(priority: .utility) { [loader, migratedFilterLists] in
-            for filter in migratedFilterLists where filter.isCustom {
-                loader.migrateCustomFilterFileIfNeeded(filter)
+            for filter in migratedFilterLists {
+                loader.migrateFilterFileIfNeeded(filter)
             }
         }
 
@@ -356,10 +356,14 @@ class AppFilterManager: ObservableObject {
         defaultLists: [FilterList]
     ) -> Bool {
         guard FilterListLoader.isNativeCompilerExperimentalEnabled else { return false }
-        let defaultsKey = "wBlockDidApplyNativeCompilerExperimentalDefaultLists"
+        let defaultsKey = "wBlockDidApplyNativeCompilerExperimentalDefaultListsV2"
         guard !UserDefaults.standard.bool(forKey: defaultsKey) else { return false }
 
-        let recommendedNames = FilterListLoader.recommendedFilterNames
+        let recommendedURLs = Set(
+            defaultLists
+                .filter { FilterListLoader.recommendedFilterNames.contains($0.name) }
+                .map(\.url)
+        )
         let legacyCoreNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
@@ -377,7 +381,7 @@ class AppFilterManager: ObservableObject {
             "Hagezi Pro Mini",
         ]
         for index in filters.indices where !filters[index].isCustom {
-            if recommendedNames.contains(filters[index].name) {
+            if recommendedURLs.contains(filters[index].url) {
                 filters[index].isSelected = true
             } else if legacyCoreNames.contains(filters[index].name) {
                 filters[index].isSelected = false

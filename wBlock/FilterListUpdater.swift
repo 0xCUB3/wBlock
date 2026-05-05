@@ -325,9 +325,12 @@ final class FilterListUpdater: @unchecked Sendable {
             return localData
         }
 
-        if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
-            // Backward compatibility: legacy custom filters were stored as "<name>.txt".
-            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        if let containerURL = loader.getSharedContainerURL() {
+            // Backward compatibility: filters were stored as "<name>.txt" before
+            // built-in downloads gained URL-fingerprinted filenames.
+            let legacyURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.legacyLocalFilename(for: filter)
+            )
             if let legacyData = try? Data(contentsOf: legacyURL) {
                 return legacyData
             }

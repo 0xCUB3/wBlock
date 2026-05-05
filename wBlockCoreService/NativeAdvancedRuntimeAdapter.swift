@@ -33,7 +33,7 @@ enum NativeAdvancedRuntimeAdapter {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .map { try AdvancedRuleBundle.decode(jsonString: $0) }
-        let combined = AdvancedRuleBundle.combine(bundles)
+        let combined = sanitizeForSafariRuntime(AdvancedRuleBundle.combine(bundles))
 
         guard let url = runtimeURL(groupIdentifier: groupIdentifier) else {
             throw CocoaError(.fileNoSuchFile)
@@ -54,6 +54,45 @@ enum NativeAdvancedRuntimeAdapter {
             combined.ruleCount,
             url.path
         )
+    }
+
+    private static func sanitizeForSafariRuntime(_ bundle: AdvancedRuleBundle) -> AdvancedRuleBundle {
+        var sanitized = bundle
+        sanitized.scriptlets = bundle.scriptlets.filter { !isUnsupportedYouTubePlaybackProbe($0) }
+        return sanitized
+    }
+
+    private static func isUnsupportedYouTubePlaybackProbe(_ rule: AdvancedScriptletRule) -> Bool {
+        guard rule.scope.matches(host: "www.youtube.com") else { return false }
+        let name = rule.name.lowercased()
+        let args = rule.args.joined(separator: "\u{1f}")
+
+        // uBlock's Experimental list currently contains broader YouTube playback
+        // probes that cycle several client identities after buffering failures.
+        // They are effective in uBO's exact runtime, but in Safari's page-world
+        // bridge they can keep invalidating googlevideo URLs and cause repeated
+        // 403/reload oscillation. Keep the Quick fixes rules and suppress only
+        // the broader experimental probes.
+        if name == "ubo-trusted-rpnt" || name == "trusted-rpnt" || name == "trusted-replace-node-text" {
+            return args.contains("adunit") &&
+                args.contains("lactmilli") &&
+                args.contains("instream") &&
+                args.contains("eafg") &&
+                args.contains("serverContract")
+        }
+
+        if name == "ubo-trusted-json-edit-xhr-request" || name == "trusted-json-edit-xhr-request" {
+            return args.contains("userAgent*=\"adunit\"") ||
+                args.contains("userAgent*=\"lactmilli\"") ||
+                args.contains("userAgent*=\"instream\"") ||
+                args.contains("userAgent*=\"eafg\"")
+        }
+
+        if name == "ubo-trusted-json-edit-xhr-response" || name == "trusted-json-edit-xhr-response" {
+            return args.contains("minimumPlaybackRate==100")
+        }
+
+        return false
     }
 
     static func clear(groupIdentifier: String) throws {

@@ -37,7 +37,7 @@ enum NativeFilterCompilerAdapter {
         return ConversionResult(
             safariRulesJSON: result.safariRulesJSON,
             safariRulesCount: result.safariRuleCount,
-            advancedRulesText: result.advancedRules.ruleCount > 0 ? try result.advancedRules.jsonString() : nil,
+            advancedRulesText: (result.advancedRules.ruleCount + result.advancedRules.exceptionRuleCount) > 0 ? try result.advancedRules.jsonString() : nil,
             unsupportedRuleCount: result.unsupportedRules.count,
             diagnostics: result.diagnostics
         )

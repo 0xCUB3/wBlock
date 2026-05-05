@@ -141,7 +141,7 @@ public enum FilterDirectivePolicy {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "3"
+    private static let inputSignatureSchemaVersion = "4"
 
     private struct State: Codable {
         var inputSignature: String
@@ -261,8 +261,7 @@ public enum ContentBlockerIncrementalCache {
             return "p|\(fingerprint)"
         }
 
-        guard filter.isCustom else { return "missing" }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        let legacyURL = containerURL.appendingPathComponent(legacyLocalFilename(for: filter))
         if let fingerprint = fileFingerprint(at: legacyURL) {
             return "l|\(fingerprint)"
         }
@@ -298,7 +297,28 @@ public enum ContentBlockerIncrementalCache {
         if filter.isCustom {
             return "custom-\(filter.id.uuidString).txt"
         }
-        return "\(filter.name).txt"
+
+        let digest = SHA256.hash(data: Data(filter.url.absoluteString.utf8))
+        let urlFingerprint = digest.prefix(8).map { String(format: "%02x", $0) }.joined()
+        let prefix = sanitizedFilenameStem(filter.name)
+        return "\(prefix)-\(urlFingerprint).txt"
+    }
+
+    public static func legacyLocalFilename(for filter: FilterList) -> String {
+        "\(filter.name).txt"
+    }
+
+    private static func sanitizedFilenameStem(_ name: String) -> String {
+        let safeName = name
+            .map { character -> Character in
+                if character.isLetter || character.isNumber || character == "-" || character == "_" || character == " " {
+                    return character
+                }
+                return "_"
+            }
+        let prefix = String(String(safeName).prefix(80))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return prefix.isEmpty ? "filter" : prefix
     }
 
     public static func baseRulesFilename(for targetRulesFilename: String) -> String {

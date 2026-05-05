@@ -5,25 +5,55 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
     public var engineTimestamp: Double
     public var css: [AdvancedStyleRule]
     public var extendedCss: [AdvancedStyleRule]
+    public var extendedCssExceptions: [AdvancedStyleRule]
     public var js: [AdvancedStyleRule]
     public var scriptlets: [AdvancedScriptletRule]
+    public var scriptletExceptions: [AdvancedScriptletRule]
 
     public var ruleCount: Int { css.count + extendedCss.count + js.count + scriptlets.count }
+    public var exceptionRuleCount: Int { extendedCssExceptions.count + scriptletExceptions.count }
 
     public init(
         formatVersion: String = "wblock-advanced-rules-v1",
         engineTimestamp: Double = Date().timeIntervalSince1970,
         css: [AdvancedStyleRule] = [],
         extendedCss: [AdvancedStyleRule] = [],
+        extendedCssExceptions: [AdvancedStyleRule] = [],
         js: [AdvancedStyleRule] = [],
-        scriptlets: [AdvancedScriptletRule] = []
+        scriptlets: [AdvancedScriptletRule] = [],
+        scriptletExceptions: [AdvancedScriptletRule] = []
     ) {
         self.formatVersion = formatVersion
         self.engineTimestamp = engineTimestamp
         self.css = css
         self.extendedCss = extendedCss
+        self.extendedCssExceptions = extendedCssExceptions
         self.js = js
         self.scriptlets = scriptlets
+        self.scriptletExceptions = scriptletExceptions
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case formatVersion
+        case engineTimestamp
+        case css
+        case extendedCss
+        case extendedCssExceptions
+        case js
+        case scriptlets
+        case scriptletExceptions
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.formatVersion = try container.decodeIfPresent(String.self, forKey: .formatVersion) ?? "wblock-advanced-rules-v1"
+        self.engineTimestamp = try container.decodeIfPresent(Double.self, forKey: .engineTimestamp) ?? 0
+        self.css = try container.decodeIfPresent([AdvancedStyleRule].self, forKey: .css) ?? []
+        self.extendedCss = try container.decodeIfPresent([AdvancedStyleRule].self, forKey: .extendedCss) ?? []
+        self.extendedCssExceptions = try container.decodeIfPresent([AdvancedStyleRule].self, forKey: .extendedCssExceptions) ?? []
+        self.js = try container.decodeIfPresent([AdvancedStyleRule].self, forKey: .js) ?? []
+        self.scriptlets = try container.decodeIfPresent([AdvancedScriptletRule].self, forKey: .scriptlets) ?? []
+        self.scriptletExceptions = try container.decodeIfPresent([AdvancedScriptletRule].self, forKey: .scriptletExceptions) ?? []
     }
 
     public func jsonString(prettyPrinted: Bool = false) throws -> String {
@@ -40,15 +70,55 @@ public struct AdvancedRuleBundle: Sendable, Equatable, Codable {
     public static func combine(_ bundles: [AdvancedRuleBundle]) -> AdvancedRuleBundle {
         var css: [AdvancedStyleRule] = []
         var extendedCss: [AdvancedStyleRule] = []
+        var extendedCssExceptions: [AdvancedStyleRule] = []
         var js: [AdvancedStyleRule] = []
         var scriptlets: [AdvancedScriptletRule] = []
+        var scriptletExceptions: [AdvancedScriptletRule] = []
         for bundle in bundles {
             css.append(contentsOf: bundle.css)
             extendedCss.append(contentsOf: bundle.extendedCss)
+            extendedCssExceptions.append(contentsOf: bundle.extendedCssExceptions)
             js.append(contentsOf: bundle.js)
             scriptlets.append(contentsOf: bundle.scriptlets)
+            scriptletExceptions.append(contentsOf: bundle.scriptletExceptions)
         }
-        return AdvancedRuleBundle(css: css, extendedCss: extendedCss, js: js, scriptlets: scriptlets)
+        return AdvancedRuleBundle(
+            css: dedupe(css),
+            extendedCss: dedupe(applyStyleExceptions(extendedCss, exceptions: extendedCssExceptions)),
+            extendedCssExceptions: dedupe(extendedCssExceptions),
+            js: dedupe(js),
+            scriptlets: dedupe(applyScriptletExceptions(scriptlets, exceptions: scriptletExceptions)),
+            scriptletExceptions: dedupe(scriptletExceptions)
+        )
+    }
+
+    private static func applyStyleExceptions(_ rules: [AdvancedStyleRule], exceptions: [AdvancedStyleRule]) -> [AdvancedStyleRule] {
+        guard !exceptions.isEmpty else { return rules }
+        let exceptionKeys = Set(exceptions.map(styleKey))
+        return rules.filter { !exceptionKeys.contains(styleKey($0)) }
+    }
+
+    private static func applyScriptletExceptions(_ rules: [AdvancedScriptletRule], exceptions: [AdvancedScriptletRule]) -> [AdvancedScriptletRule] {
+        guard !exceptions.isEmpty else { return rules }
+        let exceptionKeys = Set(exceptions.map(scriptletKey))
+        return rules.filter { !exceptionKeys.contains(scriptletKey($0)) }
+    }
+
+    private static func styleKey(_ rule: AdvancedStyleRule) -> String {
+        [rule.content, rule.scope.ifDomains.joined(separator: "|"), rule.scope.unlessDomains.joined(separator: "|")].joined(separator: "\u{1f}")
+    }
+
+    private static func scriptletKey(_ rule: AdvancedScriptletRule) -> String {
+        [rule.name, rule.args.joined(separator: "\u{1e}"), rule.scope.ifDomains.joined(separator: "|"), rule.scope.unlessDomains.joined(separator: "|")].joined(separator: "\u{1f}")
+    }
+
+    private static func dedupe<T: Hashable>(_ rules: [T]) -> [T] {
+        var seen = Set<T>()
+        var output: [T] = []
+        for rule in rules where seen.insert(rule).inserted {
+            output.append(rule)
+        }
+        return output
     }
 }
 

@@ -251,7 +251,9 @@ extension AppFilterManager {
             )
             try? FileManager.default.removeItem(at: idFileURL)
             // Clean up any legacy name-based file.
-            let legacyFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            let legacyFileURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.legacyLocalFilename(for: filter)
+            )
             try? FileManager.default.removeItem(at: legacyFileURL)
         }
         Task {
@@ -340,7 +342,7 @@ extension AppFilterManager {
             return
         }
 
-        loader.migrateCustomFilterFileIfNeeded(filter)
+        loader.migrateFilterFileIfNeeded(filter)
         guard let destinationURL = loader.localFileURL(for: filter) else {
             statusDescription = LocalizedStrings.text(
                 "Failed to access shared storage.",

@@ -55,22 +55,11 @@ function getCspNonce() {
     }
 }
 
-// Detect sandboxed iframes that do not allow scripts (injection will always fail)
+// Opaque/sandboxed frames commonly throw Safari console access violations when
+// probing frameElement. Avoid touching it; page-world injection cannot work in
+// non-http(s) frames anyway.
 function isSandboxedWithoutScripts() {
-    try {
-        const frameEl = window.frameElement;
-        if (!frameEl) return false;
-        if (!frameEl.getAttribute || !frameEl.hasAttribute || !frameEl.hasAttribute('sandbox')) return false;
-        const sandbox = frameEl.sandbox;
-        if (sandbox && typeof sandbox.contains === 'function') {
-            return !sandbox.contains('allow-scripts');
-        }
-        const attr = String(frameEl.getAttribute('sandbox') || '').trim();
-        if (attr === '') return true;
-        return !attr.split(/\s+/).includes('allow-scripts');
-    } catch (e) {
-        return false;
-    }
+    return location.protocol !== 'http:' && location.protocol !== 'https:';
 }
 
 // Prevent multiple executions of this entire script in the same context

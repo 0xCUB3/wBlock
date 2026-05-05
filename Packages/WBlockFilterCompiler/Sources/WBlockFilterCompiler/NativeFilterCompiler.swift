@@ -77,14 +77,27 @@ public struct NativeFilterCompiler: FilterCompiling {
             }
         }
 
-        let advancedBundle = AdvancedRuleBundle(
-            css: dedupeAdvancedStyleRules(advancedCSSRules),
-            extendedCss: dedupeAdvancedStyleRules(applyAdvancedStyleExceptions(advancedExtendedCSSRules, exceptions: advancedExtendedCSSExceptionRules)),
-            js: dedupeAdvancedStyleRules(advancedJSRules),
-            scriptlets: dedupeAdvancedScriptletRules(applyAdvancedScriptletExceptions(advancedScriptletRules, exceptions: advancedScriptletExceptionRules))
-        )
         let filteredNetworkRules = networkRules.filter { !badfilterIdentities.contains($0.canonicalIdentity) }
         let plannedCosmeticRules = applyCosmeticExceptions(cosmeticRules, exceptions: cosmeticExceptionRules)
+        let runtimeCosmeticRules = plannedCosmeticRules
+            .filter { !$0.ifDomains.isEmpty || !$0.unlessDomains.isEmpty }
+            .map { rule in
+                AdvancedStyleRule(
+                    scope: AdvancedDomainScope(
+                        ifDomains: rule.ifDomains,
+                        unlessDomains: rule.unlessDomains
+                    ),
+                    content: rule.selector
+                )
+            }
+        let advancedBundle = AdvancedRuleBundle(
+            css: dedupeAdvancedStyleRules(advancedCSSRules + runtimeCosmeticRules),
+            extendedCss: dedupeAdvancedStyleRules(applyAdvancedStyleExceptions(advancedExtendedCSSRules, exceptions: advancedExtendedCSSExceptionRules)),
+            extendedCssExceptions: dedupeAdvancedStyleRules(advancedExtendedCSSExceptionRules),
+            js: dedupeAdvancedStyleRules(advancedJSRules),
+            scriptlets: dedupeAdvancedScriptletRules(applyAdvancedScriptletExceptions(advancedScriptletRules, exceptions: advancedScriptletExceptionRules)),
+            scriptletExceptions: dedupeAdvancedScriptletRules(advancedScriptletExceptionRules)
+        )
         let groupedCosmeticRules = groupCosmeticRules(plannedCosmeticRules)
         let safariRules = planSafariRules(networkRules: filteredNetworkRules, cosmeticRules: groupedCosmeticRules)
         let safariJSON = configuration.target == .diagnosticsOnly ? "[]" : try SafariRuleWriter.write(safariRules)
