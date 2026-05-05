@@ -115,6 +115,8 @@ import Testing
     #expect(result.unsupportedRules.isEmpty)
     #expect(dnr.count == 4)
     #expect(dnr[0].action.type == "modifyHeaders")
+    #expect(dnr[0].condition.urlFilter == "||headers.example^")
+    #expect(dnr[0].condition.regexFilter == nil)
     #expect(dnr[0].action.responseHeaders == [AdvancedDNRModifyHeader(header: "set-cookie", operation: "remove")])
     #expect(dnr[1].action.requestHeaders == [AdvancedDNRModifyHeader(header: "cookie", operation: "remove")])
     #expect(dnr[2].action.responseHeaders == [AdvancedDNRModifyHeader(header: "content-security-policy", operation: "set", value: "script-src 'none'")])
@@ -138,6 +140,8 @@ import Testing
     #expect(result.safariRuleCount == 0)
     #expect(result.unsupportedRules.isEmpty)
     #expect(matched.dnrRules.count == 1)
+    #expect(matched.dnrRules[0].condition.urlFilter == "||cdn.example/ad.js")
+    #expect(matched.dnrRules[0].condition.regexFilter == nil)
     #expect(matched.dnrRules[0].action.redirect?.extensionPath == "/web_accessible_resources/noop.js")
 }
 

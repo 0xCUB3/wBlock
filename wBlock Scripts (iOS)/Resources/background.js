@@ -5750,6 +5750,32 @@ function logDNRSyncDiagnostic(fields) {
   }).catch(() => {});
 }
 
+function invalidDynamicRuleIndex(error) {
+  const text = error && error.message ? error.message : String(error || '');
+  const match = text.match(/rule_at_index_(\d+)/i);
+  return match ? Number.parseInt(match[1], 10) : -1;
+}
+
+async function updateDynamicRulesSkippingInvalid(removeRuleIds, rules) {
+  const candidates = rules.slice();
+  const rejected = [];
+  for (;;) {
+    try {
+      await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: candidates });
+      return { rules: candidates, rejected };
+    } catch (error) {
+      const index = invalidDynamicRuleIndex(error);
+      if (!Number.isInteger(index) || index < 0 || index >= candidates.length) throw error;
+      const rejectedRule = candidates.splice(index, 1)[0];
+      rejected.push({ id: rejectedRule && rejectedRule.id, reason: error && error.message ? error.message : String(error) });
+      if (candidates.length === 0) {
+        await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: [] });
+        return { rules: candidates, rejected };
+      }
+    }
+  }
+}
+
 async function syncDynamicDNRRules(configuration) {
   const timestamp = configuration && configuration.engineTimestamp || 0;
   if (timestamp === dnrRulesTimestamp) return;
@@ -5765,9 +5791,13 @@ async function syncDynamicDNRRules(configuration) {
     } else {
       removeRuleIds = Array.from({ length: WBLOCK_DNR_DYNAMIC_ID_MAX - WBLOCK_DNR_DYNAMIC_ID_MIN + 1 }, (_, i) => WBLOCK_DNR_DYNAMIC_ID_MIN + i);
     }
-    await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules });
+    const result = await updateDynamicRulesSkippingInvalid(removeRuleIds, rules);
     dnrRulesTimestamp = timestamp;
-    logDNRSyncDiagnostic({ outcome: 'success', rules: rules.length, removed: removeRuleIds.length, timestamp });
+    if (result.rejected.length) {
+      logDNRSyncDiagnostic({ outcome: 'success_partial', rules: result.rules.length, rejected: result.rejected.length, rejectedIds: result.rejected.map(rule => rule.id).join(','), removed: removeRuleIds.length, timestamp });
+    } else {
+      logDNRSyncDiagnostic({ outcome: 'success', rules: result.rules.length, removed: removeRuleIds.length, timestamp });
+    }
   } catch (error) {
     console.warn('[wBlock] Dynamic DNR sync failed:', error);
     logDNRSyncDiagnostic({ outcome: 'failure', rules: rules.length, reason: error && error.message ? error.message : String(error) });

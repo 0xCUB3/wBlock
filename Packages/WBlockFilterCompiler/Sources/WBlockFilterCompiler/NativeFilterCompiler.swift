@@ -369,6 +369,14 @@ public struct NativeFilterCompiler: FilterCompiling {
     }
 
     private func dnrCondition(for rule: NetworkRule) -> AdvancedDNRCondition? {
+        if let urlFilter = dnrURLFilter(for: rule) {
+            return AdvancedDNRCondition(
+                urlFilter: urlFilter,
+                resourceTypes: dnrResourceTypes(for: rule),
+                isUrlFilterCaseSensitive: rule.matchCase ? true : nil
+            )
+        }
+
         let urlRegex: String
         if rule.pattern == "*", !rule.toDomains.isEmpty {
             urlRegex = dnrRegexForDomains(rule.toDomains)
@@ -381,6 +389,19 @@ public struct NativeFilterCompiler: FilterCompiling {
             resourceTypes: dnrResourceTypes(for: rule),
             isUrlFilterCaseSensitive: rule.matchCase ? true : nil
         )
+    }
+
+    private func dnrURLFilter(for rule: NetworkRule) -> String? {
+        let pattern = rule.pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !pattern.isEmpty else { return nil }
+
+        // Dynamic DNR's urlFilter uses the same adblock-style anchors (*, ^, |,
+        // ||) as uBlock network filters. Prefer it over regexFilter because
+        // Safari rejects otherwise-valid translated regex features such as
+        // non-capturing groups in separator matches.
+        if pattern == "*" { return rule.toDomains.isEmpty ? "*" : nil }
+        if pattern.hasPrefix("/"), pattern.hasSuffix("/"), pattern.count > 1 { return nil }
+        return pattern
     }
 
     private func dnrRegexForDomains(_ domains: [String]) -> String {
