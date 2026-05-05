@@ -29501,6 +29501,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     var reIncludes = extra.includes || extra.condition ? patternToRegex(extra.includes || extra.condition, "ms", false) : null;
     var reExcludes = extra.excludes ? patternToRegex(extra.excludes, "ms", false) : null;
     var sedCount = extra.sedCount || 0;
+    var textContentFactory = (function () {
+      var out = { createScript: function (s) { return s; } };
+      var tt = self.trustedTypes;
+      if (tt && typeof tt.getPropertyType === "function" && tt.getPropertyType("script", "textContent") === "TrustedScript" && typeof tt.createPolicy === "function") {
+        try {
+          return tt.createPolicy("wblock-ubo-trusted-replace-node-text-" + Math.random().toString(36).slice(2), out);
+        } catch (e) {
+        }
+      }
+      return out;
+    })();
     var observer;
     function markDone() {
       if (source.uniqueId) {
@@ -29537,7 +29548,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return true;
       }
       rePattern.lastIndex = 0;
-      node.textContent = pattern !== "" ? before.replace(rePattern, replacement) : replacement;
+      var after = pattern !== "" ? before.replace(rePattern, replacement) : replacement;
+      node.textContent = node.nodeName === "SCRIPT" ? textContentFactory.createScript(after) : after;
       markDone();
       return sedCount === 0 || (sedCount -= 1) !== 0;
     }
