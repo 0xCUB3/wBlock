@@ -921,7 +921,7 @@ struct OnboardingView: View {
         switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
         case "minimal":
             for i in updatedFilters.indices {
-                updatedFilters[i].isSelected = updatedFilters[i].name == "AdGuard Base Filter"
+                updatedFilters[i].isSelected = updatedFilters[i].name == FilterListLoader.minimalFilterName
             }
         default:
             // Disable all filters first

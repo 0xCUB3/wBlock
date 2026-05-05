@@ -292,6 +292,10 @@ class AppFilterManager: ObservableObject {
         }
 
         migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
+        let appliedNativeExperimentalDefaults = applyNativeCompilerExperimentalDefaultsIfNeeded(
+            to: &migratedFilterLists,
+            defaultLists: defaultLists
+        )
 
         filterLists = migratedFilterLists
         markCurrentStateApplied()
@@ -309,7 +313,7 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters {
+        if hasURLMigrations || addedDefaultFilters || appliedNativeExperimentalDefaults {
             Task { await self.saveFilterLists() }
         }
 
@@ -345,6 +349,43 @@ class AppFilterManager: ObservableObject {
             close(disabledSitesDirectoryFileDescriptor)
             disabledSitesDirectoryFileDescriptor = -1
         }
+    }
+
+    private func applyNativeCompilerExperimentalDefaultsIfNeeded(
+        to filters: inout [FilterList],
+        defaultLists: [FilterList]
+    ) -> Bool {
+        guard FilterListLoader.isNativeCompilerExperimentalEnabled else { return false }
+        let defaultsKey = "wBlockDidApplyNativeCompilerExperimentalDefaultLists"
+        guard !UserDefaults.standard.bool(forKey: defaultsKey) else { return false }
+
+        let recommendedNames = FilterListLoader.recommendedFilterNames
+        let legacyCoreNames: Set<String> = [
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
+            "EasyPrivacy",
+            "Online Security Filter",
+            "Peter Lowe's Blocklist",
+            "d3Host List by d3ward",
+            "AdGuard Cookie Notices",
+            "AdGuard Popups",
+            "AdGuard Mobile App Banners",
+            "AdGuard Other Annoyances",
+            "AdGuard Widgets",
+            "Anti-Adblock List",
+            "AdGuard Mobile Filter",
+            "Hagezi Pro Mini",
+        ]
+        for index in filters.indices where !filters[index].isCustom {
+            if recommendedNames.contains(filters[index].name) {
+                filters[index].isSelected = true
+            } else if legacyCoreNames.contains(filters[index].name) {
+                filters[index].isSelected = false
+            }
+        }
+
+        UserDefaults.standard.set(true, forKey: defaultsKey)
+        return true
     }
 
     private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {

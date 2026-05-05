@@ -713,11 +713,7 @@ extension AppFilterManager {
     // MARK: - Static helpers
 
     nonisolated private static func useNativeFilterCompilerExperimental() -> Bool {
-        let environment = ProcessInfo.processInfo.environment
-        if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "1" {
-            return true
-        }
-        return UserDefaults.standard.bool(forKey: "wBlockUseNativeFilterCompilerExperimental")
+        FilterListLoader.isNativeCompilerExperimentalEnabled
     }
 
     /// Memory-efficient conversion that combines filter files using streaming I/O

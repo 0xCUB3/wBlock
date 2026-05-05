@@ -9,8 +9,41 @@ import Foundation
 import wBlockCoreService
 
 class FilterListLoader {
+    static let nativeCompilerExperimentalDefaultsFlag = "wBlockUseNativeFilterCompilerExperimental"
+
+    static var isNativeCompilerExperimentalEnabled: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "1" {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: nativeCompilerExperimentalDefaultsFlag)
+    }
+
+    static var minimalFilterName: String {
+        isNativeCompilerExperimentalEnabled ? "uBlock filters – Ads" : "AdGuard Base Filter"
+    }
+
+    static var recommendedFilterNames: Set<String> {
+        if isNativeCompilerExperimentalEnabled {
+            return nativeCompilerRecommendedFilterNames
+        }
+        return legacyRecommendedFilterNames
+    }
+
+    private static let nativeCompilerRecommendedFilterNames: Set<String> = [
+        "uBlock filters – Ads",
+        "uBlock filters – Badware risks",
+        "uBlock filters – Privacy",
+        "uBlock filters – Unbreak",
+        "uBlock filters – Quick fixes",
+        "EasyList",
+        "EasyPrivacy",
+        "Online Malicious URL Blocklist",
+        "Peter Lowe’s Ad and tracking server list",
+    ]
+
     #if os(macOS)
-        static let recommendedFilterNames: Set<String> = [
+        private static let legacyRecommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
@@ -24,7 +57,7 @@ class FilterListLoader {
             "Anti-Adblock List",
         ]
     #else
-        static let recommendedFilterNames: Set<String> = [
+        private static let legacyRecommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
@@ -105,7 +138,125 @@ class FilterListLoader {
 
     /// Returns the default filter lists without any user customizations
     func getDefaultFilterLists() -> [FilterList] {
+        if Self.isNativeCompilerExperimentalEnabled {
+            return createNativeCompilerDefaultFilterLists()
+        }
         return createDefaultFilterLists()
+    }
+
+    private func makeNativeFilter(
+        name: String,
+        url: String,
+        category: FilterListCategory,
+        isSelected: Bool = false,
+        description: String = "",
+        languages: [String] = [],
+        trustLevel: String? = nil
+    ) -> FilterList {
+        FilterList(
+            id: UUID(),
+            name: name,
+            url: URL(string: url)!,
+            category: category,
+            isSelected: isSelected,
+            description: description,
+            languages: languages,
+            trustLevel: trustLevel
+        )
+    }
+
+    /// Creates a uBlock Origin dashboard-style catalog for the native compiler experiment.
+    /// URLs are taken from uBO's assets.json / Dashboard: Filter lists page rather than
+    /// Safari-optimized AdGuard registry endpoints, so the native compiler sees the same
+    /// syntax family it is meant to support.
+    private func createNativeCompilerDefaultFilterLists() -> [FilterList] {
+        var filterLists = createDefaultFilterLists()
+        let replacedCoreNames: Set<String> = [
+            "AdGuard Base Filter",
+            "AdGuard Tracking Protection Filter",
+            "AdGuard Cookie Notices",
+            "AdGuard Popups",
+            "AdGuard Mobile App Banners",
+            "AdGuard Other Annoyances",
+            "AdGuard Widgets",
+            "AdGuard Social Media Filter",
+            "Fanboy's Annoyances Filter",
+            "Fanboy's Social Blocking List",
+            "Fanboy's Anti-AI Suggestions",
+            "Online Security Filter",
+            "Peter Lowe's Blocklist",
+            "Anti-Adblock List",
+            "AdGuard Experimental Filter",
+            "EasyPrivacy",
+            "d3Host List by d3ward",
+            "Hagezi Pro Mini",
+            "AdGuard Mobile Filter",
+        ]
+        filterLists.removeAll { replacedCoreNames.contains($0.name) }
+
+        let nativeCore: [FilterList] = [
+            makeNativeFilter(name: "uBlock filters – Ads", url: "https://ublockorigin.github.io/uAssets/filters/filters.txt", category: .ads),
+            makeNativeFilter(name: "uBlock filters – Badware risks", url: "https://ublockorigin.github.io/uAssets/filters/badware.txt", category: .security),
+            makeNativeFilter(name: "uBlock filters – Privacy", url: "https://ublockorigin.github.io/uAssets/filters/privacy.txt", category: .privacy),
+            makeNativeFilter(name: "uBlock filters – Unbreak", url: "https://ublockorigin.github.io/uAssets/filters/unbreak.txt", category: .ads),
+            makeNativeFilter(name: "uBlock filters – Quick fixes", url: "https://ublockorigin.github.io/uAssets/filters/quick-fixes.txt", category: .ads),
+            makeNativeFilter(name: "EasyList", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist.txt", category: .ads),
+            makeNativeFilter(name: "EasyPrivacy", url: "https://ublockorigin.github.io/uAssets/thirdparties/easyprivacy.txt", category: .privacy),
+            makeNativeFilter(name: "Online Malicious URL Blocklist", url: "https://malware-filter.gitlab.io/urlhaus-filter/urlhaus-filter-ag-online.txt", category: .security),
+            makeNativeFilter(name: "Peter Lowe’s Ad and tracking server list", url: "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext", category: .annoyances),
+            makeNativeFilter(name: "uBlock filters – Annoyances", url: "https://ublockorigin.github.io/uAssets/filters/annoyances.txt", category: .annoyances),
+            makeNativeFilter(name: "uBlock filters – Cookie Notices", url: "https://ublockorigin.github.io/uAssets/filters/annoyances-cookies.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – Cookie Notices", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-cookies.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – Social Widgets", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-social.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – Other Annoyances", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-annoyances.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – Chat Widgets", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-chat.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – Newsletter Notices", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-newsletters.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – Notifications", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-notifications.txt", category: .annoyances),
+            makeNativeFilter(name: "EasyList – AI Widgets", url: "https://ublockorigin.github.io/uAssets/thirdparties/easylist-ai.txt", category: .annoyances),
+            makeNativeFilter(name: "AdGuard/uBO – URL Tracking Protection", url: "https://ublockorigin.github.io/uAssets/filters/privacy-removeparam.txt", category: .privacy),
+            makeNativeFilter(name: "Block Outsider Intrusion into LAN", url: "https://ublockorigin.github.io/uAssets/filters/lan-block.txt", category: .security),
+            makeNativeFilter(name: "AdGuard – Ads", url: "https://filters.adtidy.org/extension/ublock/filters/2_without_easylist.txt", category: .ads),
+            makeNativeFilter(name: "AdGuard – Cookie Notices", url: "https://filters.adtidy.org/extension/ublock/filters/18.txt", category: .annoyances),
+            makeNativeFilter(name: "AdGuard – Social Widgets", url: "https://filters.adtidy.org/extension/ublock/filters/4.txt", category: .annoyances),
+            makeNativeFilter(name: "AdGuard – Popup Overlays", url: "https://filters.adtidy.org/extension/ublock/filters/19.txt", category: .annoyances),
+            makeNativeFilter(name: "AdGuard – Mobile App Banners", url: "https://filters.adtidy.org/extension/ublock/filters/20.txt", category: .annoyances),
+            makeNativeFilter(name: "AdGuard – Other Annoyances", url: "https://filters.adtidy.org/extension/ublock/filters/21.txt", category: .annoyances),
+            makeNativeFilter(name: "AdGuard – Widgets", url: "https://filters.adtidy.org/extension/ublock/filters/22.txt", category: .annoyances),
+            makeNativeFilter(name: "uBlock filters – Experimental", url: "https://ublockorigin.github.io/uAssets/filters/experimental.txt", category: .experimental),
+        ]
+
+        filterLists.insert(contentsOf: nativeCore, at: 0)
+        #if os(iOS)
+            filterLists.insert(
+                makeNativeFilter(name: "AdGuard – Mobile Ads", url: "https://filters.adtidy.org/extension/ublock/filters/11.txt", category: .ads),
+                at: min(nativeCore.count, filterLists.count)
+            )
+        #endif
+
+        let ublockRegionalURLByName: [String: String] = [
+            "AdGuard Chinese filter": "https://filters.adtidy.org/extension/ublock/filters/224.txt",
+            "AdGuard Dutch filter": "https://filters.adtidy.org/extension/ublock/filters/8.txt",
+            "AdGuard French filter": "https://filters.adtidy.org/extension/ublock/filters/16.txt",
+            "AdGuard German filter": "https://easylist.to/easylistgermany/easylistgermany.txt",
+            "AdGuard Japanese filter": "https://filters.adtidy.org/extension/ublock/filters/7.txt",
+            "AdGuard Russian filter": "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt",
+            "AdGuard Spanish/Portuguese filter": "https://filters.adtidy.org/extension/ublock/filters/9.txt",
+            "AdGuard Turkish filter": "https://filters.adtidy.org/extension/ublock/filters/13.txt",
+            "AdGuard Ukrainian filter": "https://filters.adtidy.org/extension/ublock/filters/23.txt",
+            "ABPVN List": "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt",
+            "Hungarian filter": "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-ublock.txt",
+            "List-KR": "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt",
+        ]
+        for index in filterLists.indices {
+            if let replacementURL = ublockRegionalURLByName[filterLists[index].name] {
+                filterLists[index].url = URL(string: replacementURL)!
+                filterLists[index].etag = nil
+                filterLists[index].serverLastModified = nil
+            }
+            filterLists[index].isSelected = Self.nativeCompilerRecommendedFilterNames.contains(filterLists[index].name)
+        }
+
+        return filterLists
     }
 
     /// Creates the default set of filter lists
