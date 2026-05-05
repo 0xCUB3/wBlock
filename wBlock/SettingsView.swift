@@ -203,6 +203,12 @@ struct SettingsView: View {
         }
 
         NavigationLink {
+            SafariDiagnosticsView()
+        } label: {
+            Label("Safari Diagnostics", systemImage: "stethoscope")
+        }
+
+        NavigationLink {
             WhitelistManagerView(filterManager: filterManager)
         } label: {
             Label("Manage Whitelist", systemImage: "list.bullet")

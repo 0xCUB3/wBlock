@@ -5746,6 +5746,13 @@ function normalizeDynamicDNRRules(rules) {
   return normalized;
 }
 
+function logDNRSyncDiagnostic(fields) {
+  browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+    type: 'logExtensionDiagnostic',
+    fields: { source: 'background', event: 'dnr_sync', ...fields }
+  }).catch(() => {});
+}
+
 async function syncDynamicDNRRules(configuration) {
   const timestamp = configuration && configuration.engineTimestamp || 0;
   if (timestamp === dnrRulesTimestamp) return;
@@ -5763,8 +5770,10 @@ async function syncDynamicDNRRules(configuration) {
     }
     await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules });
     dnrRulesTimestamp = timestamp;
+    logDNRSyncDiagnostic({ outcome: 'success', rules: rules.length, removed: removeRuleIds.length, timestamp });
   } catch (error) {
     console.warn('[wBlock] Dynamic DNR sync failed:', error);
+    logDNRSyncDiagnostic({ outcome: 'failure', rules: rules.length, reason: error && error.message ? error.message : String(error) });
   }
 }
 
