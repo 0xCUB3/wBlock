@@ -23904,6 +23904,140 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.log(e);
     }
   }
+  function uboTrustedReplaceNodeText(source, args) {
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId && Window.prototype.toString[uniqueIdentifier] === flag) {
+      return;
+    }
+    args = Array.isArray(args) ? args : [];
+    var nodeName = args[0] || "";
+    var pattern = args[1] || "";
+    var replacement = args[2] || "";
+    function escapeRegexChars(text) {
+      return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+    function patternToRegex(value, flags, verbatim) {
+      value = String(value || "");
+      if (value === "") {
+        return /^/;
+      }
+      var match = /^\/(.+)\/([gimsu]*)$/.exec(value);
+      if (match) {
+        try {
+          return new RegExp(match[1], match[2] || flags || undefined);
+        } catch (e) {
+          return /^/;
+        }
+      }
+      var escaped = escapeRegexChars(value);
+      return new RegExp(verbatim ? "^" + escaped + "$" : escaped, flags);
+    }
+    function extraArgs(values, offset) {
+      var out = Object.create(null);
+      for (var i = offset; i < values.length; i += 2) {
+        var key = values[i];
+        if (!key) {
+          continue;
+        }
+        var rawValue = values[i + 1];
+        out[key] = /^\d+$/.test(rawValue) ? parseInt(rawValue, 10) : rawValue;
+      }
+      return out;
+    }
+    var extra = extraArgs(args, 3);
+    var reNodeName = patternToRegex(nodeName, "i", true);
+    var rePattern = patternToRegex(pattern, "gms", false);
+    var reIncludes = extra.includes || extra.condition ? patternToRegex(extra.includes || extra.condition, "ms", false) : null;
+    var reExcludes = extra.excludes ? patternToRegex(extra.excludes, "ms", false) : null;
+    var sedCount = extra.sedCount || 0;
+    var observer;
+    function markDone() {
+      if (source.uniqueId) {
+        Window.prototype.toString[uniqueIdentifier] = flag;
+      }
+    }
+    function stop(takeRecord) {
+      if (observer && takeRecord !== false) {
+        handleMutations(observer.takeRecords());
+      }
+      if (observer) {
+        observer.disconnect();
+      }
+    }
+    function handleNode(node) {
+      if (!node || reNodeName.test(node.nodeName) === false) {
+        return true;
+      }
+      var before = node.textContent || "";
+      if (reIncludes) {
+        reIncludes.lastIndex = 0;
+        if (reIncludes.test(before) === false) {
+          return true;
+        }
+      }
+      if (reExcludes) {
+        reExcludes.lastIndex = 0;
+        if (reExcludes.test(before)) {
+          return true;
+        }
+      }
+      rePattern.lastIndex = 0;
+      if (rePattern.test(before) === false) {
+        return true;
+      }
+      rePattern.lastIndex = 0;
+      node.textContent = pattern !== "" ? before.replace(rePattern, replacement) : replacement;
+      markDone();
+      return sedCount === 0 || (sedCount -= 1) !== 0;
+    }
+    function handleMutations(mutations) {
+      for (var i = 0; i < mutations.length; i += 1) {
+        var addedNodes = mutations[i].addedNodes || [];
+        for (var j = 0; j < addedNodes.length; j += 1) {
+          if (handleNode(addedNodes[j])) {
+            continue;
+          }
+          stop(false);
+          return;
+        }
+      }
+    }
+    observer = new MutationObserver(handleMutations);
+    observer.observe(document, { childList: true, subtree: true });
+    if (document.documentElement) {
+      var treeWalker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+      for (;;) {
+        var node = treeWalker.nextNode();
+        if (node === null) {
+          break;
+        }
+        if (node === document.currentScript) {
+          continue;
+        }
+        if (handleNode(node)) {
+          continue;
+        }
+        stop();
+        return;
+      }
+    }
+    if (extra.stay) {
+      return;
+    }
+    var quitAfter = extra.quitAfter || 0;
+    if (quitAfter !== 0) {
+      setTimeout(function () { return stop(); }, quitAfter);
+    } else if (document.readyState === "complete" || document.readyState === "interactive") {
+      setTimeout(function () { return stop(); }, 1);
+    } else {
+      document.addEventListener("readystatechange", function () {
+        if (document.readyState === "interactive") {
+          stop();
+        }
+      }, { once: true });
+    }
+  }
   function uboNativeSafeNoop(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -24443,7 +24577,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-spoof-css": spoofCSS,
     "ubo-fingerprint2": Fingerprintjs2,
     "ubo-prevent-xhr": preventXHR,
-    "ubo-rpnt": uboNativeSafeNoop,
+    "ubo-rpnt": uboTrustedReplaceNodeText,
     "ubo-trusted-click-element": trustedClickElement,
     "ubo-trusted-create-element": trustedCreateElement,
     "ubo-trusted-dispatch-event": trustedDispatchEvent,
@@ -24455,7 +24589,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "ubo-trusted-replace-node-text": trustedReplaceNodeText,
     "ubo-trusted-replace-outbound-text": trustedReplaceOutboundText,
     "ubo-trusted-replace-xhr-response": trustedReplaceXhrResponse,
-    "ubo-trusted-rpnt": uboNativeSafeNoop,
+    "ubo-trusted-rpnt": uboTrustedReplaceNodeText,
     "ubo-trusted-set": trustedSetConstant,
     "ubo-trusted-set-attr": trustedSetAttr,
     "ubo-trusted-set-constant": trustedSetConstant,
