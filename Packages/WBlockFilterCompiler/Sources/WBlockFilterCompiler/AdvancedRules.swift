@@ -258,6 +258,7 @@ enum AdvancedRuleParser {
         selector.contains(":matches-css") ||
         selector.contains(":matches-attr") ||
         selector.contains(":matches-property") ||
+        selector.contains(":style(") ||
         selector.contains(":has(") ||
         selector.contains(":remove()")
     }

@@ -30,6 +30,21 @@ import Testing
     #expect(other.scriptlets == [AdvancedScriptlet(name: "ubo-aopr", args: ["adBlockDetected"])])
 }
 
+@Test func styleActionCosmeticsCompileToAdvancedRuntimeOnly() throws {
+    let source = FilterSource(
+        identifier: "style-action",
+        displayName: "Style action",
+        text: "example.com##body:style(overflow: auto !important;)"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.proceduralCosmetics)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+
+    #expect(result.safariRuleCount == 0)
+    #expect(result.advancedRules.extendedCss.map(\.content) == ["body:style(overflow: auto !important;)"])
+}
+
 @Test func advancedExceptionsRemoveExactMatchingRules() throws {
     let source = FilterSource(
         identifier: "advanced-exceptions",

@@ -11,6 +11,9 @@ import CryptoKit
 import Foundation
 import SafariServices
 internal import ZIPFoundation
+#if canImport(Darwin)
+import Darwin
+#endif
 import os.log
 
 /// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
@@ -144,19 +147,15 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         case .failure(let error):
             // WKErrorDomain error 6 is a common error when the content blocker
             // cannot access the blocker list file.
-            if error.localizedDescription.contains("WKErrorDomain error 6") {
-                os_log(
-                    .error,
-                    "Failed to reload content blocker, could not access blocker list file: %@",
-                    error.localizedDescription
-                )
-            } else {
-                os_log(
-                    .error,
-                    "Failed to reload content blocker: %@",
-                    error.localizedDescription
-                )
-            }
+            let nsError = error as NSError
+            os_log(
+                .error,
+                "Failed to reload content blocker: domain=%@ code=%d description=%@ userInfo=%@",
+                nsError.domain,
+                nsError.code,
+                error.localizedDescription,
+                String(describing: nsError.userInfo)
+            )
         }
 
         return result
@@ -984,6 +983,7 @@ extension ContentBlockerService {
                 return
             }
             try data.write(to: sharedFileURL, options: .atomic)
+            normalizeBlockerListFileForSafari(sharedFileURL)
             os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
         } catch {
             os_log(
@@ -993,6 +993,22 @@ extension ContentBlockerService {
                 error.localizedDescription
             )
         }
+    }
+
+    private static func normalizeBlockerListFileForSafari(_ url: URL) {
+        try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        #if canImport(Darwin)
+        let attributesToRemove = [
+            "com.apple.quarantine",
+            "com.apple.provenance",
+        ]
+        url.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return }
+            for attribute in attributesToRemove {
+                _ = removexattr(path, attribute, 0)
+            }
+        }
+        #endif
     }
 
     /// Creates a ZIP archive containing Safari content blocker rules and advanced rules.

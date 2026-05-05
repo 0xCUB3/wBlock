@@ -33,7 +33,8 @@ public struct NativeFilterCompiler: FilterCompiling {
                 diagnostics.classifiedRules[kind, default: 0] += 1
 
                 let advancedRule = AdvancedRuleParser.parse(line)
-                if let advancedRule, advancedRuleIsEnabled(advancedRule, configuration: configuration) {
+                let advancedRuleEnabled = advancedRule.map { advancedRuleIsEnabled($0, configuration: configuration) } ?? false
+                if let advancedRule, advancedRuleEnabled {
                     switch advancedRule {
                     case .css(let rule):
                         advancedCSSRules.append(rule)
@@ -48,6 +49,7 @@ public struct NativeFilterCompiler: FilterCompiling {
                     case .scriptletException(let rule):
                         advancedScriptletExceptionRules.append(rule)
                     }
+                    continue
                 }
 
                 switch RuleParser.parse(line, configuration: configuration) {
@@ -68,7 +70,7 @@ public struct NativeFilterCompiler: FilterCompiling {
                 case .cosmeticException(let rule):
                     cosmeticExceptionRules.append(rule)
                 case .unsupported(let reason):
-                    if advancedRule == nil || !advancedRuleIsEnabled(advancedRule!, configuration: configuration) {
+                    if !advancedRuleEnabled {
                         unsupportedRules.append(unsupportedRule(line: line, reason: reason))
                     }
                 }
@@ -281,8 +283,28 @@ public struct NativeFilterCompiler: FilterCompiling {
         rules.append(rule)
     }
 
+    private func safariDomainConditions(ifDomains: [String], unlessDomains: [String]) -> (ifDomain: [String]?, unlessDomain: [String]?) {
+        if ifDomains.isEmpty {
+            return (nil, unlessDomains.isEmpty ? nil : unlessDomains)
+        }
+        if unlessDomains.isEmpty {
+            return (ifDomains, nil)
+        }
+
+        // Safari content blocker triggers cannot contain both if-domain and unless-domain.
+        // Keep the positive scope to avoid accidentally broadening the rule; exact exception
+        // parity for mixed scopes needs a later split/ignore-previous-rules planner.
+        let excluded = Set(unlessDomains)
+        let filteredIfDomains = ifDomains.filter { !excluded.contains($0) }
+        return (filteredIfDomains.isEmpty ? nil : filteredIfDomains, nil)
+    }
+
     private func safariRule(for networkRule: NetworkRule) -> SafariContentBlockerRule {
-        SafariContentBlockerRule(
+        let domains = safariDomainConditions(
+            ifDomains: networkRule.ifDomains,
+            unlessDomains: networkRule.unlessDomains
+        )
+        return SafariContentBlockerRule(
             action: SafariAction(
                 type: networkRule.isException ? .ignorePreviousRules : safariActionType(for: networkRule.action),
                 selector: nil
@@ -292,8 +314,8 @@ public struct NativeFilterCompiler: FilterCompiling {
                 urlFilterIsCaseSensitive: networkRule.matchCase ? true : nil,
                 resourceType: networkRule.resourceTypes.isEmpty ? nil : Array(networkRule.resourceTypes),
                 loadType: networkRule.loadType.map { [$0] },
-                ifDomain: networkRule.ifDomains.isEmpty ? nil : networkRule.ifDomains,
-                unlessDomain: networkRule.unlessDomains.isEmpty ? nil : networkRule.unlessDomains
+                ifDomain: domains.ifDomain,
+                unlessDomain: domains.unlessDomain
             )
         )
     }
@@ -310,15 +332,19 @@ public struct NativeFilterCompiler: FilterCompiling {
     }
 
     private func safariRule(for cosmeticRule: CosmeticRule) -> SafariContentBlockerRule {
-        SafariContentBlockerRule(
+        let domains = safariDomainConditions(
+            ifDomains: cosmeticRule.ifDomains,
+            unlessDomains: cosmeticRule.unlessDomains
+        )
+        return SafariContentBlockerRule(
             action: SafariAction(type: .cssDisplayNone, selector: cosmeticRule.selector),
             trigger: SafariTrigger(
                 urlFilter: ".*",
                 urlFilterIsCaseSensitive: nil,
                 resourceType: nil,
                 loadType: nil,
-                ifDomain: cosmeticRule.ifDomains.isEmpty ? nil : cosmeticRule.ifDomains,
-                unlessDomain: cosmeticRule.unlessDomains.isEmpty ? nil : cosmeticRule.unlessDomains
+                ifDomain: domains.ifDomain,
+                unlessDomain: domains.unlessDomain
             )
         )
     }
