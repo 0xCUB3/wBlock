@@ -5726,6 +5726,29 @@ const sendQueuedNativeMessage = request => {
 
 const cacheKey = (url, topUrl) => `${url}#${topUrl || ''}`;
 
+function hasDNRDomainScope(condition) {
+  return Boolean(
+    condition && (
+      condition.requestDomains ||
+      condition.excludedRequestDomains ||
+      condition.initiatorDomains ||
+      condition.excludedInitiatorDomains
+    )
+  );
+}
+
+function isUnsafeBroadDNRRedirect(rule) {
+  const redirect = rule && rule.action && rule.action.redirect;
+  const condition = rule && rule.condition;
+  return Boolean(
+    redirect &&
+    redirect.extensionPath &&
+    condition &&
+    condition.urlFilter === '*' &&
+    !hasDNRDomainScope(condition)
+  );
+}
+
 function normalizeDynamicDNRRules(rules) {
   if (!Array.isArray(rules)) return [];
   const normalized = [];
@@ -5733,6 +5756,7 @@ function normalizeDynamicDNRRules(rules) {
   for (const rule of rules) {
     if (!rule || typeof rule !== 'object') continue;
     if (!rule.action || !rule.condition) continue;
+    if (isUnsafeBroadDNRRedirect(rule)) continue;
     const copy = JSON.parse(JSON.stringify(rule));
     // Safari rejects safari-web-extension:// URLs in DNR redirect.url.
     // Keep extensionPath intact so WebKit can resolve the packaged resource.

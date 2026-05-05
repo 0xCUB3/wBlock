@@ -147,6 +147,22 @@ import Testing
     #expect(matched.dnrRules[0].action.redirect?.extensionPath == "/web_accessible_resources/noop.js")
 }
 
+@Test func broadResourceRedirectRulesDoNotCompileToDynamicDNR() throws {
+    let source = FilterSource(
+        identifier: "broad-redirect",
+        displayName: "Broad Redirect",
+        text: "*$script,redirect=noopjs"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+    configuration.enabledCapabilities.insert(.redirects)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let dnr = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "example.com").dnrRules
+
+    #expect(dnr.isEmpty)
+}
+
 @Test func rawRegexNetworkRulesDoNotCompileToDynamicDNR() throws {
     let source = FilterSource(
         identifier: "regex-dnr",

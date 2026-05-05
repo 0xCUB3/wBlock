@@ -329,7 +329,8 @@ public struct NativeFilterCompiler: FilterCompiling {
     private func dnrRedirectRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
         guard let resource = rule.redirectResource,
               let extensionPath = extensionRedirectPath(for: resource),
-              let condition = dnrCondition(for: rule) else { return nil }
+              let condition = dnrCondition(for: rule),
+              !isUnsafeBroadDNRResourceRedirect(condition) else { return nil }
         return AdvancedDNRRule(
             id: id,
             priority: rule.important ? 90_000 : 9_000,
@@ -339,6 +340,14 @@ public struct NativeFilterCompiler: FilterCompiling {
             ),
             condition: condition
         )
+    }
+
+    private func isUnsafeBroadDNRResourceRedirect(_ condition: AdvancedDNRCondition) -> Bool {
+        condition.urlFilter == "*" &&
+            condition.requestDomains?.isEmpty != false &&
+            condition.excludedRequestDomains?.isEmpty != false &&
+            condition.initiatorDomains?.isEmpty != false &&
+            condition.excludedInitiatorDomains?.isEmpty != false
     }
 
     private func dnrModifyHeadersRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
