@@ -24060,6 +24060,25 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       Window.prototype.toString[uniqueIdentifier] = flag;
     }
   }
+  function normalizeUboJsonPruneResponseArgs(args) {
+    args = Array.isArray(args) ? args.slice() : [];
+    var propsToMatchIndex = args.indexOf("propsToMatch");
+    if (propsToMatchIndex >= 0) {
+      var matcher = args[propsToMatchIndex + 1] || "";
+      args.splice(propsToMatchIndex, 2);
+      while (args.length < 2) {
+        args.push("");
+      }
+      args.splice(2, 0, matcher);
+    }
+    return args;
+  }
+  function uboJsonPruneFetchResponse(source, args) {
+    jsonPruneFetchResponse(source, normalizeUboJsonPruneResponseArgs(args));
+  }
+  function uboJsonPruneXhrResponse(source, args) {
+    jsonPruneXhrResponse(source, normalizeUboJsonPruneResponseArgs(args));
+  }
   function uboTrustedJsonEditXhrRequest(source, args) {
     var flag = "done";
     var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
@@ -24375,8 +24394,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "inject-css-in-shadow-dom": injectCssInShadowDom,
     "json-prune-fetch-response": jsonPruneFetchResponse,
     "json-prune-fetch-response.js": jsonPruneFetchResponse,
-    "ubo-json-prune-fetch-response.js": jsonPruneFetchResponse,
-    "ubo-json-prune-fetch-response": jsonPruneFetchResponse,
+    "ubo-json-prune-fetch-response.js": uboJsonPruneFetchResponse,
+    "ubo-json-prune-fetch-response": uboJsonPruneFetchResponse,
     "json-prune": jsonPrune,
     "json-prune.js": jsonPrune,
     "ubo-json-prune.js": jsonPrune,
@@ -24384,8 +24403,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "abp-json-prune": jsonPrune,
     "json-prune-xhr-response": jsonPruneXhrResponse,
     "json-prune-xhr-response.js": jsonPruneXhrResponse,
-    "ubo-json-prune-xhr-response.js": jsonPruneXhrResponse,
-    "ubo-json-prune-xhr-response": jsonPruneXhrResponse,
+    "ubo-json-prune-xhr-response.js": uboJsonPruneXhrResponse,
+    "ubo-json-prune-xhr-response": uboJsonPruneXhrResponse,
     "log-addEventListener": logAddEventListener,
     "addEventListener-logger.js": logAddEventListener,
     "ubo-addEventListener-logger.js": logAddEventListener,
@@ -24814,7 +24833,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     });
   };
   const toExtendedCSSRules = css => {
+    const hasProceduralPseudo = selector => /:(?:has|has-text|-abp-contains|contains|xpath|upward|matches-css|matches-attr|matches-property)\s*\(/.test(selector);
+    const styleAction = /^([\s\S]+):style\(([\s\S]*)\)$/.exec.bind(/^([\s\S]+):style\(([\s\S]*)\)$/);
     return css.map(s => s.trim()).filter(s => s.length > 0).map(s => {
+      const match = styleAction(s);
+      if (match && !hasProceduralPseudo(match[1])) {
+        return `${match[1].trim()} {${match[2].trim()}}`;
+      }
       return s.includes(':style(') || s.includes(':remove()') || s.at(-1) === '}' ? s : `${s} {display:none!important;}`;
     });
   };
