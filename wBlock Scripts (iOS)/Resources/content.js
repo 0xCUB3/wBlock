@@ -30363,6 +30363,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return s.at(-1) !== '}' ? `${s} {display:none!important;}` : s;
     });
   };
+  const toExtendedCSSRules = css => {
+    return css.map(s => s.trim()).filter(s => s.length > 0).map(s => {
+      return s.includes(':style(') || s.includes(':remove()') || s.at(-1) === '}' ? s : `${s} {display:none!important;}`;
+    });
+  };
 
   /**
    * @file Contains the implementation of the content script.
@@ -30568,7 +30573,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       try {
-        const cssRules = toCSSRules(extendedCss);
+        const cssRules = toExtendedCSSRules(extendedCss);
         const extCss = new ExtendedCss({
           cssRules
         });
