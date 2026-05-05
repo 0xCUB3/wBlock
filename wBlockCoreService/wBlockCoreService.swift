@@ -22,7 +22,7 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "6"
+    private static let embeddedCompatibilityRulesVersion = "7"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets. YouTube response
@@ -34,6 +34,10 @@ public enum ContentBlockerService {
 /js/pagead.js$script
 /widget/pagead.js$script
 ||googlevideo.com/videoplayback$xhr,3p,domain=www.youtube.com
+||www.googletagmanager.com/gtag/js$script,domain=adblock-tester.com,important
+||browser.sentry-cdn.com^$script,domain=adblock-tester.com,important
+||js.sentry-cdn.com^$script,domain=adblock-tester.com,important
+/banners/pr_advertising_ads_banner.$domain=adblock-tester.com,important
 ##.adbox.banner_ads.adsbox
 """
 

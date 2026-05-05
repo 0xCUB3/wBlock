@@ -34,6 +34,58 @@ import Testing
     #expect(rules[0].action.type == "block-cookies")
 }
 
+@Test func negatedPartyOptionsMapToOppositeSafariLoadType() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: """
+        ||adblock-tester.com/banners/$~third-party
+        ||cdn.example/ad.js$~first-party
+        """
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 2)
+    #expect(rules[0].trigger.loadType == ["first-party"])
+    #expect(rules[1].trigger.loadType == ["third-party"])
+}
+
+@Test func redirectBlockRulesFallBackToBlocking() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: "||googletagmanager.com/gtag/js$script,xhr,redirect=googletagmanager_gtm.js:5"
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 1)
+    #expect(rules[0].action.type == "block")
+    #expect(Set(rules[0].trigger.resourceType ?? []) == ["raw", "script"])
+}
+
+@Test func slashPrefixedPlainPatternsStillSplitOptions() throws {
+    let source = FilterSource(
+        identifier: "fixture",
+        displayName: "Fixture",
+        text: "/banners/pr_advertising_ads_banner.$image,domain=adblock-tester.com"
+    )
+
+    let result = try NativeFilterCompiler().compile([source])
+    let rules = try decodedDetailedNetworkRules(result.safariRulesJSON)
+
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(result.safariRuleCount == 1)
+    #expect(rules[0].trigger.urlFilter == #"/banners/pr_advertising_ads_banner\."#)
+    #expect(rules[0].trigger.resourceType == ["image"])
+    #expect(rules[0].trigger.ifDomain == ["adblock-tester.com"])
+}
+
 @Test func importantBlockingRulesAreEmittedAfterNormalExceptions() throws {
     let source = FilterSource(
         identifier: "fixture",

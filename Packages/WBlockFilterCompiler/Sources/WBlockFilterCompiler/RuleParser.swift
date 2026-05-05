@@ -97,9 +97,19 @@ enum RuleParser {
                 canonicalOptions.append("third-party")
                 continue
             }
+            if lower == "~third-party" || lower == "~3p" {
+                loadType = .firstParty
+                canonicalOptions.append("~third-party")
+                continue
+            }
             if lower == "first-party" || lower == "1p" {
                 loadType = .firstParty
                 canonicalOptions.append("first-party")
+                continue
+            }
+            if lower == "~first-party" || lower == "~1p" {
+                loadType = .thirdParty
+                canonicalOptions.append("~first-party")
                 continue
             }
             if lower == "all" {
@@ -139,6 +149,16 @@ enum RuleParser {
 
             if lower.hasPrefix("denyallow=") {
                 return .unsupported(.denyAllowNeedsPlanner)
+            }
+
+            if lower.hasPrefix("redirect=") {
+                guard !isException else { return .unsupported(.noSafariEquivalent) }
+                canonicalOptions.append(lower)
+                continue
+            }
+
+            if lower.hasPrefix("redirect-rule=") || lower == "redirect" || lower == "redirect-rule" {
+                return .unsupported(.noSafariEquivalent)
             }
 
             if lower == "popunder" {
@@ -200,8 +220,8 @@ enum RuleParser {
 
     private static func splitPatternAndOptions(_ text: String) -> (pattern: String, options: [String]) {
         let separator: String.Index?
-        if text.hasPrefix("/") {
-            separator = regexOptionsSeparator(in: text)
+        if text.hasPrefix("/"), let regexSeparator = regexOptionsSeparator(in: text) {
+            separator = regexSeparator
         } else {
             separator = text.firstIndex(of: "$")
         }
