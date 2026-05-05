@@ -89,6 +89,8 @@ import Testing
     #expect(matched.js[0].contains("utm_source|utm_medium"))
     #expect(matched.dnrRules.count == 1)
     #expect(matched.dnrRules[0].action.type == "redirect")
+    #expect(matched.dnrRules[0].condition.urlFilter == "*")
+    #expect(matched.dnrRules[0].condition.requestDomains == ["example.com"])
     #expect(matched.dnrRules[0].action.redirect?.transform?.queryTransform?.removeParams == ["utm_medium", "utm_source"])
     #expect(runtime.lookup(host: "example.org").js.isEmpty)
 }
@@ -143,6 +145,22 @@ import Testing
     #expect(matched.dnrRules[0].condition.urlFilter == "||cdn.example/ad.js")
     #expect(matched.dnrRules[0].condition.regexFilter == nil)
     #expect(matched.dnrRules[0].action.redirect?.extensionPath == "/web_accessible_resources/noop.js")
+}
+
+@Test func rawRegexNetworkRulesDoNotCompileToDynamicDNR() throws {
+    let source = FilterSource(
+        identifier: "regex-dnr",
+        displayName: "Regex DNR",
+        text: "/^https?:\\/\\/ads\\.example\\/.*\\.js$/$script,redirect=noopjs"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+    configuration.enabledCapabilities.insert(.redirects)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let dnr = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "example.com").dnrRules
+
+    #expect(dnr.isEmpty)
 }
 
 @Test func urlSkipAndUriTransformCompileToAdvancedRuntimeScripts() throws {

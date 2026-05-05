@@ -369,39 +369,57 @@ public struct NativeFilterCompiler: FilterCompiling {
     }
 
     private func dnrCondition(for rule: NetworkRule) -> AdvancedDNRCondition? {
-        if let urlFilter = dnrURLFilter(for: rule) {
-            return AdvancedDNRCondition(
-                urlFilter: urlFilter,
-                resourceTypes: dnrResourceTypes(for: rule),
-                isUrlFilterCaseSensitive: rule.matchCase ? true : nil
-            )
-        }
+        let pattern = rule.pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestDomains = dnrCanonicalDomains(rule.toDomains)
+        let initiatorDomains = dnrCanonicalDomains(rule.ifDomains)
+        let excludedInitiatorDomains = dnrCanonicalDomains(rule.unlessDomains)
 
-        let urlRegex: String
-        if rule.pattern == "*", !rule.toDomains.isEmpty {
-            urlRegex = dnrRegexForDomains(rule.toDomains)
-        } else {
-            urlRegex = SafariURLFilterTranslator.translate(rule.pattern)
-        }
-        guard !urlRegex.isEmpty else { return nil }
+        // Safari's dynamic DNR regex support is much narrower than Safari
+        // content-blocker regex support. If a uBO rule was written as a raw
+        // regex, do not broaden it to only its domain constraints; drop the DNR
+        // sidecar and let any JS fallback handle it instead.
+        if isRegexNetworkPattern(pattern) { return nil }
+
+        guard let urlFilter = dnrURLFilter(for: pattern) else { return nil }
         return AdvancedDNRCondition(
-            regexFilter: urlRegex,
+            urlFilter: urlFilter,
             resourceTypes: dnrResourceTypes(for: rule),
+            requestDomains: requestDomains.isEmpty ? nil : requestDomains,
+            initiatorDomains: initiatorDomains.isEmpty ? nil : initiatorDomains,
+            excludedInitiatorDomains: excludedInitiatorDomains.isEmpty ? nil : excludedInitiatorDomains,
             isUrlFilterCaseSensitive: rule.matchCase ? true : nil
         )
     }
 
-    private func dnrURLFilter(for rule: NetworkRule) -> String? {
-        let pattern = rule.pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func dnrURLFilter(for pattern: String) -> String? {
         guard !pattern.isEmpty else { return nil }
 
         // Dynamic DNR's urlFilter uses the same adblock-style anchors (*, ^, |,
         // ||) as uBlock network filters. Prefer it over regexFilter because
         // Safari rejects otherwise-valid translated regex features such as
-        // non-capturing groups in separator matches.
-        if pattern == "*" { return rule.toDomains.isEmpty ? "*" : nil }
-        if pattern.hasPrefix("/"), pattern.hasSuffix("/"), pattern.count > 1 { return nil }
-        return pattern
+        // non-capturing groups and lookaheads.
+        return pattern == "*" ? "*" : pattern
+    }
+
+    private func isRegexNetworkPattern(_ pattern: String) -> Bool {
+        pattern.hasPrefix("/") && pattern.hasSuffix("/") && pattern.count > 1
+    }
+
+    private func dnrCanonicalDomains(_ domains: [String]) -> [String] {
+        Array(Set(domains.compactMap { domain in
+            var normalized = domain
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                .lowercased()
+            if normalized.hasPrefix("||") { normalized.removeFirst(2) }
+            if normalized.hasPrefix("*") { normalized.removeFirst() }
+            if normalized.hasPrefix(".") { normalized.removeFirst() }
+            guard !normalized.isEmpty,
+                  !normalized.contains("*"),
+                  !normalized.contains("/"),
+                  !normalized.contains(":") else { return nil }
+            return normalized
+        })).sorted()
     }
 
     private func dnrRegexForDomains(_ domains: [String]) -> String {

@@ -260,13 +260,31 @@ public struct AdvancedDNRCondition: Sendable, Equatable, Codable, Hashable {
     public var urlFilter: String?
     public var resourceTypes: [String]?
     public var excludedResourceTypes: [String]?
+    public var requestDomains: [String]?
+    public var excludedRequestDomains: [String]?
+    public var initiatorDomains: [String]?
+    public var excludedInitiatorDomains: [String]?
     public var isUrlFilterCaseSensitive: Bool?
 
-    public init(regexFilter: String? = nil, urlFilter: String? = nil, resourceTypes: [String]? = nil, excludedResourceTypes: [String]? = nil, isUrlFilterCaseSensitive: Bool? = nil) {
+    public init(
+        regexFilter: String? = nil,
+        urlFilter: String? = nil,
+        resourceTypes: [String]? = nil,
+        excludedResourceTypes: [String]? = nil,
+        requestDomains: [String]? = nil,
+        excludedRequestDomains: [String]? = nil,
+        initiatorDomains: [String]? = nil,
+        excludedInitiatorDomains: [String]? = nil,
+        isUrlFilterCaseSensitive: Bool? = nil
+    ) {
         self.regexFilter = regexFilter
         self.urlFilter = urlFilter
         self.resourceTypes = resourceTypes
         self.excludedResourceTypes = excludedResourceTypes
+        self.requestDomains = requestDomains
+        self.excludedRequestDomains = excludedRequestDomains
+        self.initiatorDomains = initiatorDomains
+        self.excludedInitiatorDomains = excludedInitiatorDomains
         self.isUrlFilterCaseSensitive = isUrlFilterCaseSensitive
     }
 }
