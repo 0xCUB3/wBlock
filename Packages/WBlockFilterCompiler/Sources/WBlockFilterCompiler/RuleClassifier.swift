@@ -90,7 +90,6 @@ enum RuleClassifier {
             switch name.trimmingCharacters(in: .whitespaces) {
             case "header", "removeheader": return .responseHeaderFiltering
             case "replace": return .responseBodyReplacement
-            case "removeparam", "queryprune": return .removeParamRequiresAdvancedRuntime
             case "csp", "permissions": return .headerModificationNeedsAdvancedRuntime
             default: continue
             }

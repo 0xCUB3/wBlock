@@ -58,6 +58,8 @@ public struct NativeFilterCompiler: FilterCompiling {
                 case .network(let rule):
                     if rule.isBadfilter {
                         badfilterIdentities.insert(rule.canonicalIdentity)
+                    } else if rule.requiresAdvancedURLHandling {
+                        advancedJSRules.append(contentsOf: advancedURLHandlingScripts(for: rule))
                     } else {
                         networkRules.append(rule)
                     }
@@ -259,6 +261,105 @@ public struct NativeFilterCompiler: FilterCompiling {
         return output
     }
 
+    private func advancedURLHandlingScripts(for rule: NetworkRule) -> [AdvancedStyleRule] {
+        var rules: [AdvancedStyleRule] = []
+        let scope = advancedScope(for: rule)
+        let hostPatterns = advancedHostPatterns(for: rule)
+        let urlFilter = SafariURLFilterTranslator.translate(rule.pattern)
+
+        if !rule.removeParameters.isEmpty {
+            rules.append(
+                AdvancedStyleRule(
+                    scope: scope,
+                    content: removeParameterScript(
+                        parameters: rule.removeParameters,
+                        hostPatterns: hostPatterns,
+                        urlFilter: urlFilter
+                    )
+                )
+            )
+        }
+
+        if let steps = rule.urlSkipSteps {
+            rules.append(
+                AdvancedStyleRule(
+                    scope: scope,
+                    content: urlSkipScript(
+                        steps: steps,
+                        hostPatterns: hostPatterns,
+                        urlFilter: urlFilter
+                    )
+                )
+            )
+        }
+
+        if let transform = rule.uriTransform {
+            rules.append(
+                AdvancedStyleRule(
+                    scope: scope,
+                    content: uriTransformScript(
+                        transform: transform,
+                        hostPatterns: hostPatterns,
+                        urlFilter: urlFilter
+                    )
+                )
+            )
+        }
+
+        return rules
+    }
+
+    private func advancedScope(for rule: NetworkRule) -> AdvancedDomainScope {
+        let domains = advancedHostPatterns(for: rule)
+        if !domains.isEmpty, domains.allSatisfy({ !$0.contains("*") }) {
+            return AdvancedDomainScope(ifDomains: domains)
+        }
+        if !rule.ifDomains.isEmpty, rule.ifDomains.allSatisfy({ !$0.contains("*") }) {
+            return AdvancedDomainScope(ifDomains: rule.ifDomains, unlessDomains: rule.unlessDomains)
+        }
+        return AdvancedDomainScope(unlessDomains: rule.unlessDomains)
+    }
+
+    private func advancedHostPatterns(for rule: NetworkRule) -> [String] {
+        if !rule.toDomains.isEmpty { return rule.toDomains }
+        if !rule.ifDomains.isEmpty { return rule.ifDomains }
+        return []
+    }
+
+    private func removeParameterScript(parameters: [String], hostPatterns: [String], urlFilter: String) -> String {
+        let parametersJSON = jsonLiteral(parameters)
+        let hostsJSON = jsonLiteral(hostPatterns)
+        let filterJSON = jsonLiteral(urlFilter)
+        return #"""
+        (()=>{const p=\#(parametersJSON),h=\#(hostsJSON),f=\#(filterJSON);const hm=x=>!h.length||h.some(d=>{const e=d.replace(/[.+?^${}()|[\]\\]/g,'\\$&').replace(/\\\*/g,'.*');return new RegExp('(^|\\.)'+e+'$','i').test(x)});if(!hm(location.hostname))return;try{if(f&&!(new RegExp(f)).test(location.href))return}catch{}const m=n=>p.some(r=>{if(r==='*')return true;if(r.includes('|'))return r.split('|').some(x=>x&&m.call(null,x));if(/^\/.+\/[a-z]*$/i.test(r)){const i=r.lastIndexOf('/');try{return new RegExp(r.slice(1,i),r.slice(i+1)).test(n)}catch{return false}}return n===r});const c=u=>{let x;try{x=new URL(u,location.href)}catch{return null}let z=false;for(const k of Array.from(x.searchParams.keys()))if(m(k)){x.searchParams.delete(k);z=true}return z?x.href:null};const n=c(location.href);if(n)history.replaceState(history.state,document.title,n);const s=r=>{try{for(const a of r.querySelectorAll('a[href]')){const n=c(a.getAttribute('href'));if(n)a.setAttribute('href',n)}}catch{}};s(document);new MutationObserver(a=>{for(const q of a)for(const n of q.addedNodes)n.nodeType===1&&s(n)}).observe(document.documentElement,{childList:true,subtree:true})})();
+        """#
+    }
+
+    private func urlSkipScript(steps: String, hostPatterns: [String], urlFilter: String) -> String {
+        let stepsJSON = jsonLiteral(steps)
+        let hostsJSON = jsonLiteral(hostPatterns)
+        let filterJSON = jsonLiteral(urlFilter)
+        return #"""
+        (()=>{const st=\#(stepsJSON),h=\#(hostsJSON),f=\#(filterJSON);const hm=x=>!h.length||h.some(d=>{const e=d.replace(/[.+?^${}()|[\]\\]/g,'\\$&').replace(/\\\*/g,'.*');return new RegExp('(^|\\.)'+e+'$','i').test(x)});if(!hm(location.hostname))return;try{if(f&&!(new RegExp(f)).test(location.href))return}catch{}const u=(url,steps)=>{try{let o=url;for(const step of steps){const c=step.charCodeAt(0);if(c===35&&step==='#'){const p=o.indexOf('#');o=p!==-1?o.slice(p+1):'';continue}if(c===38){const i=(parseInt(step.slice(1))||0)-1;if(i<0)return;const x=new URL(o);const a=Array.from(x.searchParams.keys());if(i>=a.length)return;o=decodeURIComponent(a[i]);continue}if(c===43&&step==='+https'){const s=o.replace(/^https?:\/\//,'');if(/^[\w-]:\/\//.test(s))return;o='https://'+s;continue}if(c===45){if(step==='-base64'){o=atob(o);continue}if(step==='-safebase64'){o=atob(o.replace(/[-_]/g,m=>m==='-'?'+':'/'));continue}if(step==='-uricomponent'){o=decodeURIComponent(o);continue}}if(c===47){const r=new RegExp(step.slice(1,-1));const m=r.exec(o);if(!m||m.length<2)return;o=m[1];continue}if(c===63){const v=new URL(o).searchParams.get(step.slice(1));if(v==null)return;o=v.includes(' ')?v.replace(/ /g,'%20'):v;continue}return}const x=new URL(o);if(x.protocol!=='https:'&&x.protocol!=='http:')return;return o}catch{}};const n=u(location.href,st.split(/\s+/).filter(Boolean));if(n&&n!==location.href)location.replace(n)})();
+        """#
+    }
+
+    private func uriTransformScript(transform: String, hostPatterns: [String], urlFilter: String) -> String {
+        let transformJSON = jsonLiteral(transform)
+        let hostsJSON = jsonLiteral(hostPatterns)
+        let filterJSON = jsonLiteral(urlFilter)
+        return #"""
+        (()=>{const t=\#(transformJSON),h=\#(hostsJSON),f=\#(filterJSON);const hm=x=>!h.length||h.some(d=>{const e=d.replace(/[.+?^${}()|[\]\\]/g,'\\$&').replace(/\\\*/g,'.*');return new RegExp('(^|\\.)'+e+'$','i').test(x)});if(!hm(location.hostname))return;try{if(f&&!(new RegExp(f)).test(location.href))return}catch{}const i=t.lastIndexOf('/');if(!t.startsWith('/')||i<1)return;try{const n=location.href.replace(new RegExp(t.slice(1,i)),t.slice(i+1));if(n&&n!==location.href)location.replace(n)}catch{}})();
+        """#
+    }
+
+    private func jsonLiteral<T: Encodable>(_ value: T) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.withoutEscapingSlashes]
+        guard let data = try? encoder.encode(value), let string = String(data: data, encoding: .utf8) else { return "null" }
+        return string
+    }
+
     private func expandNetworkRules(_ rules: [NetworkRule]) -> [NetworkRule] {
         rules.flatMap(expandNetworkRule)
     }
@@ -287,7 +388,7 @@ public struct NativeFilterCompiler: FilterCompiling {
     }
 
     private func expandToDomainRule(_ rule: NetworkRule) -> [NetworkRule] {
-        guard !rule.toDomains.isEmpty else { return [rule] }
+        guard !rule.toDomains.isEmpty, rule.pattern == "*" else { return [rule] }
 
         return rule.toDomains.map { domain in
             var copy = rule

@@ -19,7 +19,7 @@ enum RuleParser {
             if let hostsRule = parseHostsRule(sourceLine) {
                 return .network(hostsRule)
             }
-            return parseNetworkRule(sourceLine) ?? .unsupported(.unknownSyntax)
+            return parseNetworkRule(sourceLine, configuration: configuration) ?? .unsupported(.unknownSyntax)
         case .cosmetic:
             return parseCosmeticRule(sourceLine, delimiter: "##").map(ParsedRule.cosmetic) ?? .unsupported(.unknownSyntax)
         case .cosmeticException:
@@ -49,6 +49,9 @@ enum RuleParser {
             unlessDomains: [],
             toDomains: [],
             denyAllowDomains: [],
+            removeParameters: [],
+            urlSkipSteps: nil,
+            uriTransform: nil,
             matchCase: false,
             important: false,
             isBadfilter: false,
@@ -56,12 +59,13 @@ enum RuleParser {
         )
     }
 
-    private static func parseNetworkRule(_ sourceLine: SourceLine) -> ParsedRule? {
+    private static func parseNetworkRule(_ sourceLine: SourceLine, configuration: FilterCompilerConfiguration) -> ParsedRule? {
         let trimmed = sourceLine.text.trimmingCharacters(in: .whitespacesAndNewlines)
         let isException = trimmed.hasPrefix("@@")
         let withoutException = isException ? String(trimmed.dropFirst(2)) : trimmed
         let split = splitPatternAndOptions(withoutException)
-        let pattern = split.pattern.trimmingCharacters(in: .whitespaces)
+        let rawPattern = split.pattern.trimmingCharacters(in: .whitespaces)
+        let pattern = rawPattern.isEmpty && !split.options.isEmpty ? "*" : rawPattern
         guard !pattern.isEmpty else { return nil }
 
         var action = NetworkAction.block
@@ -72,6 +76,9 @@ enum RuleParser {
         var unlessDomains: [String] = []
         var toDomains: [String] = []
         var denyAllowDomains: [String] = []
+        var removeParameters: [String] = []
+        var urlSkipSteps: String?
+        var uriTransform: String?
         var matchCase = false
         var important = false
         var isBadfilter = false
@@ -180,18 +187,75 @@ enum RuleParser {
                     .first
                     .map(String.init) ?? ""
                 let domains = parseDomainList(value)
-                guard pattern == "*" else { return .unsupported(.noSafariEquivalent) }
                 if !domains.positive.isEmpty, domains.negative.isEmpty {
                     toDomains.append(contentsOf: domains.positive)
                     canonicalOptions.append("to=\(domains.positive.joined(separator: "|"))")
                     continue
                 }
-                if domains.positive.isEmpty, !domains.negative.isEmpty, !isException {
+                if pattern == "*", domains.positive.isEmpty, !domains.negative.isEmpty, !isException {
                     denyAllowDomains.append(contentsOf: domains.negative)
                     canonicalOptions.append("to=\(domains.negative.map { "~\($0)" }.joined(separator: "|"))")
                     continue
                 }
                 return .unsupported(.noSafariEquivalent)
+            }
+
+            if lower.hasPrefix("reason=") {
+                canonicalOptions.append(lower)
+                continue
+            }
+
+            if lower.hasPrefix("rewrite=") {
+                guard !isException else { return .unsupported(.noSafariEquivalent) }
+                canonicalOptions.append(lower)
+                continue
+            }
+
+            if lower == "removeparam" || lower == "queryprune" {
+                guard configuration.enabledCapabilities.contains(.advancedScriptlets) || configuration.enabledCapabilities.contains(.removeQueryParameters) else {
+                    return .unsupported(.removeParamRequiresAdvancedRuntime)
+                }
+                removeParameters.append("*")
+                canonicalOptions.append("removeparam=*")
+                continue
+            }
+
+            if lower.hasPrefix("removeparam=") || lower.hasPrefix("queryprune=") {
+                guard configuration.enabledCapabilities.contains(.advancedScriptlets) || configuration.enabledCapabilities.contains(.removeQueryParameters) else {
+                    return .unsupported(.removeParamRequiresAdvancedRuntime)
+                }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard !value.isEmpty else { return .unsupported(.removeParamRequiresAdvancedRuntime) }
+                removeParameters.append(value)
+                canonicalOptions.append("removeparam=\(value.lowercased())")
+                continue
+            }
+
+            if lower.hasPrefix("urlskip=") {
+                guard configuration.enabledCapabilities.contains(.advancedScriptlets) else { return .unsupported(.noSafariEquivalent) }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard !value.isEmpty else { return .unsupported(.noSafariEquivalent) }
+                urlSkipSteps = value
+                canonicalOptions.append("urlskip=\(value.lowercased())")
+                continue
+            }
+
+            if lower.hasPrefix("uritransform=") {
+                guard configuration.enabledCapabilities.contains(.advancedScriptlets) else { return .unsupported(.noSafariEquivalent) }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                guard !value.isEmpty else { return .unsupported(.noSafariEquivalent) }
+                uriTransform = value
+                canonicalOptions.append("uritransform=\(value.lowercased())")
+                continue
             }
 
             if lower.hasPrefix("redirect=") {
@@ -239,6 +303,9 @@ enum RuleParser {
                 unlessDomains: Array(Set(unlessDomains)).sorted(),
                 toDomains: Array(Set(toDomains)).sorted(),
                 denyAllowDomains: Array(Set(denyAllowDomains)).sorted(),
+                removeParameters: Array(Set(removeParameters)).sorted(),
+                urlSkipSteps: urlSkipSteps,
+                uriTransform: uriTransform,
                 matchCase: matchCase,
                 important: important,
                 isBadfilter: isBadfilter,

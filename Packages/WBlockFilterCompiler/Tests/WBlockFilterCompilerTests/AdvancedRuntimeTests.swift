@@ -70,6 +70,47 @@ import Testing
     ])
 }
 
+@Test func removeParamNetworkRulesCompileToAdvancedRuntimeScript() throws {
+    let source = FilterSource(
+        identifier: "removeparam",
+        displayName: "Removeparam",
+        text: "$removeparam=utm_source|utm_medium,to=example.com"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let runtime = AdvancedRuleRuntime(bundle: result.advancedRules)
+    let matched = runtime.lookup(host: "www.example.com")
+
+    #expect(result.safariRuleCount == 0)
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(matched.js.count == 1)
+    #expect(matched.js[0].contains("utm_source|utm_medium"))
+    #expect(runtime.lookup(host: "example.org").js.isEmpty)
+}
+
+@Test func urlSkipAndUriTransformCompileToAdvancedRuntimeScripts() throws {
+    let source = FilterSource(
+        identifier: "urlskip",
+        displayName: "URL skip",
+        text: """
+        /go?target=http$doc,to=redirect.example,urlskip=?target +https
+        /ref=$doc,to=shop.example,uritransform=/\\/ref=[^\\/?#]+//
+        """
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let runtime = AdvancedRuleRuntime(bundle: result.advancedRules)
+
+    #expect(result.safariRuleCount == 0)
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(runtime.lookup(host: "redirect.example").js.count == 1)
+    #expect(runtime.lookup(host: "shop.example").js.count == 1)
+}
+
 @Test func styleActionCosmeticsCompileToAdvancedRuntimeOnly() throws {
     let source = FilterSource(
         identifier: "style-action",

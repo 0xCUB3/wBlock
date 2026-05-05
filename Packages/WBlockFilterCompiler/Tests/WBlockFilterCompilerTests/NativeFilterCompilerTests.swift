@@ -28,13 +28,13 @@ import Testing
     #expect(result.safariRuleCount == 0)
     #expect(result.diagnostics.classifiedRules[.comment] == 1)
     #expect(result.diagnostics.classifiedRules[.preprocessor] == 1)
-    #expect(result.diagnostics.classifiedRules[.network] == 1)
+    #expect(result.diagnostics.classifiedRules[.network] == 2)
     #expect(result.diagnostics.classifiedRules[.cosmetic] == 1)
     #expect(result.diagnostics.classifiedRules[.cosmeticException] == 1)
     #expect(result.diagnostics.classifiedRules[.scriptlet] == 1)
     #expect(result.diagnostics.classifiedRules[.proceduralCosmetic] == 1)
     #expect(result.diagnostics.classifiedRules[.htmlFiltering] == 1)
-    #expect(result.diagnostics.classifiedRules[.unsupported] == 1)
+    #expect(result.diagnostics.classifiedRules[.unsupported] == nil)
     #expect(result.unsupportedRules.count == 4)
 }
 

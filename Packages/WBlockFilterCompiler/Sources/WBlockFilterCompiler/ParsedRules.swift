@@ -20,6 +20,9 @@ struct NetworkRule: Equatable {
     var unlessDomains: [String]
     var toDomains: [String]
     var denyAllowDomains: [String]
+    var removeParameters: [String]
+    var urlSkipSteps: String?
+    var uriTransform: String?
     var matchCase: Bool
     var important: Bool
     var isBadfilter: Bool
@@ -54,4 +57,10 @@ enum NetworkAction: Equatable {
     case block
     case blockCookies
     case makeHTTPS
+}
+
+extension NetworkRule {
+    var requiresAdvancedURLHandling: Bool {
+        !removeParameters.isEmpty || urlSkipSteps != nil || uriTransform != nil
+    }
 }
