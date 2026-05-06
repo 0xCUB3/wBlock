@@ -127,11 +127,11 @@ import Testing
     #expect(result.unsupportedRules.isEmpty)
     #expect(matched.js.count == 1)
     #expect(matched.js[0].contains("utm_source|utm_medium"))
-    #expect(matched.dnrRules.count == 1)
-    #expect(matched.dnrRules[0].action.type == "redirect")
-    #expect(matched.dnrRules[0].condition.urlFilter == "*")
-    #expect(matched.dnrRules[0].condition.requestDomains == ["example.com"])
-    #expect(matched.dnrRules[0].action.redirect?.transform?.queryTransform?.removeParams == ["utm_medium", "utm_source"])
+    #expect(matched.dnrRules.count == 2)
+    #expect(matched.dnrRules.map(\.action.type) == ["redirect", "redirect"])
+    #expect(matched.dnrRules.map(\.condition.urlFilter) == ["^utm_medium=", "^utm_source="])
+    #expect(matched.dnrRules.map(\.condition.requestDomains) == [["example.com"], ["example.com"]])
+    #expect(matched.dnrRules.map { $0.action.redirect?.transform?.queryTransform?.removeParams } == [["utm_medium"], ["utm_source"]])
     #expect(runtime.lookup(host: "example.org").js.isEmpty)
 }
 

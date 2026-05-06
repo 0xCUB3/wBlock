@@ -5680,13 +5680,347 @@ function wBlockApplyConfiguration(configuration) {
     return raw;
   }
 
+  const proceduralOperatorNames = [
+    'matches-css-before', 'matches-css-after', 'matches-css',
+    'matches-attr', 'matches-property', 'min-text-length',
+    'has-text', '-abp-contains', 'contains', 'nth-ancestor',
+    'upward', 'xpath', 'has', 'not'
+  ];
+  const proceduralCssPattern = /(^\^)|[(:]has-text|:-abp-contains|:contains|:xpath|:upward|:nth-ancestor|:matches-css|:matches-attr|:matches-property|:min-text-length|:remove\(\)|:style\(|:has\(/;
+  const proceduralSelectorCache = new Map();
+
+  function stripWatchAttr(selector) {
+    return String(selector || '').replace(/:watch-attr\([^)]*\)/g, '');
+  }
+
+  function parseTrailingFunction(selector, name) {
+    const needle = `:${name}(`;
+    if (!String(selector || '').endsWith(')')) return null;
+    const start = selector.lastIndexOf(needle);
+    if (start === -1) return null;
+    return {
+      selector: selector.slice(0, start),
+      argument: selector.slice(start + needle.length, -1)
+    };
+  }
+
+  function cssDeclarationText(styleText) {
+    return String(styleText || '')
+      .split(';')
+      .map(part => part.trim())
+      .filter(Boolean)
+      .map(part => /!important\s*$/i.test(part) ? part : `${part} !important`)
+      .join(';');
+  }
+
   function injectCssRules() {
-    const all = [...css, ...extendedCss].filter(rule => typeof rule === 'string' && rule.trim() && !/[(:]has-text|:-abp-contains|:xpath|:upward|:matches-css|:matches-attr|:matches-property|:remove\(\)|:style\(/.test(rule));
-    if (!all.length || !document.documentElement) return;
+    const cssRules = [];
+    for (const rule of [...css, ...extendedCss]) {
+      if (typeof rule !== 'string' || !rule.trim()) continue;
+      const trimmedRule = rule.trim();
+      if (trimmedRule.startsWith('^')) continue;
+      const styleAction = parseTrailingFunction(trimmedRule, 'style');
+      if (styleAction) {
+        const selector = stripWatchAttr(styleAction.selector).trim();
+        if (selector && !proceduralCssPattern.test(selector)) {
+          cssRules.push(`${selector}{${cssDeclarationText(styleAction.argument)}}`);
+        }
+        continue;
+      }
+      const selector = stripWatchAttr(trimmedRule);
+      if (proceduralCssPattern.test(selector)) continue;
+      cssRules.push(selector.includes('{') ? selector : `${selector}{display:none!important;}`);
+    }
+    if (!cssRules.length || !document.documentElement) return;
     const style = document.createElement('style');
     style.setAttribute('data-wblock-runtime', 'css');
-    style.textContent = all.map(selector => selector.includes('{') ? selector : `${selector}{display:none!important;}`).join('\n');
+    style.textContent = cssRules.join('\n');
     (document.head || document.documentElement).appendChild(style);
+  }
+
+  function regexFromLiteral(text) {
+    const value = String(text || '').trim();
+    if (value.startsWith('/') && value.lastIndexOf('/') > 0) {
+      const end = value.lastIndexOf('/');
+      try { return new RegExp(value.slice(1, end), value.slice(end + 1)); } catch (_) { return null; }
+    }
+    try { return new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); } catch (_) { return null; }
+  }
+
+  function parseCSSPropertyTest(text) {
+    const index = String(text || '').indexOf(':');
+    if (index === -1) return null;
+    return {
+      property: text.slice(0, index).trim(),
+      value: text.slice(index + 1).trim()
+    };
+  }
+
+  function elementMatchesCSSTest(element, test, pseudo = null) {
+    if (!element || !test) return false;
+    try {
+      if (getComputedStyle(element, pseudo).getPropertyValue(test.property).trim() === test.value) return true;
+    } catch (_) {}
+    if (!pseudo) return false;
+    try {
+      const pseudoName = pseudo.replace(/^::?/, '');
+      const pseudoSuffixes = [`::${pseudoName}`, `:${pseudoName}`];
+      for (const sheet of document.styleSheets) {
+        let rules;
+        try { rules = sheet.cssRules; } catch (_) { continue; }
+        for (const rule of rules) {
+          const selectorText = rule && rule.selectorText;
+          const style = rule && rule.style;
+          if (!selectorText || !style) continue;
+          for (const selector of selectorText.split(',')) {
+            const trimmed = selector.trim();
+            const pseudoSuffix = pseudoSuffixes.find(suffix => trimmed.endsWith(suffix));
+            if (!pseudoSuffix) continue;
+            const base = trimmed.slice(0, -pseudoSuffix.length).trim();
+            if (base && element.matches(base) && style.getPropertyValue(test.property).trim() === test.value) return true;
+          }
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function nthChildIndex(element) {
+    let index = 1;
+    for (let node = element.previousElementSibling; node; node = node.previousElementSibling) index += 1;
+    return index;
+  }
+
+  function relativeQueryAll(element, selector) {
+    selector = String(selector || '').trim();
+    if (!selector) return [];
+    selector = selector.replace(/^:scope\s*/, '').trim();
+    if (!selector) return [element];
+    if (selector.startsWith('>')) {
+      try { return Array.from(element.querySelectorAll(`:scope ${selector}`)); } catch (_) { return []; }
+    }
+    if (selector.startsWith('+') || selector.startsWith('~')) {
+      const parent = element.parentElement;
+      if (!parent) return [];
+      try { return Array.from(parent.querySelectorAll(`:scope > :nth-child(${nthChildIndex(element)})${selector}`)); } catch (_) { return []; }
+    }
+    try { return Array.from(element.querySelectorAll(selector)); } catch (_) { return []; }
+  }
+
+  function queryAllFromContext(context, selector) {
+    selector = String(selector || '').trim();
+    if (!selector) return context && context.nodeType === 1 ? [context] : [document];
+    if (context && context.nodeType === 1) {
+      if (/^(?:\s*[>+~]|:scope\b)/.test(selector)) return relativeQueryAll(context, selector);
+      try { return Array.from(context.querySelectorAll(selector)); } catch (_) { return []; }
+    }
+    try { return Array.from(document.querySelectorAll(selector)); } catch (_) { return []; }
+  }
+
+  function findNextProceduralOperator(selector, start = 0) {
+    let depth = 0;
+    let quote = '';
+    for (let i = start; i < selector.length; i++) {
+      const ch = selector[i];
+      if (quote) {
+        if (ch === '\\') { i += 1; continue; }
+        if (ch === quote) quote = '';
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+      if (ch === '(') { depth += 1; continue; }
+      if (ch === ')') { depth = Math.max(0, depth - 1); continue; }
+      if (ch !== ':' || depth !== 0) continue;
+      for (const name of proceduralOperatorNames) {
+        if (selector.startsWith(`${name}(`, i + 1)) {
+          return { index: i, name, argStart: i + name.length + 2 };
+        }
+      }
+    }
+    return null;
+  }
+
+  function findClosingParen(text, openIndex) {
+    let depth = 1;
+    let quote = '';
+    for (let i = openIndex + 1; i < text.length; i++) {
+      const ch = text[i];
+      if (quote) {
+        if (ch === '\\') { i += 1; continue; }
+        if (ch === quote) quote = '';
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+      if (ch === '(') { depth += 1; continue; }
+      if (ch === ')') {
+        depth -= 1;
+        if (depth === 0) return i;
+      }
+    }
+    return -1;
+  }
+
+  function normalizeProceduralOperator(name) {
+    if (name === '-abp-contains' || name === 'contains') return 'has-text';
+    if (name === 'nth-ancestor') return 'upward';
+    return name;
+  }
+
+  function parseProceduralSelector(rawSelector) {
+    const raw = stripWatchAttr(String(rawSelector || '').trim());
+    const cached = proceduralSelectorCache.get(raw);
+    if (cached) return cached;
+    const first = findNextProceduralOperator(raw, 0);
+    if (!first) {
+      const parsed = { selector: raw, tasks: [], procedural: false };
+      proceduralSelectorCache.set(raw, parsed);
+      return parsed;
+    }
+    const out = { selector: raw.slice(0, first.index).trim(), tasks: [], procedural: true };
+    let cursor = first.index;
+    while (cursor < raw.length) {
+      const found = findNextProceduralOperator(raw, cursor);
+      if (!found) {
+        const spath = raw.slice(cursor).trim();
+        if (spath) out.tasks.push(['spath', spath]);
+        break;
+      }
+      if (found.index > cursor) {
+        const spath = raw.slice(cursor, found.index).trim();
+        if (spath) out.tasks.push(['spath', spath]);
+      }
+      const close = findClosingParen(raw, found.argStart - 1);
+      if (close === -1) break;
+      out.tasks.push([normalizeProceduralOperator(found.name), raw.slice(found.argStart, close)]);
+      cursor = close + 1;
+    }
+    proceduralSelectorCache.set(raw, out);
+    return out;
+  }
+
+  function evaluateProceduralSelector(parsed, context = document) {
+    let nodes = queryAllFromContext(context, parsed.selector);
+    for (const task of parsed.tasks) {
+      if (!nodes.length) break;
+      const op = task[0];
+      const arg = String(task[1] || '').trim();
+      if (op === 'spath') {
+        nodes = nodes.flatMap(node => relativeQueryAll(node, arg));
+      } else if (op === 'has') {
+        nodes = nodes.filter(node => evaluateProceduralSelector(parseProceduralSelector(arg), node).length > 0);
+      } else if (op === 'not') {
+        nodes = nodes.filter(node => evaluateProceduralSelector(parseProceduralSelector(arg), node).length === 0);
+      } else if (op === 'has-text') {
+        const re = regexFromLiteral(arg);
+        nodes = re ? nodes.filter(node => re.test(node.textContent || '')) : [];
+      } else if (op === 'min-text-length') {
+        const min = Number(arg);
+        nodes = Number.isFinite(min) ? nodes.filter(node => (node.textContent || '').length >= min) : [];
+      } else if (op === 'matches-css') {
+        const test = parseCSSPropertyTest(arg);
+        nodes = nodes.filter(node => elementMatchesCSSTest(node, test));
+      } else if (op === 'matches-css-before' || op === 'matches-css-after') {
+        const test = parseCSSPropertyTest(arg);
+        const pseudo = op.endsWith('before') ? '::before' : '::after';
+        nodes = nodes.filter(node => elementMatchesCSSTest(node, test, pseudo));
+      } else if (op === 'upward') {
+        const out = [];
+        for (const node of nodes) {
+          let target = node;
+          if (/^\d+$/.test(arg)) {
+            for (let i = 0; target && i < Number(arg); i++) target = target.parentElement;
+          } else {
+            target = target.parentElement ? target.parentElement.closest(arg) : null;
+          }
+          if (target) out.push(target);
+        }
+        nodes = out;
+      } else if (op === 'xpath') {
+        const out = [];
+        for (const node of nodes) {
+          try {
+            const result = document.evaluate(arg, node, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+            for (let i = 0; i < result.snapshotLength; i++) {
+              const item = result.snapshotItem(i);
+              if (item && item.nodeType === 1) out.push(item);
+            }
+          } catch (_) {}
+        }
+        nodes = out;
+      } else {
+        nodes = [];
+      }
+    }
+    return Array.from(new Set(nodes)).filter(node => node && node.nodeType === 1);
+  }
+
+  function applyProceduralAction(elements, styleText, remove) {
+    for (const element of elements) {
+      if (!element || element.nodeType !== 1) continue;
+      try {
+        if (remove) {
+          element.remove();
+        } else if (styleText !== null) {
+          element.style.cssText += ';' + cssDeclarationText(styleText);
+        } else {
+          element.style.setProperty('display', 'none', 'important');
+        }
+      } catch (_) {}
+    }
+  }
+
+  function selectProceduralElements(rawRule) {
+    let selector = stripWatchAttr(String(rawRule || '').trim());
+    let styleText = null;
+    let remove = false;
+    if (selector.startsWith('^')) {
+      selector = selector.slice(1).trim();
+      remove = true;
+    }
+    const styleAction = parseTrailingFunction(selector, 'style');
+    if (styleAction) {
+      selector = styleAction.selector;
+      styleText = styleAction.argument;
+    }
+    if (selector.endsWith(':remove()')) {
+      selector = selector.slice(0, -':remove()'.length);
+      remove = true;
+    }
+    const parsed = parseProceduralSelector(selector);
+    try {
+      const elements = parsed.procedural
+        ? evaluateProceduralSelector(parsed, document)
+        : Array.from(document.querySelectorAll(selector));
+      return { elements, styleText, remove };
+    } catch (_) {
+      return { elements: [], styleText, remove };
+    }
+  }
+
+  function runProceduralCssRules() {
+    const rules = extendedCss.filter(rule => typeof rule === 'string' && proceduralCssPattern.test(rule));
+    if (!rules.length || !document.documentElement) return;
+    for (const rule of rules) {
+      const result = selectProceduralElements(rule);
+      applyProceduralAction(result.elements, result.styleText, result.remove);
+    }
+  }
+
+  function installProceduralCssRuntime() {
+    const rules = extendedCss.filter(rule => typeof rule === 'string' && proceduralCssPattern.test(rule));
+    if (!rules.length || !document.documentElement) return;
+    const run = () => { try { runProceduralCssRules(); } catch (_) {} };
+    let pending = false;
+    const scheduleRun = () => {
+      if (pending) return;
+      pending = true;
+      const flush = () => { pending = false; run(); };
+      try { requestAnimationFrame(flush); } catch (_) { setTimeout(flush, 16); }
+    };
+    run();
+    try { document.addEventListener('DOMContentLoaded', scheduleRun, { once: true }); } catch (_) {}
+    try { setTimeout(scheduleRun, 50); setTimeout(scheduleRun, 150); setTimeout(scheduleRun, 500); } catch (_) {}
+    try { new MutationObserver(scheduleRun).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); } catch (_) {}
   }
 
   function runRawScripts() {
@@ -5697,6 +6031,7 @@ function wBlockApplyConfiguration(configuration) {
   }
 
   try { injectCssRules(); } catch (_) {}
+  try { installProceduralCssRuntime(); } catch (_) {}
   for (const scriptlet of scriptlets) {
     const args = Array.isArray(scriptlet && scriptlet.args) ? scriptlet.args : [];
     const normalizedName = normalizeIncomingName(scriptlet && scriptlet.name);
@@ -5749,6 +6084,20 @@ function isUnsafeBroadDNRRedirect(rule) {
   );
 }
 
+function isGoogleVideoPlaybackDNRRule(rule) {
+  const actionType = rule && rule.action && rule.action.type;
+  if (actionType !== 'block' && actionType !== 'redirect') return false;
+  const condition = rule && rule.condition;
+  if (!condition) return false;
+  const haystack = [
+    condition.urlFilter,
+    condition.regexFilter,
+    ...(Array.isArray(condition.requestDomains) ? condition.requestDomains : []),
+    ...(Array.isArray(condition.excludedRequestDomains) ? condition.excludedRequestDomains : [])
+  ].filter(Boolean).join('\n').toLowerCase();
+  return haystack.includes('googlevideo') && (haystack.includes('videoplayback') || haystack.includes('initplayback'));
+}
+
 function normalizeDynamicDNRRules(rules) {
   if (!Array.isArray(rules)) return [];
   const normalized = [];
@@ -5757,6 +6106,7 @@ function normalizeDynamicDNRRules(rules) {
     if (!rule || typeof rule !== 'object') continue;
     if (!rule.action || !rule.condition) continue;
     if (isUnsafeBroadDNRRedirect(rule)) continue;
+    if (isGoogleVideoPlaybackDNRRule(rule)) continue;
     const copy = JSON.parse(JSON.stringify(rule));
     // Safari rejects safari-web-extension:// URLs in DNR redirect.url.
     // Keep extensionPath intact so WebKit can resolve the packaged resource.
@@ -5800,21 +6150,40 @@ async function updateDynamicRulesSkippingInvalid(removeRuleIds, rules) {
   }
 }
 
+async function allDynamicDNRRuleIds() {
+  if (browser.declarativeNetRequest.getDynamicRules) {
+    const existing = await browser.declarativeNetRequest.getDynamicRules();
+    return existing
+      .map(rule => rule && rule.id)
+      .filter(id => Number.isInteger(id));
+  }
+  return Array.from({ length: WBLOCK_DNR_DYNAMIC_ID_MAX - WBLOCK_DNR_DYNAMIC_ID_MIN + 1 }, (_, i) => WBLOCK_DNR_DYNAMIC_ID_MIN + i);
+}
+
+async function clearDynamicDNRRules(reason = 'clear') {
+  if (!browser.declarativeNetRequest || !browser.declarativeNetRequest.updateDynamicRules) return;
+  try {
+    const removeRuleIds = await allDynamicDNRRuleIds();
+    if (!removeRuleIds.length) return;
+    await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: [] });
+    dnrRulesTimestamp = 0;
+    logDNRSyncDiagnostic({ outcome: reason, rules: 0, removed: removeRuleIds.length });
+  } catch (error) {
+    console.warn('[wBlock] Dynamic DNR clear failed:', error);
+    logDNRSyncDiagnostic({ outcome: `${reason}_failure`, rules: 0, reason: error && error.message ? error.message : String(error) });
+  }
+}
+
 async function syncDynamicDNRRules(configuration) {
   const timestamp = configuration && configuration.engineTimestamp || 0;
   if (timestamp === dnrRulesTimestamp) return;
   if (!browser.declarativeNetRequest || !browser.declarativeNetRequest.updateDynamicRules) return;
-  const rules = normalizeDynamicDNRRules(configuration && configuration.dnrRules);
+  const rules = [];
   try {
-    let removeRuleIds = [];
-    if (browser.declarativeNetRequest.getDynamicRules) {
-      const existing = await browser.declarativeNetRequest.getDynamicRules();
-      removeRuleIds = existing
-        .map(rule => rule && rule.id)
-        .filter(id => Number.isInteger(id) && id >= WBLOCK_DNR_DYNAMIC_ID_MIN && id <= WBLOCK_DNR_DYNAMIC_ID_MAX);
-    } else {
-      removeRuleIds = Array.from({ length: WBLOCK_DNR_DYNAMIC_ID_MAX - WBLOCK_DNR_DYNAMIC_ID_MIN + 1 }, (_, i) => WBLOCK_DNR_DYNAMIC_ID_MIN + i);
-    }
+    // Dynamic DNR is intentionally disabled while the Safari advanced runtime is
+    // simplified. Always clear existing rules, including stale rules from older
+    // builds which used different ID ranges.
+    const removeRuleIds = await allDynamicDNRRuleIds();
     const result = await updateDynamicRulesSkippingInvalid(removeRuleIds, rules);
     dnrRulesTimestamp = timestamp;
     if (result.rejected.length) {
@@ -5827,6 +6196,8 @@ async function syncDynamicDNRRules(configuration) {
     logDNRSyncDiagnostic({ outcome: 'failure', rules: rules.length, reason: error && error.message ? error.message : String(error) });
   }
 }
+
+clearDynamicDNRRules('startup_clear').catch(() => {});
 
 async function requestConfiguration(originalRequest, url, topUrl) {
   const request = { ...(originalRequest || {}), payload: { url, topUrl } };

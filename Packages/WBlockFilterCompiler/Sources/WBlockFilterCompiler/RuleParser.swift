@@ -50,6 +50,7 @@ enum RuleParser {
             toDomains: [],
             denyAllowDomains: [],
             removeParameters: [],
+            requestMethods: [],
             urlSkipSteps: nil,
             uriTransform: nil,
             redirectResource: nil,
@@ -82,6 +83,7 @@ enum RuleParser {
         var toDomains: [String] = []
         var denyAllowDomains: [String] = []
         var removeParameters: [String] = []
+        var requestMethods: [String] = []
         var urlSkipSteps: String?
         var uriTransform: String?
         var redirectResource: String?
@@ -361,7 +363,22 @@ enum RuleParser {
                 continue
             }
 
-            if lower.hasPrefix("method=") || lower == "inline-script" || lower == "inline-font" || lower == "elemhide" || lower == "generichide" || lower == "genericblock" || lower == "jsinject" || lower == "shide" || lower == "ehide" || lower == "ghide" || lower == "specifichide" || lower == "cname" || lower.hasPrefix("cname=") {
+            if lower.hasPrefix("method=") {
+                guard configuration.enabledCapabilities.contains(.advancedScriptlets), !isException else {
+                    return .unsupported(.noSafariEquivalent)
+                }
+                let value = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                    .dropFirst()
+                    .first
+                    .map(String.init) ?? ""
+                let methods = parseRequestMethods(value)
+                guard !methods.isEmpty else { return .unsupported(.noSafariEquivalent) }
+                requestMethods.append(contentsOf: methods)
+                canonicalOptions.append("method=\(methods.joined(separator: "|"))")
+                continue
+            }
+
+            if lower == "inline-script" || lower == "inline-font" || lower == "elemhide" || lower == "generichide" || lower == "genericblock" || lower == "jsinject" || lower == "shide" || lower == "ehide" || lower == "ghide" || lower == "specifichide" || lower == "cname" || lower.hasPrefix("cname=") {
                 return .unsupported(.noSafariEquivalent)
             }
 
@@ -391,6 +408,7 @@ enum RuleParser {
                 toDomains: Array(Set(toDomains)).sorted(),
                 denyAllowDomains: Array(Set(denyAllowDomains)).sorted(),
                 removeParameters: Array(Set(removeParameters)).sorted(),
+                requestMethods: Array(Set(requestMethods)).sorted(),
                 urlSkipSteps: urlSkipSteps,
                 uriTransform: uriTransform,
                 redirectResource: redirectResource,
@@ -456,6 +474,15 @@ enum RuleParser {
         return nil
     }
 
+    private static func parseRequestMethods(_ value: String) -> [String] {
+        let allowed = Set(["connect", "delete", "get", "head", "options", "patch", "post", "put"])
+        return Array(Set(value
+            .split(separator: "|", omittingEmptySubsequences: true)
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { allowed.contains($0) }
+        )).sorted()
+    }
+
     private static func parseRemoveHeader(_ value: String) -> (isRequest: Bool, name: String)? {
         var raw = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !raw.isEmpty else { return nil }
@@ -511,7 +538,7 @@ enum RuleParser {
     }
 
     private static func isUsableHost(_ host: String) -> Bool {
-        !host.isEmpty && host != "localhost" && !host.contains("#")
+        !host.isEmpty && !host.contains("#")
     }
 
     private static func resourceType(for option: String) -> SafariResourceType? {

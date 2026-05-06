@@ -264,6 +264,8 @@ public struct AdvancedDNRCondition: Sendable, Equatable, Codable, Hashable {
     public var excludedRequestDomains: [String]?
     public var initiatorDomains: [String]?
     public var excludedInitiatorDomains: [String]?
+    public var requestMethods: [String]?
+    public var excludedRequestMethods: [String]?
     public var isUrlFilterCaseSensitive: Bool?
 
     public init(
@@ -275,6 +277,8 @@ public struct AdvancedDNRCondition: Sendable, Equatable, Codable, Hashable {
         excludedRequestDomains: [String]? = nil,
         initiatorDomains: [String]? = nil,
         excludedInitiatorDomains: [String]? = nil,
+        requestMethods: [String]? = nil,
+        excludedRequestMethods: [String]? = nil,
         isUrlFilterCaseSensitive: Bool? = nil
     ) {
         self.regexFilter = regexFilter
@@ -285,6 +289,8 @@ public struct AdvancedDNRCondition: Sendable, Equatable, Codable, Hashable {
         self.excludedRequestDomains = excludedRequestDomains
         self.initiatorDomains = initiatorDomains
         self.excludedInitiatorDomains = excludedInitiatorDomains
+        self.requestMethods = requestMethods
+        self.excludedRequestMethods = excludedRequestMethods
         self.isUrlFilterCaseSensitive = isUrlFilterCaseSensitive
     }
 }
@@ -457,22 +463,37 @@ enum AdvancedRuleParser {
     }
 
     private static func parseExtendedCSS(_ text: String) -> AdvancedParsedRule? {
-        let exception = text.contains("#@#")
-        let delimiter = exception ? "#@#" : "##"
-        guard let range = text.range(of: delimiter) else { return nil }
-        let domainPart = String(text[..<range.lowerBound])
-        let selector = String(text[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isExtendedSelector(selector) else { return nil }
-        let rule = AdvancedStyleRule(scope: parseScope(domainPart), content: selector)
-        return exception ? .extendedCssException(rule) : .extendedCss(rule)
+        let delimiters: [(token: String, exception: Bool, html: Bool)] = [
+            ("#@?#", true, false),
+            ("#@#^", true, true),
+            ("#@#", true, false),
+            ("#?#", false, false),
+            ("##^", false, true),
+            ("##", false, false)
+        ]
+
+        for delimiter in delimiters {
+            guard let range = text.range(of: delimiter.token) else { continue }
+            let domainPart = String(text[..<range.lowerBound])
+            let selector = String(text[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let content = delimiter.html ? "^\(selector)" : selector
+            guard isExtendedSelector(content) else { return nil }
+            let rule = AdvancedStyleRule(scope: parseScope(domainPart), content: content)
+            return delimiter.exception ? .extendedCssException(rule) : .extendedCss(rule)
+        }
+
+        return nil
     }
 
     private static func isExtendedSelector(_ selector: String) -> Bool {
+        selector.hasPrefix("^") ||
         selector.contains(":has-text") ||
         selector.contains(":-abp-contains") ||
         selector.contains(":contains") ||
         selector.contains(":xpath") ||
         selector.contains(":upward") ||
+        selector.contains(":min-text-length") ||
+        selector.contains(":nth-ancestor") ||
         selector.contains(":matches-css") ||
         selector.contains(":matches-attr") ||
         selector.contains(":matches-property") ||
@@ -486,8 +507,12 @@ enum AdvancedRuleParser {
         var positive: [String] = []
         var negative: [String] = []
         for raw in normalized.split(separator: "|", omittingEmptySubsequences: true) {
-            let item = String(raw).trimmingCharacters(in: .whitespacesAndNewlines)
+            var item = String(raw).trimmingCharacters(in: .whitespacesAndNewlines)
             guard !item.isEmpty else { continue }
+            let appliesToDescendantFrames = item.hasSuffix(">>")
+            if appliesToDescendantFrames {
+                item.removeLast(2)
+            }
             if item.hasPrefix("~") {
                 negative.append(String(item.dropFirst()))
             } else {

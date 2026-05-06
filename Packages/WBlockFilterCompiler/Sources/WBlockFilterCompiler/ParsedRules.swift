@@ -21,6 +21,7 @@ struct NetworkRule: Equatable {
     var toDomains: [String]
     var denyAllowDomains: [String]
     var removeParameters: [String]
+    var requestMethods: [String]
     var urlSkipSteps: String?
     var uriTransform: String?
     var redirectResource: String?
@@ -67,6 +68,7 @@ enum NetworkAction: Equatable {
 extension NetworkRule {
     var requiresAdvancedURLHandling: Bool {
         !removeParameters.isEmpty ||
+            !requestMethods.isEmpty ||
             urlSkipSteps != nil ||
             uriTransform != nil ||
             redirectResource != nil ||

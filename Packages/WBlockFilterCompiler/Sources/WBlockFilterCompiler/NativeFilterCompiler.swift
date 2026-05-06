@@ -61,7 +61,7 @@ public struct NativeFilterCompiler: FilterCompiling {
                     if rule.isBadfilter {
                         badfilterIdentities.insert(rule.canonicalIdentity)
                     } else if rule.requiresAdvancedURLHandling {
-                        let jsRules = advancedURLHandlingScripts(for: rule)
+                        let jsRules = advancedURLHandlingScripts(for: rule, configuration: configuration)
                         let dnrRules = advancedDNRRulesForURLHandling(rule, nextID: &nextDNRRuleID)
                         if jsRules.isEmpty, dnrRules.isEmpty, rule.redirectResource != nil {
                             networkRules.append(rule)
@@ -91,8 +91,10 @@ public struct NativeFilterCompiler: FilterCompiling {
         let filteredNetworkRules = networkRules.filter { !badfilterIdentities.contains($0.canonicalIdentity) }
         let expandedNetworkRules = expandNetworkRules(filteredNetworkRules)
         let plannedCosmeticRules = applyCosmeticExceptions(cosmeticRules, exceptions: cosmeticExceptionRules)
-        let runtimeCosmeticRules = plannedCosmeticRules
-            .filter { !$0.ifDomains.isEmpty || !$0.unlessDomains.isEmpty }
+        let scopedRuntimeCosmeticRules = plannedCosmeticRules.filter { !$0.ifDomains.isEmpty || !$0.unlessDomains.isEmpty }
+        let unscopedCosmeticRules = plannedCosmeticRules.filter { $0.ifDomains.isEmpty && $0.unlessDomains.isEmpty }
+        let unscopedRuntimeCosmeticRules = unscopedCosmeticRules.count <= 500 ? unscopedCosmeticRules : []
+        let runtimeCosmeticRules = (scopedRuntimeCosmeticRules + unscopedRuntimeCosmeticRules)
             .map { rule in
                 AdvancedStyleRule(
                     scope: AdvancedDomainScope(
@@ -102,12 +104,14 @@ public struct NativeFilterCompiler: FilterCompiling {
                     content: rule.selector
                 )
             }
+        let plannedScriptletRules = applyAdvancedScriptletExceptions(advancedScriptletRules, exceptions: advancedScriptletExceptionRules)
+        let runtimeScriptletRules = sanitizeScriptletRulesForCurrentRuntime(plannedScriptletRules, configuration: configuration)
         let advancedBundle = AdvancedRuleBundle(
             css: dedupeAdvancedStyleRules(advancedCSSRules + runtimeCosmeticRules),
             extendedCss: dedupeAdvancedStyleRules(applyAdvancedStyleExceptions(advancedExtendedCSSRules, exceptions: advancedExtendedCSSExceptionRules)),
             extendedCssExceptions: dedupeAdvancedStyleRules(advancedExtendedCSSExceptionRules),
             js: dedupeAdvancedStyleRules(advancedJSRules),
-            scriptlets: dedupeAdvancedScriptletRules(applyAdvancedScriptletExceptions(advancedScriptletRules, exceptions: advancedScriptletExceptionRules)),
+            scriptlets: dedupeAdvancedScriptletRules(runtimeScriptletRules),
             scriptletExceptions: dedupeAdvancedScriptletRules(advancedScriptletExceptionRules),
             dnrRules: dedupeAdvancedDNRRules(advancedDNRRules)
         )
@@ -236,6 +240,82 @@ public struct NativeFilterCompiler: FilterCompiling {
         return rules.filter { !exceptionKeys.contains(advancedScriptletKey($0)) }
     }
 
+    private func sanitizeScriptletRulesForCurrentRuntime(_ rules: [AdvancedScriptletRule], configuration: FilterCompilerConfiguration) -> [AdvancedScriptletRule] {
+        guard configuration.platform == .uBlockOriginCompatibility else { return rules }
+        return rules.filter { !isFragileYouTubePlaybackScriptlet($0) }
+    }
+
+    private func isFragileYouTubePlaybackScriptlet(_ rule: AdvancedScriptletRule) -> Bool {
+        guard isYouTubeScoped(rule.scope) else { return false }
+        let name = rule.name.lowercased()
+        let args = rule.args.joined(separator: "\u{1f}")
+
+        // uBO's YouTube Quick fixes/Experimental lists rely on document-start,
+        // exact page-world scriptlet injection. wBlock's native runtime resolves
+        // rules asynchronously through the Safari native-message bridge; applying
+        // these player-client cycling probes late can leave YouTube in a permanent
+        // buffering/reload loop.
+        if isTrustedReplaceNodeTextName(name) {
+            return args.contains("serverContract") && (
+                args.contains("loadVideoById") ||
+                args.contains("buffer_health_seconds") ||
+                args.contains("onAbnormalityDetected") ||
+                args.contains("YOUTUBE_PREMIUM_LOGO")
+            )
+        }
+
+        if isTrustedJSONEditRequestName(name) {
+            return args.contains("userAgent") ||
+                args.contains("clientScreen") ||
+                args.contains("#reloadxhr") ||
+                args.contains("adPlaybackContext") ||
+                args.contains("eAFgAQ")
+        }
+
+        if isTrustedJSONEditResponseName(name) {
+            return args.contains("minimumPlaybackRate")
+        }
+
+        return false
+    }
+
+    private func isYouTubeScoped(_ scope: AdvancedDomainScope) -> Bool {
+        ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com"].contains { scope.matches(host: $0) }
+    }
+
+    private func isTrustedReplaceNodeTextName(_ name: String) -> Bool {
+        name == "ubo-trusted-rpnt" ||
+            name == "ubo-trusted-rpnt.js" ||
+            name == "trusted-rpnt" ||
+            name == "trusted-rpnt.js" ||
+            name == "ubo-trusted-replace-node-text" ||
+            name == "ubo-trusted-replace-node-text.js" ||
+            name == "trusted-replace-node-text" ||
+            name == "trusted-replace-node-text.js"
+    }
+
+    private func isTrustedJSONEditRequestName(_ name: String) -> Bool {
+        name == "ubo-trusted-json-edit-xhr-request" ||
+            name == "ubo-trusted-json-edit-xhr-request.js" ||
+            name == "trusted-json-edit-xhr-request" ||
+            name == "trusted-json-edit-xhr-request.js" ||
+            name == "ubo-trusted-json-edit-fetch-request" ||
+            name == "ubo-trusted-json-edit-fetch-request.js" ||
+            name == "trusted-json-edit-fetch-request" ||
+            name == "trusted-json-edit-fetch-request.js"
+    }
+
+    private func isTrustedJSONEditResponseName(_ name: String) -> Bool {
+        name == "ubo-trusted-json-edit-xhr-response" ||
+            name == "ubo-trusted-json-edit-xhr-response.js" ||
+            name == "trusted-json-edit-xhr-response" ||
+            name == "trusted-json-edit-xhr-response.js" ||
+            name == "ubo-trusted-json-edit-fetch-response" ||
+            name == "ubo-trusted-json-edit-fetch-response.js" ||
+            name == "trusted-json-edit-fetch-response" ||
+            name == "trusted-json-edit-fetch-response.js"
+    }
+
     private func advancedStyleKey(_ rule: AdvancedStyleRule) -> String {
         [
             rule.content,
@@ -292,9 +372,12 @@ public struct NativeFilterCompiler: FilterCompiling {
 
     private func advancedDNRRulesForURLHandling(_ rule: NetworkRule, nextID: inout Int) -> [AdvancedDNRRule] {
         var rules: [AdvancedDNRRule] = []
-        if let removeParamRule = dnrRemoveParamRule(for: rule, id: nextID) {
-            rules.append(removeParamRule)
+        if let blockRule = dnrBlockRule(for: rule, id: nextID) {
+            rules.append(blockRule)
             nextID += 1
+        }
+        for removeParamRule in dnrRemoveParamRules(for: rule, nextID: &nextID) {
+            rules.append(removeParamRule)
         }
         if let redirectRule = dnrRedirectRule(for: rule, id: nextID) {
             rules.append(redirectRule)
@@ -307,23 +390,52 @@ public struct NativeFilterCompiler: FilterCompiling {
         return rules
     }
 
-    private func dnrRemoveParamRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
-        let params = exactRemoveParameters(rule.removeParameters)
-        guard !params.isEmpty else { return nil }
-        guard let condition = dnrCondition(for: rule) else { return nil }
+    private func dnrBlockRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
+        guard !rule.requestMethods.isEmpty, !rule.isException,
+              rule.removeParameters.isEmpty,
+              rule.urlSkipSteps == nil,
+              rule.uriTransform == nil,
+              rule.redirectResource == nil,
+              rule.removeRequestHeaders.isEmpty,
+              rule.removeResponseHeaders.isEmpty,
+              rule.cspDirectives.isEmpty,
+              rule.permissionsPolicies.isEmpty,
+              let condition = dnrCondition(for: rule) else { return nil }
         return AdvancedDNRRule(
             id: id,
-            priority: rule.important ? 100_000 : 10_000,
-            action: AdvancedDNRAction(
-                type: "redirect",
-                redirect: AdvancedDNRRedirect(
-                    transform: AdvancedDNRURLTransform(
-                        queryTransform: AdvancedDNRQueryTransform(removeParams: params)
-                    )
-                )
-            ),
+            priority: rule.important ? 70_000 : 7_000,
+            action: AdvancedDNRAction(type: "block"),
             condition: condition
         )
+    }
+
+    private func dnrRemoveParamRules(for rule: NetworkRule, nextID: inout Int) -> [AdvancedDNRRule] {
+        exactRemoveParameters(rule.removeParameters).compactMap { parameter in
+            guard var condition = dnrCondition(for: rule) else { return nil }
+            condition.urlFilter = dnrURLFilterForRemoveParam(base: condition.urlFilter, parameter: parameter)
+            let rule = AdvancedDNRRule(
+                id: nextID,
+                priority: rule.important ? 100_000 : 10_000,
+                action: AdvancedDNRAction(
+                    type: "redirect",
+                    redirect: AdvancedDNRRedirect(
+                        transform: AdvancedDNRURLTransform(
+                            queryTransform: AdvancedDNRQueryTransform(removeParams: [parameter])
+                        )
+                    )
+                ),
+                condition: condition
+            )
+            nextID += 1
+            return rule
+        }
+    }
+
+    private func dnrURLFilterForRemoveParam(base: String?, parameter: String) -> String {
+        let needle = "^\(parameter)="
+        guard let base, !base.isEmpty, base != "*" else { return needle }
+        if base.localizedCaseInsensitiveContains(parameter) { return base }
+        return "\(base)*\(needle)"
     }
 
     private func dnrRedirectRule(for rule: NetworkRule, id: Int) -> AdvancedDNRRule? {
@@ -396,6 +508,7 @@ public struct NativeFilterCompiler: FilterCompiling {
             requestDomains: requestDomains.isEmpty ? nil : requestDomains,
             initiatorDomains: initiatorDomains.isEmpty ? nil : initiatorDomains,
             excludedInitiatorDomains: excludedInitiatorDomains.isEmpty ? nil : excludedInitiatorDomains,
+            requestMethods: rule.requestMethods.isEmpty ? nil : rule.requestMethods,
             isUrlFilterCaseSensitive: rule.matchCase ? true : nil
         )
     }
@@ -485,6 +598,8 @@ public struct NativeFilterCompiler: FilterCompiling {
             return "/web_accessible_resources/noop.html"
         case "1x1.gif", "empty.gif", "transparent.gif":
             return "/web_accessible_resources/1x1.gif"
+        case "32x32.png", "32x32":
+            return "/web_accessible_resources/32x32.png"
         case "1x1.png", "2x2.png", "3x2.png", "empty.png", "transparent.png":
             return "/web_accessible_resources/1x1.png"
         case "noopmp4", "noop.mp4", "blank-mp4", "empty.mp4":
@@ -517,18 +632,19 @@ public struct NativeFilterCompiler: FilterCompiling {
         }
     }
 
-    private func advancedURLHandlingScripts(for rule: NetworkRule) -> [AdvancedStyleRule] {
+    private func advancedURLHandlingScripts(for rule: NetworkRule, configuration: FilterCompilerConfiguration) -> [AdvancedStyleRule] {
         var rules: [AdvancedStyleRule] = []
         let scope = advancedScope(for: rule)
         let hostPatterns = advancedHostPatterns(for: rule)
         let urlFilter = SafariURLFilterTranslator.translate(rule.pattern)
 
-        if !rule.removeParameters.isEmpty {
+        let removeParametersForScript = removeParametersNeedingScriptFallback(for: rule, configuration: configuration)
+        if !removeParametersForScript.isEmpty {
             rules.append(
                 AdvancedStyleRule(
                     scope: scope,
                     content: removeParameterScript(
-                        parameters: rule.removeParameters,
+                        parameters: removeParametersForScript,
                         hostPatterns: hostPatterns,
                         urlFilter: urlFilter
                     )
@@ -536,7 +652,8 @@ public struct NativeFilterCompiler: FilterCompiling {
             )
         }
 
-        if let steps = rule.urlSkipSteps {
+        if let steps = rule.urlSkipSteps,
+           shouldEmitPageURLScriptFallback(hostPatterns: hostPatterns, configuration: configuration) {
             rules.append(
                 AdvancedStyleRule(
                     scope: scope,
@@ -549,7 +666,8 @@ public struct NativeFilterCompiler: FilterCompiling {
             )
         }
 
-        if let transform = rule.uriTransform {
+        if let transform = rule.uriTransform,
+           shouldEmitPageURLScriptFallback(hostPatterns: hostPatterns, configuration: configuration) {
             rules.append(
                 AdvancedStyleRule(
                     scope: scope,
@@ -577,9 +695,84 @@ public struct NativeFilterCompiler: FilterCompiling {
     }
 
     private func advancedHostPatterns(for rule: NetworkRule) -> [String] {
-        if !rule.toDomains.isEmpty { return rule.toDomains }
-        if !rule.ifDomains.isEmpty { return rule.ifDomains }
-        return []
+        let candidates: [String]
+        if !rule.toDomains.isEmpty {
+            candidates = rule.toDomains
+        } else if !rule.ifDomains.isEmpty {
+            candidates = rule.ifDomains
+        } else if let patternHost = advancedPatternHost(for: rule.pattern) {
+            candidates = [patternHost]
+        } else {
+            candidates = []
+        }
+        return candidates.filter(isSpecificAdvancedHostPattern)
+    }
+
+    private func shouldEmitPageURLScriptFallback(hostPatterns: [String], configuration: FilterCompilerConfiguration) -> Bool {
+        configuration.platform != .uBlockOriginCompatibility || !hostPatterns.isEmpty
+    }
+
+    private func isSpecificAdvancedHostPattern(_ host: String) -> Bool {
+        let normalized = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized == "localhost" || normalized.contains(".")
+    }
+
+    private func advancedPatternHost(for pattern: String) -> String? {
+        let trimmed = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate: String?
+        if trimmed.hasPrefix("||") {
+            let start = trimmed.index(trimmed.startIndex, offsetBy: 2)
+            let end = trimmed[start...].firstIndex { character in
+                character == "/" || character == "^" || character == "?" || character == "*" || character == "|"
+            } ?? trimmed.endIndex
+            candidate = String(trimmed[start..<end])
+        } else {
+            let withoutLeftAnchor = trimmed.hasPrefix("|") ? String(trimmed.dropFirst()) : trimmed
+            if withoutLeftAnchor.hasPrefix("http://") || withoutLeftAnchor.hasPrefix("https://") {
+                candidate = URL(string: withoutLeftAnchor.replacingOccurrences(of: "|", with: ""))?.host
+            } else {
+                candidate = nil
+            }
+        }
+
+        guard let candidate else { return nil }
+        let normalized = candidate
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            .lowercased()
+        guard !normalized.isEmpty,
+              !normalized.contains("*"),
+              !normalized.contains("/"),
+              !normalized.contains(":") else { return nil }
+        return normalized
+    }
+
+    private func removeParametersNeedingScriptFallback(for rule: NetworkRule, configuration: FilterCompilerConfiguration) -> [String] {
+        guard !rule.removeParameters.isEmpty else { return [] }
+
+        if configuration.platform == .uBlockOriginCompatibility {
+            let exactParameters = Set(exactRemoveParameters(rule.removeParameters))
+            let expandedParameters = rule.removeParameters.flatMap { value in
+                value.split(separator: "|", omittingEmptySubsequences: true).map(String.init)
+            }
+
+            // uBO/uBOL handles removeparam at the network/DNR layer. Injecting
+            // one MutationObserver-based page script per global removeparam rule
+            // makes heavy SPAs like YouTube run dozens of URL-cleanup observers in
+            // the main world, which can stall player startup. If DNR can express
+            // the rule, do not emit the JS fallback. If it cannot, only keep the
+            // fallback for explicitly page-scoped rules.
+            if !expandedParameters.isEmpty,
+               expandedParameters.allSatisfy({ exactParameters.contains($0) }) {
+                return []
+            }
+
+            if advancedHostPatterns(for: rule).isEmpty {
+                return []
+            }
+        }
+
+        return rule.removeParameters
     }
 
     private func removeParameterScript(parameters: [String], hostPatterns: [String], urlFilter: String) -> String {

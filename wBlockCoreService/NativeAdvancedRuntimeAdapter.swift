@@ -58,41 +58,102 @@ enum NativeAdvancedRuntimeAdapter {
 
     private static func sanitizeForSafariRuntime(_ bundle: AdvancedRuleBundle) -> AdvancedRuleBundle {
         var sanitized = bundle
-        sanitized.scriptlets = bundle.scriptlets.filter { !isUnsupportedYouTubePlaybackProbe($0) }
+        sanitized.scriptlets = bundle.scriptlets.filter { !isFragileYouTubePlaybackScriptlet($0) }
+        // Keep the native advanced runtime simple and page-local for now.
+        // Dynamic DNR is global extension state in Safari and stale/broad rules can
+        // block real media before page-scoped runtime lookup has a chance to run.
+        // Static content blockers already handle network blocking; advanced rules
+        // should not install cross-page DNR until the matching/sync path is audited.
+        sanitized.dnrRules = []
+        if sanitized != bundle {
+            // Force the background runtime to replace previously-installed dynamic
+            // rules even when an older on-disk native runtime bundle is reused.
+            sanitized.engineTimestamp = Date().timeIntervalSince1970
+        }
         return sanitized
     }
 
-    private static func isUnsupportedYouTubePlaybackProbe(_ rule: AdvancedScriptletRule) -> Bool {
-        guard rule.scope.matches(host: "www.youtube.com") else { return false }
+    private static func isUnsafeGlobalRemoveParamDNRRule(_ rule: AdvancedDNRRule) -> Bool {
+        guard rule.action.type == "redirect",
+              rule.action.redirect?.transform?.queryTransform?.removeParams?.isEmpty == false,
+              rule.condition.urlFilter == "*" else { return false }
+        return rule.condition.requestDomains?.isEmpty != false &&
+            rule.condition.excludedRequestDomains?.isEmpty != false &&
+            rule.condition.initiatorDomains?.isEmpty != false &&
+            rule.condition.excludedInitiatorDomains?.isEmpty != false
+    }
+
+    private static func isFragileYouTubePlaybackScriptlet(_ rule: AdvancedScriptletRule) -> Bool {
+        guard isYouTubeScoped(rule.scope) else { return false }
         let name = rule.name.lowercased()
         let args = rule.args.joined(separator: "\u{1f}")
 
-        // uBlock's Experimental list currently contains broader YouTube playback
-        // probes that cycle several client identities after buffering failures.
-        // They are effective in uBO's exact runtime, but in Safari's page-world
-        // bridge they can keep invalidating googlevideo URLs and cause repeated
-        // 403/reload oscillation. Keep the Quick fixes rules and suppress only
-        // the broader experimental probes.
-        if name == "ubo-trusted-rpnt" || name == "trusted-rpnt" || name == "trusted-replace-node-text" {
-            return args.contains("adunit") &&
-                args.contains("lactmilli") &&
-                args.contains("instream") &&
-                args.contains("eafg") &&
-                args.contains("serverContract")
+        // uBO's YouTube Quick fixes/Experimental lists rely on document-start,
+        // exact page-world scriptlet injection. wBlock's native runtime resolves
+        // rules asynchronously through the Safari native-message bridge; applying
+        // these player-client cycling probes late can leave YouTube in a permanent
+        // buffering/reload loop. Keep conservative response-pruning scriptlets,
+        // but skip the client identity/reload probes until the runtime has a real
+        // document-start rule cache.
+        if isTrustedReplaceNodeTextName(name) {
+            return args.contains("serverContract") && (
+                args.contains("loadVideoById") ||
+                args.contains("buffer_health_seconds") ||
+                args.contains("onAbnormalityDetected") ||
+                args.contains("YOUTUBE_PREMIUM_LOGO")
+            )
         }
 
-        if name == "ubo-trusted-json-edit-xhr-request" || name == "trusted-json-edit-xhr-request" {
-            return args.contains("userAgent*=\"adunit\"") ||
-                args.contains("userAgent*=\"lactmilli\"") ||
-                args.contains("userAgent*=\"instream\"") ||
-                args.contains("userAgent*=\"eafg\"")
+        if isTrustedJSONEditRequestName(name) {
+            return args.contains("userAgent") ||
+                args.contains("clientScreen") ||
+                args.contains("#reloadxhr") ||
+                args.contains("adPlaybackContext") ||
+                args.contains("eAFgAQ")
         }
 
-        if name == "ubo-trusted-json-edit-xhr-response" || name == "trusted-json-edit-xhr-response" {
-            return args.contains("minimumPlaybackRate==100")
+        if isTrustedJSONEditResponseName(name) {
+            return args.contains("minimumPlaybackRate")
         }
 
         return false
+    }
+
+    private static func isYouTubeScoped(_ scope: AdvancedDomainScope) -> Bool {
+        ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com"].contains { scope.matches(host: $0) }
+    }
+
+    private static func isTrustedReplaceNodeTextName(_ name: String) -> Bool {
+        name == "ubo-trusted-rpnt" ||
+            name == "ubo-trusted-rpnt.js" ||
+            name == "trusted-rpnt" ||
+            name == "trusted-rpnt.js" ||
+            name == "ubo-trusted-replace-node-text" ||
+            name == "ubo-trusted-replace-node-text.js" ||
+            name == "trusted-replace-node-text" ||
+            name == "trusted-replace-node-text.js"
+    }
+
+    private static func isTrustedJSONEditRequestName(_ name: String) -> Bool {
+        name == "ubo-trusted-json-edit-xhr-request" ||
+            name == "ubo-trusted-json-edit-xhr-request.js" ||
+            name == "trusted-json-edit-xhr-request" ||
+            name == "trusted-json-edit-xhr-request.js" ||
+            name == "ubo-trusted-json-edit-fetch-request" ||
+            name == "ubo-trusted-json-edit-fetch-request.js" ||
+            name == "trusted-json-edit-fetch-request" ||
+            name == "trusted-json-edit-fetch-request.js"
+    }
+
+    private static func isTrustedJSONEditResponseName(_ name: String) -> Bool {
+        name == "ubo-trusted-json-edit-xhr-response" ||
+            name == "ubo-trusted-json-edit-xhr-response.js" ||
+            name == "trusted-json-edit-xhr-response" ||
+            name == "trusted-json-edit-xhr-response.js" ||
+            name == "ubo-trusted-json-edit-fetch-response" ||
+            name == "ubo-trusted-json-edit-fetch-response.js" ||
+            name == "trusted-json-edit-fetch-response" ||
+            name == "trusted-json-edit-fetch-response.js"
     }
 
     static func clear(groupIdentifier: String) throws {
@@ -152,9 +213,10 @@ enum NativeAdvancedRuntimeAdapter {
             return nil
         }
 
+        let sanitized = sanitizeForSafariRuntime(bundle)
         cacheLock.withLock {
-            cachedBundle = CachedBundle(path: url.path, modificationDate: modificationDate, bundle: bundle)
+            cachedBundle = CachedBundle(path: url.path, modificationDate: modificationDate, bundle: sanitized)
         }
-        return bundle
+        return sanitized
     }
 }

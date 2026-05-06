@@ -22,18 +22,16 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "10"
+    private static let embeddedCompatibilityRulesVersion = "11"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
-    /// patterns and dynamic ad containers across filter sets. YouTube response
-    /// mutation is intentionally left to uAssets/uBO filter rules to avoid
-    /// duplicate scriptlets; the googlevideo rule mirrors uBO's documented
-    /// fake-buffering mitigation in Safari content-blocker form.
+    /// patterns and dynamic ad containers across filter sets. YouTube media
+    /// requests are intentionally not blocked here because Safari can classify
+    /// normal playback requests as XHR/fetch, which breaks videos.
     private static let embeddedCompatibilityRules = #"""
 /js/widget/ads.js$script
 /js/pagead.js$script
 /widget/pagead.js$script
-||googlevideo.com/videoplayback$xhr,3p,domain=www.youtube.com
 ||www.googletagmanager.com/gtag/js$script,domain=adblock-tester.com,important
 ||sentry-cdn.com^$script,domain=adblock-tester.com,important
 ||browser.sentry-cdn.com^$script,domain=adblock-tester.com,important
@@ -582,31 +580,177 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedDomain)\"]}}"
     }
     
-    /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.
-    /// This uses Safari's native ignore-previous-rules action to whitelist disabled sites.
-    ///
-    /// - Parameters:
-    ///   - json: Existing Safari content blocker JSON string.
-    ///   - disabledSites: Array of site hostnames to whitelist.
-    /// - Returns: Modified JSON string with ignore rules injected.
+    private static let youtubePlaybackURLFilter = #".*googlevideo\.com/videoplayback.*"#
+    private static let legacyYouTubePlaybackURLFilter = #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?googlevideo\.com/videoplayback"#
+
+    private static func youtubePlaybackIgnoreRules() -> [[String: Any]] {
+        let playbackTrigger: [String: Any] = [
+            "url-filter": youtubePlaybackURLFilter
+        ]
+        let youtubePageTrigger: [String: Any] = [
+            "url-filter": ".*",
+            "if-domain": ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "*youtube.com", "*www.youtube.com"]
+        ]
+
+        var rules: [[String: Any]] = [
+            ["action": ["type": "ignore-previous-rules"], "trigger": playbackTrigger],
+            ["action": ["type": "ignore-previous-rules"], "trigger": youtubePageTrigger]
+        ]
+
+        // WebKit has reported YouTube playback fetches as raw, media, or other
+        // request classes across releases. Keep typed fallbacks for older content-
+        // blocker compilers which require matching resource-type to ignore a prior
+        // rule. The broad YouTube page ignore is intentionally blunt while Safari
+        // playback is being stabilized.
+        for resourceType in ["raw", "media", "document", "script", "image"] {
+            var playbackTypedTrigger = playbackTrigger
+            playbackTypedTrigger["resource-type"] = [resourceType]
+            rules.append([
+                "action": ["type": "ignore-previous-rules"],
+                "trigger": playbackTypedTrigger
+            ])
+
+            var pageTypedTrigger = youtubePageTrigger
+            pageTypedTrigger["resource-type"] = [resourceType]
+            rules.append([
+                "action": ["type": "ignore-previous-rules"],
+                "trigger": pageTypedTrigger
+            ])
+        }
+        return rules
+    }
+
+    private static func isBuiltInYouTubePlaybackIgnoreRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "ignore-previous-rules",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = trigger["url-filter"] as? String else {
+            return false
+        }
+        if urlFilter == ".*" {
+            guard domainListContainsYouTube(trigger["if-domain"] as? [String]) else { return false }
+        } else if urlFilter != youtubePlaybackURLFilter && urlFilter != legacyYouTubePlaybackURLFilter {
+            return false
+        }
+        if let resourceTypes = trigger["resource-type"] as? [String] {
+            guard resourceTypes.count == 1, ["raw", "media", "document", "script", "image"].contains(resourceTypes[0]) else {
+                return false
+            }
+        }
+        if let domains = trigger["if-domain"] as? [String] {
+            return domains.contains("youtube.com") || domains.contains("*youtube.com")
+        }
+        return true
+    }
+
+    private static func domainListContainsYouTube(_ domains: [String]?) -> Bool {
+        guard let domains else { return false }
+        return domains.contains { domain in
+            let normalized = domain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return normalized == "youtube.com"
+                || normalized == "www.youtube.com"
+                || normalized == "m.youtube.com"
+                || normalized == "*youtube.com"
+                || normalized == "*www.youtube.com"
+                || normalized.hasSuffix(".youtube.com")
+        }
+    }
+
+    private static func isYouTubePlaybackBlockRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "block",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = (trigger["url-filter"] as? String)?.lowercased() else {
+            return false
+        }
+
+        // Temporary safety-first policy: do not ship static block rules scoped to
+        // YouTube pages. Safari's request classification around googlevideo playback
+        // is too fragile, and one false positive makes all videos spin forever.
+        if domainListContainsYouTube(trigger["if-domain"] as? [String]) {
+            return true
+        }
+
+        if isGoogleVideoPlaybackURLFilter(urlFilter) {
+            return true
+        }
+
+        // Safari/WebKit may classify signed googlevideo playback fetches differently
+        // across releases. Do not keep broad third-party media/raw blocks scoped to
+        // YouTube pages in the static blocker, because a false positive stalls playback.
+        if urlFilter == ".*" || urlFilter == ".*_ad_" {
+            let resourceTypes = Set((trigger["resource-type"] as? [String]) ?? [])
+            let loadTypes = Set((trigger["load-type"] as? [String]) ?? [])
+            if !resourceTypes.isDisjoint(with: ["raw", "media"]) && (loadTypes.isEmpty || loadTypes.contains("third-party")) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private static func isGoogleVideoPlaybackURLFilter(_ urlFilter: String) -> Bool {
+        urlFilter.contains("googlevideo") && (urlFilter.contains("videoplayback") || urlFilter.contains("initplayback"))
+    }
+
+    private static func isGoogleVideoPlaybackBlockRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "block",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = (trigger["url-filter"] as? String)?.lowercased() else {
+            return false
+        }
+        return isGoogleVideoPlaybackURLFilter(urlFilter)
+    }
+
+    private static func isUnsafeGlobalThirdPartyRawBlock(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "block",
+              let trigger = rule["trigger"] as? [String: Any],
+              trigger["url-filter"] as? String == ".*",
+              let resourceTypes = trigger["resource-type"] as? [String],
+              resourceTypes == ["raw"],
+              let loadTypes = trigger["load-type"] as? [String],
+              loadTypes == ["third-party"] else {
+            return false
+        }
+
+        // These broad option-only filters are valid in uBO, but Safari often classifies
+        // normal media fetches as "raw". If the legacy converter loses the original
+        // domain scope, the result blocks all third-party XHR/fetch traffic, including
+        // YouTube's googlevideo playback requests.
+        return Set(trigger.keys) == Set(["url-filter", "resource-type", "load-type"])
+    }
+
+    /// Finalizes Safari content blocker JSON before saving.
+    /// This injects terminal allow rules for disabled sites and for fragile YouTube
+    /// playback requests, and removes unsafe global raw third-party blocks produced
+    /// when legacy conversion loses option-only rule domain scope.
     private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
-        guard !disabledSites.isEmpty else { return json }
         let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let openBracket = trimmed.firstIndex(of: "["),
-              let closeBracket = trimmed.lastIndex(of: "]"),
-              openBracket < closeBracket else {
+        guard let jsonData = trimmed.data(using: .utf8),
+              var rules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
             return json
         }
 
-        let ignoreRules = disabledSites.map { disabledSiteIgnoreRuleJSON(for: $0) }.joined(separator: ",")
-        guard !ignoreRules.isEmpty else { return trimmed }
+        rules.removeAll { isUnsafeGlobalThirdPartyRawBlock($0) || isYouTubePlaybackBlockRule($0) || isGoogleVideoPlaybackBlockRule($0) || isBuiltInYouTubePlaybackIgnoreRule($0) }
+        rules.append(contentsOf: youtubePlaybackIgnoreRules())
 
-        let inner = trimmed[trimmed.index(after: openBracket)..<closeBracket]
-        if inner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "[\(ignoreRules)]"
+        for site in disabledSites {
+            let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedSite.isEmpty else { continue }
+            let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+            rules.append([
+                "action": ["type": "ignore-previous-rules"],
+                "trigger": ["url-filter": ".*", "if-domain": [wildcardDomain]]
+            ])
         }
 
-        return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
+        guard let updatedData = try? JSONSerialization.data(withJSONObject: rules, options: []),
+              let updatedJSON = String(data: updatedData, encoding: .utf8) else {
+            return json
+        }
+        return updatedJSON
     }
     
     /// Counts the number of rules in a Safari content blocker JSON string.

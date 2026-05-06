@@ -16,7 +16,10 @@ class FilterListLoader {
         if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "1" {
             return true
         }
-        return UserDefaults.standard.bool(forKey: nativeCompilerExperimentalDefaultsFlag)
+        if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "0" {
+            return false
+        }
+        return true
     }
 
     static var minimalFilterName: String {

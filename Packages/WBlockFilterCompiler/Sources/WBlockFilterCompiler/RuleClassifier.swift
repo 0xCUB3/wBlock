@@ -69,6 +69,8 @@ enum RuleClassifier {
         line.contains(":has-text") ||
         line.contains(":xpath") ||
         line.contains(":upward") ||
+        line.contains(":min-text-length") ||
+        line.contains(":nth-ancestor") ||
         line.contains(":remove()") ||
         line.contains(":matches-css") ||
         line.contains(":matches-attr") ||
