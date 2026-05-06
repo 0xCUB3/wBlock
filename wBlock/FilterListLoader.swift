@@ -15,9 +15,24 @@ class FilterListLoader {
         "uBlock filters – Ads"
     }
 
-    static var recommendedFilterNames: Set<String> {
-        nativeCompilerRecommendedFilterNames
+    static var basicFilterNames: Set<String> {
+        nativeCompilerBasicFilterNames
     }
+
+    static var recommendedFilterNames: Set<String> {
+        var names = nativeCompilerRecommendedFilterNames
+        #if os(iOS)
+            names.insert("AdGuard – Mobile Ads")
+        #endif
+        return names
+    }
+
+    private static let nativeCompilerBasicFilterNames: Set<String> = [
+        "uBlock filters – Ads",
+        "uBlock filters – Unbreak",
+        "uBlock filters – Quick fixes",
+        "EasyList",
+    ]
 
     private static let nativeCompilerRecommendedFilterNames: Set<String> = [
         "uBlock filters – Ads",

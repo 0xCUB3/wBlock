@@ -422,7 +422,7 @@ struct OnboardingView: View {
     func blockingLevelDescription(_ level: BlockingLevel) -> String {
         switch level {
         case .minimal:
-            return String(localized: "Base filter only.")
+            return String(localized: "Basic ad blocking.")
         case .recommended:
             return String(localized: "Balanced defaults.")
         }
@@ -921,7 +921,7 @@ struct OnboardingView: View {
         switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
         case "minimal":
             for i in updatedFilters.indices {
-                updatedFilters[i].isSelected = updatedFilters[i].name == FilterListLoader.minimalFilterName
+                updatedFilters[i].isSelected = FilterListLoader.basicFilterNames.contains(updatedFilters[i].name)
             }
         default:
             // Disable all filters first

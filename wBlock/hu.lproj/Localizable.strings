@@ -733,3 +733,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Open any website in Safari, then run these checks again." = "Open any website in Safari, then run these checks again.";
 "Open Safari Extensions settings and confirm wBlock Scripts has website permissions." = "Open Safari Extensions settings and confirm wBlock Scripts has website permissions.";
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
+
+"Basic ad blocking." = "Basic ad blocking.";
