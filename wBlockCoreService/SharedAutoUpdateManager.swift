@@ -283,10 +283,10 @@ public actor SharedAutoUpdateManager {
 
         do {
             if advancedRulesSnippets.isEmpty {
-                try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+                try ContentBlockerService.clearAdvancedRuntime(groupIdentifier: GroupIdentifier.shared.value)
             } else {
-                try ContentBlockerService.buildCombinedFilterEngine(
-                    combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
+                try ContentBlockerService.buildCombinedNativeAdvancedRuntime(
+                    advancedRuleBundles: advancedRulesSnippets,
                     groupIdentifier: GroupIdentifier.shared.value
                 )
             }
@@ -1538,7 +1538,7 @@ public actor SharedAutoUpdateManager {
                 let digest = hasher.finalize()
                 let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-                conversion = ContentBlockerService.convertFilterFromFile(
+                conversion = try ContentBlockerService.convertFilterFromFile(
                     rulesFileURL: tempURL,
                     rulesSHA256Hex: rulesSHA256Hex,
                     groupIdentifier: GroupIdentifier.shared.value,

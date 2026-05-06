@@ -5,7 +5,6 @@
 //  Created by Andrey Meshkov on 11/04/2025.
 //
 
-internal import FilterEngine
 #if os(macOS)
 import AppKit
 #endif
@@ -121,28 +120,15 @@ public enum WebExtensionRequestHandler {
                             }
 
                             let groupIdentifier = GroupIdentifier.shared.value
-                            if let nativePayload = NativeAdvancedRuntimeAdapter.lookupPayload(
+                            message?["payload"] = NativeAdvancedRuntimeAdapter.lookupPayload(
                                 pageURL: url,
                                 topURL: topUrl,
                                 groupIdentifier: groupIdentifier
-                            ) {
-                                message?["payload"] = nativePayload
-                            } else {
-                                let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
-                                    let webExtension = try WebExtension.shared(
-                                        groupID: groupIdentifier
-                                    )
-                                    return webExtension.lookup(pageUrl: url, topUrl: topUrl)
-                                }
-
-                                if let configuration {
-                                    message?["payload"] = convertToPayload(configuration)
-                                }
-                            }
+                            ) ?? emptyRulesPayload()
                         } catch {
                             os_log(
                                 .error,
-                                "Failed to get WebExtension instance: %@",
+                                "Failed to get native advanced runtime payload: %@",
                                 error.localizedDescription
                             )
                         }
@@ -191,34 +177,6 @@ public enum WebExtensionRequestHandler {
         } else {
             context.completeRequest(returningItems: [], completionHandler: nil)
         }
-    }
-
-    /// Converts a WebExtension.Configuration object to a dictionary payload.
-    ///
-    /// - Parameters:
-    ///   - configuration: The WebExtension.Configuration object to convert.
-    /// - Returns: A dictionary containing CSS, extended CSS, JS, and scriptlets
-    ///           that should be applied to the web page.
-    private static func convertToPayload(
-        _ configuration: WebExtension.Configuration
-    ) -> [String: Any] {
-        var payload: [String: Any] = [:]
-        payload["css"] = configuration.css
-        payload["extendedCss"] = configuration.extendedCss
-        payload["js"] = configuration.js
-
-        var scriptlets: [[String: Any]] = []
-        for scriptlet in configuration.scriptlets {
-            var scriptletData: [String: Any] = [:]
-            scriptletData["name"] = scriptlet.name
-            scriptletData["args"] = scriptlet.args
-            scriptlets.append(scriptletData)
-        }
-
-        payload["scriptlets"] = scriptlets
-        payload["engineTimestamp"] = configuration.engineTimestamp
-
-        return payload
     }
 
     /// Creates an NSExtensionItem response with the provided JSON payload.

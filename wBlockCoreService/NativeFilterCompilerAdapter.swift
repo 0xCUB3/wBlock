@@ -2,8 +2,7 @@
 //  NativeFilterCompilerAdapter.swift
 //  wBlockCoreService
 //
-//  Experimental bridge from wBlockCoreService to the modular WBlockFilterCompiler package.
-//  This file intentionally does not participate in the default conversion path yet.
+//  Bridge from wBlockCoreService to the modular WBlockFilterCompiler package.
 //
 
 import Foundation

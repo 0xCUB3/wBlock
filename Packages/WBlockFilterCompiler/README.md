@@ -60,7 +60,7 @@ Implemented:
 
 Still incomplete:
 
-- production advanced-rule runtime parity with SafariConverterLib `FilterEngine`
+- production hardening for advanced-rule runtime edge cases
 - scriptlet/procedural-cosmetic exception planning
 - redirect/removeparam/header/csp support
 - mixed positive/negative domain splitting

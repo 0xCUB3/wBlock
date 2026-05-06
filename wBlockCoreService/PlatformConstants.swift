@@ -7,7 +7,7 @@ import Foundation
 
 /// Platform constants table for evaluating `!#if` conditional directives in filter lists.
 ///
-/// wBlock identifies as an AdGuard-syntax Safari content blocker. All constants follow
+/// wBlock identifies as a uBlock-compatible Safari content blocker. All constants follow
 /// the AdGuard/uBlock Origin convention: only the constants that accurately describe
 /// wBlock's identity are `true`; everything else is `false`.
 ///
@@ -16,7 +16,7 @@ public enum PlatformConstants {
 
     // MARK: - wBlock identity (true)
 
-    /// wBlock uses AdGuard syntax and SafariConverterLib.
+    /// wBlock can consume AdGuard-compatible filter syntax.
     public static let adguard = true
 
     /// wBlock is a Safari content blocker extension.

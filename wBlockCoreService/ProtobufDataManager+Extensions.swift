@@ -415,6 +415,50 @@ extension ProtobufDataManager {
         await saveData()
     }
     
+    public var uBlockDefaultCatalogMigrationVersion: Int {
+        Int(appData.settings.ublockDefaultCatalogMigrationVersion)
+    }
+
+    public var uBlockDefaultCatalogMigrationState: String {
+        appData.settings.ublockDefaultCatalogMigrationState
+    }
+
+    @MainActor
+    public func setUBlockDefaultCatalogMigrationInMemory(version: Int? = nil, state: String? = nil) {
+        if let version {
+            appData.settings.ublockDefaultCatalogMigrationVersion = Int32(version)
+        }
+        if let state {
+            appData.settings.ublockDefaultCatalogMigrationState = state
+        }
+    }
+
+    public func updateUBlockDefaultCatalogMigration(version: Int? = nil, state: String? = nil) async {
+        await updateDataImmediately { data in
+            if let version {
+                data.settings.ublockDefaultCatalogMigrationVersion = Int32(version)
+            }
+            if let state {
+                data.settings.ublockDefaultCatalogMigrationState = state
+            }
+        }
+    }
+
+    public var nativeDefaultFiltersAppliedVersion: Int {
+        Int(appData.settings.nativeDefaultFiltersAppliedVersion)
+    }
+
+    @MainActor
+    public func setNativeDefaultFiltersAppliedVersionInMemory(_ version: Int) {
+        appData.settings.nativeDefaultFiltersAppliedVersion = Int32(version)
+    }
+
+    public func updateNativeDefaultFiltersAppliedVersion(_ version: Int) async {
+        await updateDataImmediately { data in
+            data.settings.nativeDefaultFiltersAppliedVersion = Int32(version)
+        }
+    }
+
     // MARK: - Rule Count Management
     public func updateRuleCounts(
         lastRuleCount: Int? = nil,

@@ -196,7 +196,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 <td width="50%" valign="top">
 
 **Dependencies & Standards**
-- SafariConverterLib v4.2.1 for AdGuard to Safari rule conversion
+- Native uBlock-compatible compiler for Safari rule conversion
 - AdGuard Scriptlets v2.3.0 for advanced blocking techniques
 - Swift 5.9+ with strict concurrency checking enabled
 - WCAG 2.1 AA compliance with full VoiceOver and Dynamic Type support

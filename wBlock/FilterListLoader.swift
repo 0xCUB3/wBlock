@@ -9,28 +9,14 @@ import Foundation
 import wBlockCoreService
 
 class FilterListLoader {
-    static let nativeCompilerExperimentalDefaultsFlag = "wBlockUseNativeFilterCompilerExperimental"
-
-    static var isNativeCompilerExperimentalEnabled: Bool {
-        let environment = ProcessInfo.processInfo.environment
-        if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "1" {
-            return true
-        }
-        if environment["WBLOCK_NATIVE_FILTER_COMPILER_EXPERIMENTAL"] == "0" {
-            return false
-        }
-        return true
-    }
+    static var isNativeCompilerEnabled: Bool { true }
 
     static var minimalFilterName: String {
-        isNativeCompilerExperimentalEnabled ? "uBlock filters – Ads" : "AdGuard Base Filter"
+        "uBlock filters – Ads"
     }
 
     static var recommendedFilterNames: Set<String> {
-        if isNativeCompilerExperimentalEnabled {
-            return nativeCompilerRecommendedFilterNames
-        }
-        return legacyRecommendedFilterNames
+        nativeCompilerRecommendedFilterNames
     }
 
     private static let nativeCompilerRecommendedFilterNames: Set<String> = [
@@ -148,10 +134,7 @@ class FilterListLoader {
 
     /// Returns the default filter lists without any user customizations
     func getDefaultFilterLists() -> [FilterList] {
-        if Self.isNativeCompilerExperimentalEnabled {
-            return createNativeCompilerDefaultFilterLists()
-        }
-        return createDefaultFilterLists()
+        createNativeCompilerDefaultFilterLists()
     }
 
     private func makeNativeFilter(

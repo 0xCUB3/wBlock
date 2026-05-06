@@ -19,7 +19,6 @@
 		C1A2874F2E7361D000F5B43D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41C4D2DE089C50056F63D /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1A41C4E2DE089C50056F63D /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		C1A41C552DE08A040056F63D /* ContentBlockerConverter in Frameworks */ = {isa = PBXBuildFile; productRef = C1A41C542DE08A040056F63D /* ContentBlockerConverter */; };
 		C1A41C582DE08A0E0056F63D /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = C1A41C572DE08A0E0056F63D /* ZIPFoundation */; };
 		D3A000000000000000000001 /* WBlockFilterCompiler in Frameworks */ = {isa = PBXBuildFile; productRef = D3A000000000000000000003 /* WBlockFilterCompiler */; };
 		C1A41C6C2DE08AD30056F63D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C6B2DE08AD30056F63D /* Cocoa.framework */; };
@@ -668,7 +667,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1A41C552DE08A040056F63D /* ContentBlockerConverter in Frameworks */,
 				C1A41C582DE08A0E0056F63D /* ZIPFoundation in Frameworks */,
 				C1E44F382E4CBA9300F58897 /* SwiftProtobuf in Frameworks */,
 				D3A000000000000000000001 /* WBlockFilterCompiler in Frameworks */,
@@ -1039,7 +1037,6 @@
 			);
 			name = wBlockCoreService;
 			packageProductDependencies = (
-				C1A41C542DE08A040056F63D /* ContentBlockerConverter */,
 				C1A41C572DE08A0E0056F63D /* ZIPFoundation */,
 				C1E44F372E4CBA9300F58897 /* SwiftProtobuf */,
 				D3A000000000000000000003 /* WBlockFilterCompiler */,
@@ -1437,7 +1434,6 @@
 			mainGroup = C1A41C242DE0897C0056F63D;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C1A41C532DE08A040056F63D /* XCRemoteSwiftPackageReference "SafariConverterLib" */,
 				C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				C1E44F362E4CBA9300F58897 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
 				D3A000000000000000000002 /* XCLocalSwiftPackageReference "WBlockFilterCompiler" */,
@@ -3723,14 +3719,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		C1A41C532DE08A040056F63D /* XCRemoteSwiftPackageReference "SafariConverterLib" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/AdguardTeam/SafariConverterLib";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.2.2;
-			};
-		};
 		C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
@@ -3757,11 +3745,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C1A41C542DE08A040056F63D /* ContentBlockerConverter */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C1A41C532DE08A040056F63D /* XCRemoteSwiftPackageReference "SafariConverterLib" */;
-			productName = ContentBlockerConverter;
-		};
 		C1A41C572DE08A0E0056F63D /* ZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C1A41C562DE08A0E0056F63D /* XCRemoteSwiftPackageReference "ZIPFoundation" */;

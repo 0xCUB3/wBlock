@@ -96,7 +96,7 @@ extension AppFilterManager {
         }
     }
 
-    /// Fast rebuild for disabled sites changes only - skips SafariConverterLib conversion
+    /// Fast rebuild for disabled sites changes only - skips full native conversion
     func fastApplyDisabledSitesChanges() async {
         await MainActor.run {
             self.isLoading = true

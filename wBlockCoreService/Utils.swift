@@ -376,19 +376,6 @@ public enum UserScriptMetadataParser {
     }
 }
 
-/// Serializes access to the shared WebExtension instance to prevent data races
-/// between concurrent lookup() and buildFilterEngine() calls.
-public final class WebExtensionGate: @unchecked Sendable {
-    public static let shared = WebExtensionGate()
-    private let lock = NSLock()
-
-    public func withLock<T>(_ body: () throws -> T) rethrows -> T {
-        lock.lock()
-        defer { lock.unlock() }
-        return try body()
-    }
-}
-
 /// Runs an async operation on each item with bounded concurrency, calling `onResult`
 /// for each completed result in completion order. Platform-aware default concurrency.
 public func boundedConcurrentForEach<Item: Sendable, Result: Sendable>(

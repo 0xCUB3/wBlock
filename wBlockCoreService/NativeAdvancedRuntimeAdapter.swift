@@ -2,8 +2,7 @@
 //  NativeAdvancedRuntimeAdapter.swift
 //  wBlockCoreService
 //
-//  Experimental Safari WebExtension advanced-rule runtime backed by WBlockFilterCompiler.
-//  This intentionally coexists with SafariConverterLib's FilterEngine until parity gates pass.
+//  Safari WebExtension advanced-rule runtime backed by WBlockFilterCompiler.
 //
 
 import Foundation

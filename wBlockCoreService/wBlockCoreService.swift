@@ -5,8 +5,6 @@
 //  Created by Alexander Skula on 5/23/25.
 //
 
-internal import ContentBlockerConverter
-internal import FilterEngine
 import CryptoKit
 import Foundation
 import SafariServices
@@ -107,7 +105,13 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     /// - Returns: Data object containing a ZIP archive with Safari content blocker JSON and advanced rules,
     ///           or nil if the archive creation fails.
     public static func exportConversionResult(rules: String) -> Data? {
-        let result = convertRules(rules: rules)
+        let result: ConversionResult
+        do {
+            result = try convertRules(rules: rules)
+        } catch {
+            os_log(.error, "Native filter conversion export failed: %@", error.localizedDescription)
+            return nil
+        }
 
         // We'll use a variable so we can modify the JSON string
         var safariRulesJSON = result.safariRulesJSON
@@ -269,7 +273,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
     /// - Returns: A tuple containing the number of Safari content blocker rules generated 
     ///           and the advanced rules text (if any).
-    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
+    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -314,7 +318,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         }
 
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
-        let result = convertRules(rules: effectiveRules)
+        let result = try convertRules(rules: effectiveRules)
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -328,14 +332,14 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     }
 
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
-    /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
+    /// This avoids re-running native conversion when the combined rules for a target haven't changed.
     public static func convertFilterFromFile(
         rulesFileURL: URL,
         rulesSHA256Hex: String,
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String]? = nil
-    ) -> (safariRulesCount: Int, advancedRulesText: String?) {
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
@@ -379,7 +383,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         // Cache miss: read rules file and run conversion.
         let combinedRules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
-        let result = convertRules(rules: effectiveRules)
+        let result = try convertRules(rules: effectiveRules)
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -392,72 +396,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
     }
     
-    /// Experimental native conversion path. This is intentionally not used by the default
-    /// app pipeline yet; it exists so internal builds and tests can exercise the modular
-    /// WBlockFilterCompiler package without touching SafariConverterLib-backed caches.
-    public static func convertFilterNativeExperimentalFromFile(
-        rulesFileURL: URL,
-        groupIdentifier: String,
-        targetRulesFilename: String,
-        disabledSites: [String]? = nil
-    ) -> (safariRulesCount: Int, advancedRulesText: String?, unsupportedRuleCount: Int) {
-        let rules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
-        return convertFilterNativeExperimental(
-            rules: rules,
-            groupIdentifier: groupIdentifier,
-            targetRulesFilename: targetRulesFilename,
-            disabledSites: disabledSites
-        )
-    }
-
-    public static func convertFilterNativeExperimental(
-        rules: String,
-        groupIdentifier: String,
-        targetRulesFilename: String,
-        disabledSites: [String]? = nil
-    ) -> (safariRulesCount: Int, advancedRulesText: String?, unsupportedRuleCount: Int) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
-        let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
-
-        do {
-            let result = try NativeFilterCompilerAdapter.convert(
-                rules: effectiveRules,
-                sourceIdentifier: targetRulesFilename,
-                displayName: targetRulesFilename
-            )
-            let finalJSON = injectIgnoreRulesForDisabledSites(
-                json: result.safariRulesJSON,
-                disabledSites: sitesToUse
-            )
-            saveBlockerListFile(
-                contents: finalJSON,
-                groupIdentifier: groupIdentifier,
-                filename: targetRulesFilename
-            )
-            os_log(
-                .info,
-                "Native experimental conversion for %@ emitted %d Safari rules and %d unsupported rules",
-                targetRulesFilename,
-                result.safariRulesCount,
-                result.unsupportedRuleCount
-            )
-            return (
-                safariRulesCount: result.safariRulesCount + sitesToUse.count,
-                advancedRulesText: result.advancedRulesText,
-                unsupportedRuleCount: result.unsupportedRuleCount
-            )
-        } catch {
-            os_log(
-                .error,
-                "Native experimental conversion failed for %@: %@",
-                targetRulesFilename,
-                error.localizedDescription
-            )
-            return (safariRulesCount: 0, advancedRulesText: nil, unsupportedRuleCount: 0)
-        }
-    }
-
-    /// Fast update for disabled sites changes only - skips SafariConverterLib conversion
+    /// Fast update for disabled sites changes only - skips full native conversion
     /// Reads existing JSON files and re-injects ignore rules without full conversion
     ///
     /// - Parameters:
@@ -769,8 +708,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         }
     }
     
-    /// Builds the experimental native advanced runtime from WBlockFilterCompiler JSON bundles.
-    /// This does not replace SafariConverterLib's FilterEngine in the default pipeline yet.
+    /// Builds the native advanced runtime from WBlockFilterCompiler JSON bundles.
     ///
     /// - Parameters:
     ///   - advancedRuleBundles: JSON-encoded WBlockFilterCompiler advanced-rule bundles.
@@ -784,7 +722,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         }
     }
 
-    /// Clears the experimental native advanced runtime.
+    /// Clears the native advanced runtime.
     ///
     /// - Parameter groupIdentifier: Group ID to use for the shared container.
     public static func clearNativeAdvancedRuntime(groupIdentifier: String) throws {
@@ -809,8 +747,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         public let extraInNative: [String: [String]]
     }
 
-    /// Compares the installed native advanced runtime against the installed SafariConverterLib engine
-    /// for a single URL. This is a debug/parity harness and does not mutate either runtime.
+    /// Reports the installed native advanced runtime for a single URL without mutating it.
     public static func debugCompareAdvancedRuntimeLookup(
         pageURL: URL,
         topURL: URL? = nil,
@@ -822,46 +759,19 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             groupIdentifier: groupIdentifier
         )
 
-        let legacyConfiguration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
-            let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-            return webExtension.lookup(pageUrl: pageURL, topUrl: topURL)
-        }
-        let legacyPayload = legacyConfiguration.map(payloadFromLegacyConfiguration)
-
-        let categories = ["css", "extendedCss", "js", "scriptlets"]
-        var missingInNative: [String: [String]] = [:]
-        var extraInNative: [String: [String]] = [:]
-        for category in categories {
-            let nativeEntries = Set(canonicalEntries(in: nativePayload, category: category))
-            let legacyEntries = Set(canonicalEntries(in: legacyPayload, category: category))
-            let missing = legacyEntries.subtracting(nativeEntries).sorted()
-            let extra = nativeEntries.subtracting(legacyEntries).sorted()
-            if !missing.isEmpty { missingInNative[category] = missing }
-            if !extra.isEmpty { extraInNative[category] = extra }
-        }
+        let missingInNative: [String: [String]] = [:]
+        let extraInNative: [String: [String]] = [:]
 
         return AdvancedRuntimeLookupDebugReport(
             pageURL: pageURL.absoluteString,
             topURL: topURL?.absoluteString,
             nativeAvailable: nativePayload != nil,
-            legacyAvailable: legacyPayload != nil,
+            legacyAvailable: false,
             nativeCounts: payloadCounts(nativePayload),
-            legacyCounts: payloadCounts(legacyPayload),
+            legacyCounts: payloadCounts(nil),
             missingInNative: missingInNative,
             extraInNative: extraInNative
         )
-    }
-
-    private static func payloadFromLegacyConfiguration(_ configuration: WebExtension.Configuration) -> [String: Any] {
-        [
-            "css": configuration.css,
-            "extendedCss": configuration.extendedCss,
-            "js": configuration.js,
-            "scriptlets": configuration.scriptlets.map { scriptlet in
-                ["name": scriptlet.name, "args": scriptlet.args]
-            },
-            "engineTimestamp": configuration.engineTimestamp,
-        ]
     }
 
     private static func payloadCounts(_ payload: [String: Any]?) -> AdvancedRuntimePayloadCounts {
@@ -893,188 +803,17 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         }.sorted()
     }
 
-    /// Builds the filter engine with combined advanced rules from all filter groups.
-    ///
-    /// - Parameters:
-    ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
-        guard !combinedAdvancedRules.isEmpty else {
-            os_log(.info, "No advanced rules to build filter engine with")
-            return
-        }
-
-        try measure(label: "Building combined filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(
-                rules: combinedAdvancedRules,
-                groupIdentifier: groupIdentifier
-            )
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-            }
-            #endif
-            os_log(
-                .info,
-                "Successfully built combined filter engine with %d characters of advanced rules",
-                combinedAdvancedRules.count
-            )
-        }
-    }
-
-    /// Clears SafariConverterLib's legacy filter engine without removing the native runtime.
-    /// Used by the experimental native path so stale legacy rules are not used as fallback.
-    ///
-    /// - Parameter groupIdentifier: Group ID to use for the shared container.
-    public static func clearLegacyFilterEngine(groupIdentifier: String) throws {
-        try measure(label: "Clearing legacy filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: "")
-            }
-            #endif
-            os_log(.info, "Successfully cleared legacy filter engine")
-        }
-    }
-
-    /// Clears the filter engine by building it with empty rules.
-    ///
-    /// - Parameters:
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) throws {
-        try measure(label: "Clearing filter engine") {
-            try clearLegacyFilterEngine(groupIdentifier: groupIdentifier)
-            try? NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
-            os_log(.info, "Successfully cleared filter engine")
-        }
-    }
-
-    #if os(iOS)
-    private static func buildFilterEngineWithoutAdvisoryLock(
-        rules: String,
-        groupIdentifier: String
-    ) throws {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            throw WebExtension.WebExtensionError.containerURLNotFound(groupID: groupIdentifier)
-        }
-
-        let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        var coordinationError: NSError?
-        var buildResult: Result<Void, Error>?
-
-        coordinator.coordinate(writingItemAt: baseURL, options: [], error: &coordinationError) { _ in
-            buildResult = Result {
-                try buildFilterEngineFiles(rules: rules, baseURL: baseURL)
-            }
-        }
-
-        if let buildResult {
-            try buildResult.get()
-            return
-        }
-
-        if let coordinationError {
-            throw coordinationError
-        }
-
-        throw WebExtension.WebExtensionError.buildEngineFailed(
-            underlyingError: CocoaError(.fileWriteUnknown)
+    public static func buildCombinedAdvancedRuntime(combinedAdvancedRules: String, groupIdentifier: String) throws {
+        guard !combinedAdvancedRules.isEmpty else { return }
+        try buildCombinedNativeAdvancedRuntime(
+            advancedRuleBundles: [combinedAdvancedRules],
+            groupIdentifier: groupIdentifier
         )
     }
 
-    private static func buildFilterEngineFiles(rules: String, baseURL: URL) throws {
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(at: baseURL, withIntermediateDirectories: true)
-
-        let temporaryDirectory = baseURL.appendingPathComponent(
-            "engine-rebuild-\(UUID().uuidString)",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-        defer { try? fileManager.removeItem(at: temporaryDirectory) }
-
-        let temporaryRulesBinURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        let temporaryEngineURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        let temporaryRulesTextURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
-        let temporaryMetaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-
-        let storage = try FilterRuleStorage(
-            from: rules.components(separatedBy: "\n"),
-            for: SafariVersion.autodetect(),
-            fileURL: temporaryRulesBinURL
-        )
-        let engine = try FilterEngine(storage: storage)
-        try engine.write(to: temporaryEngineURL)
-        try rules.write(to: temporaryRulesTextURL, atomically: true, encoding: .utf8)
-
-        let meta = EngineMeta(timestamp: Date().timeIntervalSince1970, schemaVersion: Int32(Schema.VERSION))
-        try meta.toData().write(to: temporaryMetaURL, options: .atomic)
-
-        try publishEngineFiles(
-            temporaryRulesBinURL: temporaryRulesBinURL,
-            temporaryEngineURL: temporaryEngineURL,
-            temporaryRulesTextURL: temporaryRulesTextURL,
-            temporaryMetaURL: temporaryMetaURL,
-            baseURL: baseURL
-        )
-
-        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
-        if fileManager.fileExists(atPath: migrationMarkerURL.path) {
-            try? fileManager.removeItem(at: migrationMarkerURL)
-        }
+    public static func clearAdvancedRuntime(groupIdentifier: String) throws {
+        try NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
     }
-
-    private static func publishEngineFiles(
-        temporaryRulesBinURL: URL,
-        temporaryEngineURL: URL,
-        temporaryRulesTextURL: URL,
-        temporaryMetaURL: URL,
-        baseURL: URL
-    ) throws {
-        let lockURL = baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME)
-        guard let fileLock = FileLock(filePath: lockURL.path) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-
-        guard fileLock.lock(before: Date().addingTimeInterval(2)) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-        defer { _ = fileLock.unlock() }
-
-        let existingMetaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-        if FileManager.default.fileExists(atPath: existingMetaURL.path) {
-            try FileManager.default.removeItem(at: existingMetaURL)
-        }
-
-        try replaceEngineFile(temporaryRulesBinURL, in: baseURL, named: Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        try replaceEngineFile(temporaryEngineURL, in: baseURL, named: Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        try replaceEngineFile(temporaryRulesTextURL, in: baseURL, named: Schema.RULES_FILE_NAME)
-        try replaceEngineFile(temporaryMetaURL, in: baseURL, named: Schema.ENGINE_META_FILE_NAME)
-    }
-
-    private static func replaceEngineFile(_ sourceURL: URL, in baseURL: URL, named fileName: String) throws {
-        let destinationURL = baseURL.appendingPathComponent(fileName)
-        let fileManager = FileManager.default
-
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            _ = try fileManager.replaceItemAt(destinationURL, withItemAt: sourceURL)
-        } else {
-            try fileManager.moveItem(at: sourceURL, to: destinationURL)
-        }
-    }
-    #endif
     
     /// Backward compatibility function that builds the filter engine immediately (legacy behavior).
     /// This function is deprecated and should not be used for new code.
@@ -1095,32 +834,37 @@ extension ContentBlockerService {
     ///   - rules: AdGuard rules to convert.
     /// - Returns: A ConversionResult containing the converted Safari rules in JSON format
     ///           and advanced rules in text format.
-    private static func convertRules(rules: String) -> ConversionResult {
+    private struct ConversionResult {
+        let safariRulesJSON: String
+        let safariRulesCount: Int
+        let advancedRulesText: String?
+    }
+
+    private static func convertRules(rules: String) throws -> ConversionResult {
         var filterRules = rules
         if !filterRules.isContiguousUTF8 {
-            measure(label: "Make contigious UTF-8") {
-                // This is super important for the conversion performance.
-                // In a normal app make sure you're storing filter lists as
-                // contigious UTF-8 strings.
+            measure(label: "Make contiguous UTF-8") {
                 filterRules.makeContiguousUTF8()
             }
         }
 
-        // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
-        // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
-        let lines = filterRules.split(whereSeparator: \.isNewline).map(String.init)
-
-        let result = measure(label: "Conversion") {
-            ContentBlockerConverter().convertArray(
-                rules: lines,
-                safariVersion: .autodetect(),
-                advancedBlocking: true,
-                maxJsonSizeBytes: nil,
-                progress: nil
+        let nativeResult = try measure(label: "Native conversion") {
+            try NativeFilterCompilerAdapter.convert(
+                rules: filterRules,
+                sourceIdentifier: "combined",
+                displayName: "Combined rules"
             )
         }
 
-        return result
+        if nativeResult.unsupportedRuleCount > 0 {
+            os_log(.info, "Native filter conversion skipped %d unsupported rules", nativeResult.unsupportedRuleCount)
+        }
+
+        return ConversionResult(
+            safariRulesJSON: nativeResult.safariRulesJSON,
+            safariRulesCount: nativeResult.safariRulesCount,
+            advancedRulesText: nativeResult.advancedRulesText
+        )
     }
 
     /// Saves the blocker list file contents to the shared directory specified by the group identifier.
