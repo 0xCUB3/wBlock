@@ -10,7 +10,7 @@ import AppKit
 
 struct SyntaxHighlightingTextView: NSViewRepresentable {
     @Binding var text: String
-    private let highlighter = AdGuardSyntaxHighlighter()
+    private let highlighter = FilterSyntaxHighlighter()
     private let highlightDelayNanoseconds: UInt64 = 150_000_000
     private let highlightingCharacterLimit = 60_000
 
@@ -141,7 +141,7 @@ import UIKit
 
 struct SyntaxHighlightingTextView: UIViewRepresentable {
     @Binding var text: String
-    private let highlighter = AdGuardSyntaxHighlighter()
+    private let highlighter = FilterSyntaxHighlighter()
     private let highlightDelayNanoseconds: UInt64 = 150_000_000
     private let highlightingCharacterLimit = 60_000
 

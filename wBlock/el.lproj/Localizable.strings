@@ -82,7 +82,6 @@
 "Scripts" = "Κώδικας";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Ο κώδικας χρήστη \(bypassScript.name) απαιτεί το \(filterName)";
 "Foreign" = "Άλλες γλώσσες";
-"Minimal" = "Ελάχιστο";
 "Base filter only." = "Μόνο βασικό φίλτρο.";
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";
 "Whitelist" = "Λίστα επιτρεπόμενων";
@@ -202,7 +201,6 @@
 "Delete Added List" = "Διαγραφή λίστας";
 "Filter Update" = "Φίλτρο Ενημέρωσης";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Μόνο το φίλτρο AdGuard Base. Ελαφρύτερη προστασία, καλύτερη συμβατότητα.";
 "(pending)" = "(σε εκκρεμότητα)";
 "Continue Setup" = "Συνέχεια Ρύθμισης";
 "Progress" = "Πρόοδος";
@@ -485,7 +483,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks social media widgets and buttons." = "Αποκλείει γραφικά στοιχεία και κουμπιά μέσων κοινωνικής δικτύωσης.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Αποκλείει σενάρια παρακολούθησης, web beacons και άλλα στοιχεία που παραβιάζουν το απόρρητο.";
-"Building combined filter engine..." = "Κατασκευή κινητήρα συνδυασμένου φίλτρου...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "Ο ομαδοποιημένος παράγοντας φόντου λείπει από τη δημιουργία εφαρμογής";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading filter lists..." = "Λήψη λιστών φίλτρων...";
 "Downloading filter updates..." = "Λήψη ενημερώσεων φίλτρων...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + Κινεζικό φίλτρο AdGuard. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην κινεζική γλώσσα.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "Φίλτρο EasyList Dutch + AdGuard Dutch. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην ολλανδική γλώσσα.";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + Γερμανικό φίλτρο AdGuard. Λίστα φίλτρων που αφαιρεί συγκεκριμένα διαφημίσεις σε ιστότοπους στη γερμανική γλώσσα.";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter that enables ad blocking on websites in Russian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στη ρωσική γλώσσα.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στην ουκρανική γλώσσα.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Φίλτρο που προστατεύει από διάφορους τύπους απάτες στο πολωνικό δίκτυο, όπως μαζικά μηνύματα κειμένου, πλαστά ηλεκτρονικά καταστήματα κ.λπ.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Φίλτρο που αφαιρεί διαφημίσεις και διάφορα σενάρια από ιστότοπους με κορεατικό περιεχόμενο. Συνδυάζεται και επαυξάνεται με κανόνες που αφορούν ειδικά το AdGuard για βελτιωμένο φιλτράρισμα. Αυτό το φίλτρο αναμένεται να χρησιμοποιηθεί μαζί με το φίλτρο AdGuard Base.";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "Φίλτρα που μπλοκάρουν και αποκρύπτουν στοιχεία RSS και υπολείμματα κρυφών ενημερωτικών δελτίων σε συνδυασμό με στοιχεία κοινωνικής δικτύωσης σε πολωνικούς ιστότοπους.";
 "Finnish ad blocking filter list." = "Φινλανδική λίστα φίλτρων αποκλεισμού διαφημίσεων.";
 "Found %d update(s) available." = "Βρέθηκαν διαθέσιμες ενημερώσεις %d.";
@@ -568,7 +562,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Λίστα FR + Γαλλικό φίλτρο AdGuard. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στη γαλλική γλώσσα.";
 "Load full content" = "Φόρτωση πλήρους περιεχομένου";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "Δεν έχουν επιλεγεί λίστες φίλτρων. Εκκαθάριση κανόνων από όλες τις επεκτάσεις.";
@@ -659,9 +652,121 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "αντικαταστάθηκε αντιστοίχιση στη γραμμή $";
 "on line" = "στη γραμμή";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "Οι ενημερώσεις έχουν παύσει";
+"Automatic Updates" = "Αυτόματες ενημερώσεις";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "Επόμενο: ελέγξτε τα αντίστοιχα φίλτρα.";
+
+/* Native compiler uBlock filter lists */
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
+"EasyList – AI Widgets" = "EasyList – AI Widgets";
+"AdGuard/uBO – URL Tracking Protection" = "AdGuard/uBO – URL Tracking Protection";
+"Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Peter Lowe’s Ad and tracking server list" = "Peter Lowe’s Ad and tracking server list";
+"AdGuard – Ads" = "AdGuard – Ads";
+"AdGuard – Mobile Ads" = "AdGuard – Mobile Ads";
+"AdGuard – Cookie Notices" = "AdGuard – Cookie Notices";
+"AdGuard – Social Widgets" = "AdGuard – Social Widgets";
+"AdGuard – Popup Overlays" = "AdGuard – Popup Overlays";
+"AdGuard – Mobile App Banners" = "AdGuard – Mobile App Banners";
+"AdGuard – Other Annoyances" = "AdGuard – Other Annoyances";
+"AdGuard – Widgets" = "AdGuard – Widgets";
+
+/* Safari diagnostics */
+"Safari Diagnostics" = "Διαγνωστικά Safari";
+"Running Checks…" = "Εκτέλεση ελέγχων…";
+"Run Checks" = "Εκτέλεση ελέγχων";
+"Open Safari Extension Settings" = "Άνοιγμα ρυθμίσεων επεκτάσεων Safari";
+"Checks whether Safari sees wBlock extensions, whether generated rules exist, and whether the Scripts extension recently synced dynamic DNR rules." = "Ελέγχει αν το Safari βλέπει τις επεκτάσεις wBlock, αν υπάρχουν οι παραγμένοι κανόνες και αν η επέκταση Scripts συγχρόνισε πρόσφατα δυναμικούς κανόνες DNR.";
+"Status" = "Κατάσταση";
+"Recommendations" = "Συστάσεις";
+"Scripts Extension" = "Επέκταση Scripts";
+"Safari reports the Scripts extension is enabled." = "Το Safari αναφέρει ότι η επέκταση Scripts είναι ενεργή.";
+"Safari reports the Scripts extension is disabled." = "Το Safari αναφέρει ότι η επέκταση Scripts είναι ανενεργή.";
+"Enable wBlock Scripts in Safari Extensions settings and allow it on all websites." = "Ενεργοποιήστε το wBlock Scripts στις ρυθμίσεις επεκτάσεων του Safari και επιτρέψτε το σε όλους τους ιστότοπους.";
+"Safari did not return Scripts extension state." = "Το Safari δεν επέστρεψε την κατάσταση της επέκτασης Scripts.";
+"Open Safari Extensions settings and confirm wBlock Scripts is enabled." = "Ανοίξτε τις ρυθμίσεις επεκτάσεων του Safari και επιβεβαιώστε ότι το wBlock Scripts είναι ενεργό.";
+"%d of %d content blockers enabled" = "%d από %d αποκλειστές περιεχομένου ενεργοί";
+"Content Blockers" = "Αποκλειστές περιεχομένου";
+"Disabled: %@" = "Ανενεργό: %@";
+"Unknown: %@" = "Άγνωστο: %@";
+"Enable all wBlock content blockers in Safari Extensions settings." = "Ενεργοποιήστε όλους τους αποκλειστές περιεχομένου του wBlock στις ρυθμίσεις επεκτάσεων του Safari.";
+"Generated Rule Files" = "Παραγμένα αρχεία κανόνων";
+"Could not open the wBlock app group container." = "Δεν ήταν δυνατό το άνοιγμα του κοντέινερ ομάδας εφαρμογών wBlock.";
+"%d of %d files present · %@ Safari rules" = "%d από %d αρχεία υπάρχουν · %@ κανόνες Safari";
+"Apply changes in wBlock to regenerate Safari content blocker files." = "Εφαρμόστε τις αλλαγές στο wBlock για να δημιουργηθούν ξανά τα αρχεία αποκλειστών περιεχομένου του Safari.";
+"Missing rule files for: %@" = "Λείπουν αρχεία κανόνων για: %@";
+"Advanced Runtime" = "Προηγμένο περιβάλλον εκτέλεσης";
+"Could not locate the advanced runtime file." = "Δεν ήταν δυνατός ο εντοπισμός του αρχείου προηγμένου περιβάλλοντος εκτέλεσης.";
+"No native advanced runtime file found. This is expected unless native uBlock compatibility lists are enabled." = "Δεν βρέθηκε αρχείο εγγενούς προηγμένου περιβάλλοντος εκτέλεσης. Αυτό αναμένεται εκτός αν είναι ενεργές εγγενείς λίστες συμβατότητας uBlock.";
+"Enable native uBlock compatibility lists and apply changes to build advanced runtime rules." = "Ενεργοποιήστε εγγενείς λίστες συμβατότητας uBlock και εφαρμόστε τις αλλαγές για να δημιουργηθούν κανόνες προηγμένου περιβάλλοντος εκτέλεσης.";
+"The advanced runtime file could not be parsed." = "Δεν ήταν δυνατή η ανάλυση του αρχείου προηγμένου περιβάλλοντος εκτέλεσης.";
+"Apply changes to rebuild the advanced runtime file." = "Εφαρμόστε τις αλλαγές για να δημιουργηθεί ξανά το αρχείο προηγμένου περιβάλλοντος εκτέλεσης.";
+"%@ JS · %@ scriptlets · %@ dynamic DNR rules" = "%@ JS · %@ scriptlets · %@ δυναμικοί κανόνες DNR";
+"Dynamic DNR Sync" = "Δυναμικός συγχρονισμός DNR";
+"No Scripts extension diagnostics have been recorded yet." = "Δεν έχουν καταγραφεί ακόμη διαγνωστικά της επέκτασης Scripts.";
+"Open any website in Safari, then run these checks again." = "Ανοίξτε οποιονδήποτε ιστότοπο στο Safari και εκτελέστε ξανά αυτούς τους ελέγχους.";
+"Open Safari Extensions settings and confirm wBlock Scripts has website permissions." = "Ανοίξτε τις ρυθμίσεις επεκτάσεων του Safari και επιβεβαιώστε ότι το wBlock Scripts έχει δικαιώματα ιστότοπων.";
+"No dynamic DNR sync event found in recent Scripts extension logs." = "Δεν βρέθηκε πρόσφατο συμβάν δυναμικού συγχρονισμού DNR στα αρχεία καταγραφής της επέκτασης Scripts.";
+
+"Basic ad blocking." = "Βασικός αποκλεισμός διαφημίσεων.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Λίστα φίλτρων για ρωσόφωνους ιστότοπους.";
+"Filter list for German-language websites." = "Λίστα φίλτρων για γερμανόφωνους ιστότοπους.";
+
+"Building native advanced runtime..." = "Δημιουργία εγγενούς προηγμένου περιβάλλοντος εκτέλεσης...";
+
+"Filter list for Chinese-language websites." = "Λίστα φίλτρων για κινεζόφωνους ιστότοπους.";
+"Filter list for Dutch-language websites." = "Λίστα φίλτρων για ολλανδόφωνους ιστότοπους.";
+"Filter list for French-language websites." = "Λίστα φίλτρων για γαλλόφωνους ιστότοπους.";
+"Filter list for Korean-language websites." = "Λίστα φίλτρων για κορεατόφωνους ιστότοπους.";
+
+"Basic" = "Βασικό";
+
+"Filters optimized for uBlock, to be used along EasyList." = "Φίλτρα βελτιστοποιημένα για το uBlock, για χρήση μαζί με το EasyList.";
+"Warns about sites documented to put users at risk of unwanted software, stolen credentials, and similar threats." = "Προειδοποιεί για τεκμηριωμένους ιστότοπους που εκθέτουν τους χρήστες σε ανεπιθύμητο λογισμικό, κλεμμένα διαπιστευτήρια και παρόμοιες απειλές.";
+"Privacy filters optimized for uBlock, including important rules that resist exception filters." = "Φίλτρα απορρήτου βελτιστοποιημένα για το uBlock, συμπεριλαμβανομένων σημαντικών κανόνων που αντιστέκονται στα φίλτρα εξαίρεσης.";
+"Compatibility fixes that prevent filter lists from breaking websites." = "Διορθώσεις συμβατότητας που αποτρέπουν τις λίστες φίλτρων από το να χαλούν ιστότοπους.";
+"Urgent fixes for current site breakage, anti-adblock issues, and missed ads." = "Επείγουσες διορθώσεις για τρέχοντα προβλήματα ιστότοπων, anti-adblock και διαφημίσεις που ξέφυγαν.";
+"Primary community-maintained list for blocking adverts on English-language websites." = "Κύρια λίστα που συντηρείται από την κοινότητα για αποκλεισμό διαφημίσεων σε αγγλόφωνους ιστότοπους.";
+"Community-maintained list for blocking trackers, analytics, and privacy-invasive requests." = "Λίστα που συντηρείται από την κοινότητα για αποκλεισμό ιχνηλατών, αναλυτικών και αιτημάτων που παραβιάζουν το απόρρητο.";
+"Blocks recently reported URLs associated with unwanted software distribution and other online threats." = "Αποκλείει πρόσφατα αναφερθέντα URL που σχετίζονται με διανομή ανεπιθύμητου λογισμικού και άλλες διαδικτυακές απειλές.";
+"Hosts list that blocks advertising and tracking servers." = "Λίστα hosts που αποκλείει διαφημιστικούς διακομιστές και διακομιστές παρακολούθησης.";
+"uBlock-maintained cosmetic and network filters for common website annoyances." = "Κοσμητικά και δικτυακά φίλτρα που συντηρούνται από το uBlock για συνηθισμένες ενοχλήσεις ιστότοπων.";
+"uBlock-maintained filters for hiding cookie notices and consent prompts." = "Φίλτρα που συντηρούνται από το uBlock για απόκρυψη ειδοποιήσεων cookie και αιτημάτων συγκατάθεσης.";
+"EasyList filters for hiding cookie notices and consent prompts." = "Φίλτρα EasyList για απόκρυψη ειδοποιήσεων cookie και αιτημάτων συγκατάθεσης.";
+"EasyList filters for blocking social media widgets and buttons." = "Φίλτρα EasyList για αποκλεισμό widget και κουμπιών κοινωνικών δικτύων.";
+"EasyList filters for hiding in-page popups, overlays, and other annoyances." = "Φίλτρα EasyList για απόκρυψη αναδυόμενων μέσα στη σελίδα, επικαλύψεων και άλλων ενοχλήσεων.";
+"EasyList filters for hiding chat widgets and support bubbles." = "Φίλτρα EasyList για απόκρυψη widget συνομιλίας και φυσαλίδων υποστήριξης.";
+"EasyList filters for hiding newsletter signup notices." = "Φίλτρα EasyList για απόκρυψη προτροπών εγγραφής σε newsletter.";
+"EasyList filters for hiding notification permission prompts." = "Φίλτρα EasyList για απόκρυψη αιτημάτων άδειας ειδοποιήσεων.";
+"EasyList filters for hiding AI chat, assistant, and suggestion widgets." = "Φίλτρα EasyList για απόκρυψη widget συνομιλίας AI, βοηθών και προτάσεων.";
+"Removes known tracking parameters from URLs." = "Αφαιρεί γνωστές παραμέτρους παρακολούθησης από URL.";
+"Blocks public websites from probing private network addresses." = "Αποκλείει δημόσιους ιστότοπους από το να σαρώνουν διευθύνσεις ιδιωτικών δικτύων.";
+"AdGuard ad-blocking filters for uBlock-compatible blockers, without EasyList duplicates." = "Φίλτρα αποκλεισμού διαφημίσεων AdGuard για αποκλειστές συμβατούς με uBlock, χωρίς διπλότυπα EasyList.";
+"AdGuard filters for hiding cookie notices and consent prompts." = "Φίλτρα AdGuard για απόκρυψη ειδοποιήσεων cookie και αιτημάτων συγκατάθεσης.";
+"AdGuard filters for blocking social media widgets and buttons." = "Φίλτρα AdGuard για αποκλεισμό widget και κουμπιών κοινωνικών δικτύων.";
+"AdGuard filters for hiding popup overlays and modal interruptions." = "Φίλτρα AdGuard για απόκρυψη αναδυόμενων επικαλύψεων και modal διακοπών.";
+"AdGuard filters for hiding banners that promote mobile apps." = "Φίλτρα AdGuard για απόκρυψη banner που προωθούν εφαρμογές κινητών.";
+"AdGuard filters for miscellaneous annoying page elements." = "Φίλτρα AdGuard για διάφορα ενοχλητικά στοιχεία σελίδων.";
+"AdGuard filters for hiding third-party widgets, chat assistants, and support widgets." = "Φίλτρα AdGuard για απόκρυψη widget τρίτων, βοηθών συνομιλίας και widget υποστήριξης.";
+"Experimental uBlock filters with new rules and fixes before they move to stable lists." = "Πειραματικά φίλτρα uBlock με νέους κανόνες και διορθώσεις πριν περάσουν στις σταθερές λίστες.";
+"AdGuard mobile ad filters for uBlock-compatible blockers." = "Φίλτρα διαφημίσεων κινητών AdGuard για αποκλειστές συμβατούς με uBlock.";

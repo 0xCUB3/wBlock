@@ -251,7 +251,9 @@ extension AppFilterManager {
             )
             try? FileManager.default.removeItem(at: idFileURL)
             // Clean up any legacy name-based file.
-            let legacyFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
+            let legacyFileURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.legacyLocalFilename(for: filter)
+            )
             try? FileManager.default.removeItem(at: legacyFileURL)
         }
         Task {
@@ -340,7 +342,7 @@ extension AppFilterManager {
             return
         }
 
-        loader.migrateCustomFilterFileIfNeeded(filter)
+        loader.migrateFilterFileIfNeeded(filter)
         guard let destinationURL = loader.localFileURL(for: filter) else {
             statusDescription = LocalizedStrings.text(
                 "Failed to access shared storage.",
@@ -384,19 +386,7 @@ extension AppFilterManager {
             filterLists[index].isSelected = false
         }
 
-        #if os(iOS)
-            let essentialFilters = [
-                "AdGuard Base Filter",
-                "EasyPrivacy",
-            ]
-        #else
-            let essentialFilters = [
-                "AdGuard Base Filter",
-                "AdGuard Tracking Protection Filter",
-                "EasyPrivacy",
-                "Online Security Filter",
-            ]
-        #endif
+        let essentialFilters = FilterListLoader.recommendedFilterNames
 
         for index in filterLists.indices {
             filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)

@@ -1,5 +1,5 @@
 //
-//  AdGuardSyntaxHighlighter.swift
+//  FilterSyntaxHighlighter.swift
 //  wBlock
 //
 
@@ -11,7 +11,7 @@ import AppKit
 import UIKit
 #endif
 
-struct AdGuardSyntaxHighlighter {
+struct FilterSyntaxHighlighter {
 
     // MARK: - Platform typealiases
 

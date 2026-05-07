@@ -82,7 +82,6 @@
 "Scripts" = "Skripte";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Das Userskript \\(bypassScript.name) erfordert \\(filterName)";
 "Foreign" = "Länderspezifisch";
-"Minimal" = "Minimal";
 "Base filter only." = "Nur Basisfilter.";
 "Balanced defaults." = "Ausgewogene Standardeinstellungen.";
 "Whitelist" = "Whitelist";
@@ -202,7 +201,6 @@
 "Delete Added List" = "Liste löschen";
 "Filter Update" = "Filter-Update";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Nur der AdGuard-Base-Filter. Leichtester Schutz, beste Kompatibilität.";
 "(pending)" = "(ausstehend)";
 "Continue Setup" = "Einrichtung fortsetzen";
 "Progress" = "Fortschritt";
@@ -485,7 +483,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Blocks social media widgets and buttons." = "Blockiert Social-Media-Widgets und -Schaltflächen.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blockiert Widgets, Chat-Assistenten und Support-Widgets von Drittanbietern.";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Blockiert Tracking-Skripte, Web-Beacons und andere Elemente, die die Privatsphäre verletzen.";
-"Building combined filter engine..." = "Bau einer kombinierten Filtermaschine...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "Im App-Build fehlt der gebündelte Hintergrundagent";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Downloading filter lists..." = "Filterlisten werden heruntergeladen...";
 "Downloading filter updates..." = "Filteraktualisierungen werden heruntergeladen...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinesisch-Filter. Filterliste, die gezielt Werbung auf Websites in chinesischer Sprache entfernt.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch-Filter. Filterliste, die gezielt Anzeigen auf Websites in niederländischer Sprache entfernt.";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Deutschland + AdGuard Deutschfilter. Filterliste, die gezielt Werbung auf Websites in deutscher Sprache entfernt.";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Filter that enables ad blocking on websites in Russian language." = "Filter, der das Blockieren von Werbung auf Websites in russischer Sprache ermöglicht.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filter, der das Blockieren von Werbung auf Websites in ukrainischer Sprache ermöglicht.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filter, der vor verschiedenen Arten von Betrug im polnischen Netzwerk schützt, wie z. B. Massen-SMS, gefälschte Online-Shops usw.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filter, der Werbung und verschiedene Skripte von Websites mit koreanischen Inhalten entfernt. Kombiniert und erweitert mit AdGuard-spezifischen Regeln für verbesserte Filterung. Dieser Filter wird voraussichtlich zusammen mit dem AdGuard-Basisfilter verwendet.";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "Filter, die RSS-Elemente und Reste versteckter Newsletter in Kombination mit sozialen Elementen auf polnischen Websites blockieren und verbergen.";
 "Finnish ad blocking filter list." = "Liste der finnischen Werbeblockerfilter.";
 "Found %d update(s) available." = "Es wurden %d-Updates gefunden.";
@@ -568,7 +562,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "FR + AdGuard-Französischfilter auflisten. Filterliste, die gezielt Anzeigen auf Websites in französischer Sprache entfernt.";
 "Load full content" = "Vollständigen Inhalt laden";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "Keine Filterlisten ausgewählt. Regeln aus allen Erweiterungen löschen.";
@@ -659,9 +652,121 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "replaced match on line $" = "Treffer in Zeile $ ersetzt";
 "on line" = "in Zeile";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "Aktualisierungen pausiert";
+"Automatic Updates" = "Automatische Aktualisierungen";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "Weiter: passende Filter überprüfen.";
+
+/* Native compiler uBlock filter lists */
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
+"EasyList – AI Widgets" = "EasyList – AI Widgets";
+"AdGuard/uBO – URL Tracking Protection" = "AdGuard/uBO – URL Tracking Protection";
+"Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Peter Lowe’s Ad and tracking server list" = "Peter Lowe’s Ad and tracking server list";
+"AdGuard – Ads" = "AdGuard – Ads";
+"AdGuard – Mobile Ads" = "AdGuard – Mobile Ads";
+"AdGuard – Cookie Notices" = "AdGuard – Cookie Notices";
+"AdGuard – Social Widgets" = "AdGuard – Social Widgets";
+"AdGuard – Popup Overlays" = "AdGuard – Popup Overlays";
+"AdGuard – Mobile App Banners" = "AdGuard – Mobile App Banners";
+"AdGuard – Other Annoyances" = "AdGuard – Other Annoyances";
+"AdGuard – Widgets" = "AdGuard – Widgets";
+
+/* Safari diagnostics */
+"Safari Diagnostics" = "Safari-Diagnose";
+"Running Checks…" = "Prüfungen laufen…";
+"Run Checks" = "Prüfungen ausführen";
+"Open Safari Extension Settings" = "Safari-Erweiterungseinstellungen öffnen";
+"Checks whether Safari sees wBlock extensions, whether generated rules exist, and whether the Scripts extension recently synced dynamic DNR rules." = "Prüft, ob Safari die wBlock-Erweiterungen erkennt, ob generierte Regeln vorhanden sind und ob die Scripts-Erweiterung kürzlich dynamische DNR-Regeln synchronisiert hat.";
+"Status" = "Zustand";
+"Recommendations" = "Empfehlungen";
+"Scripts Extension" = "Scripts-Erweiterung";
+"Safari reports the Scripts extension is enabled." = "Safari meldet, dass die Scripts-Erweiterung aktiviert ist.";
+"Safari reports the Scripts extension is disabled." = "Safari meldet, dass die Scripts-Erweiterung deaktiviert ist.";
+"Enable wBlock Scripts in Safari Extensions settings and allow it on all websites." = "Aktiviere wBlock Scripts in den Safari-Erweiterungseinstellungen und erlaube sie auf allen Websites.";
+"Safari did not return Scripts extension state." = "Safari hat den Status der Scripts-Erweiterung nicht zurückgegeben.";
+"Open Safari Extensions settings and confirm wBlock Scripts is enabled." = "Öffne die Safari-Erweiterungseinstellungen und bestätige, dass wBlock Scripts aktiviert ist.";
+"%d of %d content blockers enabled" = "%d von %d Inhaltsblockern aktiviert";
+"Content Blockers" = "Inhaltsblocker";
+"Disabled: %@" = "Deaktiviert: %@";
+"Unknown: %@" = "Unbekannt: %@";
+"Enable all wBlock content blockers in Safari Extensions settings." = "Aktiviere alle wBlock-Inhaltsblocker in den Safari-Erweiterungseinstellungen.";
+"Generated Rule Files" = "Generierte Regeldateien";
+"Could not open the wBlock app group container." = "Der wBlock-App-Gruppencontainer konnte nicht geöffnet werden.";
+"%d of %d files present · %@ Safari rules" = "%d von %d Dateien vorhanden · %@ Safari-Regeln";
+"Apply changes in wBlock to regenerate Safari content blocker files." = "Wende Änderungen in wBlock an, um Safari-Inhaltsblockerdateien neu zu erzeugen.";
+"Missing rule files for: %@" = "Fehlende Regeldateien für: %@";
+"Advanced Runtime" = "Erweiterte Laufzeit";
+"Could not locate the advanced runtime file." = "Die Datei der erweiterten Laufzeit konnte nicht gefunden werden.";
+"No native advanced runtime file found. This is expected unless native uBlock compatibility lists are enabled." = "Keine native erweiterte Laufzeitdatei gefunden. Das ist zu erwarten, sofern keine nativen uBlock-Kompatibilitätslisten aktiviert sind.";
+"Enable native uBlock compatibility lists and apply changes to build advanced runtime rules." = "Aktiviere native uBlock-Kompatibilitätslisten und wende Änderungen an, um Regeln für die erweiterte Laufzeit zu erstellen.";
+"The advanced runtime file could not be parsed." = "Die Datei der erweiterten Laufzeit konnte nicht gelesen werden.";
+"Apply changes to rebuild the advanced runtime file." = "Wende Änderungen an, um die Datei der erweiterten Laufzeit neu zu erstellen.";
+"%@ JS · %@ scriptlets · %@ dynamic DNR rules" = "%@ JS · %@ Scriptlets · %@ dynamische DNR-Regeln";
+"Dynamic DNR Sync" = "Dynamische DNR-Synchronisierung";
+"No Scripts extension diagnostics have been recorded yet." = "Es wurden noch keine Diagnosedaten der Scripts-Erweiterung aufgezeichnet.";
+"Open any website in Safari, then run these checks again." = "Öffne eine beliebige Website in Safari und führe diese Prüfungen erneut aus.";
+"Open Safari Extensions settings and confirm wBlock Scripts has website permissions." = "Öffne die Safari-Erweiterungseinstellungen und bestätige, dass wBlock Scripts Website-Berechtigungen hat.";
+"No dynamic DNR sync event found in recent Scripts extension logs." = "In den letzten Logs der Scripts-Erweiterung wurde kein dynamisches DNR-Synchronisierungsereignis gefunden.";
+
+"Basic ad blocking." = "Grundlegendes Blockieren von Werbung.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filterliste für russischsprachige Websites.";
+"Filter list for German-language websites." = "Filterliste für deutschsprachige Websites.";
+
+"Building native advanced runtime..." = "Native erweiterte Laufzeit wird erstellt...";
+
+"Filter list for Chinese-language websites." = "Filterliste für chinesischsprachige Websites.";
+"Filter list for Dutch-language websites." = "Filterliste für niederländischsprachige Websites.";
+"Filter list for French-language websites." = "Filterliste für französischsprachige Websites.";
+"Filter list for Korean-language websites." = "Filterliste für koreanischsprachige Websites.";
+
+"Basic" = "Basis";
+
+"Filters optimized for uBlock, to be used along EasyList." = "Für uBlock optimierte Filter zur Verwendung zusammen mit EasyList.";
+"Warns about sites documented to put users at risk of unwanted software, stolen credentials, and similar threats." = "Warnt vor dokumentierten Websites, die Nutzer durch unerwünschte Software, gestohlene Zugangsdaten und ähnliche Bedrohungen gefährden.";
+"Privacy filters optimized for uBlock, including important rules that resist exception filters." = "Für uBlock optimierte Datenschutzfilter, einschließlich wichtiger Regeln, die Ausnahmefiltern widerstehen.";
+"Compatibility fixes that prevent filter lists from breaking websites." = "Kompatibilitätskorrekturen, die verhindern, dass Filterlisten Websites beschädigen.";
+"Urgent fixes for current site breakage, anti-adblock issues, and missed ads." = "Dringende Korrekturen für aktuelle Website-Probleme, Anti-Adblock-Hinweise und übersehene Werbung.";
+"Primary community-maintained list for blocking adverts on English-language websites." = "Primäre, von der Community gepflegte Liste zum Blockieren von Werbung auf englischsprachigen Websites.";
+"Community-maintained list for blocking trackers, analytics, and privacy-invasive requests." = "Von der Community gepflegte Liste zum Blockieren von Trackern, Analyse-Diensten und datenschutzverletzenden Anfragen.";
+"Blocks recently reported URLs associated with unwanted software distribution and other online threats." = "Blockiert kürzlich gemeldete URLs, die mit der Verbreitung unerwünschter Software und anderen Online-Bedrohungen verbunden sind.";
+"Hosts list that blocks advertising and tracking servers." = "Hosts-Liste, die Werbe- und Tracking-Server blockiert.";
+"uBlock-maintained cosmetic and network filters for common website annoyances." = "Von uBlock gepflegte kosmetische und Netzwerkfilter gegen häufige Website-Ärgernisse.";
+"uBlock-maintained filters for hiding cookie notices and consent prompts." = "Von uBlock gepflegte Filter zum Ausblenden von Cookie-Hinweisen und Zustimmungsabfragen.";
+"EasyList filters for hiding cookie notices and consent prompts." = "EasyList-Filter zum Ausblenden von Cookie-Hinweisen und Zustimmungsabfragen.";
+"EasyList filters for blocking social media widgets and buttons." = "EasyList-Filter zum Blockieren von Social-Media-Widgets und Schaltflächen.";
+"EasyList filters for hiding in-page popups, overlays, and other annoyances." = "EasyList-Filter zum Ausblenden von Popups, Overlays und anderen Ärgernissen innerhalb von Seiten.";
+"EasyList filters for hiding chat widgets and support bubbles." = "EasyList-Filter zum Ausblenden von Chat-Widgets und Support-Blasen.";
+"EasyList filters for hiding newsletter signup notices." = "EasyList-Filter zum Ausblenden von Newsletter-Anmeldehinweisen.";
+"EasyList filters for hiding notification permission prompts." = "EasyList-Filter zum Ausblenden von Benachrichtigungsanfragen.";
+"EasyList filters for hiding AI chat, assistant, and suggestion widgets." = "EasyList-Filter zum Ausblenden von KI-Chat-, Assistenten- und Vorschlags-Widgets.";
+"Removes known tracking parameters from URLs." = "Entfernt bekannte Tracking-Parameter aus URLs.";
+"Blocks public websites from probing private network addresses." = "Blockiert öffentliche Websites daran, private Netzwerkadressen abzufragen.";
+"AdGuard ad-blocking filters for uBlock-compatible blockers, without EasyList duplicates." = "AdGuard-Werbeblockerfilter für uBlock-kompatible Blocker, ohne EasyList-Duplikate.";
+"AdGuard filters for hiding cookie notices and consent prompts." = "AdGuard-Filter zum Ausblenden von Cookie-Hinweisen und Zustimmungsabfragen.";
+"AdGuard filters for blocking social media widgets and buttons." = "AdGuard-Filter zum Blockieren von Social-Media-Widgets und Schaltflächen.";
+"AdGuard filters for hiding popup overlays and modal interruptions." = "AdGuard-Filter zum Ausblenden von Popup-Overlays und modalen Unterbrechungen.";
+"AdGuard filters for hiding banners that promote mobile apps." = "AdGuard-Filter zum Ausblenden von Bannern, die mobile Apps bewerben.";
+"AdGuard filters for miscellaneous annoying page elements." = "AdGuard-Filter für verschiedene störende Seitenelemente.";
+"AdGuard filters for hiding third-party widgets, chat assistants, and support widgets." = "AdGuard-Filter zum Ausblenden von Drittanbieter-Widgets, Chat-Assistenten und Support-Widgets.";
+"Experimental uBlock filters with new rules and fixes before they move to stable lists." = "Experimentelle uBlock-Filter mit neuen Regeln und Korrekturen, bevor sie in stabile Listen übernommen werden.";
+"AdGuard mobile ad filters for uBlock-compatible blockers." = "AdGuard-Filter für mobile Werbung für uBlock-kompatible Blocker.";

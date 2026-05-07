@@ -82,7 +82,6 @@
 "Scripts" = "腳本";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 使用者腳本需要 \\(filterName)";
 "Foreign" = "國外";
-"Minimal" = "精簡";
 "Base filter only." = "僅基礎過濾器。";
 "Balanced defaults." = "平衡的預設設定。";
 "Whitelist" = "白名單";
@@ -202,7 +201,6 @@
 "Delete Added List" = "刪除清單";
 "Filter Update" = "過濾器更新";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "僅使用 AdGuard Base 過濾器。防護最輕、相容性最佳。";
 "(pending)" = "(待處理)";
 "Continue Setup" = "繼續設定";
 "Progress" = "進度";
@@ -485,7 +483,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks social media widgets and buttons." = "阻止社交媒體小工具和按鈕。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "封鎖第三方小工具、聊天助理和支援小工具。";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "阻止追蹤腳本、網路信標和其他侵犯隱私的元素。";
-"Building combined filter engine..." = "建築組合過濾引擎...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "應用程式建置中缺少捆綁的後台代理";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading filter lists..." = "正在下載過濾器列表...";
 "Downloading filter updates..." = "正在下載過濾器更新...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard 中文過濾器。專門刪除中文網站上廣告的過濾器清單。";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList 荷蘭語 + AdGuard 荷蘭語過濾器。專門刪除荷蘭語網站上的廣告的過濾器清單。";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList 德國 + AdGuard 德國過濾器。專門刪除德語網站上的廣告的過濾器清單。";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter that enables ad blocking on websites in Russian language." = "可在俄語網站上攔截廣告的過濾器。";
 "Filter that enables ad blocking on websites in Ukrainian language." = "可在烏克蘭語網站上啟用廣告攔截的過濾器。";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "過濾器可防止波蘭網路中的各種類型的詐騙，例如群發簡訊、虛假網路商店等。";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "過濾器可從包含韓文內容的網站中刪除廣告和各種腳本。與 AdGuard 特定規則結合和增強，以增強過濾功能。該過濾器預計將與 AdGuard Base 過濾器一起使用。";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "過濾器可阻止和隱藏 RSS 元素以及隱藏時事通訊的殘餘物以及波蘭網站上的社交元素。";
 "Finnish ad blocking filter list." = "芬蘭廣告攔截過濾器清單。";
 "Found %d update(s) available." = "發現 %d 更新可用。";
@@ -568,7 +562,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard 法語過濾器。專門刪除法語網站上的廣告的過濾器清單。";
 "Load full content" = "載入完整內容";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "未選擇過濾器清單。清除所有擴充功能中的規則。";
@@ -659,9 +652,121 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "已取代第 $ 行的匹配";
 "on line" = "在第";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "更新已暫停";
+"Automatic Updates" = "自動更新";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "下一步：檢視相符的過濾器。";
+
+/* Native compiler uBlock filter lists */
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
+"EasyList – AI Widgets" = "EasyList – AI Widgets";
+"AdGuard/uBO – URL Tracking Protection" = "AdGuard/uBO – URL Tracking Protection";
+"Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Peter Lowe’s Ad and tracking server list" = "Peter Lowe’s Ad and tracking server list";
+"AdGuard – Ads" = "AdGuard – Ads";
+"AdGuard – Mobile Ads" = "AdGuard – Mobile Ads";
+"AdGuard – Cookie Notices" = "AdGuard – Cookie Notices";
+"AdGuard – Social Widgets" = "AdGuard – Social Widgets";
+"AdGuard – Popup Overlays" = "AdGuard – Popup Overlays";
+"AdGuard – Mobile App Banners" = "AdGuard – Mobile App Banners";
+"AdGuard – Other Annoyances" = "AdGuard – Other Annoyances";
+"AdGuard – Widgets" = "AdGuard – Widgets";
+
+/* Safari diagnostics */
+"Safari Diagnostics" = "Safari 診斷";
+"Running Checks…" = "正在執行檢查…";
+"Run Checks" = "執行檢查";
+"Open Safari Extension Settings" = "開啟 Safari 擴充功能設定";
+"Checks whether Safari sees wBlock extensions, whether generated rules exist, and whether the Scripts extension recently synced dynamic DNR rules." = "檢查 Safari 是否能看到 wBlock 擴充功能、產生的規則是否存在，以及 Scripts 擴充功能最近是否同步了動態 DNR 規則。";
+"Status" = "狀態";
+"Recommendations" = "建議";
+"Scripts Extension" = "Scripts 擴充功能";
+"Safari reports the Scripts extension is enabled." = "Safari 回報 Scripts 擴充功能已啟用。";
+"Safari reports the Scripts extension is disabled." = "Safari 回報 Scripts 擴充功能已停用。";
+"Enable wBlock Scripts in Safari Extensions settings and allow it on all websites." = "請在 Safari 擴充功能設定中啟用 wBlock Scripts，並允許其在所有網站上執行。";
+"Safari did not return Scripts extension state." = "Safari 未傳回 Scripts 擴充功能狀態。";
+"Open Safari Extensions settings and confirm wBlock Scripts is enabled." = "開啟 Safari 擴充功能設定並確認 wBlock Scripts 已啟用。";
+"%d of %d content blockers enabled" = "已啟用 %d/%d 個內容阻擋器";
+"Content Blockers" = "內容阻擋器";
+"Disabled: %@" = "已停用：%@";
+"Unknown: %@" = "未知：%@";
+"Enable all wBlock content blockers in Safari Extensions settings." = "請在 Safari 擴充功能設定中啟用所有 wBlock 內容阻擋器。";
+"Generated Rule Files" = "產生的規則檔案";
+"Could not open the wBlock app group container." = "無法開啟 wBlock App 群組容器。";
+"%d of %d files present · %@ Safari rules" = "存在 %d/%d 個檔案 · %@ 條 Safari 規則";
+"Apply changes in wBlock to regenerate Safari content blocker files." = "在 wBlock 中套用變更以重新產生 Safari 內容阻擋器檔案。";
+"Missing rule files for: %@" = "缺少規則檔案：%@";
+"Advanced Runtime" = "進階執行階段";
+"Could not locate the advanced runtime file." = "找不到進階執行階段檔案。";
+"No native advanced runtime file found. This is expected unless native uBlock compatibility lists are enabled." = "找不到原生進階執行階段檔案。除非已啟用原生 uBlock 相容清單，否則這是預期情況。";
+"Enable native uBlock compatibility lists and apply changes to build advanced runtime rules." = "啟用原生 uBlock 相容清單並套用變更，以建置進階執行階段規則。";
+"The advanced runtime file could not be parsed." = "無法剖析進階執行階段檔案。";
+"Apply changes to rebuild the advanced runtime file." = "套用變更以重建進階執行階段檔案。";
+"%@ JS · %@ scriptlets · %@ dynamic DNR rules" = "%@ JS · %@ scriptlet · %@ 條動態 DNR 規則";
+"Dynamic DNR Sync" = "動態 DNR 同步";
+"No Scripts extension diagnostics have been recorded yet." = "尚未記錄 Scripts 擴充功能診斷。";
+"Open any website in Safari, then run these checks again." = "在 Safari 中開啟任一網站，然後再次執行這些檢查。";
+"Open Safari Extensions settings and confirm wBlock Scripts has website permissions." = "開啟 Safari 擴充功能設定並確認 wBlock Scripts 擁有網站權限。";
+"No dynamic DNR sync event found in recent Scripts extension logs." = "最近的 Scripts 擴充功能記錄中找不到動態 DNR 同步事件。";
+
+"Basic ad blocking." = "基本廣告阻擋。";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "面向俄語網站的過濾清單。";
+"Filter list for German-language websites." = "面向德語網站的過濾清單。";
+
+"Building native advanced runtime..." = "正在建置原生進階執行階段...";
+
+"Filter list for Chinese-language websites." = "面向中文網站的過濾清單。";
+"Filter list for Dutch-language websites." = "面向荷蘭語網站的過濾清單。";
+"Filter list for French-language websites." = "面向法語網站的過濾清單。";
+"Filter list for Korean-language websites." = "面向韓語網站的過濾清單。";
+
+"Basic" = "基本";
+
+"Filters optimized for uBlock, to be used along EasyList." = "為 uBlock 最佳化的過濾器，與 EasyList 搭配使用。";
+"Warns about sites documented to put users at risk of unwanted software, stolen credentials, and similar threats." = "對已記錄會讓使用者面臨不受歡迎軟體、憑證遭竊和類似威脅風險的網站發出警告。";
+"Privacy filters optimized for uBlock, including important rules that resist exception filters." = "為 uBlock 最佳化的隱私過濾器，包括可抵抗例外過濾器的重要規則。";
+"Compatibility fixes that prevent filter lists from breaking websites." = "防止過濾清單破壞網站的相容性修正。";
+"Urgent fixes for current site breakage, anti-adblock issues, and missed ads." = "針對目前網站故障、反廣告攔截問題和漏攔廣告的緊急修正。";
+"Primary community-maintained list for blocking adverts on English-language websites." = "由社群維護的主要清單，用於攔截英文網站上的廣告。";
+"Community-maintained list for blocking trackers, analytics, and privacy-invasive requests." = "由社群維護的清單，用於攔截追蹤器、分析服務和侵犯隱私的請求。";
+"Blocks recently reported URLs associated with unwanted software distribution and other online threats." = "攔截最近回報的、與不受歡迎軟體散布和其他線上威脅相關的 URL。";
+"Hosts list that blocks advertising and tracking servers." = "攔截廣告和追蹤伺服器的 hosts 清單。";
+"uBlock-maintained cosmetic and network filters for common website annoyances." = "由 uBlock 維護的外觀和網路過濾器，用於處理常見的網站干擾。";
+"uBlock-maintained filters for hiding cookie notices and consent prompts." = "由 uBlock 維護的過濾器，用於隱藏 Cookie 通知和同意提示。";
+"EasyList filters for hiding cookie notices and consent prompts." = "EasyList 過濾器，用於隱藏 Cookie 通知和同意提示。";
+"EasyList filters for blocking social media widgets and buttons." = "EasyList 過濾器，用於攔截社群媒體小工具和按鈕。";
+"EasyList filters for hiding in-page popups, overlays, and other annoyances." = "EasyList 過濾器，用於隱藏頁面內彈出視窗、覆蓋層和其他干擾。";
+"EasyList filters for hiding chat widgets and support bubbles." = "EasyList 過濾器，用於隱藏聊天小工具和支援氣泡。";
+"EasyList filters for hiding newsletter signup notices." = "EasyList 過濾器，用於隱藏電子報訂閱提示。";
+"EasyList filters for hiding notification permission prompts." = "EasyList 過濾器，用於隱藏通知權限提示。";
+"EasyList filters for hiding AI chat, assistant, and suggestion widgets." = "EasyList 過濾器，用於隱藏 AI 聊天、助理和建議小工具。";
+"Removes known tracking parameters from URLs." = "從 URL 中移除已知追蹤參數。";
+"Blocks public websites from probing private network addresses." = "阻止公開網站探測私人網路位址。";
+"AdGuard ad-blocking filters for uBlock-compatible blockers, without EasyList duplicates." = "面向 uBlock 相容攔截器的 AdGuard 廣告攔截過濾器，不含 EasyList 重複項目。";
+"AdGuard filters for hiding cookie notices and consent prompts." = "AdGuard 過濾器，用於隱藏 Cookie 通知和同意提示。";
+"AdGuard filters for blocking social media widgets and buttons." = "AdGuard 過濾器，用於攔截社群媒體小工具和按鈕。";
+"AdGuard filters for hiding popup overlays and modal interruptions." = "AdGuard 過濾器，用於隱藏彈出視窗覆蓋層和模態干擾。";
+"AdGuard filters for hiding banners that promote mobile apps." = "AdGuard 過濾器，用於隱藏推廣行動 App 的橫幅。";
+"AdGuard filters for miscellaneous annoying page elements." = "AdGuard 過濾器，用於處理各種惱人的頁面元素。";
+"AdGuard filters for hiding third-party widgets, chat assistants, and support widgets." = "AdGuard 過濾器，用於隱藏第三方小工具、聊天助理和支援小工具。";
+"Experimental uBlock filters with new rules and fixes before they move to stable lists." = "實驗性 uBlock 過濾器，包含進入穩定清單前的新規則和修正。";
+"AdGuard mobile ad filters for uBlock-compatible blockers." = "面向 uBlock 相容攔截器的 AdGuard 行動廣告過濾器。";

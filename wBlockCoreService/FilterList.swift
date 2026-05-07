@@ -94,9 +94,8 @@ public struct FilterList: Identifiable, Codable, Hashable {
         return flags.isEmpty ? nil : flags.joined(separator: " ")
     }
 
-    /// Whether this is a built-in list pre-expanded by AdGuard's registry.
-    /// These lists already have includes resolved and conditionals evaluated,
-    /// so the preprocessor should be bypassed.
+    /// Whether this built-in list was shipped from an already expanded endpoint.
+    /// Kept for migration compatibility with older saved catalogs.
     public var isOptimizedBuiltin: Bool {
         !isCustom && url.path.hasSuffix("_optimized.txt")
     }

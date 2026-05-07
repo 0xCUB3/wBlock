@@ -174,7 +174,7 @@ public actor SharedAutoUpdateManager {
     private enum AutoUpdateError: LocalizedError {
         case sharedContainerUnavailable
         case contentBlockerReloadFailed(identifiers: [String], names: [String])
-        case advancedEngineOperationFailed(phase: String, underlying: Error)
+        case advancedRuntimeOperationFailed(phase: String, underlying: Error)
         case backgroundBudgetExpired(phase: String, remainingSeconds: Int)
         case backgroundFullRebuildDeferred(phase: String)
         case statePersistenceFailed(context: String)
@@ -185,7 +185,7 @@ public actor SharedAutoUpdateManager {
                 return "shared_container"
             case .contentBlockerReloadFailed:
                 return "content_blocker_reload"
-            case let .advancedEngineOperationFailed(phase, _):
+            case let .advancedRuntimeOperationFailed(phase, _):
                 return phase
             case let .backgroundBudgetExpired(phase, _):
                 return phase
@@ -211,7 +211,7 @@ public actor SharedAutoUpdateManager {
                 return "Shared app group container unavailable."
             case let .contentBlockerReloadFailed(_, names):
                 return "Failed to reload \(names.joined(separator: ", "))."
-            case let .advancedEngineOperationFailed(_, underlying):
+            case let .advancedRuntimeOperationFailed(_, underlying):
                 return underlying.localizedDescription
             case let .backgroundBudgetExpired(phase, remainingSeconds):
                 return "Background budget expired before \(phase) with \(remainingSeconds)s remaining."
@@ -229,8 +229,8 @@ public actor SharedAutoUpdateManager {
         static let fullRebuild = "full_rebuild"
         static let conversionTarget = "conversion_target"
         static let reloadRetry = "reload_retry"
-        static let advancedEngineBuild = "advanced_engine_build"
-        static let advancedEngineClear = "advanced_engine_clear"
+        static let advancedRuntimeBuild = "advanced_runtime_build"
+        static let advancedRuntimeClear = "advanced_runtime_clear"
         static let userScripts = "userscripts"
         static let finalStateSave = "final_state_save"
         static let runStartSave = "run_start_save"
@@ -273,8 +273,8 @@ public actor SharedAutoUpdateManager {
         failureLogPrefix: String
     ) throws {
         let phase = advancedRulesSnippets.isEmpty
-            ? AutoUpdateBudgetPhase.advancedEngineClear
-            : AutoUpdateBudgetPhase.advancedEngineBuild
+            ? AutoUpdateBudgetPhase.advancedRuntimeClear
+            : AutoUpdateBudgetPhase.advancedRuntimeBuild
         try checkBudget(
             policy,
             phase: phase,
@@ -283,16 +283,16 @@ public actor SharedAutoUpdateManager {
 
         do {
             if advancedRulesSnippets.isEmpty {
-                try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+                try ContentBlockerService.clearAdvancedRuntime(groupIdentifier: GroupIdentifier.shared.value)
             } else {
-                try ContentBlockerService.buildCombinedFilterEngine(
-                    combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
+                try ContentBlockerService.buildCombinedNativeAdvancedRuntime(
+                    advancedRuleBundles: advancedRulesSnippets,
                     groupIdentifier: GroupIdentifier.shared.value
                 )
             }
         } catch {
             appendSharedLog("\(failureLogPrefix): \(error.localizedDescription)")
-            throw AutoUpdateError.advancedEngineOperationFailed(
+            throw AutoUpdateError.advancedRuntimeOperationFailed(
                 phase: phase,
                 underlying: error
             )
@@ -1234,8 +1234,9 @@ public actor SharedAutoUpdateManager {
             return localData
         }
 
-        guard filter.isCustom else { return nil }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        let legacyURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.legacyLocalFilename(for: filter)
+        )
         return try? Data(contentsOf: legacyURL)
     }
 
@@ -1390,7 +1391,7 @@ public actor SharedAutoUpdateManager {
         try publishAdvancedEngine(
             advancedRulesSnippets: advancedRulesSnippets,
             policy: policy,
-            failureLogPrefix: "Advanced engine publish failed while reusing existing outputs"
+            failureLogPrefix: "Native advanced runtime publish failed while reusing existing outputs"
         )
 
         if !failedTargets.isEmpty {
@@ -1537,7 +1538,7 @@ public actor SharedAutoUpdateManager {
                 let digest = hasher.finalize()
                 let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-                conversion = ContentBlockerService.convertFilterFromFile(
+                conversion = try ContentBlockerService.convertFilterFromFile(
                     rulesFileURL: tempURL,
                     rulesSHA256Hex: rulesSHA256Hex,
                     groupIdentifier: GroupIdentifier.shared.value,
@@ -1606,7 +1607,7 @@ public actor SharedAutoUpdateManager {
         try publishAdvancedEngine(
             advancedRulesSnippets: advancedRulesSnippets,
             policy: policy,
-            failureLogPrefix: "Advanced engine publish failed after rebuilding content blockers"
+            failureLogPrefix: "Native advanced runtime publish failed after rebuilding content blockers"
         )
 
         let cacheHits = targetMetrics.filter { $0.cacheHit }.count
@@ -1709,7 +1710,7 @@ public actor SharedAutoUpdateManager {
     }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
-        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 300)
         let title = rawMetadata.title?.replacingOccurrences(of: "/", with: " & ")
         let description = rawMetadata.description?.replacingOccurrences(of: "/", with: " & ")
 

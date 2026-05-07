@@ -244,6 +244,13 @@ struct Wblock_Data_AppSettings: Sendable {
   /// Badge counter setting
   var isBadgeCounterEnabled: Bool = false
 
+  /// One-shot filter catalog migrations
+  var ublockDefaultCatalogMigrationVersion: Int32 = 0
+
+  var ublockDefaultCatalogMigrationState: String = String()
+
+  var nativeDefaultFiltersAppliedVersion: Int32 = 0
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -820,7 +827,7 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
 
 extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppSettings"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}has_completed_onboarding\0\u{3}selected_blocking_level\0\u{3}last_update_check\0\u{3}show_advanced_features\0\u{3}app_version\0\u{3}last_terminology_sanitization_version\0\u{3}has_enabled_content_blockers\0\u{3}has_enabled_platform_extension\0\u{3}has_set_all_websites_permission\0\u{3}userscript_show_enabled_only\0\u{3}excluded_default_userscript_urls\0\u{3}is_foreign_filters_expanded\0\u{3}is_badge_counter_enabled\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}has_completed_onboarding\0\u{3}selected_blocking_level\0\u{3}last_update_check\0\u{3}show_advanced_features\0\u{3}app_version\0\u{3}last_terminology_sanitization_version\0\u{3}has_enabled_content_blockers\0\u{3}has_enabled_platform_extension\0\u{3}has_set_all_websites_permission\0\u{3}userscript_show_enabled_only\0\u{3}excluded_default_userscript_urls\0\u{3}is_foreign_filters_expanded\0\u{3}is_badge_counter_enabled\0\u{3}ublock_default_catalog_migration_version\0\u{3}ublock_default_catalog_migration_state\0\u{3}native_default_filters_applied_version\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -841,6 +848,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.excludedDefaultUserscriptUrls) }()
       case 12: try { try decoder.decodeSingularBoolField(value: &self.isForeignFiltersExpanded) }()
       case 13: try { try decoder.decodeSingularBoolField(value: &self.isBadgeCounterEnabled) }()
+      case 14: try { try decoder.decodeSingularInt32Field(value: &self.ublockDefaultCatalogMigrationVersion) }()
+      case 15: try { try decoder.decodeSingularStringField(value: &self.ublockDefaultCatalogMigrationState) }()
+      case 16: try { try decoder.decodeSingularInt32Field(value: &self.nativeDefaultFiltersAppliedVersion) }()
       default: break
       }
     }
@@ -886,6 +896,15 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if self.isBadgeCounterEnabled != false {
       try visitor.visitSingularBoolField(value: self.isBadgeCounterEnabled, fieldNumber: 13)
     }
+    if self.ublockDefaultCatalogMigrationVersion != 0 {
+      try visitor.visitSingularInt32Field(value: self.ublockDefaultCatalogMigrationVersion, fieldNumber: 14)
+    }
+    if !self.ublockDefaultCatalogMigrationState.isEmpty {
+      try visitor.visitSingularStringField(value: self.ublockDefaultCatalogMigrationState, fieldNumber: 15)
+    }
+    if self.nativeDefaultFiltersAppliedVersion != 0 {
+      try visitor.visitSingularInt32Field(value: self.nativeDefaultFiltersAppliedVersion, fieldNumber: 16)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -903,6 +922,9 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
     if lhs.excludedDefaultUserscriptUrls != rhs.excludedDefaultUserscriptUrls {return false}
     if lhs.isForeignFiltersExpanded != rhs.isForeignFiltersExpanded {return false}
     if lhs.isBadgeCounterEnabled != rhs.isBadgeCounterEnabled {return false}
+    if lhs.ublockDefaultCatalogMigrationVersion != rhs.ublockDefaultCatalogMigrationVersion {return false}
+    if lhs.ublockDefaultCatalogMigrationState != rhs.ublockDefaultCatalogMigrationState {return false}
+    if lhs.nativeDefaultFiltersAppliedVersion != rhs.nativeDefaultFiltersAppliedVersion {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

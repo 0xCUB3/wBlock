@@ -39,6 +39,11 @@ message AppSettings {
 
   // Badge counter setting
   bool is_badge_counter_enabled = 13;
+
+  // One-shot filter catalog migrations
+  int32 ublock_default_catalog_migration_version = 14;
+  string ublock_default_catalog_migration_state = 15;
+  int32 native_default_filters_applied_version = 16;
 }
 
 // Filter list data structure

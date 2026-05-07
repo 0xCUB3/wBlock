@@ -5,39 +5,57 @@
 //  Created by Alexander Skula on 5/23/25.
 //
 
-internal import ContentBlockerConverter
-internal import FilterEngine
 import CryptoKit
 import Foundation
 import SafariServices
 internal import ZIPFoundation
+#if canImport(Darwin)
+import Darwin
+#endif
 import os.log
 
-/// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
-/// and manage content blocker extensions.
+/// ContentBlockerService converts ABP/uBO-compatible filter rules to Safari content blocker JSON
+/// and manages content blocker extension artifacts.
 public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "2"
+    private static let embeddedCompatibilityRulesVersion = "11"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
-    /// patterns and dynamic ad containers across filter sets.
-    ///
-    /// YouTube rules use trusted-replace-fetch-response for pre-parse string
-    /// replacement (faster than json-prune-fetch-response which works post-parse).
-    /// Sourced from uAssets, translated to AdGuard syntax.
-    private static let embeddedCompatibilityRules = """
+    /// patterns and dynamic ad containers across filter sets. YouTube media
+    /// requests are intentionally not blocked here because Safari can classify
+    /// normal playback requests as XHR/fetch, which breaks videos.
+    private static let embeddedCompatibilityRules = #"""
 /js/widget/ads.js$script
 /js/pagead.js$script
 /widget/pagead.js$script
+||www.googletagmanager.com/gtag/js$script,domain=adblock-tester.com,important
+||sentry-cdn.com^$script,domain=adblock-tester.com,important
+||browser.sentry-cdn.com^$script,domain=adblock-tester.com,important
+||js.sentry-cdn.com^$script,domain=adblock-tester.com,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.$important
+||adblock-tester.com/banners/pr_advertising_ads_banner.$xhr,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.gif$image,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.gif$xhr,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.png$image,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.png$xhr,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.swf$media,important
+||adblock-tester.com/banners/pr_advertising_ads_banner.swf$xhr,important
+adblock-tester.com#%#//scriptlet('set-constant', 'Sentry', 'undefined')
+adblock-tester.com##+js(set-constant, Sentry, undefined)
+adblock-tester.com#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{const u=String(i&&i.url||i);return u.includes('/banners/pr_advertising_ads_banner.')?Promise.reject(new TypeError('Failed to fetch')):f(i,n);};})();
+adblock-tester.com##img[src*="/banners/pr_advertising_ads_banner."]
+adblock-tester.com##object[data*="/banners/pr_advertising_ads_banner."]
+adblock-tester.com##embed[src*="/banners/pr_advertising_ads_banner."]
+adblock.turtlecute.org##.adbox.banner_ads.adsbox
+adblock.turtlecute.org##.textads
+adblock.turtlecute.org##.textads.banner-ads.banner_ads.ad-unit.afs_ads.ad-zone.ad-space.adsbox
+||adblock.turtlecute.org/js/widget/ads.js$script,important
+||adblock.turtlecute.org/js/pagead.js$script,important
+adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{const u=String(i&&i.url||i);return /^https:\/\/[^/]+\/fakepage\.html(?:[?#]|$)/.test(u)?Promise.reject(new TypeError('Failed to fetch')):f(i,n);};})();
 ##.adbox.banner_ads.adsbox
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
-"""
+"""#
 
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
         let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -80,14 +98,20 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
     }
 
-    /// Converts AdGuard rules and exports them as a ZIP archive.
+    /// Converts filter rules and exports them as a ZIP archive.
     ///
     /// - Parameters:
-    ///   - rules: AdGuard syntax rules to be converted.
+    ///   - rules: Filter rules to be converted.
     /// - Returns: Data object containing a ZIP archive with Safari content blocker JSON and advanced rules,
     ///           or nil if the archive creation fails.
     public static func exportConversionResult(rules: String) -> Data? {
-        let result = convertRules(rules: rules)
+        let result: ConversionResult
+        do {
+            result = try convertRules(rules: rules)
+        } catch {
+            os_log(.error, "Native filter conversion export failed: %@", error.localizedDescription)
+            return nil
+        }
 
         // We'll use a variable so we can modify the JSON string
         var safariRulesJSON = result.safariRulesJSON
@@ -144,19 +168,15 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         case .failure(let error):
             // WKErrorDomain error 6 is a common error when the content blocker
             // cannot access the blocker list file.
-            if error.localizedDescription.contains("WKErrorDomain error 6") {
-                os_log(
-                    .error,
-                    "Failed to reload content blocker, could not access blocker list file: %@",
-                    error.localizedDescription
-                )
-            } else {
-                os_log(
-                    .error,
-                    "Failed to reload content blocker: %@",
-                    error.localizedDescription
-                )
-            }
+            let nsError = error as NSError
+            os_log(
+                .error,
+                "Failed to reload content blocker: domain=%@ code=%d description=%@ userInfo=%@",
+                nsError.domain,
+                nsError.code,
+                error.localizedDescription,
+                String(describing: nsError.userInfo)
+            )
         }
 
         return result
@@ -242,18 +262,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         return 0
     }
 
-    /// Converts AdGuard rules to Safari content blocker format and saves them to the shared container.
+    /// Converts filter rules to Safari content blocker format and saves them to the shared container.
     /// This version includes per-site disable functionality by injecting ignore-previous-rules for disabled sites.
     ///
     /// - Parameters:
-    ///   - rules: AdGuard rules to be converted.
+    ///   - rules: Filter rules to be converted.
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
     ///   - targetRulesFilename: Target filename for the rules file.
     ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
     /// - Returns: A tuple containing the number of Safari content blocker rules generated 
     ///           and the advanced rules text (if any).
-    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) -> (safariRulesCount: Int, advancedRulesText: String?) {
+    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -273,7 +293,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         )
 
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
         let advancedURL = containerURL.appendingPathComponent(advancedFilename)
 
@@ -283,9 +302,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
             FileManager.default.fileExists(atPath: baseURL.path),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
         {
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
-
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
@@ -294,11 +310,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .flatMap { $0.isEmpty ? nil : $0 }
 
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+            return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: advancedText)
         }
 
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
-        let result = convertRules(rules: effectiveRules)
+        let result = try convertRules(rules: effectiveRules)
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -308,18 +324,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+        return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: result.advancedRulesText)
     }
 
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
-    /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
+    /// This avoids re-running native conversion when the combined rules for a target haven't changed.
     public static func convertFilterFromFile(
         rulesFileURL: URL,
         rulesSHA256Hex: String,
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String]? = nil
-    ) -> (safariRulesCount: Int, advancedRulesText: String?) {
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
@@ -336,7 +352,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         )
 
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
         let advancedURL = containerURL.appendingPathComponent(advancedFilename)
 
@@ -346,9 +361,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
             FileManager.default.fileExists(atPath: baseURL.path),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
         {
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
-
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
@@ -357,13 +369,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .flatMap { $0.isEmpty ? nil : $0 }
 
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+            return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: advancedText)
         }
 
         // Cache miss: read rules file and run conversion.
         let combinedRules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
-        let result = convertRules(rules: effectiveRules)
+        let result = try convertRules(rules: effectiveRules)
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -373,10 +385,10 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+        return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: result.advancedRulesText)
     }
     
-    /// Fast update for disabled sites changes only - skips SafariConverterLib conversion
+    /// Fast update for disabled sites changes only - skips full native conversion
     /// Reads existing JSON files and re-injects ignore rules without full conversion
     ///
     /// - Parameters:
@@ -397,15 +409,12 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
 
         // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         if FileManager.default.fileExists(atPath: baseURL.path),
            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8) {
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
-            let finalRuleCount = baseCount + sitesToUse.count
+            let finalRuleCount = countRulesInJSON(finalJSON)
 
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
             return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
@@ -423,7 +432,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         let finalJSON = injectIgnoreRulesForDisabledSites(json: derived.baseJSON, disabledSites: sitesToUse)
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        let finalRuleCount = derived.baseRuleCount + sitesToUse.count
+        let finalRuleCount = countRulesInJSON(finalJSON)
         os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
         return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
     }
@@ -499,31 +508,177 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedDomain)\"]}}"
     }
     
-    /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.
-    /// This uses Safari's native ignore-previous-rules action to whitelist disabled sites.
-    ///
-    /// - Parameters:
-    ///   - json: Existing Safari content blocker JSON string.
-    ///   - disabledSites: Array of site hostnames to whitelist.
-    /// - Returns: Modified JSON string with ignore rules injected.
+    private static let youtubePlaybackURLFilter = #".*googlevideo\.com/videoplayback.*"#
+    private static let legacyYouTubePlaybackURLFilter = #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?googlevideo\.com/videoplayback"#
+
+    private static func youtubePlaybackIgnoreRules() -> [[String: Any]] {
+        let playbackTrigger: [String: Any] = [
+            "url-filter": youtubePlaybackURLFilter
+        ]
+        let youtubePageTrigger: [String: Any] = [
+            "url-filter": ".*",
+            "if-domain": ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "*youtube.com", "*www.youtube.com"]
+        ]
+
+        var rules: [[String: Any]] = [
+            ["action": ["type": "ignore-previous-rules"], "trigger": playbackTrigger],
+            ["action": ["type": "ignore-previous-rules"], "trigger": youtubePageTrigger]
+        ]
+
+        // WebKit has reported YouTube playback fetches as raw, media, or other
+        // request classes across releases. Keep typed fallbacks for older content-
+        // blocker compilers which require matching resource-type to ignore a prior
+        // rule. The broad YouTube page ignore is intentionally blunt while Safari
+        // playback is being stabilized.
+        for resourceType in ["raw", "media", "document", "script", "image"] {
+            var playbackTypedTrigger = playbackTrigger
+            playbackTypedTrigger["resource-type"] = [resourceType]
+            rules.append([
+                "action": ["type": "ignore-previous-rules"],
+                "trigger": playbackTypedTrigger
+            ])
+
+            var pageTypedTrigger = youtubePageTrigger
+            pageTypedTrigger["resource-type"] = [resourceType]
+            rules.append([
+                "action": ["type": "ignore-previous-rules"],
+                "trigger": pageTypedTrigger
+            ])
+        }
+        return rules
+    }
+
+    private static func isBuiltInYouTubePlaybackIgnoreRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "ignore-previous-rules",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = trigger["url-filter"] as? String else {
+            return false
+        }
+        if urlFilter == ".*" {
+            guard domainListContainsYouTube(trigger["if-domain"] as? [String]) else { return false }
+        } else if urlFilter != youtubePlaybackURLFilter && urlFilter != legacyYouTubePlaybackURLFilter {
+            return false
+        }
+        if let resourceTypes = trigger["resource-type"] as? [String] {
+            guard resourceTypes.count == 1, ["raw", "media", "document", "script", "image"].contains(resourceTypes[0]) else {
+                return false
+            }
+        }
+        if let domains = trigger["if-domain"] as? [String] {
+            return domains.contains("youtube.com") || domains.contains("*youtube.com")
+        }
+        return true
+    }
+
+    private static func domainListContainsYouTube(_ domains: [String]?) -> Bool {
+        guard let domains else { return false }
+        return domains.contains { domain in
+            let normalized = domain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return normalized == "youtube.com"
+                || normalized == "www.youtube.com"
+                || normalized == "m.youtube.com"
+                || normalized == "*youtube.com"
+                || normalized == "*www.youtube.com"
+                || normalized.hasSuffix(".youtube.com")
+        }
+    }
+
+    private static func isYouTubePlaybackBlockRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "block",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = (trigger["url-filter"] as? String)?.lowercased() else {
+            return false
+        }
+
+        // Temporary safety-first policy: do not ship static block rules scoped to
+        // YouTube pages. Safari's request classification around googlevideo playback
+        // is too fragile, and one false positive makes all videos spin forever.
+        if domainListContainsYouTube(trigger["if-domain"] as? [String]) {
+            return true
+        }
+
+        if isGoogleVideoPlaybackURLFilter(urlFilter) {
+            return true
+        }
+
+        // Safari/WebKit may classify signed googlevideo playback fetches differently
+        // across releases. Do not keep broad third-party media/raw blocks scoped to
+        // YouTube pages in the static blocker, because a false positive stalls playback.
+        if urlFilter == ".*" || urlFilter == ".*_ad_" {
+            let resourceTypes = Set((trigger["resource-type"] as? [String]) ?? [])
+            let loadTypes = Set((trigger["load-type"] as? [String]) ?? [])
+            if !resourceTypes.isDisjoint(with: ["raw", "media"]) && (loadTypes.isEmpty || loadTypes.contains("third-party")) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private static func isGoogleVideoPlaybackURLFilter(_ urlFilter: String) -> Bool {
+        urlFilter.contains("googlevideo") && (urlFilter.contains("videoplayback") || urlFilter.contains("initplayback"))
+    }
+
+    private static func isGoogleVideoPlaybackBlockRule(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "block",
+              let trigger = rule["trigger"] as? [String: Any],
+              let urlFilter = (trigger["url-filter"] as? String)?.lowercased() else {
+            return false
+        }
+        return isGoogleVideoPlaybackURLFilter(urlFilter)
+    }
+
+    private static func isUnsafeGlobalThirdPartyRawBlock(_ rule: [String: Any]) -> Bool {
+        guard let action = rule["action"] as? [String: Any],
+              action["type"] as? String == "block",
+              let trigger = rule["trigger"] as? [String: Any],
+              trigger["url-filter"] as? String == ".*",
+              let resourceTypes = trigger["resource-type"] as? [String],
+              resourceTypes == ["raw"],
+              let loadTypes = trigger["load-type"] as? [String],
+              loadTypes == ["third-party"] else {
+            return false
+        }
+
+        // These broad option-only filters are valid in uBO, but Safari often classifies
+        // normal media fetches as "raw". If conversion cannot preserve the original
+        // domain scope, the result blocks all third-party XHR/fetch traffic, including
+        // YouTube's googlevideo playback requests.
+        return Set(trigger.keys) == Set(["url-filter", "resource-type", "load-type"])
+    }
+
+    /// Finalizes Safari content blocker JSON before saving.
+    /// This injects terminal allow rules for disabled sites and for fragile YouTube
+    /// playback requests, and removes unsafe global raw third-party blocks produced
+    /// when conversion cannot preserve option-only rule domain scope.
     private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
-        guard !disabledSites.isEmpty else { return json }
         let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let openBracket = trimmed.firstIndex(of: "["),
-              let closeBracket = trimmed.lastIndex(of: "]"),
-              openBracket < closeBracket else {
+        guard let jsonData = trimmed.data(using: .utf8),
+              var rules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
             return json
         }
 
-        let ignoreRules = disabledSites.map { disabledSiteIgnoreRuleJSON(for: $0) }.joined(separator: ",")
-        guard !ignoreRules.isEmpty else { return trimmed }
+        rules.removeAll { isUnsafeGlobalThirdPartyRawBlock($0) || isYouTubePlaybackBlockRule($0) || isGoogleVideoPlaybackBlockRule($0) || isBuiltInYouTubePlaybackIgnoreRule($0) }
+        rules.append(contentsOf: youtubePlaybackIgnoreRules())
 
-        let inner = trimmed[trimmed.index(after: openBracket)..<closeBracket]
-        if inner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "[\(ignoreRules)]"
+        for site in disabledSites {
+            let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedSite.isEmpty else { continue }
+            let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+            rules.append([
+                "action": ["type": "ignore-previous-rules"],
+                "trigger": ["url-filter": ".*", "if-domain": [wildcardDomain]]
+            ])
         }
 
-        return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
+        guard let updatedData = try? JSONSerialization.data(withJSONObject: rules, options: []),
+              let updatedJSON = String(data: updatedData, encoding: .utf8) else {
+            return json
+        }
+        return updatedJSON
     }
     
     /// Counts the number of rules in a Safari content blocker JSON string.
@@ -542,222 +697,137 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
     }
     
-    /// Builds the filter engine with combined advanced rules from all filter groups.
+    /// Builds the native advanced runtime from WBlockFilterCompiler JSON bundles.
     ///
     /// - Parameters:
-    ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
+    ///   - advancedRuleBundles: JSON-encoded WBlockFilterCompiler advanced-rule bundles.
     ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
-        guard !combinedAdvancedRules.isEmpty else {
-            os_log(.info, "No advanced rules to build filter engine with")
-            return
-        }
-
-        try measure(label: "Building combined filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(
-                rules: combinedAdvancedRules,
+    public static func buildCombinedNativeAdvancedRuntime(advancedRuleBundles: [String], groupIdentifier: String) throws {
+        try measure(label: "Building native advanced runtime") {
+            try NativeAdvancedRuntimeAdapter.build(
+                jsonBundleSnippets: advancedRuleBundles,
                 groupIdentifier: groupIdentifier
             )
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-            }
-            #endif
-            os_log(
-                .info,
-                "Successfully built combined filter engine with %d characters of advanced rules",
-                combinedAdvancedRules.count
-            )
         }
     }
 
-    /// Clears the filter engine by building it with empty rules.
+    /// Clears the native advanced runtime.
     ///
-    /// - Parameters:
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) throws {
-        try measure(label: "Clearing filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: "")
-            }
-            #endif
-            os_log(.info, "Successfully cleared filter engine")
-        }
+    /// - Parameter groupIdentifier: Group ID to use for the shared container.
+    public static func clearNativeAdvancedRuntime(groupIdentifier: String) throws {
+        try NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
     }
 
-    #if os(iOS)
-    private static func buildFilterEngineWithoutAdvisoryLock(
-        rules: String,
+    public struct AdvancedRuntimePayloadCounts: Codable, Sendable, Equatable {
+        public let css: Int
+        public let extendedCss: Int
+        public let js: Int
+        public let scriptlets: Int
+    }
+
+    public struct AdvancedRuntimeLookupDebugReport: Codable, Sendable, Equatable {
+        public let pageURL: String
+        public let topURL: String?
+        public let nativeAvailable: Bool
+        public let nativeCounts: AdvancedRuntimePayloadCounts
+    }
+
+    /// Reports the installed native advanced runtime for a single URL without mutating it.
+    public static func debugAdvancedRuntimeLookup(
+        pageURL: URL,
+        topURL: URL? = nil,
         groupIdentifier: String
-    ) throws {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            throw WebExtension.WebExtensionError.containerURLNotFound(groupID: groupIdentifier)
-        }
+    ) throws -> AdvancedRuntimeLookupDebugReport {
+        let nativePayload = NativeAdvancedRuntimeAdapter.lookupPayload(
+            pageURL: pageURL,
+            topURL: topURL,
+            groupIdentifier: groupIdentifier
+        )
 
-        let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        var coordinationError: NSError?
-        var buildResult: Result<Void, Error>?
-
-        coordinator.coordinate(writingItemAt: baseURL, options: [], error: &coordinationError) { _ in
-            buildResult = Result {
-                try buildFilterEngineFiles(rules: rules, baseURL: baseURL)
-            }
-        }
-
-        if let buildResult {
-            try buildResult.get()
-            return
-        }
-
-        if let coordinationError {
-            throw coordinationError
-        }
-
-        throw WebExtension.WebExtensionError.buildEngineFailed(
-            underlyingError: CocoaError(.fileWriteUnknown)
+        return AdvancedRuntimeLookupDebugReport(
+            pageURL: pageURL.absoluteString,
+            topURL: topURL?.absoluteString,
+            nativeAvailable: nativePayload != nil,
+            nativeCounts: payloadCounts(nativePayload)
         )
     }
 
-    private static func buildFilterEngineFiles(rules: String, baseURL: URL) throws {
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(at: baseURL, withIntermediateDirectories: true)
-
-        let temporaryDirectory = baseURL.appendingPathComponent(
-            "engine-rebuild-\(UUID().uuidString)",
-            isDirectory: true
+    private static func payloadCounts(_ payload: [String: Any]?) -> AdvancedRuntimePayloadCounts {
+        AdvancedRuntimePayloadCounts(
+            css: stringArray(in: payload, key: "css").count,
+            extendedCss: stringArray(in: payload, key: "extendedCss").count,
+            js: stringArray(in: payload, key: "js").count,
+            scriptlets: scriptletEntries(in: payload).count
         )
-        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-        defer { try? fileManager.removeItem(at: temporaryDirectory) }
-
-        let temporaryRulesBinURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        let temporaryEngineURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        let temporaryRulesTextURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
-        let temporaryMetaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-
-        let storage = try FilterRuleStorage(
-            from: rules.components(separatedBy: "\n"),
-            for: SafariVersion.autodetect(),
-            fileURL: temporaryRulesBinURL
-        )
-        let engine = try FilterEngine(storage: storage)
-        try engine.write(to: temporaryEngineURL)
-        try rules.write(to: temporaryRulesTextURL, atomically: true, encoding: .utf8)
-
-        let meta = EngineMeta(timestamp: Date().timeIntervalSince1970, schemaVersion: Int32(Schema.VERSION))
-        try meta.toData().write(to: temporaryMetaURL, options: .atomic)
-
-        try publishEngineFiles(
-            temporaryRulesBinURL: temporaryRulesBinURL,
-            temporaryEngineURL: temporaryEngineURL,
-            temporaryRulesTextURL: temporaryRulesTextURL,
-            temporaryMetaURL: temporaryMetaURL,
-            baseURL: baseURL
-        )
-
-        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
-        if fileManager.fileExists(atPath: migrationMarkerURL.path) {
-            try? fileManager.removeItem(at: migrationMarkerURL)
-        }
     }
 
-    private static func publishEngineFiles(
-        temporaryRulesBinURL: URL,
-        temporaryEngineURL: URL,
-        temporaryRulesTextURL: URL,
-        temporaryMetaURL: URL,
-        baseURL: URL
-    ) throws {
-        let lockURL = baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME)
-        guard let fileLock = FileLock(filePath: lockURL.path) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-
-        guard fileLock.lock(before: Date().addingTimeInterval(2)) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-        defer { _ = fileLock.unlock() }
-
-        let existingMetaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-        if FileManager.default.fileExists(atPath: existingMetaURL.path) {
-            try FileManager.default.removeItem(at: existingMetaURL)
-        }
-
-        try replaceEngineFile(temporaryRulesBinURL, in: baseURL, named: Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        try replaceEngineFile(temporaryEngineURL, in: baseURL, named: Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        try replaceEngineFile(temporaryRulesTextURL, in: baseURL, named: Schema.RULES_FILE_NAME)
-        try replaceEngineFile(temporaryMetaURL, in: baseURL, named: Schema.ENGINE_META_FILE_NAME)
+    private static func stringArray(in payload: [String: Any]?, key: String) -> [String] {
+        payload?[key] as? [String] ?? []
     }
 
-    private static func replaceEngineFile(_ sourceURL: URL, in baseURL: URL, named fileName: String) throws {
-        let destinationURL = baseURL.appendingPathComponent(fileName)
-        let fileManager = FileManager.default
-
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            _ = try fileManager.replaceItemAt(destinationURL, withItemAt: sourceURL)
-        } else {
-            try fileManager.moveItem(at: sourceURL, to: destinationURL)
-        }
+    private static func scriptletEntries(in payload: [String: Any]?) -> [String] {
+        guard let scriptlets = payload?["scriptlets"] as? [[String: Any]] else { return [] }
+        return scriptlets.map { scriptlet in
+            let name = scriptlet["name"] as? String ?? ""
+            let args = scriptlet["args"] as? [String] ?? []
+            return "\(name)(\(args.joined(separator: "\u{1f}")))"
+        }.sorted()
     }
-    #endif
+
+    public static func buildCombinedAdvancedRuntime(combinedAdvancedRules: String, groupIdentifier: String) throws {
+        guard !combinedAdvancedRules.isEmpty else { return }
+        try buildCombinedNativeAdvancedRuntime(
+            advancedRuleBundles: [combinedAdvancedRules],
+            groupIdentifier: groupIdentifier
+        )
+    }
+
+    public static func clearAdvancedRuntime(groupIdentifier: String) throws {
+        try NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
+    }
     
-    /// Backward compatibility function that builds the filter engine immediately (legacy behavior).
-    /// This function is deprecated and should not be used for new code.
-    ///
-    /// - Parameters:
-    ///   - rules: AdGuard rules to be converted.
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    ///   - targetRulesFilename: Target filename for the rules.
-    /// - Returns: The number of Safari content blocker rules generated from the conversion.
 }
 
 // MARK: - Safari Content Blocker functions
 
 extension ContentBlockerService {
-    /// Converts AdGuard rules into the Safari content blocking rules syntax.
+    /// Converts filter rules into the Safari content blocking rules syntax.
     ///
     /// - Parameters:
-    ///   - rules: AdGuard rules to convert.
+    ///   - rules: Filter rules to convert.
     /// - Returns: A ConversionResult containing the converted Safari rules in JSON format
     ///           and advanced rules in text format.
-    private static func convertRules(rules: String) -> ConversionResult {
+    private struct ConversionResult {
+        let safariRulesJSON: String
+        let safariRulesCount: Int
+        let advancedRulesText: String?
+    }
+
+    private static func convertRules(rules: String) throws -> ConversionResult {
         var filterRules = rules
         if !filterRules.isContiguousUTF8 {
-            measure(label: "Make contigious UTF-8") {
-                // This is super important for the conversion performance.
-                // In a normal app make sure you're storing filter lists as
-                // contigious UTF-8 strings.
+            measure(label: "Make contiguous UTF-8") {
                 filterRules.makeContiguousUTF8()
             }
         }
 
-        // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
-        // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
-        let lines = filterRules.split(whereSeparator: \.isNewline).map(String.init)
-
-        let result = measure(label: "Conversion") {
-            ContentBlockerConverter().convertArray(
-                rules: lines,
-                safariVersion: .autodetect(),
-                advancedBlocking: true,
-                maxJsonSizeBytes: nil,
-                progress: nil
+        let nativeResult = try measure(label: "Native conversion") {
+            try NativeFilterCompilerAdapter.convert(
+                rules: filterRules,
+                sourceIdentifier: "combined",
+                displayName: "Combined rules"
             )
         }
 
-        return result
+        if nativeResult.unsupportedRuleCount > 0 {
+            os_log(.info, "Native filter conversion skipped %d unsupported rules", nativeResult.unsupportedRuleCount)
+        }
+
+        return ConversionResult(
+            safariRulesJSON: nativeResult.safariRulesJSON,
+            safariRulesCount: nativeResult.safariRulesCount,
+            advancedRulesText: nativeResult.advancedRulesText
+        )
     }
 
     /// Saves the blocker list file contents to the shared directory specified by the group identifier.
@@ -783,6 +853,7 @@ extension ContentBlockerService {
                 return
             }
             try data.write(to: sharedFileURL, options: .atomic)
+            normalizeBlockerListFileForSafari(sharedFileURL)
             os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
         } catch {
             os_log(
@@ -792,6 +863,41 @@ extension ContentBlockerService {
                 error.localizedDescription
             )
         }
+    }
+
+    private static func normalizeBlockerListFileForSafari(_ url: URL) {
+        do {
+            try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        } catch {
+            os_log(
+                .error,
+                "Failed to set Safari-readable permissions for %@: %@",
+                url.path,
+                error.localizedDescription
+            )
+        }
+
+        #if canImport(Darwin)
+        let attributesToRemove = [
+            "com.apple.quarantine",
+            "com.apple.provenance",
+        ]
+        url.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return }
+            for attribute in attributesToRemove {
+                if removexattr(path, attribute, 0) != 0, errno != ENOATTR {
+                    let message = String(cString: strerror(errno))
+                    os_log(
+                        .error,
+                        "Failed to remove extended attribute %@ from %@: %@",
+                        attribute,
+                        url.path,
+                        message
+                    )
+                }
+            }
+        }
+        #endif
     }
 
     /// Creates a ZIP archive containing Safari content blocker rules and advanced rules.

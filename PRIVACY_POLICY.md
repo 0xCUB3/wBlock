@@ -246,7 +246,7 @@ If you have questions or concerns about this Privacy Policy or wBlock's privacy 
 
 wBlock is built on the work of many open-source projects and filter list maintainers:
 
-- AdGuard filter lists and conversion libraries
+- uBlock Origin, AdGuard, EasyList, and other filter list maintainers
 - EasyList and other community filter lists
 - Safari content blocking framework by Apple
 - Third-party userscript developers

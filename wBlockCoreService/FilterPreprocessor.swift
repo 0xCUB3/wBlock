@@ -6,8 +6,7 @@
 //  1. Evaluate !#if / !#else / !#endif conditionals on the parent content.
 //  2. Expand !#include directives via IncludeResolver.
 //
-//  This is the single entry point that Phase 4 will call before passing
-//  content to SafariConverterLib.
+//  This is the single entry point before passing content to the native compiler.
 //
 
 import Foundation
@@ -18,7 +17,7 @@ import Foundation
 /// ```swift
 /// let preprocessor = FilterPreprocessor()
 /// let expanded = await preprocessor.preprocess(content: rawContent, listURL: filterList.url)
-/// // Pass `expanded` to SafariConverterLib
+/// // Pass `expanded` to the native compiler
 /// ```
 ///
 /// Pipeline:
@@ -28,7 +27,7 @@ import Foundation
 /// 2. `IncludeResolver.expandIncludes(in:baseURL:visited:depth:)` — fetches sub-lists
 ///    and recursively expands nested includes (up to depth 5).
 ///
-/// The returned string is ready for SafariConverterLib (`convertArray` or equivalent).
+/// The returned string is ready for the native compiler.
 public actor FilterPreprocessor {
 
     private let resolver: IncludeResolver
@@ -63,7 +62,7 @@ public actor FilterPreprocessor {
     ///   - content: Raw filter list text (as downloaded from the network or disk).
     ///   - listURL: Full URL of the parent filter list (e.g. `https://example.com/list.txt`).
     ///             Used both as the origin for same-origin checks and as the self-cycle guard.
-    /// - Returns: Fully expanded filter list content, ready for SafariConverterLib.
+    /// - Returns: Fully expanded filter list content, ready for the native compiler.
     public func preprocess(content: String, listURL: URL) async -> String {
         // Step 1: Split into lines
         let lines = content.components(separatedBy: .newlines)
@@ -93,7 +92,7 @@ public actor FilterPreprocessor {
             depth: 0
         )
 
-        // Step 6: Join and return as a single string for SafariConverterLib.
+        // Step 6: Join and return as a single string for conversion.
         return expanded.joined(separator: "\n")
     }
 }
