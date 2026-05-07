@@ -5,8 +5,13 @@
  */
 'use strict';
 
-const MESSAGE_INIT_CONTENT_SCRIPT = 'InitContentScript';
-const WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [];
+// Safari can inject the same content script more than once in some frames
+// (for example account/blank iframes). Use var so reinjection does not throw
+// duplicate top-level lexical binding errors, and guard the bootstrap below.
+var MESSAGE_INIT_CONTENT_SCRIPT = 'InitContentScript';
+var WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [];
+var WBLOCK_CONTENT_RUNTIME_ALREADY_RAN = globalThis.__wBlockContentRuntimeHasRun === true;
+globalThis.__wBlockContentRuntimeHasRun = true;
 
 function wBlockInstallYouTubeInlineScriptGuard() {
   try {
@@ -6302,4 +6307,6 @@ async function wBlockMain() {
   }
 }
 
-wBlockMain();
+if (!WBLOCK_CONTENT_RUNTIME_ALREADY_RAN) {
+  wBlockMain();
+}

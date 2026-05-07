@@ -378,7 +378,17 @@ enum RuleParser {
                 continue
             }
 
-            if lower == "inline-script" || lower == "inline-font" || lower == "elemhide" || lower == "generichide" || lower == "genericblock" || lower == "jsinject" || lower == "shide" || lower == "ehide" || lower == "ghide" || lower == "specifichide" || lower == "cname" || lower.hasPrefix("cname=") {
+            if lower == "inline-script" {
+                guard configuration.enabledCapabilities.contains(.headerModification), !isException else {
+                    return .unsupported(.headerModificationNeedsAdvancedRuntime)
+                }
+                resourceTypes.insert(.document)
+                cspDirectives.append("script-src 'self' http: https: data: blob: 'unsafe-eval'")
+                canonicalOptions.append("inline-script")
+                continue
+            }
+
+            if lower == "inline-font" || lower == "elemhide" || lower == "generichide" || lower == "genericblock" || lower == "jsinject" || lower == "shide" || lower == "ehide" || lower == "ghide" || lower == "specifichide" || lower == "cname" || lower.hasPrefix("cname=") {
                 return .unsupported(.noSafariEquivalent)
             }
 

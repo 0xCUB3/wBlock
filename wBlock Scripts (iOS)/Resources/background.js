@@ -6178,11 +6178,8 @@ async function syncDynamicDNRRules(configuration) {
   const timestamp = configuration && configuration.engineTimestamp || 0;
   if (timestamp === dnrRulesTimestamp) return;
   if (!browser.declarativeNetRequest || !browser.declarativeNetRequest.updateDynamicRules) return;
-  const rules = [];
+  const rules = normalizeDynamicDNRRules(configuration && configuration.dnrRules);
   try {
-    // Dynamic DNR is intentionally disabled while the Safari advanced runtime is
-    // simplified. Always clear existing rules, including stale rules from older
-    // builds which used different ID ranges.
     const removeRuleIds = await allDynamicDNRRuleIds();
     const result = await updateDynamicRulesSkippingInvalid(removeRuleIds, rules);
     dnrRulesTimestamp = timestamp;
@@ -6250,6 +6247,39 @@ async function applyConfiguration(tabId, frameId, configuration) {
     world: 'MAIN',
     injectImmediately: true
   }).catch(error => console.warn('[wBlock] MAIN-world runtime injection failed:', error));
+}
+
+function wBlockExecuteUserScriptSource(source) {
+  'use strict';
+  if (typeof source !== 'string' || !source) return false;
+  (0, Function)(source)();
+  return true;
+}
+
+async function executeUserScriptInMainWorld(tabId, frameId, source) {
+  if (!tabId || !browser.scripting || !browser.scripting.executeScript) {
+    return { ok: false, error: 'MAIN-world scripting API unavailable' };
+  }
+  const details = {
+    target: { tabId, frameIds: [frameId] },
+    func: wBlockExecuteUserScriptSource,
+    args: [source],
+    world: 'MAIN',
+    injectImmediately: true
+  };
+  try {
+    await browser.scripting.executeScript(details);
+    return { ok: true };
+  } catch (firstError) {
+    try {
+      const retryDetails = { ...details };
+      delete retryDetails.injectImmediately;
+      await browser.scripting.executeScript(retryDetails);
+      return { ok: true };
+    } catch (retryError) {
+      return { ok: false, error: String((retryError && retryError.message) || (firstError && firstError.message) || retryError || firstError) };
+    }
+  }
 }
 
 const FORBIDDEN_GM_XHR_HEADER_NAMES = new Set([
@@ -6359,6 +6389,11 @@ async function handleMessages(request, sender) {
       const response = await sendQueuedNativeMessage({ action: 'getUserScripts', url: message.url, requestId: message.requestId || ('userscripts-' + Date.now()), includeContent: message.includeContent === true, maxInlineContentBytes: message.maxInlineContentBytes || 0 });
       return { userScripts: response && response.userScripts ? response.userScripts : [], ...(response && response.error ? { error: response.error } : {}) };
     } catch (error) { return { userScripts: [], error: String(error && error.message ? error.message : error) }; }
+  }
+  if (message.action === 'wblock:userscript:executeMainWorld') {
+    const tabId = sender && sender.tab ? sender.tab.id : 0;
+    const frameId = sender && typeof sender.frameId === 'number' ? sender.frameId : 0;
+    return executeUserScriptInMainWorld(tabId, frameId, message.source || '');
   }
   if (message.action === 'setUserScriptStorageValue' || message.action === 'deleteUserScriptStorageValue') {
     const storageRequest = { action: message.action, requestId: message.requestId || ('userscript-storage-' + Date.now()), scriptId: message.scriptId, key: message.key };

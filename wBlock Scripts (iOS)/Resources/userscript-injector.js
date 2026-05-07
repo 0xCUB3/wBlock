@@ -79,6 +79,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
+            this.pageMenuPostMessageBridgeIDs = new Set(); // bridgeIds registered by MAIN-world executeScript
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
@@ -211,8 +212,40 @@ if (window.wBlockUserscriptInjectorHasRun) {
             };
             window.__wBlockUserscriptMenuState = this.getRegisteredMenuCommands();
 
+            window.addEventListener('message', (event) => {
+                if (event.source !== window) return;
+                const data = event.data;
+                if (!data || typeof data.type !== 'string') return;
+
+                if (data.type === 'wblock-gm-menu-register') {
+                    if (typeof data.bridgeId !== 'string' || typeof data.commandId !== 'string' || typeof data.caption !== 'string') return;
+                    this.pageMenuPostMessageBridgeIDs.add(data.bridgeId);
+                    this.registerMenuCommandDescriptor(data.bridgeId, data.commandId, data);
+                    return;
+                }
+
+                if (data.type === 'wblock-gm-menu-unregister') {
+                    if (typeof data.bridgeId !== 'string' || typeof data.commandId !== 'string') return;
+                    this.unregisterMenuCommandDescriptor(data.bridgeId, data.commandId);
+                    return;
+                }
+
+                if (data.type === 'wblock-gm-menu-invoke-result') {
+                    if (typeof data.bridgeId !== 'string' || typeof data.requestId !== 'string') return;
+                    const pending = this.pendingMenuInvocations.get(data.requestId);
+                    if (!pending) return;
+                    this.pendingMenuInvocations.delete(data.requestId);
+                    clearTimeout(pending.timeoutId);
+                    pending.resolve({
+                        ok: data.success !== false,
+                        error: typeof data.error === 'string' ? data.error : ''
+                    });
+                }
+            });
+
             window.addEventListener('pagehide', () => {
                 this.pageMenuBridgeElements.clear();
+                this.pageMenuPostMessageBridgeIDs.clear();
                 this.contentMenuCommandCallbacks.clear();
                 this.registeredMenuCommands.clear();
                 window.__wBlockUserscriptMenuState = [];
@@ -355,7 +388,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
 
             const bridgeElement = this.pageMenuBridgeElements.get(bridgeId);
-            if (!bridgeElement) {
+            const hasPostMessageBridge = this.pageMenuPostMessageBridgeIDs.has(bridgeId);
+            if (!bridgeElement && !hasPostMessageBridge) {
                 return { ok: false, error: 'Menu command not found' };
             }
 
@@ -367,9 +401,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }, 15000);
 
                 this.pendingMenuInvocations.set(requestId, { resolve, timeoutId });
-                bridgeElement.dispatchEvent(new CustomEvent('wblock-gm-menu-invoke', {
-                    detail: { bridgeId, commandId, requestId }
-                }));
+                if (bridgeElement) {
+                    bridgeElement.dispatchEvent(new CustomEvent('wblock-gm-menu-invoke', {
+                        detail: { bridgeId, commandId, requestId }
+                    }));
+                } else {
+                    window.postMessage({
+                        type: 'wblock-gm-menu-invoke',
+                        bridgeId,
+                        commandId,
+                        requestId
+                    }, '*');
+                }
             });
         }
 
@@ -499,17 +542,68 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return decoder.decode(this.concatBytes(byteArrays));
         }
 
+        userScriptPayloadCacheKey(script) {
+            if (!script || !script.id) return '';
+            const version = typeof script.version === 'string' ? script.version : '';
+            const lastUpdated = String(script.lastUpdated || '0');
+            const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames.slice().sort().join('|') : '';
+            return `wblock-userscript-payload:${script.id}:${version}:${lastUpdated}:${resourceNames}`;
+        }
+
+        async readCachedScriptPayload(script) {
+            const cacheKey = this.userScriptPayloadCacheKey(script);
+            if (!cacheKey || typeof browser === 'undefined' || !browser.storage || !browser.storage.local) {
+                return null;
+            }
+            try {
+                const result = await browser.storage.local.get(cacheKey);
+                const cached = result && result[cacheKey];
+                if (!cached || typeof cached.content !== 'string' || cached.content.length === 0) {
+                    return null;
+                }
+                const resources = cached.resources && typeof cached.resources === 'object' ? cached.resources : {};
+                return { ...script, content: cached.content, resources };
+            } catch (error) {
+                wBlockWarn('[wBlock] Failed to read userscript payload cache:', error);
+                return null;
+            }
+        }
+
+        async writeCachedScriptPayload(script) {
+            const cacheKey = this.userScriptPayloadCacheKey(script);
+            if (!cacheKey || typeof browser === 'undefined' || !browser.storage || !browser.storage.local) {
+                return;
+            }
+            try {
+                await browser.storage.local.set({
+                    [cacheKey]: {
+                        content: script.content || '',
+                        resources: script.resources || {},
+                        cachedAt: Date.now()
+                    }
+                });
+            } catch (error) {
+                wBlockWarn('[wBlock] Failed to write userscript payload cache:', error);
+            }
+        }
+
         async ensureScriptPayload(script) {
             if (script && typeof script.content === 'string' && script.content.length > 0) {
                 // Hydrated payload may already include content/resources.
                 if (script.resources == null && script.resourceContents != null) {
                     script.resources = script.resourceContents;
                 }
+                await this.writeCachedScriptPayload(script);
                 return script;
             }
 
             if (!script || !script.id) {
                 throw new Error('Userscript descriptor missing id');
+            }
+
+            const cached = await this.readCachedScriptPayload(script);
+            if (cached) {
+                return cached;
             }
 
             const content = await this.fetchTextFromChunks('getUserScriptContentChunk', { scriptId: script.id });
@@ -522,7 +616,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 });
             }
 
-            return { ...script, content, resources };
+            const hydrated = { ...script, content, resources };
+            await this.writeCachedScriptPayload(hydrated);
+            return hydrated;
         }
 
         setupDocumentEventListeners() {
@@ -723,10 +819,36 @@ if (window.wBlockUserscriptInjectorHasRun) {
             });
         }
 
+        shouldSkipFrameForScript(script) {
+            if (window === window.top) return false;
+            if (!script || typeof script.name !== 'string') return false;
+            if (!/\bBypass Paywalls Clean\b/i.test(script.name)) return false;
+
+            // BPC's userscript returns immediately in iframes except for a small
+            // allowlist. Avoid hydrating the large script payload in frames where
+            // upstream would no-op anyway.
+            const host = (location.hostname || '').toLowerCase();
+            return host !== 'app.historytoday.com' && host !== 'appan.newscientist.com';
+        }
+
+        shouldPreferMainWorldInjection(script) {
+            if (!script || typeof script.name !== 'string') return false;
+            // Most userscripts are happier in the isolated content world on
+            // Trusted Types-heavy sites such as YouTube. Use MAIN-world early
+            // only for scripts known to need direct page globals when @inject-into
+            // is left at auto.
+            return /\bBypass Paywalls Clean\b/i.test(script.name);
+        }
+
         async injectSingleScriptAsync(script) {
             // Check @noframes directive - skip if in iframe
             if (script.noframes && window !== window.top) {
                 wBlockLog(`[wBlock] Skipping ${script.name} in iframe due to @noframes directive`);
+                return;
+            }
+
+            if (this.shouldSkipFrameForScript(script)) {
+                wBlockLog(`[wBlock] Skipping ${script.name} in iframe where upstream userscript no-ops`);
                 return;
             }
 
@@ -757,14 +879,23 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);
                 } else if (injectInto === 'auto') {
-                    // Try page context first, fall back to content if CSP blocks
-                    if (!this.tryInjectInPageContext(fullScript)) {
+                    // Preserve the old auto behavior for general userscripts:
+                    // script-tag page injection first, then isolated content context.
+                    // MAIN-world executeScript is reserved for known page-global scripts
+                    // because it can expose userscripts to site Trusted Types policies.
+                    const injectedInMainWorld = this.shouldPreferMainWorldInjection(fullScript)
+                        ? await this.injectInMainWorldViaScripting(fullScript)
+                        : false;
+                    if (!injectedInMainWorld && !this.tryInjectInPageContext(fullScript)) {
                         wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${fullScript.name}`);
                         this.injectInContentContext(fullScript);
                     }
                 } else {
                     // Default: page context
-                    this.injectInPageContext(fullScript);
+                    const injectedInMainWorld = await this.injectInMainWorldViaScripting(fullScript);
+                    if (!injectedInMainWorld) {
+                        this.injectInPageContext(fullScript);
+                    }
                 }
 
                 this.injectedScripts.add(fullScript.name);
@@ -772,6 +903,34 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } finally {
                 this.injectingScripts.delete(script.name);
             }
+        }
+
+        // Page context injection via browser.scripting MAIN world. This bypasses
+        // page CSP that can block <script> tag injection while still sharing the
+        // page's JavaScript globals.
+        async injectInMainWorldViaScripting(script) {
+            if (isSandboxedWithoutScripts()) {
+                return false;
+            }
+            if (typeof browser === 'undefined' || !browser.runtime || !browser.runtime.sendMessage) {
+                return false;
+            }
+            try {
+                const response = await browser.runtime.sendMessage({
+                    action: 'wblock:userscript:executeMainWorld',
+                    source: this.wrapUserScript(script, 'page')
+                });
+                if (response && response.ok) {
+                    wBlockLog(`[wBlock] Injected ${script.name} in MAIN world via browser.scripting`);
+                    return true;
+                }
+                if (response && response.error) {
+                    wBlockLog(`[wBlock] MAIN-world userscript injection unavailable for ${script.name}: ${response.error}`);
+                }
+            } catch (error) {
+                wBlockLog(`[wBlock] MAIN-world userscript injection failed for ${script.name}: ${error && error.message ? error.message : error}`);
+            }
+            return false;
         }
 
         // Page context injection (default behavior - via <script> tag)
@@ -949,6 +1108,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const menuBridgeId = '${escapeForJS(script.menuBridgeId || '')}';
     const pageMenuBridgeElement = ${isContentContext ? 'null' : 'document.currentScript'};
     const contentMenuBridge = ${isContentContext ? 'window.__wBlockMenuCommandBridge' : 'null'};
+    const canUseWindowPostMessageForMenu = ${isContentContext ? 'false' : 'true'};
     const scriptStorageState = Object.assign({}, ${storageSnapshotJSON});
 
     const parseStoredValue = (rawValue) => {
@@ -984,15 +1144,20 @@ if (window.wBlockUserscriptInjectorHasRun) {
     };
 
     const postMenuCommandResult = (requestId, success, error) => {
-        if (!pageMenuBridgeElement || typeof requestId !== 'string' || requestId.length === 0) return;
-        pageMenuBridgeElement.dispatchEvent(new CustomEvent('wblock-gm-menu-invoke-result', {
-            detail: {
-                bridgeId: menuBridgeId,
-                requestId: requestId,
-                success: success !== false,
-                error: typeof error === 'string' ? error : ''
-            }
-        }));
+        if (typeof requestId !== 'string' || requestId.length === 0) return;
+        const detail = {
+            bridgeId: menuBridgeId,
+            requestId: requestId,
+            success: success !== false,
+            error: typeof error === 'string' ? error : ''
+        };
+        if (pageMenuBridgeElement) {
+            pageMenuBridgeElement.dispatchEvent(new CustomEvent('wblock-gm-menu-invoke-result', { detail }));
+            return;
+        }
+        if (canUseWindowPostMessageForMenu) {
+            window.postMessage({ type: 'wblock-gm-menu-invoke-result', ...detail }, '*');
+        }
     };
 
     const normalizeMenuCommandOptions = (accessKey) => {
@@ -1030,51 +1195,62 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return;
         }
 
-        if (!pageMenuBridgeElement) {
+        const messageType = kind === 'register' ? 'wblock-gm-menu-register' : 'wblock-gm-menu-unregister';
+        const detail = kind === 'register'
+            ? { bridgeId: menuBridgeId, commandId: commandId, ...normalizedDetails }
+            : { bridgeId: menuBridgeId, commandId: commandId };
+
+        if (pageMenuBridgeElement) {
+            pageMenuBridgeElement.dispatchEvent(new CustomEvent(messageType, { detail }));
             return;
         }
 
-        pageMenuBridgeElement.dispatchEvent(new CustomEvent(
-            kind === 'register' ? 'wblock-gm-menu-register' : 'wblock-gm-menu-unregister',
-            {
-                detail: kind === 'register'
-                    ? { bridgeId: menuBridgeId, commandId: commandId, ...normalizedDetails }
-                    : { bridgeId: menuBridgeId, commandId: commandId }
-            }
-        ));
+        if (canUseWindowPostMessageForMenu) {
+            window.postMessage({ type: messageType, ...detail }, '*');
+        }
     };
 
     ${isContentContext ? `` : `
+    const handleMenuInvoke = (detail) => {
+        if (!detail || detail.bridgeId !== menuBridgeId || typeof detail.commandId !== 'string') return;
+
+        const callback = menuCommandCallbacks.get(detail.commandId);
+        if (!callback) {
+            postMenuCommandResult(detail.requestId, false, 'Menu command not found');
+            return;
+        }
+
+        try {
+            Promise.resolve(callback())
+                .then(() => postMenuCommandResult(detail.requestId, true, ''))
+                .catch((error) => {
+                    postMenuCommandResult(
+                        detail.requestId,
+                        false,
+                        error && error.message ? error.message : String(error)
+                    );
+                });
+        } catch (error) {
+            postMenuCommandResult(
+                detail.requestId,
+                false,
+                error && error.message ? error.message : String(error)
+            );
+        }
+    };
+
     if (pageMenuBridgeElement) {
         pageMenuBridgeElement.addEventListener('wblock-gm-menu-invoke', (event) => {
-            const detail = event && event.detail ? event.detail : {};
-            if (detail.bridgeId !== menuBridgeId || typeof detail.commandId !== 'string') return;
-
-            const callback = menuCommandCallbacks.get(detail.commandId);
-            if (!callback) {
-                postMenuCommandResult(detail.requestId, false, 'Menu command not found');
-                return;
-            }
-
-            try {
-                Promise.resolve(callback())
-                    .then(() => postMenuCommandResult(detail.requestId, true, ''))
-                    .catch((error) => {
-                        postMenuCommandResult(
-                            detail.requestId,
-                            false,
-                            error && error.message ? error.message : String(error)
-                        );
-                    });
-            } catch (error) {
-                postMenuCommandResult(
-                    detail.requestId,
-                    false,
-                    error && error.message ? error.message : String(error)
-                );
-            }
+            handleMenuInvoke(event && event.detail ? event.detail : {});
         });
     }
+
+    window.addEventListener('message', (event) => {
+        if (event.source !== window) return;
+        const data = event.data;
+        if (!data || data.type !== 'wblock-gm-menu-invoke') return;
+        handleMenuInvoke(data);
+    });
     `}
 
     ${isContentContext ? `` : `

@@ -165,6 +165,29 @@ import Testing
     #expect(dnr[3].action.responseHeaders == [AdvancedDNRModifyHeader(header: "permissions-policy", operation: "set", value: "geolocation=()")])
 }
 
+@Test func inlineScriptRulesCompileToScopedCSPDNR() throws {
+    let source = FilterSource(
+        identifier: "inline-script",
+        displayName: "Inline Script",
+        text: "*$inline-script,domain=example.com"
+    )
+    var configuration = FilterCompilerConfiguration()
+    configuration.enabledCapabilities.insert(.headerModification)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let dnr = AdvancedRuleRuntime(bundle: result.advancedRules).lookup(host: "example.com").dnrRules
+
+    #expect(result.safariRuleCount == 0)
+    #expect(result.unsupportedRules.isEmpty)
+    #expect(dnr.count == 1)
+    #expect(dnr[0].action.type == "modifyHeaders")
+    #expect(dnr[0].condition.urlFilter == "*")
+    #expect(dnr[0].condition.resourceTypes == ["main_frame", "sub_frame"])
+    #expect(dnr[0].condition.requestDomains == ["example.com"])
+    #expect(dnr[0].condition.initiatorDomains == nil)
+    #expect(dnr[0].action.responseHeaders == [AdvancedDNRModifyHeader(header: "content-security-policy", operation: "set", value: "script-src 'self' http: https: data: blob: 'unsafe-eval'")])
+}
+
 @Test func redirectRulesCompileToDynamicDNRWhenResourceIsKnown() throws {
     let source = FilterSource(
         identifier: "redirect",

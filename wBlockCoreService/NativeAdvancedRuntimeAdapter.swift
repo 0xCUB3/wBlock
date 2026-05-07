@@ -58,12 +58,10 @@ enum NativeAdvancedRuntimeAdapter {
     private static func sanitizeForSafariRuntime(_ bundle: AdvancedRuleBundle) -> AdvancedRuleBundle {
         var sanitized = bundle
         sanitized.scriptlets = bundle.scriptlets.filter { !isFragileYouTubePlaybackScriptlet($0) }
-        // Keep the native advanced runtime simple and page-local for now.
-        // Dynamic DNR is global extension state in Safari and stale/broad rules can
-        // block real media before page-scoped runtime lookup has a chance to run.
-        // Static content blockers already handle network blocking; advanced rules
-        // should not install cross-page DNR until the matching/sync path is audited.
-        sanitized.dnrRules = []
+        // Keep dynamic DNR conservative. Safari DNR is global extension state,
+        // so allow only scoped header/CSP transformations that the page-local
+        // runtime cannot emulate (for example uBO/BPC $inline-script rules).
+        sanitized.dnrRules = bundle.dnrRules.filter(isSafeSafariRuntimeDNRRule)
         if sanitized != bundle {
             // Force the background runtime to replace previously-installed dynamic
             // rules even when an older on-disk native runtime bundle is reused.
@@ -72,14 +70,35 @@ enum NativeAdvancedRuntimeAdapter {
         return sanitized
     }
 
-    private static func isUnsafeGlobalRemoveParamDNRRule(_ rule: AdvancedDNRRule) -> Bool {
-        guard rule.action.type == "redirect",
-              rule.action.redirect?.transform?.queryTransform?.removeParams?.isEmpty == false,
-              rule.condition.urlFilter == "*" else { return false }
-        return rule.condition.requestDomains?.isEmpty != false &&
-            rule.condition.excludedRequestDomains?.isEmpty != false &&
-            rule.condition.initiatorDomains?.isEmpty != false &&
-            rule.condition.excludedInitiatorDomains?.isEmpty != false
+    private static func isSafeSafariRuntimeDNRRule(_ rule: AdvancedDNRRule) -> Bool {
+        guard rule.action.type == "modifyHeaders" else { return false }
+        guard rule.action.redirect == nil else { return false }
+        guard rule.condition.regexFilter == nil else { return false }
+
+        let hasDomainScope = rule.condition.requestDomains?.isEmpty == false ||
+            rule.condition.initiatorDomains?.isEmpty == false
+        guard hasDomainScope else { return false }
+
+        let requestHeaders = rule.action.requestHeaders ?? []
+        let responseHeaders = rule.action.responseHeaders ?? []
+        guard !requestHeaders.isEmpty || !responseHeaders.isEmpty else { return false }
+
+        for header in requestHeaders {
+            guard header.operation == "remove" else { return false }
+            guard ["cookie", "referer", "user-agent"].contains(header.header.lowercased()) else { return false }
+        }
+
+        for header in responseHeaders {
+            let name = header.header.lowercased()
+            if name == "content-security-policy" {
+                guard header.operation == "set", header.value?.isEmpty == false else { return false }
+                continue
+            }
+            guard header.operation == "remove" else { return false }
+            guard ["set-cookie", "content-security-policy", "x-frame-options"].contains(name) else { return false }
+        }
+
+        return true
     }
 
     private static func isFragileYouTubePlaybackScriptlet(_ rule: AdvancedScriptletRule) -> Bool {

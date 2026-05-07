@@ -516,6 +516,7 @@ public enum WebExtensionRequestHandler {
                     "injectInto": injectInto,
                     "updateURL": script.updateURL ?? "",
                     "downloadURL": script.downloadURL ?? "",
+                    "lastUpdated": script.lastUpdated?.timeIntervalSince1970 ?? 0,
                     "resourceNames": resourceNames,
                     "storageSnapshot": storageSnapshot
                 ]

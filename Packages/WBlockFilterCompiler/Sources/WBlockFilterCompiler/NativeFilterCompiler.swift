@@ -476,7 +476,18 @@ public struct NativeFilterCompiler: FilterCompiling {
             AdvancedDNRModifyHeader(header: "permissions-policy", operation: "set", value: $0)
         })
         guard !requestHeaders.isEmpty || !responseHeaders.isEmpty,
-              let condition = dnrCondition(for: rule) else { return nil }
+              var condition = dnrCondition(for: rule) else { return nil }
+        if rule.pattern == "*",
+           rule.resourceTypes.contains(.document),
+           condition.requestDomains == nil,
+           let initiatorDomains = condition.initiatorDomains,
+           !initiatorDomains.isEmpty {
+            // For document-level header/CSP rules, ABP/uBO domain= scopes the
+            // loaded page itself. DNR's initiatorDomains is often absent on
+            // main-frame navigations, so mirror that scope to requestDomains.
+            condition.requestDomains = initiatorDomains
+            condition.initiatorDomains = nil
+        }
         return AdvancedDNRRule(
             id: id,
             priority: rule.important ? 80_000 : 8_000,
