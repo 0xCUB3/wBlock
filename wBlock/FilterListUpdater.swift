@@ -387,6 +387,10 @@ final class FilterListUpdater: @unchecked Sendable {
             return false
         }
 
+        if UserScriptURLSupport.hasUserScriptMetadataBlock(in: content) {
+            return false
+        }
+
         // A filter list must have at least one meaningful non-empty line in the first 100 lines.
         // Meaningful = not empty, not a [header] bracket line.
         // Comments (!) and directives (!#include, !#if, etc.) all count as meaningful.

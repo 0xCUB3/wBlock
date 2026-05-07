@@ -1347,6 +1347,10 @@ struct AddFilterListView: View {
             return .duplicate
         }
 
+        if UserScriptURLSupport.hasUserScriptFileExtension(in: url) {
+            return .invalid
+        }
+
         return .valid(url)
     }
 

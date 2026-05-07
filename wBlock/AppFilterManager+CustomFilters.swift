@@ -35,6 +35,22 @@ extension AppFilterManager {
             return
         }
 
+        if UserScriptURLSupport.hasUserScriptFileExtension(in: url) {
+            statusDescription = LocalizedStrings.text(
+                "That doesn't look like a filter list.",
+                comment: "Custom filter validation error"
+            )
+            hasError = true
+            Task {
+                await ConcurrentLogManager.shared.error(
+                    .system,
+                    "Refused to add userscript URL as a filter list",
+                    metadata: ["url": url.absoluteString]
+                )
+            }
+            return
+        }
+
         CloudSyncManager.shared.clearDeletedCustomListURL(url.absoluteString)
 
         let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -69,7 +85,9 @@ extension AppFilterManager {
         }
 
         let lower = trimmedContent.lowercased()
-        if lower.hasPrefix("<!doctype html") || lower.hasPrefix("<html") {
+        if lower.hasPrefix("<!doctype html")
+            || lower.hasPrefix("<html")
+            || UserScriptURLSupport.hasUserScriptMetadataBlock(in: trimmedContent) {
             statusDescription = LocalizedStrings.text(
                 "That doesn't look like a filter list.",
                 comment: "User list validation error"

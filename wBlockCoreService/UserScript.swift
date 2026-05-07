@@ -28,6 +28,47 @@ public enum UserScriptURLSupport {
         displayName(forFilename: url.lastPathComponent)
     }
 
+    public static func hasUserScriptFileExtension(in url: URL) -> Bool {
+        hasUserScriptFileExtension(in: url.path)
+    }
+
+    public static func hasUserScriptMetadataBlock(in content: String, maxLines: Int = 300) -> Bool {
+        var scannedLines = 0
+        var foundMetadataStart = false
+        var foundMetadataDirective = false
+        var foundMetadataBlock = false
+        let trimCharacters = CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "\u{feff}"))
+
+        content.enumerateLines { line, stop in
+            if scannedLines >= maxLines {
+                stop = true
+                return
+            }
+            scannedLines += 1
+
+            let trimmedLine = line.trimmingCharacters(in: trimCharacters)
+
+            if trimmedLine == "// ==UserScript==" {
+                foundMetadataStart = true
+                return
+            }
+
+            guard foundMetadataStart else { return }
+
+            if trimmedLine == "// ==/UserScript==" {
+                foundMetadataBlock = foundMetadataDirective
+                stop = true
+                return
+            }
+
+            if trimmedLine.hasPrefix("// @") {
+                foundMetadataDirective = true
+            }
+        }
+
+        return foundMetadataBlock || (foundMetadataStart && foundMetadataDirective)
+    }
+
     public static func displayName(forFilename filename: String) -> String {
         let lowercased = filename.lowercased()
 
@@ -45,6 +86,10 @@ public enum UserScriptURLSupport {
     private static func hasSupportedExtension(in path: String) -> Bool {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+    }
+
+    private static func hasUserScriptFileExtension(in path: String) -> Bool {
+        path.lowercased().hasSuffix(".user.js")
     }
 }
 

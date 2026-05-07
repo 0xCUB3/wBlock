@@ -697,7 +697,7 @@ final class CloudSyncManager: ObservableObject {
 
             // Upsert custom lists from remote
             for remoteCustom in filters.customLists {
-                if deletedCustomURLs.contains(remoteCustom.url) {
+                if deletedCustomURLs.contains(remoteCustom.url) || remoteCustom.appearsToBeUserScript {
                     continue
                 }
                 let remoteCategory = remoteCustom.resolvedCategory
@@ -811,7 +811,7 @@ final class CloudSyncManager: ObservableObject {
             }
         )
 
-        for remoteCustom in filters.customLists where !deletedCustomURLs.contains(remoteCustom.url) {
+        for remoteCustom in filters.customLists where !deletedCustomURLs.contains(remoteCustom.url) && !remoteCustom.appearsToBeUserScript {
             let remoteCategory = remoteCustom.resolvedCategory
             if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
                 guard let content = remoteCustom.content else { continue }
@@ -1067,7 +1067,9 @@ final class CloudSyncManager: ObservableObject {
 
         let remoteCustoms = remotePayload.filters.customLists
         let missingCustoms = remoteCustoms.filter {
-            !deletedCustomURLs.contains($0.url) && !localCustomURLs.contains($0.url)
+            !deletedCustomURLs.contains($0.url)
+                && !localCustomURLs.contains($0.url)
+                && !$0.appearsToBeUserScript
         }
 
         let localRemoteScriptURLs = currentLocalRemoteUserScriptURLs()
@@ -1270,6 +1272,17 @@ final class CloudSyncManager: ObservableObject {
         let customLists = filterLists
             .filter(\.isCustom)
             .filter { !deletedCustomURLSet().contains($0.url.absoluteString) }
+            .filter { list in
+                if UserScriptURLSupport.hasUserScriptFileExtension(in: list.url) {
+                    return false
+                }
+                if let content = Self.readInlineUserListContentIfNeeded(urlString: list.url.absoluteString),
+                   UserScriptURLSupport.hasUserScriptMetadataBlock(in: content)
+                {
+                    return false
+                }
+                return true
+            }
             .map { list in
                 SyncPayload.CustomFilterList(
                     url: list.url.absoluteString,
@@ -1857,5 +1870,17 @@ private struct SyncPayload: Codable {
 private extension SyncPayload.CustomFilterList {
     var resolvedCategory: FilterListCategory {
         FilterListCategory(rawValue: category ?? "") ?? .custom
+    }
+
+    var appearsToBeUserScript: Bool {
+        if let parsedURL = URL(string: url), UserScriptURLSupport.hasUserScriptFileExtension(in: parsedURL) {
+            return true
+        }
+
+        if let content, UserScriptURLSupport.hasUserScriptMetadataBlock(in: content) {
+            return true
+        }
+
+        return false
     }
 }
