@@ -293,7 +293,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         )
 
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
         let advancedURL = containerURL.appendingPathComponent(advancedFilename)
 
@@ -303,9 +302,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             FileManager.default.fileExists(atPath: baseURL.path),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
         {
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
-
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
@@ -314,7 +310,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .flatMap { $0.isEmpty ? nil : $0 }
 
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+            return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: advancedText)
         }
 
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
@@ -328,7 +324,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+        return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: result.advancedRulesText)
     }
 
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
@@ -356,7 +352,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         )
 
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
         let advancedURL = containerURL.appendingPathComponent(advancedFilename)
 
@@ -366,9 +361,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             FileManager.default.fileExists(atPath: baseURL.path),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
         {
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
-
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
@@ -377,7 +369,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .flatMap { $0.isEmpty ? nil : $0 }
 
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+            return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: advancedText)
         }
 
         // Cache miss: read rules file and run conversion.
@@ -393,7 +385,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+        return (safariRulesCount: countRulesInJSON(finalJSON), advancedRulesText: result.advancedRulesText)
     }
     
     /// Fast update for disabled sites changes only - skips full native conversion
@@ -417,15 +409,12 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
 
         // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         if FileManager.default.fileExists(atPath: baseURL.path),
            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8) {
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
-            let finalRuleCount = baseCount + sitesToUse.count
+            let finalRuleCount = countRulesInJSON(finalJSON)
 
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
             return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
@@ -443,7 +432,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         let finalJSON = injectIgnoreRulesForDisabledSites(json: derived.baseJSON, disabledSites: sitesToUse)
         saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
 
-        let finalRuleCount = derived.baseRuleCount + sitesToUse.count
+        let finalRuleCount = countRulesInJSON(finalJSON)
         os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
         return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
     }
@@ -877,7 +866,17 @@ extension ContentBlockerService {
     }
 
     private static func normalizeBlockerListFileForSafari(_ url: URL) {
-        try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        do {
+            try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        } catch {
+            os_log(
+                .error,
+                "Failed to set Safari-readable permissions for %@: %@",
+                url.path,
+                error.localizedDescription
+            )
+        }
+
         #if canImport(Darwin)
         let attributesToRemove = [
             "com.apple.quarantine",
@@ -886,7 +885,16 @@ extension ContentBlockerService {
         url.withUnsafeFileSystemRepresentation { path in
             guard let path else { return }
             for attribute in attributesToRemove {
-                _ = removexattr(path, attribute, 0)
+                if removexattr(path, attribute, 0) != 0, errno != ENOATTR {
+                    let message = String(cString: strerror(errno))
+                    os_log(
+                        .error,
+                        "Failed to remove extended attribute %@ from %@: %@",
+                        attribute,
+                        url.path,
+                        message
+                    )
+                }
             }
         }
         #endif
