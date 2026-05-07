@@ -273,7 +273,7 @@ extension AppFilterManager {
                 }
             } catch {
                 await failApplyRun(
-                    logMessage: "Failed to clear extensions and advanced engine",
+                    logMessage: "Failed to clear extensions and native advanced runtime",
                     metadata: ["error": error.localizedDescription]
                 )
             }
@@ -472,7 +472,7 @@ extension AppFilterManager {
                     .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
             ])
 
-        // Reloading phase - reload all content blockers FIRST before building advanced engine
+        // Reloading phase - reload all content blockers first before building native advanced runtime.
         await MainActor.run {
             self.processedFiltersCount = 0
 
@@ -525,7 +525,7 @@ extension AppFilterManager {
                 metadata: reloadMetadata)
         }
 
-        // Small delay before building advanced engine to let system recover from reloads
+        // Small delay before building native advanced runtime to let system recover from reloads.
         try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms delay
 
         // Build the native advanced runtime after all content blockers are reloaded.
@@ -537,7 +537,7 @@ extension AppFilterManager {
             self.applyProgressViewModel.updatePhaseCompletion(reloading: true)
         }
 
-        let advancedEngineSucceeded: Bool
+        let advancedRuntimeSucceeded: Bool
         do {
             if !advancedRulesByTarget.isEmpty {
                 await MainActor.run {
@@ -564,31 +564,31 @@ extension AppFilterManager {
                     )
                 }.value
             }
-            advancedEngineSucceeded = true
+            advancedRuntimeSucceeded = true
         } catch {
-            advancedEngineSucceeded = false
+            advancedRuntimeSucceeded = false
             await failApplyRun(
-                logMessage: "Advanced engine publish failed",
+                logMessage: "Native advanced runtime publish failed",
                 metadata: ["error": error.localizedDescription],
                 dismissProgressSheet: false
             )
         }
 
-        let advancedEngineStatus = advancedRulesByTarget.isEmpty
+        let advancedRuntimeStatus = advancedRulesByTarget.isEmpty
             ? "cleared"
             : "\(advancedRulesByTarget.count) targets combined"
         await MainActor.run {
             self.progress = 1.0
             self.applyProgressViewModel.updateProgress(1.0)
 
-            let advancedEngineAvailable = advancedEngineSucceeded && !self.hasError
-            if allReloadsSuccessful && advancedEngineAvailable {
+            let advancedRuntimeAvailable = advancedRuntimeSucceeded && !self.hasError
+            if allReloadsSuccessful && advancedRuntimeAvailable {
                 self.statusDescription =
-                    "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
+                    "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Native advanced runtime: \(advancedRuntimeStatus)."
                 self.markCurrentStateApplied()
-            } else if advancedEngineAvailable {
+            } else if advancedRuntimeAvailable {
                 self.statusDescription =
-                    "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedEngineStatus)."
+                    "Converted rules, but one or more extensions failed to reload after 5 attempts. Native advanced runtime: \(advancedRuntimeStatus)."
             }
 
             self.isLoading = false
