@@ -652,12 +652,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "已替换第 $ 行的匹配";
 "on line" = "在第";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "更新已暂停";
+"Automatic Updates" = "自动更新";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "下一步：查看匹配的过滤器。";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";

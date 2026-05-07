@@ -652,12 +652,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "تم استبدال المطابقة في السطر $";
 "on line" = "في السطر";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "تم إيقاف التحديثات مؤقتًا";
+"Automatic Updates" = "التحديثات التلقائية";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "التالي: راجع الفلاتر المطابقة.";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";

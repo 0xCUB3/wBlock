@@ -652,12 +652,12 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "replaced match on line $" = "corrispondenza sostituita alla riga $";
 "on line" = "alla riga";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "Aggiornamenti in pausa";
+"Automatic Updates" = "Aggiornamenti automatici";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "Avanti: rivedi i filtri corrispondenti.";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";

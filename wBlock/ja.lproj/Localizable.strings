@@ -652,12 +652,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "$ 行目の一致を置換";
 "on line" = "行";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "更新は一時停止中";
+"Automatic Updates" = "自動更新";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "次へ: 一致するフィルターを確認します。";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";

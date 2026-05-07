@@ -653,12 +653,12 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "replaced match on line $" = "találat cserélve a(z) $ sorban";
 "on line" = "a(z) sorban";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "Frissítések szüneteltetve";
+"Automatic Updates" = "Automatikus frissítések";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "Következő: az egyező szűrők áttekintése.";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";

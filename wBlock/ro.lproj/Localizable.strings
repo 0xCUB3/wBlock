@@ -652,12 +652,12 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "replaced match on line $" = "potrivire înlocuită la linia $";
 "on line" = "la linia";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "Actualizări întrerupte";
+"Automatic Updates" = "Actualizări automate";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "Următorul: verifică filtrele potrivite.";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";

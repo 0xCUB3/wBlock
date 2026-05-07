@@ -652,12 +652,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "$번째 줄의 일치를 바꿈";
 "on line" = "줄";
 
-"Updates Paused" = "Updates Paused";
-"Automatic Updates" = "Automatic Updates";
+"Updates Paused" = "업데이트 일시 중지됨";
+"Automatic Updates" = "자동 업데이트";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
-"Next: review matching filters." = "Next: review matching filters.";
+"Next: review matching filters." = "다음: 일치하는 필터를 검토하세요.";
 
 /* Native compiler uBlock filter lists */
 "uBlock filters – Ads" = "uBlock filters – Ads";
