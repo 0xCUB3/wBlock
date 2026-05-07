@@ -50,31 +50,41 @@ final class FilterListUpdater: @unchecked Sendable {
             var modifiedFilter = filter  // Work with a mutable copy of the current filter
             var filterWasModifiedThisIteration = false
 
-            // --- Update Version if needed ---
-            if modifiedFilter.version.isEmpty && loader.filterFileExists(modifiedFilter) {
-                if let localContent = loader.readLocalFilterContent(modifiedFilter) {
-                    let metadata = parseMetadata(from: localContent)
-                    if let newVersion = metadata.version {
-                        modifiedFilter.version = newVersion
-                        filterWasModifiedThisIteration = true
-                        await ConcurrentLogManager.shared.info(
-                            .filterUpdate, "Loaded local version for filter",
-                            metadata: ["filter": modifiedFilter.name, "version": newVersion])
-                    }
+            let needsLocalMetadata = modifiedFilter.version.isEmpty
+                || modifiedFilter.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || modifiedFilter.sourceRuleCount == nil
+            let localContent = needsLocalMetadata && loader.filterFileExists(modifiedFilter)
+                ? loader.readLocalFilterContent(modifiedFilter)
+                : nil
+
+            // --- Update metadata if needed ---
+            if let localContent {
+                let metadata = parseMetadata(from: localContent)
+                if modifiedFilter.version.isEmpty, let newVersion = metadata.version {
+                    modifiedFilter.version = newVersion
+                    filterWasModifiedThisIteration = true
+                    await ConcurrentLogManager.shared.info(
+                        .filterUpdate, "Loaded local version for filter",
+                        metadata: ["filter": modifiedFilter.name, "version": newVersion])
+                }
+                if modifiedFilter.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   let description = metadata.description,
+                   !description.isEmpty {
+                    modifiedFilter.description = description
+                    filterWasModifiedThisIteration = true
                 }
             }
 
             // --- Update Source Rule Count if needed ---
-            // Only attempt to count if the .txt file exists
-            if modifiedFilter.sourceRuleCount == nil && loader.filterFileExists(modifiedFilter) {
-                if let localContent = loader.readLocalFilterContent(modifiedFilter) {
+            if modifiedFilter.sourceRuleCount == nil {
+                if let localContent {
                     let ruleCount = countRulesInContent(content: localContent)
                     modifiedFilter.sourceRuleCount = ruleCount
                     filterWasModifiedThisIteration = true
                     await ConcurrentLogManager.shared.info(
                         .filterUpdate, "Calculated source rule count for filter",
                         metadata: ["filter": modifiedFilter.name, "ruleCount": "\(ruleCount)"])
-                } else {
+                } else if loader.filterFileExists(modifiedFilter) {
                     await ConcurrentLogManager.shared.error(
                         .filterUpdate, "Failed to read local content for rule counting",
                         metadata: ["filter": modifiedFilter.name])

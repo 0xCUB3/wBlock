@@ -179,6 +179,9 @@ class AppFilterManager: ObservableObject {
             self.currentPlatform = .iOS
         #endif
 
+        self.filterLists = self.loader.getDefaultFilterLists()
+        markCurrentStateApplied()
+
         // Wait for ProtobufDataManager to finish loading before setting up
         Task {
             await setupAsync()
@@ -295,8 +298,11 @@ class AppFilterManager: ObservableObject {
             uniquingKeysWith: { first, _ in first }
         )
 
-        // Merge any new default filters added in app updates
-        if !migratedFilterLists.isEmpty {
+        // Merge any new default filters added in app updates.
+        if migratedFilterLists.isEmpty && !dataManager.isLoading {
+            migratedFilterLists = defaultLists
+            addedDefaultFilters = true
+        } else if !migratedFilterLists.isEmpty {
             let existingURLs = Set(migratedFilterLists.map { $0.url })
 
             for defaultFilter in defaultLists {
@@ -310,7 +316,17 @@ class AppFilterManager: ObservableObject {
             }
         }
 
+        let filterListsBeforeHydration = migratedFilterLists
         migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
+        let hydratedBuiltInMetadata = filterListsBeforeHydration.count == migratedFilterLists.count
+            && zip(filterListsBeforeHydration, migratedFilterLists).contains { before, after in
+                !after.isCustom
+                    && (before.name != after.name
+                        || before.description != after.description
+                        || before.category != after.category
+                        || before.languages != after.languages
+                        || before.trustLevel != after.trustLevel)
+            }
         let appliedNativeDefaults = appliedUBlockDefaultMigration
             ? false
             : applyNativeCompilerDefaultsIfNeeded(to: &migratedFilterLists)
@@ -331,16 +347,9 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        let shouldSaveFilterLists = hasURLMigrations || deduplicatedBuiltInFilters || addedDefaultFilters || appliedNativeDefaults || appliedUBlockDefaultMigration
+        let shouldSaveFilterLists = hasURLMigrations || deduplicatedBuiltInFilters || addedDefaultFilters || hydratedBuiltInMetadata || appliedNativeDefaults || appliedUBlockDefaultMigration
         if shouldSaveFilterLists && !appliedUBlockDefaultMigration {
             Task { await self.saveFilterLists() }
-        }
-
-        // Only load defaults if truly no data exists
-        if filterLists.isEmpty && !dataManager.isLoading {
-            let defaultLists = loader.getDefaultFilterLists()
-            filterLists = defaultLists
-            saveFilterListsCoalesced()
         }
 
         // Load saved rule counts from protobuf data
