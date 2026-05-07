@@ -8,8 +8,8 @@ struct AdGuardMobileFilterMigrationTests {
         let appSource = try read("wBlock/wBlockApp.swift")
 
         expect(
-            loaderSource.contains("https://filters.adtidy.org/ios/filters/11.txt"),
-            "expected AdGuard Mobile Filter to use the iOS metadata endpoint"
+            loaderSource.contains("https://filters.adtidy.org/extension/ublock/filters/11.txt"),
+            "expected AdGuard Mobile Filter to use the uBO endpoint"
         )
         expect(
             loaderSource.contains("\"https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt\":"),
@@ -18,6 +18,11 @@ struct AdGuardMobileFilterMigrationTests {
         expect(
             protobufSource.contains("func migrateLegacyFilterURLs() async"),
             "expected protobuf migration entrypoint for legacy filter URLs"
+        )
+        expect(
+            protobufSource.contains("filters/224_optimized.txt")
+                && protobufSource.contains("https://filters.adtidy.org/extension/ublock/filters/224.txt"),
+            "expected regional filter URL migrations to uBO endpoints"
         )
         expect(
             protobufSource.contains("AdGuard Mobile Filter"),

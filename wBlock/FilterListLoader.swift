@@ -11,10 +11,6 @@ import wBlockCoreService
 class FilterListLoader {
     static var isNativeCompilerEnabled: Bool { true }
 
-    static var minimalFilterName: String {
-        "uBlock filters – Ads"
-    }
-
     static var basicFilterNames: Set<String> {
         nativeCompilerBasicFilterNames
     }
@@ -46,44 +42,37 @@ class FilterListLoader {
         "Peter Lowe’s Ad and tracking server list",
     ]
 
-    #if os(macOS)
-        private static let legacyRecommendedFilterNames: Set<String> = [
-            "AdGuard Base Filter",
-            "AdGuard Tracking Protection Filter",
-            "EasyPrivacy",
-            "Online Security Filter",
-            "d3Host List by d3ward",
-            "AdGuard Cookie Notices",
-            "AdGuard Popups",
-            "AdGuard Mobile App Banners",
-            "AdGuard Other Annoyances",
-            "AdGuard Widgets",
-            "Anti-Adblock List",
-        ]
-    #else
-        private static let legacyRecommendedFilterNames: Set<String> = [
-            "AdGuard Base Filter",
-            "AdGuard Tracking Protection Filter",
-            "EasyPrivacy",
-            "Online Security Filter",
-            "d3Host List by d3ward",
-            "AdGuard Cookie Notices",
-            "AdGuard Popups",
-            "AdGuard Mobile App Banners",
-            "AdGuard Other Annoyances",
-            "AdGuard Widgets",
-            "Anti-Adblock List",
-            "AdGuard Mobile Filter",
-        ]
-    #endif
-
     private let filterURLMigrations: [String: URL] = [
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
-            URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+            URL(string: "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
-            string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+            string: "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
-            URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
+            URL(string: "https://filters.adtidy.org/extension/ublock/filters/11.txt")!,
+    ]
+
+    private let filterURLFragmentMigrations: [(fragment: String, url: URL)] = [
+        ("filters/224_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/224.txt")!),
+        ("easylistchina/master/easylistchina.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/224.txt")!),
+        ("filters/8_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/8.txt")!),
+        ("easylistdutch.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/8.txt")!),
+        ("filters/16_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/16.txt")!),
+        ("liste_fr.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/16.txt")!),
+        ("filters/6_optimized.txt", URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!),
+        ("filters/7_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/7.txt")!),
+        ("filters/1_optimized.txt", URL(string: "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt")!),
+        ("filters/9_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/9.txt")!),
+        ("easylistportuguese.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/9.txt")!),
+        ("filters/13_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/13.txt")!),
+        ("filters/23_optimized.txt", URL(string: "https://filters.adtidy.org/extension/ublock/filters/23.txt")!),
+        ("filters/227_optimized.txt", URL(string: "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt")!),
+        ("filter/abpvn_adguard.txt", URL(string: "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt")!),
+        ("hufilter-adguard.txt", URL(string: "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-ublock.txt")!),
+        ("NordicFiltersAdGuard.txt", URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianList.txt")!),
+        ("https://adblock.ee/list.txt", URL(string: "https://ubo-et.lepik.io/list.txt")!),
+        ("https://adblock.gardar.net/is.abp.txt", URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/custom/is.txt")!),
+        ("RandomAdversary/Macedonian-adBlock-Filters/master/Filters", URL(string: "https://raw.githubusercontent.com/DeepSpaceHarbor/Macedonian-adBlock-Filters/master/Filters")!),
+        ("easylist-downloads.adblockplus.org/cntblock.txt", URL(string: "https://raw.githubusercontent.com/easylist/ruadlist/master/cntblock.txt")!),
     ]
 
     func localFileURL(for filter: FilterList) -> URL? {
@@ -132,10 +121,13 @@ class FilterListLoader {
         }
     }
 
-    /// Updates any known legacy filter URLs to their current endpoints.
+    /// Updates any known legacy filter URLs to their current uBO-compatible endpoints.
     func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
         filters.map { filter in
-            guard let newURL = filterURLMigrations[filter.url.absoluteString] else {
+            let urlString = filter.url.absoluteString
+            let newURL = filterURLMigrations[urlString]
+                ?? filterURLFragmentMigrations.first { urlString.contains($0.fragment) }?.url
+            guard let newURL, newURL != filter.url else {
                 return filter
             }
 
@@ -173,10 +165,10 @@ class FilterListLoader {
         )
     }
 
-    /// Creates a uBlock Origin dashboard-style catalog for the native compiler experiment.
-    /// URLs are taken from uBO's assets.json / Dashboard: Filter lists page rather than
-    /// Safari-optimized AdGuard registry endpoints, so the native compiler sees the same
-    /// syntax family it is meant to support.
+    /// Creates a uBlock Origin dashboard-style catalog for the native compiler.
+    /// URLs are taken from uBO's assets.json / Dashboard: Filter lists page and
+    /// uBO-compatible endpoints so the native compiler sees the same syntax family
+    /// it is meant to support.
     private func createNativeCompilerDefaultFilterLists() -> [FilterList] {
         var filterLists = createDefaultFilterLists()
         let replacedCoreNames: Set<String> = [
@@ -241,27 +233,8 @@ class FilterListLoader {
             )
         #endif
 
-        let ublockRegionalURLByName: [String: String] = [
-            "AdGuard Chinese filter": "https://filters.adtidy.org/extension/ublock/filters/224.txt",
-            "AdGuard Dutch filter": "https://filters.adtidy.org/extension/ublock/filters/8.txt",
-            "AdGuard French filter": "https://filters.adtidy.org/extension/ublock/filters/16.txt",
-            "AdGuard German filter": "https://easylist.to/easylistgermany/easylistgermany.txt",
-            "AdGuard Japanese filter": "https://filters.adtidy.org/extension/ublock/filters/7.txt",
-            "AdGuard Russian filter": "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt",
-            "AdGuard Spanish/Portuguese filter": "https://filters.adtidy.org/extension/ublock/filters/9.txt",
-            "AdGuard Turkish filter": "https://filters.adtidy.org/extension/ublock/filters/13.txt",
-            "AdGuard Ukrainian filter": "https://filters.adtidy.org/extension/ublock/filters/23.txt",
-            "ABPVN List": "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt",
-            "Hungarian filter": "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-ublock.txt",
-            "List-KR": "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt",
-        ]
         for index in filterLists.indices {
-            if let replacementURL = ublockRegionalURLByName[filterLists[index].name] {
-                filterLists[index].url = URL(string: replacementURL)!
-                filterLists[index].etag = nil
-                filterLists[index].serverLastModified = nil
-            }
-            filterLists[index].isSelected = Self.nativeCompilerRecommendedFilterNames.contains(filterLists[index].name)
+            filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)
         }
 
         return filterLists
@@ -271,114 +244,6 @@ class FilterListLoader {
     private func createDefaultFilterLists() -> [FilterList] {
         var filterLists = [
             FilterList(
-                id: UUID(), name: "AdGuard Base Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt"
-                )!, category: FilterListCategory.ads, isSelected: true,
-                description: "Comprehensive ad-blocking rules by AdGuard."),
-            FilterList(
-                id: UUID(), name: "AdGuard Tracking Protection Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt"
-                )!, category: FilterListCategory.privacy, isSelected: true,
-                description: "Blocks online tracking and web analytics systems."),
-            FilterList(
-                id: UUID(), name: "AdGuard Cookie Notices",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks cookie consent notices on web pages."),
-            FilterList(
-                id: UUID(), name: "AdGuard Popups",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description:
-                    "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
-            FilterList(
-                id: UUID(), name: "AdGuard Mobile App Banners",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks banners promoting mobile app downloads."),
-            FilterList(
-                id: UUID(), name: "AdGuard Other Annoyances",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description:
-                    "Blocks miscellaneous irritating elements not covered by other filters."),
-            FilterList(
-                id: UUID(), name: "AdGuard Widgets",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks third-party widgets, chat assistants, and support widgets."),
-            FilterList(
-                id: UUID(), name: "AdGuard Social Media Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks social media widgets and buttons."),
-            FilterList(
-                id: UUID(), name: "Fanboy's Annoyances Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Hides in-page pop-ups, banners, and other unwanted page elements."),
-            FilterList(
-                id: UUID(), name: "Fanboy's Social Blocking List",
-                url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!,
-                category: FilterListCategory.annoyances,
-                description: "Blocks social media content on webpages."),
-            FilterList(
-                id: UUID(), name: "Fanboy's Anti-AI Suggestions",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt"
-                )!, category: FilterListCategory.annoyances,
-                description:
-                    "Blocks AI-generated suggestions and recommendations on search engines and websites."
-            ),
-            FilterList(
-                id: UUID(), name: "Online Security Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt"
-                )!, category: FilterListCategory.security, isSelected: true,
-                description:
-                    "Protects against suspicious URLs, phishing sites, and unwanted software."),
-            FilterList(
-                id: UUID(), name: "Peter Lowe's Blocklist",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt"
-                )!, category: FilterListCategory.annoyances, isSelected: true,
-                description: "Blocks ads and tracking servers to enhance privacy."),
-            FilterList(
-                id: UUID(), name: "d3Host List by d3ward",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!,
-                category: FilterListCategory.annoyances, isSelected: true,
-                description: "Comprehensive block list for ads and trackers."),
-            FilterList(
-                id: UUID(), name: "Anti-Adblock List",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt"
-                )!, category: FilterListCategory.annoyances, isSelected: true,
-                description: "Bypasses Anti-Adblock scripts used on some websites."),
-            FilterList(
                 id: UUID(), name: "Bypass Paywalls Clean Filter",
                 url: URL(
                     string:
@@ -387,13 +252,6 @@ class FilterListLoader {
                 description:
                     "Blocks paywall-related elements. Enable the corresponding userscript for best results."
             ),
-            FilterList(
-                id: UUID(), name: "AdGuard Experimental Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt"
-                )!, category: FilterListCategory.experimental,
-                description: "Contains new rules and fixes not yet included in other filters."),
         ]
 
         filterLists.append(contentsOf: [
@@ -409,7 +267,7 @@ class FilterListLoader {
                 id: UUID(), name: "ABPVN List",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_adguard.txt"
+                        "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt"
                 )!, category: .foreign, description: "Vietnamese adblock filter list.",
                 languages: ["vi"], trustLevel: "high"),
             FilterList(
@@ -431,59 +289,42 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Chinese filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/224_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/224.txt"
                 )!, category: .foreign,
                 description:
-                    "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language.",
+                    "Filter list for Chinese-language websites.",
                 languages: ["zh"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "AdGuard Dutch filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/8_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/8.txt"
                 )!, category: .foreign,
                 description:
-                    "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language.",
+                    "Filter list for Dutch-language websites.",
                 languages: ["nl"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "AdGuard French filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/16_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/16.txt"
                 )!, category: .foreign,
                 description:
-                    "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language.",
+                    "Filter list for French-language websites.",
                 languages: ["fr"], trustLevel: "full"),
-            FilterList(
-                id: UUID(), name: "AdGuard German filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/6_optimized.txt"
-                )!, category: .foreign,
-                description:
-                    "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language.",
-                languages: ["de"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "AdGuard Japanese filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/7_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/7.txt"
                 )!, category: .foreign,
                 description: "Filter that enables ad blocking on websites in Japanese language.",
                 languages: ["ja"], trustLevel: "full"),
             FilterList(
-                id: UUID(), name: "AdGuard Russian filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/1_optimized.txt"
-                )!, category: .foreign,
-                description: "Filter that enables ad blocking on websites in Russian language.",
-                languages: ["ru"], trustLevel: "full"),
-            FilterList(
                 id: UUID(), name: "AdGuard Spanish/Portuguese filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/9_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/9.txt"
                 )!, category: .foreign,
                 description:
                     "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages.",
@@ -492,7 +333,7 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Turkish filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/13_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/13.txt"
                 )!, category: .foreign,
                 description:
                     "Filter list that specifically removes ads on websites in Turkish language.",
@@ -501,7 +342,7 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Ukrainian filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/23_optimized.txt"
+                        "https://filters.adtidy.org/extension/ublock/filters/23.txt"
                 )!, category: .foreign,
                 description: "Filter that enables ad blocking on websites in Ukrainian language.",
                 languages: ["uk"], trustLevel: "full"),
@@ -522,7 +363,7 @@ class FilterListLoader {
                 id: UUID(), name: "Dandelion Sprout's Nordic Filters",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianExperimentalList%20alternate%20versions/NordicFiltersAdGuard.txt"
+                        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianList.txt"
                 )!, category: .foreign,
                 description:
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
@@ -537,15 +378,6 @@ class FilterListLoader {
                     "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian.",
                 languages: ["sr", "hr"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "EasyList China",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/easylist/easylistchina/master/easylistchina.txt"
-                )!, category: .foreign,
-                description:
-                    "Additional filter list for websites in Chinese. Already included in AdGuard Chinese filter.",
-                languages: ["zh"], trustLevel: "high"),
-            FilterList(
                 id: UUID(), name: "EasyList Czech and Slovak",
                 url: URL(
                     string:
@@ -554,18 +386,11 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Czech and Slovak.",
                 languages: ["cs", "sk"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "EasyList Dutch",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/easylistdutch.txt")!,
-                category: .foreign,
-                description:
-                    "Additional filter list for websites in Dutch. Already included in AdGuard Dutch filter.",
-                languages: ["nl"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "EasyList Germany",
                 url: URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
                 category: .foreign,
                 description:
-                    "Additional filter list for websites in German. Already included in AdGuard German filter.",
+                    "Filter list for German-language websites.",
                 languages: ["de"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "EasyList Hebrew",
@@ -594,13 +419,6 @@ class FilterListLoader {
                 category: .foreign, description: "Additional filter list for websites in Polish.",
                 languages: ["pl"], trustLevel: "low"),
             FilterList(
-                id: UUID(), name: "EasyList Portuguese",
-                url: URL(
-                    string: "https://easylist-downloads.adblockplus.org/easylistportuguese.txt")!,
-                category: .foreign,
-                description: "Additional filter list for websites in Spanish and Portuguese.",
-                languages: ["es", "pt"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "EasyList Spanish",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/easylistspanish.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Spanish.",
@@ -613,7 +431,7 @@ class FilterListLoader {
                 )!, category: .foreign, description: "Filter that blocks ads on Thai sites.",
                 languages: ["th"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "Estonian List", url: URL(string: "https://adblock.ee/list.txt")!,
+                id: UUID(), name: "Estonian List", url: URL(string: "https://ubo-et.lepik.io/list.txt")!,
                 category: .foreign, description: "Filter for ad blocking on Estonian sites.",
                 languages: ["et"], trustLevel: "low"),
             FilterList(
@@ -634,14 +452,14 @@ class FilterListLoader {
                 id: UUID(), name: "Hungarian filter",
                 url: URL(
                     string:
-                        "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-adguard.txt"
+                        "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-ublock.txt"
                 )!, category: .foreign,
                 description:
                     "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language.",
                 languages: ["hu"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Icelandic ABP List",
-                url: URL(string: "https://adblock.gardar.net/is.abp.txt")!, category: .foreign,
+                url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/custom/is.txt")!, category: .foreign,
                 description: "Additional filter list for websites in Icelandic.", languages: ["is"],
                 trustLevel: "high"),
             FilterList(
@@ -670,10 +488,10 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "List-KR",
                 url: URL(
-                    string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+                    string: "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt")!,
                 category: .foreign,
                 description:
-                    "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter.",
+                    "Filter list for Korean-language websites.",
                 languages: ["ko"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Liste AR",
@@ -681,17 +499,10 @@ class FilterListLoader {
                 category: .foreign, description: "Additional filter list for websites in Arabic.",
                 languages: ["ar"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "Liste FR",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/liste_fr.txt")!,
-                category: .foreign,
-                description:
-                    "Additional filter list for websites in French. Already included in AdGuard French filter.",
-                languages: ["fr"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "Macedonian adBlock Filters",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/RandomAdversary/Macedonian-adBlock-Filters/master/Filters"
+                        "https://raw.githubusercontent.com/DeepSpaceHarbor/Macedonian-adBlock-Filters/master/Filters"
                 )!, category: .foreign,
                 description: "Blocks ads and trackers on various Macedonian websites.",
                 languages: ["mk"], trustLevel: "low"),
@@ -771,8 +582,13 @@ class FilterListLoader {
                     "This is a complementary list for ROList with annoyances that are not necessarily banners. It is a very aggressive list and not recommended for beginners.",
                 languages: ["ro"], trustLevel: "low"),
             FilterList(
+                id: UUID(), name: "RU AdList",
+                url: URL(string: "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt")!,
+                category: .foreign, description: "Filter list for Russian-language websites.",
+                languages: ["ru", "uk", "be", "kk", "tt", "uz"], trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "RU AdList: Counters",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/cntblock.txt")!,
+                url: URL(string: "https://raw.githubusercontent.com/easylist/ruadlist/master/cntblock.txt")!,
                 category: .foreign, description: "RU AdList supplement for trackers blocking.",
                 languages: ["ru"], trustLevel: "low"),
             FilterList(
@@ -797,39 +613,6 @@ class FilterListLoader {
                 category: .foreign, description: "Filter that blocks ads on Korean sites.",
                 languages: ["ko"], trustLevel: "high"),
         ])
-        filterLists.append(
-            FilterList(
-                id: UUID(), name: "EasyPrivacy",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt"
-                )!, category: FilterListCategory.privacy, isSelected: true,
-                description:
-                    "Blocks tracking scripts, web beacons, and other privacy-invasive elements."))
-        #if os(iOS)
-            filterLists.append(
-                FilterList(
-                    id: UUID(), name: "AdGuard Mobile Filter",
-                    url: URL(
-                        string:
-                            "https://filters.adtidy.org/ios/filters/11.txt"
-                    )!, category: FilterListCategory.ads, isSelected: true,
-                    description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
-        #endif
-
-        #if os(macOS)
-            // macOS-only filters too large for iOS
-            filterLists.append(
-                FilterList(
-                    id: UUID(), name: "Hagezi Pro Mini",
-                    url: URL(
-                        string:
-                            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
-                    )!, category: FilterListCategory.annoyances, isSelected: true,
-                    description:
-                        "Extensive blocklist targeting ads, trackers, and other unwanted content."))
-        #endif
-
         for index in filterLists.indices {
             filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)
         }

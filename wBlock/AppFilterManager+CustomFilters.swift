@@ -386,19 +386,7 @@ extension AppFilterManager {
             filterLists[index].isSelected = false
         }
 
-        #if os(iOS)
-            let essentialFilters = [
-                "AdGuard Base Filter",
-                "EasyPrivacy",
-            ]
-        #else
-            let essentialFilters = [
-                "AdGuard Base Filter",
-                "AdGuard Tracking Protection Filter",
-                "EasyPrivacy",
-                "Online Security Filter",
-            ]
-        #endif
+        let essentialFilters = FilterListLoader.recommendedFilterNames
 
         for index in filterLists.indices {
             filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)

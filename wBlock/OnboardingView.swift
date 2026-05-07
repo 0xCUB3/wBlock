@@ -9,7 +9,7 @@ import AppKit
 
 struct OnboardingView: View {
     enum BlockingLevel: String, CaseIterable, Identifiable {
-        case minimal = "Minimal"
+        case minimal = "Basic"
         case recommended = "Recommended"
         var id: String { rawValue }
     }
@@ -384,9 +384,9 @@ struct OnboardingView: View {
     }
 
     private func blockingLevelCard(for level: BlockingLevel) -> some View {
-        let isSelected =
-            selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            == level.rawValue.lowercased()
+        let selectedKey = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let isSelected = selectedKey == level.rawValue.lowercased()
+            || (level == .minimal && selectedKey == "minimal")
 
         return Button {
             setSelectedBlockingLevel(level.rawValue)
@@ -919,7 +919,7 @@ struct OnboardingView: View {
         // 1. Set filter selection based on chosen blocking level
         var updatedFilters = filterManager.filterLists
         switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "minimal":
+        case "basic", "minimal":
             for i in updatedFilters.indices {
                 updatedFilters[i].isSelected = FilterListLoader.basicFilterNames.contains(updatedFilters[i].name)
             }

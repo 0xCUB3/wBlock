@@ -82,7 +82,6 @@
 "Scripts" = "Scriptler";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) userscript, \\(filterName) gerektirir";
 "Foreign" = "Yabancı";
-"Minimal" = "Asgari";
 "Base filter only." = "Yalnızca temel filtre.";
 "Balanced defaults." = "Dengeli ayarlar.";
 "Whitelist" = "Beyaz Liste";
@@ -202,7 +201,6 @@
 "Delete Added List" = "Listeyi sil";
 "Filter Update" = "Filtre Güncelleme";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Yalnızca AdGuard Base filtresi. En hafif koruma, en iyi uyumluluk.";
 "(pending)" = "(beklemede)";
 "Continue Setup" = "Kuruluma Devam Et";
 "Progress" = "İlerleme";
@@ -485,7 +483,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Blocks social media widgets and buttons." = "Sosyal medya widget'larını ve düğmelerini engeller.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Üçüncü taraf widget'ları, sohbet yardımcılarını ve destek widget'larını engeller.";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "İzleme komut dosyalarını, web işaretçilerini ve gizliliği ihlal eden diğer öğeleri engeller.";
-"Building combined filter engine..." = "Kombine filtre motoru inşası...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "Paketlenmiş arka plan aracısı uygulama derlemesinde eksik";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Downloading filter lists..." = "Filtre listeleri indiriliyor...";
 "Downloading filter updates..." = "Filtre güncellemeleri indiriliyor...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList Çin + AdGuard Çince filtresi. Özellikle Çince dilindeki web sitelerindeki reklamları kaldıran filtre listesi.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Felemenkçe + AdGuard Felemenkçe filtresi. Hollandaca dilindeki web sitelerindeki reklamları özel olarak kaldıran filtre listesi.";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Almanya + AdGuard Almanca filtresi. Almanca dilindeki web sitelerindeki reklamları özel olarak kaldıran filtre listesi.";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Filter that enables ad blocking on websites in Russian language." = "Rusça web sitelerinde reklam engellemeyi sağlayan filtre.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Ukrayna dilindeki web sitelerinde reklam engellemeyi sağlayan filtre.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Polonya ağındaki toplu metin mesajları, sahte çevrimiçi mağazalar vb. gibi çeşitli dolandırıcılık türlerine karşı koruma sağlayan filtre.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Korece içeriğe sahip web sitelerindeki reklamları ve çeşitli komut dosyalarını kaldıran filtre. Gelişmiş filtreleme için AdGuard'a özel kurallarla birleştirilmiş ve genişletilmiştir. Bu filtrenin AdGuard Base filtresiyle birlikte kullanılması bekleniyor.";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "RSS öğelerini ve gizli haber bültenlerinin kalıntılarını Polonya web sitelerindeki sosyal öğelerle birleştiren ve engelleyen filtreler.";
 "Finnish ad blocking filter list." = "Finlandiya reklam engelleme filtre listesi.";
 "Found %d update(s) available." = "Kullanılabilir %d güncellemesi bulundu.";
@@ -568,7 +562,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "FR + AdGuard Fransızca filtresini listeleyin. Fransızca dilindeki web sitelerindeki reklamları özel olarak kaldıran filtre listesi.";
 "Load full content" = "İçeriğin tamamını yükle";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "Hiçbir filtre listesi seçilmedi. Tüm uzantılardan kurallar temizleniyor.";
@@ -734,3 +727,16 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
 
 "Basic ad blocking." = "Basic ad blocking.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filter list for Russian-language websites.";
+"Filter list for German-language websites." = "Filter list for German-language websites.";
+
+"Building native advanced runtime..." = "Building native advanced runtime...";
+
+"Filter list for Chinese-language websites." = "Filter list for Chinese-language websites.";
+"Filter list for Dutch-language websites." = "Filter list for Dutch-language websites.";
+"Filter list for French-language websites." = "Filter list for French-language websites.";
+"Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
+
+"Basic" = "Basic";

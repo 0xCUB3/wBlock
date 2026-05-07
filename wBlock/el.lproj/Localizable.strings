@@ -82,7 +82,6 @@
 "Scripts" = "Κώδικας";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Ο κώδικας χρήστη \(bypassScript.name) απαιτεί το \(filterName)";
 "Foreign" = "Άλλες γλώσσες";
-"Minimal" = "Ελάχιστο";
 "Base filter only." = "Μόνο βασικό φίλτρο.";
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";
 "Whitelist" = "Λίστα επιτρεπόμενων";
@@ -202,7 +201,6 @@
 "Delete Added List" = "Διαγραφή λίστας";
 "Filter Update" = "Φίλτρο Ενημέρωσης";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Μόνο το φίλτρο AdGuard Base. Ελαφρύτερη προστασία, καλύτερη συμβατότητα.";
 "(pending)" = "(σε εκκρεμότητα)";
 "Continue Setup" = "Συνέχεια Ρύθμισης";
 "Progress" = "Πρόοδος";
@@ -485,7 +483,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks social media widgets and buttons." = "Αποκλείει γραφικά στοιχεία και κουμπιά μέσων κοινωνικής δικτύωσης.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Αποκλείει σενάρια παρακολούθησης, web beacons και άλλα στοιχεία που παραβιάζουν το απόρρητο.";
-"Building combined filter engine..." = "Κατασκευή κινητήρα συνδυασμένου φίλτρου...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "Ο ομαδοποιημένος παράγοντας φόντου λείπει από τη δημιουργία εφαρμογής";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading filter lists..." = "Λήψη λιστών φίλτρων...";
 "Downloading filter updates..." = "Λήψη ενημερώσεων φίλτρων...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + Κινεζικό φίλτρο AdGuard. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην κινεζική γλώσσα.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "Φίλτρο EasyList Dutch + AdGuard Dutch. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην ολλανδική γλώσσα.";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + Γερμανικό φίλτρο AdGuard. Λίστα φίλτρων που αφαιρεί συγκεκριμένα διαφημίσεις σε ιστότοπους στη γερμανική γλώσσα.";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter that enables ad blocking on websites in Russian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στη ρωσική γλώσσα.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στην ουκρανική γλώσσα.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Φίλτρο που προστατεύει από διάφορους τύπους απάτες στο πολωνικό δίκτυο, όπως μαζικά μηνύματα κειμένου, πλαστά ηλεκτρονικά καταστήματα κ.λπ.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Φίλτρο που αφαιρεί διαφημίσεις και διάφορα σενάρια από ιστότοπους με κορεατικό περιεχόμενο. Συνδυάζεται και επαυξάνεται με κανόνες που αφορούν ειδικά το AdGuard για βελτιωμένο φιλτράρισμα. Αυτό το φίλτρο αναμένεται να χρησιμοποιηθεί μαζί με το φίλτρο AdGuard Base.";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "Φίλτρα που μπλοκάρουν και αποκρύπτουν στοιχεία RSS και υπολείμματα κρυφών ενημερωτικών δελτίων σε συνδυασμό με στοιχεία κοινωνικής δικτύωσης σε πολωνικούς ιστότοπους.";
 "Finnish ad blocking filter list." = "Φινλανδική λίστα φίλτρων αποκλεισμού διαφημίσεων.";
 "Found %d update(s) available." = "Βρέθηκαν διαθέσιμες ενημερώσεις %d.";
@@ -568,7 +562,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Λίστα FR + Γαλλικό φίλτρο AdGuard. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στη γαλλική γλώσσα.";
 "Load full content" = "Φόρτωση πλήρους περιεχομένου";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "Δεν έχουν επιλεγεί λίστες φίλτρων. Εκκαθάριση κανόνων από όλες τις επεκτάσεις.";
@@ -734,3 +727,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
 
 "Basic ad blocking." = "Basic ad blocking.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filter list for Russian-language websites.";
+"Filter list for German-language websites." = "Filter list for German-language websites.";
+
+"Building native advanced runtime..." = "Building native advanced runtime...";
+
+"Filter list for Chinese-language websites." = "Filter list for Chinese-language websites.";
+"Filter list for Dutch-language websites." = "Filter list for Dutch-language websites.";
+"Filter list for French-language websites." = "Filter list for French-language websites.";
+"Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
+
+"Basic" = "Basic";

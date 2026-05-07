@@ -82,7 +82,6 @@
 "Scripts" = "スクリプト";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) ユーザースクリプトには \\(filterName) が必要です";
 "Foreign" = "海外";
-"Minimal" = "最小";
 "Base filter only." = "ベースフィルターのみ。";
 "Balanced defaults." = "バランスの取れた既定設定。";
 "Whitelist" = "ホワイトリスト";
@@ -202,7 +201,6 @@
 "Delete Added List" = "リストを削除";
 "Filter Update" = "フィルター更新";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "AdGuard Baseフィルターのみ。最も軽い保護で互換性は最高。";
 "(pending)" = "(保留中)";
 "Continue Setup" = "設定を続行";
 "Progress" = "進行状況";
@@ -485,7 +483,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks social media widgets and buttons." = "ソーシャルメディアのウィジェットとボタンをブロックします。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "サードパーティのウィジェット、チャット アシスタント、サポート ウィジェットをブロックします。";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "追跡スクリプト、Web ビーコン、その他のプライバシーを侵害する要素をブロックします。";
-"Building combined filter engine..." = "複合フィルター エンジンを構築しています...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "バンドルされたバックグラウンド エージェントがアプリのビルドに含まれない";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading filter lists..." = "フィルタリストをダウンロードしています...";
 "Downloading filter updates..." = "フィルターの更新をダウンロードしています...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard 中国語フィルター。中国語の Web サイト上の広告を特に削除するフィルター リスト。";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList オランダ語 + AdGuard オランダ語フィルター。オランダ語の Web サイト上の広告を特に削除するフィルター リスト。";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + AdGuard ドイツ語フィルター。ドイツ語の Web サイト上の広告を特に削除するフィルター リスト。";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter that enables ad blocking on websites in Russian language." = "ロシア語の Web サイトでの広告ブロックを有効にするフィルター。";
 "Filter that enables ad blocking on websites in Ukrainian language." = "ウクライナ語の Web サイトでの広告ブロックを有効にするフィルター。";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "大量のテキスト メッセージ、偽のオンライン ストアなど、ポーランドのネットワーク内のさまざまなタイプの詐欺から保護するフィルター。";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "韓国のコンテンツを含む Web サイトから広告やさまざまなスクリプトを削除するフィルター。 AdGuard 固有のルールと組み合わせて強化し、フィルタリングを強化します。このフィルターは、AdGuard Base フィルターと併用することが想定されています。";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "ポーランドの Web サイト上のソーシャル要素と組み合わされた RSS 要素および非表示のニュースレターの残骸をブロックして非表示にするフィルター。";
 "Finnish ad blocking filter list." = "フィンランドの広告ブロック フィルター リスト。";
 "Found %d update(s) available." = "利用可能な %d アップデートが見つかりました。";
@@ -568,7 +562,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard フランス語フィルター。フランス語の Web サイト上の広告を特に削除するフィルター リスト。";
 "Load full content" = "完全なコンテンツをロードする";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "フィルタ リストが選択されていません。すべての拡張機能からルールをクリアします。";
@@ -734,3 +727,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
 
 "Basic ad blocking." = "Basic ad blocking.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filter list for Russian-language websites.";
+"Filter list for German-language websites." = "Filter list for German-language websites.";
+
+"Building native advanced runtime..." = "Building native advanced runtime...";
+
+"Filter list for Chinese-language websites." = "Filter list for Chinese-language websites.";
+"Filter list for Dutch-language websites." = "Filter list for Dutch-language websites.";
+"Filter list for French-language websites." = "Filter list for French-language websites.";
+"Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
+
+"Basic" = "Basic";

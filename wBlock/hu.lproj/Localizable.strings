@@ -82,7 +82,6 @@
 "Scripts" = "Szkriptek";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "A(z) \\(bypassScript.name) felhasználói szkripthez szükséges ez: \\(filterName)";
 "Foreign" = "Nemzetközi";
-"Minimal" = "Minimális";
 "Base filter only." = "Csak az alap szűrő.";
 "Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
 "Whitelist" = "Engedélyezőlista";
@@ -202,7 +201,6 @@
 "Delete Added List" = "Lista törlése";
 "Filter Update" = "Szűrőfrissítés";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Csak az AdGuard Base szűrő. A legkönnyebb védelem, legjobb kompatibilitás.";
 "(pending)" = "(függőben)";
 "Continue Setup" = "Beállítás folytatása";
 "Progress" = "Folyamat";
@@ -486,7 +484,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Blocks social media widgets and buttons." = "Blokkolja a közösségi média widgeteket és gombokat.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Letiltja a harmadik féltől származó widgeteket, csevegési asszisztenseket és támogatási widgeteket.";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Letiltja a nyomkövetési szkripteket, webjelzőket és más, az adatvédelembe ütköző elemeket.";
-"Building combined filter engine..." = "Kombinált szűrőmotor építése...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "A háttérügynök hiányzik az alkalmazás felépítéséből";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -509,10 +506,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Downloading filter lists..." = "Szűrőlisták letöltése...";
 "Downloading filter updates..." = "Szűrőfrissítések letöltése...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard kínai szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a kínai nyelvű webhelyekről.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList holland + AdGuard holland szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a holland nyelvű webhelyekről.";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Németország + AdGuard német szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket német nyelvű webhelyekről.";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -547,7 +542,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Filter that enables ad blocking on websites in Russian language." = "Szűrő, amely lehetővé teszi a hirdetések blokkolását orosz nyelvű webhelyeken.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Szűrő, amely lehetővé teszi a hirdetések blokkolását az ukrán nyelvű webhelyeken.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Szűrő, amely megvéd a lengyel hálózat különböző típusú csalásaitól, például tömeges szöveges üzenetektől, hamis online áruházaktól stb.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Szűrő, amely eltávolítja a hirdetéseket és a különféle szkripteket a koreai tartalmú webhelyekről. AdGuard-specifikus szabályokkal kombinálva és kiegészítve a továbbfejlesztett szűrés érdekében. Ezt a szűrőt várhatóan az AdGuard Base szűrővel együtt kell használni.";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "Szűrők, amelyek blokkolják és elrejtik az RSS-elemeket és a rejtett hírlevelek maradványait közösségi elemekkel kombinálva a lengyel webhelyeken.";
 "Finnish ad blocking filter list." = "Finn hirdetésblokkoló szűrőlista.";
 "Found %d update(s) available." = "Elérhető %d frissítés(ek)et találtunk.";
@@ -569,7 +563,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "List FR + AdGuard francia szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a francia nyelvű webhelyekről.";
 "Load full content" = "Teljes tartalom betöltése";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "Nincsenek kiválasztva szűrőlisták. Szabályok törlése az összes bővítményről.";
@@ -735,3 +728,16 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
 
 "Basic ad blocking." = "Basic ad blocking.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filter list for Russian-language websites.";
+"Filter list for German-language websites." = "Filter list for German-language websites.";
+
+"Building native advanced runtime..." = "Building native advanced runtime...";
+
+"Filter list for Chinese-language websites." = "Filter list for Chinese-language websites.";
+"Filter list for Dutch-language websites." = "Filter list for Dutch-language websites.";
+"Filter list for French-language websites." = "Filter list for French-language websites.";
+"Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
+
+"Basic" = "Basic";

@@ -82,7 +82,6 @@
 "Scripts" = "Scripts";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Le script utilisateur \\(bypassScript.name) nécessite le \\(filterName)";
 "Foreign" = "Étranger";
-"Minimal" = "Minimal";
 "Base filter only." = "Filtre de base uniquement.";
 "Balanced defaults." = "Paramètres par défaut équilibrés.";
 "Whitelist" = "Liste blanche";
@@ -202,7 +201,6 @@
 "Delete Added List" = "Supprimer la liste";
 "Filter Update" = "Mise à jour des filtres";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Uniquement le filtre AdGuard Base. Protection la plus légère, meilleure compatibilité.";
 "(pending)" = "(en attente)";
 "Continue Setup" = "Continuer la configuration";
 "Progress" = "Progression";
@@ -485,7 +483,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Blocks social media widgets and buttons." = "Bloque les widgets et les boutons des réseaux sociaux.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Bloque les widgets tiers, les assistants de discussion et les widgets d'assistance.";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Bloque les scripts de suivi, les balises Web et autres éléments portant atteinte à la vie privée.";
-"Building combined filter engine..." = "Construction d'un moteur de filtre combiné...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "Agent d'arrière-plan intégré manquant dans la création de l'application";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Downloading filter lists..." = "Téléchargement des listes de filtres...";
 "Downloading filter updates..." = "Téléchargement des mises à jour des filtres...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList Chine + filtre chinois AdGuard. Liste de filtres qui supprime spécifiquement les publicités sur les sites Web en langue chinoise.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "Filtre néerlandais EasyList + AdGuard. Liste de filtres qui supprime spécifiquement les publicités sur les sites Web en langue néerlandaise.";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Allemagne + filtre allemand AdGuard. Liste de filtres qui supprime spécifiquement les publicités sur les sites Web en langue allemande.";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Filter that enables ad blocking on websites in Russian language." = "Filtre qui permet le blocage des publicités sur les sites Web en langue russe.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filtre qui permet le blocage des publicités sur les sites Web en langue ukrainienne.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filtre qui protège contre divers types d'arnaques sur le réseau polonais, telles que la messagerie texte de masse, les fausses boutiques en ligne, etc.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filtre qui supprime les publicités et divers scripts des sites Web au contenu coréen. Combiné et augmenté avec des règles spécifiques à AdGuard pour un filtrage amélioré. Ce filtre devrait être utilisé avec le filtre AdGuard Base.";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "Filtres qui bloquent et masquent les éléments RSS et les restes de newsletters cachées combinés avec des éléments sociaux sur les sites Web polonais.";
 "Finnish ad blocking filter list." = "Liste finlandaise des filtres de blocage des publicités.";
 "Found %d update(s) available." = "Mises à jour %d trouvées disponibles.";
@@ -568,7 +562,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + filtre français AdGuard. Liste de filtres qui supprime spécifiquement les publicités sur les sites Web en langue française.";
 "Load full content" = "Charger le contenu complet";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "Aucune liste de filtres sélectionnée. Effacement des règles de toutes les extensions.";
@@ -734,3 +727,16 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
 
 "Basic ad blocking." = "Basic ad blocking.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filter list for Russian-language websites.";
+"Filter list for German-language websites." = "Filter list for German-language websites.";
+
+"Building native advanced runtime..." = "Building native advanced runtime...";
+
+"Filter list for Chinese-language websites." = "Filter list for Chinese-language websites.";
+"Filter list for Dutch-language websites." = "Filter list for Dutch-language websites.";
+"Filter list for French-language websites." = "Filter list for French-language websites.";
+"Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
+
+"Basic" = "Basic";

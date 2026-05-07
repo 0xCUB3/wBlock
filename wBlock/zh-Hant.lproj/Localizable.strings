@@ -82,7 +82,6 @@
 "Scripts" = "腳本";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 使用者腳本需要 \\(filterName)";
 "Foreign" = "國外";
-"Minimal" = "精簡";
 "Base filter only." = "僅基礎過濾器。";
 "Balanced defaults." = "平衡的預設設定。";
 "Whitelist" = "白名單";
@@ -202,7 +201,6 @@
 "Delete Added List" = "刪除清單";
 "Filter Update" = "過濾器更新";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "僅使用 AdGuard Base 過濾器。防護最輕、相容性最佳。";
 "(pending)" = "(待處理)";
 "Continue Setup" = "繼續設定";
 "Progress" = "進度";
@@ -485,7 +483,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks social media widgets and buttons." = "阻止社交媒體小工具和按鈕。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "封鎖第三方小工具、聊天助理和支援小工具。";
 "Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "阻止追蹤腳本、網路信標和其他侵犯隱私的元素。";
-"Building combined filter engine..." = "建築組合過濾引擎...";
 "Bulgarian list" = "Bulgarian list";
 "Bundled background agent missing from app build" = "應用程式建置中缺少捆綁的後台代理";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
@@ -508,10 +505,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading filter lists..." = "正在下載過濾器列表...";
 "Downloading filter updates..." = "正在下載過濾器更新...";
 "EasyList China" = "EasyList China";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard 中文過濾器。專門刪除中文網站上廣告的過濾器清單。";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch" = "EasyList Dutch";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList 荷蘭語 + AdGuard 荷蘭語過濾器。專門刪除荷蘭語網站上的廣告的過濾器清單。";
 "EasyList Germany" = "EasyList Germany";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList 德國 + AdGuard 德國過濾器。專門刪除德語網站上的廣告的過濾器清單。";
 "EasyList Hebrew" = "EasyList Hebrew";
@@ -546,7 +541,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter that enables ad blocking on websites in Russian language." = "可在俄語網站上攔截廣告的過濾器。";
 "Filter that enables ad blocking on websites in Ukrainian language." = "可在烏克蘭語網站上啟用廣告攔截的過濾器。";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "過濾器可防止波蘭網路中的各種類型的詐騙，例如群發簡訊、虛假網路商店等。";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "過濾器可從包含韓文內容的網站中刪除廣告和各種腳本。與 AdGuard 特定規則結合和增強，以增強過濾功能。該過濾器預計將與 AdGuard Base 過濾器一起使用。";
 "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites." = "過濾器可阻止和隱藏 RSS 元素以及隱藏時事通訊的殘餘物以及波蘭網站上的社交元素。";
 "Finnish ad blocking filter list." = "芬蘭廣告攔截過濾器清單。";
 "Found %d update(s) available." = "發現 %d 更新可用。";
@@ -568,7 +562,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "List-KR" = "List-KR";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard 法語過濾器。專門刪除法語網站上的廣告的過濾器清單。";
 "Load full content" = "載入完整內容";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "No filter lists selected. Clearing rules from all extensions." = "未選擇過濾器清單。清除所有擴充功能中的規則。";
@@ -734,3 +727,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No dynamic DNR sync event found in recent Scripts extension logs." = "No dynamic DNR sync event found in recent Scripts extension logs.";
 
 "Basic ad blocking." = "Basic ad blocking.";
+
+"RU AdList" = "RU AdList";
+"Filter list for Russian-language websites." = "Filter list for Russian-language websites.";
+"Filter list for German-language websites." = "Filter list for German-language websites.";
+
+"Building native advanced runtime..." = "Building native advanced runtime...";
+
+"Filter list for Chinese-language websites." = "Filter list for Chinese-language websites.";
+"Filter list for Dutch-language websites." = "Filter list for Dutch-language websites.";
+"Filter list for French-language websites." = "Filter list for French-language websites.";
+"Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
+
+"Basic" = "Basic";

@@ -12,7 +12,32 @@ internal import SwiftProtobuf
 extension ProtobufDataManager {
     private static let adGuardMobileFilterName = "AdGuard Mobile Filter"
     private static let adGuardMobileLegacyURLFragment = "filter_11_Mobile"
-    private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11.txt"
+    private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/extension/ublock/filters/11.txt"
+    private static let legacyFilterURLMigrations: [(fragment: String, url: String)] = [
+        ("filter_11_Mobile", "https://filters.adtidy.org/extension/ublock/filters/11.txt"),
+        ("filters.adtidy.org/ios/filters/11.txt", "https://filters.adtidy.org/extension/ublock/filters/11.txt"),
+        ("filters/224_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/224.txt"),
+        ("easylistchina/master/easylistchina.txt", "https://filters.adtidy.org/extension/ublock/filters/224.txt"),
+        ("filters/8_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/8.txt"),
+        ("easylistdutch.txt", "https://filters.adtidy.org/extension/ublock/filters/8.txt"),
+        ("filters/16_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/16.txt"),
+        ("liste_fr.txt", "https://filters.adtidy.org/extension/ublock/filters/16.txt"),
+        ("filters/6_optimized.txt", "https://easylist.to/easylistgermany/easylistgermany.txt"),
+        ("filters/7_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/7.txt"),
+        ("filters/1_optimized.txt", "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt"),
+        ("filters/9_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/9.txt"),
+        ("easylistportuguese.txt", "https://filters.adtidy.org/extension/ublock/filters/9.txt"),
+        ("filters/13_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/13.txt"),
+        ("filters/23_optimized.txt", "https://filters.adtidy.org/extension/ublock/filters/23.txt"),
+        ("filters/227_optimized.txt", "https://cdn.jsdelivr.net/npm/@list-kr/filterslists@latest/dist/filterslist-uBlockOrigin-classic.txt"),
+        ("filter/abpvn_adguard.txt", "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt"),
+        ("hufilter-adguard.txt", "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-ublock.txt"),
+        ("NordicFiltersAdGuard.txt", "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianList.txt"),
+        ("https://adblock.ee/list.txt", "https://ubo-et.lepik.io/list.txt"),
+        ("https://adblock.gardar.net/is.abp.txt", "https://raw.githubusercontent.com/brave/adblock-lists/master/custom/is.txt"),
+        ("RandomAdversary/Macedonian-adBlock-Filters/master/Filters", "https://raw.githubusercontent.com/DeepSpaceHarbor/Macedonian-adBlock-Filters/master/Filters"),
+        ("easylist-downloads.adblockplus.org/cntblock.txt", "https://raw.githubusercontent.com/easylist/ruadlist/master/cntblock.txt"),
+    ]
 
     private func isAdGuardMobileFilter(_ filter: Wblock_Data_FilterListData) -> Bool {
         filter.name == Self.adGuardMobileFilterName
@@ -50,10 +75,12 @@ extension ProtobufDataManager {
         var needsSave = false
 
         for i in 0..<updatedData.filterLists.count {
-            if updatedData.filterLists[i].url.contains(Self.adGuardMobileLegacyURLFragment) {
-                updatedData.filterLists[i].url = Self.adGuardMobileCurrentURL
-                needsSave = true
-            }
+            guard let migration = Self.legacyFilterURLMigrations.first(where: {
+                updatedData.filterLists[i].url.contains($0.fragment)
+            }) else { continue }
+            guard updatedData.filterLists[i].url != migration.url else { continue }
+            updatedData.filterLists[i].url = migration.url
+            needsSave = true
         }
 
         if needsSave {
@@ -126,11 +153,11 @@ extension ProtobufDataManager {
 
         // Define the new split filters
         let newFilters: [(name: String, url: String, description: String)] = [
-            ("AdGuard Cookie Notices", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt", "Blocks cookie consent notices on web pages."),
-            ("AdGuard Popups", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
-            ("AdGuard Mobile App Banners", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt", "Blocks banners promoting mobile app downloads."),
-            ("AdGuard Other Annoyances", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt", "Blocks miscellaneous irritating elements not covered by other filters."),
-            ("AdGuard Widgets", "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
+            ("AdGuard Cookie Notices", "https://filters.adtidy.org/extension/ublock/filters/18.txt", "Blocks cookie consent notices on web pages."),
+            ("AdGuard Popups", "https://filters.adtidy.org/extension/ublock/filters/19.txt", "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."),
+            ("AdGuard Mobile App Banners", "https://filters.adtidy.org/extension/ublock/filters/20.txt", "Blocks banners promoting mobile app downloads."),
+            ("AdGuard Other Annoyances", "https://filters.adtidy.org/extension/ublock/filters/21.txt", "Blocks miscellaneous irritating elements not covered by other filters."),
+            ("AdGuard Widgets", "https://filters.adtidy.org/extension/ublock/filters/22.txt", "Blocks third-party widgets, chat assistants, and support widgets.")
         ]
 
         // Add the new filters (only if they don't already exist)

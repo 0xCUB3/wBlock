@@ -86,7 +86,7 @@ class AppFilterManager: ObservableObject {
     }
 
     private enum UBlockMigrationKeys {
-        static let targetVersion = 1
+        static let targetVersion = 2
     }
 
     private var appliedSelectedFilterIDs: Set<UUID> = []
@@ -227,7 +227,7 @@ class AppFilterManager: ObservableObject {
         } catch {
             await ConcurrentLogManager.shared.error(
                 .filterApply,
-                "Failed to clear filter engine during onboarding reset",
+                "Failed to clear native advanced runtime during onboarding reset",
                 metadata: ["error": error.localizedDescription]
             )
             hasError = true
@@ -281,6 +281,9 @@ class AppFilterManager: ObservableObject {
         }
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
+        let countBeforeDuplicateMerge = migratedFilterLists.count
+        migratedFilterLists = mergeDuplicateBuiltInFiltersByURL(migratedFilterLists)
+        let deduplicatedBuiltInFilters = migratedFilterLists.count != countBeforeDuplicateMerge
         let defaultLists = loader.getDefaultFilterLists()
         let appliedUBlockDefaultMigration = migrateLegacyDefaultFiltersToUBlockCatalogIfNeeded(
             filters: &migratedFilterLists,
@@ -310,10 +313,7 @@ class AppFilterManager: ObservableObject {
         migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
         let appliedNativeDefaults = appliedUBlockDefaultMigration
             ? false
-            : applyNativeCompilerDefaultsIfNeeded(
-                to: &migratedFilterLists,
-                defaultLists: defaultLists
-            )
+            : applyNativeCompilerDefaultsIfNeeded(to: &migratedFilterLists)
 
         filterLists = migratedFilterLists
         markCurrentStateApplied()
@@ -331,7 +331,8 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters || appliedNativeDefaults || appliedUBlockDefaultMigration {
+        let shouldSaveFilterLists = hasURLMigrations || deduplicatedBuiltInFilters || addedDefaultFilters || appliedNativeDefaults || appliedUBlockDefaultMigration
+        if shouldSaveFilterLists && !appliedUBlockDefaultMigration {
             Task { await self.saveFilterLists() }
         }
 
@@ -347,6 +348,9 @@ class AppFilterManager: ObservableObject {
 
         if appliedUBlockDefaultMigration || shouldResumeUBlockMigrationApply() {
             Task { @MainActor in
+                if appliedUBlockDefaultMigration {
+                    await self.saveFilterLists()
+                }
                 await self.performUBlockMigrationApplyIfNeeded(reason: appliedUBlockDefaultMigration ? "catalogMigrated" : "resume")
             }
         }
@@ -380,11 +384,14 @@ class AppFilterManager: ObservableObject {
         defaultLists: [FilterList]
     ) -> Bool {
         guard FilterListLoader.isNativeCompilerEnabled else { return false }
-        guard dataManager.uBlockDefaultCatalogMigrationVersion < UBlockMigrationKeys.targetVersion else { return false }
+        guard dataManager.uBlockDefaultCatalogMigrationVersion < UBlockMigrationKeys.targetVersion
+            || currentUBlockMigrationState() != .applySucceeded
+        else { return false }
 
         let legacyDefaultNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "AdGuard Annoyances Filter",
             "AdGuard Cookie Notices",
             "AdGuard Popups",
             "AdGuard Mobile App Banners",
@@ -404,24 +411,72 @@ class AppFilterManager: ObservableObject {
             "AdGuard Mobile Filter",
         ]
         let legacyDefaultURLFragments = [
-            "FiltersRegistry/master/platforms/extension/safari/filters/",
-            "FiltersRegistry/master/filters/",
-            "filters.adtidy.org/ios/filters/",
+            "filters/2_optimized.txt",
+            "filters/3_optimized.txt",
+            "filters/4_optimized.txt",
+            "filters/5_optimized.txt",
+            "filters/18_optimized.txt",
+            "filters/19_optimized.txt",
+            "filters/20_optimized.txt",
+            "filters/21_optimized.txt",
+            "filters/22_optimized.txt",
+            "filters/118_optimized.txt",
+            "filters/122_optimized.txt",
+            "filters/204_optimized.txt",
+            "filters/207_optimized.txt",
+            "filters/208_optimized.txt",
+            "14_optimized.txt",
+            "filter_11_Mobile",
+            "filters.adtidy.org/ios/filters/11.txt",
         ]
         let legacyDefaults = filters.filter { filter in
             !filter.isCustom
                 && (legacyDefaultNames.contains(filter.name)
                     || legacyDefaultURLFragments.contains { filter.url.absoluteString.contains($0) })
         }
-        guard !legacyDefaults.isEmpty else { return false }
+        guard !legacyDefaults.isEmpty else {
+            if dataManager.uBlockDefaultCatalogMigrationVersion > 0
+                || currentUBlockMigrationState() == .applySucceeded
+            {
+                dataManager.setUBlockDefaultCatalogMigrationInMemory(
+                    version: UBlockMigrationKeys.targetVersion,
+                    state: UBlockMigrationState.applySucceeded.rawValue
+                )
+                Task {
+                    await dataManager.updateUBlockDefaultCatalogMigration(
+                        version: UBlockMigrationKeys.targetVersion,
+                        state: UBlockMigrationState.applySucceeded.rawValue
+                    )
+                }
+            }
+            return false
+        }
 
         let selectedLegacyNames = Set(legacyDefaults.filter(\.isSelected).map(\.name))
         let selectedNativeNames = nativeDefaultNamesMapped(from: selectedLegacyNames)
         let defaultsByName = Dictionary(defaultLists.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        let defaultsByURL = Dictionary(defaultLists.map { ($0.url, $0) }, uniquingKeysWith: { first, _ in first })
+        let selectedPreservedDefaultNames = Set(
+            filters.compactMap { filter -> String? in
+                guard filter.isSelected,
+                    !filter.isCustom,
+                    !legacyDefaults.contains(where: { $0.id == filter.id })
+                else { return nil }
+
+                if let catalogFilter = defaultsByURL[filter.url] {
+                    return catalogFilter.name
+                }
+                if let catalogFilter = defaultsByName[filter.name] {
+                    return catalogFilter.name
+                }
+                return nil
+            }
+        )
         var migratedDefaults: [FilterList] = []
         for defaultFilter in defaultLists where !defaultFilter.isCustom {
             var filter = defaultFilter
             filter.isSelected = selectedNativeNames.contains(filter.name)
+                || selectedPreservedDefaultNames.contains(filter.name)
             migratedDefaults.append(filter)
         }
 
@@ -429,7 +484,8 @@ class AppFilterManager: ObservableObject {
             !filter.isCustom
                 && (legacyDefaultNames.contains(filter.name)
                     || legacyDefaultURLFragments.contains { filter.url.absoluteString.contains($0) }
-                    || defaultsByName[filter.name] != nil)
+                    || defaultsByName[filter.name] != nil
+                    || defaultsByURL[filter.url] != nil)
         }
         filters.insert(contentsOf: migratedDefaults, at: 0)
         dataManager.setUBlockDefaultCatalogMigrationInMemory(
@@ -458,6 +514,9 @@ class AppFilterManager: ObservableObject {
     private func currentUBlockMigrationState() -> UBlockMigrationState {
         let raw = dataManager.uBlockDefaultCatalogMigrationState
         guard let state = UBlockMigrationState(rawValue: raw) else {
+            if dataManager.uBlockDefaultCatalogMigrationVersion >= UBlockMigrationKeys.targetVersion {
+                return .catalogMigrated
+            }
             return .notStarted
         }
         return state
@@ -566,6 +625,20 @@ class AppFilterManager: ObservableObject {
         if legacyNames.contains("Peter Lowe's Blocklist") {
             add("Peter Lowe’s Ad and tracking server list")
         }
+        if legacyNames.contains("AdGuard Annoyances Filter") {
+            add(
+                "uBlock filters – Annoyances",
+                "uBlock filters – Cookie Notices",
+                "EasyList – Cookie Notices",
+                "EasyList – Social Widgets",
+                "EasyList – Other Annoyances",
+                "AdGuard – Cookie Notices",
+                "AdGuard – Popup Overlays",
+                "AdGuard – Mobile App Banners",
+                "AdGuard – Other Annoyances",
+                "AdGuard – Widgets"
+            )
+        }
         if legacyNames.contains("AdGuard Cookie Notices") {
             add("uBlock filters – Cookie Notices", "EasyList – Cookie Notices", "AdGuard – Cookie Notices")
         }
@@ -602,22 +675,15 @@ class AppFilterManager: ObservableObject {
         return names
     }
 
-    private func applyNativeCompilerDefaultsIfNeeded(
-        to filters: inout [FilterList],
-        defaultLists: [FilterList]
-    ) -> Bool {
+    private func applyNativeCompilerDefaultsIfNeeded(to filters: inout [FilterList]) -> Bool {
         guard FilterListLoader.isNativeCompilerEnabled else { return false }
-        let defaultsVersion = 1
+        let defaultsVersion = 2
         guard dataManager.nativeDefaultFiltersAppliedVersion < defaultsVersion else { return false }
 
-        let recommendedURLs = Set(
-            defaultLists
-                .filter { FilterListLoader.recommendedFilterNames.contains($0.name) }
-                .map(\.url)
-        )
         let legacyCoreNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "AdGuard Annoyances Filter",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -631,17 +697,45 @@ class AppFilterManager: ObservableObject {
             "AdGuard Mobile Filter",
             "Hagezi Pro Mini",
         ]
+        var changedSelection = false
         for index in filters.indices where !filters[index].isCustom {
-            if recommendedURLs.contains(filters[index].url) {
-                filters[index].isSelected = true
-            } else if legacyCoreNames.contains(filters[index].name) {
+            if legacyCoreNames.contains(filters[index].name), filters[index].isSelected {
                 filters[index].isSelected = false
+                changedSelection = true
             }
         }
 
         dataManager.setNativeDefaultFiltersAppliedVersionInMemory(defaultsVersion)
         Task { await dataManager.updateNativeDefaultFiltersAppliedVersion(defaultsVersion) }
-        return true
+        return changedSelection
+    }
+
+    private func mergeDuplicateBuiltInFiltersByURL(_ filters: [FilterList]) -> [FilterList] {
+        var result: [FilterList] = []
+        var firstIndexByURL: [URL: Int] = [:]
+
+        for filter in filters {
+            guard !filter.isCustom else {
+                result.append(filter)
+                continue
+            }
+
+            if let existingIndex = firstIndexByURL[filter.url] {
+                result[existingIndex].isSelected = result[existingIndex].isSelected || filter.isSelected
+                if result[existingIndex].sourceRuleCount == nil {
+                    result[existingIndex].sourceRuleCount = filter.sourceRuleCount
+                }
+                if result[existingIndex].version.isEmpty {
+                    result[existingIndex].version = filter.version
+                }
+                continue
+            }
+
+            firstIndexByURL[filter.url] = result.count
+            result.append(filter)
+        }
+
+        return result
     }
 
     private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
@@ -682,27 +776,27 @@ class AppFilterManager: ObservableObject {
             let newFilters: [(name: String, url: String, description: String)] = [
                 (
                     "AdGuard Cookie Notices",
-                    "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt",
+                    "https://filters.adtidy.org/extension/ublock/filters/18.txt",
                     "Blocks cookie consent notices on web pages."
                 ),
                 (
                     "AdGuard Popups",
-                    "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt",
+                    "https://filters.adtidy.org/extension/ublock/filters/19.txt",
                     "Blocks promotional pop-ups, newsletter sign-ups, and notification requests."
                 ),
                 (
                     "AdGuard Mobile App Banners",
-                    "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt",
+                    "https://filters.adtidy.org/extension/ublock/filters/20.txt",
                     "Blocks banners promoting mobile app downloads."
                 ),
                 (
                     "AdGuard Other Annoyances",
-                    "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt",
+                    "https://filters.adtidy.org/extension/ublock/filters/21.txt",
                     "Blocks miscellaneous irritating elements not covered by other filters."
                 ),
                 (
                     "AdGuard Widgets",
-                    "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt",
+                    "https://filters.adtidy.org/extension/ublock/filters/22.txt",
                     "Blocks third-party widgets, chat assistants, and support widgets."
                 ),
             ]
@@ -723,8 +817,8 @@ class AppFilterManager: ObservableObject {
 
         // Migration 2: Remove duplicate iOS-specific "AdGuard Mobile App Banners" filter
         let hasMainMobileAppBanners = result.contains(where: {
-            $0.url.absoluteString.contains("FiltersRegistry")
-                && $0.url.absoluteString.contains("20_optimized.txt")
+            $0.url.absoluteString.contains("filters/20_optimized.txt")
+                || $0.url.absoluteString.contains("extension/ublock/filters/20.txt")
         })
         if hasMainMobileAppBanners {
             let countBefore = result.count

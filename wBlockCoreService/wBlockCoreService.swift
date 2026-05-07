@@ -14,8 +14,8 @@ import Darwin
 #endif
 import os.log
 
-/// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
-/// and manage content blocker extensions.
+/// ContentBlockerService converts ABP/uBO-compatible filter rules to Safari content blocker JSON
+/// and manages content blocker extension artifacts.
 public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
@@ -98,10 +98,10 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         }
     }
 
-    /// Converts AdGuard rules and exports them as a ZIP archive.
+    /// Converts filter rules and exports them as a ZIP archive.
     ///
     /// - Parameters:
-    ///   - rules: AdGuard syntax rules to be converted.
+    ///   - rules: Filter rules to be converted.
     /// - Returns: Data object containing a ZIP archive with Safari content blocker JSON and advanced rules,
     ///           or nil if the archive creation fails.
     public static func exportConversionResult(rules: String) -> Data? {
@@ -262,11 +262,11 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         return 0
     }
 
-    /// Converts AdGuard rules to Safari content blocker format and saves them to the shared container.
+    /// Converts filter rules to Safari content blocker format and saves them to the shared container.
     /// This version includes per-site disable functionality by injecting ignore-previous-rules for disabled sites.
     ///
     /// - Parameters:
-    ///   - rules: AdGuard rules to be converted.
+    ///   - rules: Filter rules to be converted.
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
     ///   - targetRulesFilename: Target filename for the rules file.
@@ -655,7 +655,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         }
 
         // These broad option-only filters are valid in uBO, but Safari often classifies
-        // normal media fetches as "raw". If the legacy converter loses the original
+        // normal media fetches as "raw". If conversion cannot preserve the original
         // domain scope, the result blocks all third-party XHR/fetch traffic, including
         // YouTube's googlevideo playback requests.
         return Set(trigger.keys) == Set(["url-filter", "resource-type", "load-type"])
@@ -664,7 +664,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     /// Finalizes Safari content blocker JSON before saving.
     /// This injects terminal allow rules for disabled sites and for fragile YouTube
     /// playback requests, and removes unsafe global raw third-party blocks produced
-    /// when legacy conversion loses option-only rule domain scope.
+    /// when conversion cannot preserve option-only rule domain scope.
     private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
         let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let jsonData = trimmed.data(using: .utf8),
@@ -740,15 +740,11 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         public let pageURL: String
         public let topURL: String?
         public let nativeAvailable: Bool
-        public let legacyAvailable: Bool
         public let nativeCounts: AdvancedRuntimePayloadCounts
-        public let legacyCounts: AdvancedRuntimePayloadCounts
-        public let missingInNative: [String: [String]]
-        public let extraInNative: [String: [String]]
     }
 
     /// Reports the installed native advanced runtime for a single URL without mutating it.
-    public static func debugCompareAdvancedRuntimeLookup(
+    public static func debugAdvancedRuntimeLookup(
         pageURL: URL,
         topURL: URL? = nil,
         groupIdentifier: String
@@ -759,18 +755,11 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             groupIdentifier: groupIdentifier
         )
 
-        let missingInNative: [String: [String]] = [:]
-        let extraInNative: [String: [String]] = [:]
-
         return AdvancedRuntimeLookupDebugReport(
             pageURL: pageURL.absoluteString,
             topURL: topURL?.absoluteString,
             nativeAvailable: nativePayload != nil,
-            legacyAvailable: false,
-            nativeCounts: payloadCounts(nativePayload),
-            legacyCounts: payloadCounts(nil),
-            missingInNative: missingInNative,
-            extraInNative: extraInNative
+            nativeCounts: payloadCounts(nativePayload)
         )
     }
 
@@ -781,13 +770,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             js: stringArray(in: payload, key: "js").count,
             scriptlets: scriptletEntries(in: payload).count
         )
-    }
-
-    private static func canonicalEntries(in payload: [String: Any]?, category: String) -> [String] {
-        if category == "scriptlets" {
-            return scriptletEntries(in: payload)
-        }
-        return stringArray(in: payload, key: category).sorted()
     }
 
     private static func stringArray(in payload: [String: Any]?, key: String) -> [String] {
@@ -815,23 +797,15 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         try NativeAdvancedRuntimeAdapter.clear(groupIdentifier: groupIdentifier)
     }
     
-    /// Backward compatibility function that builds the filter engine immediately (legacy behavior).
-    /// This function is deprecated and should not be used for new code.
-    ///
-    /// - Parameters:
-    ///   - rules: AdGuard rules to be converted.
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    ///   - targetRulesFilename: Target filename for the rules.
-    /// - Returns: The number of Safari content blocker rules generated from the conversion.
 }
 
 // MARK: - Safari Content Blocker functions
 
 extension ContentBlockerService {
-    /// Converts AdGuard rules into the Safari content blocking rules syntax.
+    /// Converts filter rules into the Safari content blocking rules syntax.
     ///
     /// - Parameters:
-    ///   - rules: AdGuard rules to convert.
+    ///   - rules: Filter rules to convert.
     /// - Returns: A ConversionResult containing the converted Safari rules in JSON format
     ///           and advanced rules in text format.
     private struct ConversionResult {

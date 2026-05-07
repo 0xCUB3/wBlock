@@ -528,7 +528,7 @@ extension AppFilterManager {
         // Small delay before building advanced engine to let system recover from reloads
         try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms delay
 
-        // NOW build the combined filter engine AFTER all content blockers are reloaded
+        // Build the native advanced runtime after all content blockers are reloaded.
         await MainActor.run {
             self.progress = 0.9
 
@@ -542,7 +542,7 @@ extension AppFilterManager {
             if !advancedRulesByTarget.isEmpty {
                 await MainActor.run {
                     self.applyProgressViewModel.updateStageDescription(
-                        LocalizedStrings.text("Building combined filter engine...", comment: "Apply pipeline stage")
+                        LocalizedStrings.text("Building native advanced runtime...", comment: "Apply pipeline stage")
                     )
                 }
 
@@ -557,7 +557,7 @@ extension AppFilterManager {
                 }.value
             } else {
                 await ConcurrentLogManager.shared.debug(
-                    .filterApply, "No advanced rules found, clearing filter engine", metadata: [:])
+                    .filterApply, "No advanced rules found, clearing native advanced runtime", metadata: [:])
                 try await Task.detached {
                     try ContentBlockerService.clearAdvancedRuntime(
                         groupIdentifier: GroupIdentifier.shared.value
