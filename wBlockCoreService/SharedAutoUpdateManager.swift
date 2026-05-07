@@ -1710,7 +1710,7 @@ public actor SharedAutoUpdateManager {
     }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
-        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 300)
         let title = rawMetadata.title?.replacingOccurrences(of: "/", with: " & ")
         let description = rawMetadata.description?.replacingOccurrences(of: "/", with: " & ")
 

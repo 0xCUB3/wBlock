@@ -22,15 +22,20 @@ public enum FilterListMetadataParser {
         pattern: "^!\\s*(?:version|last modified|updated)\\s*:?\\s*(.*)$",
         options: [.caseInsensitive]
     )
+    private static let metadataKeyRegex = try! NSRegularExpression(
+        pattern: "^!\\s*(?:title|description|version|last modified|updated|expires|homepage|license|licence|diff-path|diff-expires|checksum|support|github issues|github pull requests)\\s*:",
+        options: [.caseInsensitive]
+    )
 
     public static func parse(
         from content: String,
         maxLines: Int? = nil
     ) -> (title: String?, description: String?, version: String?) {
         var title: String?
-        var description: String?
+        var descriptionParts: [String] = []
         var version: String?
         var scannedLines = 0
+        var isCollectingDescription = false
 
         for line in content.split(whereSeparator: \.isNewline) {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
@@ -38,14 +43,22 @@ public enum FilterListMetadataParser {
             if title == nil {
                 title = firstCapturedGroup(in: trimmedLine, regex: titleRegex)
             }
-            if description == nil {
-                description = firstCapturedGroup(in: trimmedLine, regex: descriptionRegex)
-            }
             if version == nil {
                 version = firstCapturedGroup(in: trimmedLine, regex: versionRegex)
             }
 
-            if title != nil, description != nil, version != nil {
+            if let firstDescriptionLine = firstCapturedGroup(in: trimmedLine, regex: descriptionRegex) {
+                let marker = firstDescriptionLine.trimmingCharacters(in: .whitespaces)
+                descriptionParts = (marker == "|" || marker == ">") ? [] : [firstDescriptionLine]
+                isCollectingDescription = true
+            } else if isCollectingDescription,
+                      let continuation = descriptionContinuation(from: trimmedLine) {
+                descriptionParts.append(continuation)
+            } else if isCollectingDescription {
+                isCollectingDescription = false
+            }
+
+            if title != nil, !descriptionParts.isEmpty, version != nil, !isCollectingDescription {
                 break
             }
 
@@ -55,16 +68,33 @@ public enum FilterListMetadataParser {
             }
         }
 
+        let description = descriptionParts.isEmpty ? nil : descriptionParts.joined(separator: " ")
         return (title: title, description: description, version: version)
+    }
+
+    private static func descriptionContinuation(from line: String) -> String? {
+        guard line.hasPrefix("!") else { return nil }
+        guard firstMatch(in: line, regex: metadataKeyRegex) == nil else { return nil }
+
+        let payload = line.dropFirst().trimmingCharacters(in: .whitespaces)
+        guard !payload.isEmpty else { return nil }
+        guard !payload.hasPrefix("[") else { return nil }
+        guard !payload.hasPrefix("***") else { return nil }
+        guard !payload.hasPrefix("---") else { return nil }
+
+        let lowercased = payload.lowercased()
+        guard !lowercased.hasPrefix("http://"), !lowercased.hasPrefix("https://") else { return nil }
+        guard !lowercased.hasPrefix("github ") else { return nil }
+
+        return payload
     }
 
     private static func firstCapturedGroup(
         in line: String,
         regex: NSRegularExpression
     ) -> String? {
-        let range = NSRange(location: 0, length: line.utf16.count)
         guard
-            let match = regex.firstMatch(in: line, options: [], range: range),
+            let match = firstMatch(in: line, regex: regex),
             match.numberOfRanges > 1,
             let valueRange = Range(match.range(at: 1), in: line)
         else {
@@ -72,6 +102,11 @@ public enum FilterListMetadataParser {
         }
         let value = String(line[valueRange]).trimmingCharacters(in: .whitespaces)
         return value.isEmpty ? nil : value
+    }
+
+    private static func firstMatch(in line: String, regex: NSRegularExpression) -> NSTextCheckingResult? {
+        let range = NSRange(location: 0, length: line.utf16.count)
+        return regex.firstMatch(in: line, options: [], range: range)
     }
 }
 

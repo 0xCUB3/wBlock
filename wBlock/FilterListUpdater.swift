@@ -161,7 +161,7 @@ final class FilterListUpdater: @unchecked Sendable {
     func parseMetadata(from content: String) -> (
         title: String?, description: String?, version: String?
     ) {
-        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 120)
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 300)
 
         let title =
             rawMetadata.title

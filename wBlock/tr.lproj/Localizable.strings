@@ -740,3 +740,33 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Filter list for Korean-language websites." = "Filter list for Korean-language websites.";
 
 "Basic" = "Basic";
+
+"Filters optimized for uBlock, to be used along EasyList." = "Filters optimized for uBlock, to be used along EasyList.";
+"Warns about sites documented to put users at risk of unwanted software, stolen credentials, and similar threats." = "Warns about sites documented to put users at risk of unwanted software, stolen credentials, and similar threats.";
+"Privacy filters optimized for uBlock, including important rules that resist exception filters." = "Privacy filters optimized for uBlock, including important rules that resist exception filters.";
+"Compatibility fixes that prevent filter lists from breaking websites." = "Compatibility fixes that prevent filter lists from breaking websites.";
+"Urgent fixes for current site breakage, anti-adblock issues, and missed ads." = "Urgent fixes for current site breakage, anti-adblock issues, and missed ads.";
+"Primary community-maintained list for blocking adverts on English-language websites." = "Primary community-maintained list for blocking adverts on English-language websites.";
+"Community-maintained list for blocking trackers, analytics, and privacy-invasive requests." = "Community-maintained list for blocking trackers, analytics, and privacy-invasive requests.";
+"Blocks recently reported URLs associated with unwanted software distribution and other online threats." = "Blocks recently reported URLs associated with unwanted software distribution and other online threats.";
+"Hosts list that blocks advertising and tracking servers." = "Hosts list that blocks advertising and tracking servers.";
+"uBlock-maintained cosmetic and network filters for common website annoyances." = "uBlock-maintained cosmetic and network filters for common website annoyances.";
+"uBlock-maintained filters for hiding cookie notices and consent prompts." = "uBlock-maintained filters for hiding cookie notices and consent prompts.";
+"EasyList filters for hiding cookie notices and consent prompts." = "EasyList filters for hiding cookie notices and consent prompts.";
+"EasyList filters for blocking social media widgets and buttons." = "EasyList filters for blocking social media widgets and buttons.";
+"EasyList filters for hiding in-page popups, overlays, and other annoyances." = "EasyList filters for hiding in-page popups, overlays, and other annoyances.";
+"EasyList filters for hiding chat widgets and support bubbles." = "EasyList filters for hiding chat widgets and support bubbles.";
+"EasyList filters for hiding newsletter signup notices." = "EasyList filters for hiding newsletter signup notices.";
+"EasyList filters for hiding notification permission prompts." = "EasyList filters for hiding notification permission prompts.";
+"EasyList filters for hiding AI chat, assistant, and suggestion widgets." = "EasyList filters for hiding AI chat, assistant, and suggestion widgets.";
+"Removes known tracking parameters from URLs." = "Removes known tracking parameters from URLs.";
+"Blocks public websites from probing private network addresses." = "Blocks public websites from probing private network addresses.";
+"AdGuard ad-blocking filters for uBlock-compatible blockers, without EasyList duplicates." = "AdGuard ad-blocking filters for uBlock-compatible blockers, without EasyList duplicates.";
+"AdGuard filters for hiding cookie notices and consent prompts." = "AdGuard filters for hiding cookie notices and consent prompts.";
+"AdGuard filters for blocking social media widgets and buttons." = "AdGuard filters for blocking social media widgets and buttons.";
+"AdGuard filters for hiding popup overlays and modal interruptions." = "AdGuard filters for hiding popup overlays and modal interruptions.";
+"AdGuard filters for hiding banners that promote mobile apps." = "AdGuard filters for hiding banners that promote mobile apps.";
+"AdGuard filters for miscellaneous annoying page elements." = "AdGuard filters for miscellaneous annoying page elements.";
+"AdGuard filters for hiding third-party widgets, chat assistants, and support widgets." = "AdGuard filters for hiding third-party widgets, chat assistants, and support widgets.";
+"Experimental uBlock filters with new rules and fixes before they move to stable lists." = "Experimental uBlock filters with new rules and fixes before they move to stable lists.";
+"AdGuard mobile ad filters for uBlock-compatible blockers." = "AdGuard mobile ad filters for uBlock-compatible blockers.";
