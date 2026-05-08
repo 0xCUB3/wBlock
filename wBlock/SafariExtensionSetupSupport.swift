@@ -4,6 +4,42 @@ import SafariServices
 import UIKit
 #endif
 
+#if os(macOS)
+private func makeSafariExtensionSettingsHandler() -> @Sendable (Error?) -> Void {
+    { _ in }
+}
+
+private func makeScriptsExtensionStateHandler(
+    _ continuation: CheckedContinuation<Bool?, Never>
+) -> @Sendable (SFSafariExtensionState?, Error?) -> Void {
+    { state, error in
+        guard error == nil else {
+            continuation.resume(returning: nil)
+            return
+        }
+        continuation.resume(returning: state?.isEnabled)
+    }
+}
+#elseif os(iOS)
+@available(iOS 26.2, *)
+private func makeSafariExtensionSettingsHandler() -> @Sendable (Error?) -> Void {
+    { _ in }
+}
+
+@available(iOS 26.2, *)
+private func makeScriptsExtensionStateHandler(
+    _ continuation: CheckedContinuation<Bool?, Never>
+) -> @Sendable (SFSafariExtensionState?, Error?) -> Void {
+    { state, error in
+        guard error == nil else {
+            continuation.resume(returning: nil)
+            return
+        }
+        continuation.resume(returning: state?.isEnabled)
+    }
+}
+#endif
+
 enum SafariExtensionSetupSupport {
     #if os(macOS)
     static let scriptsExtensionIdentifier = "skula.wBlock.wBlock-Scripts"
@@ -15,13 +51,15 @@ enum SafariExtensionSetupSupport {
     static func openScriptsExtensionSettings() {
         #if os(macOS)
         SFSafariApplication.showPreferencesForExtension(
-            withIdentifier: scriptsExtensionIdentifier
-        ) { _ in }
+            withIdentifier: scriptsExtensionIdentifier,
+            completionHandler: makeSafariExtensionSettingsHandler()
+        )
         #elseif os(iOS)
         if #available(iOS 26.2, *) {
             SFSafariSettings.openExtensionsSettings(
-                forIdentifiers: [scriptsExtensionIdentifier]
-            ) { _ in }
+                forIdentifiers: [scriptsExtensionIdentifier],
+                completionHandler: makeSafariExtensionSettingsHandler()
+            )
             return
         }
 
@@ -37,27 +75,17 @@ enum SafariExtensionSetupSupport {
         #if os(macOS)
         return await withCheckedContinuation { continuation in
             SFSafariExtensionManager.getStateOfSafariExtension(
-                withIdentifier: scriptsExtensionIdentifier
-            ) { state, error in
-                guard error == nil else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                continuation.resume(returning: state?.isEnabled)
-            }
+                withIdentifier: scriptsExtensionIdentifier,
+                completionHandler: makeScriptsExtensionStateHandler(continuation)
+            )
         }
         #elseif os(iOS)
         guard #available(iOS 26.2, *) else { return nil }
         return await withCheckedContinuation { continuation in
             SFSafariExtensionManager.getStateOfExtension(
-                withIdentifier: scriptsExtensionIdentifier
-            ) { state, error in
-                guard error == nil else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                continuation.resume(returning: state?.isEnabled)
-            }
+                withIdentifier: scriptsExtensionIdentifier,
+                completionHandler: makeScriptsExtensionStateHandler(continuation)
+            )
         }
         #endif
     }

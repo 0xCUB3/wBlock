@@ -243,15 +243,7 @@ private enum SafariDiagnosticsRunner {
     }
 
     private static func contentBlockerEnabledState(identifier: String) async -> Bool? {
-        await withCheckedContinuation { continuation in
-            SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: identifier) { state, error in
-                guard error == nil else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                continuation.resume(returning: state?.isEnabled)
-            }
-        }
+        await ContentBlockerService.contentBlockerStateSnapshot(withIdentifier: identifier).isEnabled
     }
 
     private static func generatedRuleFileItems() -> (items: [SafariDiagnosticItem], recommendations: [String]) {

@@ -123,38 +123,27 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     /// - Parameters:
     ///   - identifier: Bundle ID of the content blocker extension to reload.
     /// - Returns: A Result indicating success or containing an error if the reload failed.
-    @MainActor
     public static func contentBlockerStateSnapshot(
         withIdentifier identifier: String
     ) async -> ContentBlockerStateSnapshot {
         await withCheckedContinuation { continuation in
-            SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: identifier) { state, error in
-                if let error {
-                    continuation.resume(returning: ContentBlockerStateSnapshot(
-                        isEnabled: nil,
-                        errorDescription: describeSafariServicesError(error)
-                    ))
-                    return
-                }
-
-                continuation.resume(returning: ContentBlockerStateSnapshot(
-                    isEnabled: state?.isEnabled,
-                    errorDescription: state == nil ? "Safari returned no state" : nil
-                ))
-            }
+            SFContentBlockerManager.getStateOfContentBlocker(
+                withIdentifier: identifier,
+                completionHandler: makeContentBlockerStateHandler(continuation)
+            )
         }
     }
 
-    @MainActor
     public static func reloadContentBlocker(
         withIdentifier identifier: String
     ) async -> Result<Void, Error> {
         os_log(.info, "Start reloading content blocker: %@", identifier)
 
         let error: Error? = await withCheckedContinuation { continuation in
-            SFContentBlockerManager.reloadContentBlocker(withIdentifier: identifier) { error in
-                continuation.resume(returning: error)
-            }
+            SFContentBlockerManager.reloadContentBlocker(
+                withIdentifier: identifier,
+                completionHandler: makeContentBlockerReloadHandler(continuation)
+            )
         }
 
         let result: Result<Void, Error> = if let error { .failure(error) } else { .success(()) }
@@ -259,7 +248,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         )
     }
 
-    private static func describeSafariServicesError(_ error: Error) -> String {
+    fileprivate static func describeSafariServicesError(_ error: Error) -> String {
         let nsError = error as NSError
         return "domain=\(nsError.domain) code=\(nsError.code) description=\(error.localizedDescription)"
     }
@@ -962,4 +951,31 @@ extension ContentBlockerService {
     }
 
 
+}
+
+private func makeContentBlockerStateHandler(
+    _ continuation: CheckedContinuation<ContentBlockerService.ContentBlockerStateSnapshot, Never>
+) -> @Sendable (SFContentBlockerState?, Error?) -> Void {
+    { state, error in
+        if let error {
+            continuation.resume(returning: ContentBlockerService.ContentBlockerStateSnapshot(
+                isEnabled: nil,
+                errorDescription: ContentBlockerService.describeSafariServicesError(error)
+            ))
+            return
+        }
+
+        continuation.resume(returning: ContentBlockerService.ContentBlockerStateSnapshot(
+            isEnabled: state?.isEnabled,
+            errorDescription: state == nil ? "Safari returned no state" : nil
+        ))
+    }
+}
+
+private func makeContentBlockerReloadHandler(
+    _ continuation: CheckedContinuation<Error?, Never>
+) -> @Sendable (Error?) -> Void {
+    { error in
+        continuation.resume(returning: error)
+    }
 }
