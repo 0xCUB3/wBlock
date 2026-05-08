@@ -19,12 +19,13 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "11"
+    private static let embeddedCompatibilityRulesVersion = "13"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
-    /// patterns and dynamic ad containers across filter sets. YouTube media
-    /// requests are intentionally not blocked here because Safari can classify
-    /// normal playback requests as XHR/fetch, which breaks videos.
+    /// patterns and dynamic ad containers across filter sets. YouTube handling
+    /// mirrors the conservative uBO response-mutation strategy rather than
+    /// broad media blocking, because Safari can classify normal playback
+    /// requests as XHR/fetch.
     private static let embeddedCompatibilityRules = #"""
 /js/widget/ads.js$script
 /js/pagead.js$script
@@ -41,6 +42,15 @@ public enum ContentBlockerService {
 ||adblock-tester.com/banners/pr_advertising_ads_banner.png$xhr,important
 ||adblock-tester.com/banners/pr_advertising_ads_banner.swf$media,important
 ||adblock-tester.com/banners/pr_advertising_ads_banner.swf$xhr,important
+www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
+www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
+www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', '/playlist\\?list=|\\/player(?:\\?.+)?$|watch\\?[tv]=/')
+www.youtube.com##+js(json-prune-fetch-response, adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots, , propsToMatch, /player?)
+www.youtube.com##+js(json-prune-xhr-response, adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots, , propsToMatch, /\/player(?:\?.+)?$/)
+www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
+www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
+www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adSlots', 'undefined')
+www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
 adblock-tester.com#%#//scriptlet('set-constant', 'Sentry', 'undefined')
 adblock-tester.com##+js(set-constant, Sentry, undefined)
 adblock-tester.com#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{const u=String(i&&i.url||i);return u.includes('/banners/pr_advertising_ads_banner.')?Promise.reject(new TypeError('Failed to fetch')):f(i,n);};})();
@@ -531,42 +541,33 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedDomain)\"]}}"
     }
     
-    private static let youtubePlaybackURLFilter = #".*googlevideo\.com/videoplayback.*"#
+    private static let youtubePlaybackURLFilters = [
+        #".*googlevideo\.com/(?:videoplayback|initplayback).*"#,
+        #".*c\.youtube\.com/(?:videoplayback|initplayback).*"#
+    ]
     private static let legacyYouTubePlaybackURLFilter = #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?googlevideo\.com/videoplayback"#
 
     private static func youtubePlaybackIgnoreRules() -> [[String: Any]] {
-        let playbackTrigger: [String: Any] = [
-            "url-filter": youtubePlaybackURLFilter
-        ]
-        let youtubePageTrigger: [String: Any] = [
-            "url-filter": ".*",
-            "if-domain": ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "*youtube.com", "*www.youtube.com"]
-        ]
-
-        var rules: [[String: Any]] = [
-            ["action": ["type": "ignore-previous-rules"], "trigger": playbackTrigger],
-            ["action": ["type": "ignore-previous-rules"], "trigger": youtubePageTrigger]
-        ]
+        let youtubeDomains = ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtubekids.com", "www.youtubekids.com", "*youtube.com", "*www.youtube.com", "*youtube-nocookie.com", "*youtubekids.com"]
+        var rules: [[String: Any]] = []
 
         // WebKit has reported YouTube playback fetches as raw, media, or other
-        // request classes across releases. Keep typed fallbacks for older content-
-        // blocker compilers which require matching resource-type to ignore a prior
-        // rule. The broad YouTube page ignore is intentionally blunt while Safari
-        // playback is being stabilized.
-        for resourceType in ["raw", "media", "document", "script", "image"] {
-            var playbackTypedTrigger = playbackTrigger
-            playbackTypedTrigger["resource-type"] = [resourceType]
-            rules.append([
-                "action": ["type": "ignore-previous-rules"],
-                "trigger": playbackTypedTrigger
-            ])
-
-            var pageTypedTrigger = youtubePageTrigger
-            pageTypedTrigger["resource-type"] = [resourceType]
-            rules.append([
-                "action": ["type": "ignore-previous-rules"],
-                "trigger": pageTypedTrigger
-            ])
+        // request classes across releases. Keep this scoped to signed playback
+        // URLs on YouTube pages; do not ignore all previous YouTube rules.
+        for urlFilter in youtubePlaybackURLFilters {
+            let playbackTrigger: [String: Any] = [
+                "url-filter": urlFilter,
+                "if-domain": youtubeDomains
+            ]
+            rules.append(["action": ["type": "ignore-previous-rules"], "trigger": playbackTrigger])
+            for resourceType in ["raw", "media", "document", "script", "image"] {
+                var playbackTypedTrigger = playbackTrigger
+                playbackTypedTrigger["resource-type"] = [resourceType]
+                rules.append([
+                    "action": ["type": "ignore-previous-rules"],
+                    "trigger": playbackTypedTrigger
+                ])
+            }
         }
         return rules
     }
@@ -578,18 +579,14 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
               let urlFilter = trigger["url-filter"] as? String else {
             return false
         }
-        if urlFilter == ".*" {
-            guard domainListContainsYouTube(trigger["if-domain"] as? [String]) else { return false }
-        } else if urlFilter != youtubePlaybackURLFilter && urlFilter != legacyYouTubePlaybackURLFilter {
+        guard youtubePlaybackURLFilters.contains(urlFilter) || urlFilter == legacyYouTubePlaybackURLFilter else {
             return false
         }
+        guard domainListContainsYouTube(trigger["if-domain"] as? [String]) else { return false }
         if let resourceTypes = trigger["resource-type"] as? [String] {
             guard resourceTypes.count == 1, ["raw", "media", "document", "script", "image"].contains(resourceTypes[0]) else {
                 return false
             }
-        }
-        if let domains = trigger["if-domain"] as? [String] {
-            return domains.contains("youtube.com") || domains.contains("*youtube.com")
         }
         return true
     }
@@ -601,9 +598,17 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             return normalized == "youtube.com"
                 || normalized == "www.youtube.com"
                 || normalized == "m.youtube.com"
+                || normalized == "youtube-nocookie.com"
+                || normalized == "www.youtube-nocookie.com"
+                || normalized == "youtubekids.com"
+                || normalized == "www.youtubekids.com"
                 || normalized == "*youtube.com"
                 || normalized == "*www.youtube.com"
+                || normalized == "*youtube-nocookie.com"
+                || normalized == "*youtubekids.com"
                 || normalized.hasSuffix(".youtube.com")
+                || normalized.hasSuffix(".youtube-nocookie.com")
+                || normalized.hasSuffix(".youtubekids.com")
         }
     }
 
@@ -615,13 +620,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             return false
         }
 
-        // Temporary safety-first policy: do not ship static block rules scoped to
-        // YouTube pages. Safari's request classification around googlevideo playback
-        // is too fragile, and one false positive makes all videos spin forever.
-        if domainListContainsYouTube(trigger["if-domain"] as? [String]) {
-            return true
-        }
-
         if isGoogleVideoPlaybackURLFilter(urlFilter) {
             return true
         }
@@ -629,7 +627,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         // Safari/WebKit may classify signed googlevideo playback fetches differently
         // across releases. Do not keep broad third-party media/raw blocks scoped to
         // YouTube pages in the static blocker, because a false positive stalls playback.
-        if urlFilter == ".*" || urlFilter == ".*_ad_" {
+        if domainListContainsYouTube(trigger["if-domain"] as? [String]), urlFilter == ".*" || urlFilter == ".*_ad_" {
             let resourceTypes = Set((trigger["resource-type"] as? [String]) ?? [])
             let loadTypes = Set((trigger["load-type"] as? [String]) ?? [])
             if !resourceTypes.isDisjoint(with: ["raw", "media"]) && (loadTypes.isEmpty || loadTypes.contains("third-party")) {
@@ -641,7 +639,7 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     }
 
     private static func isGoogleVideoPlaybackURLFilter(_ urlFilter: String) -> Bool {
-        urlFilter.contains("googlevideo") && (urlFilter.contains("videoplayback") || urlFilter.contains("initplayback"))
+        (urlFilter.contains("googlevideo") || urlFilter.contains("c\\.youtube") || urlFilter.contains("c.youtube")) && (urlFilter.contains("videoplayback") || urlFilter.contains("initplayback"))
     }
 
     private static func isGoogleVideoPlaybackBlockRule(_ rule: [String: Any]) -> Bool {
@@ -674,9 +672,9 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     }
 
     /// Finalizes Safari content blocker JSON before saving.
-    /// This injects terminal allow rules for disabled sites and for fragile YouTube
-    /// playback requests, and removes unsafe global raw third-party blocks produced
-    /// when conversion cannot preserve option-only rule domain scope.
+    /// This injects terminal allow rules for disabled sites and narrowly-scoped
+    /// fragile YouTube playback requests, and removes unsafe global raw third-party
+    /// blocks produced when conversion cannot preserve option-only rule domain scope.
     private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
         let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let jsonData = trimmed.data(using: .utf8),

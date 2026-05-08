@@ -17,7 +17,7 @@
         },
         "condition": {
             "urlFilter": "*",
-            "requestDomains": ["youtube.com", "m.youtube.com"],
+            "requestDomains": ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtubekids.com", "www.youtubekids.com"],
             "resourceTypes": ["main_frame", "sub_frame"]
         }
     }

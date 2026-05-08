@@ -55,6 +55,19 @@ function getCspNonce() {
     }
 }
 
+function setTrustedScriptText(scriptElement, source) {
+    try {
+        const tt = window.trustedTypes;
+        if (tt && typeof tt.createPolicy === 'function') {
+            const policy = tt.createPolicy('wblock-userscript-' + Math.random().toString(36).slice(2), { createScript: value => value });
+            scriptElement.textContent = policy.createScript(source);
+            return true;
+        }
+    } catch (e) {}
+    scriptElement.textContent = source;
+    return true;
+}
+
 // Opaque/sandboxed frames commonly throw Safari console access violations when
 // probing frameElement. Avoid touching it; page-world injection cannot work in
 // non-http(s) frames anyway.
@@ -940,7 +953,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return;
             }
             const scriptElement = document.createElement('script');
-            scriptElement.textContent = this.wrapUserScript(script, 'page');
+            setTrustedScriptText(scriptElement, this.wrapUserScript(script, 'page'));
             scriptElement.setAttribute('data-userscript', script.name);
             scriptElement.setAttribute('type', 'text/javascript');
             const nonce = getCspNonce();
@@ -966,7 +979,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // with the page context, so use a DOM side-effect to detect execution.
                 const testElement = document.createElement('script');
                 const testId = `__wblock_csp_test_${Date.now()}`;
-                testElement.textContent = `try{document.documentElement && document.documentElement.setAttribute('${testId}','1');}catch(e){}`;
+                setTrustedScriptText(testElement, `try{document.documentElement && document.documentElement.setAttribute('${testId}','1');}catch(e){}`);
                 const nonce = getCspNonce();
                 if (nonce) {
                     testElement.nonce = nonce;

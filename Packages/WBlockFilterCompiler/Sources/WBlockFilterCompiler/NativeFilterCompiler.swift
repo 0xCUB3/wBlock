@@ -250,11 +250,10 @@ public struct NativeFilterCompiler: FilterCompiling {
         let name = rule.name.lowercased()
         let args = rule.args.joined(separator: "\u{1f}")
 
-        // uBO's YouTube Quick fixes/Experimental lists rely on document-start,
-        // exact page-world scriptlet injection. wBlock's native runtime resolves
-        // rules asynchronously through the Safari native-message bridge; applying
-        // these player-client cycling probes late can leave YouTube in a permanent
-        // buffering/reload loop.
+        // uBO's large YouTube node-text player patch relies on exact document-start
+        // page-world injection and can loop if it lands late. Keep response/request
+        // mutation scriptlets enabled, because those are also applied by the early
+        // YouTube runtime and are needed to remove ad-bearing player responses.
         if isTrustedReplaceNodeTextName(name) {
             return args.contains("serverContract") && (
                 args.contains("loadVideoById") ||
@@ -265,11 +264,7 @@ public struct NativeFilterCompiler: FilterCompiling {
         }
 
         if isTrustedJSONEditRequestName(name) {
-            return args.contains("userAgent") ||
-                args.contains("clientScreen") ||
-                args.contains("#reloadxhr") ||
-                args.contains("adPlaybackContext") ||
-                args.contains("eAFgAQ")
+            return false
         }
 
         if isTrustedJSONEditResponseName(name) {
@@ -280,7 +275,7 @@ public struct NativeFilterCompiler: FilterCompiling {
     }
 
     private func isYouTubeScoped(_ scope: AdvancedDomainScope) -> Bool {
-        ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com"].contains { scope.matches(host: $0) }
+        ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtubekids.com", "www.youtubekids.com"].contains { scope.matches(host: $0) }
     }
 
     private func isTrustedReplaceNodeTextName(_ name: String) -> Bool {
