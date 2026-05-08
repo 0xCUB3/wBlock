@@ -6294,11 +6294,59 @@ const shouldUseNativeGMXmlhttpRequest = headers => !!headers && typeof headers =
   return FORBIDDEN_GM_XHR_HEADER_NAMES.has(normalized) || normalized.startsWith('proxy-') || normalized.startsWith('sec-');
 });
 const formatGMResponseHeaders = headers => !headers || typeof headers !== 'object' ? '' : Object.entries(headers).map(([key, value]) => `${key}: ${value}`).join('\r\n');
+const normalizeGMResponseType = responseType => String(responseType || 'text').trim().toLowerCase();
+const isBinaryGMResponseType = responseType => ['arraybuffer', 'blob'].includes(normalizeGMResponseType(responseType));
+const isTextLikeMimeType = mimeType => {
+  const normalized = String(mimeType || '').toLowerCase();
+  return normalized.startsWith('text/') || normalized.includes('json') || normalized.includes('javascript') || normalized.includes('xml') || normalized === 'image/svg+xml';
+};
+const bytesToBase64 = bytes => {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+};
 const parseGMResponseBody = (responseText, responseType) => {
-  if (String(responseType || 'text').toLowerCase() === 'json') {
+  if (normalizeGMResponseType(responseType) === 'json') {
     try { return JSON.parse(responseText || 'null'); } catch (_) { return null; }
   }
   return responseText;
+};
+const buildGMResponsePayload = async (fetchResponse, responseType) => {
+  const headers = {};
+  fetchResponse.headers.forEach((value, key) => { headers[key] = value; });
+  const normalizedResponseType = normalizeGMResponseType(responseType);
+  const contentType = fetchResponse.headers.get('content-type') || '';
+
+  if (isBinaryGMResponseType(normalizedResponseType)) {
+    const arrayBuffer = await fetchResponse.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const responseText = isTextLikeMimeType(contentType) ? new TextDecoder().decode(bytes) : '';
+    return {
+      status: fetchResponse.status,
+      statusText: fetchResponse.statusText,
+      responseHeaders: formatGMResponseHeaders(headers),
+      responseText,
+      response: null,
+      responseBase64: bytesToBase64(bytes),
+      responseMimeType: contentType,
+      responseType: normalizedResponseType,
+      finalUrl: fetchResponse.url
+    };
+  }
+
+  const responseText = await fetchResponse.text();
+  return {
+    status: fetchResponse.status,
+    statusText: fetchResponse.statusText,
+    responseHeaders: formatGMResponseHeaders(headers),
+    responseText,
+    response: parseGMResponseBody(responseText, normalizedResponseType),
+    responseType: normalizedResponseType,
+    finalUrl: fetchResponse.url
+  };
 };
 
 const normalizeMenuCommands = commands => Array.isArray(commands) ? commands.filter(command => command && typeof command === 'object').map(command => ({
@@ -6355,17 +6403,7 @@ async function handleGMXmlhttpRequest(message) {
     if (message.body && !['GET', 'HEAD'].includes(method.toUpperCase())) options.body = message.body;
     let fetchResponse;
     try { fetchResponse = await fetch(message.url, options); } finally { if (timeoutId) clearTimeout(timeoutId); }
-    const headers = {};
-    fetchResponse.headers.forEach((value, key) => { headers[key] = value; });
-    const responseText = await fetchResponse.text();
-    return {
-      status: fetchResponse.status,
-      statusText: fetchResponse.statusText,
-      responseHeaders: formatGMResponseHeaders(headers),
-      responseText,
-      response: parseGMResponseBody(responseText, message.responseType),
-      finalUrl: fetchResponse.url
-    };
+    return await buildGMResponsePayload(fetchResponse, message.responseType);
   } catch (error) {
     return { error: error && error.message ? error.message : String(error) };
   }

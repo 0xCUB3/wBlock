@@ -1778,12 +1778,35 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
             };
 
+            const decodeBase64ToBytes = (base64) => {
+                const binary = atob(base64 || '');
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes;
+            };
+
+            const normalizeGMResponseObject = (result) => {
+                const requestedType = String(result.responseType || details.responseType || 'text').toLowerCase();
+                if (typeof result.responseBase64 === 'string') {
+                    const bytes = decodeBase64ToBytes(result.responseBase64);
+                    if (requestedType === 'arraybuffer') {
+                        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+                    }
+                    if (requestedType === 'blob') {
+                        return new Blob([bytes], { type: result.responseMimeType || '' });
+                    }
+                }
+                return result.response;
+            };
+
             const makeResponse = (result) => ({
                 status: result.status,
                 statusText: result.statusText,
                 responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
                 responseText: result.responseText,
-                response: result.response,
+                response: normalizeGMResponseObject(result),
                 readyState: 4,
                 finalUrl: result.finalUrl || details.url,
                 responseURL: result.finalUrl || details.url
@@ -1978,26 +2001,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
     GM.xmlhttpRequest = __wBlockGMRequestPromise;
     GM.xmlHttpRequest = __wBlockGMRequestPromise;
 
-    const GM_info = GM.info;
-    const GM_getValue = __wBlockLegacyGM.getValue;
-    const GM_setValue = __wBlockLegacyGM.setValue;
-    const GM_deleteValue = __wBlockLegacyGM.deleteValue;
-    const GM_listValues = __wBlockLegacyGM.listValues;
-    const GM_getResourceURL = __wBlockLegacyGM.getResourceURL;
-    const GM_getResourceUrl = __wBlockLegacyGM.getResourceUrl;
-    const GM_getResourceText = __wBlockLegacyGM.getResourceText;
-    const GM_addElement = GM.addElement;
-    const GM_addValueChangeListener = GM.addValueChangeListener;
-    const GM_removeValueChangeListener = GM.removeValueChangeListener;
-    const GM_addStyle = GM.addStyle;
-    const GM_setClipboard = GM.setClipboard;
-    const GM_openInTab = GM.openInTab;
-    const GM_notification = GM.notification;
-    const GM_download = GM.download;
-    const GM_xmlhttpRequest = __wBlockLegacyGM.xmlhttpRequest;
-    const GM_xmlHttpRequest = __wBlockLegacyGM.xmlhttpRequest;
-    const GM_registerMenuCommand = GM.registerMenuCommand;
-    const GM_unregisterMenuCommand = GM.unregisterMenuCommand;
+    var GM_info = GM.info;
+    var GM_getValue = __wBlockLegacyGM.getValue;
+    var GM_setValue = __wBlockLegacyGM.setValue;
+    var GM_deleteValue = __wBlockLegacyGM.deleteValue;
+    var GM_listValues = __wBlockLegacyGM.listValues;
+    var GM_getResourceURL = __wBlockLegacyGM.getResourceURL;
+    var GM_getResourceUrl = __wBlockLegacyGM.getResourceUrl;
+    var GM_getResourceText = __wBlockLegacyGM.getResourceText;
+    var GM_addElement = GM.addElement;
+    var GM_addValueChangeListener = GM.addValueChangeListener;
+    var GM_removeValueChangeListener = GM.removeValueChangeListener;
+    var GM_addStyle = GM.addStyle;
+    var GM_setClipboard = GM.setClipboard;
+    var GM_openInTab = GM.openInTab;
+    var GM_notification = GM.notification;
+    var GM_download = GM.download;
+    var GM_xmlhttpRequest = __wBlockLegacyGM.xmlhttpRequest;
+    var GM_xmlHttpRequest = __wBlockLegacyGM.xmlhttpRequest;
+    var GM_registerMenuCommand = GM.registerMenuCommand;
+    var GM_unregisterMenuCommand = GM.unregisterMenuCommand;
 
     ${exposeGMGlobals ? `
     ${exposeGMGlobalsPrefix}

@@ -670,19 +670,55 @@ public enum WebExtensionRequestHandler {
                     return "\(key): \(String(describing: entry.value))"
                 }
                 .joined(separator: "\r\n")
-            let responseText = decodeNativeGMXmlhttpResponseText(data)
+            let responseText = shouldDecodeNativeGMXmlhttpResponseText(data: data, mimeType: httpResponse.mimeType, responseType: responseType)
+                ? decodeNativeGMXmlhttpResponseText(data)
+                : ""
 
-            return [
+            var payload: [String: Any?] = [
                 "status": httpResponse.statusCode,
                 "statusText": HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode),
                 "responseHeaders": responseHeaders,
                 "responseText": responseText,
                 "response": nativeGMXmlhttpResponseObject(data: data, responseText: responseText, responseType: responseType),
+                "responseType": responseType,
                 "finalUrl": httpResponse.url?.absoluteString ?? url.absoluteString
             ]
+
+            if nativeGMXmlhttpResponseTypeIsBinary(responseType) {
+                payload["response"] = nil
+                payload["responseBase64"] = data.base64EncodedString()
+                payload["responseMimeType"] = httpResponse.value(forHTTPHeaderField: "Content-Type") ?? httpResponse.mimeType ?? ""
+            }
+
+            return payload
         } catch {
             return ["error": error.localizedDescription]
         }
+    }
+
+    private static func nativeGMXmlhttpResponseTypeIsBinary(_ responseType: String) -> Bool {
+        let normalized = responseType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized == "arraybuffer" || normalized == "blob"
+    }
+
+    private static func nativeGMXmlhttpMimeTypeIsTextLike(_ mimeType: String?) -> Bool {
+        let normalized = (mimeType ?? "").lowercased()
+        return normalized.hasPrefix("text/")
+            || normalized.contains("json")
+            || normalized.contains("javascript")
+            || normalized.contains("xml")
+            || normalized == "image/svg+xml"
+    }
+
+    private static func shouldDecodeNativeGMXmlhttpResponseText(
+        data: Data,
+        mimeType: String?,
+        responseType: String
+    ) -> Bool {
+        if !nativeGMXmlhttpResponseTypeIsBinary(responseType) {
+            return true
+        }
+        return nativeGMXmlhttpMimeTypeIsTextLike(mimeType) && !data.isEmpty
     }
 
     private static func nativeGMXmlhttpResponseObject(
