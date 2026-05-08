@@ -3,6 +3,38 @@ import os.log
 import Darwin
 import wBlockCoreService
 
+private struct WeakZapperRuleManagerBox: @unchecked Sendable {
+    weak var value: ZapperRuleManager?
+}
+
+private func makeZapperRulesMonitorEventHandler(
+    managerBox: WeakZapperRuleManagerBox
+) -> @Sendable () -> Void {
+    {
+        Task { @MainActor in
+            guard let manager = managerBox.value else { return }
+            manager.pendingRefreshTask?.cancel()
+            var task: Task<Void, Never>?
+            task = Task { @MainActor [weak manager] in
+                defer {
+                    if let manager, let task, manager.pendingRefreshTask == task {
+                        manager.pendingRefreshTask = nil
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                await manager?.refreshFromDisk()
+            }
+            manager.pendingRefreshTask = task
+        }
+    }
+}
+
+private func makeZapperRulesMonitorCancelHandler(descriptor: CInt) -> @Sendable () -> Void {
+    {
+        close(descriptor)
+    }
+}
+
 /// ZapperRuleManager is the unified data layer for element zapper rules stored in protobuf.
 ///
 /// It enumerates all hostnames that have saved rules, reads rules per hostname, and deletes
@@ -32,7 +64,7 @@ final class ZapperRuleManager: ObservableObject {
     private let monitorQueue = DispatchQueue(label: "skula.wBlock.zapper-rules-monitor", qos: .utility)
     private var dataDirectoryMonitor: DispatchSourceFileSystemObject?
     private var dataDirectoryFileDescriptor: CInt = -1
-    private var pendingRefreshTask: Task<Void, Never>?
+    fileprivate var pendingRefreshTask: Task<Void, Never>?
 
     private init() {
         Task { @MainActor in
@@ -98,7 +130,7 @@ final class ZapperRuleManager: ObservableObject {
         }
     }
 
-    private func refreshFromDisk() async {
+    fileprivate func refreshFromDisk() async {
         await ProtobufDataManager.shared.waitUntilLoaded()
         _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
         publishStateFromDataManager()
@@ -116,6 +148,7 @@ final class ZapperRuleManager: ObservableObject {
     private func setupDataDirectoryMonitor() {
         dataDirectoryMonitor?.cancel()
         dataDirectoryMonitor = nil
+        dataDirectoryFileDescriptor = -1
         pendingRefreshTask?.cancel()
         pendingRefreshTask = nil
 
@@ -137,29 +170,11 @@ final class ZapperRuleManager: ObservableObject {
             queue: monitorQueue
         )
 
-        source.setEventHandler { [weak self] in
-            guard let self else { return }
-            self.pendingRefreshTask?.cancel()
-            var task: Task<Void, Never>?
-            task = Task { @MainActor [weak self] in
-                defer {
-                    if let self, let task, self.pendingRefreshTask == task {
-                        self.pendingRefreshTask = nil
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                await self?.refreshFromDisk()
-            }
-            self.pendingRefreshTask = task
-        }
+        source.setEventHandler(handler: makeZapperRulesMonitorEventHandler(
+            managerBox: WeakZapperRuleManagerBox(value: self)
+        ))
 
-        source.setCancelHandler { [weak self] in
-            guard let self else { return }
-            if self.dataDirectoryFileDescriptor >= 0 {
-                close(self.dataDirectoryFileDescriptor)
-                self.dataDirectoryFileDescriptor = -1
-            }
-        }
+        source.setCancelHandler(handler: makeZapperRulesMonitorCancelHandler(descriptor: descriptor))
 
         dataDirectoryMonitor = source
         source.resume()
@@ -169,9 +184,6 @@ final class ZapperRuleManager: ObservableObject {
         pendingRefreshTask?.cancel()
         dataDirectoryMonitor?.cancel()
         dataDirectoryMonitor = nil
-        if dataDirectoryFileDescriptor >= 0 {
-            close(dataDirectoryFileDescriptor)
-            dataDirectoryFileDescriptor = -1
-        }
+        dataDirectoryFileDescriptor = -1
     }
 }
