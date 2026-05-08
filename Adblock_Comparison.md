@@ -119,7 +119,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 | visionOS support | ✅ extension pieces | ✅ | ✅ | ❌ |
 | RAM usage measured locally | ~40 MB<sup>6</sup> | ~120 MB<sup>6</sup> | ~50 MB<sup>6</sup> | ~100 MB<sup>6</sup> |
 | Static rule capacity | 750,000<sup>7</sup> | DNR-based, browser-dependent<sup>7</sup> | 4 blocklist extensions, capacity not published<sup>7</sup> | 900,000<sup>7</sup> |
-| GitHub stars | ~2.5k | ~3.3k for uBOL | N/A | ~1.2k |
+| GitHub stars | ~2.5k | ~3.3k | N/A | ~1.2k |
 | Open source | ✅ | ✅ | ❌ | ✅ |
 | License | GPL-3.0 | GPL-3.0 | Proprietary | Other / AdGuard source license |
 | Main implementation | Swift + JS | JavaScript | Swift | Swift + web UI |
