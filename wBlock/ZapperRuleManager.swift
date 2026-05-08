@@ -132,17 +132,25 @@ final class ZapperRuleManager: ObservableObject {
 
     fileprivate func refreshFromDisk() async {
         await ProtobufDataManager.shared.waitUntilLoaded()
-        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
         publishStateFromDataManager()
     }
 
     private func publishStateFromDataManager() {
         let discovered = ProtobufDataManager.shared.getZapperDomains()
+        let previousDomains = domains
+        let previousRules = rulesForSelectedDomain
+
         domains = discovered
         if let selectedDomain {
             rulesForSelectedDomain = rules(for: selectedDomain)
         }
-        logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
+
+        if discovered != previousDomains || rulesForSelectedDomain != previousRules {
+            logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
+        } else {
+            logger.debug("ZapperRuleManager: Refresh skipped — no zapper rule changes")
+        }
     }
 
     private func setupDataDirectoryMonitor() {

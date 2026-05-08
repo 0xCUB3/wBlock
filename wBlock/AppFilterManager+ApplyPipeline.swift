@@ -512,6 +512,11 @@ extension AppFilterManager {
             "slowestTarget": reloadSummary.metrics.max(by: { $0.durationMs < $1.durationMs })
                 .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
             "failedNames": failedReloads.prefix(3).map(\.blockerName).joined(separator: ","),
+            "failedDetails": failedReloads.prefix(3).map { metric in
+                let state = metric.stateDescription ?? "unknown"
+                let error = metric.lastErrorDescription ?? "none"
+                return "\(metric.blockerName)[state=\(state),error=\(error)]"
+            }.joined(separator: " | "),
         ]
 
         if allReloadsSuccessful {
@@ -802,6 +807,8 @@ extension AppFilterManager {
         let success: Bool
         let attempts: Int
         let durationMs: Int
+        let stateDescription: String?
+        let lastErrorDescription: String?
     }
 
     struct ReloadPhaseSummary {
@@ -957,7 +964,9 @@ extension AppFilterManager {
                     blockerName: name,
                     success: reloadResult.success,
                     attempts: reloadResult.attempts,
-                    durationMs: reloadResult.durationMs
+                    durationMs: reloadResult.durationMs,
+                    stateDescription: reloadResult.stateDescription,
+                    lastErrorDescription: reloadResult.lastErrorDescription
                 )
             )
             allSuccessful = allSuccessful && reloadResult.success

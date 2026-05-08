@@ -101,6 +101,20 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         public let success: Bool
         public let attempts: Int
         public let durationMs: Int
+        public let stateDescription: String?
+        public let lastErrorDescription: String?
+    }
+
+    public struct ContentBlockerStateSnapshot: Sendable {
+        public let isEnabled: Bool?
+        public let errorDescription: String?
+
+        public var summary: String {
+            if let isEnabled {
+                return isEnabled ? "enabled" : "disabled"
+            }
+            return errorDescription ?? "unknown"
+        }
     }
 
 
@@ -110,10 +124,32 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     ///   - identifier: Bundle ID of the content blocker extension to reload.
     /// - Returns: A Result indicating success or containing an error if the reload failed.
     @MainActor
+    public static func contentBlockerStateSnapshot(
+        withIdentifier identifier: String
+    ) async -> ContentBlockerStateSnapshot {
+        await withCheckedContinuation { continuation in
+            SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: identifier) { state, error in
+                if let error {
+                    continuation.resume(returning: ContentBlockerStateSnapshot(
+                        isEnabled: nil,
+                        errorDescription: describeSafariServicesError(error)
+                    ))
+                    return
+                }
+
+                continuation.resume(returning: ContentBlockerStateSnapshot(
+                    isEnabled: state?.isEnabled,
+                    errorDescription: state == nil ? "Safari returned no state" : nil
+                ))
+            }
+        }
+    }
+
+    @MainActor
     public static func reloadContentBlocker(
         withIdentifier identifier: String
     ) async -> Result<Void, Error> {
-        os_log(.info, "Start reloading the content blocker")
+        os_log(.info, "Start reloading content blocker: %@", identifier)
 
         let error: Error? = await withCheckedContinuation { continuation in
             SFContentBlockerManager.reloadContentBlocker(withIdentifier: identifier) { error in
@@ -132,7 +168,8 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             let nsError = error as NSError
             os_log(
                 .error,
-                "Failed to reload content blocker: domain=%@ code=%d description=%@ userInfo=%@",
+                "Failed to reload content blocker %@: domain=%@ code=%d description=%@ userInfo=%@",
+                identifier,
                 nsError.domain,
                 nsError.code,
                 error.localizedDescription,
@@ -149,23 +186,49 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
     ) async -> ReloadAttemptResult {
         let startTime = Date()
         let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
+        let initialState = await contentBlockerStateSnapshot(withIdentifier: identifier)
+
+        if initialState.isEnabled == false || initialState.isEnabled == nil {
+            os_log(
+                .info,
+                "Skipping reload for content blocker %@ because Safari reports state: %@",
+                identifier,
+                initialState.summary
+            )
+            return ReloadAttemptResult(
+                success: false,
+                attempts: 0,
+                durationMs: elapsedMs(),
+                stateDescription: initialState.summary,
+                lastErrorDescription: initialState.errorDescription
+            )
+        }
+
+        var lastErrorDescription: String?
 
         for attempt in 1...maxRetries {
             if Task.isCancelled {
                 return ReloadAttemptResult(
                     success: false,
                     attempts: max(0, attempt - 1),
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    stateDescription: initialState.summary,
+                    lastErrorDescription: lastErrorDescription
                 )
             }
 
             let result = await reloadContentBlocker(withIdentifier: identifier)
-            if case .success = result {
+            switch result {
+            case .success:
                 return ReloadAttemptResult(
                     success: true,
                     attempts: attempt,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    stateDescription: initialState.summary,
+                    lastErrorDescription: nil
                 )
+            case .failure(let error):
+                lastErrorDescription = describeSafariServicesError(error)
             }
 
             guard attempt < maxRetries else {
@@ -179,16 +242,26 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
                 return ReloadAttemptResult(
                     success: false,
                     attempts: attempt,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    stateDescription: initialState.summary,
+                    lastErrorDescription: lastErrorDescription
                 )
             }
         }
 
+        let finalState = await contentBlockerStateSnapshot(withIdentifier: identifier)
         return ReloadAttemptResult(
             success: false,
             attempts: maxRetries,
-            durationMs: elapsedMs()
+            durationMs: elapsedMs(),
+            stateDescription: finalState.summary,
+            lastErrorDescription: lastErrorDescription
         )
+    }
+
+    private static func describeSafariServicesError(_ error: Error) -> String {
+        let nsError = error as NSError
+        return "domain=\(nsError.domain) code=\(nsError.code) description=\(error.localizedDescription)"
     }
 
     /// Saves the provided JSON content to the content blocker file in the shared container
@@ -846,15 +919,42 @@ extension ContentBlockerService {
         url.withUnsafeFileSystemRepresentation { path in
             guard let path else { return }
             for attribute in attributesToRemove {
+                errno = 0
+                let existingSize = getxattr(path, attribute, nil, 0, 0, 0)
+                if existingSize == -1 {
+                    if errno != ENOATTR {
+                        let message = String(cString: strerror(errno))
+                        os_log(
+                            .debug,
+                            "Could not inspect extended attribute %@ on %@: %@",
+                            attribute,
+                            url.path,
+                            message
+                        )
+                    }
+                    continue
+                }
+
+                errno = 0
                 if removexattr(path, attribute, 0) != 0, errno != ENOATTR {
                     let message = String(cString: strerror(errno))
-                    os_log(
-                        .error,
-                        "Failed to remove extended attribute %@ from %@: %@",
-                        attribute,
-                        url.path,
-                        message
-                    )
+                    if errno == EPERM || errno == EACCES {
+                        os_log(
+                            .debug,
+                            "Could not remove extended attribute %@ from %@: %@",
+                            attribute,
+                            url.path,
+                            message
+                        )
+                    } else {
+                        os_log(
+                            .error,
+                            "Failed to remove extended attribute %@ from %@: %@",
+                            attribute,
+                            url.path,
+                            message
+                        )
+                    }
                 }
             }
         }
