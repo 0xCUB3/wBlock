@@ -382,10 +382,7 @@ class AppFilterManager: ObservableObject {
         pendingDisabledSitesCheckTask?.cancel()
         disabledSitesDirectoryMonitor?.cancel()
         disabledSitesDirectoryMonitor = nil
-        if disabledSitesDirectoryFileDescriptor >= 0 {
-            close(disabledSitesDirectoryFileDescriptor)
-            disabledSitesDirectoryFileDescriptor = -1
-        }
+        disabledSitesDirectoryFileDescriptor = -1
     }
 
     private func migrateLegacyDefaultFiltersToUBlockCatalogIfNeeded(

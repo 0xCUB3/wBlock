@@ -1,6 +1,39 @@
 import Foundation
 import wBlockCoreService
 
+private struct WeakAppFilterManagerBox: @unchecked Sendable {
+    weak var value: AppFilterManager?
+}
+
+private func makeDisabledSitesMonitorEventHandler(
+    managerBox: WeakAppFilterManagerBox
+) -> @Sendable () -> Void {
+    {
+        Task { @MainActor in
+            guard let manager = managerBox.value else { return }
+            manager.pendingDisabledSitesCheckTask?.cancel()
+            var task: Task<Void, Never>?
+            task = Task { @MainActor [weak manager] in
+                defer {
+                    if let manager, let task, manager.pendingDisabledSitesCheckTask == task {
+                        manager.pendingDisabledSitesCheckTask = nil
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                guard let manager else { return }
+                await manager.checkForDisabledSitesChanges()
+            }
+            manager.pendingDisabledSitesCheckTask = task
+        }
+    }
+}
+
+private func makeDisabledSitesMonitorCancelHandler(descriptor: CInt) -> @Sendable () -> Void {
+    {
+        close(descriptor)
+    }
+}
+
 extension AppFilterManager {
     /// Sets up an observer to automatically rebuild content blockers when disabled sites change
     func setupDisabledSitesObserver() {
@@ -9,6 +42,7 @@ extension AppFilterManager {
 
         disabledSitesDirectoryMonitor?.cancel()
         disabledSitesDirectoryMonitor = nil
+        disabledSitesDirectoryFileDescriptor = -1
         pendingDisabledSitesCheckTask?.cancel()
         pendingDisabledSitesCheckTask = nil
 
@@ -43,30 +77,11 @@ extension AppFilterManager {
             queue: disabledSitesMonitorQueue
         )
 
-        source.setEventHandler { [weak self] in
-            guard let self else { return }
-            self.pendingDisabledSitesCheckTask?.cancel()
-            var task: Task<Void, Never>?
-            task = Task { @MainActor [weak self] in
-                defer {
-                    if let self, let task, self.pendingDisabledSitesCheckTask == task {
-                        self.pendingDisabledSitesCheckTask = nil
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                guard let self else { return }
-                await self.checkForDisabledSitesChanges()
-            }
-            self.pendingDisabledSitesCheckTask = task
-        }
+        source.setEventHandler(handler: makeDisabledSitesMonitorEventHandler(
+            managerBox: WeakAppFilterManagerBox(value: self)
+        ))
 
-        source.setCancelHandler { [weak self] in
-            guard let self else { return }
-            if self.disabledSitesDirectoryFileDescriptor >= 0 {
-                close(self.disabledSitesDirectoryFileDescriptor)
-                self.disabledSitesDirectoryFileDescriptor = -1
-            }
-        }
+        source.setCancelHandler(handler: makeDisabledSitesMonitorCancelHandler(descriptor: descriptor))
 
         disabledSitesDirectoryMonitor = source
         source.resume()
