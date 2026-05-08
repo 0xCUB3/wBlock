@@ -8,7 +8,6 @@
 import CryptoKit
 import Foundation
 import SafariServices
-internal import ZIPFoundation
 #if canImport(Darwin)
 import Darwin
 #endif
@@ -96,44 +95,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
         } catch {
             return "Failed to read the filter file: \(error)"
         }
-    }
-
-    /// Converts filter rules and exports them as a ZIP archive.
-    ///
-    /// - Parameters:
-    ///   - rules: Filter rules to be converted.
-    /// - Returns: Data object containing a ZIP archive with Safari content blocker JSON and advanced rules,
-    ///           or nil if the archive creation fails.
-    public static func exportConversionResult(rules: String) -> Data? {
-        let result: ConversionResult
-        do {
-            result = try convertRules(rules: rules)
-        } catch {
-            os_log(.error, "Native filter conversion export failed: %@", error.localizedDescription)
-            return nil
-        }
-
-        // We'll use a variable so we can modify the JSON string
-        var safariRulesJSON = result.safariRulesJSON
-        let advancedRulesText = result.advancedRulesText
-
-        // Attempt to pretty-print the JSON
-        if let data = safariRulesJSON.data(using: .utf8),
-            let jsonObject = try? JSONSerialization.jsonObject(with: data),
-            let prettyData = try? JSONSerialization.data(
-                withJSONObject: jsonObject,
-                options: [.prettyPrinted]
-            ),
-            let prettyString = String(data: prettyData, encoding: .utf8)
-        {
-            safariRulesJSON = prettyString
-        }
-
-        // Pass the newly formatted JSON string to the ZIP creation
-        return createZipArchive(
-            safariRulesJSON: safariRulesJSON,
-            advancedRulesText: advancedRulesText
-        )
     }
 
     public struct ReloadAttemptResult: Sendable {
@@ -900,65 +861,5 @@ extension ContentBlockerService {
         #endif
     }
 
-    /// Creates a ZIP archive containing Safari content blocker rules and advanced rules.
-    ///
-    /// The archive will always include "content-blocker.json" and optionally "advanced-rules.txt"
-    /// if advanced rules are provided.
-    ///
-    /// - Parameters:
-    ///   - safariRulesJSON: JSON string containing Safari content blocker rules.
-    ///   - advancedRulesText: Optional text string containing advanced blocking rules.
-    /// - Returns: Data object representing the ZIP archive, or nil if archive creation fails.
-    private static func createZipArchive(
-        safariRulesJSON: String,
-        advancedRulesText: String?
-    ) -> Data? {
-        // 1. Prepare data from strings
-        guard let contentBlockerData = safariRulesJSON.data(using: .utf8) else {
-            return nil
-        }
-        let advancedData = advancedRulesText?.data(using: .utf8)
 
-        do {
-            // 3. Create the Archive object with ZipFoundation
-            let archive = try Archive(accessMode: .create)
-
-            // 4. Add content-blocker.json entry
-            try archive.addEntry(
-                with: "content-blocker.json",
-                type: .file,
-                uncompressedSize: Int64(contentBlockerData.count),
-                bufferSize: 4
-            ) { position, size -> Data in
-                // This will be called until `data` is exhausted (3x in this case).
-                return contentBlockerData.subdata(
-                    in: Data.Index(position)..<Int(position) + size
-                )
-            }
-
-            // 5. Add advanced-rules.txt if present
-            if let advancedData = advancedData {
-                try archive.addEntry(
-                    with: "advanced-rules.txt",
-                    type: .file,
-                    uncompressedSize: Int64(advancedData.count),
-                    bufferSize: 4
-                ) { position, size -> Data in
-                    // This will be called until `data` is exhausted (3x in this case).
-                    return advancedData.subdata(in: Data.Index(position)..<Int(position) + size)
-                }
-            }
-
-            // 6. Zip creation complete
-            return archive.data
-        } catch {
-            os_log(
-                .error,
-                "Error while creating a ZIP archive with rules: %@",
-                error.localizedDescription
-            )
-
-            return nil
-        }
-    }
 }

@@ -7,12 +7,12 @@
 
 import Foundation
 
-public enum Platform {
+public enum Platform: Sendable {
     case macOS
     case iOS
 }
 
-public struct ContentBlockerTargetInfo: Hashable {
+public struct ContentBlockerTargetInfo: Hashable, Sendable {
     /// Stable slot index shown to users (e.g. "wBlock 1").
     public let slot: Int
     public let platform: Platform
@@ -38,7 +38,7 @@ public struct ContentBlockerTargetInfo: Hashable {
     }
 }
 
-public class ContentBlockerTargetManager {
+public final class ContentBlockerTargetManager: Sendable {
     public static let shared = ContentBlockerTargetManager()
 
     public let targets: [ContentBlockerTargetInfo]

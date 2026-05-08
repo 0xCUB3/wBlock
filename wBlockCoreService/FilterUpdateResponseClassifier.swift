@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum FilterUpdateResponseStatus: Equatable {
+@frozen public enum FilterUpdateResponseStatus: Equatable {
     case notModified
     case updatedContent
     case unchangedContent

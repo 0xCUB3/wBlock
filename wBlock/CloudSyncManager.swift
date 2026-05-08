@@ -1074,7 +1074,6 @@ final class CloudSyncManager: ObservableObject {
 
         let localRemoteScriptURLs = currentLocalRemoteUserScriptURLs()
         let remoteRemoteScripts = remotePayload.userScripts.remote
-        let remoteRemoteScriptURLs = Set(remoteRemoteScripts.map(\.url))
         let remoteDeletedRemoteURLs = Set(remotePayload.userScripts.deletedRemoteURLs ?? [])
 
         let deletedRemoteURLsToClear =

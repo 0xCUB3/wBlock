@@ -20,6 +20,7 @@
 
 import Foundation
 import CryptoKit
+import Darwin
 import os.log
 import SafariServices
 #if canImport(UIKit)
@@ -33,7 +34,7 @@ public actor SharedAutoUpdateManager {
 
     // MARK: - Cached Status for Performance
     /// Public struct to hold auto-update status with named properties for clarity and safety.
-    public struct AutoUpdateStatus {
+    public struct AutoUpdateStatus: Sendable {
         public let scheduledAt: Date?
         public let remaining: TimeInterval?
         public let intervalHours: Double
@@ -135,6 +136,13 @@ public actor SharedAutoUpdateManager {
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
 
     private let sharedAutoUpdateLogFilename = "auto_update.log"
+    private let pendingRebuildMarkerFilename = "auto_update_pending_rebuild"
+    private let runLockFilename = "auto_update.lock"
+    private let runLockStalenessThreshold: TimeInterval = 30 * 60
+    private let maxSharedAutoUpdateLogBytes: UInt64 = 512 * 1024
+    private let retainedSharedAutoUpdateLogBytes: Int = 256 * 1024
+    private let maxConcurrentFilterFetches = 4
+    private var activeRunLockFileDescriptor: Int32?
 
     // Staleness threshold: if running flag is set for longer than this, it's considered stuck
     private let runningFlagStalenessThreshold: TimeInterval = 180 // 3 minutes (reduced from 10)
@@ -224,7 +232,6 @@ public actor SharedAutoUpdateManager {
     }
 
     private enum AutoUpdateBudgetPhase {
-        static let existingOutputReload = "existing_output_reload"
         static let networkFetch = "network_fetch"
         static let fullRebuild = "full_rebuild"
         static let conversionTarget = "conversion_target"
@@ -308,6 +315,102 @@ public actor SharedAutoUpdateManager {
         appendSharedLog(clearedMessage)
         if !didPersist {
             appendSharedLog(persistFailureMessage)
+        }
+    }
+
+    private func sharedContainerURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
+    }
+
+    private func pendingRebuildMarkerURL() -> URL? {
+        sharedContainerURL()?.appendingPathComponent(pendingRebuildMarkerFilename)
+    }
+
+    private func pendingRebuildMarkerExists() -> Bool {
+        guard let url = pendingRebuildMarkerURL() else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    private func setPendingRebuildMarker(_ reason: String) {
+        guard let url = pendingRebuildMarkerURL() else { return }
+        let line = "\(ISO8601DateFormatter().string(from: Date())) \(reason)\n"
+        if let data = line.data(using: .utf8) {
+            try? data.write(to: url, options: .atomic)
+        }
+    }
+
+    private func clearPendingRebuildMarker() {
+        guard let url = pendingRebuildMarkerURL() else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    private func cleanupStagingDirectory(_ directory: URL?) {
+        guard let directory else { return }
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    private func commitStagedFilterUpdates(_ updates: [StagedFilterUpdate]) throws {
+        for update in updates {
+            let parent = update.liveURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+
+            if FileManager.default.fileExists(atPath: update.liveURL.path) {
+                _ = try FileManager.default.replaceItemAt(
+                    update.liveURL,
+                    withItemAt: update.stagedURL,
+                    backupItemName: nil,
+                    options: []
+                )
+            } else {
+                try FileManager.default.moveItem(at: update.stagedURL, to: update.liveURL)
+            }
+        }
+    }
+
+    private func acquireRunLock() -> Bool {
+        guard let base = sharedContainerURL() else { return true }
+        let lockURL = base.appendingPathComponent(runLockFilename)
+        let path = lockURL.path
+
+        func tryOpen() -> Int32 {
+            open(path, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR)
+        }
+
+        var fd = tryOpen()
+        if fd == -1 && errno == EEXIST {
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+               let modified = attrs[.modificationDate] as? Date,
+               Date().timeIntervalSince(modified) > runLockStalenessThreshold {
+                try? FileManager.default.removeItem(at: lockURL)
+                fd = tryOpen()
+            }
+        }
+
+        guard fd != -1 else { return false }
+        activeRunLockFileDescriptor = fd
+        let payload = "pid=\(getpid()) started=\(ISO8601DateFormatter().string(from: Date()))\n"
+        if let data = payload.data(using: .utf8) {
+            data.withUnsafeBytes { buffer in
+                _ = write(fd, buffer.baseAddress, buffer.count)
+            }
+        }
+        return true
+    }
+
+    private func refreshRunLockTimestamp() {
+        guard let base = sharedContainerURL() else { return }
+        try? FileManager.default.setAttributes(
+            [.modificationDate: Date()],
+            ofItemAtPath: base.appendingPathComponent(runLockFilename).path
+        )
+    }
+
+    private func releaseRunLock() {
+        guard let fd = activeRunLockFileDescriptor else { return }
+        close(fd)
+        activeRunLockFileDescriptor = nil
+        if let base = sharedContainerURL() {
+            try? FileManager.default.removeItem(at: base.appendingPathComponent(runLockFilename))
         }
     }
 
@@ -658,16 +761,42 @@ public actor SharedAutoUpdateManager {
             }
         }
 
+        guard acquireRunLock() else {
+            os_log("Auto-update lock is held, skipping trigger: %{public}@", log: log, type: .info, trigger)
+            appendSkipTelemetry(trigger: trigger, reason: "already_running_lock")
+            return .skipped(reason: "already_running")
+        }
+
+        let isRunningAfterLock = await getAutoUpdateIsRunning()
+        if isRunningAfterLock {
+            releaseRunLock()
+            os_log("Auto-update already running after lock, skipping trigger: %{public}@", log: log, type: .info, trigger)
+            appendSkipTelemetry(trigger: trigger, reason: "already_running")
+            return .skipped(reason: "already_running")
+        }
+
         if forceFlag {
             await ProtobufDataManager.shared.setAutoUpdateForceNext(false)
         }
 
+        var activeStagingDirectory: URL?
         let startTimestamp = Date().timeIntervalSince1970
         await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
+        guard await ProtobufDataManager.shared.saveDataImmediately() else {
+            await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+            _ = await ProtobufDataManager.shared.saveDataImmediately()
+            releaseRunLock()
+            return .failed(
+                message: AutoUpdateError.statePersistenceFailed(
+                    context: AutoUpdateBudgetPhase.runStartSave
+                ).localizedDescription
+            )
+        }
         let heartbeatTask = Task.detached(priority: .utility) {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 60_000_000_000)
                 if Task.isCancelled { break }
+                await self.refreshRunLockTimestamp()
                 await ProtobufDataManager.shared.refreshAutoUpdateRunningTimestamp()
             }
         }
@@ -676,8 +805,11 @@ public actor SharedAutoUpdateManager {
 
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
             heartbeatTask.cancel()
+            cleanupStagingDirectory(activeStagingDirectory)
+            activeStagingDirectory = nil
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
             let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
+            releaseRunLock()
             invalidateStatusCache()
             let endTimestamp = Date().timeIntervalSince1970
             let duration = endTimestamp - startTimestamp
@@ -787,21 +919,32 @@ public actor SharedAutoUpdateManager {
             )
             try throwIfCancelled()
             let updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
+            activeStagingDirectory = updateResult.stagingDirectory
             try throwIfCancelled()
             let updatedFilterSet = updateResult.updatedFilters
             let hadErrors = updateResult.hadErrors
 
             guard !updatedFilterSet.isEmpty else {
                 var reloadStatus = "skipped"
-                if shouldForce || contentBlockerOutputsNeedRepair() {
+                let needsRepair = contentBlockerOutputsNeedRepair() || pendingRebuildMarkerExists()
+                if needsRepair {
+                    try requireFullRebuildAllowed(policy, phase: AutoUpdateBudgetPhase.fullRebuild)
                     try checkBudget(
                         policy,
-                        phase: AutoUpdateBudgetPhase.existingOutputReload,
-                        requiredTime: max(policy.minimumTimeForReloadRetry, policy.minimumTimeForAdvancedEngine)
+                        phase: AutoUpdateBudgetPhase.fullRebuild,
+                        requiredTime: policy.minimumTimeForConversionTarget
+                            + policy.minimumTimeForReloadRetry
+                            + policy.minimumTimeForAdvancedEngine
                     )
                     try throwIfCancelled()
-                    let reloaded = try await reloadExistingContentBlockers(policy: policy)
-                    reloadStatus = reloaded ? "ok" : "failed"
+                    _ = try await rebuildAndReload(selectedFilters: selectedFilters, policy: policy)
+                    clearPendingRebuildMarker()
+                    reloadStatus = "rebuilt"
+                    await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
+                }
+
+                if !updateResult.validatorUpdates.isEmpty {
+                    await ProtobufDataManager.shared.setFilterValidators(updateResult.validatorUpdates)
                 }
 
                 let completionTime = Date().timeIntervalSince1970
@@ -868,15 +1011,25 @@ public actor SharedAutoUpdateManager {
                 }
             }
 
-            try requireFinalSaveBudget()
-            await saveFilterListsToProtobuf(merged)
-            try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
+            setPendingRebuildMarker("filter updates fetched; rebuild pending")
             try throwIfCancelled()
+            let stagedSourceOverrides = Dictionary(
+                uniqueKeysWithValues: updateResult.stagedUpdates.map { ($0.filterID, $0.stagedURL) }
+            )
             let rebuildSummary = try await rebuildAndReload(
                 selectedFilters: merged.filter { $0.isSelected },
-                policy: policy
+                policy: policy,
+                stagedSourceOverrides: stagedSourceOverrides
             )
             try throwIfCancelled()
+            try requireFinalSaveBudget()
+            try commitStagedFilterUpdates(updateResult.stagedUpdates)
+            await saveFilterListsToProtobuf(merged)
+            if !updateResult.validatorUpdates.isEmpty {
+                await ProtobufDataManager.shared.setFilterValidators(updateResult.validatorUpdates)
+            }
+            try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
+            clearPendingRebuildMarker()
 
             try requireUserScriptsBudget()
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
@@ -1035,18 +1188,27 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Update Detection & Fetch
-    private struct UpdateFetchResult {
+    private struct StagedFilterUpdate: Sendable {
+        var filterID: UUID
+        var stagedURL: URL
+        var liveURL: URL
+    }
+
+    private struct UpdateFetchResult: Sendable {
         var updatedFilters: [FilterList]
+        var stagedUpdates: [StagedFilterUpdate]
+        var validatorUpdates: [String: (etag: String?, lastModified: String?)]
+        var stagingDirectory: URL?
         var hadErrors: Bool
         var errorCount: Int
         var checkedCount: Int
     }
 
-    private enum FilterFetchOutcome {
+    private enum FilterFetchOutcome: Sendable {
         case noChange
         case noChangeWithValidators(uuid: String, etag: String?, lastModified: String?)
-        case updated(filter: FilterList, validators: (etag: String?, lastModified: String?))
-        case error(filterName: String, error: Error)
+        case updated(filter: FilterList, stagedUpdate: StagedFilterUpdate, validators: (etag: String?, lastModified: String?))
+        case error(filterName: String, message: String)
     }
 
     private func checkAndFetchUpdates(filters: [FilterList]) async throws -> UpdateFetchResult {
@@ -1056,17 +1218,43 @@ public actor SharedAutoUpdateManager {
             throw AutoUpdateError.sharedContainerUnavailable
         }
 
+        let stagingDirectory = containerURL
+            .appendingPathComponent("auto_update_staging", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: stagingDirectory,
+            withIntermediateDirectories: true
+        )
+
         var updatedFilters: [FilterList] = []
+        var stagedUpdates: [StagedFilterUpdate] = []
         var hadErrors = false
         var errorCount = 0
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
+        var iterator = filters.makeIterator()
+        var inFlight = 0
 
         await withTaskGroup(of: FilterFetchOutcome.self) { group in
-            for filter in filters {
-                group.addTask { await self.fetchIfUpdated(filter, containerURL: containerURL) }
+            func enqueueNext() {
+                guard let filter = iterator.next() else { return }
+                inFlight += 1
+                group.addTask {
+                    await self.fetchIfUpdated(
+                        filter,
+                        containerURL: containerURL,
+                        stagingDirectory: stagingDirectory
+                    )
+                }
             }
 
-            for await outcome in group {
+            for _ in 0..<min(maxConcurrentFilterFetches, filters.count) {
+                enqueueNext()
+            }
+
+            while inFlight > 0 {
+                guard let outcome = await group.next() else { break }
+                inFlight -= 1
+
                 if Task.isCancelled {
                     group.cancelAll()
                     break
@@ -1077,12 +1265,13 @@ public actor SharedAutoUpdateManager {
                     break
                 case .noChangeWithValidators(let uuid, let etag, let lastModified):
                     validatorUpdates[uuid] = (etag: etag, lastModified: lastModified)
-                case .updated(let filter, let validators):
+                case .updated(let filter, let stagedUpdate, let validators):
                     updatedFilters.append(filter)
+                    stagedUpdates.append(stagedUpdate)
                     if validators.etag != nil || validators.lastModified != nil {
                         validatorUpdates[filter.id.uuidString] = validators
                     }
-                case .error(let filterName, let error):
+                case .error(let filterName, let message):
                     hadErrors = true
                     errorCount += 1
                     os_log(
@@ -1090,27 +1279,31 @@ public actor SharedAutoUpdateManager {
                         log: log,
                         type: .error,
                         filterName,
-                        error.localizedDescription
+                        message
                     )
                 }
+                enqueueNext()
             }
         }
 
         try Task.checkCancellation()
 
-        if !validatorUpdates.isEmpty {
-            await ProtobufDataManager.shared.setFilterValidators(validatorUpdates)
-        }
-
         return UpdateFetchResult(
             updatedFilters: updatedFilters,
+            stagedUpdates: stagedUpdates,
+            validatorUpdates: validatorUpdates,
+            stagingDirectory: stagingDirectory,
             hadErrors: hadErrors,
             errorCount: errorCount,
             checkedCount: filters.count
         )
     }
 
-    private func fetchIfUpdated(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
+    private func fetchIfUpdated(
+        _ filter: FilterList,
+        containerURL: URL,
+        stagingDirectory: URL
+    ) async -> FilterFetchOutcome {
         let uuid = filter.id.uuidString
         let etag = await getFilterEtag(uuid)
         let lastModified = await getFilterLastModified(uuid)
@@ -1120,7 +1313,7 @@ public actor SharedAutoUpdateManager {
         do {
             let (data, response) = try await urlSession.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                return .error(filterName: filter.name, error: URLError(.badServerResponse))
+                return .error(filterName: filter.name, message: URLError(.badServerResponse).localizedDescription)
             }
 
             let responseEtag = http.value(forHTTPHeaderField: "ETag")
@@ -1130,6 +1323,7 @@ public actor SharedAutoUpdateManager {
             let localURL = containerURL.appendingPathComponent(
                 ContentBlockerIncrementalCache.localFilename(for: filter)
             )
+            let stagedURL = stagingDirectory.appendingPathComponent(localURL.lastPathComponent)
             let localData = localDataForComparison(filter: filter, containerURL: containerURL)
             let responseStatus = FilterUpdateResponseClassifier.classify(
                 statusCode: http.statusCode,
@@ -1150,16 +1344,16 @@ public actor SharedAutoUpdateManager {
                     : .noChange
             case .invalidContent:
                 // Don't overwrite the on-disk list with HTML challenge pages or other garbage.
-                return .error(filterName: filter.name, error: URLError(.cannotParseResponse))
+                return .error(filterName: filter.name, message: URLError(.cannotParseResponse).localizedDescription)
             case .unexpectedStatus:
-                return .error(filterName: filter.name, error: URLError(.badServerResponse))
+                return .error(filterName: filter.name, message: URLError(.badServerResponse).localizedDescription)
             case .updatedContent:
                 break
             }
 
             // Decode raw data for preprocessing
             guard let rawContent = String(data: data, encoding: .utf8) else {
-                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
+                return .error(filterName: filter.name, message: URLError(.cannotDecodeContentData).localizedDescription)
             }
 
             // PREP-07: Strip unknown !# directives before preprocessing.
@@ -1190,13 +1384,13 @@ public actor SharedAutoUpdateManager {
             }
 
             guard let finalData = finalContent.data(using: .utf8) else {
-                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
+                return .error(filterName: filter.name, message: URLError(.cannotDecodeContentData).localizedDescription)
             }
 
             do {
-                try finalData.write(to: localURL, options: .atomic)
+                try finalData.write(to: stagedURL, options: .atomic)
             } catch {
-                return .error(filterName: filter.name, error: error)
+                return .error(filterName: filter.name, message: error.localizedDescription)
             }
 
             let meta = parseMetadata(from: String(finalContent.prefix(8192)))
@@ -1210,10 +1404,15 @@ public actor SharedAutoUpdateManager {
             updated.rawSourceRuleCount = rawCount
             return .updated(
                 filter: updated,
+                stagedUpdate: StagedFilterUpdate(
+                    filterID: filter.id,
+                    stagedURL: stagedURL,
+                    liveURL: localURL
+                ),
                 validators: (etag: responseEtag, lastModified: responseLastModified)
             )
         } catch {
-            return .error(filterName: filter.name, error: error)
+            return .error(filterName: filter.name, message: error.localizedDescription)
         }
     }
 
@@ -1248,6 +1447,7 @@ public actor SharedAutoUpdateManager {
         target: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
         containerURL: URL,
+        stagedSourceOverrides: [UUID: URL] = [:],
         destinationHandle: FileHandle,
         hasher: inout SHA256,
         newlineData: Data
@@ -1262,6 +1462,7 @@ public actor SharedAutoUpdateManager {
                     target: target,
                     allTargets: allTargets,
                     containerURL: containerURL,
+                    sourceURLOverride: stagedSourceOverrides[filter.id],
                     destinationHandle: destinationHandle,
                     hasher: &hasher,
                     newlineData: newlineData
@@ -1278,10 +1479,11 @@ public actor SharedAutoUpdateManager {
             }
         }
 
-        guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
-            for: filter,
-            containerURL: containerURL
-        ) else {
+        guard let sourceURL = stagedSourceOverrides[filter.id]
+            ?? SafariContentBlockerAffinityProcessor.sourceURL(
+                for: filter,
+                containerURL: containerURL
+            ) else {
             return false
         }
 
@@ -1351,62 +1553,11 @@ public actor SharedAutoUpdateManager {
         return false
     }
 
-    private func reloadExistingContentBlockers(
-        policy: AutoUpdateExecutionPolicy
-    ) async throws -> Bool {
-        #if os(iOS)
-        let platform: Platform = .iOS
-        #else
-        let platform: Platform = .macOS
-        #endif
-
-        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
-        var allReloaded = true
-        var failedTargets: [String] = []
-        var advancedRulesSnippets: [String] = []
-
-        let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
-
-        for target in targets {
-            try Task.checkCancellation()
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.reloadRetry,
-                requiredTime: policy.minimumTimeForReloadRetry
-            )
-
-            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
-            let reloaded = reloadResult.success
-            allReloaded = allReloaded && reloaded
-            if !reloaded {
-                failedTargets.append(target.displayName)
-            }
-            if let containerURL,
-               let adv = loadCachedAdvancedRules(for: target, containerURL: containerURL),
-               !adv.isEmpty {
-                advancedRulesSnippets.append(adv)
-            }
-        }
-
-        try publishAdvancedEngine(
-            advancedRulesSnippets: advancedRulesSnippets,
-            policy: policy,
-            failureLogPrefix: "Native advanced runtime publish failed while reusing existing outputs"
-        )
-
-        if !failedTargets.isEmpty {
-            appendSharedLog(
-                "Reload failures while reusing existing outputs: \(failedTargets.prefix(3).joined(separator: ", "))"
-            )
-        }
-
-        return allReloaded
-    }
-
     // MARK: - Conversion & Reload
     private func rebuildAndReload(
         selectedFilters: [FilterList],
-        policy: AutoUpdateExecutionPolicy
+        policy: AutoUpdateExecutionPolicy,
+        stagedSourceOverrides: [UUID: URL] = [:]
     ) async throws -> RebuildAndReloadSummary {
         try Task.checkCancellation()
 
@@ -1431,7 +1582,8 @@ public actor SharedAutoUpdateManager {
         )
         let affinityFilterIDs = SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(
             orderedSelectedFilters,
-            containerURL: containerURL
+            containerURL: containerURL,
+            sourceOverrides: stagedSourceOverrides
         )
         let hasAffinityFilters = !affinityFilterIDs.isEmpty
         let mirroredZapperRulesText = await MainActor.run {
@@ -1474,8 +1626,10 @@ public actor SharedAutoUpdateManager {
                 groupIdentifier: GroupIdentifier.shared.value
             )
 
+            let hasStagedSources = !stagedSourceOverrides.isEmpty
             let canReuseCachedConversion =
-                currentSignature != nil
+                !hasStagedSources
+                && currentSignature != nil
                 && currentSignature == storedSignature
                 && ContentBlockerIncrementalCache.hasBaseRulesCache(
                     targetRulesFilename: rulesFilename,
@@ -1519,6 +1673,7 @@ public actor SharedAutoUpdateManager {
                         target: target,
                         allTargets: targets,
                         containerURL: containerURL,
+                        stagedSourceOverrides: stagedSourceOverrides,
                         destinationHandle: fileHandle,
                         hasher: &hasher,
                         newlineData: newlineData
@@ -1792,6 +1947,8 @@ public actor SharedAutoUpdateManager {
     private func appendSharedLog(_ line: String) {
         guard let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else { return }
         let logURL = base.appendingPathComponent(sharedAutoUpdateLogFilename)
+        rotateSharedLogIfNeeded(logURL)
+
         let timestamp = ISO8601DateFormatter().string(from: Date())
         let full = "[\(timestamp)] \(line)\n"
         if let data = full.data(using: .utf8) {
@@ -1809,6 +1966,24 @@ public actor SharedAutoUpdateManager {
                 try? data.write(to: logURL)
             }
         }
+    }
+
+    private func rotateSharedLogIfNeeded(_ logURL: URL) {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: logURL.path),
+              let size = attrs[.size] as? NSNumber,
+              size.uint64Value > maxSharedAutoUpdateLogBytes,
+              let data = try? Data(contentsOf: logURL)
+        else {
+            return
+        }
+
+        let retainedCount = min(retainedSharedAutoUpdateLogBytes, data.count)
+        let tail = data.suffix(retainedCount)
+        var rotated = Data()
+        let header = "[\(ISO8601DateFormatter().string(from: Date()))] log rotated; kept last \(retainedCount) bytes\n"
+        rotated.append(Data(header.utf8))
+        rotated.append(tail)
+        try? rotated.write(to: logURL, options: .atomic)
     }
 
     private func appendTelemetry(_ event: String, fields: [String: String]) {

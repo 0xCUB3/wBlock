@@ -8,7 +8,7 @@
 import Foundation
 import wBlockCoreService
 
-class FilterListLoader {
+final class FilterListLoader: @unchecked Sendable {
     static var isNativeCompilerEnabled: Bool { true }
 
     static var basicFilterNames: Set<String> {

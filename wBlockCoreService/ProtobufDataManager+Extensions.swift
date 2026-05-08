@@ -63,10 +63,8 @@ extension ProtobufDataManager {
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             return protoFilterList
         }
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
 
     // MARK: - Data Migration
@@ -84,10 +82,8 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
-            await saveData()
+            appData = updatedData
+            saveData()
         }
     }
 
@@ -109,10 +105,8 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
-            await saveData()
+            appData = updatedData
+            saveData()
         }
     }
 
@@ -129,10 +123,8 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
-            await saveData()
+            appData = updatedData
+            saveData()
         }
     }
 
@@ -176,10 +168,8 @@ extension ProtobufDataManager {
             }
         }
 
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
 
     // MARK: - Filter Lists
@@ -239,20 +229,16 @@ extension ProtobufDataManager {
             updatedData.filterLists.append(protoFilterList)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     public func removeFilterList(withId id: UUID) async {
         var updatedData = await latestAppDataSnapshot()
         updatedData.filterLists.removeAll { $0.id == id.uuidString }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     public func updateFilterListSelection(_ filterLists: [FilterList]) async {
@@ -265,10 +251,8 @@ extension ProtobufDataManager {
             }
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     // MARK: - Userscripts
@@ -358,10 +342,8 @@ extension ProtobufDataManager {
             updatedData.userScripts.append(protoUserScript)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     public func removeUserScript(withId id: UUID) async {
@@ -376,10 +358,8 @@ extension ProtobufDataManager {
         
         updatedData.userScripts.removeAll { $0.id == id.uuidString }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     // MARK: - Whitelist Management
@@ -436,10 +416,8 @@ extension ProtobufDataManager {
             updatedData.settings.showAdvancedFeatures = showAdvancedFeatures
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     public var uBlockDefaultCatalogMigrationVersion: Int {
@@ -511,10 +489,8 @@ extension ProtobufDataManager {
         
         updatedData.ruleCounts.lastUpdated = Int64(Date().timeIntervalSince1970)
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     // MARK: - Performance Data
@@ -567,10 +543,8 @@ extension ProtobufDataManager {
             updatedData.performance.totalFiltersCount = Int32(totalFiltersCount)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     // MARK: - Helper Methods
@@ -698,10 +672,8 @@ extension ProtobufDataManager {
             updatedData.filterLists.append(protoFilterList)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
     
     public func updateUserScripts(_ userScripts: [UserScript]) async {
@@ -735,10 +707,8 @@ extension ProtobufDataManager {
             updatedData.userScripts.append(protoUserScript)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
-        await saveData()
+        appData = updatedData
+        saveData()
     }
 
     /// Drops legacy embedded userscript source bodies from protobuf once they have
@@ -758,7 +728,7 @@ extension ProtobufDataManager {
         guard didChange else { return false }
 
         appData = updatedData
-        await saveData()
+        saveData()
         return true
     }
 
@@ -774,7 +744,7 @@ extension ProtobufDataManager {
             if !updatedData.settings.excludedDefaultUserscriptUrls.contains(url) {
                 updatedData.settings.excludedDefaultUserscriptUrls.append(url)
                 appData = updatedData
-                await saveData()
+                saveData()
             }
         }
     }
@@ -784,7 +754,7 @@ extension ProtobufDataManager {
             var updatedData = appData
             updatedData.settings.excludedDefaultUserscriptUrls.removeAll { $0 == url }
             appData = updatedData
-            await saveData()
+            saveData()
         }
     }
 
@@ -799,7 +769,7 @@ extension ProtobufDataManager {
             var updatedData = appData
             updatedData.settings.userscriptShowEnabledOnly = value
             appData = updatedData
-            await saveData()
+            saveData()
         }
     }
 }

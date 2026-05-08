@@ -82,6 +82,7 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
         context.coordinator.applyAttributedText(for: text, to: textView)
     }
 
+    @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SyntaxHighlightingTextView
         var isUpdating = false
@@ -114,13 +115,11 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
         func scheduleHighlight(for text: String) {
             highlightTask?.cancel()
             let delay = parent.highlightDelayNanoseconds
-            highlightTask = Task { [weak self] in
+            highlightTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: delay)
                 guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    guard let self, let textView = self.textView, textView.string == text else { return }
-                    self.applyAttributedText(for: text, to: textView)
-                }
+                guard let self, let textView = self.textView, textView.string == text else { return }
+                self.applyAttributedText(for: text, to: textView)
             }
         }
 
@@ -193,6 +192,7 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         context.coordinator.applyAttributedText(for: text, to: textView)
     }
 
+    @MainActor
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: SyntaxHighlightingTextView
         var isUpdating = false
@@ -219,13 +219,11 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         func scheduleHighlight(for text: String) {
             highlightTask?.cancel()
             let delay = parent.highlightDelayNanoseconds
-            highlightTask = Task { [weak self] in
+            highlightTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: delay)
                 guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    guard let self, let textView = self.textView, (textView.text ?? "") == text else { return }
-                    self.applyAttributedText(for: text, to: textView)
-                }
+                guard let self, let textView = self.textView, (textView.text ?? "") == text else { return }
+                self.applyAttributedText(for: text, to: textView)
             }
         }
 

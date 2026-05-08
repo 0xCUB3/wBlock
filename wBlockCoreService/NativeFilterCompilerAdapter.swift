@@ -6,7 +6,7 @@
 //
 
 import Foundation
-@_implementationOnly import WBlockFilterCompiler
+internal import WBlockFilterCompiler
 
 enum NativeFilterCompilerAdapter {
     struct ConversionResult: Sendable, Equatable {

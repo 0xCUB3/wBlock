@@ -732,7 +732,7 @@ private struct ScriptUpdateSettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Toggle("Automatic Updates", isOn: Binding(
                 get: { updatesAutomatically },
-                set: onChange
+                set: { value in onChange(value) }
             ))
             .toggleStyle(.switch)
 

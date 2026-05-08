@@ -202,10 +202,11 @@ final class FilterListUpdater: @unchecked Sendable {
         // to avoid deadlock (MainActor suspends waiting for group, child tasks
         // need MainActor to read validators).
         let eligibleFilters = filterLists.filter { $0.limitExceededReason == nil }
-        var validatorsMap: [UUID: (etag: String?, lastModified: String?)] = [:]
+        var validatorsLookup: [UUID: (etag: String?, lastModified: String?)] = [:]
         for filter in eligibleFilters {
-            validatorsMap[filter.id] = await storedValidators(for: filter)
+            validatorsLookup[filter.id] = await storedValidators(for: filter)
         }
+        let validatorsByFilterID = validatorsLookup
 
         // Collect validator updates to apply after the group completes
         // (writing to ProtobufDataManager requires MainActor).
@@ -213,7 +214,7 @@ final class FilterListUpdater: @unchecked Sendable {
         // Keep preflight update checks bounded so Apply Changes doesn't burst
         // one URLSession task per selected filter on iOS.
         let filtersWithUpdates = await boundedConcurrentCompactMap(eligibleFilters) { filter in
-            let validators = validatorsMap[filter.id] ?? (nil, nil)
+            let validators = validatorsByFilterID[filter.id] ?? (nil, nil)
             let hasUpdate = await self.hasUpdateNoMainActor(
                 for: filter,
                 validators: validators,
@@ -586,10 +587,10 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Updates selected filters and returns the list of successfully updated filters
     func updateSelectedFilters(
-        _ selectedFilters: [FilterList], progressCallback: @escaping (Float) -> Void
+        _ selectedFilters: [FilterList], progressCallback: @MainActor @escaping @Sendable (Float) -> Void
     ) async -> [FilterList] {
         guard !selectedFilters.isEmpty else {
-            progressCallback(1.0)
+            await progressCallback(1.0)
             return []
         }
 
@@ -616,7 +617,7 @@ final class FilterListUpdater: @unchecked Sendable {
                     .filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
             }
             completedSteps += 1
-            progressCallback(completedSteps / totalSteps)
+            await progressCallback(completedSteps / totalSteps)
         })
 
         return updatedFilters
@@ -708,16 +709,16 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Updates selected scripts and returns the list of successfully updated scripts
     func updateSelectedScripts(
-        _ selectedScripts: [UserScript], progressCallback: @escaping (Float) -> Void
+        _ selectedScripts: [UserScript], progressCallback: @MainActor @escaping @Sendable (Float) -> Void
     ) async -> [UserScript] {
         guard !selectedScripts.isEmpty else {
-            progressCallback(1.0)
+            await progressCallback(1.0)
             return []
         }
 
         let scriptsToUpdate = selectedScripts.filter(\.updatesAutomatically)
         guard !scriptsToUpdate.isEmpty else {
-            progressCallback(1.0)
+            await progressCallback(1.0)
             return []
         }
         let totalSteps = Float(scriptsToUpdate.count)
@@ -748,7 +749,7 @@ final class FilterListUpdater: @unchecked Sendable {
             }
 
             completedSteps += 1
-            progressCallback(completedSteps / totalSteps)
+            await progressCallback(completedSteps / totalSteps)
         })
 
         return updatedScripts

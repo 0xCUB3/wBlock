@@ -7,7 +7,7 @@
 
 import Foundation
 import os.log
-@_implementationOnly import WBlockFilterCompiler
+internal import WBlockFilterCompiler
 
 enum NativeAdvancedRuntimeAdapter {
     static let runtimeFilename = "wblock_native_advanced_runtime.json"
@@ -19,7 +19,7 @@ enum NativeAdvancedRuntimeAdapter {
     }
 
     private static let cacheLock = NSLock()
-    private static var cachedBundle: CachedBundle?
+    private nonisolated(unsafe) static var cachedBundle: CachedBundle?
 
     static func runtimeURL(groupIdentifier: String) -> URL? {
         FileManager.default

@@ -31,12 +31,13 @@ public enum SafariContentBlockerAffinityProcessor {
 
     public static func detectFiltersWithAffinity(
         _ filters: [FilterList],
-        containerURL: URL
+        containerURL: URL,
+        sourceOverrides: [UUID: URL] = [:]
     ) -> Set<UUID> {
         var affinityFilterIDs: Set<UUID> = []
 
         for filter in filters {
-            guard let sourceURL = sourceURL(for: filter, containerURL: containerURL),
+            guard let sourceURL = sourceOverrides[filter.id] ?? sourceURL(for: filter, containerURL: containerURL),
                   let content = try? String(contentsOf: sourceURL, encoding: .utf8),
                   content.contains(directivePrefix)
             else {
@@ -56,11 +57,12 @@ public enum SafariContentBlockerAffinityProcessor {
         target: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
         containerURL: URL,
+        sourceURLOverride: URL? = nil,
         destinationHandle: FileHandle,
         hasher: inout SHA256,
         newlineData: Data
     ) throws -> Bool {
-        guard let sourceURL = sourceURL(for: filter, containerURL: containerURL) else {
+        guard let sourceURL = sourceURLOverride ?? sourceURL(for: filter, containerURL: containerURL) else {
             return false
         }
 

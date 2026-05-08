@@ -66,19 +66,6 @@ if [[ -n "${TEAM_ID}" ]]; then
     fi
   fi
 
-  # Patch XPC service plists so they also use the team-prefixed group
-  if [[ -d "${APP_PATH}/Contents/XPCServices" ]]; then
-    for xpc_plist in "${APP_PATH}/Contents/XPCServices/"*.xpc/Contents/Info.plist; do
-      if [[ -f "${xpc_plist}" ]]; then
-        if ! /usr/libexec/PlistBuddy -c "Print :AppIdentifierPrefix" "${xpc_plist}" &>/dev/null; then
-          /usr/libexec/PlistBuddy -c "Add :AppIdentifierPrefix string ${TEAM_ID}." "${xpc_plist}"
-        else
-          /usr/libexec/PlistBuddy -c "Set :AppIdentifierPrefix ${TEAM_ID}." "${xpc_plist}"
-        fi
-      fi
-    done
-  fi
-
   # Patch login item plists so shared app-group lookup sees the team prefix
   if [[ -d "${APP_PATH}/Contents/Library/LoginItems" ]]; then
     for login_item_plist in "${APP_PATH}/Contents/Library/LoginItems/"*.app/Contents/Info.plist; do
@@ -133,20 +120,6 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
     while IFS= read -r -d '' f; do
       sign_item "${f}"
     done < <(find "${APP_PATH}/Contents/Frameworks" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) -print0)
-  fi
-
-  # Sign embedded XPC services
-  if [[ -d "${APP_PATH}/Contents/XPCServices" ]]; then
-    while IFS= read -r -d '' xpc; do
-      local_entitlements="${ROOT_DIR}/FilterUpdateService/FilterUpdateService.entitlements"
-      if [[ -f "${local_entitlements}" ]]; then
-        modified_ent="$(prepare_entitlements "${local_entitlements}")"
-        sign_item "${xpc}" "${modified_ent}"
-        rm -f "${modified_ent}"
-      else
-        sign_item "${xpc}"
-      fi
-    done < <(find "${APP_PATH}/Contents/XPCServices" -maxdepth 1 -name "*.xpc" -print0)
   fi
 
   # Sign embedded Safari extensions (sign nested frameworks inside each appex first)

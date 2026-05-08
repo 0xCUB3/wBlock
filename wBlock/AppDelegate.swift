@@ -58,6 +58,7 @@ private final class BackgroundTaskHandle {
 #endif
 
 
+@MainActor
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
     var hasPendingApplyNotification = false
@@ -68,16 +69,6 @@ class AppDelegate: NSObject {
     private let dueSoonThresholdSeconds: TimeInterval = 300 // 5 minutes
 
     #if os(macOS)
-    /// Percentage of interval used for scheduler tolerance (0.0-1.0)
-    private let schedulerTolerancePercentage: Double = 0.2 // 20%
-    /// Maximum tolerance in hours regardless of interval
-    private let maxSchedulerToleranceHours: Double = 1.0
-    /// Interval for periodic timer checks (in seconds)
-    private let periodicTimerInterval: TimeInterval = 30 * 60 // 30 minutes
-    /// macOS-only scheduler holder
-    private var backgroundScheduler: NSBackgroundActivityScheduler?
-    /// Periodic timer for regular update checks
-    private var periodicUpdateTimer: Timer?
     private var autoUpdateSaveObserver: AnyCancellable?
     private var lastObservedAutoUpdateEnabled: Bool?
     #endif
@@ -102,7 +93,7 @@ class AppDelegate: NSObject {
 
 private extension AppDelegate {
     @discardableResult
-    func runForcedAutoUpdate(
+    static func runForcedAutoUpdate(
         trigger: String,
         policy: SharedAutoUpdateManager.AutoUpdateExecutionPolicy? = nil
     ) async -> SharedAutoUpdateManager.AutoUpdateRunOutcome {
@@ -222,10 +213,6 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // Clean up periodic timer
-        periodicUpdateTimer?.invalidate()
-        periodicUpdateTimer = nil
-
         // Flush any pending coalesced filter list saves
         filterManager?.flushPendingSave()
 
@@ -234,8 +221,6 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Setup periodic auto-update system for macOS
-        setupMacOSAutoUpdate()
         observeMacOSAutoUpdateSettingSaves()
         Task { @MainActor in
             await reconcileMacOSLaunchAgentRegistration(reason: "Launch")
@@ -255,7 +240,7 @@ extension AppDelegate: NSApplicationDelegate {
 
             if isSignificantlyOverdue && !status.isRunning {
                 os_log("App launch: update significantly overdue (>1h) - forcing update", type: .info)
-                await runForcedAutoUpdate(trigger: "AppLaunch")
+                await Self.runForcedAutoUpdate(trigger: "AppLaunch")
             } else {
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
             }
@@ -272,7 +257,7 @@ extension AppDelegate: NSApplicationDelegate {
 
             // If overdue or due soon, force update
             if status.isOverdue || (isDueSoon && !status.isRunning) {
-                await runForcedAutoUpdate(trigger: "BecomeActive")
+                await Self.runForcedAutoUpdate(trigger: "BecomeActive")
             } else {
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
             }
@@ -281,28 +266,6 @@ extension AppDelegate: NSApplicationDelegate {
     
     // MARK: - macOS Auto-Update System
     
-    @MainActor private func setupMacOSAutoUpdate() {
-        // More aggressive periodic trigger while app is running
-        periodicUpdateTimer = Timer.scheduledTimer(withTimeInterval: periodicTimerInterval, repeats: true) { [weak self] _ in
-            Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
-        }
-
-        let intervalHours = configuredAutoUpdateIntervalHours()
-        
-        let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
-        scheduler.repeats = true
-        scheduler.interval = intervalHours * 60 * 60 // Use configured interval
-        scheduler.tolerance = min(intervalHours * schedulerTolerancePercentage, maxSchedulerToleranceHours) * 60 * 60
-        scheduler.qualityOfService = .utility
-        scheduler.schedule { [weak self] completion in
-            Task {
-                await self?.runMacOSBackgroundUpdate(trigger: "BackgroundActivityScheduler")
-                completion(NSBackgroundActivityScheduler.Result.finished)
-            }
-        }
-        self.backgroundScheduler = scheduler
-    }
-
     @MainActor private func observeMacOSAutoUpdateSettingSaves() {
         autoUpdateSaveObserver = ProtobufDataManager.shared.didSaveData
             .receive(on: DispatchQueue.main)
@@ -328,24 +291,6 @@ extension AppDelegate: NSApplicationDelegate {
         )
     }
 
-
-    private func runMacOSBackgroundUpdate(trigger: String) async {
-        // Check if update is overdue
-        let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-
-        // If an XPC service exists in future builds, prefer it; else fallback in-process
-        #if os(macOS)
-        let usedXPC = await FilterUpdateClient.shared.updateFilters()
-        if usedXPC { return }
-        #endif
-
-        // Force update if overdue
-        if status.isOverdue && !status.isRunning {
-            await runForcedAutoUpdate(trigger: trigger)
-        } else {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
-        }
-    }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         guard urls.contains(where: { $0.scheme == "wblockapp" }) else { return }
@@ -384,7 +329,7 @@ extension AppDelegate: UIApplicationDelegate {
                 let catchUpReason: AutoUpdateDiagnosticResult = status.isOverdue ? .overdue : .dueSoon
                 os_log("App became active with overdue/due update - forcing update", type: .info)
                 await ProtobufDataManager.shared.recordAutoUpdateForegroundCatchUp(reason: catchUpReason)
-                await runForcedAutoUpdate(trigger: "BecomeActive")
+                await Self.runForcedAutoUpdate(trigger: "BecomeActive")
             } else {
                 // Normal opportunistic update
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
@@ -657,14 +602,46 @@ extension AppDelegate: UIApplicationDelegate {
     ) {
         os_log("%{public}@ started", type: .info, taskLabel)
         Task { @MainActor in
-            self.scheduleBackgroundFilterUpdate()
-            self.scheduleBackgroundProcessingUpdate()
+            await self.rescheduleBackgroundTasks(reason: "BackgroundTaskStart")
         }
         let completionState = BGTaskCompletionState()
-        let updateTask = Task {
+        var updateTask: Task<Void, Never>?
+
+        task.expirationHandler = {
+            os_log("%{public}@ expired - clearing running flag", type: .default, taskLabel)
+            updateTask?.cancel()
+
+            Task { [weak self] in
+                guard await completionState.claimCompletion() else { return }
+                guard let self else { return }
+                await self.clearAutoUpdateRunningFlag(context: taskLabel)
+                await ProtobufDataManager.shared.recordAutoUpdateTaskExpiration(kind)
+                await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .timedOut)
+                task.setTaskCompleted(success: false)
+                await MainActor.run {
+                    onExpiration(self)
+                }
+            }
+        }
+
+        updateTask = Task {
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            let autoUpdateEnabled = await MainActor.run { ProtobufDataManager.shared.autoUpdateEnabled }
+            guard autoUpdateEnabled else {
+                os_log("%{public}@ skipped because auto-update is disabled", type: .info, taskLabel)
+                guard await completionState.claimCompletion() else { return }
+                await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .completed)
+                task.setTaskCompleted(success: true)
+                await MainActor.run {
+                    BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: self.backgroundTaskIdentifier)
+                    BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: self.backgroundProcessingIdentifier)
+                }
+                return
+            }
+
             await ProtobufDataManager.shared.recordAutoUpdateTaskStart(kind)
-            let policy = await self.backgroundAutoUpdatePolicy(kind: kind, trigger: trigger)
-            let outcome = await self.runForcedAutoUpdate(trigger: trigger, policy: policy)
+            let policy = self.backgroundAutoUpdatePolicy(kind: kind, trigger: trigger)
+            let outcome = await Self.runForcedAutoUpdate(trigger: trigger, policy: policy)
             let success = outcome.isSuccessfulForBackgroundTask
             let result = diagnosticResult(for: outcome)
 
@@ -688,23 +665,6 @@ extension AppDelegate: UIApplicationDelegate {
                 if success {
                     onSuccess(self)
                 } else {
-                    onExpiration(self)
-                }
-            }
-        }
-
-        task.expirationHandler = {
-            os_log("%{public}@ expired - clearing running flag", type: .default, taskLabel)
-            updateTask.cancel()
-
-            Task { [weak self] in
-                guard await completionState.claimCompletion() else { return }
-                guard let self else { return }
-                await self.clearAutoUpdateRunningFlag(context: taskLabel)
-                await ProtobufDataManager.shared.recordAutoUpdateTaskExpiration(kind)
-                await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .timedOut)
-                task.setTaskCompleted(success: false)
-                await MainActor.run {
                     onExpiration(self)
                 }
             }
@@ -739,7 +699,7 @@ extension AppDelegate: UIApplicationDelegate {
     }
 }
 
-extension AppDelegate: UNUserNotificationCenterDelegate {
+extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {

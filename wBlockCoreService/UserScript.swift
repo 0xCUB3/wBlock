@@ -160,13 +160,13 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return false
     }
 
-    private static let matchRegexCache: NSCache<NSString, NSRegularExpression> = {
+    private nonisolated(unsafe) static let matchRegexCache: NSCache<NSString, NSRegularExpression> = {
         let cache = NSCache<NSString, NSRegularExpression>()
         cache.countLimit = 512
         return cache
     }()
 
-    private static let includeRegexCache: NSCache<NSString, NSRegularExpression> = {
+    private nonisolated(unsafe) static let includeRegexCache: NSCache<NSString, NSRegularExpression> = {
         let cache = NSCache<NSString, NSRegularExpression>()
         cache.countLimit = 512
         return cache

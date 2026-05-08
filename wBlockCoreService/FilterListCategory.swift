@@ -8,7 +8,7 @@
 import Combine
 import Foundation
 
-public enum FilterListCategory: String, CaseIterable, Identifiable, Codable {
+public enum FilterListCategory: String, CaseIterable, Identifiable, Codable, Sendable {
     case all = "All"
     case ads = "Ads"
     case privacy = "Privacy"

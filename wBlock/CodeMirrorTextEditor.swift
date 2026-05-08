@@ -206,6 +206,10 @@ private extension CodeMirrorTextEditor {
 
 extension CodeMirrorTextEditor {
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, CodeMirrorEditorBridge {
+        private struct WebViewBox: @unchecked Sendable {
+            let webView: WKWebView?
+        }
+
         private let controller: CodeMirrorEditorController
         fileprivate var messageHandlerProxy: WeakScriptMessageHandler?
         private weak var webView: WKWebView?
@@ -223,8 +227,11 @@ extension CodeMirrorTextEditor {
         }
 
         deinit {
-            webView?.navigationDelegate = nil
-            webView?.configuration.userContentController.removeScriptMessageHandler(forName: CodeMirrorResources.handlerName)
+            let webViewBox = WebViewBox(webView: webView)
+            Task { @MainActor in
+                webViewBox.webView?.navigationDelegate = nil
+                webViewBox.webView?.configuration.userContentController.removeScriptMessageHandler(forName: CodeMirrorResources.handlerName)
+            }
         }
 
         func attach(_ webView: WKWebView) {

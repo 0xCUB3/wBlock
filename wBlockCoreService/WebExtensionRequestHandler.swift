@@ -8,7 +8,7 @@
 #if os(macOS)
 import AppKit
 #endif
-import SafariServices
+@preconcurrency import SafariServices
 import os.log
 
 /// WebExtensionRequestHandler processes requests from Safari Web Extensions and provides
@@ -18,6 +18,18 @@ import os.log
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
 public enum WebExtensionRequestHandler {
+    private struct ExtensionContextBox: @unchecked Sendable {
+        let context: NSExtensionContext
+    }
+
+    private struct MessageBox: @unchecked Sendable {
+        let value: [String: Any?]
+    }
+
+    private struct PayloadBox: @unchecked Sendable {
+        let value: [String: Any]
+    }
+
     private static let sharedWebExtensionLogFilename = "web_extension.log"
 
     private static func emptyRulesPayload() -> [String: Any] {
@@ -107,52 +119,45 @@ public enum WebExtensionRequestHandler {
         if let urlString = payload["url"] as? String {
             if let url = URL(string: urlString) {
                 // Respect per-site disable immediately for both content blockers and scripts.
+                let contextBox = ExtensionContextBox(context: context)
+                let messageBox = MessageBox(value: message ?? [:])
+                let payloadBox = PayloadBox(value: payload)
                 Task { @MainActor in
+                    var message = messageBox.value
+                    let payload = payloadBox.value
                     let disabledSites = await currentDisabledSites()
                     let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
                     if disabled {
-                        message?["payload"] = emptyRulesPayload()
+                        message["payload"] = emptyRulesPayload()
                     } else {
-                        do {
-                            var topUrl: URL?
-                            if let topUrlString = payload["topUrl"] as? String {
-                                topUrl = URL(string: topUrlString)
-                            }
-
-                            let groupIdentifier = GroupIdentifier.shared.value
-                            message?["payload"] = NativeAdvancedRuntimeAdapter.lookupPayload(
-                                pageURL: url,
-                                topURL: topUrl,
-                                groupIdentifier: groupIdentifier
-                            ) ?? emptyRulesPayload()
-                        } catch {
-                            os_log(
-                                .error,
-                                "Failed to get native advanced runtime payload: %@",
-                                error.localizedDescription
-                            )
+                        var topUrl: URL?
+                        if let topUrlString = payload["topUrl"] as? String {
+                            topUrl = URL(string: topUrlString)
                         }
+
+                        let groupIdentifier = GroupIdentifier.shared.value
+                        message["payload"] = NativeAdvancedRuntimeAdapter.lookupPayload(
+                            pageURL: url,
+                            topURL: topUrl,
+                            groupIdentifier: groupIdentifier
+                        ) ?? emptyRulesPayload()
                     }
 
-                    if var trace = message?["trace"] as? [String: Int64] {
+                    if var trace = message["trace"] as? [String: Int64] {
                         trace["nativeStart"] = nativeStart
                         trace["nativeEnd"] = Int64(Date().timeIntervalSince1970 * 1000)
-                        message?["trace"] = trace
+                        message["trace"] = trace
                     }
 
                     // Enable verbose logging in the content script only in debug builds
                     #if DEBUG
-                    message?["verbose"] = true
+                    message["verbose"] = true
                     #else
-                    message?["verbose"] = false
+                    message["verbose"] = false
                     #endif
 
-                    if let safeMessage = message {
-                        let response = createResponse(with: safeMessage)
-                        context.completeRequest(returningItems: [response], completionHandler: nil)
-                    } else {
-                        context.completeRequest(returningItems: [], completionHandler: nil)
-                    }
+                    let response = createResponse(with: message)
+                    contextBox.context.completeRequest(returningItems: [response], completionHandler: nil)
                 }
                 return
             }
@@ -249,11 +254,12 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let contextBox = ExtensionContextBox(context: context)
         Task { @MainActor in
             let disabledSites = await currentDisabledSites()
             let disabled = HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled])
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -267,6 +273,7 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let contextBox = ExtensionContextBox(context: context)
         Task { @MainActor in
             var list = await currentDisabledSites()
             let previousList = list
@@ -294,7 +301,7 @@ public enum WebExtensionRequestHandler {
                     "skippedTargets": 0,
                     "failedTargets": 0
                 ])
-                context.completeRequest(returningItems: [response])
+                contextBox.context.completeRequest(returningItems: [response])
                 return
             }
 
@@ -322,7 +329,7 @@ public enum WebExtensionRequestHandler {
                 "skippedTargets": summary.skippedTargets,
                 "failedTargets": summary.failedTargets
             ])
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -476,12 +483,13 @@ public enum WebExtensionRequestHandler {
 
         let includeContent = message["includeContent"] as? Bool == true
         let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
+        let contextBox = ExtensionContextBox(context: context)
         Task { @MainActor in
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
                 if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
                     let response = createResponse(with: ["userScripts": []])
-                    context.completeRequest(returningItems: [response])
+                    contextBox.context.completeRequest(returningItems: [response])
                     return
                 }
             }
@@ -535,7 +543,7 @@ public enum WebExtensionRequestHandler {
             }
 
             let response = createResponse(with: ["userScripts": userScriptDescriptors])
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -549,12 +557,13 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let contextBox = ExtensionContextBox(context: context)
         Task {
             let result = await UserScriptStorageManager.shared.setSerializedValue(rawValue, forKey: key, scriptID: scriptID)
             let response = createResponse(with: result.ok
                 ? ["ok": true]
                 : ["ok": false, "error": result.error ?? "Failed to persist userscript storage"] )
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -567,12 +576,13 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let contextBox = ExtensionContextBox(context: context)
         Task {
             let result = await UserScriptStorageManager.shared.deleteValue(forKey: key, scriptID: scriptID)
             let response = createResponse(with: result.ok
                 ? ["ok": true]
                 : ["ok": false, "error": result.error ?? "Failed to persist userscript storage"] )
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -600,6 +610,7 @@ public enum WebExtensionRequestHandler {
             ?? (message["timeout"] as? Int).map(Double.init)
             ?? 0
 
+        let contextBox = ExtensionContextBox(context: context)
         Task {
             let result = await performNativeGMXmlhttpRequest(
                 url: url,
@@ -611,7 +622,7 @@ public enum WebExtensionRequestHandler {
                 timeoutMilliseconds: timeoutMilliseconds
             )
             let response = createResponse(with: result)
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -703,6 +714,8 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let submittedRules = message["rules"] as? [String]
+        let contextBox = ExtensionContextBox(context: context)
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
@@ -711,7 +724,7 @@ public enum WebExtensionRequestHandler {
             let pendingDeletions = await ProtobufDataManager.shared.consumeZapperPendingDeletions(forHost: hostname)
             let deletionSet = Set(pendingDeletions)
 
-            if let rules = message["rules"] as? [String] {
+            if let rules = submittedRules {
                 let filtered = rules
                     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty && !deletionSet.contains($0) }
@@ -721,11 +734,11 @@ public enum WebExtensionRequestHandler {
                     await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: filtered)
                 }
                 let response = createResponse(with: ["ok": true, "rules": filtered])
-                context.completeRequest(returningItems: [response])
+                contextBox.context.completeRequest(returningItems: [response])
             } else {
                 await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
                 let response = createResponse(with: ["ok": true, "rules": [String]()])
-                context.completeRequest(returningItems: [response])
+                contextBox.context.completeRequest(returningItems: [response])
             }
         }
     }
@@ -738,12 +751,13 @@ public enum WebExtensionRequestHandler {
             return
         }
 
+        let contextBox = ExtensionContextBox(context: context)
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
             let response = createResponse(with: ["ok": true, "rules": rules])
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 
@@ -780,12 +794,13 @@ public enum WebExtensionRequestHandler {
             }
         }
 
+        let contextBox = ExtensionContextBox(context: context)
         Task { @MainActor in
             let manager = UserScriptManager.shared
             await manager.waitUntilReady()
             guard let script = manager.userScript(withId: scriptId) else {
                 let response = createResponse(with: ["error": "Userscript not found"])
-                context.completeRequest(returningItems: [response])
+                contextBox.context.completeRequest(returningItems: [response])
                 return
             }
 
@@ -800,7 +815,7 @@ public enum WebExtensionRequestHandler {
 
             guard let text, !text.isEmpty else {
                 let response = createResponse(with: ["error": "Requested content not available"])
-                context.completeRequest(returningItems: [response])
+                contextBox.context.completeRequest(returningItems: [response])
                 return
             }
 
@@ -808,7 +823,7 @@ public enum WebExtensionRequestHandler {
             let totalChunks = Int(ceil(Double(data.count) / Double(chunkSize)))
             guard totalChunks > 0, chunkIndex < totalChunks else {
                 let response = createResponse(with: ["error": "chunkIndex out of range", "totalChunks": totalChunks])
-                context.completeRequest(returningItems: [response])
+                contextBox.context.completeRequest(returningItems: [response])
                 return
             }
 
@@ -827,7 +842,7 @@ public enum WebExtensionRequestHandler {
             }
 
             let response = createResponse(with: responsePayload)
-            context.completeRequest(returningItems: [response])
+            contextBox.context.completeRequest(returningItems: [response])
         }
     }
 }

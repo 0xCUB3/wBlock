@@ -158,8 +158,8 @@ struct ContentView: View {
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
-        Task {
-            await filterManager.checkAndEnableFilters(forceReload: true)
+        Task { @MainActor in
+            filterManager.checkAndEnableFilters(forceReload: true)
         }
     }
 
@@ -759,8 +759,8 @@ struct ContentModifiers: ViewModifier {
                     NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)
                 ) { _ in
                     filterManager.showingApplyProgressSheet = true
-                    Task {
-                        await filterManager.checkAndEnableFilters(forceReload: true)
+                    Task { @MainActor in
+                        filterManager.checkAndEnableFilters(forceReload: true)
                     }
                 }
                 .fullScreenCover(isPresented: $showOnboardingSheet) {

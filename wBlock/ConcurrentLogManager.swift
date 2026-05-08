@@ -9,7 +9,7 @@ import Foundation
 import wBlockCoreService
 
 /// Log severity levels following Swift-Log best practices
-public enum LogLevel: String, Codable, Comparable, CaseIterable {
+public enum LogLevel: String, Codable, Comparable, CaseIterable, Sendable {
     case trace   // Detailed diagnostics, not for production
     case debug   // High-value operational info
     case info    // Significant events, recoverable failures
@@ -37,7 +37,7 @@ public enum LogLevel: String, Codable, Comparable, CaseIterable {
 }
 
 /// Log category for better organization
-public enum LogCategory: String, Codable {
+public enum LogCategory: String, Codable, Sendable {
     case system = "System"
     case filterUpdate = "FilterUpdate"
     case filterApply = "FilterApply"
@@ -49,7 +49,7 @@ public enum LogCategory: String, Codable {
 }
 
 /// Structured log entry with metadata support
-public struct LogEntry: Identifiable, Codable, Equatable {
+public struct LogEntry: Identifiable, Codable, Equatable, Sendable {
     public let id: UUID
     public let timestamp: Date
     public let level: LogLevel

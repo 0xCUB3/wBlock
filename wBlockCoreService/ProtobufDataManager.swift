@@ -29,7 +29,7 @@ private actor ProtobufDiskStore {
 
     func readAppData(from url: URL) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?) {
         let rawData = try Data(contentsOf: url)
-        let appData = try Wblock_Data_AppData(serializedData: rawData)
+        let appData = try Wblock_Data_AppData(serializedBytes: rawData)
         return (appData: appData, rawData: rawData, modificationDate: modificationDate(for: url))
     }
 
@@ -127,7 +127,7 @@ private actor ProtobufDiskStore {
         }
 
         let rawData = try Data(contentsOf: dataURL)
-        return (rawData: rawData, appData: try Wblock_Data_AppData(serializedData: rawData))
+        return (rawData: rawData, appData: try Wblock_Data_AppData(serializedBytes: rawData))
     }
 
 
@@ -483,10 +483,10 @@ public class ProtobufDataManager: ObservableObject {
         if appData.autoUpdate.isRunning == value {
             if value {
                 appData.autoUpdate.runningSinceTimestamp = nowTimestamp
-                await saveData()
+                saveData()
             } else if appData.autoUpdate.runningSinceTimestamp != 0 {
                 appData.autoUpdate.runningSinceTimestamp = 0
-                await saveData()
+                saveData()
             }
             return
         }
@@ -495,7 +495,7 @@ public class ProtobufDataManager: ObservableObject {
         updatedData.autoUpdate.isRunning = value
         updatedData.autoUpdate.runningSinceTimestamp = value ? nowTimestamp : 0
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     /// Refreshes the running timestamp without re-writing unrelated auto-update fields.
@@ -509,7 +509,7 @@ public class ProtobufDataManager: ObservableObject {
             return
         }
         appData.autoUpdate.runningSinceTimestamp = nowTimestamp
-        await saveData()
+        saveData()
     }
 
     /// Timestamp when auto-update started running
@@ -562,7 +562,7 @@ public class ProtobufDataManager: ObservableObject {
             }
         }
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     @MainActor
@@ -589,7 +589,7 @@ public class ProtobufDataManager: ObservableObject {
             }
         }
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     /// Indicates if userscripts initial setup has been completed
@@ -722,7 +722,7 @@ public class ProtobufDataManager: ObservableObject {
         updatedData.extensionData.tabBlockedRequests[tabId] = tabData
         updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     @MainActor
@@ -731,7 +731,7 @@ public class ProtobufDataManager: ObservableObject {
         updatedData.extensionData.tabBlockedRequests.removeValue(forKey: tabId)
         updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     @MainActor
@@ -744,7 +744,7 @@ public class ProtobufDataManager: ObservableObject {
         updatedData.extensionData.tabBlockedRequests[tabId] = tabData
         updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     @MainActor
@@ -756,7 +756,7 @@ public class ProtobufDataManager: ObservableObject {
         }
         updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     /// Get all tab IDs that have data
@@ -1050,7 +1050,7 @@ public class ProtobufDataManager: ObservableObject {
         var updatedData = await latestAppDataSnapshot()
         block(&updatedData)
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     /// Writes immediately for cross-process paths that need deterministic visibility.
@@ -1582,11 +1582,9 @@ public class ProtobufDataManager: ObservableObject {
             migratedData.ruleCounts.categoriesApproachingLimit = categories
         }
 
-        await MainActor.run {
-            self.appData = migratedData
-        }
+        appData = migratedData
 
-        await saveData()
+        saveData()
         logger.info("✅ Migration completed successfully")
     }
     

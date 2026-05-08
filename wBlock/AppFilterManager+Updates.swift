@@ -96,9 +96,7 @@ extension AppFilterManager {
         let successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
             selectedFilters,
             progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
-                }
+                self.progress = newProgress
             }
         )
 

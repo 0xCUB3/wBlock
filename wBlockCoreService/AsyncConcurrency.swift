@@ -1,6 +1,6 @@
 import Foundation
 
-public enum CloudSyncUploadAction: Equatable {
+@frozen public enum CloudSyncUploadAction: Equatable {
     case startNow(String)
     case deferUntilIdle
 }
