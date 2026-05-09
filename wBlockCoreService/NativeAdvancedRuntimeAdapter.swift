@@ -103,11 +103,6 @@ enum NativeAdvancedRuntimeAdapter {
 
     private static func isFragileYouTubePlaybackScriptlet(_ rule: AdvancedScriptletRule) -> Bool {
         guard isYouTubeScoped(rule.scope) else { return false }
-        // Safari YouTube playback is currently too sensitive for page-world
-        // scriptlet mutation: even response-only mutations correlate with SABR
-        // buffering at 0x0 and repeated signed videoplayback 403s on sidebar
-        // navigation. Suppress all YouTube scriptlets while keeping static/DNR
-        // blocking and the diagnostic-only registered runtime active.
         return true
     }
 
@@ -158,6 +153,13 @@ enum NativeAdvancedRuntimeAdapter {
     private static func isEarlyRegisteredScriptletName(_ rawName: String) -> Bool {
         switch normalizedScriptletName(rawName) {
         case "set", "set-constant", "trusted-set", "trusted-set-constant",
+             "abort-current-inline-script", "abort-current-script", "acis", "acs",
+             "abort-on-property-read", "aopr",
+             "abort-on-property-write", "aopw",
+             "abort-on-stack-trace", "aost",
+             "replace-node-text", "rpnt", "trusted-replace-node-text", "trusted-rpnt",
+             "remove-node-text", "rmnt",
+             "trusted-replace-argument",
              "nano-settimeout-booster", "nano-stb",
              "no-fetch-if", "prevent-fetch", "trusted-prevent-fetch",
              "no-xhr-if", "prevent-xhr", "trusted-prevent-xhr",
@@ -204,15 +206,15 @@ enum NativeAdvancedRuntimeAdapter {
     static func registeredScriptletPayload(groupIdentifier: String, disabledSites: [String]) -> [String: Any]? {
         guard let bundle = loadBundle(groupIdentifier: groupIdentifier) else { return nil }
         let scriptlets = bundle.scriptlets
-            .filter { isEarlyRegisteredScriptletName($0.name) && !isYouTubeScoped($0.scope) && !isFragileYouTubePlaybackScriptlet($0) }
+            .filter { isEarlyRegisteredScriptletName($0.name) && !isFragileYouTubePlaybackScriptlet($0) }
             .map { rule -> [String: Any] in
-                [
-                    "name": rule.name,
-                    "args": rule.args,
-                    "ifDomains": rule.scope.ifDomains,
-                    "unlessDomains": rule.scope.unlessDomains
-                ]
-            }
+            [
+                "name": rule.name,
+                "args": rule.args,
+                "ifDomains": rule.scope.ifDomains,
+                "unlessDomains": rule.scope.unlessDomains
+            ]
+        }
 
         return [
             "engineTimestamp": bundle.engineTimestamp,

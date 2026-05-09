@@ -63,7 +63,9 @@ public struct NativeFilterCompiler: FilterCompiling {
                     } else if rule.requiresAdvancedURLHandling {
                         let jsRules = advancedURLHandlingScripts(for: rule, configuration: configuration)
                         let dnrRules = advancedDNRRulesForURLHandling(rule, nextID: &nextDNRRuleID)
-                        if jsRules.isEmpty, dnrRules.isEmpty, rule.redirectResource != nil {
+                        if jsRules.isEmpty,
+                           dnrRules.isEmpty,
+                           rule.redirectResource != nil {
                             networkRules.append(rule)
                         } else {
                             advancedJSRules.append(contentsOf: jsRules)
@@ -247,11 +249,9 @@ public struct NativeFilterCompiler: FilterCompiling {
 
     private func isFragileYouTubePlaybackScriptlet(_ rule: AdvancedScriptletRule) -> Bool {
         guard isYouTubeScoped(rule.scope) else { return false }
-        // Safari YouTube playback is currently too sensitive for page-world
-        // scriptlet mutation: even response-only mutations correlate with SABR
-        // buffering at 0x0 and repeated signed videoplayback 403s on sidebar
-        // navigation. Suppress all YouTube scriptlets while keeping static/DNR
-        // blocking and the diagnostic-only registered runtime active.
+        // YouTube needs document_start page hooks, but dynamically compiled
+        // scriptlets arrive too late and have caused playback regressions in
+        // Safari. A tiny packaged runtime handles YouTube instead.
         return true
     }
 

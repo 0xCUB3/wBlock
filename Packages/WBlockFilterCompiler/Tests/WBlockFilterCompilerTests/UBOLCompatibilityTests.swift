@@ -71,6 +71,8 @@ import Testing
         www.youtube.com##+js(trusted-rpnt, script, (function serverContract(), (()=>{const e=document.getElementById("movie_player"); e.getStatsForNerds?.(); e.loadVideoById("id", 0); window.Promise.prototype.then=new Proxy(window.Promise.prototype.then,{apply:(e,t,o)=>{const n=o[0];return typeof n==="function"&&n.toString().includes("onAbnormalityDetected")&&(o[0]=function(){}),Reflect.apply(e,t,o)}})})();(function serverContract(), sedCount, 1)
         www.youtube.com##+js(trusted-json-edit-xhr-request, [?..userAgent*="channel"]..client[?.clientName=="WEB"]+={"clientScreen":"CHANNEL"}, propsToMatch, /player?)
         www.youtube.com##+js(json-prune-fetch-response, adPlacements adSlots, , propsToMatch, /player?)
+        www.youtube.com##+js(trusted-replace-fetch-response, '"adPlacements"', '"no_ads"', propsToMatch, /player?)
+        www.youtube.com##+js(trusted-prevent-dom-bypass, Node.prototype.appendChild, Element.prototype.getElementsByTagName)
         example.com##+js(trusted-json-edit-xhr-request, [?..userAgent*="channel"]..client[?.clientName=="WEB"]+={"clientScreen":"CHANNEL"}, propsToMatch, /player?)
         """
     )
@@ -82,6 +84,22 @@ import Testing
 
     #expect(scriptlets.map(\.name) == ["ubo-trusted-json-edit-xhr-request"])
     #expect(scriptlets[0].scope.matches(host: "example.com"))
+}
+
+@Test func staleYouTubeGoogleVideoPlaybackRuleStaysUnsupportedOnSafari() throws {
+    let source = FilterSource(
+        identifier: "youtube-quick-fixes",
+        displayName: "YouTube quick fixes",
+        text: #"/\.googlevideo\.com\/videoplayback\?expire=(?:[02-9]+|1[1-68-9]\d+|17[1-48-9]\d+)&/$xhr,3p,method=get,domain=www.youtube.com"#
+    )
+    var configuration = FilterCompilerConfiguration(platform: .uBlockOriginCompatibility)
+    configuration.enabledCapabilities.insert(.advancedScriptlets)
+
+    let result = try NativeFilterCompiler().compile([source], configuration: configuration)
+    let rules = try #require(JSONSerialization.jsonObject(with: Data(result.safariRulesJSON.utf8)) as? [[String: Any]])
+
+    #expect(result.unsupportedRules.map(\.reason) == [.noSafariEquivalent])
+    #expect(rules.isEmpty)
 }
 
 @Test func redirect32x32CompilesToPackagedDynamicDNRResource() throws {

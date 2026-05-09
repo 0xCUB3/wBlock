@@ -19,13 +19,10 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "13"
+    private static let embeddedCompatibilityRulesVersion = "14"
 
     /// Minimal built-in rules that improve blocking of common dynamic ad script
-    /// patterns and dynamic ad containers across filter sets. YouTube handling
-    /// mirrors the conservative uBO response-mutation strategy rather than
-    /// broad media blocking, because Safari can classify normal playback
-    /// requests as XHR/fetch.
+    /// patterns and dynamic ad containers across filter sets.
     private static let embeddedCompatibilityRules = #"""
 /js/widget/ads.js$script
 /js/pagead.js$script
@@ -42,15 +39,6 @@ public enum ContentBlockerService {
 ||adblock-tester.com/banners/pr_advertising_ads_banner.png$xhr,important
 ||adblock-tester.com/banners/pr_advertising_ads_banner.swf$media,important
 ||adblock-tester.com/banners/pr_advertising_ads_banner.swf$xhr,important
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', '/playlist\\?list=|\\/player(?:\\?.+)?$|watch\\?[tv]=/')
-www.youtube.com##+js(json-prune-fetch-response, adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots, , propsToMatch, /player?)
-www.youtube.com##+js(json-prune-xhr-response, adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots, , propsToMatch, /\/player(?:\?.+)?$/)
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adSlots', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
 adblock-tester.com#%#//scriptlet('set-constant', 'Sentry', 'undefined')
 adblock-tester.com##+js(set-constant, Sentry, undefined)
 adblock-tester.com#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{const u=String(i&&i.url||i);return u.includes('/banners/pr_advertising_ads_banner.')?Promise.reject(new TypeError('Failed to fetch')):f(i,n);};})();
@@ -533,64 +521,45 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
+    private static func safariIfDomainWildcard(for site: String) -> String? {
+        let trimmed = site.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            .lowercased()
+        guard !trimmed.isEmpty else { return nil }
+
+        let withoutWildcard: String
+        if trimmed.hasPrefix("*.") {
+            withoutWildcard = String(trimmed.dropFirst(2))
+        } else if trimmed.hasPrefix("*") {
+            withoutWildcard = String(trimmed.dropFirst())
+                .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        } else {
+            withoutWildcard = trimmed
+        }
+        guard !withoutWildcard.isEmpty,
+              !withoutWildcard.contains("/"),
+              !withoutWildcard.contains(":"),
+              let asciiHost = URL(string: "http://\(withoutWildcard)/")?.host,
+              asciiHost.unicodeScalars.allSatisfy({ scalar in
+                  switch scalar {
+                  case "a"..."z", "0"..."9", ".", "-":
+                      return true
+                  default:
+                      return false
+                  }
+              }) else {
+            return nil
+        }
+        return "*.\(asciiHost)"
+    }
+
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
-        let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
-        let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+        guard let wildcardDomain = safariIfDomainWildcard(for: site) else { return "" }
         let escapedDomain = escapeForJSONString(wildcardDomain)
 
         return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-domain\":[\"\(escapedDomain)\"]}}"
     }
     
-    private static let youtubePlaybackURLFilters = [
-        #".*googlevideo\.com/(?:videoplayback|initplayback).*"#,
-        #".*c\.youtube\.com/(?:videoplayback|initplayback).*"#
-    ]
-    private static let legacyYouTubePlaybackURLFilter = #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?googlevideo\.com/videoplayback"#
-
-    private static func youtubePlaybackIgnoreRules() -> [[String: Any]] {
-        let youtubeDomains = ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "tv.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtubekids.com", "www.youtubekids.com", "*youtube.com", "*www.youtube.com", "*youtube-nocookie.com", "*youtubekids.com"]
-        var rules: [[String: Any]] = []
-
-        // WebKit has reported YouTube playback fetches as raw, media, or other
-        // request classes across releases. Keep this scoped to signed playback
-        // URLs on YouTube pages; do not ignore all previous YouTube rules.
-        for urlFilter in youtubePlaybackURLFilters {
-            let playbackTrigger: [String: Any] = [
-                "url-filter": urlFilter,
-                "if-domain": youtubeDomains
-            ]
-            rules.append(["action": ["type": "ignore-previous-rules"], "trigger": playbackTrigger])
-            for resourceType in ["raw", "media", "document", "script", "image"] {
-                var playbackTypedTrigger = playbackTrigger
-                playbackTypedTrigger["resource-type"] = [resourceType]
-                rules.append([
-                    "action": ["type": "ignore-previous-rules"],
-                    "trigger": playbackTypedTrigger
-                ])
-            }
-        }
-        return rules
-    }
-
-    private static func isBuiltInYouTubePlaybackIgnoreRule(_ rule: [String: Any]) -> Bool {
-        guard let action = rule["action"] as? [String: Any],
-              action["type"] as? String == "ignore-previous-rules",
-              let trigger = rule["trigger"] as? [String: Any],
-              let urlFilter = trigger["url-filter"] as? String else {
-            return false
-        }
-        guard youtubePlaybackURLFilters.contains(urlFilter) || urlFilter == legacyYouTubePlaybackURLFilter else {
-            return false
-        }
-        guard domainListContainsYouTube(trigger["if-domain"] as? [String]) else { return false }
-        if let resourceTypes = trigger["resource-type"] as? [String] {
-            guard resourceTypes.count == 1, ["raw", "media", "document", "script", "image"].contains(resourceTypes[0]) else {
-                return false
-            }
-        }
-        return true
-    }
-
     private static func domainListContainsYouTube(_ domains: [String]?) -> Bool {
         guard let domains else { return false }
         return domains.contains { domain in
@@ -602,10 +571,9 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
                 || normalized == "www.youtube-nocookie.com"
                 || normalized == "youtubekids.com"
                 || normalized == "www.youtubekids.com"
-                || normalized == "*youtube.com"
-                || normalized == "*www.youtube.com"
-                || normalized == "*youtube-nocookie.com"
-                || normalized == "*youtubekids.com"
+                || normalized == "*.youtube.com"
+                || normalized == "*.youtube-nocookie.com"
+                || normalized == "*.youtubekids.com"
                 || normalized.hasSuffix(".youtube.com")
                 || normalized.hasSuffix(".youtube-nocookie.com")
                 || normalized.hasSuffix(".youtubekids.com")
@@ -624,9 +592,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             return true
         }
 
-        // Safari/WebKit may classify signed googlevideo playback fetches differently
-        // across releases. Do not keep broad third-party media/raw blocks scoped to
-        // YouTube pages in the static blocker, because a false positive stalls playback.
         if domainListContainsYouTube(trigger["if-domain"] as? [String]), urlFilter == ".*" || urlFilter == ".*_ad_" {
             let resourceTypes = Set((trigger["resource-type"] as? [String]) ?? [])
             let loadTypes = Set((trigger["load-type"] as? [String]) ?? [])
@@ -640,16 +605,6 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
 
     private static func isGoogleVideoPlaybackURLFilter(_ urlFilter: String) -> Bool {
         (urlFilter.contains("googlevideo") || urlFilter.contains("c\\.youtube") || urlFilter.contains("c.youtube")) && (urlFilter.contains("videoplayback") || urlFilter.contains("initplayback"))
-    }
-
-    private static func isGoogleVideoPlaybackBlockRule(_ rule: [String: Any]) -> Bool {
-        guard let action = rule["action"] as? [String: Any],
-              action["type"] as? String == "block",
-              let trigger = rule["trigger"] as? [String: Any],
-              let urlFilter = (trigger["url-filter"] as? String)?.lowercased() else {
-            return false
-        }
-        return isGoogleVideoPlaybackURLFilter(urlFilter)
     }
 
     private static func isUnsafeGlobalThirdPartyRawBlock(_ rule: [String: Any]) -> Bool {
@@ -666,15 +621,13 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
 
         // These broad option-only filters are valid in uBO, but Safari often classifies
         // normal media fetches as "raw". If conversion cannot preserve the original
-        // domain scope, the result blocks all third-party XHR/fetch traffic, including
-        // YouTube's googlevideo playback requests.
+        // domain scope, the result blocks all third-party XHR/fetch traffic.
         return Set(trigger.keys) == Set(["url-filter", "resource-type", "load-type"])
     }
 
     /// Finalizes Safari content blocker JSON before saving.
-    /// This injects terminal allow rules for disabled sites and narrowly-scoped
-    /// fragile YouTube playback requests, and removes unsafe global raw third-party
-    /// blocks produced when conversion cannot preserve option-only rule domain scope.
+    /// This injects terminal allow rules for disabled sites and removes unsafe
+    /// raw/media blocks Safari can over-apply.
     private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
         let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let jsonData = trimmed.data(using: .utf8),
@@ -682,13 +635,10 @@ adblock.turtlecute.org#%#(()=>{const f=fetch.bind(window);window.fetch=(i,n)=>{c
             return json
         }
 
-        rules.removeAll { isUnsafeGlobalThirdPartyRawBlock($0) || isYouTubePlaybackBlockRule($0) || isGoogleVideoPlaybackBlockRule($0) || isBuiltInYouTubePlaybackIgnoreRule($0) }
-        rules.append(contentsOf: youtubePlaybackIgnoreRules())
+        rules.removeAll { isUnsafeGlobalThirdPartyRawBlock($0) || isYouTubePlaybackBlockRule($0) }
 
         for site in disabledSites {
-            let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedSite.isEmpty else { continue }
-            let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+            guard let wildcardDomain = safariIfDomainWildcard(for: site) else { continue }
             rules.append([
                 "action": ["type": "ignore-previous-rules"],
                 "trigger": ["url-filter": ".*", "if-domain": [wildcardDomain]]

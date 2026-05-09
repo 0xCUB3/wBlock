@@ -12,49 +12,6 @@ var MESSAGE_INIT_CONTENT_SCRIPT = 'InitContentScript';
 var WBLOCK_CONTENT_RUNTIME_ALREADY_RAN = globalThis.__wBlockContentRuntimeHasRun === true;
 globalThis.__wBlockContentRuntimeHasRun = true;
 
-function wBlockInstallYouTubeInlineScriptGuard() {
-  try {
-    const host = location.hostname || '';
-    if (host !== 'youtube.com' && host !== 'www.youtube.com' && !host.endsWith('.youtube.com')) return;
-
-    const textContentFactory = (() => {
-      const out = { createScript: s => s };
-      const tt = self.trustedTypes;
-      if (tt && typeof tt.getPropertyType === 'function' && typeof tt.createPolicy === 'function') {
-        try {
-          if (tt.getPropertyType('script', 'textContent') === 'TrustedScript') {
-            return tt.createPolicy('wblock-youtube-inline-script-guard', out);
-          }
-        } catch (_) {}
-      }
-      return out;
-    })();
-
-    const neutralize = node => {
-      try {
-        if (!node || node.nodeName !== 'SCRIPT') return;
-        const text = node.textContent || '';
-        if (text.includes('window,"fetch"')) {
-          node.textContent = textContentFactory.createScript('');
-        }
-      } catch (_) {}
-    };
-
-    try { document.querySelectorAll('script').forEach(neutralize); } catch (_) {}
-    const observer = new MutationObserver(mutations => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) neutralize(node);
-      }
-    });
-    observer.observe(document, { childList: true, subtree: true });
-    document.addEventListener('DOMContentLoaded', () => observer.disconnect(), { once: true });
-  } catch (_) {}
-}
-
-// Disabled: YouTube enforces Trusted Types and media playback is too fragile
-// for broad inline script neutralization from the content script.
-// wBlockInstallYouTubeInlineScriptGuard();
-
 function wBlockInstallTestSiteCompatibilityGuards() {
   try {
     const host = location.hostname || '';

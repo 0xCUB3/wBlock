@@ -109,7 +109,7 @@ import Testing
     #expect(rules[1].trigger.resourceType == ["raw"])
     #expect(rules[2].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?adblock-tester\.com/banners/pr_advertising_ads_banner\.gif"#)
     #expect(rules[2].trigger.resourceType == ["image"])
-    #expect(rules[3].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?sentry-cdn\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[3].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?sentry-cdn\.com[^A-Za-z0-9_.%-]?"#)
     #expect(rules[3].trigger.resourceType == ["script"])
     #expect(rules[3].trigger.ifDomain == ["adblock-tester.com"])
 }
@@ -170,9 +170,9 @@ import Testing
     #expect(rules[0].trigger.urlFilter == ".*")
     #expect(rules[0].trigger.ifDomain == ["example.com"])
     #expect(rules[1].action.type == "ignore-previous-rules")
-    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?google\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?google\.com[^A-Za-z0-9_.%-]?"#)
     #expect(rules[2].action.type == "ignore-previous-rules")
-    #expect(rules[2].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?gstatic\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[2].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?gstatic\.com[^A-Za-z0-9_.%-]?"#)
 }
 
 @Test func wildcardToDomainsExpandToDestinationRules() throws {
@@ -189,8 +189,8 @@ import Testing
     #expect(result.safariRuleCount == 2)
     #expect(rules.map { $0.action.type } == ["block", "block"])
     #expect(rules.map { $0.trigger.resourceType ?? [] } == [["raw"], ["raw"]])
-    #expect(rules[0].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?amazon\..*(?:[^A-Za-z0-9_\-.%]|$)"#)
-    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?x\.com(?:[^A-Za-z0-9_\-.%]|$)"#)
+    #expect(rules[0].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?amazon\..*[^A-Za-z0-9_.%-]?"#)
+    #expect(rules[1].trigger.urlFilter == #"^[a-z][a-z0-9+.-]*://([^/?#]+\.)?x\.com[^A-Za-z0-9_.%-]?"#)
 }
 
 @Test func mixedBlockingDomainOptionsEmitContextException() throws {

@@ -6056,23 +6056,7 @@ const WBLOCK_DNR_DYNAMIC_ID_MIN = 2000000;
 const WBLOCK_DNR_DYNAMIC_ID_MAX = 2999999;
 const cache = new Map();
 let nativeMessageQueue = Promise.resolve();
-let registeredAdvancedRuntimeTimestamp = 0;
-let registeredAdvancedRuntimeKey = '';
-let registeredAdvancedRuntimeRefresh = null;
-let registeredYouTubeMainRuntimeKey = '';
-const WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID = 'wblock-advanced-runtime-scriptlets';
-const WBLOCK_YOUTUBE_MAIN_RUNTIME_ID = 'wblock-youtube-main-runtime';
-const WBLOCK_YOUTUBE_MAIN_RUNTIME_MATCHES = [
-  '*://youtube.com/*',
-  '*://www.youtube.com/*',
-  '*://m.youtube.com/*',
-  '*://music.youtube.com/*',
-  '*://tv.youtube.com/*',
-  '*://youtube-nocookie.com/*',
-  '*://www.youtube-nocookie.com/*',
-  '*://youtubekids.com/*',
-  '*://www.youtubekids.com/*'
-];
+let registeredAdvancedRuntimeClearPromise = null;
 const menuCommandsByTab = new Map();
 
 const sendQueuedNativeMessage = request => {
@@ -6118,7 +6102,10 @@ function isGoogleVideoPlaybackDNRRule(rule) {
     ...(Array.isArray(condition.excludedRequestDomains) ? condition.excludedRequestDomains : [])
   ].filter(Boolean).join('\n').toLowerCase();
   const isPlaybackHost = haystack.includes('googlevideo') || haystack.includes('c.youtube');
-  return isPlaybackHost && (haystack.includes('videoplayback') || haystack.includes('initplayback'));
+  if (!isPlaybackHost || (!haystack.includes('videoplayback') && !haystack.includes('initplayback'))) {
+    return false;
+  }
+  return true;
 }
 
 function normalizeDynamicDNRRules(rules) {
@@ -6217,185 +6204,17 @@ async function syncDynamicDNRRules(configuration) {
   }
 }
 
-function wBlockRegisteredAdvancedRuntimeCode(payload) {
-  const scriptlets = Array.isArray(payload && payload.scriptlets) ? payload.scriptlets : [];
-  const disabledSites = Array.isArray(payload && payload.disabledSites) ? payload.disabledSites : [];
-  const configurationJSON = JSON.stringify({ scriptlets, disabledSites });
-  return `(() => {
-    const registered = ${configurationJSON};
-    const normalizeDomain = value => String(value || '').trim().replace(/^\\.+|\\.+$/g, '').toLowerCase();
-    const domainMatches = (domain, host) => {
-      const normalized = normalizeDomain(domain);
-      if (!normalized) return false;
-      if (normalized === '*') return true;
-      const suffix = normalized.startsWith('*.') ? normalized.slice(2) : normalized;
-      return host === suffix || host.endsWith('.' + suffix);
-    };
-    const host = normalizeDomain(location.hostname);
-    if (!host) return;
-    if (registered.disabledSites.some(domain => domainMatches(domain, host))) return;
-    const activeScriptlets = [];
-    for (const rule of registered.scriptlets) {
-      if (!rule || typeof rule.name !== 'string') continue;
-      const ifDomains = Array.isArray(rule.ifDomains) ? rule.ifDomains : [];
-      const unlessDomains = Array.isArray(rule.unlessDomains) ? rule.unlessDomains : [];
-      if (unlessDomains.some(domain => domainMatches(domain, host))) continue;
-      if (ifDomains.length && !ifDomains.some(domain => domainMatches(domain, host))) continue;
-      activeScriptlets.push({ name: rule.name, args: Array.isArray(rule.args) ? rule.args : [] });
-    }
-    if (!activeScriptlets.length) return;
-    (${wBlockApplyConfiguration.toString()})({ css: [], extendedCss: [], js: [], scriptlets: activeScriptlets });
-  })();`;
-}
-
-function wBlockNormalizeDomain(value) {
-  return String(value || '').trim().replace(/^\.+|\.+$/g, '').toLowerCase();
-}
-
-function wBlockDomainMatches(domain, host) {
-  const normalized = wBlockNormalizeDomain(domain);
-  const normalizedHost = wBlockNormalizeDomain(host);
-  if (!normalized || !normalizedHost) return false;
-  if (normalized === '*') return true;
-  const suffix = normalized.startsWith('*.') ? normalized.slice(2) : normalized;
-  return normalizedHost === suffix || normalizedHost.endsWith('.' + suffix);
-}
-
-function wBlockIsYouTubeRuntimeDisabled(disabledSites) {
-  const hosts = ['youtube.com', 'www.youtube.com', 'music.youtube.com', 'm.youtube.com', 'tv.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'];
-  return Array.isArray(disabledSites) && disabledSites.some(domain => hosts.some(host => wBlockDomainMatches(domain, host)));
-}
-
-async function unregisterRegisteredAdvancedRuntime(reason = 'unregister') {
-  if (!browser.userScripts || !browser.userScripts.unregister) return false;
-  try {
-    await browser.userScripts.unregister({ ids: [WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID] });
-    registeredAdvancedRuntimeTimestamp = 0;
-    registeredAdvancedRuntimeKey = '';
-    return true;
-  } catch (error) {
-    console.warn(`[wBlock] Registered advanced runtime ${reason} failed:`, error);
-    return false;
-  }
-}
-
-async function unregisterYouTubeMainRuntime(reason = 'unregister') {
-  if (!browser.scripting || !browser.scripting.unregisterContentScripts) return false;
-  try {
-    await browser.scripting.unregisterContentScripts({ ids: [WBLOCK_YOUTUBE_MAIN_RUNTIME_ID] });
-    registeredYouTubeMainRuntimeKey = '';
-    return true;
-  } catch (error) {
-    console.warn(`[wBlock] YouTube MAIN runtime ${reason} unregister failed:`, error);
-    return false;
-  }
-}
-
-async function registerYouTubeMainRuntimeScript(script) {
-  const attempts = [
-    script,
-    { ...script, persistAcrossSessions: undefined },
-    { ...script, matchOriginAsFallback: undefined },
-    { ...script, persistAcrossSessions: undefined, matchOriginAsFallback: undefined }
-  ];
-  let lastError = null;
-  for (const attempt of attempts) {
-    const cleaned = Object.fromEntries(Object.entries(attempt).filter(([, value]) => value !== undefined));
-    try {
-      await browser.scripting.registerContentScripts([cleaned]);
-      return true;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  if (lastError) throw lastError;
-  return false;
-}
-
-async function refreshYouTubeMainRuntimeRegistration(disabledSites, reason = 'refresh') {
-  if (!browser.scripting || !browser.scripting.registerContentScripts || !browser.scripting.unregisterContentScripts) return false;
-  const disabled = wBlockIsYouTubeRuntimeDisabled(disabledSites);
-  const registrationKey = disabled ? 'disabled' : 'enabled';
-  if (registrationKey === registeredYouTubeMainRuntimeKey) return true;
-  if (disabled) {
-    if (await unregisterYouTubeMainRuntime('disabled')) {
-      registeredYouTubeMainRuntimeKey = registrationKey;
-    }
-    return false;
-  }
-  const script = {
-    id: WBLOCK_YOUTUBE_MAIN_RUNTIME_ID,
-    js: ['youtube-early-main.js'],
-    matches: WBLOCK_YOUTUBE_MAIN_RUNTIME_MATCHES,
-    allFrames: true,
-    runAt: 'document_start',
-    world: 'MAIN',
-    matchOriginAsFallback: true,
-    persistAcrossSessions: true
-  };
-  try {
-    await browser.scripting.unregisterContentScripts({ ids: [WBLOCK_YOUTUBE_MAIN_RUNTIME_ID] }).catch(() => {});
-    await registerYouTubeMainRuntimeScript(script);
-    registeredYouTubeMainRuntimeKey = registrationKey;
-    return true;
-  } catch (error) {
-    registeredYouTubeMainRuntimeKey = '';
-    console.warn(`[wBlock] YouTube MAIN runtime ${reason} register failed:`, error);
-    return false;
-  }
-}
-
-async function refreshRegisteredAdvancedRuntime(reason = 'refresh') {
-  if (registeredAdvancedRuntimeRefresh) return registeredAdvancedRuntimeRefresh;
-  registeredAdvancedRuntimeRefresh = (async () => {
-    let payload = null;
-    try {
-      const response = await sendQueuedNativeMessage({ action: 'getAdvancedRuntimeRegistration' });
-      payload = response && response.payload;
-    } catch (error) {
-      console.warn('[wBlock] Registered advanced runtime lookup failed:', error);
-      return false;
-    }
-
-    const disabledSites = Array.isArray(payload && payload.disabledSites) ? payload.disabledSites : [];
-    await refreshYouTubeMainRuntimeRegistration(disabledSites, reason);
-
-    if (!browser.userScripts || !browser.userScripts.register || !browser.userScripts.unregister) return false;
-    const timestamp = payload && payload.engineTimestamp || 0;
-    const scriptlets = Array.isArray(payload && payload.scriptlets) ? payload.scriptlets : [];
-    if (!timestamp || !scriptlets.length) {
-      await unregisterRegisteredAdvancedRuntime('empty');
-      return false;
-    }
-    const registrationKey = JSON.stringify({ timestamp, disabledSites, scriptlets: scriptlets.length });
-    if (registrationKey === registeredAdvancedRuntimeKey) return true;
-
-    const code = wBlockRegisteredAdvancedRuntimeCode(payload);
-    try {
-      await browser.userScripts.unregister({ ids: [WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID] }).catch(() => {});
-      await browser.userScripts.register([{
-        id: WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID,
-        js: [{ code }],
-        matches: ['http://*/*', 'https://*/*'],
-        allFrames: true,
-        runAt: 'document_start',
-        world: 'MAIN'
-      }]);
-      registeredAdvancedRuntimeTimestamp = timestamp;
-      registeredAdvancedRuntimeKey = registrationKey;
-      return true;
-    } catch (error) {
-      registeredAdvancedRuntimeTimestamp = 0;
-      registeredAdvancedRuntimeKey = '';
-      console.warn(`[wBlock] Registered advanced runtime ${reason} failed:`, error);
-      return false;
-    }
-  })().finally(() => { registeredAdvancedRuntimeRefresh = null; });
-  return registeredAdvancedRuntimeRefresh;
-}
-
 function scheduleRegisteredAdvancedRuntimeRefresh(reason = 'schedule') {
-  refreshRegisteredAdvancedRuntime(reason).catch(() => {});
+  if (registeredAdvancedRuntimeClearPromise) return registeredAdvancedRuntimeClearPromise;
+  if (!browser.userScripts || !browser.userScripts.unregister) return Promise.resolve();
+
+  registeredAdvancedRuntimeClearPromise = browser.userScripts.unregister({ ids: ['wblock-advanced-runtime-scriptlets'] })
+    .catch(error => {
+      registeredAdvancedRuntimeClearPromise = null;
+      console.warn('[wBlock] Registered advanced runtime cleanup failed:', error);
+      setTimeout(() => { scheduleRegisteredAdvancedRuntimeRefresh(reason); }, 1000);
+    });
+  return registeredAdvancedRuntimeClearPromise;
 }
 
 clearDynamicDNRRules('startup_clear').catch(() => {});
@@ -6423,36 +6242,6 @@ async function getConfiguration(message, url, topUrl) {
     return cache.get(key);
   }
   return requestConfiguration(message, url, topUrl);
-}
-
-async function insertCss(tabId, frameId, configuration) {
-  const css = Array.isArray(configuration.css) ? configuration.css : [];
-  const extendedCss = Array.isArray(configuration.extendedCss) ? configuration.extendedCss : [];
-  const simpleExtended = extendedCss.filter(rule => typeof rule === 'string' && !/[(:]has-text|:-abp-contains|:xpath|:upward|:matches-css|:matches-attr|:matches-property|:remove\(\)|:style\(/.test(rule));
-  const selectors = [...css, ...simpleExtended].filter(rule => typeof rule === 'string' && rule.trim());
-  if (!selectors.length || !browser.scripting || !browser.scripting.insertCSS) return;
-  const cssText = selectors.map(selector => selector.includes('{') ? selector : `${selector}{display:none!important;}`).join('\n');
-  await browser.scripting.insertCSS({
-    target: { tabId, frameIds: [frameId] },
-    origin: 'USER',
-    css: cssText
-  }).catch(error => console.warn('[wBlock] CSS injection failed:', error));
-}
-
-async function applyConfiguration(tabId, frameId, configuration) {
-  if (!configuration) return;
-  await insertCss(tabId, frameId, configuration);
-  const scriptlets = Array.isArray(configuration.scriptlets) ? configuration.scriptlets : [];
-  const scripts = Array.isArray(configuration.js) ? configuration.js : [];
-  const extendedCss = Array.isArray(configuration.extendedCss) ? configuration.extendedCss : [];
-  if (!scriptlets.length && !scripts.length && !extendedCss.length) return;
-  await browser.scripting.executeScript({
-    target: { tabId, frameIds: [frameId] },
-    func: wBlockApplyConfiguration,
-    args: [configuration],
-    world: 'MAIN',
-    injectImmediately: true
-  }).catch(error => console.warn('[wBlock] MAIN-world runtime injection failed:', error));
 }
 
 function wBlockExecuteUserScriptSource(source) {
@@ -6677,8 +6466,7 @@ async function handleMessages(request, sender) {
   if (!url.startsWith('http') && topUrl) { url = topUrl; blankFrame = true; }
   const configuration = await getConfiguration(message, url, topUrl);
   if (!configuration) return { type: MESSAGE_INIT_CONTENT_SCRIPT };
-  if (!blankFrame && tabId) await applyConfiguration(tabId, frameId, configuration);
-  return { type: MESSAGE_INIT_CONTENT_SCRIPT, payload: blankFrame ? { ...configuration, scriptlets: [], js: [] } : null };
+  return { type: MESSAGE_INIT_CONTENT_SCRIPT, payload: blankFrame ? { ...configuration, scriptlets: [], js: [] } : configuration };
 }
 
 browser.runtime.onMessage.addListener((request, sender) => handleMessages(request, sender));

@@ -404,6 +404,10 @@ enum RuleParser {
             return .unsupported(.mixedDomainOptionsNeedSplitting)
         }
 
+        if isUnsupportedSafariRawRegex(pattern) {
+            return .unsupported(.noSafariEquivalent)
+        }
+
         let identity = canonicalIdentity(isException: isException, pattern: pattern, options: canonicalOptions)
         return .network(
             NetworkRule(
@@ -542,13 +546,63 @@ enum RuleParser {
     }
 
     private static func normalizeDomain(_ raw: String) -> String {
-        raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "."))
             .lowercased()
+        guard !trimmed.isEmpty else { return "" }
+
+        let wildcardPrefix = trimmed.hasPrefix("*.")
+        let host = wildcardPrefix ? String(trimmed.dropFirst(2)) : trimmed
+        let asciiHost = URL(string: "http://\(host)/")?.host ?? host
+        return wildcardPrefix ? "*.\(asciiHost)" : asciiHost
     }
 
     private static func isUsableHost(_ host: String) -> Bool {
-        !host.isEmpty && !host.contains("#")
+        !host.isEmpty &&
+            !host.contains("..") &&
+            host.unicodeScalars.allSatisfy { scalar in
+                switch scalar {
+                case "a"..."z", "0"..."9", ".", "-", "*":
+                    return true
+                default:
+                    return false
+                }
+            }
+    }
+
+    private static func isUnsupportedSafariRawRegex(_ pattern: String) -> Bool {
+        guard pattern.hasPrefix("/"), pattern.hasSuffix("/"), pattern.count > 1 else { return false }
+        let body = String(pattern.dropFirst().dropLast())
+        if body.contains("(?") { return true }
+
+        var escaped = false
+        var inCharacterClass = false
+        for character in body {
+            if escaped {
+                if "bBdDsSwW".contains(character) {
+                    return true
+                }
+                escaped = false
+                continue
+            }
+            if character == "\\" {
+                escaped = true
+                continue
+            }
+            if character == "[" {
+                inCharacterClass = true
+                continue
+            }
+            if character == "]" {
+                inCharacterClass = false
+                continue
+            }
+            if inCharacterClass { continue }
+            if character == "|" || character == "{" || character == "}" {
+                return true
+            }
+        }
+        return false
     }
 
     private static func resourceType(for option: String) -> SafariResourceType? {

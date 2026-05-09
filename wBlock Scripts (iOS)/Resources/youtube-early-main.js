@@ -1,8 +1,9 @@
 /*
- * Browser-registered YouTube document_start runtime.
- * Keep this intentionally small and Safari-safe: only remove ad metadata from
- * YouTube player JSON responses. Avoid request spoofing, DOM-bypass, timer, and
- * player/client mutation scriptlets because they can stall SABR playback.
+ * Static YouTube document_start runtime.
+ *
+ * Safari needs these hooks before YouTube's player bootstrap runs. Keep this
+ * packaged and tiny instead of feeding dynamic filter-list scriptlets through
+ * the generic runtime.
  */
 'use strict';
 
@@ -23,39 +24,8 @@
   if (globalThis.__wBlockYouTubeDocumentStartRuntime) return;
   globalThis.__wBlockYouTubeDocumentStartRuntime = true;
 
-  const diagnostics = (() => {
-    const startedAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
-    const recent = [];
-    const debug = (() => {
-      try {
-        return new URL(location.href).searchParams.get('wblockytdebug') === '1' || localStorage.getItem('wblockYouTubeDiagnostics') === '1';
-      } catch (_) {
-        return false;
-      }
-    })();
-    const now = () => Math.round((typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - startedAt);
-    const remember = entry => {
-      recent.push(entry);
-      if (recent.length > 60) recent.shift();
-      return entry;
-    };
-    const log = (level, event, data = {}) => {
-      const entry = remember({ t: now(), event, ...data });
-      if (debug) {
-        try { (console[level] || console.info).call(console, `[wBlock:yt] ${event}`, entry); } catch (_) {}
-      }
-      return entry;
-    };
-    return {
-      debug,
-      recent,
-      log,
-      enable() { try { localStorage.setItem('wblockYouTubeDiagnostics', '1'); } catch (_) {} log('info', 'diagnostics-enabled', { reloadRequired: true }); },
-      disable() { try { localStorage.removeItem('wblockYouTubeDiagnostics'); } catch (_) {} log('info', 'diagnostics-disabled', { reloadRequired: true }); }
-    };
-  })();
-  globalThis.__wBlockYouTubeDiagnostics = diagnostics;
-  diagnostics.log('info', 'runtime-start', { href: location.href, readyState: document.readyState });
+  const AD_METADATA_KEYS = ['adPlacements', 'adSlots', 'playerAds'];
+  const INITIAL_RESPONSE_PROPS = ['ytInitialPlayerResponse', 'playerResponse'];
 
   const urlFrom = value => {
     try {
@@ -67,44 +37,139 @@
     }
   };
 
-  const shouldPruneURL = rawURL => {
+  const youtubeResponseKind = rawURL => {
     let parsed;
-    try { parsed = new URL(rawURL, location.href); } catch (_) { return false; }
+    try { parsed = new URL(rawURL, location.href); } catch (_) { return ''; }
     const hostname = parsed.hostname.toLowerCase();
-    if (!youtubeHosts.has(hostname)) return false;
+    if (!youtubeHosts.has(hostname)) return '';
     const path = parsed.pathname;
-    return path === '/youtubei/v1/player' || path === '/youtubei/v1/playlist' || /\/player(?:$|[?#])/.test(path);
+    if (path === '/youtubei/v1/player' || /\/player(?:$|[?#])/.test(path)) return 'player';
+    if (path === '/youtubei/v1/playlist' || path === '/playlist') return 'playlist';
+    if (path === '/youtubei/v1/get_watch' || path === '/get_video_info') return 'get_watch';
+    if (path === '/watch') return 'watch';
+    return '';
   };
+
+  const shouldPruneFetchURL = rawURL => {
+    const kind = youtubeResponseKind(rawURL);
+    return kind === 'player' || kind === 'playlist' || kind === 'get_watch';
+  };
+  const shouldPruneXHRURL = rawURL => youtubeResponseKind(rawURL) !== '';
 
   const pruneAdMetadata = value => {
     let changed = false;
+    const visited = typeof WeakSet === 'function' ? new WeakSet() : null;
     const visit = node => {
       if (!node || typeof node !== 'object') return;
+      if (visited) {
+        if (visited.has(node)) return;
+        visited.add(node);
+      }
       if (Array.isArray(node)) {
         for (const item of node) visit(item);
         return;
       }
-      for (const key of ['adPlacements', 'adSlots']) {
+      for (const key of AD_METADATA_KEYS) {
         if (Object.prototype.hasOwnProperty.call(node, key)) {
           delete node[key];
           changed = true;
         }
       }
+      try {
+        if (node.playerConfig && node.playerConfig.audioConfig && node.playerConfig.audioConfig.muteOnStart === true) {
+          node.playerConfig.audioConfig.muteOnStart = false;
+          changed = true;
+        }
+        if (Object.prototype.hasOwnProperty.call(node, 'youThereRenderer')) {
+          delete node.youThereRenderer;
+          changed = true;
+        }
+      } catch (_) {}
       for (const item of Object.values(node)) visit(item);
     };
     visit(value);
     return changed;
   };
 
+  const hasAdMetadataText = text => {
+    if (typeof text !== 'string') return false;
+    return text.includes('"adPlacements"') || text.includes('"adSlots"') || text.includes('"playerAds"') ||
+      text.includes('"muteOnStart":true') || text.includes('"youThereRenderer"');
+  };
+
   const prunedJSONText = text => {
-    if (typeof text !== 'string' || !text.includes('ad')) return null;
+    if (!hasAdMetadataText(text)) return null;
     try {
       const json = JSON.parse(text);
-      if (!pruneAdMetadata(json)) return null;
+      pruneAdMetadata(json);
       return JSON.stringify(json);
     } catch (_) {
       return null;
     }
+  };
+
+  const rewrittenAdMetadataText = text => {
+    if (!hasAdMetadataText(text)) return null;
+    return text
+      .replaceAll('"adPlacements"', '"no_ads"')
+      .replaceAll('"adSlots"', '"no_ads"')
+      .replaceAll('"playerAds"', '"no_ads"');
+  };
+
+  const sanitizedResponseText = text => {
+    const pruned = prunedJSONText(text);
+    return pruned || rewrittenAdMetadataText(text);
+  };
+
+  const sanitizeObject = value => {
+    try { pruneAdMetadata(value); } catch (_) {}
+    return value;
+  };
+
+  const installInitialResponsePruner = () => {
+    for (const prop of INITIAL_RESPONSE_PROPS) {
+      try {
+        const descriptor = Object.getOwnPropertyDescriptor(globalThis, prop);
+        if (descriptor && descriptor.configurable === false) {
+          try { sanitizeObject(globalThis[prop]); } catch (_) {}
+          continue;
+        }
+
+        let current;
+        if (descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')) {
+          current = sanitizeObject(descriptor.value);
+        } else if (descriptor && typeof descriptor.get === 'function') {
+          try { current = sanitizeObject(descriptor.get.call(globalThis)); } catch (_) {}
+        } else if (Object.prototype.hasOwnProperty.call(globalThis, prop)) {
+          current = sanitizeObject(globalThis[prop]);
+        }
+
+        Object.defineProperty(globalThis, prop, {
+          configurable: true,
+          enumerable: descriptor ? descriptor.enumerable : true,
+          get() {
+            return current;
+          },
+          set(value) {
+            current = sanitizeObject(value);
+          }
+        });
+      } catch (_) {}
+    }
+  };
+
+  const installJSONParsePruner = () => {
+    if (!JSON || typeof JSON.parse !== 'function' || JSON.parse.__wBlockYouTubeSafePruner) return;
+    const nativeParse = JSON.parse;
+    const wrappedParse = new Proxy(nativeParse, { apply(target, thisArg, args) {
+      const result = Reflect.apply(target, thisArg, args);
+      if (hasAdMetadataText(args[0])) {
+        try { sanitizeObject(result); } catch (_) {}
+      }
+      return result;
+    }});
+    try { Object.defineProperty(wrappedParse, '__wBlockYouTubeSafePruner', { value: true }); } catch (_) {}
+    JSON.parse = wrappedParse;
   };
 
   const installFetchPruner = () => {
@@ -112,18 +177,16 @@
     const nativeFetch = fetch;
     const wrappedFetch = new Proxy(nativeFetch, { apply(target, thisArg, args) {
       const rawURL = urlFrom(args[0]);
-      const shouldPrune = shouldPruneURL(rawURL);
       const result = Reflect.apply(target, thisArg, args);
-      if (!shouldPrune || !result || typeof result.then !== 'function') return result;
+      if (!shouldPruneFetchURL(rawURL) || !result || typeof result.then !== 'function') return result;
       return result.then(async response => {
         if (!response || response.ok === false) return response;
         try {
           const text = await response.clone().text();
-          const pruned = prunedJSONText(text);
+          const pruned = sanitizedResponseText(text);
           if (pruned === null) return response;
           const headers = new Headers(response.headers);
           headers.delete('content-length');
-          diagnostics.log('info', 'player-response-pruned', { transport: 'fetch', url: rawURL.slice(0, 160) });
           const responseAfter = new Response(pruned, { status: response.status, statusText: response.statusText, headers });
           try {
             Object.defineProperties(responseAfter, {
@@ -133,8 +196,7 @@
             });
           } catch (_) {}
           return responseAfter;
-        } catch (error) {
-          diagnostics.log('warn', 'fetch-prune-failed', { error: String(error && error.message || error) });
+        } catch (_) {
           return response;
         }
       });
@@ -149,7 +211,7 @@
     const nativeOpen = proto.open;
     proto.open = function(method, url, ...rest) {
       try {
-        this.__wBlockYouTubePruneResponse = shouldPruneURL(urlFrom(url));
+        this.__wBlockYouTubePruneResponse = shouldPruneXHRURL(urlFrom(url));
       } catch (_) {
         this.__wBlockYouTubePruneResponse = false;
       }
@@ -164,10 +226,7 @@
         get() {
           const text = responseTextDescriptor.get.call(this);
           if (!this.__wBlockYouTubePruneResponse) return text;
-          const pruned = prunedJSONText(text);
-          if (pruned === null) return text;
-          diagnostics.log('info', 'player-response-pruned', { transport: 'xhr' });
-          return pruned;
+          return sanitizedResponseText(text) || text;
         }
       });
     }
@@ -180,11 +239,9 @@
         get() {
           const response = responseDescriptor.get.call(this);
           if (!this.__wBlockYouTubePruneResponse || !response) return response;
-          if (typeof response === 'string') return prunedJSONText(response) || response;
+          if (typeof response === 'string') return sanitizedResponseText(response) || response;
           if (typeof response === 'object') {
-            try {
-              if (pruneAdMetadata(response)) diagnostics.log('info', 'player-response-pruned', { transport: 'xhr', type: 'json' });
-            } catch (_) {}
+            try { pruneAdMetadata(response); } catch (_) {}
           }
           return response;
         }
@@ -193,7 +250,10 @@
     try { Object.defineProperty(proto, '__wBlockYouTubeSafePruner', { value: true }); } catch (_) {}
   };
 
-  try { installFetchPruner(); installXHRPruner(); } catch (error) {
-    diagnostics.log('warn', 'install-failed', { error: String(error && error.message || error) });
-  }
+  try {
+    installInitialResponsePruner();
+    installJSONParsePruner();
+    installFetchPruner();
+    installXHRPruner();
+  } catch (_) {}
 })();

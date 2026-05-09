@@ -31,7 +31,12 @@ enum SafariURLFilterTranslator {
             } else if character == "*" {
                 output += ".*"
             } else if character == "^" {
-                output += "(?:[^A-Za-z0-9_\\-.%]|$)"
+                // Safari's content-blocker regex dialect does not support
+                // disjunctions, and rejects escaped hyphens inside character
+                // classes on iOS. Approximate ABP's separator token with an
+                // optional separator character so host-anchored rules still
+                // compile when the separator is the end of the URL.
+                output += "[^A-Za-z0-9_.%-]?"
             } else {
                 output += escapedRegexCharacter(character)
             }
