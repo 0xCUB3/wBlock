@@ -9,107 +9,6 @@
 // (for example account/blank iframes). Use var so reinjection does not throw
 // duplicate top-level lexical binding errors, and guard the bootstrap below.
 var MESSAGE_INIT_CONTENT_SCRIPT = 'InitContentScript';
-var WBLOCK_YOUTUBE_AD_RESPONSE_PATHS = 'adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots';
-var WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT = String.raw`(() => {
-  if (globalThis.__wblockYouTubeServerContractRuntime) return;
-  globalThis.__wblockYouTubeServerContractRuntime = true;
-  const install = () => {
-    if (location.href.startsWith('https://www.youtube.com/tv#/') || location.href.startsWith('https://www.youtube.com/embed/')) return true;
-    const cfg = globalThis.ytcfg && ytcfg.data_ && ytcfg.data_.INNERTUBE_CONTEXT;
-    const client = cfg && cfg.client;
-    if (!client || typeof client.userAgent !== 'string') return false;
-    try {
-      if (globalThis.ytInitialData?.topbar?.desktopTopbarRenderer?.logo?.topbarLogoRenderer?.iconImage?.iconType === 'YOUTUBE_PREMIUM_LOGO') return true;
-    } catch (_) {}
-    const baseUserAgent = client.userAgent;
-    const setClientSuffix = suffix => {
-      client.userAgent = suffix ? baseUserAgent.replace?.(/(Mozilla\/5\.0 \([^)]+)/, '$1; ' + suffix) : baseUserAgent;
-    };
-    const candidates = ['channel'];
-    let reloadArmed = false;
-    let remainingCandidates = candidates;
-    document.addEventListener('DOMContentLoaded', () => {
-      const checkPlayer = () => {
-        const player = document.getElementById('movie_player');
-        if (!player || !location.href.includes('/watch?')) { remainingCandidates = candidates; return; }
-        const response = player.getPlayerResponse?.();
-        const progress = player.getProgressState?.();
-        const stats = player.getStatsForNerds?.();
-        if ((progress && progress.duration > 0 && (progress.loaded < progress.duration || progress.duration - progress.current > 1)) || response?.videoDetails?.isLive) {
-          if (!stats?.debug_info?.startsWith?.('SSAP, AD')) {
-            const videoId = response?.videoDetails?.videoId;
-            const startSeconds = response?.playerConfig?.playbackStartConfig?.startSeconds ?? 0;
-            const buffering = player.getPlayerStateObject?.()?.isBuffering;
-            const subreason = JSON.stringify(response?.playabilityStatus?.errorScreen?.playerErrorMessageRenderer?.subreason?.runs);
-            if (response?.playabilityStatus?.status === 'UNPLAYABLE' && !response?.playabilityStatus?.errorScreen?.playerErrorMessageRenderer?.playerCaptchaViewModel && subreason?.includes?.('WEB_PAGE_TYPE_UNKNOWN') && subreason?.includes?.('https://support.google.com/youtube/answer/3037019')) {
-              remainingCandidates = remainingCandidates.slice(1);
-              remainingCandidates.length > 0 ? setClientSuffix(remainingCandidates[0]) : setClientSuffix('');
-              reloadArmed = false;
-              player.loadVideoById?.(videoId, startSeconds);
-              return;
-            }
-            if (remainingCandidates.length === 0) {
-              reloadArmed = false;
-              setClientSuffix('');
-              return;
-            }
-            if (buffering && stats?.buffer_health_seconds === '0.00 s' && stats?.resolution === '0x0' && reloadArmed) {
-              setClientSuffix(remainingCandidates[0]);
-              reloadArmed = false;
-              player.loadVideoById?.(videoId, startSeconds);
-              return;
-            }
-          }
-          if (progress.duration > 0) player.seekTo?.(progress.duration);
-        }
-      };
-      checkPlayer();
-      new MutationObserver(() => checkPlayer()).observe(document, { childList: true, subtree: true });
-    });
-    const nativeMapHas = Map.prototype.has;
-    Map.prototype.has = new Proxy(nativeMapHas, { apply(target, thisArg, args) {
-      if (args?.[0] === 'onSnackbarMessage' && !reloadArmed) {
-        const player = document.getElementById('movie_player');
-        if (player) {
-          const stats = player.getStatsForNerds?.();
-          const buffering = player.getPlayerStateObject?.()?.isBuffering;
-          const playbackUrl = player.getPlayerResponse?.()?.playbackTracking?.videostatsPlaybackUrl?.baseUrl || '';
-          if (buffering && stats?.buffer_health_seconds === '0.00 s' && stats?.resolution === '0x0' && remainingCandidates.length > 0) {
-            if (String(playbackUrl).includes('reloadxhr')) remainingCandidates = remainingCandidates.slice(1);
-            reloadArmed = true;
-          }
-        }
-      }
-      return Reflect.apply(target, thisArg, args);
-    } });
-    const nativeStringify = JSON.stringify;
-    JSON.stringify = new Proxy(nativeStringify, { apply(target, thisArg, args) {
-      const payload = args?.[0];
-      const clientInfo = payload?.context?.client;
-      if (payload && typeof payload === 'object' && 'attestationRequest' in payload && typeof payload?.playbackContext?.contentPlaybackContext === 'object' && clientInfo?.mainAppWebInfo?.graftUrl?.includes('/watch?')) {
-        payload.playbackContext.contentPlaybackContext.lactMilliseconds = String(Date.now());
-      }
-      return Reflect.apply(target, thisArg, args);
-    } });
-    const thenHandler = { apply(target, thisArg, args) {
-      if (typeof args?.[0] === 'function' && args[0].toString().includes('onAbnormalityDetected')) args[0] = function() {};
-      return Reflect.apply(target, thisArg, args);
-    } };
-    Promise.prototype.then = new Proxy(Promise.prototype.then, thenHandler);
-    return true;
-  };
-  let tries = 0;
-  const retry = () => {
-    try { if (install()) return; } catch (_) {}
-    if (++tries < 160) setTimeout(retry, 50);
-  };
-  retry();
-})();`;
-var WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [
-  { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/player?'] },
-  { name: 'ubo-json-prune-xhr-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', String.raw`/\/player(?:\?.+)?$/`] }
-];
-var WBLOCK_EARLY_YOUTUBE_CONFIGURATION = { scriptlets: WBLOCK_EARLY_YOUTUBE_SCRIPTLETS, css: [], extendedCss: [], js: [] };
 var WBLOCK_CONTENT_RUNTIME_ALREADY_RAN = globalThis.__wBlockContentRuntimeHasRun === true;
 globalThis.__wBlockContentRuntimeHasRun = true;
 
@@ -6361,25 +6260,6 @@ function wBlockInjectPageConfiguration(configuration) {
   script.remove();
 }
 
-function wBlockApplyEarlyYouTubeCompatibility() {
-  try {
-    const host = location.hostname || '';
-    if (!['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'tv.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'].includes(host)) return;
-    let requestedMainWorldInjection = false;
-    try {
-      if (typeof browser !== 'undefined' && browser.runtime && typeof browser.runtime.sendMessage === 'function') {
-        requestedMainWorldInjection = true;
-        browser.runtime.sendMessage({ action: 'wblock:applyEarlyYouTubeRuntime', url: location.href }).catch(() => {});
-      }
-    } catch (_) {}
-    // Prefer browser.scripting MAIN-world injection on YouTube. Inline script tags
-    // are both slower and frequently rejected by YouTube Trusted Types/CSP.
-    if (!requestedMainWorldInjection) wBlockInjectPageConfiguration(WBLOCK_EARLY_YOUTUBE_CONFIGURATION);
-  } catch (error) {
-    try { console.warn('[wBlock] Early YouTube runtime failed:', error); } catch (_) {}
-  }
-}
-
 function wBlockDelayLoadEvents(timeoutMs = 250) {
   const interceptors = [];
   const events = [
@@ -6407,7 +6287,6 @@ function wBlockDelayLoadEvents(timeoutMs = 250) {
 }
 
 async function wBlockMain() {
-  wBlockApplyEarlyYouTubeCompatibility();
   const releaseEvents = wBlockDelayLoadEvents(250);
   try {
     const response = await browser.runtime.sendMessage({ type: MESSAGE_INIT_CONTENT_SCRIPT });
