@@ -18,6 +18,9 @@
     const recent = [];
     let nextId = 1;
     let lastPlayerSignature = '';
+    const detailedNetwork = (() => {
+      try { return new URL(location.href).searchParams.get('wblockytdebug') === '1' || localStorage.getItem('wblockYouTubeDiagnostics') === '1'; } catch (_) { return false; }
+    })();
     const now = () => Math.round((typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - startedAt);
     const remember = entry => {
       recent.push(entry);
@@ -156,10 +159,19 @@
         }
       } catch (_) {}
     };
-    try { wrapFetch(); wrapXHR(); installEventLogs(); } catch (error) { log('warn', 'diagnostics-install-failed', { error: String(error && error.message || error) }); }
+    try {
+      if (detailedNetwork) { wrapFetch(); wrapXHR(); }
+      installEventLogs();
+    } catch (error) { log('warn', 'diagnostics-install-failed', { error: String(error && error.message || error) }); }
     try { setInterval(samplePlayer, 1000); } catch (_) {}
-    log('info', 'runtime-start', { href: location.href, readyState: document.readyState, userAgent: navigator.userAgent, scriptlets: 'early-youtube' });
-    return { log, recent, samplePlayer };
+    log('info', 'runtime-start', { href: location.href, readyState: document.readyState, userAgent: navigator.userAgent, detailedNetwork, scriptlets: 'early-youtube' });
+    return {
+      log,
+      recent,
+      samplePlayer,
+      enableDetailedNetwork() { try { localStorage.setItem('wblockYouTubeDiagnostics', '1'); } catch (_) {} log('info', 'detailed-network-enabled', { reloadRequired: true }); },
+      disableDetailedNetwork() { try { localStorage.removeItem('wblockYouTubeDiagnostics'); } catch (_) {} log('info', 'detailed-network-disabled', { reloadRequired: true }); }
+    };
   })();
   globalThis.__wBlockYouTubeDiagnostics = wBlockYtDiag;
 

@@ -247,34 +247,12 @@ public struct NativeFilterCompiler: FilterCompiling {
 
     private func isFragileYouTubePlaybackScriptlet(_ rule: AdvancedScriptletRule) -> Bool {
         guard isYouTubeScoped(rule.scope) else { return false }
-        let name = rule.name.lowercased()
-        let args = rule.args.joined(separator: "\u{1f}")
-
-        // uBO's large YouTube node-text player patch relies on exact document-start
-        // page-world injection and can loop if it lands late. On Safari, the
-        // YouTube request-editing quick fixes which spoof the channel/reloadxhr
-        // player client can also steer playback toward c.youtube/googlevideo hosts
-        // that intermittently fail DNS or return stale signed URLs, causing
-        // "Experiencing interruptions?" stalls. Keep response mutation enabled,
-        // but suppress those player request edits.
-        if isTrustedReplaceNodeTextName(name) {
-            return args.contains("serverContract") && (
-                args.contains("loadVideoById") ||
-                args.contains("buffer_health_seconds") ||
-                args.contains("onAbnormalityDetected") ||
-                args.contains("YOUTUBE_PREMIUM_LOGO")
-            )
-        }
-
-        if isTrustedJSONEditRequestName(name) {
-            return args.contains("userAgent") || args.contains("reloadxhr") || args.contains("clientScreen") || args.contains("referer")
-        }
-
-        if isTrustedJSONEditResponseName(name) {
-            return args.contains("minimumPlaybackRate")
-        }
-
-        return false
+        // Safari YouTube playback is currently too sensitive for page-world
+        // scriptlet mutation: even response-only mutations correlate with SABR
+        // buffering at 0x0 and repeated signed videoplayback 403s on sidebar
+        // navigation. Suppress all YouTube scriptlets while keeping static/DNR
+        // blocking and the diagnostic-only registered runtime active.
+        return true
     }
 
     private func isYouTubeScoped(_ scope: AdvancedDomainScope) -> Bool {
