@@ -122,13 +122,11 @@ const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
     { name: 'ubo-trusted-replace-xhr-response', args: ['"adPlacements"', '"no_ads"', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
     { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?([A-Z]"\}|"\}{2,4})\}\],/`, '', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
     { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?("adSlots"|"adBreakHeartbeatParams")/gms`, '$1', String.raw`/\/player(?:\?.+)?$/`] },
-    { name: 'ubo-trusted-json-edit-xhr-request', args: ['[?..userAgent*="channel"]..client[?.clientName=="WEB"]+={"clientScreen":"CHANNEL"}', 'propsToMatch', '/player?'] },
-    { name: 'ubo-trusted-json-edit-xhr-request', args: ['[?..userAgent=/adunit|channel|lactmilli|instream|eafg/]..referer=repl({"regex":"$","replacement":"#reloadxhr"})', 'propsToMatch', '/player?'] },
     { name: 'ubo-nano-stb', args: ['[native code]', '17000', '0.001'] }
   ],
   css: [],
   extendedCss: [],
-  js: [WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT]
+  js: []
 };
 
 function wBlockApplyConfiguration(configuration) {
@@ -6238,7 +6236,8 @@ function isGoogleVideoPlaybackDNRRule(rule) {
     ...(Array.isArray(condition.requestDomains) ? condition.requestDomains : []),
     ...(Array.isArray(condition.excludedRequestDomains) ? condition.excludedRequestDomains : [])
   ].filter(Boolean).join('\n').toLowerCase();
-  return haystack.includes('googlevideo') && (haystack.includes('videoplayback') || haystack.includes('initplayback'));
+  const isPlaybackHost = haystack.includes('googlevideo') || haystack.includes('c.youtube');
+  return isPlaybackHost && (haystack.includes('videoplayback') || haystack.includes('initplayback'));
 }
 
 function normalizeDynamicDNRRules(rules) {

@@ -63,7 +63,7 @@ import Testing
     #expect(result.advancedRules.dnrRules[0].action.redirect?.transform?.queryTransform?.removeParams == ["fbclid"])
 }
 
-@Test func fragileYouTubeNodeTextScriptletsAreSuppressedButRequestEditorsRemainEnabled() throws {
+@Test func fragileYouTubePlaybackScriptletsSuppressChannelRequestEditors() throws {
     let source = FilterSource(
         identifier: "youtube-quick-fixes",
         displayName: "YouTube quick fixes",
@@ -80,10 +80,9 @@ import Testing
     let result = try NativeFilterCompiler().compile([source], configuration: configuration)
     let scriptlets = result.advancedRules.scriptlets
 
-    #expect(scriptlets.map(\.name) == ["ubo-trusted-json-edit-xhr-request", "ubo-json-prune-fetch-response", "ubo-trusted-json-edit-xhr-request"])
+    #expect(scriptlets.map(\.name) == ["ubo-json-prune-fetch-response", "ubo-trusted-json-edit-xhr-request"])
     #expect(scriptlets[0].scope.matches(host: "www.youtube.com"))
-    #expect(scriptlets[1].scope.matches(host: "www.youtube.com"))
-    #expect(scriptlets[2].scope.matches(host: "example.com"))
+    #expect(scriptlets[1].scope.matches(host: "example.com"))
 }
 
 @Test func redirect32x32CompilesToPackagedDynamicDNRResource() throws {

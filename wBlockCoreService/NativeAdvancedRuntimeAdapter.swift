@@ -107,9 +107,12 @@ enum NativeAdvancedRuntimeAdapter {
         let args = rule.args.joined(separator: "\u{1f}")
 
         // uBO's large YouTube node-text player patch relies on exact document-start
-        // page-world injection and can loop if it lands late. Keep response/request
-        // mutation scriptlets enabled, because those are also applied by the early
-        // YouTube runtime and are needed to remove ad-bearing player responses.
+        // page-world injection and can loop if it lands late. On Safari, the
+        // YouTube request-editing quick fixes which spoof the channel/reloadxhr
+        // player client can also steer playback toward c.youtube/googlevideo hosts
+        // that intermittently fail DNS or return stale signed URLs, causing
+        // "Experiencing interruptions?" stalls. Keep response mutation enabled,
+        // but suppress those player request edits.
         if isTrustedReplaceNodeTextName(name) {
             return args.contains("serverContract") && (
                 args.contains("loadVideoById") ||
@@ -120,7 +123,7 @@ enum NativeAdvancedRuntimeAdapter {
         }
 
         if isTrustedJSONEditRequestName(name) {
-            return false
+            return args.contains("userAgent") || args.contains("reloadxhr") || args.contains("clientScreen") || args.contains("referer")
         }
 
         if isTrustedJSONEditResponseName(name) {
@@ -223,7 +226,7 @@ enum NativeAdvancedRuntimeAdapter {
     static func registeredScriptletPayload(groupIdentifier: String, disabledSites: [String]) -> [String: Any]? {
         guard let bundle = loadBundle(groupIdentifier: groupIdentifier) else { return nil }
         let scriptlets = bundle.scriptlets
-            .filter { isEarlyRegisteredScriptletName($0.name) }
+            .filter { isEarlyRegisteredScriptletName($0.name) && !isFragileYouTubePlaybackScriptlet($0) }
             .map { rule -> [String: Any] in
                 [
                     "name": rule.name,
