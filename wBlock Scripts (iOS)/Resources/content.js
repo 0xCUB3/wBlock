@@ -4394,7 +4394,7 @@ function wBlockApplyConfiguration(configuration) {
                           return true;
                       },
                       getter: function() {
-                          if ( document.currentScript === thisScript ) {
+                          if ( thisScript && document.currentScript === thisScript ) {
                               return this.v;
                           }
                           safe.uboLog(logPrefix, 'Property read');

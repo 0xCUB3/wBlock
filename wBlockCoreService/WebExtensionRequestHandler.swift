@@ -92,6 +92,9 @@ public enum WebExtensionRequestHandler {
             case "gmXmlhttpRequestNative", "gmXmlhttpRequest":
                 handleNativeGMXmlhttpRequest(message: message!, context: context)
                 return
+            case "getAdvancedRuntimeRegistration":
+                handleGetAdvancedRuntimeRegistration(message: message!, context: context)
+                return
             case "getSiteDisabledState":
                 handleGetSiteDisabledState(message: message!, context: context)
                 return
@@ -244,6 +247,24 @@ public enum WebExtensionRequestHandler {
     private enum UserScriptChunkKind {
         case content
         case resource
+    }
+
+    private static func handleGetAdvancedRuntimeRegistration(message: [String: Any?], context: NSExtensionContext) {
+        let contextBox = ExtensionContextBox(context: context)
+        Task { @MainActor in
+            let groupIdentifier = GroupIdentifier.shared.value
+            let disabledSites = await currentDisabledSites()
+            let payload = NativeAdvancedRuntimeAdapter.registeredScriptletPayload(
+                groupIdentifier: groupIdentifier,
+                disabledSites: disabledSites
+            ) ?? [
+                "engineTimestamp": 0,
+                "disabledSites": disabledSites,
+                "scriptlets": []
+            ]
+            let response = createResponse(with: ["payload": payload])
+            contextBox.context.completeRequest(returningItems: [response])
+        }
     }
 
     private static func handleGetSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {

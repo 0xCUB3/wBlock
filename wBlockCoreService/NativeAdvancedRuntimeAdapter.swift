@@ -167,6 +167,30 @@ enum NativeAdvancedRuntimeAdapter {
             name == "trusted-json-edit-fetch-response.js"
     }
 
+    private static func normalizedScriptletName(_ rawName: String) -> String {
+        var name = rawName.lowercased()
+        if name.hasPrefix("ubo-") { name.removeFirst(4) }
+        if name.hasSuffix(".js") { name.removeLast(3) }
+        return name
+    }
+
+    private static func isEarlyRegisteredScriptletName(_ rawName: String) -> Bool {
+        switch normalizedScriptletName(rawName) {
+        case "set", "set-constant", "trusted-set", "trusted-set-constant",
+             "nano-setTimeout-booster", "nano-stb",
+             "no-fetch-if", "prevent-fetch", "trusted-prevent-fetch",
+             "no-xhr-if", "prevent-xhr", "trusted-prevent-xhr",
+             "json-prune", "json-prune-fetch-response", "json-prune-xhr-response",
+             "json-edit-fetch-request", "json-edit-xhr-request",
+             "trusted-json-edit-fetch-request", "trusted-json-edit-xhr-request",
+             "trusted-replace-fetch-response", "trusted-replace-xhr-response",
+             "trusted-prevent-dom-bypass":
+            return true
+        default:
+            return false
+        }
+    }
+
     static func clear(groupIdentifier: String) throws {
         guard let url = runtimeURL(groupIdentifier: groupIdentifier) else { return }
         if FileManager.default.fileExists(atPath: url.path) {
@@ -194,6 +218,26 @@ enum NativeAdvancedRuntimeAdapter {
         payload["userScripts"] = []
         payload["engineTimestamp"] = configuration.engineTimestamp
         return payload
+    }
+
+    static func registeredScriptletPayload(groupIdentifier: String, disabledSites: [String]) -> [String: Any]? {
+        guard let bundle = loadBundle(groupIdentifier: groupIdentifier) else { return nil }
+        let scriptlets = bundle.scriptlets
+            .filter { isEarlyRegisteredScriptletName($0.name) }
+            .map { rule -> [String: Any] in
+                [
+                    "name": rule.name,
+                    "args": rule.args,
+                    "ifDomains": rule.scope.ifDomains,
+                    "unlessDomains": rule.scope.unlessDomains
+                ]
+            }
+
+        return [
+            "engineTimestamp": bundle.engineTimestamp,
+            "disabledSites": disabledSites,
+            "scriptlets": scriptlets
+        ]
     }
 
     private static func dnrRuleDictionary(_ rule: AdvancedDNRRule) -> [String: Any] {

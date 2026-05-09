@@ -4243,7 +4243,7 @@ function wBlockApplyConfiguration(configuration) {
                           return true;
                       },
                       getter: function() {
-                          if ( document.currentScript === thisScript ) {
+                          if ( thisScript && document.currentScript === thisScript ) {
                               return this.v;
                           }
                           safe.uboLog(logPrefix, 'Property read');
@@ -6180,6 +6180,10 @@ const WBLOCK_DNR_DYNAMIC_ID_MIN = 2000000;
 const WBLOCK_DNR_DYNAMIC_ID_MAX = 2999999;
 const cache = new Map();
 let nativeMessageQueue = Promise.resolve();
+let registeredAdvancedRuntimeTimestamp = 0;
+let registeredAdvancedRuntimeKey = '';
+let registeredAdvancedRuntimeRefresh = null;
+const WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID = 'wblock-advanced-runtime-scriptlets';
 const menuCommandsByTab = new Map();
 
 const sendQueuedNativeMessage = request => {
@@ -6323,7 +6327,103 @@ async function syncDynamicDNRRules(configuration) {
   }
 }
 
+function wBlockRegisteredAdvancedRuntimeCode(payload) {
+  const scriptlets = Array.isArray(payload && payload.scriptlets) ? payload.scriptlets : [];
+  const disabledSites = Array.isArray(payload && payload.disabledSites) ? payload.disabledSites : [];
+  const configurationJSON = JSON.stringify({ scriptlets, disabledSites });
+  return `(() => {
+    const registered = ${configurationJSON};
+    const normalizeDomain = value => String(value || '').trim().replace(/^\\.+|\\.+$/g, '').toLowerCase();
+    const domainMatches = (domain, host) => {
+      const normalized = normalizeDomain(domain);
+      if (!normalized) return false;
+      if (normalized === '*') return true;
+      const suffix = normalized.startsWith('*.') ? normalized.slice(2) : normalized;
+      return host === suffix || host.endsWith('.' + suffix);
+    };
+    const host = normalizeDomain(location.hostname);
+    if (!host) return;
+    if (registered.disabledSites.some(domain => domainMatches(domain, host))) return;
+    const activeScriptlets = [];
+    for (const rule of registered.scriptlets) {
+      if (!rule || typeof rule.name !== 'string') continue;
+      const ifDomains = Array.isArray(rule.ifDomains) ? rule.ifDomains : [];
+      const unlessDomains = Array.isArray(rule.unlessDomains) ? rule.unlessDomains : [];
+      if (unlessDomains.some(domain => domainMatches(domain, host))) continue;
+      if (ifDomains.length && !ifDomains.some(domain => domainMatches(domain, host))) continue;
+      activeScriptlets.push({ name: rule.name, args: Array.isArray(rule.args) ? rule.args : [] });
+    }
+    if (!activeScriptlets.length) return;
+    (${wBlockApplyConfiguration.toString()})({ css: [], extendedCss: [], js: [], scriptlets: activeScriptlets });
+  })();`;
+}
+
+async function unregisterRegisteredAdvancedRuntime(reason = 'unregister') {
+  if (!browser.userScripts || !browser.userScripts.unregister) return false;
+  try {
+    await browser.userScripts.unregister({ ids: [WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID] });
+    registeredAdvancedRuntimeTimestamp = 0;
+    registeredAdvancedRuntimeKey = '';
+    return true;
+  } catch (error) {
+    console.warn(`[wBlock] Registered advanced runtime ${reason} failed:`, error);
+    return false;
+  }
+}
+
+async function refreshRegisteredAdvancedRuntime(reason = 'refresh') {
+  if (!browser.userScripts || !browser.userScripts.register || !browser.userScripts.unregister) return false;
+  if (registeredAdvancedRuntimeRefresh) return registeredAdvancedRuntimeRefresh;
+  registeredAdvancedRuntimeRefresh = (async () => {
+    let payload = null;
+    try {
+      const response = await sendQueuedNativeMessage({ action: 'getAdvancedRuntimeRegistration' });
+      payload = response && response.payload;
+    } catch (error) {
+      console.warn('[wBlock] Registered advanced runtime lookup failed:', error);
+      return false;
+    }
+
+    const timestamp = payload && payload.engineTimestamp || 0;
+    const scriptlets = Array.isArray(payload && payload.scriptlets) ? payload.scriptlets : [];
+    if (!timestamp || !scriptlets.length) {
+      await unregisterRegisteredAdvancedRuntime('empty');
+      return false;
+    }
+    const disabledSites = Array.isArray(payload && payload.disabledSites) ? payload.disabledSites : [];
+    const registrationKey = JSON.stringify({ timestamp, disabledSites });
+    if (registrationKey === registeredAdvancedRuntimeKey) return true;
+
+    const code = wBlockRegisteredAdvancedRuntimeCode(payload);
+    try {
+      await browser.userScripts.unregister({ ids: [WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID] }).catch(() => {});
+      await browser.userScripts.register([{
+        id: WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID,
+        js: [{ code }],
+        matches: ['http://*/*', 'https://*/*'],
+        allFrames: true,
+        runAt: 'document_start',
+        world: 'MAIN'
+      }]);
+      registeredAdvancedRuntimeTimestamp = timestamp;
+      registeredAdvancedRuntimeKey = registrationKey;
+      return true;
+    } catch (error) {
+      registeredAdvancedRuntimeTimestamp = 0;
+      registeredAdvancedRuntimeKey = '';
+      console.warn(`[wBlock] Registered advanced runtime ${reason} failed:`, error);
+      return false;
+    }
+  })().finally(() => { registeredAdvancedRuntimeRefresh = null; });
+  return registeredAdvancedRuntimeRefresh;
+}
+
+function scheduleRegisteredAdvancedRuntimeRefresh(reason = 'schedule') {
+  refreshRegisteredAdvancedRuntime(reason).catch(() => {});
+}
+
 clearDynamicDNRRules('startup_clear').catch(() => {});
+scheduleRegisteredAdvancedRuntimeRefresh('startup');
 
 async function requestConfiguration(originalRequest, url, topUrl) {
   const request = { ...(originalRequest || {}), payload: { url, topUrl } };
@@ -6333,6 +6433,7 @@ async function requestConfiguration(originalRequest, url, topUrl) {
   if (configuration.engineTimestamp !== engineTimestamp) {
     cache.clear();
     engineTimestamp = configuration.engineTimestamp || 0;
+    scheduleRegisteredAdvancedRuntimeRefresh('engine_timestamp_changed');
   }
   await syncDynamicDNRRules(configuration);
   cache.set(cacheKey(url, topUrl), configuration);
@@ -6557,7 +6658,7 @@ async function handleMessages(request, sender) {
     await applyConfiguration(tabId, frameId, WBLOCK_EARLY_YOUTUBE_CONFIGURATION);
     return { ok: true };
   }
-  if (message.action === 'wblock:clearCache') { cache.clear(); engineTimestamp = 0; return { ok: true }; }
+  if (message.action === 'wblock:clearCache') { cache.clear(); engineTimestamp = 0; scheduleRegisteredAdvancedRuntimeRefresh('clear_cache'); return { ok: true }; }
   if (message.action === 'wblock:zapper:syncRules') {
     if (typeof message.hostname !== 'string' || !message.hostname) return { ok: false, error: 'Missing hostname', rules: [] };
     try { return await sendQueuedNativeMessage({ action: 'syncZapperRules', hostname: message.hostname, rules: Array.isArray(message.rules) ? message.rules : [] }) || { ok: false, rules: [] }; }
