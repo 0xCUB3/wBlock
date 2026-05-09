@@ -105,7 +105,10 @@ var WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT = String.raw`(() => {
   };
   retry();
 })();`;
-var WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [];
+var WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [
+  { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/player?'] },
+  { name: 'ubo-json-prune-xhr-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', String.raw`/\/player(?:\?.+)?$/`] }
+];
 var WBLOCK_EARLY_YOUTUBE_CONFIGURATION = { scriptlets: WBLOCK_EARLY_YOUTUBE_SCRIPTLETS, css: [], extendedCss: [], js: [] };
 var WBLOCK_CONTENT_RUNTIME_ALREADY_RAN = globalThis.__wBlockContentRuntimeHasRun === true;
 globalThis.__wBlockContentRuntimeHasRun = true;

@@ -104,10 +104,13 @@ const WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT = String.raw`(() => {
   retry();
 })();`;
 const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
-  // Temporarily diagnostic-only on Safari: early page-world YouTube scriptlets
-  // can leave sidebar navigations stuck at 0x0/SABR buffering. Keep the
-  // registered MAIN script for observability while we isolate the unsafe rule.
-  scriptlets: [],
+  // Conservative Safari-safe subset: mutate only ad fields in YouTube player
+  // responses. Avoid DOM-bypass, request-spoofing, timer, and regex replacement
+  // scriptlets, which correlated with sidebar playback stalls.
+  scriptlets: [
+    { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/player?'] },
+    { name: 'ubo-json-prune-xhr-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', String.raw`/\/player(?:\?.+)?$/`] }
+  ],
   css: [],
   extendedCss: [],
   js: []

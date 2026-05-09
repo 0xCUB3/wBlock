@@ -170,14 +170,27 @@
       recent,
       samplePlayer,
       enableDetailedNetwork() { try { localStorage.setItem('wblockYouTubeDiagnostics', '1'); } catch (_) {} log('info', 'detailed-network-enabled', { reloadRequired: true }); },
-      disableDetailedNetwork() { try { localStorage.removeItem('wblockYouTubeDiagnostics'); } catch (_) {} log('info', 'detailed-network-disabled', { reloadRequired: true }); }
+      disableDetailedNetwork() { try { localStorage.removeItem('wblockYouTubeDiagnostics'); } catch (_) {} log('info', 'detailed-network-disabled', { reloadRequired: true }); },
+      setScriptletMode(mode = 'safe') { try { mode === 'off' ? localStorage.setItem('wblockYouTubeScriptlets', 'off') : localStorage.removeItem('wblockYouTubeScriptlets'); } catch (_) {} log('info', 'scriptlet-mode-set', { mode: mode === 'off' ? 'off' : 'safe', reloadRequired: true }); }
     };
   })();
   globalThis.__wBlockYouTubeDiagnostics = wBlockYtDiag;
 
+  const WBLOCK_EARLY_YOUTUBE_SAFE_SCRIPTLETS = [
+    {
+      name: 'ubo-json-prune-fetch-response',
+      args: ['adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots', '', 'propsToMatch', '/player?']
+    },
+    {
+      name: 'ubo-json-prune-xhr-response',
+      args: ['adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots', '', 'propsToMatch', '/\\/player(?:\\?.+)?$/']
+    }
+  ];
+  const wBlockYtScriptletMode = (() => {
+    try { return localStorage.getItem('wblockYouTubeScriptlets') || 'safe'; } catch (_) { return 'safe'; }
+  })();
   const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
-    // Diagnostic-only while isolating Safari sidebar playback stalls.
-    scriptlets: [],
+    scriptlets: wBlockYtScriptletMode === 'off' ? [] : WBLOCK_EARLY_YOUTUBE_SAFE_SCRIPTLETS,
     css: [],
     extendedCss: [],
     js: []
@@ -6228,7 +6241,7 @@
 
   try {
     wBlockApplyConfiguration(WBLOCK_EARLY_YOUTUBE_CONFIGURATION);
-    wBlockYtDiag.log('info', 'scriptlets-applied', { count: WBLOCK_EARLY_YOUTUBE_CONFIGURATION.scriptlets.length, names: WBLOCK_EARLY_YOUTUBE_CONFIGURATION.scriptlets.map(rule => rule.name) });
+    wBlockYtDiag.log('info', 'scriptlets-applied', { mode: wBlockYtScriptletMode, count: WBLOCK_EARLY_YOUTUBE_CONFIGURATION.scriptlets.length, names: WBLOCK_EARLY_YOUTUBE_CONFIGURATION.scriptlets.map(rule => rule.name) });
   } catch (error) {
     wBlockYtDiag.log('warn', 'scriptlets-apply-failed', { error: String(error && error.message || error) });
   }
