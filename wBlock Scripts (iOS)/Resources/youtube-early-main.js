@@ -1,137 +1,180 @@
 /*
- * wBlock WebExtension background runtime.
- * uBO-compatible scriptlet dispatcher backed by wBlock's native filter compiler
- * output.
+ * Browser-registered YouTube document_start runtime.
+ * This file is intentionally static so browser.scripting.registerContentScripts()
+ * can inject it in the MAIN world before YouTube's player bootstrap.
  */
 'use strict';
 
-const NATIVE_HOST_ID = 'application.id';
-const MESSAGE_INIT_CONTENT_SCRIPT = 'InitContentScript';
-const WBLOCK_YOUTUBE_AD_RESPONSE_PATHS = 'adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots';
-const WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT = String.raw`(() => {
-  if (globalThis.__wblockYouTubeServerContractRuntime) return;
-  globalThis.__wblockYouTubeServerContractRuntime = true;
-  const install = () => {
-    if (location.href.startsWith('https://www.youtube.com/tv#/') || location.href.startsWith('https://www.youtube.com/embed/')) return true;
-    const cfg = globalThis.ytcfg && ytcfg.data_ && ytcfg.data_.INNERTUBE_CONTEXT;
-    const client = cfg && cfg.client;
-    if (!client || typeof client.userAgent !== 'string') return false;
-    try {
-      if (globalThis.ytInitialData?.topbar?.desktopTopbarRenderer?.logo?.topbarLogoRenderer?.iconImage?.iconType === 'YOUTUBE_PREMIUM_LOGO') return true;
-    } catch (_) {}
-    const baseUserAgent = client.userAgent;
-    const setClientSuffix = suffix => {
-      client.userAgent = suffix ? baseUserAgent.replace?.(/(Mozilla\/5\.0 \([^)]+)/, '$1; ' + suffix) : baseUserAgent;
-    };
-    const candidates = ['channel'];
-    let reloadArmed = false;
-    let remainingCandidates = candidates;
-    document.addEventListener('DOMContentLoaded', () => {
-      const checkPlayer = () => {
-        const player = document.getElementById('movie_player');
-        if (!player || !location.href.includes('/watch?')) { remainingCandidates = candidates; return; }
-        const response = player.getPlayerResponse?.();
-        const progress = player.getProgressState?.();
-        const stats = player.getStatsForNerds?.();
-        if ((progress && progress.duration > 0 && (progress.loaded < progress.duration || progress.duration - progress.current > 1)) || response?.videoDetails?.isLive) {
-          if (!stats?.debug_info?.startsWith?.('SSAP, AD')) {
-            const videoId = response?.videoDetails?.videoId;
-            const startSeconds = response?.playerConfig?.playbackStartConfig?.startSeconds ?? 0;
-            const buffering = player.getPlayerStateObject?.()?.isBuffering;
-            const subreason = JSON.stringify(response?.playabilityStatus?.errorScreen?.playerErrorMessageRenderer?.subreason?.runs);
-            if (response?.playabilityStatus?.status === 'UNPLAYABLE' && !response?.playabilityStatus?.errorScreen?.playerErrorMessageRenderer?.playerCaptchaViewModel && subreason?.includes?.('WEB_PAGE_TYPE_UNKNOWN') && subreason?.includes?.('https://support.google.com/youtube/answer/3037019')) {
-              remainingCandidates = remainingCandidates.slice(1);
-              remainingCandidates.length > 0 ? setClientSuffix(remainingCandidates[0]) : setClientSuffix('');
-              reloadArmed = false;
-              player.loadVideoById?.(videoId, startSeconds);
-              return;
-            }
-            if (remainingCandidates.length === 0) {
-              reloadArmed = false;
-              setClientSuffix('');
-              return;
-            }
-            if (buffering && stats?.buffer_health_seconds === '0.00 s' && stats?.resolution === '0x0' && reloadArmed) {
-              setClientSuffix(remainingCandidates[0]);
-              reloadArmed = false;
-              player.loadVideoById?.(videoId, startSeconds);
-              return;
-            }
-          }
-          if (progress.duration > 0) player.seekTo?.(progress.duration);
-        }
-      };
-      checkPlayer();
-      new MutationObserver(() => checkPlayer()).observe(document, { childList: true, subtree: true });
-    });
-    const nativeMapHas = Map.prototype.has;
-    Map.prototype.has = new Proxy(nativeMapHas, { apply(target, thisArg, args) {
-      if (args?.[0] === 'onSnackbarMessage' && !reloadArmed) {
-        const player = document.getElementById('movie_player');
-        if (player) {
-          const stats = player.getStatsForNerds?.();
-          const buffering = player.getPlayerStateObject?.()?.isBuffering;
-          const playbackUrl = player.getPlayerResponse?.()?.playbackTracking?.videostatsPlaybackUrl?.baseUrl || '';
-          if (buffering && stats?.buffer_health_seconds === '0.00 s' && stats?.resolution === '0x0' && remainingCandidates.length > 0) {
-            if (String(playbackUrl).includes('reloadxhr')) remainingCandidates = remainingCandidates.slice(1);
-            reloadArmed = true;
-          }
-        }
-      }
-      return Reflect.apply(target, thisArg, args);
-    } });
-    const nativeStringify = JSON.stringify;
-    JSON.stringify = new Proxy(nativeStringify, { apply(target, thisArg, args) {
-      const payload = args?.[0];
-      const clientInfo = payload?.context?.client;
-      if (payload && typeof payload === 'object' && 'attestationRequest' in payload && typeof payload?.playbackContext?.contentPlaybackContext === 'object' && clientInfo?.mainAppWebInfo?.graftUrl?.includes('/watch?')) {
-        payload.playbackContext.contentPlaybackContext.lactMilliseconds = String(Date.now());
-      }
-      return Reflect.apply(target, thisArg, args);
-    } });
-    const thenHandler = { apply(target, thisArg, args) {
-      if (typeof args?.[0] === 'function' && args[0].toString().includes('onAbnormalityDetected')) args[0] = function() {};
-      return Reflect.apply(target, thisArg, args);
-    } };
-    Promise.prototype.then = new Proxy(Promise.prototype.then, thenHandler);
-    return true;
-  };
-  let tries = 0;
-  const retry = () => {
-    try { if (install()) return; } catch (_) {}
-    if (++tries < 160) setTimeout(retry, 50);
-  };
-  retry();
-})();`;
-const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
-  scriptlets: [
-    { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'fetch'] },
-    { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'Request'] },
-    { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'JSON.parse'] },
-    { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.playerAds', 'undefined'] },
-    { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.adPlacements', 'undefined'] },
-    { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.adSlots', 'undefined'] },
-    { name: 'ubo-set-constant', args: ['playerResponse.adPlacements', 'undefined'] },
-    { name: 'ubo-json-prune', args: ['playerResponse.adPlacements playerResponse.playerAds playerResponse.adSlots adPlacements playerAds adSlots legacyImportant'] },
-    { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/player?'] },
-    { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/playlist?'] },
-    { name: 'ubo-json-prune-xhr-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', String.raw`/\/player(?:\?.+)?$/`] },
-    { name: 'ubo-trusted-replace-fetch-response', args: ['"adPlacements"', '"no_ads"', 'player?'] },
-    { name: 'ubo-trusted-replace-fetch-response', args: ['"adSlots"', '"no_ads"', 'player?'] },
-    { name: 'ubo-trusted-replace-fetch-response', args: ['"adSlots"', '"no_ads"', String.raw`/^\W+$/`] },
-    { name: 'ubo-trusted-replace-xhr-response', args: ['"adPlacements"', '"no_ads"', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
-    { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?([A-Z]"\}|"\}{2,4})\}\],/`, '', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
-    { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?("adSlots"|"adBreakHeartbeatParams")/gms`, '$1', String.raw`/\/player(?:\?.+)?$/`] },
-    { name: 'ubo-trusted-json-edit-xhr-request', args: ['[?..userAgent*="channel"]..client[?.clientName=="WEB"]+={"clientScreen":"CHANNEL"}', 'propsToMatch', '/player?'] },
-    { name: 'ubo-trusted-json-edit-xhr-request', args: ['[?..userAgent=/adunit|channel|lactmilli|instream|eafg/]..referer=repl({"regex":"$","replacement":"#reloadxhr"})', 'propsToMatch', '/player?'] },
-    { name: 'ubo-nano-stb', args: ['[native code]', '17000', '0.001'] }
+(() => {
+  const host = String(location.hostname || '').toLowerCase();
+  const isYouTubeHost = host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com') || host === 'youtubekids.com' || host.endsWith('.youtubekids.com');
+  if (!isYouTubeHost) return;
+  if (globalThis.__wBlockYouTubeDocumentStartRuntime) return;
+  globalThis.__wBlockYouTubeDocumentStartRuntime = true;
+
+  const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
+  "scriptlets": [
+    {
+      "name": "ubo-trusted-prevent-dom-bypass",
+      "args": [
+        "Node.prototype.appendChild",
+        "fetch"
+      ]
+    },
+    {
+      "name": "ubo-trusted-prevent-dom-bypass",
+      "args": [
+        "Node.prototype.appendChild",
+        "Request"
+      ]
+    },
+    {
+      "name": "ubo-trusted-prevent-dom-bypass",
+      "args": [
+        "Node.prototype.appendChild",
+        "JSON.parse"
+      ]
+    },
+    {
+      "name": "ubo-set-constant",
+      "args": [
+        "ytInitialPlayerResponse.playerAds",
+        "undefined"
+      ]
+    },
+    {
+      "name": "ubo-set-constant",
+      "args": [
+        "ytInitialPlayerResponse.adPlacements",
+        "undefined"
+      ]
+    },
+    {
+      "name": "ubo-set-constant",
+      "args": [
+        "ytInitialPlayerResponse.adSlots",
+        "undefined"
+      ]
+    },
+    {
+      "name": "ubo-set-constant",
+      "args": [
+        "playerResponse.adPlacements",
+        "undefined"
+      ]
+    },
+    {
+      "name": "ubo-json-prune",
+      "args": [
+        "playerResponse.adPlacements playerResponse.playerAds playerResponse.adSlots adPlacements playerAds adSlots legacyImportant"
+      ]
+    },
+    {
+      "name": "ubo-json-prune-fetch-response",
+      "args": [
+        "adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots",
+        "",
+        "propsToMatch",
+        "/player?"
+      ]
+    },
+    {
+      "name": "ubo-json-prune-fetch-response",
+      "args": [
+        "adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots",
+        "",
+        "propsToMatch",
+        "/playlist?"
+      ]
+    },
+    {
+      "name": "ubo-json-prune-xhr-response",
+      "args": [
+        "adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots",
+        "",
+        "propsToMatch",
+        "/\\/player(?:\\?.+)?$/"
+      ]
+    },
+    {
+      "name": "ubo-trusted-replace-fetch-response",
+      "args": [
+        "\"adPlacements\"",
+        "\"no_ads\"",
+        "player?"
+      ]
+    },
+    {
+      "name": "ubo-trusted-replace-fetch-response",
+      "args": [
+        "\"adSlots\"",
+        "\"no_ads\"",
+        "player?"
+      ]
+    },
+    {
+      "name": "ubo-trusted-replace-fetch-response",
+      "args": [
+        "\"adSlots\"",
+        "\"no_ads\"",
+        "/^\\W+$/"
+      ]
+    },
+    {
+      "name": "ubo-trusted-replace-xhr-response",
+      "args": [
+        "\"adPlacements\"",
+        "\"no_ads\"",
+        "/playlist\\?list=|\\/player(?:\\?.+)?$|watch\\?[tv]=/"
+      ]
+    },
+    {
+      "name": "ubo-trusted-replace-xhr-response",
+      "args": [
+        "/\"adPlacements.*?([A-Z]\"\\}|\"\\}{2,4})\\}\\],/",
+        "",
+        "/playlist\\?list=|\\/player(?:\\?.+)?$|watch\\?[tv]=/"
+      ]
+    },
+    {
+      "name": "ubo-trusted-replace-xhr-response",
+      "args": [
+        "/\"adPlacements.*?(\"adSlots\"|\"adBreakHeartbeatParams\")/gms",
+        "$1",
+        "/\\/player(?:\\?.+)?$/"
+      ]
+    },
+    {
+      "name": "ubo-trusted-json-edit-xhr-request",
+      "args": [
+        "[?..userAgent*=\"channel\"]..client[?.clientName==\"WEB\"]+={\"clientScreen\":\"CHANNEL\"}",
+        "propsToMatch",
+        "/player?"
+      ]
+    },
+    {
+      "name": "ubo-trusted-json-edit-xhr-request",
+      "args": [
+        "[?..userAgent=/adunit|channel|lactmilli|instream|eafg/]..referer=repl({\"regex\":\"$\",\"replacement\":\"#reloadxhr\"})",
+        "propsToMatch",
+        "/player?"
+      ]
+    },
+    {
+      "name": "ubo-nano-stb",
+      "args": [
+        "[native code]",
+        "17000",
+        "0.001"
+      ]
+    }
   ],
-  css: [],
-  extendedCss: [],
-  js: [WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT]
+  "css": [],
+  "extendedCss": [],
+  "js": []
 };
 
-function wBlockApplyConfiguration(configuration) {
+  const wBlockApplyConfiguration = function wBlockApplyConfiguration(configuration) {
   'use strict';
   const config = configuration || {};
   const css = Array.isArray(config.css) ? config.css : [];
@@ -6172,650 +6215,103 @@ function wBlockApplyConfiguration(configuration) {
     try { fn(...args); } catch (_) {}
   }
   try { runRawScripts(); } catch (_) {}
-}
-
-let engineTimestamp = 0;
-let dnrRulesTimestamp = 0;
-const WBLOCK_DNR_DYNAMIC_ID_MIN = 2000000;
-const WBLOCK_DNR_DYNAMIC_ID_MAX = 2999999;
-const cache = new Map();
-let nativeMessageQueue = Promise.resolve();
-let registeredAdvancedRuntimeTimestamp = 0;
-let registeredAdvancedRuntimeKey = '';
-let registeredAdvancedRuntimeRefresh = null;
-let registeredYouTubeMainRuntimeKey = '';
-const WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID = 'wblock-advanced-runtime-scriptlets';
-const WBLOCK_YOUTUBE_MAIN_RUNTIME_ID = 'wblock-youtube-main-runtime';
-const WBLOCK_YOUTUBE_MAIN_RUNTIME_MATCHES = [
-  '*://youtube.com/*',
-  '*://*.youtube.com/*',
-  '*://youtube-nocookie.com/*',
-  '*://*.youtube-nocookie.com/*',
-  '*://youtubekids.com/*',
-  '*://*.youtubekids.com/*'
-];
-const menuCommandsByTab = new Map();
-
-const sendQueuedNativeMessage = request => {
-  const response = nativeMessageQueue.then(() => browser.runtime.sendNativeMessage(NATIVE_HOST_ID, request));
-  nativeMessageQueue = response.catch(() => {});
-  return response;
 };
 
-const cacheKey = (url, topUrl) => `${url}#${topUrl || ''}`;
+  try { wBlockApplyConfiguration(WBLOCK_EARLY_YOUTUBE_CONFIGURATION); } catch (_) {}
 
-function hasDNRDomainScope(condition) {
-  return Boolean(
-    condition && (
-      condition.requestDomains ||
-      condition.excludedRequestDomains ||
-      condition.initiatorDomains ||
-      condition.excludedInitiatorDomains
-    )
-  );
-}
-
-function isUnsafeBroadDNRRedirect(rule) {
-  const redirect = rule && rule.action && rule.action.redirect;
-  const condition = rule && rule.condition;
-  return Boolean(
-    redirect &&
-    redirect.extensionPath &&
-    condition &&
-    condition.urlFilter === '*' &&
-    !hasDNRDomainScope(condition)
-  );
-}
-
-function isGoogleVideoPlaybackDNRRule(rule) {
-  const actionType = rule && rule.action && rule.action.type;
-  if (actionType !== 'block' && actionType !== 'redirect') return false;
-  const condition = rule && rule.condition;
-  if (!condition) return false;
-  const haystack = [
-    condition.urlFilter,
-    condition.regexFilter,
-    ...(Array.isArray(condition.requestDomains) ? condition.requestDomains : []),
-    ...(Array.isArray(condition.excludedRequestDomains) ? condition.excludedRequestDomains : [])
-  ].filter(Boolean).join('\n').toLowerCase();
-  return haystack.includes('googlevideo') && (haystack.includes('videoplayback') || haystack.includes('initplayback'));
-}
-
-function normalizeDynamicDNRRules(rules) {
-  if (!Array.isArray(rules)) return [];
-  const normalized = [];
-  let nextId = WBLOCK_DNR_DYNAMIC_ID_MIN;
-  for (const rule of rules) {
-    if (!rule || typeof rule !== 'object') continue;
-    if (!rule.action || !rule.condition) continue;
-    if (isUnsafeBroadDNRRedirect(rule)) continue;
-    if (isGoogleVideoPlaybackDNRRule(rule)) continue;
-    const copy = JSON.parse(JSON.stringify(rule));
-    // Safari rejects safari-web-extension:// URLs in DNR redirect.url.
-    // Keep extensionPath intact so WebKit can resolve the packaged resource.
-    copy.id = nextId++;
-    if (copy.id > WBLOCK_DNR_DYNAMIC_ID_MAX) break;
-    normalized.push(copy);
-  }
-  return normalized;
-}
-
-function logDNRSyncDiagnostic(fields) {
-  browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
-    action: 'logExtensionDiagnostic',
-    fields: { source: 'background', event: 'dnr_sync', ...fields }
-  }).catch(() => {});
-}
-
-function invalidDynamicRuleIndex(error) {
-  const text = error && error.message ? error.message : String(error || '');
-  const match = text.match(/rule_at_index_(\d+)/i);
-  return match ? Number.parseInt(match[1], 10) : -1;
-}
-
-async function updateDynamicRulesSkippingInvalid(removeRuleIds, rules) {
-  const candidates = rules.slice();
-  const rejected = [];
-  for (;;) {
-    try {
-      await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: candidates });
-      return { rules: candidates, rejected };
-    } catch (error) {
-      const index = invalidDynamicRuleIndex(error);
-      if (!Number.isInteger(index) || index < 0 || index >= candidates.length) throw error;
-      const rejectedRule = candidates.splice(index, 1)[0];
-      rejected.push({ id: rejectedRule && rejectedRule.id, reason: error && error.message ? error.message : String(error) });
-      if (candidates.length === 0) {
-        await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: [] });
-        return { rules: candidates, rejected };
-      }
-    }
-  }
-}
-
-async function allDynamicDNRRuleIds() {
-  if (browser.declarativeNetRequest.getDynamicRules) {
-    const existing = await browser.declarativeNetRequest.getDynamicRules();
-    return existing
-      .map(rule => rule && rule.id)
-      .filter(id => Number.isInteger(id));
-  }
-  return Array.from({ length: WBLOCK_DNR_DYNAMIC_ID_MAX - WBLOCK_DNR_DYNAMIC_ID_MIN + 1 }, (_, i) => WBLOCK_DNR_DYNAMIC_ID_MIN + i);
-}
-
-async function clearDynamicDNRRules(reason = 'clear') {
-  if (!browser.declarativeNetRequest || !browser.declarativeNetRequest.updateDynamicRules) return;
-  try {
-    const removeRuleIds = await allDynamicDNRRuleIds();
-    if (!removeRuleIds.length) return;
-    await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: [] });
-    dnrRulesTimestamp = 0;
-    logDNRSyncDiagnostic({ outcome: reason, rules: 0, removed: removeRuleIds.length });
-  } catch (error) {
-    console.warn('[wBlock] Dynamic DNR clear failed:', error);
-    logDNRSyncDiagnostic({ outcome: `${reason}_failure`, rules: 0, reason: error && error.message ? error.message : String(error) });
-  }
-}
-
-async function syncDynamicDNRRules(configuration) {
-  const timestamp = configuration && configuration.engineTimestamp || 0;
-  if (timestamp === dnrRulesTimestamp) return;
-  if (!browser.declarativeNetRequest || !browser.declarativeNetRequest.updateDynamicRules) return;
-  const rules = normalizeDynamicDNRRules(configuration && configuration.dnrRules);
-  try {
-    const removeRuleIds = await allDynamicDNRRuleIds();
-    const result = await updateDynamicRulesSkippingInvalid(removeRuleIds, rules);
-    dnrRulesTimestamp = timestamp;
-    if (result.rejected.length) {
-      logDNRSyncDiagnostic({ outcome: 'success_partial', rules: result.rules.length, rejected: result.rejected.length, rejectedIds: result.rejected.map(rule => rule.id).join(','), removed: removeRuleIds.length, timestamp });
-    } else {
-      logDNRSyncDiagnostic({ outcome: 'success', rules: result.rules.length, removed: removeRuleIds.length, timestamp });
-    }
-  } catch (error) {
-    console.warn('[wBlock] Dynamic DNR sync failed:', error);
-    logDNRSyncDiagnostic({ outcome: 'failure', rules: rules.length, reason: error && error.message ? error.message : String(error) });
-  }
-}
-
-function wBlockRegisteredAdvancedRuntimeCode(payload) {
-  const scriptlets = Array.isArray(payload && payload.scriptlets) ? payload.scriptlets : [];
-  const disabledSites = Array.isArray(payload && payload.disabledSites) ? payload.disabledSites : [];
-  const configurationJSON = JSON.stringify({ scriptlets, disabledSites });
-  return `(() => {
-    const registered = ${configurationJSON};
-    const normalizeDomain = value => String(value || '').trim().replace(/^\\.+|\\.+$/g, '').toLowerCase();
-    const domainMatches = (domain, host) => {
-      const normalized = normalizeDomain(domain);
-      if (!normalized) return false;
-      if (normalized === '*') return true;
-      const suffix = normalized.startsWith('*.') ? normalized.slice(2) : normalized;
-      return host === suffix || host.endsWith('.' + suffix);
-    };
-    const host = normalizeDomain(location.hostname);
-    if (!host) return;
-    if (registered.disabledSites.some(domain => domainMatches(domain, host))) return;
-    const activeScriptlets = [];
-    for (const rule of registered.scriptlets) {
-      if (!rule || typeof rule.name !== 'string') continue;
-      const ifDomains = Array.isArray(rule.ifDomains) ? rule.ifDomains : [];
-      const unlessDomains = Array.isArray(rule.unlessDomains) ? rule.unlessDomains : [];
-      if (unlessDomains.some(domain => domainMatches(domain, host))) continue;
-      if (ifDomains.length && !ifDomains.some(domain => domainMatches(domain, host))) continue;
-      activeScriptlets.push({ name: rule.name, args: Array.isArray(rule.args) ? rule.args : [] });
-    }
-    if (!activeScriptlets.length) return;
-    (${wBlockApplyConfiguration.toString()})({ css: [], extendedCss: [], js: [], scriptlets: activeScriptlets });
-  })();`;
-}
-
-function wBlockNormalizeDomain(value) {
-  return String(value || '').trim().replace(/^\.+|\.+$/g, '').toLowerCase();
-}
-
-function wBlockDomainMatches(domain, host) {
-  const normalized = wBlockNormalizeDomain(domain);
-  const normalizedHost = wBlockNormalizeDomain(host);
-  if (!normalized || !normalizedHost) return false;
-  if (normalized === '*') return true;
-  const suffix = normalized.startsWith('*.') ? normalized.slice(2) : normalized;
-  return normalizedHost === suffix || normalizedHost.endsWith('.' + suffix);
-}
-
-function wBlockIsYouTubeRuntimeDisabled(disabledSites) {
-  const hosts = ['youtube.com', 'www.youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'];
-  return Array.isArray(disabledSites) && disabledSites.some(domain => hosts.some(host => wBlockDomainMatches(domain, host)));
-}
-
-async function unregisterRegisteredAdvancedRuntime(reason = 'unregister') {
-  if (!browser.userScripts || !browser.userScripts.unregister) return false;
-  try {
-    await browser.userScripts.unregister({ ids: [WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID] });
-    registeredAdvancedRuntimeTimestamp = 0;
-    registeredAdvancedRuntimeKey = '';
-    return true;
-  } catch (error) {
-    console.warn(`[wBlock] Registered advanced runtime ${reason} failed:`, error);
-    return false;
-  }
-}
-
-async function unregisterYouTubeMainRuntime(reason = 'unregister') {
-  if (!browser.scripting || !browser.scripting.unregisterContentScripts) return false;
-  try {
-    await browser.scripting.unregisterContentScripts({ ids: [WBLOCK_YOUTUBE_MAIN_RUNTIME_ID] });
-    registeredYouTubeMainRuntimeKey = '';
-    return true;
-  } catch (error) {
-    console.warn(`[wBlock] YouTube MAIN runtime ${reason} unregister failed:`, error);
-    return false;
-  }
-}
-
-async function registerYouTubeMainRuntimeScript(script) {
-  const attempts = [
-    script,
-    { ...script, persistAcrossSessions: undefined },
-    { ...script, matchOriginAsFallback: undefined },
-    { ...script, persistAcrossSessions: undefined, matchOriginAsFallback: undefined }
-  ];
-  let lastError = null;
-  for (const attempt of attempts) {
-    const cleaned = Object.fromEntries(Object.entries(attempt).filter(([, value]) => value !== undefined));
-    try {
-      await browser.scripting.registerContentScripts([cleaned]);
+  (() => {
+    if (globalThis.__wblockYouTubeServerContractRuntime) return;
+    globalThis.__wblockYouTubeServerContractRuntime = true;
+    const install = () => {
+      if (location.href.startsWith('https://www.youtube.com/tv#/') || location.href.startsWith('https://www.youtube.com/embed/')) return true;
+      const cfg = globalThis.ytcfg && ytcfg.data_ && ytcfg.data_.INNERTUBE_CONTEXT;
+      const client = cfg && cfg.client;
+      if (!client || typeof client.userAgent !== 'string') return false;
+      try {
+        if (globalThis.ytInitialData?.topbar?.desktopTopbarRenderer?.logo?.topbarLogoRenderer?.iconImage?.iconType === 'YOUTUBE_PREMIUM_LOGO') return true;
+      } catch (_) {}
+      const baseUserAgent = client.userAgent;
+      const setClientSuffix = suffix => {
+        client.userAgent = suffix ? baseUserAgent.replace?.(/(Mozilla\/5\.0 \([^)]+)/, '$1; ' + suffix) : baseUserAgent;
+      };
+      const candidates = ['channel'];
+      let reloadArmed = false;
+      let remainingCandidates = candidates;
+      document.addEventListener('DOMContentLoaded', () => {
+        const checkPlayer = () => {
+          const player = document.getElementById('movie_player');
+          if (!player || !location.href.includes('/watch?')) { remainingCandidates = candidates; return; }
+          const response = player.getPlayerResponse?.();
+          const progress = player.getProgressState?.();
+          const stats = player.getStatsForNerds?.();
+          if ((progress && progress.duration > 0 && (progress.loaded < progress.duration || progress.duration - progress.current > 1)) || response?.videoDetails?.isLive) {
+            if (!stats?.debug_info?.startsWith?.('SSAP, AD')) {
+              const videoId = response?.videoDetails?.videoId;
+              const startSeconds = response?.playerConfig?.playbackStartConfig?.startSeconds ?? 0;
+              const buffering = player.getPlayerStateObject?.()?.isBuffering;
+              const subreason = JSON.stringify(response?.playabilityStatus?.errorScreen?.playerErrorMessageRenderer?.subreason?.runs);
+              if (response?.playabilityStatus?.status === 'UNPLAYABLE' && !response?.playabilityStatus?.errorScreen?.playerErrorMessageRenderer?.playerCaptchaViewModel && subreason?.includes?.('WEB_PAGE_TYPE_UNKNOWN') && subreason?.includes?.('https://support.google.com/youtube/answer/3037019')) {
+                remainingCandidates = remainingCandidates.slice(1);
+                remainingCandidates.length > 0 ? setClientSuffix(remainingCandidates[0]) : setClientSuffix('');
+                reloadArmed = false;
+                player.loadVideoById?.(videoId, startSeconds);
+                return;
+              }
+              if (remainingCandidates.length === 0) {
+                reloadArmed = false;
+                setClientSuffix('');
+                return;
+              }
+              if (buffering && stats?.buffer_health_seconds === '0.00 s' && stats?.resolution === '0x0' && reloadArmed) {
+                setClientSuffix(remainingCandidates[0]);
+                reloadArmed = false;
+                player.loadVideoById?.(videoId, startSeconds);
+                return;
+              }
+            }
+            if (progress.duration > 0) player.seekTo?.(progress.duration);
+          }
+        };
+        checkPlayer();
+        new MutationObserver(() => checkPlayer()).observe(document, { childList: true, subtree: true });
+      });
+      const nativeMapHas = Map.prototype.has;
+      Map.prototype.has = new Proxy(nativeMapHas, { apply(target, thisArg, args) {
+        if (args?.[0] === 'onSnackbarMessage' && !reloadArmed) {
+          const player = document.getElementById('movie_player');
+          if (player) {
+            const stats = player.getStatsForNerds?.();
+            const buffering = player.getPlayerStateObject?.()?.isBuffering;
+            const playbackUrl = player.getPlayerResponse?.()?.playbackTracking?.videostatsPlaybackUrl?.baseUrl || '';
+            if (buffering && stats?.buffer_health_seconds === '0.00 s' && stats?.resolution === '0x0' && remainingCandidates.length > 0) {
+              if (String(playbackUrl).includes('reloadxhr')) remainingCandidates = remainingCandidates.slice(1);
+              reloadArmed = true;
+            }
+          }
+        }
+        return Reflect.apply(target, thisArg, args);
+      } });
+      const nativeStringify = JSON.stringify;
+      JSON.stringify = new Proxy(nativeStringify, { apply(target, thisArg, args) {
+        const payload = args?.[0];
+        const clientInfo = payload?.context?.client;
+        if (payload && typeof payload === 'object' && 'attestationRequest' in payload && typeof payload?.playbackContext?.contentPlaybackContext === 'object' && clientInfo?.mainAppWebInfo?.graftUrl?.includes('/watch?')) {
+          payload.playbackContext.contentPlaybackContext.lactMilliseconds = String(Date.now());
+        }
+        return Reflect.apply(target, thisArg, args);
+      } });
+      const thenHandler = { apply(target, thisArg, args) {
+        if (typeof args?.[0] === 'function' && args[0].toString().includes('onAbnormalityDetected')) args[0] = function() {};
+        return Reflect.apply(target, thisArg, args);
+      } };
+      Promise.prototype.then = new Proxy(Promise.prototype.then, thenHandler);
       return true;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  if (lastError) throw lastError;
-  return false;
-}
-
-async function refreshYouTubeMainRuntimeRegistration(disabledSites, reason = 'refresh') {
-  if (!browser.scripting || !browser.scripting.registerContentScripts || !browser.scripting.unregisterContentScripts) return false;
-  const disabled = wBlockIsYouTubeRuntimeDisabled(disabledSites);
-  const registrationKey = disabled ? 'disabled' : 'enabled';
-  if (registrationKey === registeredYouTubeMainRuntimeKey) return true;
-  if (disabled) {
-    await unregisterYouTubeMainRuntime('disabled');
-    registeredYouTubeMainRuntimeKey = registrationKey;
-    return false;
-  }
-  const script = {
-    id: WBLOCK_YOUTUBE_MAIN_RUNTIME_ID,
-    js: ['youtube-early-main.js'],
-    matches: WBLOCK_YOUTUBE_MAIN_RUNTIME_MATCHES,
-    allFrames: true,
-    runAt: 'document_start',
-    world: 'MAIN',
-    matchOriginAsFallback: true,
-    persistAcrossSessions: true
-  };
-  try {
-    await browser.scripting.unregisterContentScripts({ ids: [WBLOCK_YOUTUBE_MAIN_RUNTIME_ID] }).catch(() => {});
-    await registerYouTubeMainRuntimeScript(script);
-    registeredYouTubeMainRuntimeKey = registrationKey;
-    return true;
-  } catch (error) {
-    registeredYouTubeMainRuntimeKey = '';
-    console.warn(`[wBlock] YouTube MAIN runtime ${reason} register failed:`, error);
-    return false;
-  }
-}
-
-async function refreshRegisteredAdvancedRuntime(reason = 'refresh') {
-  if (registeredAdvancedRuntimeRefresh) return registeredAdvancedRuntimeRefresh;
-  registeredAdvancedRuntimeRefresh = (async () => {
-    let payload = null;
-    try {
-      const response = await sendQueuedNativeMessage({ action: 'getAdvancedRuntimeRegistration' });
-      payload = response && response.payload;
-    } catch (error) {
-      console.warn('[wBlock] Registered advanced runtime lookup failed:', error);
-      return false;
-    }
-
-    const disabledSites = Array.isArray(payload && payload.disabledSites) ? payload.disabledSites : [];
-    await refreshYouTubeMainRuntimeRegistration(disabledSites, reason);
-
-    if (!browser.userScripts || !browser.userScripts.register || !browser.userScripts.unregister) return false;
-    const timestamp = payload && payload.engineTimestamp || 0;
-    const scriptlets = Array.isArray(payload && payload.scriptlets) ? payload.scriptlets : [];
-    if (!timestamp || !scriptlets.length) {
-      await unregisterRegisteredAdvancedRuntime('empty');
-      return false;
-    }
-    const registrationKey = JSON.stringify({ timestamp, disabledSites, scriptlets: scriptlets.length });
-    if (registrationKey === registeredAdvancedRuntimeKey) return true;
-
-    const code = wBlockRegisteredAdvancedRuntimeCode(payload);
-    try {
-      await browser.userScripts.unregister({ ids: [WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID] }).catch(() => {});
-      await browser.userScripts.register([{
-        id: WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID,
-        js: [{ code }],
-        matches: ['http://*/*', 'https://*/*'],
-        allFrames: true,
-        runAt: 'document_start',
-        world: 'MAIN'
-      }]);
-      registeredAdvancedRuntimeTimestamp = timestamp;
-      registeredAdvancedRuntimeKey = registrationKey;
-      return true;
-    } catch (error) {
-      registeredAdvancedRuntimeTimestamp = 0;
-      registeredAdvancedRuntimeKey = '';
-      console.warn(`[wBlock] Registered advanced runtime ${reason} failed:`, error);
-      return false;
-    }
-  })().finally(() => { registeredAdvancedRuntimeRefresh = null; });
-  return registeredAdvancedRuntimeRefresh;
-}
-
-function scheduleRegisteredAdvancedRuntimeRefresh(reason = 'schedule') {
-  refreshRegisteredAdvancedRuntime(reason).catch(() => {});
-}
-
-clearDynamicDNRRules('startup_clear').catch(() => {});
-scheduleRegisteredAdvancedRuntimeRefresh('startup');
-
-async function requestConfiguration(originalRequest, url, topUrl) {
-  const request = { ...(originalRequest || {}), payload: { url, topUrl } };
-  const response = await sendQueuedNativeMessage(request);
-  const configuration = response && response.payload;
-  if (!configuration) return null;
-  if (configuration.engineTimestamp !== engineTimestamp) {
-    cache.clear();
-    engineTimestamp = configuration.engineTimestamp || 0;
-    scheduleRegisteredAdvancedRuntimeRefresh('engine_timestamp_changed');
-  }
-  await syncDynamicDNRRules(configuration);
-  cache.set(cacheKey(url, topUrl), configuration);
-  return configuration;
-}
-
-async function getConfiguration(message, url, topUrl) {
-  const key = cacheKey(url, topUrl);
-  if (cache.has(key)) {
-    requestConfiguration(message, url, topUrl).catch(() => {});
-    return cache.get(key);
-  }
-  return requestConfiguration(message, url, topUrl);
-}
-
-async function insertCss(tabId, frameId, configuration) {
-  const css = Array.isArray(configuration.css) ? configuration.css : [];
-  const extendedCss = Array.isArray(configuration.extendedCss) ? configuration.extendedCss : [];
-  const simpleExtended = extendedCss.filter(rule => typeof rule === 'string' && !/[(:]has-text|:-abp-contains|:xpath|:upward|:matches-css|:matches-attr|:matches-property|:remove\(\)|:style\(/.test(rule));
-  const selectors = [...css, ...simpleExtended].filter(rule => typeof rule === 'string' && rule.trim());
-  if (!selectors.length || !browser.scripting || !browser.scripting.insertCSS) return;
-  const cssText = selectors.map(selector => selector.includes('{') ? selector : `${selector}{display:none!important;}`).join('\n');
-  await browser.scripting.insertCSS({
-    target: { tabId, frameIds: [frameId] },
-    origin: 'USER',
-    css: cssText
-  }).catch(error => console.warn('[wBlock] CSS injection failed:', error));
-}
-
-async function applyConfiguration(tabId, frameId, configuration) {
-  if (!configuration) return;
-  await insertCss(tabId, frameId, configuration);
-  const scriptlets = Array.isArray(configuration.scriptlets) ? configuration.scriptlets : [];
-  const scripts = Array.isArray(configuration.js) ? configuration.js : [];
-  const extendedCss = Array.isArray(configuration.extendedCss) ? configuration.extendedCss : [];
-  if (!scriptlets.length && !scripts.length && !extendedCss.length) return;
-  await browser.scripting.executeScript({
-    target: { tabId, frameIds: [frameId] },
-    func: wBlockApplyConfiguration,
-    args: [configuration],
-    world: 'MAIN',
-    injectImmediately: true
-  }).catch(error => console.warn('[wBlock] MAIN-world runtime injection failed:', error));
-}
-
-function wBlockExecuteUserScriptSource(source) {
-  'use strict';
-  if (typeof source !== 'string' || !source) return false;
-  (0, Function)(source)();
-  return true;
-}
-
-async function executeUserScriptInMainWorld(tabId, frameId, source) {
-  if (!tabId || !browser.scripting || !browser.scripting.executeScript) {
-    return { ok: false, error: 'MAIN-world scripting API unavailable' };
-  }
-  const details = {
-    target: { tabId, frameIds: [frameId] },
-    func: wBlockExecuteUserScriptSource,
-    args: [source],
-    world: 'MAIN',
-    injectImmediately: true
-  };
-  try {
-    await browser.scripting.executeScript(details);
-    return { ok: true };
-  } catch (firstError) {
-    try {
-      const retryDetails = { ...details };
-      delete retryDetails.injectImmediately;
-      await browser.scripting.executeScript(retryDetails);
-      return { ok: true };
-    } catch (retryError) {
-      return { ok: false, error: String((retryError && retryError.message) || (firstError && firstError.message) || retryError || firstError) };
-    }
-  }
-}
-
-const FORBIDDEN_GM_XHR_HEADER_NAMES = new Set([
-  'accept-charset', 'accept-encoding', 'access-control-request-headers',
-  'access-control-request-method', 'connection', 'content-length', 'cookie',
-  'date', 'dnt', 'host', 'keep-alive', 'origin', 'permissions-policy',
-  'referer', 'referrer', 'te', 'trailer', 'transfer-encoding', 'upgrade',
-  'user-agent', 'via'
-]);
-const shouldUseNativeGMXmlhttpRequest = headers => !!headers && typeof headers === 'object' && Object.keys(headers).some(name => {
-  const normalized = String(name || '').trim().toLowerCase();
-  return FORBIDDEN_GM_XHR_HEADER_NAMES.has(normalized) || normalized.startsWith('proxy-') || normalized.startsWith('sec-');
-});
-const formatGMResponseHeaders = headers => !headers || typeof headers !== 'object' ? '' : Object.entries(headers).map(([key, value]) => `${key}: ${value}`).join('\r\n');
-const normalizeGMResponseType = responseType => String(responseType || 'text').trim().toLowerCase();
-const isBinaryGMResponseType = responseType => ['arraybuffer', 'blob'].includes(normalizeGMResponseType(responseType));
-const isTextLikeMimeType = mimeType => {
-  const normalized = String(mimeType || '').toLowerCase();
-  return normalized.startsWith('text/') || normalized.includes('json') || normalized.includes('javascript') || normalized.includes('xml') || normalized === 'image/svg+xml';
-};
-const bytesToBase64 = bytes => {
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
-};
-const parseGMResponseBody = (responseText, responseType) => {
-  if (normalizeGMResponseType(responseType) === 'json') {
-    try { return JSON.parse(responseText || 'null'); } catch (_) { return null; }
-  }
-  return responseText;
-};
-const buildGMResponsePayload = async (fetchResponse, responseType) => {
-  const headers = {};
-  fetchResponse.headers.forEach((value, key) => { headers[key] = value; });
-  const normalizedResponseType = normalizeGMResponseType(responseType);
-  const contentType = fetchResponse.headers.get('content-type') || '';
-
-  if (isBinaryGMResponseType(normalizedResponseType)) {
-    const arrayBuffer = await fetchResponse.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    const responseText = isTextLikeMimeType(contentType) ? new TextDecoder().decode(bytes) : '';
-    return {
-      status: fetchResponse.status,
-      statusText: fetchResponse.statusText,
-      responseHeaders: formatGMResponseHeaders(headers),
-      responseText,
-      response: null,
-      responseBase64: bytesToBase64(bytes),
-      responseMimeType: contentType,
-      responseType: normalizedResponseType,
-      finalUrl: fetchResponse.url
     };
-  }
-
-  const responseText = await fetchResponse.text();
-  return {
-    status: fetchResponse.status,
-    statusText: fetchResponse.statusText,
-    responseHeaders: formatGMResponseHeaders(headers),
-    responseText,
-    response: parseGMResponseBody(responseText, normalizedResponseType),
-    responseType: normalizedResponseType,
-    finalUrl: fetchResponse.url
-  };
-};
-
-const normalizeMenuCommands = commands => Array.isArray(commands) ? commands.filter(command => command && typeof command === 'object').map(command => ({
-  bridgeId: typeof command.bridgeId === 'string' ? command.bridgeId : '',
-  commandId: typeof command.commandId === 'string' ? command.commandId : '',
-  caption: typeof command.caption === 'string' ? command.caption : '',
-  title: typeof command.title === 'string' ? command.title : '',
-  accessKey: typeof command.accessKey === 'string' ? command.accessKey : '',
-  scriptName: typeof command.scriptName === 'string' ? command.scriptName : '',
-  sortOrder: Number.isFinite(Number(command.sortOrder)) ? Number(command.sortOrder) : 0
-})).filter(command => command.bridgeId && command.commandId && command.caption.trim()) : [];
-
-function setFrameMenuCommands(tabId, frameId, commands) {
-  if (typeof tabId !== 'number') return;
-  const frameCommands = menuCommandsByTab.get(tabId) || new Map();
-  const normalized = normalizeMenuCommands(commands).map(command => ({ ...command, frameId }));
-  if (normalized.length) frameCommands.set(frameId, normalized); else frameCommands.delete(frameId);
-  if (frameCommands.size) menuCommandsByTab.set(tabId, frameCommands); else menuCommandsByTab.delete(tabId);
-}
-function getTabMenuCommands(tabId) {
-  const frameCommands = menuCommandsByTab.get(tabId);
-  if (!frameCommands) return [];
-  return Array.from(frameCommands.values()).flat().sort((a, b) => a.sortOrder - b.sortOrder || a.caption.localeCompare(b.caption));
-}
-async function queryLiveTabMenuCommands(tabId) {
-  if (!tabId) return [];
-  try { await browser.tabs.sendMessage(tabId, { type: 'wblock:menu:syncState' }); } catch (_) {}
-  return getTabMenuCommands(tabId);
-}
-
-async function handleGMXmlhttpRequest(message) {
-  try {
-    const requestHeaders = message.headers || {};
-    if (shouldUseNativeGMXmlhttpRequest(requestHeaders)) {
-      return await sendQueuedNativeMessage({
-        action: 'gmXmlhttpRequestNative',
-        requestId: 'userscript-gmxhr-native-' + Date.now(),
-        url: message.url,
-        method: message.method || 'GET',
-        headers: requestHeaders,
-        body: message.body || null,
-        anonymous: message.anonymous === true,
-        responseType: message.responseType || 'text',
-        redirect: message.redirect || 'follow',
-        timeout: message.timeout || 0
-      }) || { error: 'Empty response from native host' };
-    }
-    const timeoutMs = Number(message.timeout || 0);
-    const abortController = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
-    const timeoutId = abortController ? setTimeout(() => abortController.abort(), timeoutMs) : null;
-    const method = message.method || 'GET';
-    const options = { method, headers: requestHeaders, credentials: message.anonymous ? 'omit' : 'include', redirect: message.redirect || 'follow' };
-    if (abortController) options.signal = abortController.signal;
-    if (message.body && !['GET', 'HEAD'].includes(method.toUpperCase())) options.body = message.body;
-    let fetchResponse;
-    try { fetchResponse = await fetch(message.url, options); } finally { if (timeoutId) clearTimeout(timeoutId); }
-    return await buildGMResponsePayload(fetchResponse, message.responseType);
-  } catch (error) {
-    return { error: error && error.message ? error.message : String(error) };
-  }
-}
-
-function isYouTubeURL(url) {
-  try {
-    const host = new URL(url || '').hostname.toLowerCase();
-    return host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com') || host === 'youtubekids.com' || host.endsWith('.youtubekids.com');
-  } catch (_) {
-    return false;
-  }
-}
-
-async function handleMessages(request, sender) {
-  const message = request || {};
-  if (message.action === 'wblock:applyEarlyYouTubeRuntime') {
-    const tabId = sender && sender.tab ? sender.tab.id : 0;
-    const frameId = sender && typeof sender.frameId === 'number' ? sender.frameId : 0;
-    const url = sender && sender.url ? sender.url : (typeof message.url === 'string' ? message.url : (sender && sender.tab ? sender.tab.url : ''));
-    if (typeof tabId !== 'number' || !isYouTubeURL(url)) return { ok: false };
-    await applyConfiguration(tabId, frameId, WBLOCK_EARLY_YOUTUBE_CONFIGURATION);
-    return { ok: true };
-  }
-  if (message.action === 'wblock:clearCache') { cache.clear(); engineTimestamp = 0; scheduleRegisteredAdvancedRuntimeRefresh('clear_cache'); return { ok: true }; }
-  if (message.action === 'wblock:zapper:syncRules') {
-    if (typeof message.hostname !== 'string' || !message.hostname) return { ok: false, error: 'Missing hostname', rules: [] };
-    try { return await sendQueuedNativeMessage({ action: 'syncZapperRules', hostname: message.hostname, rules: Array.isArray(message.rules) ? message.rules : [] }) || { ok: false, rules: [] }; }
-    catch (error) { return { ok: false, error: String(error && error.message ? error.message : error), rules: [] }; }
-  }
-  if (message.action === 'wblock:zapper:getRules') {
-    if (typeof message.hostname !== 'string' || !message.hostname) return { ok: false, error: 'Missing hostname', rules: [] };
-    try { return await sendQueuedNativeMessage({ action: 'getZapperRules', hostname: message.hostname }) || { ok: false, rules: [] }; }
-    catch (error) { return { ok: false, error: String(error && error.message ? error.message : error), rules: [] }; }
-  }
-  if (message.action === 'getUserScripts') {
-    try {
-      const response = await sendQueuedNativeMessage({ action: 'getUserScripts', url: message.url, requestId: message.requestId || ('userscripts-' + Date.now()), includeContent: message.includeContent === true, maxInlineContentBytes: message.maxInlineContentBytes || 0 });
-      return { userScripts: response && response.userScripts ? response.userScripts : [], ...(response && response.error ? { error: response.error } : {}) };
-    } catch (error) { return { userScripts: [], error: String(error && error.message ? error.message : error) }; }
-  }
-  if (message.action === 'wblock:userscript:executeMainWorld') {
-    const tabId = sender && sender.tab ? sender.tab.id : 0;
-    const frameId = sender && typeof sender.frameId === 'number' ? sender.frameId : 0;
-    return executeUserScriptInMainWorld(tabId, frameId, message.source || '');
-  }
-  if (message.action === 'setUserScriptStorageValue' || message.action === 'deleteUserScriptStorageValue') {
-    const storageRequest = { action: message.action, requestId: message.requestId || ('userscript-storage-' + Date.now()), scriptId: message.scriptId, key: message.key };
-    if (typeof message.rawValue === 'string') storageRequest.rawValue = message.rawValue;
-    try { return await sendQueuedNativeMessage(storageRequest) || { ok: false, error: 'Empty response from native host' }; }
-    catch (error) { return { ok: false, error: String(error && error.message ? error.message : error) }; }
-  }
-  if (message.action === 'getUserScriptContentChunk' || message.action === 'getUserScriptResourceChunk') {
-    const chunkRequest = { action: message.action, requestId: message.requestId || ('userscript-chunk-' + Date.now()), scriptId: message.scriptId, chunkIndex: message.chunkIndex, chunkSize: message.chunkSize };
-    if (typeof message.resourceName === 'string' && message.resourceName) chunkRequest.resourceName = message.resourceName;
-    try { return await sendQueuedNativeMessage(chunkRequest) || { error: 'Empty response from native host' }; }
-    catch (error) { return { error: String(error && error.message ? error.message : error) }; }
-  }
-  if (message.action === 'gmXmlhttpRequest') return handleGMXmlhttpRequest(message);
-  if (message.action === 'wblock:menu:updateFrameCommands') {
-    setFrameMenuCommands(sender && sender.tab ? sender.tab.id : 0, sender && typeof sender.frameId === 'number' ? sender.frameId : 0, message.commands);
-    return { ok: true };
-  }
-  if (message.action === 'wblock:menu:getCommands') {
-    const tabId = typeof message.tabId === 'number' ? message.tabId : (sender && sender.tab ? sender.tab.id : 0);
-    const commands = await queryLiveTabMenuCommands(tabId);
-    return { ok: true, commands };
-  }
-  if (message.action === 'wblock:menu:invokeCommand') {
-    const tabId = typeof message.tabId === 'number' ? message.tabId : (sender && sender.tab ? sender.tab.id : 0);
-    const frameId = typeof message.frameId === 'number' ? message.frameId : 0;
-    if (!tabId) return { ok: false, error: 'Missing tab' };
-    try { return await browser.tabs.sendMessage(tabId, { type: 'wblock:menu:invokeCommand', bridgeId: message.bridgeId, commandId: message.commandId }, { frameId }) || { ok: false, error: 'Empty response from content script' }; }
-    catch (error) { return { ok: false, error: String(error && error.message ? error.message : error) }; }
-  }
-
-  const tabId = sender && sender.tab ? sender.tab.id : 0;
-  const frameId = sender && typeof sender.frameId === 'number' ? sender.frameId : 0;
-  let url = sender && sender.url ? sender.url : '';
-  const topUrl = frameId === 0 ? undefined : (sender && sender.tab ? sender.tab.url : undefined);
-  let blankFrame = false;
-  if (!url.startsWith('http') && topUrl) { url = topUrl; blankFrame = true; }
-  const configuration = await getConfiguration(message, url, topUrl);
-  if (!configuration) return { type: MESSAGE_INIT_CONTENT_SCRIPT };
-  if (!blankFrame && tabId) await applyConfiguration(tabId, frameId, configuration);
-  return { type: MESSAGE_INIT_CONTENT_SCRIPT, payload: blankFrame ? { ...configuration, scriptlets: [], js: [] } : null };
-}
-
-browser.runtime.onMessage.addListener((request, sender) => handleMessages(request, sender));
-browser.tabs && browser.tabs.onRemoved && browser.tabs.onRemoved.addListener(tabId => menuCommandsByTab.delete(tabId));
+    let tries = 0;
+    const retry = () => {
+      try { if (install()) return; } catch (_) {}
+      if (++tries < 160) setTimeout(retry, 50);
+    };
+    retry();
+  })();
+})();

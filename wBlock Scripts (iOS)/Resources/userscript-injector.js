@@ -844,6 +844,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return host !== 'app.historytoday.com' && host !== 'appan.newscientist.com';
         }
 
+        isTrustedTypesHeavySite() {
+            const host = String(location.hostname || '').toLowerCase();
+            return host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com') || host === 'youtubekids.com' || host.endsWith('.youtubekids.com');
+        }
+
         shouldPreferMainWorldInjection(script) {
             if (!script || typeof script.name !== 'string') return false;
             // Most userscripts are happier in the isolated content world on
@@ -894,12 +899,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 } else if (injectInto === 'auto') {
                     // Preserve the old auto behavior for general userscripts:
                     // script-tag page injection first, then isolated content context.
-                    // MAIN-world executeScript is reserved for known page-global scripts
-                    // because it can expose userscripts to site Trusted Types policies.
+                    // Trusted Types-heavy sites can log noisy policy violations even
+                    // for failed probe script tags, so avoid page-tag probes there.
                     const injectedInMainWorld = this.shouldPreferMainWorldInjection(fullScript)
                         ? await this.injectInMainWorldViaScripting(fullScript)
                         : false;
-                    if (!injectedInMainWorld && !this.tryInjectInPageContext(fullScript)) {
+                    if (!injectedInMainWorld && this.isTrustedTypesHeavySite()) {
+                        this.injectInContentContext(fullScript);
+                    } else if (!injectedInMainWorld && !this.tryInjectInPageContext(fullScript)) {
                         wBlockLog(`[wBlock] Page injection blocked (likely CSP), falling back to content context for ${fullScript.name}`);
                         this.injectInContentContext(fullScript);
                     }

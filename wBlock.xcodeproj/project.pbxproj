@@ -353,6 +353,7 @@
 				Resources/rules/csp_strip_rules.json,
 				Resources/web_accessible_resources,
 				"Resources/userscript-injector.js",
+				"Resources/youtube-early-main.js",
 				"Resources/zapper-content.js",
 			);
 			target = 867CCA172F696EA200719EFE /* wBlock Scripts */;
