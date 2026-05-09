@@ -158,7 +158,7 @@ enum NativeAdvancedRuntimeAdapter {
     private static func isEarlyRegisteredScriptletName(_ rawName: String) -> Bool {
         switch normalizedScriptletName(rawName) {
         case "set", "set-constant", "trusted-set", "trusted-set-constant",
-             "nano-setTimeout-booster", "nano-stb",
+             "nano-settimeout-booster", "nano-stb",
              "no-fetch-if", "prevent-fetch", "trusted-prevent-fetch",
              "no-xhr-if", "prevent-xhr", "trusted-prevent-xhr",
              "json-prune", "json-prune-fetch-response", "json-prune-xhr-response",

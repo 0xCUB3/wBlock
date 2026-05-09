@@ -6318,8 +6318,9 @@ async function refreshYouTubeMainRuntimeRegistration(disabledSites, reason = 're
   const registrationKey = disabled ? 'disabled' : 'enabled';
   if (registrationKey === registeredYouTubeMainRuntimeKey) return true;
   if (disabled) {
-    await unregisterYouTubeMainRuntime('disabled');
-    registeredYouTubeMainRuntimeKey = registrationKey;
+    if (await unregisterYouTubeMainRuntime('disabled')) {
+      registeredYouTubeMainRuntimeKey = registrationKey;
+    }
     return false;
   }
   const script = {

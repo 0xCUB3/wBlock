@@ -124,7 +124,15 @@
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           diagnostics.log('info', 'player-response-pruned', { transport: 'fetch', url: rawURL.slice(0, 160) });
-          return new Response(pruned, { status: response.status, statusText: response.statusText, headers });
+          const responseAfter = new Response(pruned, { status: response.status, statusText: response.statusText, headers });
+          try {
+            Object.defineProperties(responseAfter, {
+              url: { value: response.url },
+              type: { value: response.type },
+              redirected: { value: response.redirected }
+            });
+          } catch (_) {}
+          return responseAfter;
         } catch (error) {
           diagnostics.log('warn', 'fetch-prune-failed', { error: String(error && error.message || error) });
           return response;
@@ -141,8 +149,10 @@
     const nativeOpen = proto.open;
     proto.open = function(method, url, ...rest) {
       try {
-        if (shouldPruneURL(urlFrom(url))) this.__wBlockYouTubePruneResponse = true;
-      } catch (_) {}
+        this.__wBlockYouTubePruneResponse = shouldPruneURL(urlFrom(url));
+      } catch (_) {
+        this.__wBlockYouTubePruneResponse = false;
+      }
       return nativeOpen.call(this, method, url, ...rest);
     };
 
@@ -169,8 +179,14 @@
         enumerable: responseDescriptor.enumerable,
         get() {
           const response = responseDescriptor.get.call(this);
-          if (!this.__wBlockYouTubePruneResponse || typeof response !== 'string') return response;
-          return prunedJSONText(response) || response;
+          if (!this.__wBlockYouTubePruneResponse || !response) return response;
+          if (typeof response === 'string') return prunedJSONText(response) || response;
+          if (typeof response === 'object') {
+            try {
+              if (pruneAdMetadata(response)) diagnostics.log('info', 'player-response-pruned', { transport: 'xhr', type: 'json' });
+            } catch (_) {}
+          }
+          return response;
         }
       });
     }
