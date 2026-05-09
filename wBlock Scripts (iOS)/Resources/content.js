@@ -105,26 +105,7 @@ var WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT = String.raw`(() => {
   };
   retry();
 })();`;
-var WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [
-  { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'fetch'] },
-  { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'Request'] },
-  { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'JSON.parse'] },
-  { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.playerAds', 'undefined'] },
-  { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.adPlacements', 'undefined'] },
-  { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.adSlots', 'undefined'] },
-  { name: 'ubo-set-constant', args: ['playerResponse.adPlacements', 'undefined'] },
-  { name: 'ubo-json-prune', args: ['playerResponse.adPlacements playerResponse.playerAds playerResponse.adSlots adPlacements playerAds adSlots legacyImportant'] },
-  { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/player?'] },
-  { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/playlist?'] },
-  { name: 'ubo-json-prune-xhr-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', String.raw`/\/player(?:\?.+)?$/`] },
-  { name: 'ubo-trusted-replace-fetch-response', args: ['"adPlacements"', '"no_ads"', 'player?'] },
-  { name: 'ubo-trusted-replace-fetch-response', args: ['"adSlots"', '"no_ads"', 'player?'] },
-  { name: 'ubo-trusted-replace-fetch-response', args: ['"adSlots"', '"no_ads"', String.raw`/^\W+$/`] },
-  { name: 'ubo-trusted-replace-xhr-response', args: ['"adPlacements"', '"no_ads"', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
-  { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?([A-Z]"\}|"\}{2,4})\}\],/`, '', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
-  { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?("adSlots"|"adBreakHeartbeatParams")/gms`, '$1', String.raw`/\/player(?:\?.+)?$/`] },
-  { name: 'ubo-nano-stb', args: ['[native code]', '17000', '0.001'] }
-];
+var WBLOCK_EARLY_YOUTUBE_SCRIPTLETS = [];
 var WBLOCK_EARLY_YOUTUBE_CONFIGURATION = { scriptlets: WBLOCK_EARLY_YOUTUBE_SCRIPTLETS, css: [], extendedCss: [], js: [] };
 var WBLOCK_CONTENT_RUNTIME_ALREADY_RAN = globalThis.__wBlockContentRuntimeHasRun === true;
 globalThis.__wBlockContentRuntimeHasRun = true;
@@ -6380,7 +6361,7 @@ function wBlockInjectPageConfiguration(configuration) {
 function wBlockApplyEarlyYouTubeCompatibility() {
   try {
     const host = location.hostname || '';
-    if (host !== 'youtube.com' && !host.endsWith('.youtube.com') && host !== 'youtube-nocookie.com' && !host.endsWith('.youtube-nocookie.com') && host !== 'youtubekids.com' && !host.endsWith('.youtubekids.com')) return;
+    if (!['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'tv.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'].includes(host)) return;
     let requestedMainWorldInjection = false;
     try {
       if (typeof browser !== 'undefined' && browser.runtime && typeof browser.runtime.sendMessage === 'function') {

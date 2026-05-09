@@ -104,26 +104,10 @@ const WBLOCK_YOUTUBE_SERVER_CONTRACT_SCRIPT = String.raw`(() => {
   retry();
 })();`;
 const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
-  scriptlets: [
-    { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'fetch'] },
-    { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'Request'] },
-    { name: 'ubo-trusted-prevent-dom-bypass', args: ['Node.prototype.appendChild', 'JSON.parse'] },
-    { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.playerAds', 'undefined'] },
-    { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.adPlacements', 'undefined'] },
-    { name: 'ubo-set-constant', args: ['ytInitialPlayerResponse.adSlots', 'undefined'] },
-    { name: 'ubo-set-constant', args: ['playerResponse.adPlacements', 'undefined'] },
-    { name: 'ubo-json-prune', args: ['playerResponse.adPlacements playerResponse.playerAds playerResponse.adSlots adPlacements playerAds adSlots legacyImportant'] },
-    { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/player?'] },
-    { name: 'ubo-json-prune-fetch-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', '/playlist?'] },
-    { name: 'ubo-json-prune-xhr-response', args: [WBLOCK_YOUTUBE_AD_RESPONSE_PATHS, '', 'propsToMatch', String.raw`/\/player(?:\?.+)?$/`] },
-    { name: 'ubo-trusted-replace-fetch-response', args: ['"adPlacements"', '"no_ads"', 'player?'] },
-    { name: 'ubo-trusted-replace-fetch-response', args: ['"adSlots"', '"no_ads"', 'player?'] },
-    { name: 'ubo-trusted-replace-fetch-response', args: ['"adSlots"', '"no_ads"', String.raw`/^\W+$/`] },
-    { name: 'ubo-trusted-replace-xhr-response', args: ['"adPlacements"', '"no_ads"', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
-    { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?([A-Z]"\}|"\}{2,4})\}\],/`, '', String.raw`/playlist\?list=|\/player(?:\?.+)?$|watch\?[tv]=/`] },
-    { name: 'ubo-trusted-replace-xhr-response', args: [String.raw`/"adPlacements.*?("adSlots"|"adBreakHeartbeatParams")/gms`, '$1', String.raw`/\/player(?:\?.+)?$/`] },
-    { name: 'ubo-nano-stb', args: ['[native code]', '17000', '0.001'] }
-  ],
+  // Temporarily diagnostic-only on Safari: early page-world YouTube scriptlets
+  // can leave sidebar navigations stuck at 0x0/SABR buffering. Keep the
+  // registered MAIN script for observability while we isolate the unsafe rule.
+  scriptlets: [],
   css: [],
   extendedCss: [],
   js: []
@@ -6186,11 +6170,14 @@ const WBLOCK_REGISTERED_ADVANCED_RUNTIME_ID = 'wblock-advanced-runtime-scriptlet
 const WBLOCK_YOUTUBE_MAIN_RUNTIME_ID = 'wblock-youtube-main-runtime';
 const WBLOCK_YOUTUBE_MAIN_RUNTIME_MATCHES = [
   '*://youtube.com/*',
-  '*://*.youtube.com/*',
+  '*://www.youtube.com/*',
+  '*://m.youtube.com/*',
+  '*://music.youtube.com/*',
+  '*://tv.youtube.com/*',
   '*://youtube-nocookie.com/*',
-  '*://*.youtube-nocookie.com/*',
+  '*://www.youtube-nocookie.com/*',
   '*://youtubekids.com/*',
-  '*://*.youtubekids.com/*'
+  '*://www.youtubekids.com/*'
 ];
 const menuCommandsByTab = new Map();
 
@@ -6381,7 +6368,7 @@ function wBlockDomainMatches(domain, host) {
 }
 
 function wBlockIsYouTubeRuntimeDisabled(disabledSites) {
-  const hosts = ['youtube.com', 'www.youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'];
+  const hosts = ['youtube.com', 'www.youtube.com', 'music.youtube.com', 'm.youtube.com', 'tv.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'];
   return Array.isArray(disabledSites) && disabledSites.some(domain => hosts.some(host => wBlockDomainMatches(domain, host)));
 }
 

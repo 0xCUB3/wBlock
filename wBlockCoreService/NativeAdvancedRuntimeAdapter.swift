@@ -226,7 +226,7 @@ enum NativeAdvancedRuntimeAdapter {
     static func registeredScriptletPayload(groupIdentifier: String, disabledSites: [String]) -> [String: Any]? {
         guard let bundle = loadBundle(groupIdentifier: groupIdentifier) else { return nil }
         let scriptlets = bundle.scriptlets
-            .filter { isEarlyRegisteredScriptletName($0.name) && !isFragileYouTubePlaybackScriptlet($0) }
+            .filter { isEarlyRegisteredScriptletName($0.name) && !isYouTubeScoped($0.scope) && !isFragileYouTubePlaybackScriptlet($0) }
             .map { rule -> [String: Any] in
                 [
                     "name": rule.name,

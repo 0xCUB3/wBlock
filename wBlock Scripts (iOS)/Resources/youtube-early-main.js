@@ -7,7 +7,7 @@
 
 (() => {
   const host = String(location.hostname || '').toLowerCase();
-  const isYouTubeHost = host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com') || host === 'youtubekids.com' || host.endsWith('.youtubekids.com');
+  const isYouTubeHost = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'tv.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtubekids.com', 'www.youtubekids.com'].includes(host);
   if (!isYouTubeHost) return;
   if (globalThis.__wBlockYouTubeDocumentStartRuntime) return;
   globalThis.__wBlockYouTubeDocumentStartRuntime = true;
@@ -164,150 +164,12 @@
   globalThis.__wBlockYouTubeDiagnostics = wBlockYtDiag;
 
   const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
-  "scriptlets": [
-    {
-      "name": "ubo-trusted-prevent-dom-bypass",
-      "args": [
-        "Node.prototype.appendChild",
-        "fetch"
-      ]
-    },
-    {
-      "name": "ubo-trusted-prevent-dom-bypass",
-      "args": [
-        "Node.prototype.appendChild",
-        "Request"
-      ]
-    },
-    {
-      "name": "ubo-trusted-prevent-dom-bypass",
-      "args": [
-        "Node.prototype.appendChild",
-        "JSON.parse"
-      ]
-    },
-    {
-      "name": "ubo-set-constant",
-      "args": [
-        "ytInitialPlayerResponse.playerAds",
-        "undefined"
-      ]
-    },
-    {
-      "name": "ubo-set-constant",
-      "args": [
-        "ytInitialPlayerResponse.adPlacements",
-        "undefined"
-      ]
-    },
-    {
-      "name": "ubo-set-constant",
-      "args": [
-        "ytInitialPlayerResponse.adSlots",
-        "undefined"
-      ]
-    },
-    {
-      "name": "ubo-set-constant",
-      "args": [
-        "playerResponse.adPlacements",
-        "undefined"
-      ]
-    },
-    {
-      "name": "ubo-json-prune",
-      "args": [
-        "playerResponse.adPlacements playerResponse.playerAds playerResponse.adSlots adPlacements playerAds adSlots legacyImportant"
-      ]
-    },
-    {
-      "name": "ubo-json-prune-fetch-response",
-      "args": [
-        "adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots",
-        "",
-        "propsToMatch",
-        "/player?"
-      ]
-    },
-    {
-      "name": "ubo-json-prune-fetch-response",
-      "args": [
-        "adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots",
-        "",
-        "propsToMatch",
-        "/playlist?"
-      ]
-    },
-    {
-      "name": "ubo-json-prune-xhr-response",
-      "args": [
-        "adPlacements adSlots playerResponse.adPlacements playerResponse.adSlots [].playerResponse.adPlacements [].playerResponse.adSlots",
-        "",
-        "propsToMatch",
-        "/\\/player(?:\\?.+)?$/"
-      ]
-    },
-    {
-      "name": "ubo-trusted-replace-fetch-response",
-      "args": [
-        "\"adPlacements\"",
-        "\"no_ads\"",
-        "player?"
-      ]
-    },
-    {
-      "name": "ubo-trusted-replace-fetch-response",
-      "args": [
-        "\"adSlots\"",
-        "\"no_ads\"",
-        "player?"
-      ]
-    },
-    {
-      "name": "ubo-trusted-replace-fetch-response",
-      "args": [
-        "\"adSlots\"",
-        "\"no_ads\"",
-        "/^\\W+$/"
-      ]
-    },
-    {
-      "name": "ubo-trusted-replace-xhr-response",
-      "args": [
-        "\"adPlacements\"",
-        "\"no_ads\"",
-        "/playlist\\?list=|\\/player(?:\\?.+)?$|watch\\?[tv]=/"
-      ]
-    },
-    {
-      "name": "ubo-trusted-replace-xhr-response",
-      "args": [
-        "/\"adPlacements.*?([A-Z]\"\\}|\"\\}{2,4})\\}\\],/",
-        "",
-        "/playlist\\?list=|\\/player(?:\\?.+)?$|watch\\?[tv]=/"
-      ]
-    },
-    {
-      "name": "ubo-trusted-replace-xhr-response",
-      "args": [
-        "/\"adPlacements.*?(\"adSlots\"|\"adBreakHeartbeatParams\")/gms",
-        "$1",
-        "/\\/player(?:\\?.+)?$/"
-      ]
-    },
-    {
-      "name": "ubo-nano-stb",
-      "args": [
-        "[native code]",
-        "17000",
-        "0.001"
-      ]
-    }
-  ],
-  "css": [],
-  "extendedCss": [],
-  "js": []
-};
+    // Diagnostic-only while isolating Safari sidebar playback stalls.
+    scriptlets: [],
+    css: [],
+    extendedCss: [],
+    js: []
+  };
 
   const wBlockApplyConfiguration = function wBlockApplyConfiguration(configuration) {
   'use strict';
