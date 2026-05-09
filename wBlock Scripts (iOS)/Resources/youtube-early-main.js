@@ -12,6 +12,157 @@
   if (globalThis.__wBlockYouTubeDocumentStartRuntime) return;
   globalThis.__wBlockYouTubeDocumentStartRuntime = true;
 
+  const wBlockYtDiag = (() => {
+    const prefix = '[wBlock:yt]';
+    const startedAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    const recent = [];
+    let nextId = 1;
+    let lastPlayerSignature = '';
+    const now = () => Math.round((typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - startedAt);
+    const remember = entry => {
+      recent.push(entry);
+      if (recent.length > 80) recent.shift();
+      return entry;
+    };
+    const log = (level, event, data = {}) => {
+      const entry = remember({ t: now(), event, ...data });
+      try { (console[level] || console.info).call(console, `${prefix} ${event}`, entry); } catch (_) {}
+      return entry;
+    };
+    const urlFrom = value => {
+      try {
+        if (typeof value === 'string') return value;
+        if (value && typeof value.url === 'string') return value.url;
+        return String(value || '');
+      } catch (_) { return ''; }
+    };
+    const classifyURL = rawURL => {
+      let parsed;
+      try { parsed = new URL(rawURL, location.href); } catch (_) { return null; }
+      const host = parsed.hostname.toLowerCase();
+      const path = parsed.pathname;
+      if ((host.endsWith('googlevideo.com') || host.endsWith('c.youtube.com')) && /\/(?:videoplayback|initplayback)(?:$|[/?#])/.test(path)) return { kind: 'media', parsed };
+      if (host.endsWith('youtube.com') && /\/youtubei\/v1\/(?:player|next|playlist|browse)/.test(path)) return { kind: 'innertube', parsed };
+      if (/ad_status\.js$/.test(path)) return { kind: 'ad-status', parsed };
+      if (host.includes('doubleclick.net') || host.includes('googlesyndication.com') || host.includes('googleadservices.com')) return { kind: 'ad-network', parsed };
+      return null;
+    };
+    const describeURL = parsed => {
+      const params = {};
+      for (const key of ['v', 'list', 'id', 'itag', 'mime', 'range', 'rn', 'rbuf', 'clen', 'dur', 'c', 'cver', 'alr', 'cpn']) {
+        const value = parsed.searchParams.get(key);
+        if (value !== null) params[key] = value.slice(0, 80);
+      }
+      return { host: parsed.hostname, path: parsed.pathname, params };
+    };
+    const logURL = (level, event, rawURL, data = {}) => {
+      const classified = classifyURL(rawURL);
+      if (!classified) return null;
+      return log(level, event, { kind: classified.kind, url: describeURL(classified.parsed), ...data });
+    };
+    const wrapFetch = () => {
+      if (typeof fetch !== 'function' || fetch.__wBlockYtDiag) return;
+      const nativeFetch = fetch;
+      const wrappedFetch = new Proxy(nativeFetch, { apply(target, thisArg, args) {
+        const rawURL = urlFrom(args[0]);
+        const classified = classifyURL(rawURL);
+        const id = classified ? nextId++ : 0;
+        if (classified && classified.kind !== 'media') log('info', 'fetch:start', { id, kind: classified.kind, url: describeURL(classified.parsed) });
+        let result;
+        try { result = Reflect.apply(target, thisArg, args); } catch (error) {
+          if (classified) log('warn', 'fetch:throw', { id, kind: classified.kind, url: describeURL(classified.parsed), error: String(error && error.message || error) });
+          throw error;
+        }
+        if (classified && result && typeof result.then === 'function') {
+          result.then(response => {
+            const level = response && response.ok === false ? 'warn' : 'info';
+            log(level, 'fetch:done', { id, kind: classified.kind, url: describeURL(classified.parsed), status: response && response.status, ok: response && response.ok, type: response && response.type });
+          }, error => log('warn', 'fetch:fail', { id, kind: classified.kind, url: describeURL(classified.parsed), error: String(error && error.message || error) }));
+        }
+        return result;
+      }});
+      try { Object.defineProperty(wrappedFetch, '__wBlockYtDiag', { value: true }); } catch (_) {}
+      fetch = wrappedFetch;
+    };
+    const wrapXHR = () => {
+      const proto = XMLHttpRequest && XMLHttpRequest.prototype;
+      if (!proto || proto.__wBlockYtDiag) return;
+      const nativeOpen = proto.open;
+      const nativeSend = proto.send;
+      proto.open = function(method, url, ...rest) {
+        const rawURL = urlFrom(url);
+        const classified = classifyURL(rawURL);
+        if (classified) {
+          this.__wBlockYtDiag = { id: nextId++, method: String(method || 'GET'), kind: classified.kind, url: describeURL(classified.parsed) };
+          if (classified.kind !== 'media') log('info', 'xhr:open', this.__wBlockYtDiag);
+        }
+        return nativeOpen.call(this, method, url, ...rest);
+      };
+      proto.send = function(...args) {
+        const meta = this.__wBlockYtDiag;
+        if (meta && !meta.listenerAttached) {
+          meta.listenerAttached = true;
+          const done = event => {
+            const status = (() => { try { return this.status; } catch (_) { return 0; } })();
+            const level = status >= 400 || event.type !== 'loadend' ? 'warn' : 'info';
+            log(level, 'xhr:' + event.type, { ...meta, status, responseURLHost: (() => { try { return new URL(this.responseURL).hostname; } catch (_) { return ''; } })() });
+          };
+          try { this.addEventListener('loadend', done); this.addEventListener('error', done); this.addEventListener('timeout', done); this.addEventListener('abort', done); } catch (_) {}
+        }
+        return nativeSend.apply(this, args);
+      };
+      try { Object.defineProperty(proto, '__wBlockYtDiag', { value: true }); } catch (_) {}
+    };
+    const installEventLogs = () => {
+      try {
+        document.addEventListener('securitypolicyviolation', event => {
+          log('warn', 'csp-violation', { directive: event.violatedDirective, effectiveDirective: event.effectiveDirective, blockedURI: event.blockedURI, sourceFile: event.sourceFile, lineNumber: event.lineNumber, sample: event.sample });
+        }, true);
+      } catch (_) {}
+      try {
+        addEventListener('error', event => {
+          const target = event && event.target;
+          const rawURL = target && (target.currentSrc || target.src || target.href || target.data);
+          if (rawURL && classifyURL(rawURL)) logURL('warn', 'resource:error', rawURL, { tag: target && target.localName });
+        }, true);
+      } catch (_) {}
+      const mediaLog = event => {
+        const target = event && event.target;
+        if (!target || target.localName !== 'video') return;
+        const rawURL = target.currentSrc || target.src || '';
+        logURL(event.type === 'error' ? 'warn' : 'info', 'media:' + event.type, rawURL, { networkState: target.networkState, readyState: target.readyState, errorCode: target.error && target.error.code });
+      };
+      for (const type of ['error', 'stalled', 'waiting', 'suspend', 'emptied', 'abort']) {
+        try { document.addEventListener(type, mediaLog, true); } catch (_) {}
+      }
+    };
+    const samplePlayer = () => {
+      try {
+        const player = document.getElementById('movie_player');
+        if (!player) return;
+        const stats = player.getStatsForNerds?.() || {};
+        const progress = player.getProgressState?.() || {};
+        const response = player.getPlayerResponse?.() || {};
+        const state = player.getPlayerStateObject?.() || {};
+        const playability = response.playabilityStatus || {};
+        const debug = String(stats.debug_info || '');
+        const signature = JSON.stringify({ href: location.href, status: playability.status || '', reason: playability.reason || '', buffering: !!state.isBuffering, health: stats.buffer_health_seconds || '', resolution: stats.resolution || '', debug: debug.slice(0, 24), loaded: progress.loaded, duration: progress.duration });
+        const looksBad = state.isBuffering || playability.status === 'UNPLAYABLE' || stats.buffer_health_seconds === '0.00 s' || stats.resolution === '0x0' || document.body?.innerText?.includes('Experiencing interruptions');
+        if (looksBad && signature !== lastPlayerSignature) {
+          lastPlayerSignature = signature;
+          const playbackURL = response.playbackTracking?.videostatsPlaybackUrl?.baseUrl || '';
+          const playbackHost = (() => { try { return new URL(playbackURL).hostname; } catch (_) { return ''; } })();
+          log('warn', 'player:suspect-state', { videoId: response.videoDetails?.videoId, playabilityStatus: playability.status, reason: playability.reason, subreason: playability.errorScreen?.playerErrorMessageRenderer?.subreason?.runs?.map(r => r.text).join('').slice(0, 240), isBuffering: !!state.isBuffering, bufferHealth: stats.buffer_health_seconds, resolution: stats.resolution, debugInfo: debug.slice(0, 160), progress: { current: progress.current, loaded: progress.loaded, duration: progress.duration }, formats: response.streamingData ? { formats: response.streamingData.formats?.length || 0, adaptiveFormats: response.streamingData.adaptiveFormats?.length || 0, expiresInSeconds: response.streamingData.expiresInSeconds } : null, playbackHost, recent: recent.slice(-12) });
+        }
+      } catch (_) {}
+    };
+    try { wrapFetch(); wrapXHR(); installEventLogs(); } catch (error) { log('warn', 'diagnostics-install-failed', { error: String(error && error.message || error) }); }
+    try { setInterval(samplePlayer, 1000); } catch (_) {}
+    log('info', 'runtime-start', { href: location.href, readyState: document.readyState, userAgent: navigator.userAgent, scriptlets: 'early-youtube' });
+    return { log, recent, samplePlayer };
+  })();
+  globalThis.__wBlockYouTubeDiagnostics = wBlockYtDiag;
+
   const WBLOCK_EARLY_YOUTUBE_CONFIGURATION = {
   "scriptlets": [
     {
@@ -6201,5 +6352,10 @@
   try { runRawScripts(); } catch (_) {}
 };
 
-  try { wBlockApplyConfiguration(WBLOCK_EARLY_YOUTUBE_CONFIGURATION); } catch (_) {}
+  try {
+    wBlockApplyConfiguration(WBLOCK_EARLY_YOUTUBE_CONFIGURATION);
+    wBlockYtDiag.log('info', 'scriptlets-applied', { count: WBLOCK_EARLY_YOUTUBE_CONFIGURATION.scriptlets.length, names: WBLOCK_EARLY_YOUTUBE_CONFIGURATION.scriptlets.map(rule => rule.name) });
+  } catch (error) {
+    wBlockYtDiag.log('warn', 'scriptlets-apply-failed', { error: String(error && error.message || error) });
+  }
 })();
