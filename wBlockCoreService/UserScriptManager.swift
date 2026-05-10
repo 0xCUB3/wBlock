@@ -57,19 +57,22 @@ struct BuiltInUserScriptDefinition {
     let isEnabledByDefault: Bool
     let section: BuiltInUserScriptSection
     let description: String
+    let languages: [String]
 
     init(
         name: String,
         url: String,
         isEnabledByDefault: Bool,
         section: BuiltInUserScriptSection = .general,
-        description: String = "Default userscript"
+        description: String = "Default userscript",
+        languages: [String] = []
     ) {
         self.name = name
         self.url = url
         self.isEnabledByDefault = isEnabledByDefault
         self.section = section
         self.description = description
+        self.languages = languages
     }
 }
 
@@ -86,7 +89,8 @@ enum BuiltInUserScripts {
 
     private static func tinyShieldGroupedDefinition(
         _ domainGroup: String,
-        displayDomain: String? = nil
+        displayDomain: String? = nil,
+        languages: [String]
     ) -> BuiltInUserScriptDefinition {
         let initial = domainGroup.prefix(1).lowercased()
         return BuiltInUserScriptDefinition(
@@ -94,7 +98,8 @@ enum BuiltInUserScripts {
             url: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/\(initial)/tinyShield-\(domainGroup).user.js",
             isEnabledByDefault: false,
             section: .foreign,
-            description: tinyShieldDescription
+            description: tinyShieldDescription,
+            languages: languages
         )
     }
 
@@ -130,31 +135,32 @@ enum BuiltInUserScripts {
             url: popupBlockerStableURL,
             isEnabledByDefault: false
         ),
-        tinyShieldGroupedDefinition("autobild.de"),
-        tinyShieldGroupedDefinition("bild.de"),
-        tinyShieldGroupedDefinition("computerbild.de"),
-        tinyShieldGroupedDefinition("gutefrage.net"),
-        tinyShieldGroupedDefinition("welt.de"),
-        tinyShieldGroupedDefinition("geo.fr"),
-        tinyShieldGroupedDefinition("lerobert.com"),
-        tinyShieldGroupedDefinition("programme-tv.net"),
-        tinyShieldGroupedDefinition("kuruma-news.jp"),
-        tinyShieldGroupedDefinition("oricon.co.jp"),
-        tinyShieldGroupedDefinition("toyokeizai.net"),
-        tinyShieldGroupedDefinition("dogdrip.net"),
-        tinyShieldGroupedDefinition("sportalkorea.com"),
-        tinyShieldGroupedDefinition("ygosu.com"),
-        tinyShieldGroupedDefinition("dziennik.pl"),
-        tinyShieldGroupedDefinition("doviz.com"),
-        tinyShieldGroupedDefinition("elnacional.cat"),
-        tinyShieldGroupedDefinition("pravda.com.ua"),
-        tinyShieldGroupedDefinition("slobodnadalmacija.hr")
+        tinyShieldGroupedDefinition("autobild.de", languages: ["de"]),
+        tinyShieldGroupedDefinition("bild.de", languages: ["de"]),
+        tinyShieldGroupedDefinition("computerbild.de", languages: ["de"]),
+        tinyShieldGroupedDefinition("gutefrage.net", languages: ["de"]),
+        tinyShieldGroupedDefinition("welt.de", languages: ["de"]),
+        tinyShieldGroupedDefinition("geo.fr", languages: ["fr"]),
+        tinyShieldGroupedDefinition("lerobert.com", languages: ["fr"]),
+        tinyShieldGroupedDefinition("programme-tv.net", languages: ["fr"]),
+        tinyShieldGroupedDefinition("kuruma-news.jp", languages: ["ja"]),
+        tinyShieldGroupedDefinition("oricon.co.jp", languages: ["ja"]),
+        tinyShieldGroupedDefinition("toyokeizai.net", languages: ["ja"]),
+        tinyShieldGroupedDefinition("dogdrip.net", languages: ["ko"]),
+        tinyShieldGroupedDefinition("sportalkorea.com", languages: ["ko"]),
+        tinyShieldGroupedDefinition("ygosu.com", languages: ["ko"]),
+        tinyShieldGroupedDefinition("dziennik.pl", languages: ["pl"]),
+        tinyShieldGroupedDefinition("doviz.com", languages: ["tr"]),
+        tinyShieldGroupedDefinition("elnacional.cat", languages: ["ca"]),
+        tinyShieldGroupedDefinition("pravda.com.ua", languages: ["uk"]),
+        tinyShieldGroupedDefinition("slobodnadalmacija.hr", languages: ["hr"])
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
     static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL])
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
     static let sectionByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.section) })
+    static let languagesByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) })
 }
 
 @MainActor
@@ -468,6 +474,11 @@ public class UserScriptManager: ObservableObject {
     public func builtInSection(for userScript: UserScript) -> BuiltInUserScriptSection? {
         guard let urlString = userScript.url?.absoluteString else { return nil }
         return BuiltInUserScripts.sectionByURL[urlString]
+    }
+
+    public func builtInLanguages(for userScript: UserScript) -> [String] {
+        guard let urlString = userScript.url?.absoluteString else { return [] }
+        return BuiltInUserScripts.languagesByURL[urlString] ?? []
     }
 
     private init() {

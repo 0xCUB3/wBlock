@@ -135,7 +135,14 @@ struct OnboardingView: View {
 
     private var defaultUserScripts: [OnboardingUserScriptItem] {
         userScriptManager.userScripts
-            .filter { userScriptManager.isDefaultUserScript($0) }
+            .filter { script in
+                guard userScriptManager.isDefaultUserScript(script) else { return false }
+                guard userScriptManager.builtInSection(for: script) == .foreign else { return true }
+
+                let scriptLanguages = Set(userScriptManager.builtInLanguages(for: script).map { $0.lowercased() })
+                guard !scriptLanguages.isEmpty else { return false }
+                return !scriptLanguages.isDisjoint(with: selectedLanguages.map { $0.lowercased() })
+            }
             .map { script in
                 OnboardingUserScriptItem(
                     id: script.id.uuidString,
