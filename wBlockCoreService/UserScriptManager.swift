@@ -56,17 +56,20 @@ struct BuiltInUserScriptDefinition {
     let url: String
     let isEnabledByDefault: Bool
     let section: BuiltInUserScriptSection
+    let description: String
 
     init(
         name: String,
         url: String,
         isEnabledByDefault: Bool,
-        section: BuiltInUserScriptSection = .general
+        section: BuiltInUserScriptSection = .general,
+        description: String = "Default userscript"
     ) {
         self.name = name
         self.url = url
         self.isEnabledByDefault = isEnabledByDefault
         self.section = section
+        self.description = description
     }
 }
 
@@ -78,6 +81,8 @@ enum BuiltInUserScripts {
         "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
     static let tinyShieldURL =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
+    static let tinyShieldDescription =
+        "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
 
     private static func tinyShieldGroupedDefinition(
         _ domainGroup: String,
@@ -88,7 +93,8 @@ enum BuiltInUserScripts {
             name: "tinyShield (\(displayDomain ?? domainGroup))",
             url: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/\(initial)/tinyShield-\(domainGroup).user.js",
             isEnabledByDefault: false,
-            section: .foreign
+            section: .foreign,
+            description: tinyShieldDescription
         )
     }
 
@@ -116,7 +122,8 @@ enum BuiltInUserScripts {
         BuiltInUserScriptDefinition(
             name: "tinyShield",
             url: tinyShieldURL,
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            description: tinyShieldDescription
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
@@ -977,6 +984,7 @@ public class UserScriptManager: ObservableObject {
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
+        await refreshDefaultUserScriptDescriptionsIfNeeded()
 
         // Always check for duplicates - simplified approach
         checkForDuplicatesAndAskForConfirmation()
@@ -1068,7 +1076,7 @@ public class UserScriptManager: ObservableObject {
                 var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
                 newUserScript.isEnabled = defaultScript.isEnabledByDefault
                 newUserScript.isLocal = false
-                newUserScript.description = "Default userscript"
+                newUserScript.description = defaultScript.description
                 newUserScript.version = ""
 
                 userScripts.append(newUserScript)
@@ -1085,6 +1093,40 @@ public class UserScriptManager: ObservableObject {
         } else {
             logger.info("ℹ️ No missing default scripts to add")
         }
+    }
+
+    private func refreshDefaultUserScriptDescriptionsIfNeeded() async {
+        var didUpdate = false
+
+        for defaultScript in defaultUserScripts {
+            guard let index = userScripts.firstIndex(where: { $0.url?.absoluteString == defaultScript.url }) else {
+                continue
+            }
+            guard shouldReplaceDefaultUserScriptDescription(userScripts[index].description) else {
+                continue
+            }
+            guard userScripts[index].description != defaultScript.description else {
+                continue
+            }
+
+            userScripts[index].description = defaultScript.description
+            didUpdate = true
+        }
+
+        if didUpdate {
+            await persistUserScriptsNow()
+        }
+    }
+
+    private func shouldReplaceDefaultUserScriptDescription(_ description: String) -> Bool {
+        let normalizedDescription = description
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        return normalizedDescription.isEmpty
+            || normalizedDescription == "default userscript"
+            || normalizedDescription == "default userscript - downloading..."
+            || normalizedDescription == "ready to enable"
     }
 
     private func downloadMissingDefaultScripts() async {
@@ -1133,9 +1175,8 @@ public class UserScriptManager: ObservableObject {
             newUserScript.isLocal = false  // Mark as remote
 
             // Add placeholder metadata so they show up in the list
-            newUserScript.description = "Default userscript"
+            newUserScript.description = defaultScript.description
             newUserScript.version = ""
-
             userScripts.append(newUserScript)
             logger.info("✅ Added default userscript placeholder: \(defaultScript.name)")
         }
@@ -1218,14 +1259,9 @@ public class UserScriptManager: ObservableObject {
         guard !userScript.isLocal else { return false }
         guard isDefaultUserScript(userScript) else { return false }
 
-        let normalizedDescription = userScript.description
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
+        let normalizedVersion = userScript.version.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        return normalizedDescription.isEmpty
-            || normalizedDescription == "default userscript"
-            || normalizedDescription == "default userscript - downloading..."
-            || normalizedDescription == "ready to enable"
+        return normalizedVersion.isEmpty || shouldReplaceDefaultUserScriptDescription(userScript.description)
     }
 
     public func prefetchDefaultUserScriptMetadataIfNeeded() {

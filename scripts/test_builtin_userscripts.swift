@@ -5,6 +5,7 @@ import Foundation
 let source = try String(contentsOfFile: "wBlockCoreService/UserScriptManager.swift", encoding: .utf8)
 let viewSource = try String(contentsOfFile: "wBlock/UserScriptManagerView.swift", encoding: .utf8)
 let tinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
+let tinyShieldDescription = "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
 let expectedForeignGroups = [
     "autobild.de",
     "bild.de",
@@ -37,8 +38,8 @@ guard source.contains(tinyShieldURL) else {
     exit(1)
 }
 
-guard source.contains("name: \"tinyShield\",\n            url: tinyShieldURL,\n            isEnabledByDefault: false") else {
-    fputs("FAIL: tinyShield should be available but disabled by default\n", stderr)
+guard source.contains("name: \"tinyShield\",\n            url: tinyShieldURL,\n            isEnabledByDefault: false,\n            description: tinyShieldDescription") else {
+    fputs("FAIL: tinyShield should be available but disabled by default with a usable description\n", stderr)
     exit(1)
 }
 
@@ -62,7 +63,22 @@ guard source.contains("section: .foreign") else {
     exit(1)
 }
 
-guard viewSource.contains("title: \"Foreign\"") && viewSource.contains("$0.builtInSection == .foreign") else {
+guard source.contains("description: tinyShieldDescription") else {
+    fputs("FAIL: tinyShield definitions should not fall back to the generic Default userscript description\n", stderr)
+    exit(1)
+}
+
+guard source.contains("refreshDefaultUserScriptDescriptionsIfNeeded()") else {
+    fputs("FAIL: existing default userscript placeholders should be refreshed\n", stderr)
+    exit(1)
+}
+
+guard viewSource.contains("DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded)") else {
+    fputs("FAIL: userscript UI should render foreign userscripts in a collapsible section\n", stderr)
+    exit(1)
+}
+
+guard viewSource.contains("scriptSection.id == .foreign") && viewSource.contains("Text(\"Foreign\")") else {
     fputs("FAIL: userscript UI should render foreign userscripts in a Foreign section\n", stderr)
     exit(1)
 }

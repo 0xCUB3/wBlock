@@ -68,6 +68,7 @@ struct UserScriptManagerView: View {
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
     @State private var showSearch = false
+    @AppStorage("userscriptsForeignSectionExpanded") private var isForeignUserScriptsExpanded = false
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
@@ -191,9 +192,21 @@ struct UserScriptManagerView: View {
                 }
             } else {
                 ForEach(displayedScriptSections) { scriptSection in
-                    Section(scriptSection.title) {
-                        ForEach(scriptSection.scripts) { script in
-                            scriptRowView(script: script)
+                    if scriptSection.id == .foreign {
+                        Section {
+                            DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded) {
+                                ForEach(scriptSection.scripts) { script in
+                                    scriptRowView(script: script)
+                                }
+                            } label: {
+                                Text(scriptSection.title)
+                            }
+                        }
+                    } else {
+                        Section(scriptSection.title) {
+                            ForEach(scriptSection.scripts) { script in
+                                scriptRowView(script: script)
+                            }
                         }
                     }
                 }
@@ -407,27 +420,64 @@ struct UserScriptManagerView: View {
     private var scriptsListView: some View {
         LazyVStack(spacing: 16) {
             ForEach(displayedScriptSections) { scriptSection in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(scriptSection.title)
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-
-                    VStack(spacing: 0) {
-                        ForEach(scriptSection.scripts.indices, id: \.self) { index in
-                            scriptRowView(script: scriptSection.scripts[index])
-
-                            if index < scriptSection.scripts.count - 1 {
-                                Divider()
-                                    .padding(.leading, 16)
-                            }
-                        }
-                    }
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                if scriptSection.id == .foreign {
+                    macOSForeignScriptsView(scripts: scriptSection.scripts)
+                } else {
+                    macOSUserScriptSectionView(title: scriptSection.title, scripts: scriptSection.scripts)
                 }
             }
         }
         .padding(.horizontal)
+    }
+
+    private func macOSUserScriptSectionView(
+        title: LocalizedStringKey,
+        scripts: [UserScriptListItem]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                ForEach(scripts.indices, id: \.self) { index in
+                    scriptRowView(script: scripts[index])
+
+                    if index < scripts.count - 1 {
+                        Divider()
+                            .padding(.leading, 16)
+                    }
+                }
+            }
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+    }
+
+    private func macOSForeignScriptsView(scripts: [UserScriptListItem]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded) {
+                VStack(spacing: 0) {
+                    ForEach(scripts.indices, id: \.self) { index in
+                        scriptRowView(script: scripts[index])
+
+                        if index < scripts.count - 1 {
+                            Divider()
+                                .padding(.leading, 16)
+                        }
+                    }
+                }
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            } label: {
+                Text("Foreign")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 4)
+        }
     }
     #endif
 

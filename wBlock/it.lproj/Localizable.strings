@@ -665,3 +665,4 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
 "Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
 "Next: review matching filters." = "Next: review matching filters.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
