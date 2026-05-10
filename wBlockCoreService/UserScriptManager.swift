@@ -81,6 +81,11 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false
         ),
         BuiltInUserScriptDefinition(
+            name: "tinyShield",
+            url: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js",
+            isEnabledByDefault: false
+        ),
+        BuiltInUserScriptDefinition(
             name: popupBlockerName,
             url: popupBlockerStableURL,
             isEnabledByDefault: false
