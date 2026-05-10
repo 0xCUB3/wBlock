@@ -61,6 +61,8 @@ struct OnboardingView: View {
     @State private var showRemoteConfigPrompt: Bool = false
     @State private var isAdoptingRemoteConfig: Bool = false
     @State private var hasSeededUserscriptSelection = false
+    @State private var manuallySelectedUserscripts: Set<String> = []
+    @State private var manuallyDeselectedBaselineUserscripts: Set<String> = []
     @State private var hasEnabledContentBlockers = false
     @State private var hasEnabledAdvanced = false
     @State private var detectedScriptsExtensionEnabled: Bool?
@@ -109,6 +111,7 @@ struct OnboardingView: View {
         let description: String
         let version: String
         let sourceHost: String?
+        let isBaselineEnabledByDefault: Bool
     }
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
@@ -149,7 +152,8 @@ struct OnboardingView: View {
                     name: script.name,
                     description: resolvedUserscriptDescription(for: script),
                     version: script.version.trimmingCharacters(in: .whitespacesAndNewlines),
-                    sourceHost: script.url?.host
+                    sourceHost: script.url?.host,
+                    isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script)
                 )
             }
     }
@@ -209,10 +213,12 @@ struct OnboardingView: View {
             probeForExistingICloudSetupIfNeeded()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             seedSelectedUserscriptsIfNeeded()
+            syncBaselineUserscriptSelection()
         }
         .task {
             await userScriptManager.waitUntilReady()
             seedSelectedUserscriptsIfNeeded()
+            syncBaselineUserscriptSelection()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             await refreshScriptsExtensionState(retryingWhenDisabled: true)
         }
@@ -226,12 +232,14 @@ struct OnboardingView: View {
             sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
             hasManuallyEditedRegionalSelection = false
             updateRegionalRecommendations(for: newValue)
+            syncBaselineUserscriptSelection()
         }
         .onChangeCompat(of: filterManager.filterLists) { _ in
             updateRegionalRecommendations(for: selectedLanguages)
         }
         .onChangeCompat(of: userScriptManager.userScripts) { _ in
             seedSelectedUserscriptsIfNeeded()
+            syncBaselineUserscriptSelection()
         }
         .confirmationDialog(
             "Use existing iCloud setup?",
@@ -608,7 +616,7 @@ struct OnboardingView: View {
 
     private var userscriptStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose optional userscripts. These are disabled by default.")
+            Text("Baseline userscripts are enabled by default. You can adjust them here.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -840,8 +848,16 @@ struct OnboardingView: View {
         return Button {
             if isSelected {
                 selectedUserscripts.remove(script.id)
+                manuallySelectedUserscripts.remove(script.id)
+                if script.isBaselineEnabledByDefault {
+                    manuallyDeselectedBaselineUserscripts.insert(script.id)
+                }
             } else {
                 selectedUserscripts.insert(script.id)
+                manuallyDeselectedBaselineUserscripts.remove(script.id)
+                if !script.isBaselineEnabledByDefault {
+                    manuallySelectedUserscripts.insert(script.id)
+                }
             }
         } label: {
             HStack(alignment: .top, spacing: 12) {
@@ -904,6 +920,39 @@ struct OnboardingView: View {
 
         selectedUserscripts = Set(defaultScripts.filter(\.isEnabled).map { $0.id.uuidString })
         hasSeededUserscriptSelection = true
+        syncBaselineUserscriptSelection()
+    }
+
+    private func syncBaselineUserscriptSelection() {
+        let defaultScripts = userScriptManager.userScripts.filter {
+            userScriptManager.isDefaultUserScript($0)
+        }
+        guard !defaultScripts.isEmpty else { return }
+
+        let visibleDefaultIDs = Set(defaultUserScripts.map(\.id))
+        let allDefaultIDs = Set(defaultScripts.map { $0.id.uuidString })
+        let allForeignDefaultIDs = Set(defaultScripts.compactMap { script -> String? in
+            userScriptManager.builtInSection(for: script) == .foreign ? script.id.uuidString : nil
+        })
+        let visibleBaselineIDs = Set(defaultScripts.compactMap { script -> String? in
+            guard isBaselineUserscriptEnabledByDefault(script) else { return nil }
+            guard visibleDefaultIDs.contains(script.id.uuidString) else { return nil }
+            return script.id.uuidString
+        })
+
+        selectedUserscripts = selectedUserscripts.intersection(allDefaultIDs)
+        selectedUserscripts.subtract(allForeignDefaultIDs.subtracting(visibleDefaultIDs))
+        selectedUserscripts.formUnion(visibleBaselineIDs.subtracting(manuallyDeselectedBaselineUserscripts))
+        selectedUserscripts.formUnion(manuallySelectedUserscripts.intersection(visibleDefaultIDs))
+    }
+
+    private func isBaselineUserscriptEnabledByDefault(_ script: UserScript) -> Bool {
+        if userScriptManager.builtInSection(for: script) == .foreign {
+            let languages = Set(userScriptManager.builtInLanguages(for: script).map { $0.lowercased() })
+            return !languages.isEmpty && !languages.isDisjoint(with: selectedLanguages.map { $0.lowercased() })
+        }
+
+        return script.name.localizedCaseInsensitiveCompare("AdGuard Extra") == .orderedSame
     }
     
     func applySettings() async {

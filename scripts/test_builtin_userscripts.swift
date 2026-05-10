@@ -106,4 +106,13 @@ else {
     exit(1)
 }
 
+guard onboardingSource.contains("Baseline userscripts are enabled by default. You can adjust them here.")
+    && onboardingSource.contains("isBaselineUserscriptEnabledByDefault")
+    && onboardingSource.contains("AdGuard Extra")
+    && onboardingSource.contains("visibleBaselineIDs")
+else {
+    fputs("FAIL: onboarding should enable baseline userscripts by default\n", stderr)
+    exit(1)
+}
+
 print("PASS: built-in userscript definitions")
