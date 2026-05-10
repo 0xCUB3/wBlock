@@ -1318,15 +1318,19 @@ public class UserScriptManager: ObservableObject {
                         in: .whitespacesAndNewlines)
                     let parsedVersion = parsed.version.trimmingCharacters(in: .whitespacesAndNewlines)
 
+                    guard let updateIndex = self.indexOfUserScript(withId: scriptID),
+                          self.userScripts.indices.contains(updateIndex)
+                    else { continue }
+
                     if !parsedDescription.isEmpty
-                        && self.userScripts[index].description != parsedDescription
+                        && self.userScripts[updateIndex].description != parsedDescription
                     {
-                        self.userScripts[index].description = parsedDescription
+                        self.userScripts[updateIndex].description = parsedDescription
                         hasMetadataUpdates = true
                     }
 
-                    if !parsedVersion.isEmpty && self.userScripts[index].version != parsedVersion {
-                        self.userScripts[index].version = parsedVersion
+                    if !parsedVersion.isEmpty && self.userScripts[updateIndex].version != parsedVersion {
+                        self.userScripts[updateIndex].version = parsedVersion
                         hasMetadataUpdates = true
                     }
                 } catch {
@@ -1450,6 +1454,10 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func downloadUserScriptInBackground(at index: Int, from url: URL) async {
+        guard userScripts.indices.contains(index) else { return }
+        let scriptID = userScripts[index].id
+        let scriptName = userScripts[index].name
+
         logger.info("📥 Downloading userscript from: \(url)")
 
         do {
@@ -1457,59 +1465,61 @@ public class UserScriptManager: ObservableObject {
 
             let content = String(data: data, encoding: .utf8) ?? ""
 
+            guard let currentIndex = indexOfUserScript(withId: scriptID),
+                  userScripts.indices.contains(currentIndex)
+            else { return }
+
             // Check if we got a DDoS protection page instead of actual content
             if isDDoSProtectionPage(content) {
                 logger.error("❌ Received DDoS protection page instead of userscript from: \(url)")
-                if index < userScripts.count {
-                    userScripts[index].description = "DDoS protection - try again later"
-                    userScripts[index].version = "Error"
-                    await persistUserScriptsNow()
-                }
+                userScripts[currentIndex].description = "DDoS protection - try again later"
+                userScripts[currentIndex].version = "Error"
+                await persistUserScriptsNow()
                 return
             }
 
-            if index < userScripts.count {
-                userScripts[index].content = content
-                userScripts[index].parseMetadata()
-                userScripts[index].lastUpdated = Date()
+            userScripts[currentIndex].content = content
+            userScripts[currentIndex].parseMetadata()
+            userScripts[currentIndex].lastUpdated = Date()
 
-                // Update description and version from metadata, but keep disabled
-                if userScripts[index].description.isEmpty
-                    || userScripts[index].description == "Default userscript - downloading..."
-                {
-                    userScripts[index].description =
-                        userScripts[index].description.isEmpty
-                        ? "Ready to enable" : userScripts[index].description
-                }
+            // Update description and version from metadata, but keep disabled
+            if userScripts[currentIndex].description.isEmpty
+                || userScripts[currentIndex].description == "Default userscript - downloading..."
+            {
+                userScripts[currentIndex].description =
+                    userScripts[currentIndex].description.isEmpty
+                    ? "Ready to enable" : userScripts[currentIndex].description
+            }
 
-                if userScripts[index].version == "Downloading..." {
-                    userScripts[index].version =
-                        userScripts[index].version.isEmpty
-                        ? "Downloaded" : userScripts[index].version
-                }
+            if userScripts[currentIndex].version == "Downloading..." {
+                userScripts[currentIndex].version =
+                    userScripts[currentIndex].version.isEmpty
+                    ? "Downloaded" : userScripts[currentIndex].version
             }
 
             // Process @require directives after metadata is parsed
-            if index < userScripts.count {
-                let processedContent = await processRequireDirectives(userScripts[index])
-                let resourceContents = await processResourceDirectives(userScripts[index])
+            let scriptForDirectives = userScripts[currentIndex]
+            let processedContent = await processRequireDirectives(scriptForDirectives)
+            let resourceContents = await processResourceDirectives(scriptForDirectives)
 
-                if index < userScripts.count {
-                    userScripts[index].content = processedContent
-                    userScripts[index].resourceContents = resourceContents
-                    _ = writeUserScriptContent(userScripts[index])
-                    _ = writeUserScriptResources(userScripts[index])
-                    await persistUserScriptsNow()
-                    logger.info("✅ Downloaded and saved: \(self.userScripts[index].name)")
-                }
-            }
+            guard let finalIndex = indexOfUserScript(withId: scriptID),
+                  userScripts.indices.contains(finalIndex)
+            else { return }
+
+            userScripts[finalIndex].content = processedContent
+            userScripts[finalIndex].resourceContents = resourceContents
+            _ = writeUserScriptContent(userScripts[finalIndex])
+            _ = writeUserScriptResources(userScripts[finalIndex])
+            await persistUserScriptsNow()
+            logger.info("✅ Downloaded and saved: \(self.userScripts[finalIndex].name)")
         } catch {
-            if index < userScripts.count {
-                userScripts[index].description = "Download failed - tap to retry"
-                userScripts[index].version = "Error"
+            if let failedIndex = indexOfUserScript(withId: scriptID),
+               userScripts.indices.contains(failedIndex) {
+                userScripts[failedIndex].description = "Download failed - tap to retry"
+                userScripts[failedIndex].version = "Error"
                 await persistUserScriptsNow()
             }
-            logger.error("❌ Failed to download \(self.userScripts[index].name): \(error)")
+            logger.error("❌ Failed to download \(scriptName): \(error)")
         }
     }
 
@@ -2208,7 +2218,7 @@ public class UserScriptManager: ObservableObject {
     /// Phase 2: download full script, process directives, write if content changed.
     /// Falls back to full download + content comparison if meta check is inconclusive.
     private func updateSingleScript(_ candidate: UserScript) async throws -> Bool {
-        guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { return false }
+        guard userScripts.contains(where: { $0.id == candidate.id }) else { return false }
 
         // Phase 1: Try meta check
         let metaURL = resolveMetaURL(for: candidate)
@@ -2236,6 +2246,8 @@ public class UserScriptManager: ObservableObject {
 
         let processedContent = await processRequireDirectives(tempUserScript)
         let resourceContents = await processResourceDirectives(tempUserScript)
+
+        guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { return false }
 
         // Skip if nothing changed
         if userScripts[index].content == processedContent,
