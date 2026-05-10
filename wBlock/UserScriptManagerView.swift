@@ -68,6 +68,7 @@ struct UserScriptManagerView: View {
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
     @State private var showSearch = false
+    @State private var downloadingScriptIDs = Set<UUID>()
     @AppStorage("userscriptsForeignSectionExpanded") private var isForeignUserScriptsExpanded = false
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
@@ -562,32 +563,28 @@ struct UserScriptManagerView: View {
             Spacer()
 
             HStack(spacing: 8) {
-                if !script.isDownloaded, !script.isLocal, script.url != nil {
-                    Button {
-                        Task {
-                            guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
-                            await ConcurrentLogManager.shared.debug(.userScript, "Downloading userscript", metadata: ["script": script.name])
-                            await userScriptManager.downloadUserScript(managedScript)
-                            refreshScripts()
-                        }
-                    } label: {
-                        Image(systemName: "arrow.down.circle")
-                    }
-                    .buttonStyle(.borderless)
-                    #if os(macOS)
-                    .help("Download Script")
-                    #endif
-                }
-
-
                 Toggle("", isOn: Binding(
-                    get: { script.isEnabled },
-                    set: { _ in
+                    get: { script.isEnabled || downloadingScriptIDs.contains(script.id) },
+                    set: { newValue in
+                        let shouldDownloadBeforeEnabling =
+                            newValue && !script.isDownloaded && !script.isLocal && script.url != nil
+                        if shouldDownloadBeforeEnabling {
+                            downloadingScriptIDs.insert(script.id)
+                        }
+
                         Task {
-                            guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
-                            await ConcurrentLogManager.shared.debug(.userScript, "Toggling userscript", metadata: ["script": script.name])
-                            await userScriptManager.toggleUserScript(managedScript)
+                            guard let managedScript = userScriptManager.userScript(withId: script.id) else {
+                                await MainActor.run { downloadingScriptIDs.remove(script.id) }
+                                return
+                            }
+                            await ConcurrentLogManager.shared.debug(
+                                .userScript,
+                                "Setting userscript enabled state",
+                                metadata: ["script": script.name, "enabled": "\(newValue)"]
+                            )
+                            await userScriptManager.setUserScript(managedScript, isEnabled: newValue)
                             await MainActor.run {
+                                downloadingScriptIDs.remove(script.id)
                                 refreshScripts()
                             }
                         }
@@ -595,7 +592,7 @@ struct UserScriptManagerView: View {
                 ))
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .disabled(!script.isDownloaded)
+                .disabled(downloadingScriptIDs.contains(script.id) || (script.isLocal && !script.isDownloaded))
                 .frame(alignment: .center)
             }
         }

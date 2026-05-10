@@ -84,6 +84,15 @@ guard viewSource.contains("DisclosureGroup(isExpanded: $isForeignUserScriptsExpa
     exit(1)
 }
 
+guard viewSource.contains("downloadingScriptIDs")
+    && viewSource.contains("setUserScript(managedScript, isEnabled: newValue)")
+    && !viewSource.contains("Image(systemName: \"arrow.down.circle\")")
+    && !viewSource.contains(".disabled(!script.isDownloaded)")
+else {
+    fputs("FAIL: undownloaded remote userscripts should enable by downloading from the toggle without a separate download button\n", stderr)
+    exit(1)
+}
+
 guard viewSource.contains("scriptSection.id == .foreign") && viewSource.contains("Text(\"Foreign\")") else {
     fputs("FAIL: userscript UI should render foreign userscripts in a Foreign section\n", stderr)
     exit(1)
