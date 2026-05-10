@@ -13,7 +13,7 @@ public enum FilterAutoUpdateRunner {
         #else
         logger.info("Running shared auto-update for trigger=\(trigger, privacy: .public)")
         #endif
-        await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
-        return true
+        let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
+        return outcome.isSuccessfulForBackgroundTask
     }
 }

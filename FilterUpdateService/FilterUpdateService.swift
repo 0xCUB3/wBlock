@@ -12,8 +12,8 @@ import wBlockCoreService
 class FilterUpdateService: NSObject, FilterUpdateProtocol {
     func updateFilters(_ reply: @escaping (Bool) -> Void) {
         Task {
-            await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "XPCService")
-            reply(true)
+            let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "XPCService")
+            reply(outcome.isSuccessfulForBackgroundTask)
         }
     }
 }

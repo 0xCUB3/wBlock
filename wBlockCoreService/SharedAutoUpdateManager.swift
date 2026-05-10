@@ -177,6 +177,7 @@ public actor SharedAutoUpdateManager {
         case advancedEngineOperationFailed(phase: String, underlying: Error)
         case backgroundBudgetExpired(phase: String, remainingSeconds: Int)
         case backgroundFullRebuildDeferred(phase: String)
+        case selectedFilterStateUnavailable
         case statePersistenceFailed(context: String)
 
         var failurePhase: String? {
@@ -191,6 +192,8 @@ public actor SharedAutoUpdateManager {
                 return phase
             case let .backgroundFullRebuildDeferred(phase):
                 return phase
+            case .selectedFilterStateUnavailable:
+                return "selected_filter_state"
             case let .statePersistenceFailed(context):
                 return context
             }
@@ -217,6 +220,8 @@ public actor SharedAutoUpdateManager {
                 return "Background budget expired before \(phase) with \(remainingSeconds)s remaining."
             case let .backgroundFullRebuildDeferred(phase):
                 return "Background policy deferred \(phase)."
+            case .selectedFilterStateUnavailable:
+                return "Selected filter state is unavailable while existing blocker output is present."
             case let .statePersistenceFailed(context):
                 return "Failed to persist auto-update state during \(context)."
             }
@@ -745,6 +750,13 @@ public actor SharedAutoUpdateManager {
             try throwIfCancelled()
 
             guard !selectedFilters.isEmpty else {
+                if isExternalHelperTrigger(trigger), contentBlockerOutputsContainRules() {
+                    appendSharedLog(
+                        "Auto-update aborted: selected filter state was empty while existing blocker output is present (trigger=\(trigger))."
+                    )
+                    throw AutoUpdateError.selectedFilterStateUnavailable
+                }
+
                 try requireUserScriptsBudget()
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
                 if scriptsResult.updated > 0 {
@@ -800,8 +812,8 @@ public actor SharedAutoUpdateManager {
                         requiredTime: max(policy.minimumTimeForReloadRetry, policy.minimumTimeForAdvancedEngine)
                     )
                     try throwIfCancelled()
-                    let reloaded = try await reloadExistingContentBlockers(policy: policy)
-                    reloadStatus = reloaded ? "ok" : "failed"
+                    try await reloadExistingContentBlockers(policy: policy)
+                    reloadStatus = "ok"
                 }
 
                 let completionTime = Date().timeIntervalSince1970
@@ -1350,9 +1362,43 @@ public actor SharedAutoUpdateManager {
         return false
     }
 
+    private func isExternalHelperTrigger(_ trigger: String) -> Bool {
+        switch trigger {
+        case "XPCService", "LaunchAgent", "LegacyLoginItem":
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func contentBlockerOutputsContainRules() -> Bool {
+        #if os(iOS)
+        let platform: Platform = .iOS
+        #else
+        let platform: Platform = .macOS
+        #endif
+
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            return false
+        }
+
+        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
+            let rulesURL = containerURL.appendingPathComponent(target.rulesFilename)
+            guard let data = try? Data(contentsOf: rulesURL), !data.isEmpty else {
+                continue
+            }
+
+            if data.contains(UInt8(ascii: "{")) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     private func reloadExistingContentBlockers(
         policy: AutoUpdateExecutionPolicy
-    ) async throws -> Bool {
+    ) async throws {
         #if os(iOS)
         let platform: Platform = .iOS
         #else
@@ -1360,7 +1406,6 @@ public actor SharedAutoUpdateManager {
         #endif
 
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
-        var allReloaded = true
         var failedTargets: [String] = []
         var advancedRulesSnippets: [String] = []
 
@@ -1375,9 +1420,7 @@ public actor SharedAutoUpdateManager {
             )
 
             let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
-            let reloaded = reloadResult.success
-            allReloaded = allReloaded && reloaded
-            if !reloaded {
+            if !reloadResult.success {
                 failedTargets.append(target.displayName)
             }
             if let containerURL,
@@ -1397,9 +1440,11 @@ public actor SharedAutoUpdateManager {
             appendSharedLog(
                 "Reload failures while reusing existing outputs: \(failedTargets.prefix(3).joined(separator: ", "))"
             )
+            throw AutoUpdateError.contentBlockerReloadFailed(
+                identifiers: [],
+                names: failedTargets
+            )
         }
-
-        return allReloaded
     }
 
     // MARK: - Conversion & Reload
