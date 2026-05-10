@@ -138,7 +138,7 @@ wBlock allows you to download and use filter lists from third-party sources incl
 wBlock allows you to download and run userscripts from third-party sources. **Important considerations:**
 
 - Userscripts are JavaScript code that runs in the context of web pages
-- wBlock provides default userscripts (disabled by default) including Return YouTube Dislike, Bypass Paywalls Clean, YouTube Classic, AdGuard Extra, and tinyShield
+- wBlock provides default userscripts (disabled by default) including Return YouTube Dislike, Bypass Paywalls Clean, YouTube Classic, AdGuard Extra, tinyShield, and selected site-specific tinyShield scripts
 - You can add custom userscripts from any source
 - **Privacy Warning:** Userscripts have access to web pages according to their @match patterns. Carefully review userscripts before enabling them
 - wBlock is not responsible for the behavior or privacy practices of third-party userscripts

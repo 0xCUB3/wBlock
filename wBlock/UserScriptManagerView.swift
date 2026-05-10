@@ -27,8 +27,9 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isLocal: Bool
     let isDownloaded: Bool
     let updatesAutomatically: Bool
+    let builtInSection: BuiltInUserScriptSection?
 
-    init(script: UserScript) {
+    init(script: UserScript, builtInSection: BuiltInUserScriptSection?) {
         id = script.id
         name = script.name
         localizedDisplayName = script.localizedDisplayName
@@ -41,7 +42,14 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isLocal = script.isLocal
         isDownloaded = script.isDownloaded
         updatesAutomatically = script.updatesAutomatically
+        self.builtInSection = builtInSection
     }
+}
+
+private struct UserScriptDisplaySection: Identifiable {
+    let id: BuiltInUserScriptSection
+    let title: LocalizedStringKey
+    let scripts: [UserScriptListItem]
 }
 
 private struct SelectedUserScript: Identifiable {
@@ -93,17 +101,36 @@ struct UserScriptManagerView: View {
 
     private var displayedScripts: [UserScriptListItem] {
         let filteredByEnabled = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
-        guard !trimmedSearchText.isEmpty else {
-            return filteredByEnabled.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        let filteredBySearch: [UserScriptListItem]
+
+        if trimmedSearchText.isEmpty {
+            filteredBySearch = filteredByEnabled
+        } else {
+            filteredBySearch = filteredByEnabled.filter { script in
+                script.localizedDisplayName.localizedCaseInsensitiveContains(trimmedSearchText)
+                    || script.localizedDisplayDescription.localizedCaseInsensitiveContains(trimmedSearchText)
+                    || (script.url?.absoluteString.localizedCaseInsensitiveContains(trimmedSearchText)
+                        ?? false)
+                    || (script.updateURL?.localizedCaseInsensitiveContains(trimmedSearchText) ?? false)
+            }
         }
 
-        return filteredByEnabled.filter { script in
-            script.localizedDisplayName.localizedCaseInsensitiveContains(trimmedSearchText)
-                || script.localizedDisplayDescription.localizedCaseInsensitiveContains(trimmedSearchText)
-                || (script.url?.absoluteString.localizedCaseInsensitiveContains(trimmedSearchText)
-                    ?? false)
-                || (script.updateURL?.localizedCaseInsensitiveContains(trimmedSearchText) ?? false)
-        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return filteredBySearch.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private var displayedScriptSections: [UserScriptDisplaySection] {
+        let standardScripts = displayedScripts.filter { $0.builtInSection != .foreign }
+        let foreignScripts = displayedScripts.filter { $0.builtInSection == .foreign }
+        var sections: [UserScriptDisplaySection] = []
+
+        if !standardScripts.isEmpty {
+            sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
+        }
+        if !foreignScripts.isEmpty {
+            sections.append(UserScriptDisplaySection(id: .foreign, title: "Foreign", scripts: foreignScripts))
+        }
+
+        return sections
     }
 
     private func copyScriptURL(_ url: URL) {
@@ -163,9 +190,11 @@ struct UserScriptManagerView: View {
                         .padding(.vertical, 40)
                 }
             } else {
-                Section("Userscripts") {
-                    ForEach(displayedScripts) { script in
-                        scriptRowView(script: script)
+                ForEach(displayedScriptSections) { scriptSection in
+                    Section(scriptSection.title) {
+                        ForEach(scriptSection.scripts) { script in
+                            scriptRowView(script: script)
+                        }
                     }
                 }
             }
@@ -288,7 +317,12 @@ struct UserScriptManagerView: View {
     }
 
     private func refreshScripts() {
-        scripts = userScriptManager.userScripts.map(UserScriptListItem.init)
+        scripts = userScriptManager.userScripts.map { script in
+            UserScriptListItem(
+                script: script,
+                builtInSection: userScriptManager.builtInSection(for: script)
+            )
+        }
     }
 
     #if os(macOS)
@@ -372,17 +406,26 @@ struct UserScriptManagerView: View {
     #if os(macOS)
     private var scriptsListView: some View {
         LazyVStack(spacing: 16) {
-            VStack(spacing: 0) {
-                ForEach(displayedScripts.indices, id: \.self) { index in
-                    scriptRowView(script: displayedScripts[index])
+            ForEach(displayedScriptSections) { scriptSection in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(scriptSection.title)
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
 
-                    if index < displayedScripts.count - 1 {
-                        Divider()
-                            .padding(.leading, 16)
+                    VStack(spacing: 0) {
+                        ForEach(scriptSection.scripts.indices, id: \.self) { index in
+                            scriptRowView(script: scriptSection.scripts[index])
+
+                            if index < scriptSection.scripts.count - 1 {
+                                Divider()
+                                    .padding(.leading, 16)
+                            }
+                        }
                     }
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                 }
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
         .padding(.horizontal)
     }

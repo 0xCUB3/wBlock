@@ -46,10 +46,28 @@ public enum UserScriptManagerNotificationKey {
     public static let isLocal = "isLocal"
 }
 
+public enum BuiltInUserScriptSection: String, Hashable, Sendable {
+    case general
+    case foreign
+}
+
 struct BuiltInUserScriptDefinition {
     let name: String
     let url: String
     let isEnabledByDefault: Bool
+    let section: BuiltInUserScriptSection
+
+    init(
+        name: String,
+        url: String,
+        isEnabledByDefault: Bool,
+        section: BuiltInUserScriptSection = .general
+    ) {
+        self.name = name
+        self.url = url
+        self.isEnabledByDefault = isEnabledByDefault
+        self.section = section
+    }
 }
 
 enum BuiltInUserScripts {
@@ -58,6 +76,21 @@ enum BuiltInUserScripts {
         "https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js"
     static let legacyPopupBlockerBetaURL =
         "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
+    static let tinyShieldURL =
+        "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
+
+    private static func tinyShieldGroupedDefinition(
+        _ domainGroup: String,
+        displayDomain: String? = nil
+    ) -> BuiltInUserScriptDefinition {
+        let initial = domainGroup.prefix(1).lowercased()
+        return BuiltInUserScriptDefinition(
+            name: "tinyShield (\(displayDomain ?? domainGroup))",
+            url: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/\(initial)/tinyShield-\(domainGroup).user.js",
+            isEnabledByDefault: false,
+            section: .foreign
+        )
+    }
 
     static let definitions: [BuiltInUserScriptDefinition] = [
         BuiltInUserScriptDefinition(
@@ -82,19 +115,39 @@ enum BuiltInUserScripts {
         ),
         BuiltInUserScriptDefinition(
             name: "tinyShield",
-            url: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js",
+            url: tinyShieldURL,
             isEnabledByDefault: false
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
             url: popupBlockerStableURL,
             isEnabledByDefault: false
-        )
+        ),
+        tinyShieldGroupedDefinition("autobild.de"),
+        tinyShieldGroupedDefinition("bild.de"),
+        tinyShieldGroupedDefinition("computerbild.de"),
+        tinyShieldGroupedDefinition("gutefrage.net"),
+        tinyShieldGroupedDefinition("welt.de"),
+        tinyShieldGroupedDefinition("geo.fr"),
+        tinyShieldGroupedDefinition("lerobert.com"),
+        tinyShieldGroupedDefinition("programme-tv.net"),
+        tinyShieldGroupedDefinition("kuruma-news.jp"),
+        tinyShieldGroupedDefinition("oricon.co.jp"),
+        tinyShieldGroupedDefinition("toyokeizai.net"),
+        tinyShieldGroupedDefinition("dogdrip.net"),
+        tinyShieldGroupedDefinition("sportalkorea.com"),
+        tinyShieldGroupedDefinition("ygosu.com"),
+        tinyShieldGroupedDefinition("dziennik.pl"),
+        tinyShieldGroupedDefinition("doviz.com"),
+        tinyShieldGroupedDefinition("elnacional.cat"),
+        tinyShieldGroupedDefinition("pravda.com.ua"),
+        tinyShieldGroupedDefinition("slobodnadalmacija.hr")
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
     static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL])
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
+    static let sectionByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.section) })
 }
 
 @MainActor
@@ -403,6 +456,11 @@ public class UserScriptManager: ObservableObject {
     public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
         return BuiltInUserScripts.allProtectedURLs.contains(urlString)
+    }
+
+    public func builtInSection(for userScript: UserScript) -> BuiltInUserScriptSection? {
+        guard let urlString = userScript.url?.absoluteString else { return nil }
+        return BuiltInUserScripts.sectionByURL[urlString]
     }
 
     private init() {
