@@ -1,7 +1,6 @@
 import SwiftUI
 import wBlockCoreService
 #if os(iOS)
-import UserNotifications
 import UIKit
 #elseif os(macOS)
 import AppKit
@@ -62,9 +61,6 @@ struct OnboardingView: View {
     @State private var showRemoteConfigPrompt: Bool = false
     @State private var isAdoptingRemoteConfig: Bool = false
     @State private var hasSeededUserscriptSelection = false
-#if os(iOS)
-    @State private var wantsReminderNotifications: Bool = true
-#endif
     @State private var hasEnabledContentBlockers = false
     @State private var hasEnabledAdvanced = false
     @State private var detectedScriptsExtensionEnabled: Bool?
@@ -73,9 +69,6 @@ struct OnboardingView: View {
     @ObservedObject var filterManager: AppFilterManager
     
     private static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
-    #if os(iOS)
-    private static let reminderPreferenceKey = "onboardingWantsReminderNotifications"
-    #endif
     private static let cloudSyncEnabledDefaultsKey = "cloudSyncEnabled"
 
     // Helper to look up canonical filter metadata from filterManager instead of loading separately
@@ -105,10 +98,6 @@ struct OnboardingView: View {
         _optionalRegionalFilters = State(initialValue: [])
         _regionInfoMessage = State(initialValue: nil)
         _wantsCloudSync = State(initialValue: defaults.bool(forKey: Self.cloudSyncEnabledDefaultsKey))
-#if os(iOS)
-    let storedReminderPreference = defaults.object(forKey: Self.reminderPreferenceKey) as? Bool ?? true
-    _wantsReminderNotifications = State(initialValue: storedReminderPreference)
-#endif
     }
     private let sharedDefaults: UserDefaults
     @Environment(\.dismiss) private var dismiss
@@ -667,11 +656,6 @@ struct OnboardingView: View {
                 .foregroundStyle(.secondary)
 
             cloudSyncCard
-
-#if os(iOS)
-            Divider()
-            reminderCard
-#endif
         }
         .padding(.top, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -950,9 +934,6 @@ struct OnboardingView: View {
             }
         }
         sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)
-#if os(iOS)
-    sharedDefaults.set(wantsReminderNotifications, forKey: Self.reminderPreferenceKey)
-#endif
         filterManager.filterLists = updatedFilters
         await filterManager.saveFilterLists()
 
@@ -972,9 +953,6 @@ struct OnboardingView: View {
         // 4. Set sync and mark onboarding complete
         CloudSyncManager.shared.setEnabled(wantsCloudSync)
         setHasCompletedOnboarding(true)
-#if os(iOS)
-        await requestNotificationPermissionIfNeeded()
-#endif
 
         // 5. Dismiss onboarding and let the main view handle download + apply
         dismiss()
@@ -1113,51 +1091,6 @@ struct OnboardingView: View {
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
-
-#if os(iOS)
-    private var reminderCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label {
-                Text("Reminders")
-                    .font(.headline)
-            } icon: {
-                Image(systemName: "bell.badge")
-                    .foregroundStyle(.yellow)
-            }
-
-            Toggle("Notify me", isOn: $wantsReminderNotifications)
-                .toggleStyle(.switch)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-    }
-
-    @MainActor
-    private func requestNotificationPermissionIfNeeded() async {
-        guard wantsReminderNotifications else { return }
-
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-
-        switch settings.authorizationStatus {
-        case .notDetermined:
-            do {
-                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-                let metadata: [String: String] = [
-                    "granted": granted ? "true" : "false"
-                ]
-                await ConcurrentLogManager.shared.info(.startup, "Requested notification permission during onboarding", metadata: metadata)
-            } catch {
-                await ConcurrentLogManager.shared.error(.startup, "Failed to request notification permission", metadata: ["error": error.localizedDescription])
-            }
-        case .denied, .authorized, .provisional, .ephemeral:
-            break
-        @unknown default:
-            break
-        }
-    }
-#endif
 
     private func resolvedLanguages(for filter: FilterList) -> Set<String> {
         if !filter.languages.isEmpty {
