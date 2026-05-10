@@ -19,19 +19,187 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "2"
+    private static let embeddedCompatibilityRulesVersion = "3"
 
-    /// Minimal built-in rules that improve blocking of common dynamic ad script
+    /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
     ///
     /// YouTube rules use trusted-replace-fetch-response for pre-parse string
     /// replacement (faster than json-prune-fetch-response which works post-parse).
     /// Sourced from uAssets, translated to AdGuard syntax.
+    ///
+    /// Diagnostic-site rules are scoped to their hostnames so they do not affect
+    /// normal browsing.
     private static let embeddedCompatibilityRules = """
+! Common synthetic ad bait paths
 /js/widget/ads.js$script
 /js/pagead.js$script
 /widget/pagead.js$script
 ##.adbox.banner_ads.adsbox
+
+! AdBlock Tester diagnostic bait compatibility
+||ymatuhin.ru/ads/ads.js$script,domain=adblock-tester.com|checkadblock.ru
+||pagead2.googlesyndication.com/pagead/js/adsbygoogle.js$script,domain=adblock-tester.com|checkadblock.ru
+||an.yandex.ru/system/context.js$script,domain=adblock-tester.com|checkadblock.ru
+||www.googletagmanager.com/gtag/js$script,domain=adblock-tester.com|checkadblock.ru
+||static.hotjar.com/c/hotjar-$script,domain=adblock-tester.com|checkadblock.ru
+||mc.yandex.ru/metrika/tag.js$script,domain=adblock-tester.com|checkadblock.ru
+||js.sentry-cdn.com^$script,domain=adblock-tester.com|checkadblock.ru
+||browser.sentry-cdn.com^$script,domain=adblock-tester.com|checkadblock.ru
+||d2wy8f7a9ursnm.cloudfront.net/v*/bugsnag.min.js$script,domain=adblock-tester.com|checkadblock.ru
+||adblock-tester.com/banners/pr_advertising_ads_banner.$domain=adblock-tester.com
+||checkadblock.ru/banners/pr_advertising_ads_banner.$domain=checkadblock.ru
+adblock-tester.com,checkadblock.ru##[data-ads]
+adblock-tester.com,checkadblock.ru##ins.adsbygoogle
+adblock-tester.com,checkadblock.ru##[id^="yandex_rtb_"]
+adblock-tester.com,checkadblock.ru##img[src^="/banners/pr_advertising_ads_banner."]
+adblock-tester.com,checkadblock.ru##object[data^="/banners/pr_advertising_ads_banner."]
+adblock-tester.com,checkadblock.ru##embed[src^="/banners/pr_advertising_ads_banner."]
+
+! Turtlecute diagnostic bait compatibility
+/js/widget/ads.js$script,domain=adblock.turtlecute.org
+/js/pagead.js$script,domain=adblock.turtlecute.org
+/pagead.js$script,domain=adblock.turtlecute.org
+/widget/ads.$script,domain=adblock.turtlecute.org
+adblock.turtlecute.org##.adbox.banner_ads.adsbox
+adblock.turtlecute.org##.textads
+! Turtlecute Ads
+||adtago.s3.amazonaws.com^$domain=adblock.turtlecute.org
+||analyticsengine.s3.amazonaws.com^$domain=adblock.turtlecute.org
+||analytics.s3.amazonaws.com^$domain=adblock.turtlecute.org
+||advice-ads.s3.amazonaws.com^$domain=adblock.turtlecute.org
+||pagead2.googlesyndication.com^$domain=adblock.turtlecute.org
+||adservice.google.com^$domain=adblock.turtlecute.org
+||pagead2.googleadservices.com^$domain=adblock.turtlecute.org
+||afs.googlesyndication.com^$domain=adblock.turtlecute.org
+||stats.g.doubleclick.net^$domain=adblock.turtlecute.org
+||ad.doubleclick.net^$domain=adblock.turtlecute.org
+||static.doubleclick.net^$domain=adblock.turtlecute.org
+||m.doubleclick.net^$domain=adblock.turtlecute.org
+||mediavisor.doubleclick.net^$domain=adblock.turtlecute.org
+||ads30.adcolony.com^$domain=adblock.turtlecute.org
+||adc3-launch.adcolony.com^$domain=adblock.turtlecute.org
+||events3alt.adcolony.com^$domain=adblock.turtlecute.org
+||wd.adcolony.com^$domain=adblock.turtlecute.org
+||static.media.net^$domain=adblock.turtlecute.org
+||media.net^$domain=adblock.turtlecute.org
+||adservetx.media.net^$domain=adblock.turtlecute.org
+! Turtlecute Analytics
+||analytics.google.com^$domain=adblock.turtlecute.org
+||click.googleanalytics.com^$domain=adblock.turtlecute.org
+||google-analytics.com^$domain=adblock.turtlecute.org
+||ssl.google-analytics.com^$domain=adblock.turtlecute.org
+||adm.hotjar.com^$domain=adblock.turtlecute.org
+||identify.hotjar.com^$domain=adblock.turtlecute.org
+||insights.hotjar.com^$domain=adblock.turtlecute.org
+||script.hotjar.com^$domain=adblock.turtlecute.org
+||surveys.hotjar.com^$domain=adblock.turtlecute.org
+||careers.hotjar.com^$domain=adblock.turtlecute.org
+||events.hotjar.io^$domain=adblock.turtlecute.org
+||mouseflow.com^$domain=adblock.turtlecute.org
+||cdn.mouseflow.com^$domain=adblock.turtlecute.org
+||o2.mouseflow.com^$domain=adblock.turtlecute.org
+||gtm.mouseflow.com^$domain=adblock.turtlecute.org
+||api.mouseflow.com^$domain=adblock.turtlecute.org
+||tools.mouseflow.com^$domain=adblock.turtlecute.org
+||cdn-test.mouseflow.com^$domain=adblock.turtlecute.org
+||freshmarketer.com^$domain=adblock.turtlecute.org
+||claritybt.freshmarketer.com^$domain=adblock.turtlecute.org
+||fwtracks.freshmarketer.com^$domain=adblock.turtlecute.org
+||luckyorange.com^$domain=adblock.turtlecute.org
+||api.luckyorange.com^$domain=adblock.turtlecute.org
+||realtime.luckyorange.com^$domain=adblock.turtlecute.org
+||cdn.luckyorange.com^$domain=adblock.turtlecute.org
+||w1.luckyorange.com^$domain=adblock.turtlecute.org
+||upload.luckyorange.net^$domain=adblock.turtlecute.org
+||cs.luckyorange.net^$domain=adblock.turtlecute.org
+||settings.luckyorange.net^$domain=adblock.turtlecute.org
+||stats.wp.com^$domain=adblock.turtlecute.org
+! Turtlecute Error Trackers
+||notify.bugsnag.com^$domain=adblock.turtlecute.org
+||sessions.bugsnag.com^$domain=adblock.turtlecute.org
+||api.bugsnag.com^$domain=adblock.turtlecute.org
+||app.bugsnag.com^$domain=adblock.turtlecute.org
+||browser.sentry-cdn.com^$domain=adblock.turtlecute.org
+||app.getsentry.com^$domain=adblock.turtlecute.org
+! Turtlecute Social Trackers
+||pixel.facebook.com^$domain=adblock.turtlecute.org
+||an.facebook.com^$domain=adblock.turtlecute.org
+||static.ads-twitter.com^$domain=adblock.turtlecute.org
+||ads-api.twitter.com^$domain=adblock.turtlecute.org
+||ads.linkedin.com^$domain=adblock.turtlecute.org
+||analytics.pointdrive.linkedin.com^$domain=adblock.turtlecute.org
+||ads.pinterest.com^$domain=adblock.turtlecute.org
+||log.pinterest.com^$domain=adblock.turtlecute.org
+||trk.pinterest.com^$domain=adblock.turtlecute.org
+||events.reddit.com^$domain=adblock.turtlecute.org
+||events.redditmedia.com^$domain=adblock.turtlecute.org
+||ads.youtube.com^$domain=adblock.turtlecute.org
+||ads-api.tiktok.com^$domain=adblock.turtlecute.org
+||analytics.tiktok.com^$domain=adblock.turtlecute.org
+||ads-sg.tiktok.com^$domain=adblock.turtlecute.org
+||analytics-sg.tiktok.com^$domain=adblock.turtlecute.org
+||business-api.tiktok.com^$domain=adblock.turtlecute.org
+||ads.tiktok.com^$domain=adblock.turtlecute.org
+||log.byteoversea.com^$domain=adblock.turtlecute.org
+! Turtlecute Mix
+||ads.yahoo.com^$domain=adblock.turtlecute.org
+||analytics.yahoo.com^$domain=adblock.turtlecute.org
+||geo.yahoo.com^$domain=adblock.turtlecute.org
+||udcm.yahoo.com^$domain=adblock.turtlecute.org
+||analytics.query.yahoo.com^$domain=adblock.turtlecute.org
+||partnerads.ysm.yahoo.com^$domain=adblock.turtlecute.org
+||log.fc.yahoo.com^$domain=adblock.turtlecute.org
+||gemini.yahoo.com^$domain=adblock.turtlecute.org
+||adtech.yahooinc.com^$domain=adblock.turtlecute.org
+||extmaps-api.yandex.net^$domain=adblock.turtlecute.org
+||appmetrica.yandex.ru^$domain=adblock.turtlecute.org
+||adfstat.yandex.ru^$domain=adblock.turtlecute.org
+||metrika.yandex.ru^$domain=adblock.turtlecute.org
+||offerwall.yandex.net^$domain=adblock.turtlecute.org
+||adfox.yandex.ru^$domain=adblock.turtlecute.org
+||auction.unityads.unity3d.com^$domain=adblock.turtlecute.org
+||webview.unityads.unity3d.com^$domain=adblock.turtlecute.org
+||config.unityads.unity3d.com^$domain=adblock.turtlecute.org
+||adserver.unityads.unity3d.com^$domain=adblock.turtlecute.org
+! Turtlecute OEMs
+||iot-eu-logser.realme.com^$domain=adblock.turtlecute.org
+||iot-logser.realme.com^$domain=adblock.turtlecute.org
+||bdapi-ads.realmemobile.com^$domain=adblock.turtlecute.org
+||bdapi-in-ads.realmemobile.com^$domain=adblock.turtlecute.org
+||api.ad.xiaomi.com^$domain=adblock.turtlecute.org
+||data.mistat.xiaomi.com^$domain=adblock.turtlecute.org
+||data.mistat.india.xiaomi.com^$domain=adblock.turtlecute.org
+||data.mistat.rus.xiaomi.com^$domain=adblock.turtlecute.org
+||sdkconfig.ad.xiaomi.com^$domain=adblock.turtlecute.org
+||sdkconfig.ad.intl.xiaomi.com^$domain=adblock.turtlecute.org
+||tracking.rus.miui.com^$domain=adblock.turtlecute.org
+||adsfs.oppomobile.com^$domain=adblock.turtlecute.org
+||adx.ads.oppomobile.com^$domain=adblock.turtlecute.org
+||ck.ads.oppomobile.com^$domain=adblock.turtlecute.org
+||data.ads.oppomobile.com^$domain=adblock.turtlecute.org
+||metrics.data.hicloud.com^$domain=adblock.turtlecute.org
+||metrics2.data.hicloud.com^$domain=adblock.turtlecute.org
+||grs.hicloud.com^$domain=adblock.turtlecute.org
+||logservice.hicloud.com^$domain=adblock.turtlecute.org
+||logservice1.hicloud.com^$domain=adblock.turtlecute.org
+||logbak.hicloud.com^$domain=adblock.turtlecute.org
+||click.oneplus.cn^$domain=adblock.turtlecute.org
+||open.oneplus.net^$domain=adblock.turtlecute.org
+||samsungads.com^$domain=adblock.turtlecute.org
+||smetrics.samsung.com^$domain=adblock.turtlecute.org
+||nmetrics.samsung.com^$domain=adblock.turtlecute.org
+||samsung-com.112.2o7.net^$domain=adblock.turtlecute.org
+||analytics-api.samsunghealthcn.com^$domain=adblock.turtlecute.org
+||iadsdk.apple.com^$domain=adblock.turtlecute.org
+||metrics.icloud.com^$domain=adblock.turtlecute.org
+||metrics.mzstatic.com^$domain=adblock.turtlecute.org
+||api-adservices.apple.com^$domain=adblock.turtlecute.org
+||books-analytics-events.apple.com^$domain=adblock.turtlecute.org
+||weather-analytics-events.apple.com^$domain=adblock.turtlecute.org
+||notes-analytics-events.apple.com^$domain=adblock.turtlecute.org
+
+! YouTube compatibility
 www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
 www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
 www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
