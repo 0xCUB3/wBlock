@@ -9,7 +9,6 @@ import Foundation
 internal import SwiftProtobuf
 import Combine
 import os.log
-import Darwin
 
 // MARK: - Disk I/O (off MainActor)
 
@@ -54,42 +53,7 @@ private actor ProtobufDiskStore {
     }
 
     private func withExclusiveFileLock<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {
-        #if os(iOS)
-        return try withCoordinatedWriteAccess(for: dataURL, operation)
-        #else
-        let lockURL = dataURL.appendingPathExtension("lock")
-        if !fileExists(at: lockURL) {
-            _ = fileManager.createFile(atPath: lockURL.path, contents: Data())
-        }
-
-        let descriptor = open(lockURL.path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0 else {
-            let message = String(cString: strerror(errno))
-            throw NSError(
-                domain: "ProtobufDiskStore",
-                code: Int(errno),
-                userInfo: [NSLocalizedDescriptionKey: "Failed to open lock file: \(message)"]
-            )
-        }
-
-        guard flock(descriptor, LOCK_EX) == 0 else {
-            let errorCode = errno
-            let message = String(cString: strerror(errorCode))
-            close(descriptor)
-            throw NSError(
-                domain: "ProtobufDiskStore",
-                code: Int(errorCode),
-                userInfo: [NSLocalizedDescriptionKey: "Failed to lock data file: \(message)"]
-            )
-        }
-
-        defer {
-            _ = flock(descriptor, LOCK_UN)
-            close(descriptor)
-        }
-
-        return try operation()
-        #endif
+        try withCoordinatedWriteAccess(for: dataURL, operation)
     }
 
     private func withCoordinatedWriteAccess<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {

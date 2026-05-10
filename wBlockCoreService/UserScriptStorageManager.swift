@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 
 actor UserScriptStorageManager {
@@ -132,38 +131,32 @@ actor UserScriptStorageManager {
     }
 
     private func withExclusiveFileLock<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {
-        let lockURL = dataURL.appendingPathExtension("lock")
-        if !fileExists(at: lockURL) {
-            _ = fileManager.createFile(atPath: lockURL.path, contents: Data())
+        let directoryURL = dataURL.deletingLastPathComponent()
+        if !fileExists(at: directoryURL) {
+            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         }
 
-        let descriptor = open(lockURL.path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0 else {
-            let message = String(cString: strerror(errno))
-            throw NSError(
-                domain: "UserScriptStorageManager",
-                code: Int(errno),
-                userInfo: [NSLocalizedDescriptionKey: "Failed to open lock file: \(message)"]
-            )
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        var coordinationError: NSError?
+        var operationResult: Result<T, Error>?
+
+        coordinator.coordinate(writingItemAt: directoryURL, options: [], error: &coordinationError) { _ in
+            operationResult = Result { try operation() }
         }
 
-        guard flock(descriptor, LOCK_EX) == 0 else {
-            let errorCode = errno
-            let message = String(cString: strerror(errorCode))
-            close(descriptor)
-            throw NSError(
-                domain: "UserScriptStorageManager",
-                code: Int(errorCode),
-                userInfo: [NSLocalizedDescriptionKey: "Failed to lock storage file: \(message)"]
-            )
+        if let operationResult {
+            return try operationResult.get()
         }
 
-        defer {
-            _ = flock(descriptor, LOCK_UN)
-            close(descriptor)
+        if let coordinationError {
+            throw coordinationError
         }
 
-        return try operation()
+        throw NSError(
+            domain: "UserScriptStorageManager",
+            code: CocoaError.fileWriteUnknown.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: "File coordination failed before userscript storage write"]
+        )
     }
 
     private func decodeStorage(from data: Data?) throws -> [String: [String: String]] {
