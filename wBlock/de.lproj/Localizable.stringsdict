@@ -29,9 +29,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Aktualisiertes %d-Skript</string>
+			<string>%d Skript aktualisiert</string>
 			<key>other</key>
-			<string>Aktualisierte %d-Skripte</string>
+			<string>%d Skripte aktualisiert</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
