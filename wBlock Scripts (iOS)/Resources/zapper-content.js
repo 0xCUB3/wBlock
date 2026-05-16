@@ -9,6 +9,7 @@
 
   const STORAGE_PREFIX = 'wblock.zapperRules.v1:';
   const META_PREFIX = 'wblock.zapperMeta.v1:';
+  const ZAPPER_DISABLED_STORAGE_PREFIX = 'wblock.zapperRulesDisabled.v1:';
   const STYLE_ID = 'wblock-zapper-style';
   const UI_STYLE_ID = 'wblock-zapper-ui-style';
   const UI_ROOT_ID = 'wblock-zapper-root';
@@ -105,6 +106,38 @@
 
   function metaKey(host) {
     return `${META_PREFIX}${host}`;
+  }
+
+  function zapperDisabledStorageKey(host) {
+    return `${ZAPPER_DISABLED_STORAGE_PREFIX}${host}`;
+  }
+
+  async function getZapperRulesDisabled(host) {
+    if (!host) return false;
+    try {
+      const key = zapperDisabledStorageKey(host);
+      const result = await browser.storage.local.get(key);
+      return result[key] === true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function getSiteDisabledState(host) {
+    if (!host) return false;
+    try {
+      const response = await browser.runtime.sendNativeMessage('application.id', {
+        action: 'getSiteDisabledState',
+        host
+      });
+      return Boolean(response && response.disabled);
+    } catch {
+      return false;
+    }
+  }
+
+  async function shouldSuppressZapperRules(host) {
+    return (await getZapperRulesDisabled(host)) || (await getSiteDisabledState(host));
   }
 
   function normalizeRules(rules) {
@@ -301,8 +334,12 @@
     return selectors.map((sel) => `${sel} { display: none !important; }`).join('\n');
   }
 
-  function applyRulesToPage(rules) {
+  async function applyRulesToPage(rules) {
     const style = ensureStyleElement(STYLE_ID);
+    if (await shouldSuppressZapperRules(state.host || safeHostname())) {
+      style.textContent = '';
+      return;
+    }
     style.textContent = buildHideCss(rules);
   }
 
@@ -783,7 +820,7 @@
     state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
     state.undoStack.push(normalized);
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
-    applyRulesToPage(state.rules);
+    await applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
     showToast(options.manual
       ? t('zapper_toast_rule_saved', undefined, 'Rule saved for this site.')
@@ -808,7 +845,7 @@
     const toRemove = state.undoStack.pop();
     state.rules = state.rules.filter((r) => r !== toRemove);
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
-    applyRulesToPage(state.rules);
+    await applyRulesToPage(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
     showToast(t('zapper_toast_undone', undefined, 'Undone.'));
   }
@@ -962,8 +999,12 @@
     addSelectorRule(selector).catch(() => {});
   }
 
-  function activateZapper() {
-    if (state.active) return;
+  async function activateZapper() {
+    if (state.active) return true;
+    state.host = safeHostname();
+    if (await shouldSuppressZapperRules(state.host)) {
+      return false;
+    }
     ensureUi();
     state.active = true;
     state.undoStack = [];
@@ -1103,6 +1144,7 @@
       clearTimeout(scrollTimer);
       state.isScrolling = false;
     });
+    return true;
   }
 
   function deactivateZapper(options = {}) {
@@ -1138,7 +1180,7 @@
     }
 
     state.rules = nativeRules;
-    applyRulesToPage(state.rules);
+    await applyRulesToPage(state.rules);
   }
 
   function startRuleSyncLoop() {
@@ -1166,17 +1208,17 @@
     const nativeRules = await fetchRulesFromNative(state.host);
     if (Array.isArray(nativeRules)) {
       state.rules = nativeRules;
-      applyRulesToPage(state.rules);
+      await applyRulesToPage(state.rules);
       return;
     }
 
     state.rules = await loadRulesForHost(state.host);
-    applyRulesToPage(state.rules);
+    await applyRulesToPage(state.rules);
     if (state.rules.length > 0) {
       const reconciled = await syncRulesToNative(state.host, state.rules);
       if (reconciled !== null && reconciled.length !== state.rules.length) {
         state.rules = reconciled;
-        applyRulesToPage(state.rules);
+        await applyRulesToPage(state.rules);
       }
     }
   }
@@ -1192,8 +1234,10 @@
       });
     }
     if (message.type === 'wblock:zapper:activate') {
-      activateZapper();
-      return Promise.resolve({ ok: true, handledBy: 'zapper-content' });
+      return activateZapper().then((activated) => ({
+        ok: activated !== false,
+        handledBy: 'zapper-content'
+      }));
     }
     if (message.type === 'wblock:zapper:deactivate') {
       deactivateZapper({ removeUi: true });

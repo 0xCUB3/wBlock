@@ -12,7 +12,10 @@
             <img src="../../assets/images/shield-icon.png" alt="wBlock" class="app-icon">
             <div class="top-text">
                 <div class="title-row">
-                    <div class="title">wBlock</div>
+                    <div class="title-group">
+                        <div class="title">wBlock</div>
+                        <button id="open-app" class="top-open" type="button" hidden data-i18n="popup_button_open_short">Open</button>
+                    </div>
                     <div id="blocking-status" class="pill" data-i18n="popup_status_loading">Loading…</div>
                 </div>
                 <div class="subtitle" id="site-host">—</div>
@@ -31,8 +34,14 @@
 
         <div class="section">
             <div class="row">
-                <div class="label" data-i18n="popup_element_zapper">Element zapper</div>
-                <div id="zapper-count" class="value">0</div>
+                <div id="zapper-title" class="label" data-i18n="popup_element_zapper">Element zapper</div>
+                <div class="row-trailing">
+                    <div id="zapper-count" class="value">0</div>
+                    <label class="switch" for="zapper-enabled-toggle">
+                        <input id="zapper-enabled-toggle" type="checkbox" checked aria-labelledby="zapper-title" />
+                        <span class="slider" aria-hidden="true"></span>
+                    </label>
+                </div>
             </div>
             <div class="button-row">
                 <button id="zapper-activate" class="btn btn-primary" type="button" data-i18n="popup_button_activate">Activate</button>
@@ -50,7 +59,6 @@
         <div id="userscript-commands" class="section" hidden></div>
 
         <footer class="footer">
-            <button id="open-app" class="btn footer-btn" type="button" hidden data-i18n="popup_button_open_app">Open wBlock App</button>
             <div id="error" class="error" hidden></div>
         </footer>
     </div>

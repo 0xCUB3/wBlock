@@ -39,6 +39,10 @@
     "message": "打开 wBlock 应用",
     "description": "Button label to open the containing native app from the popup."
   },
+  "popup_button_open_short": {
+    "message": "打开",
+    "description": "Short button label to open the containing native app from the popup header."
+  },
   "popup_rules_empty": {
     "message": "没有规则",
     "description": "Empty-state text shown when no zapper rules exist for the current site."

@@ -39,6 +39,10 @@
     "message": "Άνοιγμα εφαρμογής wBlock",
     "description": "Button label to open the containing native app from the popup."
   },
+  "popup_button_open_short": {
+    "message": "Άνοιγμα",
+    "description": "Short button label to open the containing native app from the popup header."
+  },
   "popup_rules_empty": {
     "message": "Δεν υπάρχουν κανόνες",
     "description": "Empty-state text shown when no zapper rules exist for the current site."

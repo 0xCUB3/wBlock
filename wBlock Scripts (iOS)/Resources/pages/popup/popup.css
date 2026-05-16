@@ -70,10 +70,30 @@ body {
   gap: 10px;
 }
 
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .title {
   font-weight: 700;
   font-size: 15px;
   line-height: 1.1;
+}
+
+.top-open {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px;
+  min-height: 24px;
+  background: var(--btn);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
 }
 
 .subtitle {
@@ -142,6 +162,13 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.row-trailing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 
 .switch {
@@ -334,11 +361,6 @@ body {
 
 .footer {
   margin-top: 2px;
-}
-
-.footer-btn {
-  width: 100%;
-  margin-bottom: 10px;
 }
 
 .error {
