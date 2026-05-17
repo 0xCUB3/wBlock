@@ -538,10 +538,12 @@ public enum WebExtensionRequestHandler {
                     $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
                 }
                 let injectInto = (script.injectInto == "auto" && hasUnsafeWindowGrant) ? "page" : script.injectInto
+                let namespace = UserScriptMetadataParser.extractValue(for: "namespace", from: script.content) ?? ""
 
                 var descriptor: [String: Any] = [
                     "id": script.id.uuidString,
                     "name": script.name,
+                    "namespace": namespace,
                     "version": script.version,
                     "description": script.description,
                     "runAt": script.runAt,

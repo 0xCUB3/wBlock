@@ -242,6 +242,20 @@ public class UserScriptManager: ObservableObject {
         }.value
     }
 
+    private func resolveMetadataURL(_ rawValue: String, relativeTo userScript: UserScript) -> URL? {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if let baseURL = userScript.url,
+           let resolvedURL = URL(string: trimmed, relativeTo: baseURL)?.absoluteURL,
+           resolvedURL.scheme != nil {
+            return resolvedURL
+        }
+
+        guard let url = URL(string: trimmed), url.scheme != nil else { return nil }
+        return url
+    }
+
     private func extractResourceURL(forResourceName name: String, from userScriptContent: String) -> String? {
         var inMetadata = false
         for line in userScriptContent.split(whereSeparator: \.isNewline) {
@@ -363,8 +377,9 @@ public class UserScriptManager: ObservableObject {
 
         // 3) Download on-demand by parsing metadata
         let content = self.userScripts[index].content
+        let script = self.userScripts[index]
         guard let resourceURLString = self.extractResourceURL(forResourceName: resourceName, from: content),
-            let url = URL(string: resourceURLString)
+            let url = self.resolveMetadataURL(resourceURLString, relativeTo: script)
         else {
             self.logger.error(
                 "❌ Missing @resource URL for '\(resourceName)' in script \(self.userScripts[index].name)"
@@ -1359,13 +1374,13 @@ public class UserScriptManager: ObservableObject {
 
         // Download and prepend each required script
         for requireURL in userScript.require {
-            guard let url = URL(string: requireURL) else {
+            guard let url = resolveMetadataURL(requireURL, relativeTo: userScript) else {
                 logger.error("❌ Invalid @require URL: \(requireURL)")
                 continue
             }
 
             do {
-                logger.info("📥 Downloading required script: \(requireURL)")
+                logger.info("📥 Downloading required script: \(url.absoluteString)")
 
                 let (responseData, _) = try await urlSession.data(from: url)
 
@@ -1375,10 +1390,10 @@ public class UserScriptManager: ObservableObject {
                         logger.error("❌ Received DDoS protection page for @require: \(requireURL)")
                         continue
                     }
-                    combinedContent += "// @require \(requireURL)\n"
+                    combinedContent += "// @require \(url.absoluteString)\n"
                     combinedContent += requiredContent
                     combinedContent += "\n\n"
-                    logger.info("✅ Downloaded required script from: \(requireURL)")
+                    logger.info("✅ Downloaded required script from: \(url.absoluteString)")
                 } else {
                     logger.error("❌ Failed to decode required script from: \(requireURL)")
                 }
@@ -1412,13 +1427,13 @@ public class UserScriptManager: ObservableObject {
         for resource in userScript.resource {
             let resourceName = resource.name
             let resourceURL = resource.url
-            guard let url = URL(string: resourceURL) else {
+            guard let url = resolveMetadataURL(resourceURL, relativeTo: userScript) else {
                 logger.error("❌ Invalid @resource URL: \(resourceURL)")
                 continue
             }
 
             do {
-                logger.info("📥 Downloading resource: \(resourceName) from \(resourceURL)")
+                logger.info("📥 Downloading resource: \(resourceName) from \(url.absoluteString)")
 
                 let (responseData, response) = try await urlSession.data(from: url)
 

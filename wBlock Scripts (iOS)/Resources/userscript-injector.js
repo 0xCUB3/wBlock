@@ -1064,6 +1064,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
         deliverRuntimePortMessage(data.portName || '', data.message);
     });
 
+    const resolveUserscriptRequestURL = (url) => {
+        try {
+            return new URL(String(url || ''), location.href).href;
+        } catch (_error) {
+            return url;
+        }
+    };
+
     const patchRuntimeConnect = (api) => {
         if (!api || typeof api !== 'object') return api;
         if (!api.runtime || typeof api.runtime !== 'object') api.runtime = {};
@@ -1398,7 +1406,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 name: '${escapeForJS(script.name || 'Unknown Script')}',
                 version: '${escapeForJS(script.version || '1.0.0')}',
                 description: '${escapeForJS(script.description || '')}',
-                namespace: 'wblock',
+                namespace: '${escapeForJS(script.namespace || 'wblock')}',
                 updateURL: '${escapeForJS(script.updateURL || '')}',
                 downloadURL: '${escapeForJS(script.downloadURL || '')}'
             },
@@ -1890,7 +1898,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             };
 
             const requestPayload = {
-                url: details.url,
+                url: resolveUserscriptRequestURL(details.url),
                 method: method,
                 headers: details.headers || {},
                 body: details.data || null,

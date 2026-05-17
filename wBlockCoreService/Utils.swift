@@ -329,6 +329,32 @@ public enum HostMatcher {
 }
 
 public enum UserScriptMetadataParser {
+    public static func extractValue(for directive: String, from userScriptContent: String) -> String? {
+        let normalizedDirective = directive.hasPrefix("@") ? directive : "@\(directive)"
+        var inMetadata = false
+
+        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed == "// ==UserScript==" {
+                inMetadata = true
+                continue
+            }
+            if trimmed == "// ==/UserScript==" { break }
+            if !inMetadata { continue }
+
+            let parts = trimmed.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
+            guard parts.count >= 2, parts[0] == "//", parts[1] == normalizedDirective else { continue }
+            if parts.count >= 3 {
+                let value = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
+                return value.isEmpty ? nil : value
+            }
+            return nil
+        }
+
+        return nil
+    }
+
     public static func extractResourceNames(from userScriptContent: String) -> [String] {
         var names: [String] = []
         var inMetadata = false
