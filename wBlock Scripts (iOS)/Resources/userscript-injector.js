@@ -129,9 +129,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const data = event.data;
                 if (!data || data.type !== 'wblock-gm-xhr-request') return;
 
-                const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType } = data;
+                const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName } = data;
 
-                this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType })
+                this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName })
                     .then(result => {
                         window.postMessage({
                             type: 'wblock-gm-xhr-response',
@@ -399,7 +399,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     responseType: details.responseType || 'text',
                     timeout: details.timeout || 0,
                     redirect: details.redirect || 'follow',
-                    overrideMimeType: details.overrideMimeType || ''
+                    overrideMimeType: details.overrideMimeType || '',
+                    portName: details.portName || ''
                 });
             }
 
@@ -422,7 +423,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         responseType: details.responseType || 'text',
                         timeout: details.timeout || 0,
                         redirect: details.redirect || 'follow',
-                        overrideMimeType: details.overrideMimeType || ''
+                        overrideMimeType: details.overrideMimeType || '',
+                        portName: details.portName || ''
                     });
                 });
             }
@@ -660,6 +662,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                     if (message && message.type === 'wblock:menu:syncState') {
                         this.syncMenuCommandsToBackground();
+                        return Promise.resolve({ ok: true });
+                    }
+
+                    if (message && message.type === 'wblock:gm-port-message') {
+                        window.postMessage(message, '*');
                         return Promise.resolve({ ok: true });
                     }
 
@@ -993,6 +1000,89 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const pageMenuBridgeElement = ${isContentContext ? 'null' : 'document.currentScript'};
     const contentMenuBridge = ${isContentContext ? 'window.__wBlockMenuCommandBridge' : 'null'};
     const scriptStorageState = Object.assign({}, ${storageSnapshotJSON});
+    const runtimePorts = new Map(); // portName -> Set(port)
+
+    const makeRuntimeEvent = () => {
+        const listeners = new Set();
+        return {
+            addListener: function(listener) {
+                if (typeof listener === 'function') listeners.add(listener);
+            },
+            removeListener: function(listener) {
+                listeners.delete(listener);
+            },
+            hasListener: function(listener) {
+                return listeners.has(listener);
+            },
+            dispatch: function(...args) {
+                listeners.forEach(listener => {
+                    try { listener(...args); }
+                    catch (error) { wBlockError('[wBlock] Runtime port listener error:', error); }
+                });
+            }
+        };
+    };
+
+    const createRuntimePort = (connectInfo) => {
+        const portName = typeof connectInfo === 'string'
+            ? connectInfo
+            : (connectInfo && typeof connectInfo.name === 'string' ? connectInfo.name : '');
+        const onMessage = makeRuntimeEvent();
+        const onDisconnect = makeRuntimeEvent();
+        const port = {
+            name: portName,
+            onMessage: onMessage,
+            onDisconnect: onDisconnect,
+            postMessage: function(message) {
+                window.postMessage({ type: 'wblock:gm-port-post-message', portName, message }, '*');
+            },
+            disconnect: function() {
+                const ports = runtimePorts.get(portName);
+                if (ports) {
+                    ports.delete(port);
+                    if (ports.size === 0) runtimePorts.delete(portName);
+                }
+                onDisconnect.dispatch(port);
+            }
+        };
+        if (!runtimePorts.has(portName)) runtimePorts.set(portName, new Set());
+        runtimePorts.get(portName).add(port);
+        return port;
+    };
+
+    const deliverRuntimePortMessage = (portName, message) => {
+        const ports = runtimePorts.get(portName);
+        if (!ports || ports.size === 0) return false;
+        ports.forEach(port => port.onMessage.dispatch(message, port));
+        return true;
+    };
+
+    window.addEventListener('message', (event) => {
+        if (event.source !== window) return;
+        const data = event.data;
+        if (!data || data.type !== 'wblock:gm-port-message') return;
+        deliverRuntimePortMessage(data.portName || '', data.message);
+    });
+
+    const patchRuntimeConnect = (api) => {
+        if (!api || typeof api !== 'object') return api;
+        if (!api.runtime || typeof api.runtime !== 'object') api.runtime = {};
+        if (typeof api.runtime.connect !== 'function') {
+            api.runtime.connect = function(connectInfo) { return createRuntimePort(connectInfo); };
+        }
+        return api;
+    };
+
+    try {
+        let immersiveBrowserAPI = patchRuntimeConnect(globalThis.immersiveTranslateBrowserAPI);
+        Object.defineProperty(globalThis, 'immersiveTranslateBrowserAPI', {
+            configurable: true,
+            get: function() { return immersiveBrowserAPI; },
+            set: function(value) { immersiveBrowserAPI = patchRuntimeConnect(value); }
+        });
+    } catch (error) {
+        wBlockWarn('[wBlock] Failed to install runtime port shim:', error);
+    }
 
     const parseStoredValue = (rawValue) => {
         if (rawValue === null || typeof rawValue === 'undefined') {
@@ -1808,7 +1898,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 responseType: details.responseType || 'text',
                 redirect: details.redirect || 'follow',
                 timeout: details.timeout || 0,
-                overrideMimeType: details.overrideMimeType || ''
+                overrideMimeType: details.overrideMimeType || '',
+                portName: details.portName || (details.extra && details.extra.portName) || ''
             };
 
             const timeoutMs = Number(details.timeout || 0);

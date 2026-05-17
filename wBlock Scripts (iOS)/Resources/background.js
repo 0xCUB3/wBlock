@@ -24953,6 +24953,65 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return responseText;
   };
+  const sendGMPortMessage = async (sender, portName, message) => {
+    var _sender$tab;
+    const tabId = (_sender$tab = sender.tab) === null || _sender$tab === void 0 ? void 0 : _sender$tab.id;
+    if (!tabId || !portName) {
+      return false;
+    }
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        type: "wblock:gm-port-message",
+        portName,
+        message
+      }, {
+        frameId: sender.frameId ?? 0
+      });
+      return true;
+    } catch (error) {
+      console.error("[wBlock] Failed to deliver userscript stream chunk:", error);
+      return false;
+    }
+  };
+  const streamGMFetchResponseToPort = async (fetchResponse, sender, portName) => {
+    if (!fetchResponse.body || typeof fetchResponse.body.getReader !== "function") {
+      const text = await fetchResponse.text();
+      await sendGMPortMessage(sender, portName, text);
+      await sendGMPortMessage(sender, portName, "[DONE]");
+      return { responseLength: new TextEncoder().encode(text).byteLength, sentDone: true };
+    }
+
+    const reader = fetchResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let responseLength = 0;
+    let sentDone = false;
+    const emitLine = async line => {
+      const trimmed = String(line || "").trim();
+      if (!trimmed || trimmed.startsWith("event:")) return;
+      const message = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
+      if (!message) return;
+      if (message === "[DONE]") sentDone = true;
+      await sendGMPortMessage(sender, portName, message);
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      responseLength += value ? value.byteLength || value.length || 0 : 0;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        await emitLine(line);
+      }
+    }
+
+    buffer += decoder.decode();
+    if (buffer) await emitLine(buffer);
+    if (!sentDone) await sendGMPortMessage(sender, portName, "[DONE]");
+    return { responseLength, sentDone: true };
+  };
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
@@ -25074,7 +25133,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "gmXmlhttpRequest") {
       try {
         const requestHeaders = message.headers || {};
+        const streamPortName = typeof message.portName === "string" ? message.portName : "";
+        const wantsStreamResponse = !!streamPortName || normalizeGMResponseType(message.responseType) === "stream" || normalizeGMResponseType(message.responseType) === "realstream";
         if (shouldUseNativeGMXmlhttpRequest(requestHeaders)) {
+          if (wantsStreamResponse) {
+            return { error: "Streaming GM_xmlhttpRequest is not available for native-header requests" };
+          }
           const nativeRequest = {
             action: "gmXmlhttpRequestNative",
             requestId: "userscript-gmxhr-native-" + Date.now(),
@@ -25124,6 +25188,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           responseHeaders[key] = value;
         });
         const responseType = normalizeGMResponseType(message.responseType);
+        if (streamPortName) {
+          const streamResult = await streamGMFetchResponseToPort(fetchResponse, sender, streamPortName);
+          return {
+            status: fetchResponse.status,
+            statusText: fetchResponse.statusText,
+            responseHeaders: formatGMResponseHeaders(responseHeaders),
+            responseText: "",
+            response: null,
+            responseLength: streamResult.responseLength,
+            responseTotal: streamResult.responseLength,
+            finalUrl: fetchResponse.url
+          };
+        }
+        if (responseType === "stream" || responseType === "realstream") {
+          return { error: "Streaming GM_xmlhttpRequest requires a portName" };
+        }
         let responseText = "";
         let response = null;
         let responseBase64 = null;
