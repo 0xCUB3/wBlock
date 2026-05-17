@@ -1613,12 +1613,40 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
             };
 
+            const normalizeGMResponseType = (responseType) => String(responseType || 'text').trim().toLowerCase();
+
+            const arrayBufferFromBase64 = (base64) => {
+                const binary = atob(base64 || '');
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes.buffer;
+            };
+
+            const makeTypedResponseBody = (result) => {
+                const responseType = normalizeGMResponseType(details.responseType);
+                if (!result || typeof result.responseBase64 !== 'string') {
+                    return result ? result.response : undefined;
+                }
+
+                const arrayBuffer = arrayBufferFromBase64(result.responseBase64);
+                if (responseType === 'arraybuffer') {
+                    return arrayBuffer;
+                }
+                if (responseType === 'blob') {
+                    const mimeType = typeof result.responseMimeType === 'string' ? result.responseMimeType : '';
+                    return typeof Blob !== 'undefined' ? new Blob([arrayBuffer], { type: mimeType }) : arrayBuffer;
+                }
+                return result.response;
+            };
+
             const makeResponse = (result) => ({
                 status: result.status,
                 statusText: result.statusText,
                 responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
-                responseText: result.responseText,
-                response: result.response,
+                responseText: typeof result.responseText === 'string' ? result.responseText : '',
+                response: makeTypedResponseBody(result),
                 readyState: 4,
                 finalUrl: result.finalUrl || details.url,
                 responseURL: result.finalUrl || details.url

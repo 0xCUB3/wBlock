@@ -690,7 +690,8 @@ public enum WebExtensionRequestHandler {
                     return "\(key): \(String(describing: entry.value))"
                 }
                 .joined(separator: "\r\n")
-            let responseText = decodeNativeGMXmlhttpResponseText(data)
+            let isBinaryResponse = nativeGMXmlhttpResponseIsBinary(responseType)
+            let responseText = isBinaryResponse ? "" : decodeNativeGMXmlhttpResponseText(data)
 
             return [
                 "status": httpResponse.statusCode,
@@ -698,6 +699,8 @@ public enum WebExtensionRequestHandler {
                 "responseHeaders": responseHeaders,
                 "responseText": responseText,
                 "response": nativeGMXmlhttpResponseObject(data: data, responseText: responseText, responseType: responseType),
+                "responseBase64": isBinaryResponse ? data.base64EncodedString() : nil,
+                "responseMimeType": httpResponse.mimeType ?? "",
                 "finalUrl": httpResponse.url?.absoluteString ?? url.absoluteString
             ]
         } catch {
@@ -713,7 +716,14 @@ public enum WebExtensionRequestHandler {
         if responseType == "json" {
             return try? JSONSerialization.jsonObject(with: data, options: [])
         }
+        if nativeGMXmlhttpResponseIsBinary(responseType) {
+            return nil
+        }
         return responseText
+    }
+
+    private static func nativeGMXmlhttpResponseIsBinary(_ responseType: String) -> Bool {
+        responseType == "blob" || responseType == "arraybuffer"
     }
 
     private static func decodeNativeGMXmlhttpResponseText(_ data: Data) -> String {

@@ -24912,8 +24912,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return Object.entries(headers).map(([key, value]) => `${key}: ${value}`).join("\r\n");
   };
+  const normalizeGMResponseType = responseType => String(responseType || "text").trim().toLowerCase();
+  const isBinaryGMResponseType = responseType => {
+    const normalized = normalizeGMResponseType(responseType);
+    return normalized === "blob" || normalized === "arraybuffer";
+  };
+  const arrayBufferToBase64 = buffer => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 32768;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  };
   const parseGMResponseBody = (responseText, responseType) => {
-    const normalized = String(responseType || "text").toLowerCase();
+    const normalized = normalizeGMResponseType(responseType);
     if (normalized === "json") {
       try {
         return JSON.parse(responseText || "null");
@@ -25092,13 +25106,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         fetchResponse.headers.forEach((value, key) => {
           responseHeaders[key] = value;
         });
-        const responseText = await fetchResponse.text();
+        const responseType = normalizeGMResponseType(message.responseType);
+        let responseText = "";
+        let response = null;
+        let responseBase64 = null;
+        const responseMimeType = fetchResponse.headers.get("content-type") || "";
+
+        if (isBinaryGMResponseType(responseType)) {
+          const responseBuffer = await fetchResponse.arrayBuffer();
+          responseBase64 = arrayBufferToBase64(responseBuffer);
+        } else {
+          responseText = await fetchResponse.text();
+          response = parseGMResponseBody(responseText, responseType);
+        }
+
         return {
           status: fetchResponse.status,
           statusText: fetchResponse.statusText,
           responseHeaders: formatGMResponseHeaders(responseHeaders),
           responseText: responseText,
-          response: parseGMResponseBody(responseText, message.responseType),
+          response: response,
+          responseBase64: responseBase64,
+          responseMimeType: responseMimeType,
           finalUrl: fetchResponse.url
         };
       } catch (error) {
