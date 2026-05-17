@@ -25111,14 +25111,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         let response = null;
         let responseBase64 = null;
         const responseMimeType = fetchResponse.headers.get("content-type") || "";
+        const declaredLength = Number(fetchResponse.headers.get("content-length") || 0);
+        let responseLength = 0;
 
         if (isBinaryGMResponseType(responseType)) {
           const responseBuffer = await fetchResponse.arrayBuffer();
+          responseLength = responseBuffer.byteLength;
           responseBase64 = arrayBufferToBase64(responseBuffer);
         } else {
           responseText = await fetchResponse.text();
+          responseLength = new TextEncoder().encode(responseText).byteLength;
           response = parseGMResponseBody(responseText, responseType);
         }
+        const responseTotal = Number.isFinite(declaredLength) && declaredLength > 0 ? declaredLength : responseLength;
 
         return {
           status: fetchResponse.status,
@@ -25128,6 +25133,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           response: response,
           responseBase64: responseBase64,
           responseMimeType: responseMimeType,
+          responseLength: responseLength,
+          responseTotal: responseTotal,
           finalUrl: fetchResponse.url
         };
       } catch (error) {

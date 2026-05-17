@@ -1641,22 +1641,45 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return result.response;
             };
 
-            const makeResponse = (result) => ({
-                status: result.status,
-                statusText: result.statusText,
-                responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
-                responseText: typeof result.responseText === 'string' ? result.responseText : '',
-                response: makeTypedResponseBody(result),
-                readyState: 4,
-                finalUrl: result.finalUrl || details.url,
-                responseURL: result.finalUrl || details.url
-            });
+            const makeResponse = (result) => {
+                const loaded = Number(result.responseLength || 0);
+                const total = Number(result.responseTotal || loaded || 0);
+                return {
+                    status: result.status,
+                    statusText: result.statusText,
+                    responseHeaders: normalizeGMResponseHeaders(result.responseHeaders),
+                    responseText: typeof result.responseText === 'string' ? result.responseText : '',
+                    response: makeTypedResponseBody(result),
+                    readyState: 4,
+                    loaded: loaded,
+                    total: total,
+                    lengthComputable: total > 0,
+                    finalUrl: result.finalUrl || details.url,
+                    responseURL: result.finalUrl || details.url
+                };
+            };
+
+            const dispatchReadyState = (readyState) => {
+                if (typeof details.onreadystatechange === 'function') {
+                    details.onreadystatechange({ readyState: readyState, status: 0, statusText: '', finalUrl: details.url, responseURL: details.url });
+                }
+            };
+
+            const dispatchLoadStart = () => {
+                if (typeof details.onloadstart === 'function') {
+                    details.onloadstart({ readyState: 1, loaded: 0, total: 0, lengthComputable: false });
+                }
+                dispatchReadyState(1);
+            };
 
             const onResult = (result) => {
                 if (completed) return;
                 completed = true;
                 clearRequestTimeout();
                 const response = makeResponse(result);
+                if (typeof details.onprogress === 'function') {
+                    details.onprogress(response);
+                }
                 if (typeof details.onreadystatechange === 'function') {
                     details.onreadystatechange(response);
                 }
@@ -1700,6 +1723,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     onFail('GM_xmlhttpRequest timed out', 'ontimeout');
                 }, timeoutMs);
             }
+
+            dispatchLoadStart();
 
             ${isContentContext ? `
             // Content context: send directly via browser.runtime.sendMessage

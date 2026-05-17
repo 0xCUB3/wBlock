@@ -692,6 +692,9 @@ public enum WebExtensionRequestHandler {
                 .joined(separator: "\r\n")
             let isBinaryResponse = nativeGMXmlhttpResponseIsBinary(responseType)
             let responseText = isBinaryResponse ? "" : decodeNativeGMXmlhttpResponseText(data)
+            let responseLength = data.count
+            let expectedLength = httpResponse.expectedContentLength
+            let responseTotal = expectedLength > 0 ? expectedLength : Int64(responseLength)
 
             return [
                 "status": httpResponse.statusCode,
@@ -701,6 +704,8 @@ public enum WebExtensionRequestHandler {
                 "response": nativeGMXmlhttpResponseObject(data: data, responseText: responseText, responseType: responseType),
                 "responseBase64": isBinaryResponse ? data.base64EncodedString() : nil,
                 "responseMimeType": httpResponse.mimeType ?? "",
+                "responseLength": responseLength,
+                "responseTotal": responseTotal,
                 "finalUrl": httpResponse.url?.absoluteString ?? url.absoluteString
             ]
         } catch {
