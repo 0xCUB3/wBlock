@@ -1558,26 +1558,87 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 throw error;
             }
 
-            const link = document.createElement('a');
-            link.href = downloadURL;
-            if (fileName) {
-                link.download = fileName;
-            }
-            link.rel = 'noopener';
-            link.style.display = 'none';
-            (document.body || document.documentElement).appendChild(link);
-            if (typeof link.click === 'function') {
-                link.click();
-            }
-            link.remove();
+            const clickDownloadLink = (href, revokeURL) => {
+                const link = document.createElement('a');
+                link.href = href;
+                if (fileName) {
+                    link.download = fileName;
+                }
+                link.rel = 'noopener';
+                link.style.display = 'none';
+                (document.body || document.documentElement).appendChild(link);
+                if (typeof link.click === 'function') {
+                    link.click();
+                }
+                link.remove();
+                if (revokeURL && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+                    setTimeout(() => URL.revokeObjectURL(href), 60000);
+                }
+            };
 
-            if (typeof normalized.onload === 'function') {
-                setTimeout(() => normalized.onload(), 0);
+            if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+                clickDownloadLink(downloadURL, false);
+                if (typeof normalized.onload === 'function') {
+                    setTimeout(() => normalized.onload(), 0);
+                }
+                return {
+                    abort: function() {
+                        wBlockLog('[wBlock] GM_download abort requested for:', downloadURL);
+                    }
+                };
             }
+
+            const request = __wBlockLegacyGM.xmlhttpRequest({
+                method: normalized.method || 'GET',
+                url: downloadURL,
+                headers: normalized.headers || {},
+                data: normalized.data,
+                anonymous: normalized.anonymous === true,
+                timeout: normalized.timeout || 0,
+                responseType: 'blob',
+                onloadstart: function(response) {
+                    if (typeof normalized.onloadstart === 'function') normalized.onloadstart(response);
+                },
+                onprogress: function(response) {
+                    if (typeof normalized.onprogress === 'function') normalized.onprogress(response);
+                },
+                onload: function(response) {
+                    try {
+                        const responseBody = response && response.response;
+                        const blob = typeof Blob !== 'undefined' && responseBody instanceof Blob
+                            ? responseBody
+                            : new Blob([responseBody || response.responseText || '']);
+                        const objectURL = URL.createObjectURL(blob);
+                        clickDownloadLink(objectURL, true);
+                        if (typeof normalized.onload === 'function') {
+                            normalized.onload(response);
+                        }
+                    } catch (error) {
+                        if (typeof normalized.onerror === 'function') {
+                            normalized.onerror(error);
+                        } else {
+                            wBlockError('[wBlock] GM_download failed:', error);
+                        }
+                    }
+                },
+                onerror: function(response) {
+                    if (typeof normalized.onerror === 'function') normalized.onerror(response);
+                },
+                ontimeout: function(response) {
+                    if (typeof normalized.ontimeout === 'function') normalized.ontimeout(response);
+                    else if (typeof normalized.onerror === 'function') normalized.onerror(response);
+                },
+                onabort: function(response) {
+                    if (typeof normalized.onabort === 'function') normalized.onabort(response);
+                }
+            });
 
             return {
                 abort: function() {
                     wBlockLog('[wBlock] GM_download abort requested for:', downloadURL);
+                    if (request && typeof request.abort === 'function') {
+                        request.abort();
+                    }
                 }
             };
         },
