@@ -6,6 +6,7 @@
 //
 
 internal import FilterEngine
+import Foundation
 #if os(macOS)
 import AppKit
 #endif
@@ -627,6 +628,8 @@ public enum WebExtensionRequestHandler {
         let responseType = ((message["responseType"] as? String) ?? "text")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
+        let overrideMimeType = (message["overrideMimeType"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         let timeoutMilliseconds = message["timeout"] as? Double
             ?? (message["timeout"] as? Int).map(Double.init)
             ?? 0
@@ -639,6 +642,7 @@ public enum WebExtensionRequestHandler {
                 body: body,
                 anonymous: anonymous,
                 responseType: responseType,
+                overrideMimeType: overrideMimeType,
                 timeoutMilliseconds: timeoutMilliseconds
             )
             let response = createResponse(with: result)
@@ -653,6 +657,7 @@ public enum WebExtensionRequestHandler {
         body: String?,
         anonymous: Bool,
         responseType: String,
+        overrideMimeType: String?,
         timeoutMilliseconds: Double
     ) async -> [String: Any?] {
         let timeoutSeconds = timeoutMilliseconds > 0 ? max(timeoutMilliseconds / 1000, 0.1) : 30
@@ -691,7 +696,7 @@ public enum WebExtensionRequestHandler {
                 }
                 .joined(separator: "\r\n")
             let isBinaryResponse = nativeGMXmlhttpResponseIsBinary(responseType)
-            let responseText = isBinaryResponse ? "" : decodeNativeGMXmlhttpResponseText(data)
+            let responseText = isBinaryResponse ? "" : decodeNativeGMXmlhttpResponseText(data, overrideMimeType: overrideMimeType, response: httpResponse)
             let responseLength = data.count
             let expectedLength = httpResponse.expectedContentLength
             let responseTotal = expectedLength > 0 ? expectedLength : Int64(responseLength)
@@ -731,7 +736,17 @@ public enum WebExtensionRequestHandler {
         responseType == "blob" || responseType == "arraybuffer"
     }
 
-    private static func decodeNativeGMXmlhttpResponseText(_ data: Data) -> String {
+    private static func decodeNativeGMXmlhttpResponseText(
+        _ data: Data,
+        overrideMimeType: String?,
+        response: HTTPURLResponse
+    ) -> String {
+        let charset = charsetName(from: overrideMimeType)
+            ?? charsetName(from: response.value(forHTTPHeaderField: "Content-Type"))
+        if let charset, let encoding = stringEncoding(forCharset: charset),
+           let decoded = String(data: data, encoding: encoding) {
+            return decoded
+        }
         if let utf8 = String(data: data, encoding: .utf8) {
             return utf8
         }
@@ -739,6 +754,36 @@ public enum WebExtensionRequestHandler {
             return latin1
         }
         return String(decoding: data, as: UTF8.self)
+    }
+
+    private static func charsetName(from contentType: String?) -> String? {
+        guard let contentType else { return nil }
+        return contentType
+            .split(separator: ";")
+            .compactMap { part -> String? in
+                let pieces = part.split(separator: "=", maxSplits: 1)
+                guard pieces.count == 2,
+                      pieces[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                        .caseInsensitiveCompare("charset") == .orderedSame
+                else { return nil }
+                return pieces[1]
+                    .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "\"'")))
+            }
+            .first
+    }
+
+    private static func stringEncoding(forCharset charset: String) -> String.Encoding? {
+        let cfEncoding = CFStringConvertIANACharSetNameToEncoding(charset as CFString)
+        if cfEncoding != kCFStringEncodingInvalidId {
+            return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(cfEncoding))
+        }
+
+        switch charset.lowercased() {
+        case "latin1", "latin-1":
+            return .isoLatin1
+        default:
+            return nil
+        }
     }
 
     private static func handleSyncZapperRules(message: [String: Any?], context: NSExtensionContext) {

@@ -128,9 +128,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const data = event.data;
                 if (!data || data.type !== 'wblock-gm-xhr-request') return;
 
-                const { id, url, method, headers, body, anonymous, responseType, timeout, redirect } = data;
+                const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType } = data;
 
-                this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect })
+                this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType })
                     .then(result => {
                         window.postMessage({
                             type: 'wblock-gm-xhr-response',
@@ -397,7 +397,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     anonymous: !!details.anonymous,
                     responseType: details.responseType || 'text',
                     timeout: details.timeout || 0,
-                    redirect: details.redirect || 'follow'
+                    redirect: details.redirect || 'follow',
+                    overrideMimeType: details.overrideMimeType || ''
                 });
             }
 
@@ -419,7 +420,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         anonymous: !!details.anonymous,
                         responseType: details.responseType || 'text',
                         timeout: details.timeout || 0,
-                        redirect: details.redirect || 'follow'
+                        redirect: details.redirect || 'follow',
+                        overrideMimeType: details.overrideMimeType || ''
                     });
                 });
             }
@@ -1775,7 +1777,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 anonymous: !!details.anonymous,
                 responseType: details.responseType || 'text',
                 redirect: details.redirect || 'follow',
-                timeout: details.timeout || 0
+                timeout: details.timeout || 0,
+                overrideMimeType: details.overrideMimeType || ''
             };
 
             const timeoutMs = Number(details.timeout || 0);

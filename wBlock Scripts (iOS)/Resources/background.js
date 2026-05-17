@@ -24926,6 +24926,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return btoa(binary);
   };
+  const extractCharsetFromContentType = contentType => {
+    const match = String(contentType || "").match(/charset\s*=\s*[\"']?([^;\"'\s]+)/i);
+    return match ? match[1].trim() : "";
+  };
+  const decodeGMFetchResponseText = async (response, overrideMimeType) => {
+    const charset = extractCharsetFromContentType(overrideMimeType) || extractCharsetFromContentType(response.headers.get("content-type"));
+    if (!charset || typeof TextDecoder === "undefined") {
+      return await response.text();
+    }
+    const buffer = await response.arrayBuffer();
+    try {
+      return new TextDecoder(charset).decode(buffer);
+    } catch (_error) {
+      return new TextDecoder("utf-8").decode(buffer);
+    }
+  };
   const parseGMResponseBody = (responseText, responseType) => {
     const normalized = normalizeGMResponseType(responseType);
     if (normalized === "json") {
@@ -25069,7 +25085,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             anonymous: message.anonymous === true,
             responseType: message.responseType || 'text',
             redirect: message.redirect || 'follow',
-            timeout: message.timeout || 0
+            timeout: message.timeout || 0,
+            overrideMimeType: message.overrideMimeType || ''
           };
           const nativeResponse = await sendQueuedNativeMessage(nativeRequest);
           return nativeResponse || { error: "Empty response from native host" };
@@ -25119,7 +25136,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           responseLength = responseBuffer.byteLength;
           responseBase64 = arrayBufferToBase64(responseBuffer);
         } else {
-          responseText = await fetchResponse.text();
+          responseText = await decodeGMFetchResponseText(fetchResponse, message.overrideMimeType);
           responseLength = new TextEncoder().encode(responseText).byteLength;
           response = parseGMResponseBody(responseText, responseType);
         }
