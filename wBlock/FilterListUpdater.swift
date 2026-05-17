@@ -362,36 +362,8 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     /// Validates if content appears to be a valid filter list.
-    /// Two checks: (a) reject HTML challenge pages, (b) require at least one meaningful
-    /// non-empty, non-bracket line within the first 100 lines.
-    /// Comments (!), directives (!#include, !#if, etc.), and actual rules all count as meaningful.
     private func isValidFilterContent(_ content: String) -> Bool {
-        // Fast-path: reject HTML challenge/protection pages
-        let prefix = String(content.prefix(2048))
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        if prefix.hasPrefix("<!doctype html") || prefix.hasPrefix("<html") {
-            return false
-        }
-
-        // A filter list must have at least one meaningful non-empty line in the first 100 lines.
-        // Meaningful = not empty, not a [header] bracket line.
-        // Comments (!) and directives (!#include, !#if, etc.) all count as meaningful.
-        var scannedLines = 0
-        var meaningfulLineCount = 0
-
-        content.enumerateLines { line, stop in
-            if scannedLines >= 100 { stop = true; return }
-            scannedLines += 1
-
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty && !trimmed.hasPrefix("[") {
-                meaningfulLineCount += 1
-            }
-            if meaningfulLineCount >= 1 { stop = true }
-        }
-
-        return meaningfulLineCount >= 1
+        FilterListContentValidator.appearsToBeFilterList(content)
     }
 
     /// Strips unknown `!#` directives from downloaded filter content.

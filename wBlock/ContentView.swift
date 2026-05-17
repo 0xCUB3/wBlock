@@ -1331,13 +1331,7 @@ struct AddFilterListView: View {
             return .idle
         }
 
-        guard let components = URLComponents(string: trimmed),
-            let scheme = components.scheme?.lowercased(),
-            scheme == "https" || scheme == "http",
-            let host = components.host,
-            !host.isEmpty,
-            let url = components.url
-        else {
+        guard let url = FilterListURLSupport.validatedRemoteURL(from: trimmed) else {
             return .invalid
         }
 

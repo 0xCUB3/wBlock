@@ -4,7 +4,7 @@ import wBlockCoreService
 extension AppFilterManager {
     // MARK: - List Management
     func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom, hasUserProvidedName: Bool = false) {
-        guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard let url = FilterListURLSupport.validatedRemoteURL(from: urlString)
         else {
             statusDescription = LocalizedStrings.format(
                 "Invalid URL provided: %@",
@@ -68,8 +68,7 @@ extension AppFilterManager {
             return
         }
 
-        let lower = trimmedContent.lowercased()
-        if lower.hasPrefix("<!doctype html") || lower.hasPrefix("<html") {
+        guard FilterListContentValidator.appearsToBeFilterList(trimmedContent) else {
             statusDescription = LocalizedStrings.text(
                 "That doesn't look like a filter list.",
                 comment: "User list validation error"
