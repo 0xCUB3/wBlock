@@ -93,6 +93,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
+            this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
             this.menuCommandSequence = 0;
             this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
@@ -525,17 +526,31 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 throw new Error('Userscript descriptor missing id');
             }
 
-            const content = await this.fetchTextFromChunks('getUserScriptContentChunk', { scriptId: script.id });
-            const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
-            const resources = {};
-            for (const resourceName of resourceNames) {
-                resources[resourceName] = await this.fetchTextFromChunks('getUserScriptResourceChunk', {
-                    scriptId: script.id,
-                    resourceName
-                });
+            if (this.scriptPayloadPromises.has(script.id)) {
+                return await this.scriptPayloadPromises.get(script.id);
             }
 
-            return { ...script, content, resources };
+            const payloadPromise = (async () => {
+                const content = await this.fetchTextFromChunks('getUserScriptContentChunk', { scriptId: script.id });
+                const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
+                const resources = {};
+                for (const resourceName of resourceNames) {
+                    resources[resourceName] = await this.fetchTextFromChunks('getUserScriptResourceChunk', {
+                        scriptId: script.id,
+                        resourceName
+                    });
+                }
+
+                return { ...script, content, resources };
+            })();
+
+            this.scriptPayloadPromises.set(script.id, payloadPromise);
+            try {
+                return await payloadPromise;
+            } catch (error) {
+                this.scriptPayloadPromises.delete(script.id);
+                throw error;
+            }
         }
 
         setupDocumentEventListeners() {
@@ -708,7 +723,22 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog('[wBlock] No userscripts to inject.');
                 return;
             }
-            userScripts.forEach(script => this.injectUserScript(script));
+            const runAtPriority = { 'document-start': 0, 'document-body': 1, 'document-end': 2, 'document-idle': 3 };
+            const orderedScripts = [...userScripts].sort((left, right) => {
+                const leftPriority = runAtPriority[left && left.runAt] ?? 2;
+                const rightPriority = runAtPriority[right && right.runAt] ?? 2;
+                return leftPriority - rightPriority;
+            });
+
+            orderedScripts
+                .filter(script => script && script.runAt === 'document-start' && script.id)
+                .forEach(script => {
+                    this.ensureScriptPayload(script).catch(error => {
+                        wBlockWarn(`[wBlock] Failed to preload userscript payload for ${script.name}:`, error);
+                    });
+                });
+
+            orderedScripts.forEach(script => this.injectUserScript(script));
         }
 
         injectUserScript(script) {
