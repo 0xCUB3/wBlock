@@ -669,13 +669,12 @@ function renderPageUserScripts(scripts, disabled = false) {
         name.textContent = script.name;
         text.appendChild(name);
 
-        const metaParts = [];
-        if (typeof script.version === 'string' && script.version.trim()) metaParts.push(`v${script.version.trim()}`);
-        metaParts.push(script.disabledForSite ? t('popup_userscript_disabled_here', undefined, 'Disabled here') : t('popup_userscript_running', undefined, 'Running'));
-        const meta = document.createElement('span');
-        meta.className = 'userscript-meta';
-        meta.textContent = metaParts.join(' · ');
-        text.appendChild(meta);
+        if (typeof script.version === 'string' && script.version.trim()) {
+            const meta = document.createElement('span');
+            meta.className = 'userscript-meta';
+            meta.textContent = `v${script.version.trim()}`;
+            text.appendChild(meta);
+        }
 
         const control = document.createElement('span');
         control.className = 'switch';

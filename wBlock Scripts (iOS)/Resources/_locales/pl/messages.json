@@ -211,14 +211,6 @@
     "message": "No userscripts are running on this page.",
     "description": "Empty state shown when no userscripts match or run on the current page."
   },
-  "popup_userscript_running": {
-    "message": "Running",
-    "description": "Status label for a userscript enabled on the current site."
-  },
-  "popup_userscript_disabled_here": {
-    "message": "Disabled here",
-    "description": "Status label for a userscript disabled on the current site."
-  },
   "popup_error_update_userscript": {
     "message": "Failed to update userscript setting.",
     "description": "Error shown when popup fails to update a per-site userscript setting."
