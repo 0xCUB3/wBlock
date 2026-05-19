@@ -646,14 +646,15 @@ function renderPageUserScripts(scripts, disabled = false) {
     const normalizedScripts = Array.isArray(scripts) ? scripts : [];
     currentPageUserScripts = normalizedScripts;
     list.innerHTML = '';
-    section.hidden = false;
     if (count) count.textContent = String(normalizedScripts.filter((script) => script && script.running !== false).length);
 
     if (normalizedScripts.length === 0) {
-        setUserscriptsExpanded(userscriptsExpanded);
+        section.hidden = true;
+        setUserscriptsExpanded(false);
         return;
     }
 
+    section.hidden = false;
     if (empty) empty.hidden = true;
 
     for (const script of normalizedScripts) {
@@ -984,11 +985,20 @@ async function refreshUi() {
         return;
     }
 
-    const contentScriptReachable = await probeTabSupport(tab.id);
+    const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
+    const disabledPromise = getSiteDisabledState(host);
+    const zapperRulesDisabledPromise = getZapperRulesDisabled(host);
+    const contentScriptReachablePromise = probeTabSupport(tab.id);
+    const zapperRulesPromise = getAuthoritativeZapperRules(host);
+    const zapperCountPromise = updateZapperCount(host);
+
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const disabled = await getSiteDisabledState(host);
-    const zapperRulesDisabled = await getZapperRulesDisabled(host);
+    const [disabled, zapperRulesDisabled, contentScriptReachable] = await Promise.all([
+        disabledPromise,
+        zapperRulesDisabledPromise,
+        contentScriptReachablePromise,
+    ]);
     if (disableToggle) {
         disableToggle.checked = disabled;
         disableToggle.disabled = false;
@@ -1008,9 +1018,9 @@ async function refreshUi() {
     if (rulesToggle) {
         rulesToggle.disabled = false;
     }
-    currentZapperRules = await getAuthoritativeZapperRules(host);
-    await updateZapperCount(host);
-    renderPageUserScripts(await fetchPageUserScripts(tab.url), disabled);
+    renderPageUserScripts(await pageUserScriptsPromise, disabled);
+    currentZapperRules = await zapperRulesPromise;
+    await zapperCountPromise;
     renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);
