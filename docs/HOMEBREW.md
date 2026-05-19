@@ -26,8 +26,8 @@ The workflow `.github/workflows/homebrew-cask.yml` builds and publishes the Home
 
 Accepted tag styles:
 
-- `v2.1.0`
-- `2.1.0`
+- `v2.1.1`
+- `2.1.1`
 
 The workflow:
 
