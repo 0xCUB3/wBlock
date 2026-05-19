@@ -674,3 +674,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
 "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
 "Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+
+"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

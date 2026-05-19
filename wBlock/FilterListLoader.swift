@@ -126,6 +126,15 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy, isSelected: true,
                 description: "Blocks online tracking and web analytics systems."),
             FilterList(
+                id: UUID(), name: "HaGeZi Referral Allowlist",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt"
+                )!, category: FilterListCategory.privacy,
+                description:
+                    "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.",
+                trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "AdGuard Cookie Notices",
                 url: URL(
                     string:

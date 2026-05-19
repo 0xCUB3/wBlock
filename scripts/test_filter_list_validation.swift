@@ -20,6 +20,14 @@ struct FilterListValidationTests {
             """,
             "expected ordinary Adblock syntax to be accepted"
         )
+        expectValidContent(
+            """
+            [Adblock Plus]
+            ! Title: Referral Allowlist
+            @@||example.com^
+            """,
+            "expected allowlist-only exception rules to be accepted"
+        )
         expectInvalidContent(
             """
             // ==UserScript==
