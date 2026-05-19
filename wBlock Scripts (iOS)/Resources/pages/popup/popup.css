@@ -302,6 +302,46 @@ body {
   padding: 8px 0;
 }
 
+.userscript-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.userscript-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(120, 120, 128, 0.08);
+}
+
+.userscript-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userscript-name {
+  font-size: 13px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userscript-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--subtext);
+}
+
 .command-list {
   display: flex;
   flex-direction: column;

@@ -185,8 +185,10 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var isPrefetchingDefaultMetadata = false
 
     private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
+    private let userScriptSiteDisabledDefaultsKey = "userScriptDisabledHostsByID"
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
     private let dataManager = ProtobufDataManager.shared
+    private let sharedDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
     private var initialLoadTask: Task<Void, Never>?
@@ -2366,14 +2368,63 @@ public class UserScriptManager: ObservableObject {
     public func getEnabledUserScriptsForURL(_ url: String) -> [UserScript] {
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
+        let host = URL(string: url)?.host ?? ""
+        let runnableScripts = matchingScripts.filter {
+            !isUserScript($0, disabledOnHost: host)
+        }
 
         #if DEBUG
         logger.debug(
-            "🎯 Userscript match summary for URL \(url, privacy: .public): enabled=\(enabledScripts.count), matched=\(matchingScripts.count)"
+            "🎯 Userscript match summary for URL \(url, privacy: .public): enabled=\(enabledScripts.count), matched=\(matchingScripts.count), runnable=\(runnableScripts.count)"
         )
         #endif
 
-        return matchingScripts
+        return runnableScripts
+    }
+
+    public func pageUserScripts(for url: String) -> [(script: UserScript, disabledForSite: Bool)] {
+        let host = URL(string: url)?.host ?? ""
+        return userScripts
+            .filter { $0.isEnabled && $0.matches(url: url) }
+            .map { script in
+                (script: script, disabledForSite: isUserScript(script, disabledOnHost: host))
+            }
+    }
+
+    public func setUserScript(withId scriptID: UUID, disabledOnHost host: String, disabled: Bool) -> Bool {
+        guard indexOfUserScript(withId: scriptID) != nil else { return false }
+        let normalizedHost = normalizedDisabledHost(host)
+        guard !normalizedHost.isEmpty else { return false }
+
+        var map = userScriptDisabledHostsByID()
+        var disabledHosts = map[scriptID.uuidString] ?? []
+        disabledHosts.removeAll { $0 == normalizedHost }
+        if disabled {
+            disabledHosts.append(normalizedHost)
+        }
+
+        if disabledHosts.isEmpty {
+            map.removeValue(forKey: scriptID.uuidString)
+        } else {
+            map[scriptID.uuidString] = disabledHosts.sorted()
+        }
+
+        sharedDefaults.set(map, forKey: userScriptSiteDisabledDefaultsKey)
+        sharedDefaults.synchronize()
+        return true
+    }
+
+    public func isUserScript(_ userScript: UserScript, disabledOnHost host: String) -> Bool {
+        let disabledHosts = userScriptDisabledHostsByID()[userScript.id.uuidString] ?? []
+        return HostMatcher.isHostDisabled(host: host, disabledSites: disabledHosts)
+    }
+
+    private func userScriptDisabledHostsByID() -> [String: [String]] {
+        sharedDefaults.dictionary(forKey: userScriptSiteDisabledDefaultsKey) as? [String: [String]] ?? [:]
+    }
+
+    private func normalizedDisabledHost(_ host: String) -> String {
+        host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     /// Manually triggers duplicate userscript removal and cleanup

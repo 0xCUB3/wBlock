@@ -69,6 +69,9 @@ public enum WebExtensionRequestHandler {
             case "getUserScriptContentChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .content)
                 return
+            case "getPageUserScripts":
+                handleGetPageUserScriptsRequest(message: message!, context: context)
+                return
             case "getUserScriptResourceChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .resource)
                 return
@@ -77,6 +80,9 @@ public enum WebExtensionRequestHandler {
                 return
             case "deleteUserScriptStorageValue":
                 handleDeleteUserScriptStorageValue(message: message!, context: context)
+                return
+            case "setUserScriptSiteDisabledState":
+                handleSetUserScriptSiteDisabledState(message: message!, context: context)
                 return
             case "gmXmlhttpRequestNative", "gmXmlhttpRequest":
                 handleNativeGMXmlhttpRequest(message: message!, context: context)
@@ -569,6 +575,68 @@ public enum WebExtensionRequestHandler {
             }
 
             let response = createResponse(with: ["userScripts": userScriptDescriptors])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
+        guard let urlString = message["url"] as? String else {
+            let response = createResponse(with: ["userScripts": []])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        Task { @MainActor in
+            let disabledSites = await currentDisabledSites()
+            if let url = URL(string: urlString),
+               HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
+            {
+                let response = createResponse(with: ["userScripts": []])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            let manager = UserScriptManager.shared
+            await manager.waitUntilReady()
+            let pageScripts = manager.pageUserScripts(for: urlString)
+            let descriptors = pageScripts.map { item -> [String: Any] in
+                [
+                    "id": item.script.id.uuidString,
+                    "name": item.script.name,
+                    "version": item.script.version,
+                    "description": item.script.description,
+                    "disabledForSite": item.disabledForSite,
+                    "running": !item.disabledForSite
+                ]
+            }
+
+            let response = createResponse(with: ["userScripts": descriptors])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleSetUserScriptSiteDisabledState(message: [String: Any?], context: NSExtensionContext) {
+        guard let scriptIDString = message["scriptId"] as? String,
+              let scriptID = UUID(uuidString: scriptIDString),
+              let host = message["host"] as? String
+        else {
+            let response = createResponse(with: ["ok": false, "error": "Missing userscript site setting payload"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        let disabled = message["disabled"] as? Bool ?? false
+        Task { @MainActor in
+            let manager = UserScriptManager.shared
+            await manager.waitUntilReady()
+            let ok = manager.setUserScript(
+                withId: scriptID,
+                disabledOnHost: host,
+                disabled: disabled
+            )
+            let response = createResponse(with: ok
+                ? ["ok": true]
+                : ["ok": false, "error": "Userscript not found"])
             context.completeRequest(returningItems: [response])
         }
     }

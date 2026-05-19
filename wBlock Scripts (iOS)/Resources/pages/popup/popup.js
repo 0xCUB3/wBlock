@@ -384,6 +384,7 @@ async function notifyZapperRulesChanged(tabId) {
 
 let zapperRulesExpanded = false;
 let currentZapperRules = [];
+let currentPageUserScripts = [];
 let host = '';
 let tab = null;
 
@@ -584,6 +585,106 @@ async function fetchUserscriptCommands(tabId) {
     }
 }
 
+async function fetchPageUserScripts(url) {
+    if (!url) return [];
+    try {
+        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+            action: 'getPageUserScripts',
+            url,
+        });
+        if (!response || !Array.isArray(response.userScripts)) {
+            return [];
+        }
+        return response.userScripts.filter((script) => (
+            script
+            && typeof script.id === 'string'
+            && typeof script.name === 'string'
+            && script.name.trim().length > 0
+        ));
+    } catch (error) {
+        console.warn('[wBlock] Failed to fetch page userscripts:', error);
+        return [];
+    }
+}
+
+async function setUserscriptSiteDisabled(scriptId, disabled) {
+    if (!scriptId || !host) {
+        return { ok: false, error: 'Invalid userscript site setting request' };
+    }
+    try {
+        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+            action: 'setUserScriptSiteDisabledState',
+            scriptId,
+            host,
+            disabled: Boolean(disabled),
+        });
+        return response || { ok: false, error: 'Userscript setting returned no response' };
+    } catch (error) {
+        return { ok: false, error: error && error.message ? error.message : String(error) };
+    }
+}
+
+function renderPageUserScripts(scripts, disabled = false) {
+    const section = document.getElementById('userscripts-section');
+    const list = document.getElementById('userscripts-list');
+    const empty = document.getElementById('userscripts-empty');
+    const count = document.getElementById('userscripts-count');
+    if (!section || !list) return;
+
+    const normalizedScripts = Array.isArray(scripts) ? scripts : [];
+    list.innerHTML = '';
+    section.hidden = false;
+    if (count) count.textContent = String(normalizedScripts.filter((script) => script && script.running !== false).length);
+
+    if (normalizedScripts.length === 0) {
+        if (empty) empty.hidden = false;
+        return;
+    }
+
+    if (empty) empty.hidden = true;
+
+    for (const script of normalizedScripts) {
+        const row = document.createElement('label');
+        row.className = 'userscript-row';
+
+        const text = document.createElement('span');
+        text.className = 'userscript-text';
+
+        const name = document.createElement('span');
+        name.className = 'userscript-name';
+        name.textContent = script.name;
+        text.appendChild(name);
+
+        const metaParts = [];
+        if (typeof script.version === 'string' && script.version.trim()) metaParts.push(`v${script.version.trim()}`);
+        metaParts.push(script.disabledForSite ? t('popup_userscript_disabled_here', undefined, 'Disabled here') : t('popup_userscript_running', undefined, 'Running'));
+        const meta = document.createElement('span');
+        meta.className = 'userscript-meta';
+        meta.textContent = metaParts.join(' · ');
+        text.appendChild(meta);
+
+        const control = document.createElement('span');
+        control.className = 'switch';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'userscript-toggle';
+        input.setAttribute('data-script-id', script.id);
+        input.checked = !script.disabledForSite;
+        input.disabled = disabled;
+
+        const slider = document.createElement('span');
+        slider.className = 'slider';
+        slider.setAttribute('aria-hidden', 'true');
+
+        control.appendChild(input);
+        control.appendChild(slider);
+        row.appendChild(text);
+        row.appendChild(control);
+        list.appendChild(row);
+    }
+}
+
 async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
     if (!tabId || !bridgeId || !commandId) {
         return { ok: false, error: 'Invalid menu command request' };
@@ -610,6 +711,7 @@ function setupListeners() {
     const zapperActivate = document.getElementById('zapper-activate');
     const zapperClear = document.getElementById('zapper-clear');
     const userscriptCommands = document.getElementById('userscript-commands');
+    const userscriptsList = document.getElementById('userscripts-list');
     const openAppButton = document.getElementById('open-app');
 
     if (rulesToggle) {
@@ -716,6 +818,31 @@ function setupListeners() {
         });
     }
 
+    if (userscriptsList) {
+        userscriptsList.addEventListener('change', async (event) => {
+            const input = getClosestTarget(event, 'input.userscript-toggle');
+            if (!input || !tab || !tab.id) return;
+
+            const scriptId = input.getAttribute('data-script-id') || '';
+            const disabledForSite = !input.checked;
+            try {
+                setError('');
+                input.disabled = true;
+                const response = await setUserscriptSiteDisabled(scriptId, disabledForSite);
+                if (!response || response.ok === false) {
+                    throw new Error((response && response.error) || t('popup_error_update_userscript', undefined, 'Failed to update userscript setting.'));
+                }
+                await reloadActiveTab(tab.id);
+                await refreshUi();
+            } catch (error) {
+                console.error('[wBlock] Failed to update userscript site setting:', error);
+                setError((error && error.message) || t('popup_error_update_userscript', undefined, 'Failed to update userscript setting.'));
+                input.checked = !input.checked;
+                input.disabled = false;
+            }
+        });
+    }
+
     if (userscriptCommands) {
         userscriptCommands.addEventListener('click', async (event) => {
             const button = getClosestTarget(event, 'button.command-btn');
@@ -794,6 +921,7 @@ async function refreshUi() {
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const openAppButton = document.getElementById('open-app');
+    const userscriptsSection = document.getElementById('userscripts-section');
 
     if (openAppButton) {
         openAppButton.hidden = !(await shouldShowOpenAppButton());
@@ -810,6 +938,9 @@ async function refreshUi() {
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
+        currentPageUserScripts = [];
+        renderPageUserScripts([], true);
+        if (userscriptsSection) userscriptsSection.hidden = true;
         renderUserscriptCommands([]);
         await logExtensionDiagnostic({
             event: 'popup_support_fallback',
@@ -851,6 +982,8 @@ async function refreshUi() {
     }
     currentZapperRules = await getAuthoritativeZapperRules(host);
     await updateZapperCount(host);
+    currentPageUserScripts = await fetchPageUserScripts(tab.url);
+    renderPageUserScripts(currentPageUserScripts, disabled);
     renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);
