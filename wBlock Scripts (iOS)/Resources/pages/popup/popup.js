@@ -383,6 +383,7 @@ async function notifyZapperRulesChanged(tabId) {
 }
 
 let zapperRulesExpanded = false;
+let userscriptsExpanded = false;
 let currentZapperRules = [];
 let currentPageUserScripts = [];
 let host = '';
@@ -394,6 +395,17 @@ function setRulesExpanded(expanded) {
     const container = document.getElementById('zapper-rules');
     if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     if (container) container.hidden = !expanded;
+}
+
+function setUserscriptsExpanded(expanded) {
+    userscriptsExpanded = expanded;
+    const toggle = document.getElementById('userscripts-toggle');
+    const list = document.getElementById('userscripts-list');
+    const empty = document.getElementById('userscripts-empty');
+    const hasScripts = currentPageUserScripts.length > 0;
+    if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (list) list.hidden = !expanded || !hasScripts;
+    if (empty) empty.hidden = !expanded || hasScripts;
 }
 
 function renderZapperRules(rules) {
@@ -632,12 +644,13 @@ function renderPageUserScripts(scripts, disabled = false) {
     if (!section || !list) return;
 
     const normalizedScripts = Array.isArray(scripts) ? scripts : [];
+    currentPageUserScripts = normalizedScripts;
     list.innerHTML = '';
     section.hidden = false;
     if (count) count.textContent = String(normalizedScripts.filter((script) => script && script.running !== false).length);
 
     if (normalizedScripts.length === 0) {
-        if (empty) empty.hidden = false;
+        setUserscriptsExpanded(userscriptsExpanded);
         return;
     }
 
@@ -683,6 +696,8 @@ function renderPageUserScripts(scripts, disabled = false) {
         row.appendChild(control);
         list.appendChild(row);
     }
+
+    setUserscriptsExpanded(userscriptsExpanded);
 }
 
 async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
@@ -712,7 +727,14 @@ function setupListeners() {
     const zapperClear = document.getElementById('zapper-clear');
     const userscriptCommands = document.getElementById('userscript-commands');
     const userscriptsList = document.getElementById('userscripts-list');
+    const userscriptsToggle = document.getElementById('userscripts-toggle');
     const openAppButton = document.getElementById('open-app');
+
+    if (userscriptsToggle) {
+        userscriptsToggle.addEventListener('click', () => {
+            setUserscriptsExpanded(!userscriptsExpanded);
+        });
+    }
 
     if (rulesToggle) {
         rulesToggle.addEventListener('click', async () => {
@@ -832,8 +854,13 @@ function setupListeners() {
                 if (!response || response.ok === false) {
                     throw new Error((response && response.error) || t('popup_error_update_userscript', undefined, 'Failed to update userscript setting.'));
                 }
+                currentPageUserScripts = currentPageUserScripts.map((script) => (
+                    script.id === scriptId
+                        ? { ...script, disabledForSite, running: !disabledForSite }
+                        : script
+                ));
+                renderPageUserScripts(currentPageUserScripts, false);
                 await reloadActiveTab(tab.id);
-                await refreshUi();
             } catch (error) {
                 console.error('[wBlock] Failed to update userscript site setting:', error);
                 setError((error && error.message) || t('popup_error_update_userscript', undefined, 'Failed to update userscript setting.'));
@@ -939,6 +966,7 @@ async function refreshUi() {
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
         currentPageUserScripts = [];
+        userscriptsExpanded = false;
         renderPageUserScripts([], true);
         if (userscriptsSection) userscriptsSection.hidden = true;
         renderUserscriptCommands([]);
@@ -982,8 +1010,7 @@ async function refreshUi() {
     }
     currentZapperRules = await getAuthoritativeZapperRules(host);
     await updateZapperCount(host);
-    currentPageUserScripts = await fetchPageUserScripts(tab.url);
-    renderPageUserScripts(currentPageUserScripts, disabled);
+    renderPageUserScripts(await fetchPageUserScripts(tab.url), disabled);
     renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);

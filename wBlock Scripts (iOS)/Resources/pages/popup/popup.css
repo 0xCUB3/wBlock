@@ -248,6 +248,12 @@ body {
   transform: rotate(180deg);
 }
 
+.disclosure-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .rules {
   margin-top: 8px;
   display: flex;
@@ -307,6 +313,10 @@ body {
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+}
+
+.userscript-list[hidden] {
+  display: none !important;
 }
 
 .userscript-row {
