@@ -94,7 +94,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 - **Blocked request logger** (macOS) — see what's being blocked on each page
 - **Whitelist** for trusted domains
 - **Regional filters** with auto-detection based on your locale
-- **Homebrew cask** for macOS: `brew tap 0xcub3/wblock https://github.com/0xCUB3/wBlock && brew install --cask wblock`
+- **Homebrew cask** for macOS: `brew tap 0xcub3/wblock && brew install --cask wblock`
 
 </td>
 </tr>
