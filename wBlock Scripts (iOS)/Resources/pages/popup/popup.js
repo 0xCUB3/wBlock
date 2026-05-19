@@ -985,6 +985,12 @@ async function refreshUi() {
     }
 
     const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
+    let pageUserScriptsRenderedDisabled = null;
+    const renderPageUserScriptsPromise = pageUserScriptsPromise.then((scripts) => {
+        pageUserScriptsRenderedDisabled = disableToggle ? disableToggle.checked : false;
+        renderPageUserScripts(scripts, pageUserScriptsRenderedDisabled);
+        return scripts;
+    });
     const disabledPromise = getSiteDisabledState(host);
     const zapperRulesDisabledPromise = getZapperRulesDisabled(host);
     const contentScriptReachablePromise = probeTabSupport(tab.id);
@@ -1017,7 +1023,10 @@ async function refreshUi() {
     if (rulesToggle) {
         rulesToggle.disabled = false;
     }
-    renderPageUserScripts(await pageUserScriptsPromise, disabled);
+    await renderPageUserScriptsPromise;
+    if (pageUserScriptsRenderedDisabled !== disabled) {
+        renderPageUserScripts(await pageUserScriptsPromise, disabled);
+    }
     currentZapperRules = await zapperRulesPromise;
     await zapperCountPromise;
     renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
