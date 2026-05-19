@@ -12,6 +12,8 @@ struct CodeMirrorDocumentAnalysis: Equatable {
 @MainActor
 final class CodeMirrorEditorController: ObservableObject {
     fileprivate let initialText: String
+    fileprivate var documentText: String
+    fileprivate var isDocumentClean = true
     fileprivate weak var bridge: (any CodeMirrorEditorBridge)?
 
     @Published private(set) var isDirty = false
@@ -19,10 +21,13 @@ final class CodeMirrorEditorController: ObservableObject {
 
     init(text: String) {
         self.initialText = text
+        self.documentText = text
     }
 
     func currentText() async -> String {
-        await bridge?.currentText() ?? initialText
+        guard let text = await bridge?.currentText() else { return documentText }
+        documentText = text
+        return text
     }
 
     func openSearch() {
@@ -34,7 +39,17 @@ final class CodeMirrorEditorController: ObservableObject {
     }
 
     func discardChanges() {
+        documentText = initialText
+        isDocumentClean = true
+        updateDirtyState(false)
         bridge?.resetDocument(to: initialText, markClean: true)
+    }
+
+    func replaceText(_ text: String, markClean: Bool = false) {
+        documentText = text
+        isDocumentClean = markClean
+        updateDirtyState(!markClean)
+        bridge?.resetDocument(to: text, markClean: markClean)
     }
 
     fileprivate func bind(_ bridge: any CodeMirrorEditorBridge) {
@@ -265,13 +280,17 @@ extension CodeMirrorTextEditor {
         }
 
         func resetDocument(to text: String, markClean: Bool) {
+            controller.documentText = text
+            controller.isDocumentClean = markClean
             guard hasBootedEditor, let encodedText = Self.encodedJSONString(text) else { return }
             runScript("window.wblockEditor.setDocument(\(encodedText), \(markClean ? "true" : "false"))")
         }
 
         func currentText() async -> String {
-            guard hasBootedEditor, let webView else { return controller.initialText }
-            return await webView.evaluateJavaScriptString("window.wblockEditor.getDocument()")
+            guard hasBootedEditor, let webView else { return controller.documentText }
+            let text: String = await webView.evaluateJavaScriptString("window.wblockEditor.getDocument()")
+            controller.documentText = text
+            return text
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -288,7 +307,7 @@ extension CodeMirrorTextEditor {
                 hasBootedEditor = true
                 lastAppliedEditable = pendingEditable
                 lastAppliedLineWrapping = pendingLineWrapping
-                controller.updateDirtyState(false)
+                controller.updateDirtyState(!controller.isDocumentClean)
 
                 if let analysisPayload = payload["analysis"] as? [String: Any],
                    let analysis = Self.analysis(from: analysisPayload)
@@ -297,6 +316,7 @@ extension CodeMirrorTextEditor {
                 }
             case "dirtyStateChanged":
                 if let isDirty = payload["isDirty"] as? Bool {
+                    controller.isDocumentClean = !isDirty
                     controller.updateDirtyState(isDirty)
                 }
             default:
@@ -312,7 +332,7 @@ extension CodeMirrorTextEditor {
 
         private func bootstrapScript() -> String? {
             let config = CodeMirrorBootstrapConfig(
-                text: controller.initialText,
+                text: controller.documentText,
                 editable: pendingEditable,
                 lineWrapping: pendingLineWrapping,
                 phrases: CodeMirrorResources.localizedPhrases

@@ -1741,11 +1741,9 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func addUserScript(fromLocalFile fileURL: URL) async -> Error? {
-        await MainActor.run {
-            isLoading = true
-            statusDescription = "Importing userscript..."
-            hasError = false
-        }
+        isLoading = true
+        statusDescription = "Importing userscript..."
+        hasError = false
 
         let accessed = fileURL.startAccessingSecurityScopedResource()
         defer {
@@ -1772,102 +1770,132 @@ public class UserScriptManager: ObservableObject {
                 throw UserScriptImportError.unreadableFile
             }
 
-            guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw UserScriptImportError.emptyContent
-            }
-
-            guard hasMetadataBlock(in: content) else {
-                throw UserScriptImportError.missingMetadata
-            }
-
-            // Determine canonical name using metadata when available; fall back to filename.
-            var tempScript = UserScript(name: "", content: content)
-            tempScript.parseMetadata()
-            let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
-            let filenameBasedName = baseName(for: fileURL).trimmingCharacters(
-                in: .whitespacesAndNewlines)
-            let canonicalName =
-                !metadataName.isEmpty
-                ? metadataName : (filenameBasedName.isEmpty ? filename : filenameBasedName)
-
-            // Only replace an existing local script with the same canonical name; any
-            // collision with a remote script is handled by the subsequent duplicate check.
-            let existingIndex = userScripts.firstIndex { script in
-                script.isLocal
-                    && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                        == canonicalName.lowercased()
-            }
-
-            let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
-            var newUserScript = UserScript(
-                id: scriptID, name: canonicalName, url: nil, content: content)
-            newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
-            newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
-            newUserScript.isLocal = true
-            newUserScript.lastUpdated = Date()
-
-            // Copy parsed metadata from tempScript to avoid a second parse
-            newUserScript.description = tempScript.description
-            newUserScript.version = tempScript.version
-            newUserScript.matches = tempScript.matches
-            newUserScript.excludeMatches = tempScript.excludeMatches
-            newUserScript.includes = tempScript.includes
-            newUserScript.excludes = tempScript.excludes
-            newUserScript.runAt = tempScript.runAt
-            newUserScript.injectInto = tempScript.injectInto
-            newUserScript.grant = tempScript.grant
-            newUserScript.require = tempScript.require
-            newUserScript.resource = tempScript.resource
-            newUserScript.resourceContents = tempScript.resourceContents
-            newUserScript.noframes = tempScript.noframes
-            newUserScript.updateURL = tempScript.updateURL
-            newUserScript.downloadURL = tempScript.downloadURL
-
-            // Process @require and @resource directives (networked content is allowed even for local imports)
-            let processedContent = await processRequireDirectives(newUserScript)
-            let resourceContents = await processResourceDirectives(newUserScript)
-            newUserScript.content = processedContent
-            newUserScript.resourceContents = resourceContents
-
-            if let existingIndex {
-                userScripts[existingIndex] = newUserScript
-                statusDescription = "Replaced userscript: \(newUserScript.name)"
-            } else {
-                userScripts.append(newUserScript)
-                statusDescription = "Imported userscript: \(newUserScript.name)"
-            }
-
-            _ = writeUserScriptContent(newUserScript)
-            _ = writeUserScriptResources(newUserScript)
-
-            NotificationCenter.default.post(
-                name: .userScriptManagerDidImportLocalUserScript,
-                object: self,
-                userInfo: [UserScriptManagerNotificationKey.name: newUserScript.name]
-            )
-            NotificationCenter.default.post(
-                name: .userScriptManagerDidUpsertUserScript,
-                object: self,
-                userInfo: userScriptNotificationInfo(for: newUserScript)
+            _ = try await importLocalUserScript(
+                content: content,
+                fallbackName: baseName(for: fileURL),
+                importedStatusVerb: "Imported",
+                replacedStatusVerb: "Replaced"
             )
 
-            checkForDuplicatesAndAskForConfirmation()
-
-            await persistUserScriptsNow()
-            await MainActor.run {
-                isLoading = false
-            }
+            isLoading = false
             return nil
         } catch {
-            await MainActor.run {
-                hasError = true
-                errorMessage =
-                    (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                statusDescription = "Import failed"
-                isLoading = false
-            }
+            hasError = true
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            statusDescription = "Import failed"
+            isLoading = false
             return error
         }
+    }
+
+    public func addUserScript(fromSourceContent content: String) async -> Error? {
+        isLoading = true
+        statusDescription = "Adding userscript..."
+        hasError = false
+
+        do {
+            _ = try await importLocalUserScript(
+                content: content,
+                fallbackName: "Pasted Userscript",
+                importedStatusVerb: "Added",
+                replacedStatusVerb: "Updated"
+            )
+
+            isLoading = false
+            return nil
+        } catch {
+            hasError = true
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            statusDescription = "Import failed"
+            isLoading = false
+            return error
+        }
+    }
+
+    @discardableResult
+    private func importLocalUserScript(
+        content rawContent: String,
+        fallbackName: String,
+        importedStatusVerb: String,
+        replacedStatusVerb: String
+    ) async throws -> UserScript {
+        let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedContent.isEmpty else {
+            throw UserScriptImportError.emptyContent
+        }
+
+        guard hasMetadataBlock(in: rawContent) else {
+            throw UserScriptImportError.missingMetadata
+        }
+
+        var tempScript = UserScript(name: "", content: rawContent)
+        tempScript.parseMetadata()
+
+        let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fallbackName = fallbackName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let canonicalName = !metadataName.isEmpty
+            ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName)
+
+        let existingIndex = userScripts.firstIndex { script in
+            script.isLocal
+                && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    == canonicalName.lowercased()
+        }
+
+        let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
+        var newUserScript = UserScript(id: scriptID, name: canonicalName, url: nil, content: rawContent)
+        newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
+        newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
+        newUserScript.isLocal = true
+        newUserScript.lastUpdated = Date()
+
+        newUserScript.description = tempScript.description
+        newUserScript.version = tempScript.version
+        newUserScript.matches = tempScript.matches
+        newUserScript.excludeMatches = tempScript.excludeMatches
+        newUserScript.includes = tempScript.includes
+        newUserScript.excludes = tempScript.excludes
+        newUserScript.runAt = tempScript.runAt
+        newUserScript.injectInto = tempScript.injectInto
+        newUserScript.grant = tempScript.grant
+        newUserScript.require = tempScript.require
+        newUserScript.resource = tempScript.resource
+        newUserScript.resourceContents = tempScript.resourceContents
+        newUserScript.noframes = tempScript.noframes
+        newUserScript.updateURL = tempScript.updateURL
+        newUserScript.downloadURL = tempScript.downloadURL
+
+        let processedContent = await processRequireDirectives(newUserScript)
+        let resourceContents = await processResourceDirectives(newUserScript)
+        newUserScript.content = processedContent
+        newUserScript.resourceContents = resourceContents
+
+        if let existingIndex {
+            userScripts[existingIndex] = newUserScript
+            statusDescription = "\(replacedStatusVerb) userscript: \(newUserScript.name)"
+        } else {
+            userScripts.append(newUserScript)
+            statusDescription = "\(importedStatusVerb) userscript: \(newUserScript.name)"
+        }
+
+        _ = writeUserScriptContent(newUserScript)
+        _ = writeUserScriptResources(newUserScript)
+
+        NotificationCenter.default.post(
+            name: .userScriptManagerDidImportLocalUserScript,
+            object: self,
+            userInfo: [UserScriptManagerNotificationKey.name: newUserScript.name]
+        )
+        NotificationCenter.default.post(
+            name: .userScriptManagerDidUpsertUserScript,
+            object: self,
+            userInfo: userScriptNotificationInfo(for: newUserScript)
+        )
+
+        checkForDuplicatesAndAskForConfirmation()
+        await persistUserScriptsNow()
+        return newUserScript
     }
 
     public func toggleUserScript(_ userScript: UserScript) async {

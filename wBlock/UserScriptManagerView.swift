@@ -1290,13 +1290,23 @@ struct AddUserScriptView: View {
     @State private var validationState: ValidationState = .idle
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
+    @State private var editorImportError: String?
     @State private var showingFileImporter = false
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
+    @State private var isEditorLineWrappingEnabled = false
+    @StateObject private var editorController: CodeMirrorEditorController
     @FocusState private var urlFieldFocused: Bool
+
+    init(userScriptManager: UserScriptManager, onScriptAdded: @escaping () -> Void) {
+        self.userScriptManager = userScriptManager
+        self.onScriptAdded = onScriptAdded
+        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: ""))
+    }
 
     private enum AddMode: String, CaseIterable, Identifiable {
         case url = "URL"
+        case editor = "Editor"
         case file = "File"
 
         var id: String { rawValue }
@@ -1366,6 +1376,10 @@ struct AddUserScriptView: View {
                 .tag(AddMode.url)
                 .tabItem { Label("URL", systemImage: "link") }
 
+            editorTab
+                .tag(AddMode.editor)
+                .tabItem { Label("Editor", systemImage: "curlybraces") }
+
             fileTab
                 .tag(AddMode.file)
                 .tabItem { Label("File", systemImage: "doc") }
@@ -1408,6 +1422,43 @@ struct AddUserScriptView: View {
         }
     }
 
+    private var editorTab: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Script Content")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Paste or write a userscript with a standard metadata block.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+
+            editorToolbar
+                .padding(.horizontal, 20)
+
+            CodeMirrorTextEditor(
+                controller: editorController,
+                isEditable: true,
+                isLineWrappingEnabled: isEditorLineWrappingEnabled
+            )
+            .frame(minHeight: 320)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+
+            editorImportMessage
+                .padding(.horizontal, 20)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 16)
+    }
+
     private var fileTab: some View {
         Form {
             Section {
@@ -1440,7 +1491,9 @@ struct AddUserScriptView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     modePickerCard
                     macosModeContent
-                    requirementsCard
+                    if addMode == .url {
+                        requirementsCard
+                    }
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
                 .padding(.top, 12)
@@ -1482,6 +1535,8 @@ struct AddUserScriptView: View {
         switch addMode {
         case .url:
             macosURLCard
+        case .editor:
+            macosEditorCard
         case .file:
             macosFileCard
         }
@@ -1523,6 +1578,37 @@ struct AddUserScriptView: View {
             }
 
             validationMessage
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private var macosEditorCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Script Content")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Paste or write a userscript with a standard metadata block.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            editorToolbar
+
+            CodeMirrorTextEditor(
+                controller: editorController,
+                isEditable: true,
+                isLineWrappingEnabled: isEditorLineWrappingEnabled
+            )
+            .frame(minHeight: 320)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+
+            editorImportMessage
         }
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -1577,7 +1663,7 @@ struct AddUserScriptView: View {
 
     private var addButtonTitle: String {
         switch addMode {
-        case .url:
+        case .url, .editor:
             return "Add"
         case .file:
             return "Import"
@@ -1609,6 +1695,18 @@ struct AddUserScriptView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
+    private var editorImportMessage: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.")
+                .foregroundStyle(.secondary)
+            if let editorImportError {
+                Text(editorImportError)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .font(.footnote)
+    }
+
     private var fileImportMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
@@ -1633,6 +1731,34 @@ struct AddUserScriptView: View {
             Label("Requirements", systemImage: "info.circle")
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var editorToolbar: some View {
+        HStack(spacing: 10) {
+            Button {
+                editorController.openSearch()
+            } label: {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            .disabled(isAdding)
+
+            Button {
+                isEditorLineWrappingEnabled.toggle()
+            } label: {
+                Label("Wrap Lines", systemImage: isEditorLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
+            }
+            .disabled(isAdding)
+
+            Spacer()
+
+            Button {
+                pasteScriptFromClipboard()
+            } label: {
+                Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
+            }
+            .disabled(isAdding)
+        }
+        .controlSize(.small)
     }
 
     private var compactPasteButton: some View {
@@ -1720,6 +1846,8 @@ struct AddUserScriptView: View {
         case .url:
             if case .valid = validationState { return true }
             return false
+        case .editor:
+            return editorController.isDirty
         case .file:
             return true
         }
@@ -1743,6 +1871,8 @@ struct AddUserScriptView: View {
                     dismiss()
                 }
             }
+        case .editor:
+            addScriptFromEditor()
         case .file:
             fileImportError = nil
             showingFileImporter = true
@@ -1767,6 +1897,31 @@ struct AddUserScriptView: View {
         }
 
         return types
+    }
+
+    private func addScriptFromEditor() {
+        isAdding = true
+        editorImportError = nil
+
+        Task(priority: .userInitiated) {
+            let content = await editorController.currentText()
+            let error = await userScriptManager.addUserScript(fromSourceContent: content)
+
+            if let error {
+                await MainActor.run {
+                    editorImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    isAdding = false
+                }
+            } else {
+                await ConcurrentLogManager.shared.info(.userScript, "Added userscript from editor")
+
+                await MainActor.run {
+                    isAdding = false
+                    onScriptAdded()
+                    dismiss()
+                }
+            }
+        }
     }
 
     private func importFile(at url: URL) {
@@ -1819,6 +1974,20 @@ struct AddUserScriptView: View {
             urlInput = string
         }
         #endif
+    }
+
+    private func pasteScriptFromClipboard() {
+        #if os(iOS)
+        guard let string = UIPasteboard.general.string else { return }
+        #elseif os(macOS)
+        guard let string = NSPasteboard.general.string(forType: .string) else { return }
+        #endif
+
+        editorImportError = nil
+        editorController.replaceText(string)
+        DispatchQueue.main.async {
+            editorController.focus()
+        }
     }
 
     private enum ValidationState: Equatable {

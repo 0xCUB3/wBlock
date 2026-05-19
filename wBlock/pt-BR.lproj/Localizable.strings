@@ -667,3 +667,10 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+
+"Add" = "Add";
+"Adding…" = "Adding…";
+"Editor" = "Editor";
+"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
+"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
+"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
