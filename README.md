@@ -23,7 +23,7 @@
 <br>
 
 ![Version](https://img.shields.io/github/v/release/0xCUB3/wBlock?style=flat&label=version&color=gray)
-![Platform](https://img.shields.io/badge/macOS_12+_|_iOS_15+-gray?style=flat&logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/macOS_12.3+_|_iOS_15.4+-gray?style=flat&logo=apple&logoColor=white)
 ![License](https://img.shields.io/badge/GPL--3.0-gray?style=flat&label=license)
 
 [![Join Discord](https://img.shields.io/badge/Join-Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
