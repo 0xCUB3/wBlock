@@ -1,8 +1,8 @@
 # Safari ad blocker comparison
 
-_Last reviewed: May 3, 2026._
+_Last reviewed: May 20, 2026._
 
-Safari ad blockers are shaped by Apple's extension model. Network blocking is usually handled by compiled content blocker rules, while page-level behavior such as cosmetic filtering, scriptlets, and element picking requires a Safari Web Extension or injected scripts. This comparison focuses on four current Safari blockers: wBlock, uBlock Origin Lite, Wipr 2, and AdGuard Mini.
+Safari ad blockers are shaped by Apple's extension model. Network blocking is usually handled by compiled content blocker rules, while page-level behavior such as cosmetic filtering, scriptlets, and element picking requires a Safari Web Extension or injected scripts. This comparison focuses on current Safari blockers: wBlock, uBlock Origin Lite, Wipr 2, AdGuard Mini on macOS, and AdGuard for iOS on iPhone and iPad.
 
 The [feature comparison](#feature-comparison) gives a quick checklist. The sections below explain the implementation differences, platform support, update behavior, customization options, and practical limitations behind the table.
 
@@ -86,9 +86,9 @@ Sources: [Wipr 2 App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), 
 
 ---
 
-## AdGuard Mini
+## AdGuard Mini and AdGuard for iOS
 
-AdGuard Mini is the renamed and rebuilt version of AdGuard for Safari. It is macOS-only and filters Safari traffic, not system-wide traffic from other Mac apps. AdGuard's iPhone and iPad blocker is a separate product, and the full AdGuard for Mac app is the system-wide option.
+AdGuard's Safari blockers are split by platform. AdGuard Mini is the renamed and rebuilt version of AdGuard for Safari for macOS. On iPhone and iPad, the comparable product is AdGuard for iOS. Both are separate from the full AdGuard for Mac app, which is the system-wide macOS option.
 
 <div align="center">
   <picture>
@@ -104,24 +104,28 @@ Mini provides more direct filter management than Wipr or uBOL. It includes filte
 
 The free version covers core Safari blocking. Pro features require an AdGuard license or in-app purchase and include real-time filter updates, AdGuard Extra for anti-adblock and difficult ads, and advanced custom filters. At the time of writing, version 2.1.4 is current on the App Store, while 2.2.0 is available as a beta on GitHub.
 
-AdGuard Mini is best suited to macOS users who want a mature filter ecosystem, a detailed rule-management interface, and AdGuard's filtering syntax and lists. It is less suitable for users who need one blocker across macOS, iPhone, and iPad, or for users who prefer advanced features to be available without a Pro license. Users who need system-wide filtering on macOS should compare Mini with the full AdGuard for Mac app rather than with Safari-only blockers alone.
+AdGuard for iOS is a separate app for iPhone and iPad. Its Safari protection uses six content blockers: General, Privacy, Social, Security, Custom, and Other. AdGuard's iOS knowledge base says iOS 15 raised the per-content-blocker cap to 150,000 rules, and the app exposes filters, user rules, an allowlist, and custom filter URLs. AdGuard for iOS also includes DNS protection for blocking through DNS servers and DNS filters.
 
-Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), [AdGuard Mini App Store](https://apps.apple.com/pl/app/adguard-mini/id1440147259?mt=12), [AdGuard Mini GitHub](https://github.com/AdguardTeam/AdGuardMiniForMac), [AdGuard rule limit KB](https://adguard.com/kb/adguard-mini-for-mac/solving-problems/rule-limit/)
+The iOS Safari Web Extension adds browser controls for enabling or disabling protection on the current site, manually blocking page elements, reporting issues, and applying advanced filtering rules and scriptlets. Advanced protection requires Premium. AdGuard also says the separate AdGuard and AdGuard Pro iOS apps are now basically the same, so users do not need both.
+
+AdGuard's Safari products are best suited to users who want a mature filter ecosystem, detailed rule-management tools, and AdGuard's filtering syntax and lists. Mini covers macOS Safari, while AdGuard for iOS covers iPhone and iPad. Users who need system-wide filtering on macOS should compare Mini with the full AdGuard for Mac app rather than with Safari-only blockers alone.
+
+Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), [AdGuard Mini App Store](https://apps.apple.com/pl/app/adguard-mini/id1440147259?mt=12), [AdGuard Mini GitHub](https://github.com/AdguardTeam/AdGuardMiniForMac), [AdGuard rule limit KB](https://adguard.com/kb/adguard-mini-for-mac/solving-problems/rule-limit/), [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), [AdGuard for iOS GitHub](https://github.com/AdguardTeam/AdguardForiOS), [AdGuard iOS Safari protection KB](https://adguard.com/kb/adguard-for-ios/features/safari-protection/), [AdGuard iOS Web Extension KB](https://adguard.com/kb/adguard-for-ios/web-extension/), [AdGuard and AdGuard Pro KB](https://adguard.com/kb/adguard-for-ios/adguard-and-adguard-pro/)
 
 ---
 
 # Feature comparison
 
-| **Feature** | **wBlock**<sup>1</sup> | **uBlock Origin Lite**<sup>2</sup> | **Wipr 2**<sup>3</sup> | **AdGuard Mini**<sup>4</sup> |
+| **Feature** | **wBlock**<sup>1</sup> | **uBlock Origin Lite**<sup>2</sup> | **Wipr 2**<sup>3</sup> | **AdGuard Mini / iOS**<sup>4</sup> |
 |:--|:--:|:--:|:--:|:--:|
-| macOS support | ✅ | ✅ | ✅ | ✅ |
-| iOS / iPadOS support | ✅ | ✅ | ✅ | ❌<sup>20</sup> |
+| macOS support | ✅ | ✅ | ✅ | ✅ via Mini |
+| iOS / iPadOS support | ✅ | ✅ | ✅ | ✅ via AdGuard for iOS<sup>20</sup> |
 | visionOS support | ✅ extension pieces | ✅ | ✅ | ❌ |
-| RAM usage measured locally | ~40 MB<sup>6</sup> | ~120 MB<sup>6</sup> | ~50 MB<sup>6</sup> | ~100 MB<sup>6</sup> |
-| Static rule capacity | 750,000<sup>7</sup> | DNR-based, browser-dependent<sup>7</sup> | 4 blocklist extensions, capacity not published<sup>7</sup> | 900,000<sup>7</sup> |
-| GitHub stars | ~2.5k | ~3.3k for uBOL | N/A | ~1.2k |
-| Open source | ✅ | ✅ | ❌ | ✅ |
-| License | GPL-3.0 | GPL-3.0 | Proprietary | Other / AdGuard source license |
+| RAM usage measured locally | ~40 MB<sup>6</sup> | ~120 MB<sup>6</sup> | ~50 MB<sup>6</sup> | ~100 MB Mini<sup>6</sup> |
+| Static rule capacity | 750,000<sup>7</sup> | DNR-based, browser-dependent<sup>7</sup> | 4 blocklist extensions, capacity not published<sup>7</sup> | 900,000 Mini; iOS has six 150k slots<sup>7</sup> |
+| GitHub stars (rough popularity signal) | ~2.5k | ~3.3k for uBOL | N/A | ~1.2k Mini / ~1.7k iOS |
+| Open source | ✅ | ✅ | ❌ | ✅, license differs by app |
+| License | GPL-3.0 | GPL-3.0 | Proprietary | Mini: Other / AdGuard source license; iOS: GPL-3.0 |
 | Main implementation | Swift + JS | JavaScript | Swift | Swift + web UI |
 | Extension architecture | Content Blocker + Web Extension | MV3 declarative extension | Content Blocker + Web Extension | Content Blocker + Web Extension |
 | Filter storage | Protocol Buffers + LZ4 | Packaged DNR rulesets + extension storage | Closed source | App storage + JSON/rules files |
@@ -131,16 +135,16 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 | Dynamic filtering | Limited Safari workaround<sup>12</sup> | ❌ | ❌ | Limited, not uBO-style<sup>12</sup> |
 | YouTube ad blocking | ✅ | ✅ / varies by site changes | ✅ via Wipr Extra | ✅, stronger with Pro Extra |
 | Script injection / scriptlets | ✅ | Declarative scriptlets | Wipr Extra only | ✅ |
-| Userscript support | ✅ | ❌ | ❌ | ❌ in Mini<sup>15</sup> |
+| Userscript support | ✅ | ❌ | ❌ | ❌ in Mini / iOS<sup>15</sup> |
 | Filter updates | Automatic, 1h to 7d configurable | Extension updates only | Automatic, twice weekly | Automatic; real-time updates require Pro |
 | Multi-device sync | ✅ iCloud | ❌ | ❌ settings sync, universal purchase | ❌ |
 | Per-site disable | ✅ | ✅ | ✅ through Safari/Wipr Extra controls | ✅ |
 | Whitelist / allowlist | ✅ | ✅ | ✅ | ✅ |
 | Logging / debugging | ✅ macOS logger | ❌ | ❌ | ✅ |
 | Regional / language filters | ✅, plus manual lists | ✅ rulesets | ✅ 30+ language variants | ✅ 34 app languages and many filters |
-| Interface style | Native, detailed | Popup + web options | Native, minimal | Detailed macOS app |
+| Interface style | Native, detailed | Popup + web options | Native, minimal | Detailed AdGuard apps |
 | Cost | Free | Free | $4.99 one-time, optional tips | Free, Pro subscription / license |
-| Best fit | Safari power users | Set-and-forget uBO users | People who want no knobs | macOS users who want mature AdGuard tools |
+| Best fit | Safari power users | Set-and-forget uBO users | People who want no knobs | Users who want mature AdGuard tools |
 
 ---
 
@@ -152,13 +156,13 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 
 <sup>3</sup> **Wipr 2:** Paid, closed-source Safari blocker by Kaylee Calderolla. It uses Safari content blockers plus Wipr Extra for harder cases.
 
-<sup>4</sup> **AdGuard Mini:** Formerly AdGuard for Safari. It is macOS-only and separate from AdGuard for iOS and the full AdGuard for Mac app.
+<sup>4</sup> **AdGuard Mini / iOS:** AdGuard Mini is formerly AdGuard for Safari and is macOS-only. AdGuard for iOS is the separate iPhone and iPad Safari blocker.
 
 <sup>5</sup> **wBlock App Store:** https://apps.apple.com/app/wblock/id6746388723
 
 <sup>6</sup> **RAM usage:** These are local spot checks on a 2023 M2 Pro MacBook Pro with a small tab set and only one blocker active. Treat them as rough numbers, not benchmarks. Browser version, enabled filters, tabs, and websites can move the numbers a lot.
 
-<sup>7</sup> **Rule capacity:** Safari content blocker extensions are capped at about 150,000 rules each. wBlock ships five content blocker slots, for 750,000 total. AdGuard says Mini has six content blockers, for 900,000 total. Wipr documents four blocklist extensions but does not publish a single total rule count. uBOL uses packaged declarative rulesets; its FAQ says rules are compiled into declarative rulesets and scripts when the extension package is built.
+<sup>7</sup> **Rule capacity:** Safari content blocker extensions are capped at about 150,000 rules each. wBlock ships five content blocker slots, for 750,000 total. AdGuard says Mini has six content blockers, for 900,000 total; AdGuard for iOS also uses six content blockers, with iOS 15 and later allowing 150,000 rules per blocker. Wipr documents four blocklist extensions but does not publish a single total rule count. uBOL uses packaged declarative rulesets; its FAQ says rules are compiled into declarative rulesets and scripts when the extension package is built.
 
 <sup>8</sup> **Content Blocker Extension:** Apple's native declarative filtering API. It is fast and private, but less flexible than a live request-filtering engine.
 
@@ -168,23 +172,23 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 
 <sup>11</sup> **Element zapper / picker:** A UI for selecting page elements and hiding them. The exact behavior differs by app. uBOL's picker is mainly for cosmetic filters; wBlock and AdGuard expose broader element blocking tools.
 
-<sup>12</sup> **Dynamic filtering:** Classic uBO-style dynamic request filtering is not available through Safari's static content blocker API. wBlock approximates some dynamic behavior through per-site disable rules, fast rebuilds, and scripts. AdGuard Mini has custom rules and element blocking, but it is not uBO's dynamic filtering matrix.
+<sup>12</sup> **Dynamic filtering:** Classic uBO-style dynamic request filtering is not available through Safari's static content blocker API. wBlock approximates some dynamic behavior through per-site disable rules, fast rebuilds, and scripts. AdGuard's Safari apps have custom rules and element blocking, but they are not uBO's dynamic filtering matrix.
 
 <sup>13</sup> **Script injection:** Static content blockers cannot do everything. Web extensions or app extensions can inject scripts for cosmetic fixes, anti-adblock handling, or site-specific behavior.
 
 <sup>14</sup> **Userscripts:** Greasemonkey/Tampermonkey-style user JavaScript. wBlock supports this directly. The compatibility layer is still growing.
 
-<sup>15</sup> **AdGuard userscripts:** The paid standalone AdGuard for Mac app supports userscripts. AdGuard Mini does not advertise general userscript installation.
+<sup>15</sup> **AdGuard userscripts:** The paid standalone AdGuard for Mac app supports userscripts. AdGuard Mini and AdGuard for iOS do not advertise general userscript installation.
 
 <sup>16</sup> **AdBlock Tester:** I removed the old hard-coded score row because those sites mostly measure enabled filter lists, not blocker quality. The result can change with one list update and should not be treated as a serious benchmark.
 
 <sup>17</sup> **Language support:** Wipr's App Store page lists enhanced blocklists for 30+ languages. AdGuard Mini's App Store page lists English plus 33 more app languages. uBOL and wBlock both support regional filter coverage, but the UI/localization story differs.
 
-<sup>18</sup> **License:** GitHub reports GPL-3.0 for wBlock and uBOL. Wipr is closed source. AdGuard Mini is source-available/open on GitHub, but GitHub reports a nonstandard license.
+<sup>18</sup> **License:** GitHub reports GPL-3.0 for wBlock, uBOL, and AdGuard for iOS. Wipr is closed source. AdGuard Mini is source-available/open on GitHub, but GitHub reports a nonstandard license.
 
 <sup>19</sup> **Implementation language:** GitHub language stats can be misleading because bundled JavaScript rules and generated resources count heavily. The table describes the practical app architecture rather than raw repository percentages.
 
-<sup>20</sup> **AdGuard iOS:** AdGuard Mini is only for macOS. For iPhone and iPad, AdGuard offers [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html).
+<sup>20</sup> **AdGuard iOS:** AdGuard Mini is only for macOS. For iPhone and iPad, AdGuard offers [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), a separate app with Safari content blockers, a Safari Web Extension, DNS protection, user rules, an allowlist, and custom filters.
 
 ---
 
