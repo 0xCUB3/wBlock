@@ -17,6 +17,7 @@
   const TOAST_ID = 'wblock-zapper-toast';
   const MAX_RULES_PER_SITE = 200;
   const RULE_SYNC_INTERVAL_MS = 5000;
+  const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
 
   function t(key, substitutions, fallback = '') {
     const message = browser.i18n.getMessage(key, substitutions);
@@ -24,6 +25,26 @@
       return message;
     }
     return fallback;
+  }
+
+  function withTimeout(promise, timeoutMs, message = 'Operation timed out.') {
+    let timer = null;
+    return Promise.race([
+      Promise.resolve(promise).finally(() => {
+        if (timer !== null) clearTimeout(timer);
+      }),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  }
+
+  function sendNativeMessageWithTimeout(message, timeoutMs = NATIVE_MESSAGE_TIMEOUT_MS) {
+    return withTimeout(
+      browser.runtime.sendNativeMessage('application.id', message),
+      timeoutMs,
+      `Native message timed out: ${message && message.action ? message.action : 'unknown'}`
+    );
   }
 
   const state = {
@@ -126,10 +147,10 @@
   async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
-      const response = await browser.runtime.sendNativeMessage('application.id', {
+      const response = await sendNativeMessageWithTimeout({
         action: 'getSiteDisabledState',
         host
-      });
+      }, 800);
       return Boolean(response && response.disabled);
     } catch {
       return false;
@@ -208,11 +229,11 @@
     if (!host) return null;
     const normalizedRules = normalizeRules(rules);
     try {
-      const response = await browser.runtime.sendMessage({
+      const response = await withTimeout(browser.runtime.sendMessage({
         action: 'wblock:zapper:syncRules',
         hostname: host,
         rules: normalizedRules
-      });
+      }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper sync timed out.');
       // If the native side returned an authoritative rules list (e.g. after
       // filtering out app-deleted rules), update browser.storage.local to match.
       if (response && Array.isArray(response.rules)) {
@@ -225,7 +246,7 @@
       return null;
     } catch {
       try {
-        const response = await browser.runtime.sendNativeMessage('application.id', {
+        const response = await sendNativeMessageWithTimeout({
           action: 'syncZapperRules',
           hostname: host,
           rules: normalizedRules
@@ -247,10 +268,10 @@
   async function fetchRulesFromNative(host) {
     if (!host) return null;
     try {
-      const response = await browser.runtime.sendMessage({
+      const response = await withTimeout(browser.runtime.sendMessage({
         action: 'wblock:zapper:getRules',
         hostname: host
-      });
+      }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper fetch timed out.');
       if (!response || !Array.isArray(response.rules)) {
         return null;
       }
@@ -274,7 +295,7 @@
       return normalized;
     } catch {
       try {
-        const response = await browser.runtime.sendNativeMessage('application.id', {
+        const response = await sendNativeMessageWithTimeout({
           action: 'getZapperRules',
           hostname: host
         });
@@ -1205,21 +1226,20 @@
 
   async function reloadRulesAndApply() {
     state.host = safeHostname();
+    state.rules = await loadRulesForHost(state.host);
+    await applyRulesToPage(state.rules);
+
     const nativeRules = await fetchRulesFromNative(state.host);
     if (Array.isArray(nativeRules)) {
-      state.rules = nativeRules;
-      await applyRulesToPage(state.rules);
+      if (rulesSignature(nativeRules) !== rulesSignature(state.rules)) {
+        state.rules = nativeRules;
+        await applyRulesToPage(state.rules);
+      }
       return;
     }
 
-    state.rules = await loadRulesForHost(state.host);
-    await applyRulesToPage(state.rules);
     if (state.rules.length > 0) {
-      const reconciled = await syncRulesToNative(state.host, state.rules);
-      if (reconciled !== null && reconciled.length !== state.rules.length) {
-        state.rules = reconciled;
-        await applyRulesToPage(state.rules);
-      }
+      syncRulesToNative(state.host, state.rules).catch(() => {});
     }
   }
 

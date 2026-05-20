@@ -2,9 +2,11 @@ const NATIVE_HOST_ID = 'application.id';
 const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 const ZAPPER_META_PREFIX = 'wblock.zapperMeta.v1:';
 const ZAPPER_DISABLED_STORAGE_PREFIX = 'wblock.zapperRulesDisabled.v1:';
-const SUPPORT_PROBE_TIMEOUT_MS = 800;
-const SUPPORT_PROBE_ATTEMPTS = 3;
-const SUPPORT_PROBE_RETRY_DELAY_MS = 150;
+const SUPPORT_PROBE_TIMEOUT_MS = 1200;
+const SUPPORT_PROBE_ATTEMPTS = 5;
+const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
+const TOP_FRAME_ID = 0;
+const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
 
 function t(key, substitutions, fallback = '') {
     const message = browser.i18n.getMessage(key, substitutions);
@@ -33,14 +35,34 @@ function normalizeDiagnosticFields(fields) {
     );
 }
 
+function withTimeout(promise, timeoutMs, message = 'Operation timed out.') {
+    let timer = null;
+    return Promise.race([
+        Promise.resolve(promise).finally(() => {
+            if (timer !== null) clearTimeout(timer);
+        }),
+        new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+    ]);
+}
+
+function sendNativeMessageWithTimeout(message, timeoutMs = NATIVE_MESSAGE_TIMEOUT_MS) {
+    return withTimeout(
+        browser.runtime.sendNativeMessage(NATIVE_HOST_ID, message),
+        timeoutMs,
+        `Native message timed out: ${message && message.action ? message.action : 'unknown'}`
+    );
+}
+
 async function logExtensionDiagnostic(fields) {
     const normalizedFields = normalizeDiagnosticFields(fields);
     console.info('[wBlock] Support diagnostic', normalizedFields);
     try {
-        await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+        await sendNativeMessageWithTimeout({
             action: 'logExtensionDiagnostic',
             fields: normalizedFields,
-        });
+        }, 1200);
     } catch (error) {
         console.warn('[wBlock] Failed to forward support diagnostic to native log:', error, normalizedFields);
     }
@@ -100,11 +122,11 @@ async function syncRulesToNative(host, rules) {
     if (!host) return null;
     const normalizedRules = normalizeRules(rules);
     try {
-        const response = await browser.runtime.sendMessage({
+        const response = await withTimeout(browser.runtime.sendMessage({
             action: 'wblock:zapper:syncRules',
             hostname: host,
             rules: normalizedRules
-        });
+        }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper sync timed out.');
         if (response && Array.isArray(response.rules)) {
             const key = zapperStorageKey(host);
             const normalized = normalizeRules(response.rules);
@@ -115,7 +137,7 @@ async function syncRulesToNative(host, rules) {
         return null;
     } catch {
         try {
-            const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+            const response = await sendNativeMessageWithTimeout({
                 action: 'syncZapperRules',
                 hostname: host,
                 rules: normalizedRules
@@ -137,10 +159,10 @@ async function syncRulesToNative(host, rules) {
 async function fetchRulesFromNative(host) {
     if (!host) return null;
     try {
-        const response = await browser.runtime.sendMessage({
+        const response = await withTimeout(browser.runtime.sendMessage({
             action: 'wblock:zapper:getRules',
             hostname: host,
-        });
+        }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper fetch timed out.');
         if (!response || !Array.isArray(response.rules)) {
             return null;
         }
@@ -159,7 +181,7 @@ async function fetchRulesFromNative(host) {
         return normalized;
     } catch {
         try {
-            const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+            const response = await sendNativeMessageWithTimeout({
                 action: 'getZapperRules',
                 hostname: host,
             });
@@ -192,8 +214,10 @@ async function getAuthoritativeZapperRules(host) {
         return nativeRules;
     }
     const localRules = await loadZapperRules(host);
-    const reconciled = await syncRulesToNative(host, localRules);
-    return Array.isArray(reconciled) ? reconciled : localRules;
+    if (localRules.length > 0) {
+        syncRulesToNative(host, localRules).catch(() => {});
+    }
+    return localRules;
 }
 
 function setError(message) {
@@ -274,21 +298,19 @@ function isZapperCommandResponse(response) {
     );
 }
 
-async function sendTabMessageWithRetry(tabId, message, { timeoutMs = null, validateResponse = isSuccessfulTabMessageResponse } = {}) {
+async function sendTabMessageWithRetry(tabId, message, { timeoutMs = null, validateResponse = isSuccessfulTabMessageResponse, frameId = TOP_FRAME_ID } = {}) {
     if (!tabId) throw new Error('Missing tab');
     let lastError = null;
 
     for (let attempt = 0; attempt < SUPPORT_PROBE_ATTEMPTS; attempt += 1) {
         try {
-            const messagePromise = browser.tabs.sendMessage(tabId, message);
+            const messageOptions = typeof frameId === 'number' ? { frameId } : undefined;
+            const messagePromise = messageOptions
+                ? browser.tabs.sendMessage(tabId, message, messageOptions)
+                : browser.tabs.sendMessage(tabId, message);
             const response = timeoutMs === null
                 ? await messagePromise
-                : await Promise.race([
-                    messagePromise,
-                    new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Tab message timed out.')), timeoutMs);
-                    }),
-                ]);
+                : await withTimeout(messagePromise, timeoutMs, 'Tab message timed out.');
 
             if (!validateResponse || validateResponse(response)) {
                 return response;
@@ -376,7 +398,7 @@ async function saveZapperRules(host, rules) {
 async function notifyZapperRulesChanged(tabId) {
     if (!tabId) return;
     try {
-        await browser.tabs.sendMessage(tabId, { type: 'wblock:zapper:reloadRules' });
+        await browser.tabs.sendMessage(tabId, { type: 'wblock:zapper:reloadRules' }, { frameId: TOP_FRAME_ID });
     } catch {
         // Content script may not be reachable on certain pages; ignore.
     }
@@ -446,7 +468,7 @@ function renderZapperRules(rules) {
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
-        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+        const response = await sendNativeMessageWithTimeout({
             action: 'getSiteDisabledState',
             host,
         });
@@ -459,11 +481,11 @@ async function getSiteDisabledState(host) {
 
 async function setSiteDisabledState(host, disabled) {
     if (!host) return;
-    return browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+    return sendNativeMessageWithTimeout({
         action: 'setSiteDisabledState',
         host,
         disabled: Boolean(disabled),
-    });
+    }, 5000);
 }
 
 function zapperDisabledStorageKey(host) {
@@ -600,7 +622,7 @@ async function fetchUserscriptCommands(tabId) {
 async function fetchPageUserScripts(url) {
     if (!url) return [];
     try {
-        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+        const response = await sendNativeMessageWithTimeout({
             action: 'getPageUserScripts',
             url,
         });
@@ -624,12 +646,12 @@ async function setUserscriptSiteDisabled(scriptId, disabled) {
         return { ok: false, error: 'Invalid userscript site setting request' };
     }
     try {
-        const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+        const response = await sendNativeMessageWithTimeout({
             action: 'setUserScriptSiteDisabledState',
             scriptId,
             host,
             disabled: Boolean(disabled),
-        });
+        }, 5000);
         return response || { ok: false, error: 'Userscript setting returned no response' };
     } catch (error) {
         return { ok: false, error: error && error.message ? error.message : String(error) };
@@ -742,6 +764,7 @@ function setupListeners() {
                 setError('');
                 setRulesExpanded(!zapperRulesExpanded);
                 if (!zapperRulesExpanded) return;
+                renderZapperRules(currentZapperRules);
                 currentZapperRules = await getAuthoritativeZapperRules(host);
                 renderZapperRules(currentZapperRules);
             } catch (error) {
@@ -901,9 +924,9 @@ function setupListeners() {
             try {
                 setError('');
                 openAppButton.disabled = true;
-                const response = await browser.runtime.sendNativeMessage(NATIVE_HOST_ID, {
+                const response = await sendNativeMessageWithTimeout({
                     action: 'openContainingApp',
-                });
+                }, 5000);
                 if (response && response.opened) {
                     window.close();
                     return;
@@ -1018,7 +1041,7 @@ async function refreshUi() {
     disabled ? 'disabled' : 'active');
 
     if (zapperActivate) {
-        zapperActivate.disabled = disabled || zapperRulesDisabled || !contentScriptReachable;
+        zapperActivate.disabled = disabled || zapperRulesDisabled;
     }
     if (rulesToggle) {
         rulesToggle.disabled = false;

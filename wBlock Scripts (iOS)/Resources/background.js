@@ -24789,8 +24789,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const cache = new Map();
   let nativeMessageQueue = Promise.resolve();
+  const nativeMessageTimeoutMs = request => {
+    const action = request && typeof request.action === "string" ? request.action : "";
+    if (action === "syncZapperRules" || action === "getZapperRules") return 3500;
+    return 30000;
+  };
+  const withNativeMessageTimeout = (promise, timeoutMs, action) => {
+    let timer = null;
+    return Promise.race([Promise.resolve(promise).finally(() => {
+      if (timer !== null) clearTimeout(timer);
+    }), new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Native message timed out: ${action || "unknown"}`)), timeoutMs);
+    })]);
+  };
   const sendQueuedNativeMessage = request => {
-    const response = nativeMessageQueue.then(() => browser.runtime.sendNativeMessage("application.id", request));
+    const action = request && typeof request.action === "string" ? request.action : "";
+    const response = nativeMessageQueue.then(() => withNativeMessageTimeout(browser.runtime.sendNativeMessage("application.id", request), nativeMessageTimeoutMs(request), action));
     nativeMessageQueue = response.catch(() => {});
     return response;
   };
