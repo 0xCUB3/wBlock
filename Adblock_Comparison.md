@@ -2,15 +2,17 @@
 
 _Last reviewed: May 20, 2026._
 
-Safari ad blockers are shaped by Apple's extension model. Network blocking is usually handled by compiled content blocker rules, while page-level behavior such as cosmetic filtering, scriptlets, and element picking requires a Safari Web Extension or injected scripts. This comparison focuses on current Safari blockers: wBlock, uBlock Origin Lite, Wipr 2, AdGuard Mini on macOS, and AdGuard for iOS on iPhone and iPad.
+Safari ad blockers all run into the same wall eventually: Safari is not Chrome, and it is definitely not Firefox with classic uBlock Origin. The fast path is Apple's Content Blocking API, where an app gives Safari a declarative rule list that Safari compiles and applies inside the browser engine. That is good for privacy and battery life, but the extension cannot sit on every request, inspect arbitrary response data, and decide what to do at runtime.
 
-The [feature comparison](#feature-comparison) gives a quick checklist. The sections below explain the implementation differences, platform support, update behavior, customization options, and practical limitations behind the table.
+Anything more flexible has to happen somewhere else. Cosmetic filtering, scriptlets, element picking, YouTube workarounds, and per-page controls usually live in a Safari Web Extension or in scripts injected by one. That split is the main technical difference between the blockers in this document. The table is useful, but the prose matters more because a checkmark can hide a lot of implementation detail.
+
+This comparison covers wBlock, uBlock Origin Lite, Wipr 2, and AdGuard's Safari apps: AdGuard Mini on macOS and AdGuard for iOS on iPhone and iPad.
 
 ## wBlock
 
-wBlock is a native Safari ad blocker for macOS, iOS, and iPadOS. It combines Apple's Content Blocker Extensions for static network filtering with wBlock Scripts for cosmetic filtering, scriptlets, userscripts, and the element zapper. Users enable the bundled Safari extensions, choose filter lists during onboarding, and apply the generated Safari rules.
+wBlock is a native Safari blocker for macOS, iOS, and iPadOS. It uses five Safari content blocker extensions per platform, which gives it five 150,000-rule slots and a 750,000-rule ceiling when all slots are available. That number is not the same thing as source filter lines. A single AdGuard rule can expand, collapse, or disappear during conversion depending on whether Safari can express it. The useful number is the converted Safari rule count, and wBlock exposes that instead of pretending the source list size tells the whole story.
 
-The app is built with SwiftUI. Static blocking rules are compiled and passed to Safari, so routine network filtering runs through Safari's content blocker engine rather than through a persistent JavaScript request filter. wBlock currently uses five content blocker slots per platform, giving it a total capacity of 750,000 Safari rules. Filter data is stored with Protocol Buffers and LZ4 compression to reduce storage size and keep large enabled-list sets responsive.
+The app stores filter metadata and compiled data with Protocol Buffers and LZ4 compression. That is a practical choice for this kind of app: filter lists are large, repetitive, and updated often, while the UI needs to stay responsive when the user enables a big regional list or imports a custom subscription. Updates use HTTP conditional requests through `ETag` and `If-Modified-Since`, so a scheduled refresh does not need to download a full list when the server can prove nothing changed.
 
 <div align="center">
   <picture>
@@ -20,9 +22,7 @@ The app is built with SwiftUI. Static blocking rules are compiled and passed to 
   </picture>
 </div>
 
-The main interface reports enabled filter lists, source rule counts, converted Safari rule counts, conversion time, reload time, and affected filter categories. These details are useful because Safari limits each content blocker extension to about 150,000 rules. A blocker that exceeds a slot's capacity has to split, trim, or otherwise manage the rule set. wBlock exposes the conversion result so users can see how many Safari rules were produced and whether a reload is needed.
-
-wBlock Scripts handles features that cannot be expressed as static content blocker rules. Cosmetic filtering hides page elements after load, scriptlets patch common anti-adblock or site-behavior patterns, and the element zapper lets users select page elements visually. The zapper works across macOS, iOS, iPadOS, and visionOS extension contexts. It tracks scroll position and supports parent/child navigation so users can select a container element rather than only the exact clicked node.
+The static blocking pipeline is only half of the app. wBlock Scripts handles the parts Safari content blockers cannot express cleanly: cosmetic selectors, scriptlets, user scripts, and the element zapper. The zapper is not just a desktop convenience; it works in Safari extension contexts across macOS, iOS, iPadOS, and visionOS. It keeps track of page position and lets the user walk up or down the DOM selection, which matters because the clicked node is often an inner icon or text span rather than the ad container the user actually wants to hide.
 
 <div align="center">
   <picture>
@@ -32,39 +32,37 @@ wBlock Scripts handles features that cannot be expressed as static content block
   </picture>
 </div>
 
-wBlock also includes a userscript engine. Safari does not have the same userscript extension ecosystem as Chrome and Firefox, so wBlock provides its own Greasemonkey-style compatibility layer. Current support includes script storage, resources, menu commands, GM XHR, and both legacy `GM_*` and modern `GM.*` API forms for common operations. Compatibility is still developing, especially for large scripts that depend on less common Tampermonkey APIs, but the feature gives Safari users a built-in path for scripts that would otherwise require a separate userscript manager.
+The userscript support is the most ambitious part of wBlock. Safari does not have the mature userscript extension ecosystem that Chromium and Firefox users take for granted, so wBlock ships its own Greasemonkey-style layer. The current implementation covers storage, resources, menu commands, GM XHR, and both legacy `GM_*` and modern `GM.*` forms for common APIs. That gives Safari users a path for scripts that would otherwise require a separate userscript manager, although scripts that depend on obscure Tampermonkey behavior may still need fixes.
 
-Additional features include iCloud sync for filter selections, custom lists, userscripts, and whitelist; configurable filter auto-updates from hourly to weekly; HTTP conditional requests for efficient filter downloads; preprocessing for AdGuard `!#include` directives; automatic custom filter title detection; Homebrew distribution on macOS; and a macOS blocked-request logger.
+The debugging view is where wBlock gets more opinionated. The main view reports source rule counts, converted Safari rule counts, conversion time, reload time, and the categories touched by a change. macOS gets a blocked-request logger. Per-site disabling is implemented with Safari-compatible exception rules and targeted rebuilds rather than live request interception, because Safari does not allow the latter through the content blocker API.
 
-wBlock is best suited to users who want native Safari blocking with visible rule conversion, custom lists, userscripts, and debugging tools. The main limitation is project maturity: advanced userscript compatibility is still being expanded, and some site-specific scripts may need fixes before they behave the same way they do in Tampermonkey.
+wBlock is strongest when the user wants to see and control the machinery: custom lists, userscripts, visible conversion output, iCloud sync, and debugging tools. Its tradeoff is maturity. The core blocking path is straightforward, but userscript compatibility is a long tail, and a few complicated scripts will expose missing API edges before a set-and-forget blocker would.
 
-Sources: [wBlock GitHub](https://github.com/0xCUB3/wBlock), [wBlock App Store](https://apps.apple.com/us/app/wblock/id6746388723)
+References: [wBlock GitHub](https://github.com/0xCUB3/wBlock), [wBlock App Store](https://apps.apple.com/us/app/wblock/id6746388723)
 
 ---
 
 ## uBlock Origin Lite
 
-uBlock Origin Lite, usually shortened to uBOL, is a separate project from classic uBlock Origin. It is built for Manifest V3 and relies on declarative rules instead of a continuously running request-filtering engine. The browser enforces the compiled rules directly, which reduces background activity but removes or limits several features available in classic uBlock Origin.
+uBlock Origin Lite is not classic uBlock Origin with a smaller UI. It is a separate Manifest V3 project built around declarative filtering. In Chrome terms that means `declarativeNetRequest`; in Safari's App Store build, Apple still has its own extension packaging and conversion path. The important bit is the same either way: the rules are prepared ahead of time, shipped as extension rulesets, and enforced by the browser rather than by a persistent request-filtering background page.
 
-On Safari, uBOL is distributed through the App Store for iPhone, iPad, Mac, and Vision Pro. Apple's App Store listing notes that after extension updates, Safari converts updated DNR rulesets into native content blocking rules. This means filtering is efficient once rules are installed, while filter list updates are tied to extension updates rather than to manual in-app list refreshes.
+That architecture gives uBOL much of its appeal. It has low background overhead, it inherits a lot of filter knowledge from the uBlock Origin ecosystem, and it works on iPhone, iPad, Mac, and Vision Pro through the App Store. The popup's basic, optimal, and complete modes are really presets for how much filtering the extension is allowed to do on the current site. The options page exposes additional bundled rulesets rather than turning the app into a full filter-subscription manager.
 
 <div align="center">
   <img src="docs/media/img/adblock_comparison/ublock_origin_lite.png" alt="uBlock Origin Lite Screenshot" width="700" />
 </div>
 
-The popup exposes broad filtering modes such as basic, optimal, and complete. The options page lets users enable additional rulesets. The default ruleset tracks uBlock Origin's default filter selection, including uBO's built-in lists, EasyList, EasyPrivacy, and Peter Lowe's ad and tracking server list.
+The downside is the same one that affects every MV3-style blocker: once the browser owns the request decision, the extension loses the freedom that made classic uBO so powerful. uBOL does not have uBO's dynamic filtering matrix, dynamic URL filtering, per-site no-scripting switch, or arbitrary filter list workflow. Recent versions have a custom filters area for limited cases, especially cosmetic rules created through the picker flow, but that is not equivalent to maintaining a large set of network subscriptions and dynamic rules by hand.
 
-The main limitation is feature depth compared with classic uBO. uBOL does not provide uBO's dynamic filtering matrix, dynamic URL filtering, per-site no-scripting switch, or full custom filter list workflow. Newer versions include a custom filters pane, mainly for cosmetic filters created through the element picker path, but this is not equivalent to maintaining arbitrary network filter lists. These limits come from the declarative design rather than from a simplified interface alone.
+uBOL makes the most sense for people who want uBO-flavored defaults with almost no maintenance. It is free, open source, and its App Store privacy label is Data Not Collected. If your muscle memory depends on classic uBO's advanced pane, though, uBOL will feel constrained because the browser's declarative model is doing exactly what it was designed to do.
 
-uBOL fits users who want a free, open-source, low-overhead blocker with defaults derived from uBlock Origin. It is less suitable for users who depend on classic uBO's dynamic filtering, extensive custom rules, or manual filter list management. Apple's App Store page states that the developer does not collect data.
-
-Sources: [uBOL GitHub](https://github.com/uBlockOrigin/uBOL-home), [uBOL FAQ](https://github.com/uBlockOrigin/uBOL-home/wiki/Frequently-asked-questions-(FAQ)), [uBOL App Store](https://apps.apple.com/us/app/ublock-origin-lite/id6745342698)
+References: [uBOL GitHub](https://github.com/uBlockOrigin/uBOL-home), [uBOL FAQ](https://github.com/uBlockOrigin/uBOL-home/wiki/Frequently-asked-questions-(FAQ)), [uBOL App Store](https://apps.apple.com/us/app/ublock-origin-lite/id6745342698)
 
 ---
 
 ## Wipr 2
 
-Wipr 2 is a paid native Safari blocker focused on automatic operation and minimal configuration. Users enable the four Wipr blocklist extensions and Wipr Extra in Safari. The app does not expose filter subscriptions, custom rule editing, request logs, or detailed blocking categories.
+Wipr 2 takes the opposite approach from wBlock. It is a paid native Safari blocker with very few knobs. The user enables the Wipr blocklist extensions and Wipr Extra, then mostly leaves the app alone. There is no public filter subscription interface, no user rule editor, no request log, and no visible rule-conversion report.
 
 <div align="center">
   <picture>
@@ -74,21 +72,19 @@ Wipr 2 is a paid native Safari blocker focused on automatic operation and minima
   </picture>
 </div>
 
-The App Store description says Wipr blocks ads, popups, trackers, cookie warnings, and other web annoyances. Its blocklist updates twice a week automatically. Wipr also includes enhanced blocklists for many languages, selected from the device's preferred languages rather than through manual regional-list management. Wipr 2 is sold as a universal purchase for iPhone, iPad, Mac, and Vision Pro, with optional tips as in-app purchases.
+The architecture is still Safari-native. The main Wipr blocklists use Safari content blockers, while Wipr Extra is a Safari Web Extension for cases where static rules are not enough, such as difficult ads and some anti-adblock behavior. Extra asks for broader website access because it has to see and modify page content. That is the normal Safari permission tradeoff: static blockers are narrow and private, web extensions can do more but need more trust.
 
-Wipr's help page describes a two-part architecture. The main Wipr blocklists use Safari's Content Blocking Extensions API. Wipr Extra uses the Safari Web Extensions API for cases that static rules cannot handle well, including some difficult ads and anti-adblock behavior. Extra is optional because it requires broader website access than static content blockers.
+Wipr's regional support is also deliberately automatic. Instead of asking the user to pick filter subscriptions, Wipr selects enhanced blocklists based on the device's preferred languages. Updates run automatically twice a week. The rule capacity is not published as one neat total, so it is hard to compare raw capacity against wBlock's five slots or AdGuard's six slots without reverse-engineering the installed blockers.
 
-The tradeoff is limited customization. Wipr does not support custom filter lists, a user rule editor, block statistics, a visible request logger, userscripts, or an element zapper. Its design depends on the built-in blocklists and the developer's update schedule. This makes it appropriate for users who want low-maintenance blocking, but not for users who need to inspect, tune, or extend the filtering behavior.
+This is the blocker for people who do not want to manage a blocker. That is not a backhanded compliment; there is real value in an app that stays out of the way and has a clean App Store privacy label. The cost is that there is nowhere to go when you want to inspect a false positive, add a niche filter list, or debug a site-specific miss yourself.
 
-At $4.99, Wipr 2 is the simplest paid option in this comparison. Its strengths are native platform coverage, automatic updates, low configuration burden, and a privacy-focused App Store listing. Its limitations are the absence of power-user controls and reliance on the bundled lists.
-
-Sources: [Wipr 2 App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), [Wipr Help](https://kaylees.site/wipr-help.html)
+References: [Wipr 2 App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), [Wipr Help](https://kaylees.site/wipr-help.html)
 
 ---
 
 ## AdGuard Mini and AdGuard for iOS
 
-AdGuard's Safari blockers are split by platform. AdGuard Mini is the renamed and rebuilt version of AdGuard for Safari for macOS. On iPhone and iPad, the comparable product is AdGuard for iOS. Both are separate from the full AdGuard for Mac app, which is the system-wide macOS option.
+AdGuard's Safari story is split across products. AdGuard Mini is the macOS Safari app formerly called AdGuard for Safari. AdGuard for iOS is the iPhone and iPad app. The full AdGuard for Mac app is a different thing again: it is the system-wide macOS product, not just a Safari content blocker.
 
 <div align="center">
   <picture>
@@ -98,19 +94,19 @@ AdGuard's Safari blockers are split by platform. AdGuard Mini is the renamed and
   </picture>
 </div>
 
-AdGuard Mini uses Safari's Content Blocking API and splits rules across six content blockers: General, Privacy, Social, Security, Other, and Custom. AdGuard's knowledge base lists the combined capacity as 900,000 filtering rules, with Safari's 150,000-rule limit applying to each content-blocking extension. Actual coverage depends on the enabled filters, conversion output, and distribution across the six rule slots.
+Mini uses six Safari content blockers: General, Privacy, Social, Security, Other, and Custom. With Safari's 150,000-rule limit per content blocker, that gives Mini a published ceiling of 900,000 compiled rules. As with every Safari blocker, the ceiling is only meaningful after conversion. Unsupported filter syntax, generated exception rules, and category splitting all affect the final rule sets that Safari actually loads.
 
-Mini provides more direct filter management than Wipr or uBOL. It includes filter categories, custom filters, user rules, element blocking, issue reporting, and an advanced rule editor. The App Store page lists English plus 33 other app languages, and AdGuard's filter ecosystem gives it broad regional and category coverage.
+Mini is much more configurable than Wipr and more traditional than uBOL. It has filter categories, custom filters, user rules, element blocking, issue reporting, and an advanced rule editor. The free version covers basic Safari blocking. Pro unlocks real-time filter updates, AdGuard Extra for more stubborn anti-adblock and ad cases, and advanced custom-filter features. That division matters because the technically interesting parts of AdGuard often live above the static content blocker layer.
 
-The free version covers core Safari blocking. Pro features require an AdGuard license or in-app purchase and include real-time filter updates, AdGuard Extra for anti-adblock and difficult ads, and advanced custom filters. At the time of writing, version 2.1.4 is current on the App Store, while 2.2.0 is available as a beta on GitHub.
+AdGuard for iOS follows the same broad design, adapted to iOS. It has six content blockers named General, Privacy, Social, Security, Custom, and Other, and current iOS versions allow 150,000 rules per blocker. Its Safari protection includes filter groups, user rules, an allowlist, and custom filter URLs. The Safari Web Extension adds the in-browser controls: toggle protection for the current site, manually block an element, report a filtering issue, and apply advanced filtering rules and scriptlets when Premium is enabled.
 
-AdGuard for iOS is a separate app for iPhone and iPad. Its Safari protection uses six content blockers: General, Privacy, Social, Security, Custom, and Other. AdGuard's iOS knowledge base says iOS 15 raised the per-content-blocker cap to 150,000 rules, and the app exposes filters, user rules, an allowlist, and custom filter URLs. AdGuard for iOS also includes DNS protection for blocking through DNS servers and DNS filters.
+The iOS app also has DNS protection, which is worth separating from Safari filtering. DNS blocking can cover more than Safari because it works at the resolver level, commonly through a local VPN-style configuration on iOS, but it only sees hostnames. It cannot hide page elements, apply scriptlets, or make path-level URL decisions after an encrypted HTTPS connection is established. In practice, Safari content blockers handle page filtering, the Web Extension handles advanced page behavior, and DNS filtering catches domain-level tracking or ad hosts across the device.
 
-The iOS Safari Web Extension adds browser controls for enabling or disabling protection on the current site, manually blocking page elements, reporting issues, and applying advanced filtering rules and scriptlets. Advanced protection requires Premium. AdGuard also says the separate AdGuard and AdGuard Pro iOS apps are now basically the same, so users do not need both.
+AdGuard also has both AdGuard and AdGuard Pro in the iOS App Store. Historically they differed because App Store rules changed over time, but the current products are effectively parallel ways to get the same advanced iOS feature set. You do not need to install both.
 
-AdGuard's Safari products are best suited to users who want a mature filter ecosystem, detailed rule-management tools, and AdGuard's filtering syntax and lists. Mini covers macOS Safari, while AdGuard for iOS covers iPhone and iPad. Users who need system-wide filtering on macOS should compare Mini with the full AdGuard for Mac app rather than with Safari-only blockers alone.
+AdGuard is the most mature filtering ecosystem in this comparison. It has broad regional coverage, a long-running rule syntax, and polished reporting flows. The tradeoff is product split and licensing complexity: Mini covers macOS Safari, AdGuard for iOS covers iPhone and iPad, and the deepest macOS system-wide filtering lives in the separate AdGuard for Mac app.
 
-Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), [AdGuard Mini App Store](https://apps.apple.com/pl/app/adguard-mini/id1440147259?mt=12), [AdGuard Mini GitHub](https://github.com/AdguardTeam/AdGuardMiniForMac), [AdGuard rule limit KB](https://adguard.com/kb/adguard-mini-for-mac/solving-problems/rule-limit/), [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), [AdGuard for iOS GitHub](https://github.com/AdguardTeam/AdguardForiOS), [AdGuard iOS Safari protection KB](https://adguard.com/kb/adguard-for-ios/features/safari-protection/), [AdGuard iOS Web Extension KB](https://adguard.com/kb/adguard-for-ios/web-extension/), [AdGuard and AdGuard Pro KB](https://adguard.com/kb/adguard-for-ios/adguard-and-adguard-pro/)
+References: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), [AdGuard Mini App Store](https://apps.apple.com/pl/app/adguard-mini/id1440147259?mt=12), [AdGuard Mini GitHub](https://github.com/AdguardTeam/AdGuardMiniForMac), [AdGuard rule limit KB](https://adguard.com/kb/adguard-mini-for-mac/solving-problems/rule-limit/), [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), [AdGuard for iOS GitHub](https://github.com/AdguardTeam/AdguardForiOS), [AdGuard iOS Safari protection KB](https://adguard.com/kb/adguard-for-ios/features/safari-protection/), [AdGuard iOS Web Extension KB](https://adguard.com/kb/adguard-for-ios/web-extension/), [AdGuard and AdGuard Pro KB](https://adguard.com/kb/adguard-for-ios/adguard-and-adguard-pro/)
 
 ---
 
@@ -121,80 +117,83 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 | macOS support | ✅ | ✅ | ✅ | ✅ via Mini |
 | iOS / iPadOS support | ✅ | ✅ | ✅ | ✅ via AdGuard for iOS<sup>20</sup> |
 | visionOS support | ✅ extension pieces | ✅ | ✅ | ❌ |
+| Static rule capacity | 750,000<sup>7</sup> | DNR-based, browser-dependent<sup>7</sup> | 4 blocklist extensions, total not published<sup>7</sup> | 900,000 Mini; iOS uses six 150k slots<sup>7</sup> |
+| Static blocking model | Safari content blockers | Packaged declarative rulesets | Safari content blockers | Safari content blockers |
+| Page-level model | Safari Web Extension scripts | Extension content scripts | Wipr Extra Web Extension | Safari Web Extension / AdGuard Extra |
 | RAM usage measured locally | ~40 MB<sup>6</sup> | ~120 MB<sup>6</sup> | ~50 MB<sup>6</sup> | ~100 MB Mini<sup>6</sup> |
-| Static rule capacity | 750,000<sup>7</sup> | DNR-based, browser-dependent<sup>7</sup> | 4 blocklist extensions, capacity not published<sup>7</sup> | 900,000 Mini; iOS has six 150k slots<sup>7</sup> |
-| GitHub stars (rough popularity signal) | ~2.5k | ~3.3k for uBOL | N/A | ~1.2k Mini / ~1.7k iOS |
+| GitHub stars (not a feature, just a popularity signal) | ~2.5k | ~3.3k for uBOL | N/A | ~1.2k Mini / ~1.7k iOS |
 | Open source | ✅ | ✅ | ❌ | ✅, license differs by app |
-| License | GPL-3.0 | GPL-3.0 | Proprietary | Mini: Other / AdGuard source license; iOS: GPL-3.0 |
-| Main implementation | Swift + JS | JavaScript | Swift | Swift + web UI |
-| Extension architecture | Content Blocker + Web Extension | MV3 declarative extension | Content Blocker + Web Extension | Content Blocker + Web Extension |
+| License | GPL-3.0 | GPL-3.0 | Proprietary | Mini: AdGuard source license; iOS: GPL-3.0 |
+| Main implementation | Swift + JavaScript | JavaScript | Swift | Swift + web UI |
 | Filter storage | Protocol Buffers + LZ4 | Packaged DNR rulesets + extension storage | Closed source | App storage + JSON/rules files |
 | Element zapper / picker | ✅ | ✅ for cosmetic filters | ❌ | ✅ |
-| Custom filter lists | ✅ | ❌ full lists; limited cosmetic custom filters | ❌ | ✅ |
+| Custom filter lists | ✅ | Limited, not full subscription management | ❌ | ✅ |
 | User rule editor | ✅ | Limited | ❌ | ✅ |
-| Dynamic filtering | Limited Safari workaround<sup>12</sup> | ❌ | ❌ | Limited, not uBO-style<sup>12</sup> |
-| YouTube ad blocking | ✅ | ✅ / varies by site changes | ✅ via Wipr Extra | ✅, stronger with Pro Extra |
-| Script injection / scriptlets | ✅ | Declarative scriptlets | Wipr Extra only | ✅ |
+| Dynamic filtering | Safari-compatible approximation<sup>12</sup> | ❌ | ❌ | Limited, not uBO-style<sup>12</sup> |
+| YouTube ad blocking | ✅ | ✅ / changes often | ✅ via Wipr Extra | ✅, stronger with Pro Extra |
+| Script injection / scriptlets | ✅ | Limited scriptlet support | Wipr Extra only | ✅ |
 | Userscript support | ✅ | ❌ | ❌ | ❌ in Mini / iOS<sup>15</sup> |
 | Filter updates | Automatic, 1h to 7d configurable | Extension updates only | Automatic, twice weekly | Automatic; real-time updates require Pro |
 | Multi-device sync | ✅ iCloud | ❌ | ❌ settings sync, universal purchase | ❌ |
-| Per-site disable | ✅ | ✅ | ✅ through Safari/Wipr Extra controls | ✅ |
+| Per-site disable | ✅ | ✅ | ✅ through Safari/Wipr controls | ✅ |
 | Whitelist / allowlist | ✅ | ✅ | ✅ | ✅ |
 | Logging / debugging | ✅ macOS logger | ❌ | ❌ | ✅ |
-| Regional / language filters | ✅, plus manual lists | ✅ rulesets | ✅ 30+ language variants | ✅ 34 app languages and many filters |
+| DNS-level blocking | ❌ | ❌ | ❌ | ✅ on iOS |
+| Regional / language filters | ✅, plus manual lists | ✅ bundled rulesets | ✅ 30+ language variants | ✅ broad AdGuard filter catalog |
+| App Store privacy label | Data Not Collected | Data Not Collected | Data Not Collected | Data Not Collected on current App Store labels |
 | Interface style | Native, detailed | Popup + web options | Native, minimal | Detailed AdGuard apps |
 | Cost | Free | Free | $4.99 one-time, optional tips | Free, Pro subscription / license |
-| Best fit | Safari power users | Set-and-forget uBO users | People who want no knobs | Users who want mature AdGuard tools |
+| Natural fit | Safari users who want control and visibility | Users who want uBO-style defaults without classic uBO complexity | Users who do not want to configure anything | Users already comfortable with AdGuard's filter ecosystem |
 
 ---
 
 ## Notes
 
-<sup>1</sup> **wBlock:** Safari-focused, open source, and native to Apple platforms. Current public docs list 750,000 rule capacity, Protocol Buffer storage, LZ4 compression, iCloud sync, custom lists, element zapper, and userscripts.
+<sup>1</sup> **wBlock:** Safari-focused, open source, and native to Apple platforms. The public docs list 750,000 rule capacity, Protocol Buffer storage, LZ4 compression, iCloud sync, custom lists, element zapper, and userscripts.
 
-<sup>2</sup> **uBlock Origin Lite:** MV3 version of uBlock Origin. It is designed to be declarative and low-overhead. It is not a drop-in replacement for classic uBO.
+<sup>2</sup> **uBlock Origin Lite:** MV3 version of uBlock Origin. It is declarative by design and should not be treated as a drop-in replacement for classic uBO.
 
 <sup>3</sup> **Wipr 2:** Paid, closed-source Safari blocker by Kaylee Calderolla. It uses Safari content blockers plus Wipr Extra for harder cases.
 
-<sup>4</sup> **AdGuard Mini / iOS:** AdGuard Mini is formerly AdGuard for Safari and is macOS-only. AdGuard for iOS is the separate iPhone and iPad Safari blocker.
+<sup>4</sup> **AdGuard Mini / iOS:** AdGuard Mini is the macOS app formerly called AdGuard for Safari. AdGuard for iOS is the separate iPhone and iPad app.
 
 <sup>5</sup> **wBlock App Store:** https://apps.apple.com/app/wblock/id6746388723
 
 <sup>6</sup> **RAM usage:** These are local spot checks on a 2023 M2 Pro MacBook Pro with a small tab set and only one blocker active. Treat them as rough numbers, not benchmarks. Browser version, enabled filters, tabs, and websites can move the numbers a lot.
 
-<sup>7</sup> **Rule capacity:** Safari content blocker extensions are capped at about 150,000 rules each. wBlock ships five content blocker slots, for 750,000 total. AdGuard says Mini has six content blockers, for 900,000 total; AdGuard for iOS also uses six content blockers, with iOS 15 and later allowing 150,000 rules per blocker. Wipr documents four blocklist extensions but does not publish a single total rule count. uBOL uses packaged declarative rulesets; its FAQ says rules are compiled into declarative rulesets and scripts when the extension package is built.
+<sup>7</sup> **Rule capacity:** Safari content blocker extensions are capped at about 150,000 compiled rules each on current Apple platforms. wBlock ships five content blocker slots, for 750,000 total. AdGuard Mini ships six, for 900,000 total. AdGuard for iOS also uses six content blockers on iOS 15 and later. Wipr documents four blocklist extensions but does not publish a single total rule count. uBOL uses packaged declarative rulesets, so its limits depend on the browser's declarative ruleset handling rather than Safari content blocker slots alone.
 
-<sup>8</sup> **Content Blocker Extension:** Apple's native declarative filtering API. It is fast and private, but less flexible than a live request-filtering engine.
+<sup>8</sup> **Content Blocker Extension:** Apple's native declarative filtering API. It is fast and private because Safari applies compiled rules internally, but it cannot behave like a live request-filtering engine.
 
-<sup>9</sup> **Manifest V3:** Chrome's newer extension model. uBOL is built around MV3's declarativeNetRequest API. Safari can run WebExtensions, but Safari still has its own conversion and extension rules.
+<sup>9</sup> **Manifest V3:** Chrome's newer extension model. uBOL is built around MV3's declarativeNetRequest approach. Safari can run WebExtensions, but it still has its own extension packaging, permissions, and content-blocking behavior.
 
 <sup>10</sup> **Filter storage:** Closed-source apps do not publish enough implementation detail to compare storage formats precisely.
 
-<sup>11</sup> **Element zapper / picker:** A UI for selecting page elements and hiding them. The exact behavior differs by app. uBOL's picker is mainly for cosmetic filters; wBlock and AdGuard expose broader element blocking tools.
+<sup>11</sup> **Element zapper / picker:** A UI for selecting page elements and hiding them. uBOL's picker is mainly for cosmetic filters, while wBlock and AdGuard expose broader element-blocking tools.
 
-<sup>12</sup> **Dynamic filtering:** Classic uBO-style dynamic request filtering is not available through Safari's static content blocker API. wBlock approximates some dynamic behavior through per-site disable rules, fast rebuilds, and scripts. AdGuard's Safari apps have custom rules and element blocking, but they are not uBO's dynamic filtering matrix.
+<sup>12</sup> **Dynamic filtering:** Classic uBO-style dynamic request filtering is not available through Safari's static content blocker API. wBlock approximates part of the workflow with per-site disable rules, fast rebuilds, and scripts. AdGuard's Safari apps have custom rules and element blocking, but they are not uBO's dynamic filtering matrix.
 
-<sup>13</sup> **Script injection:** Static content blockers cannot do everything. Web extensions or app extensions can inject scripts for cosmetic fixes, anti-adblock handling, or site-specific behavior.
+<sup>13</sup> **Script injection:** Static content blockers cannot do everything. Web extensions or app extensions inject scripts for cosmetic fixes, anti-adblock handling, and site-specific behavior.
 
-<sup>14</sup> **Userscripts:** Greasemonkey/Tampermonkey-style user JavaScript. wBlock supports this directly. The compatibility layer is still growing.
+<sup>14</sup> **Userscripts:** Greasemonkey/Tampermonkey-style user JavaScript. wBlock supports this directly, although compatibility is still growing.
 
 <sup>15</sup> **AdGuard userscripts:** The paid standalone AdGuard for Mac app supports userscripts. AdGuard Mini and AdGuard for iOS do not advertise general userscript installation.
 
 <sup>16</sup> **AdBlock Tester:** I removed the old hard-coded score row because those sites mostly measure enabled filter lists, not blocker quality. The result can change with one list update and should not be treated as a serious benchmark.
 
-<sup>17</sup> **Language support:** Wipr's App Store page lists enhanced blocklists for 30+ languages. AdGuard Mini's App Store page lists English plus 33 more app languages. uBOL and wBlock both support regional filter coverage, but the UI/localization story differs.
+<sup>17</sup> **Language support:** Wipr's App Store page lists enhanced blocklists for 30+ languages. AdGuard has a large regional filter catalog and broad app localization. uBOL and wBlock both support regional filter coverage, but they expose it differently.
 
 <sup>18</sup> **License:** GitHub reports GPL-3.0 for wBlock, uBOL, and AdGuard for iOS. Wipr is closed source. AdGuard Mini is source-available/open on GitHub, but GitHub reports a nonstandard license.
 
 <sup>19</sup> **Implementation language:** GitHub language stats can be misleading because bundled JavaScript rules and generated resources count heavily. The table describes the practical app architecture rather than raw repository percentages.
 
-<sup>20</sup> **AdGuard iOS:** AdGuard Mini is only for macOS. For iPhone and iPad, AdGuard offers [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), a separate app with Safari content blockers, a Safari Web Extension, DNS protection, user rules, an allowlist, and custom filters.
+<sup>20</sup> **AdGuard iOS:** AdGuard for iOS is a separate app with Safari content blockers, a Safari Web Extension, DNS protection, user rules, an allowlist, and custom filters.
 
 ---
 
 # How wBlock approximates dynamic filtering in Safari
 
-Safari's content blocker API uses compiled static rules. wBlock cannot inspect each request at runtime and make request-by-request decisions the way classic uBlock Origin can. Instead, it uses Safari-compatible mechanisms for site exceptions, targeted rebuilds, and page-level scripts.
+Safari's content blocker API starts from compiled static rules. wBlock cannot inspect each request at runtime and make request-by-request decisions the way classic uBlock Origin can. The workaround is to use the parts of Safari that are dynamic enough: exception rules, quick rebuilds, and page scripts.
 
 ## 1. Per-site disable with `ignore-previous-rules`
 
@@ -210,20 +209,20 @@ When blocking is disabled for a site, wBlock adds an `ignore-previous-rules` ent
 }
 ```
 
-Safari interprets this as an instruction to ignore earlier blocking rules for the matching domain. This provides domain-level disable behavior without live request interception.
+Safari treats this as an instruction to ignore earlier blocking rules for the matching domain. It is not as granular as uBO's dynamic matrix, but it gives Safari users a real domain-level off switch without keeping a live request interceptor running.
 
 ## 2. Fast content blocker rebuilds
 
-wBlock stores filters in a format that can be read, changed, and rebuilt quickly. When a change only affects one category or site-specific override, the app avoids rebuilding every target when possible. Safari still has to reload compiled rule sets before changes take effect.
+wBlock stores filter data in a format that can be read, changed, and written without turning every update into a full app-sized rebuild. When a change only affects a category or a site exception, the app can limit the work to the relevant targets. Safari still has to reload the compiled rule sets before the new behavior applies; that part is unavoidable.
 
 ## 3. Scripts for page-level behavior
 
-Some annoyances are handled after the page loads. The element zapper, cosmetic fixes, userscripts, scriptlets, and some YouTube-related workarounds run through scripts rather than through Safari's static network-rule layer.
+Some annoyances are better handled after the page loads. Cosmetic filtering, scriptlets, userscripts, the element zapper, and some YouTube fixes run through scripts because static network rules cannot select arbitrary DOM nodes or patch page JavaScript behavior.
 
 ## 4. Category-based rule management
 
-wBlock tracks pending changes by category and target extension. This lets the app limit rebuild work to the affected rule groups when the change does not require a full regeneration.
+wBlock tracks pending changes by category and target extension. That bookkeeping lets the app avoid rebuilding unrelated blockers when a small setting changes. It also makes the UI's rule counts more useful because the user can see which part of the rule set actually changed.
 
 ## Limits
 
-The approach remains bounded by Safari's content blocker model. Content blocker rules must be compiled and reloaded before they apply, and wBlock cannot provide true uBO-style request-by-request dynamic filtering through that API.
+This is still Safari. Content blocker rules must be compiled and reloaded before they apply, and no Safari app can recreate classic uBO's request-by-request dynamic filtering through the content blocker API alone.
