@@ -82,6 +82,7 @@
 "Scripts" = "Scriptler";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) userscript, \\(filterName) gerektirir";
 "Foreign" = "Yabancı";
+"International" = "Uluslararası";
 "Minimal" = "Asgari";
 "Base filter only." = "Yalnızca temel filtre.";
 "Balanced defaults." = "Dengeli ayarlar.";

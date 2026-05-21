@@ -82,6 +82,7 @@
 "Scripts" = "腳本";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 使用者腳本需要 \\(filterName)";
 "Foreign" = "國外";
+"International" = "國際";
 "Minimal" = "精簡";
 "Base filter only." = "僅基礎過濾器。";
 "Balanced defaults." = "平衡的預設設定。";

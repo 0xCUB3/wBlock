@@ -82,6 +82,7 @@
 "Scripts" = "Szkriptek";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "A(z) \\(bypassScript.name) felhasználói szkripthez szükséges ez: \\(filterName)";
 "Foreign" = "Nemzetközi";
+"International" = "Nemzetközi";
 "Minimal" = "Minimális";
 "Base filter only." = "Csak az alap szűrő.";
 "Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";

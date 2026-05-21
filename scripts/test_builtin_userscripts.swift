@@ -93,8 +93,8 @@ else {
     exit(1)
 }
 
-guard viewSource.contains("scriptSection.id == .foreign") && viewSource.contains("Text(\"Foreign\")") else {
-    fputs("FAIL: userscript UI should render foreign userscripts in a Foreign section\n", stderr)
+guard viewSource.contains("scriptSection.id == .foreign") && viewSource.contains("Text(\"International\")") else {
+    fputs("FAIL: userscript UI should render foreign userscripts in an International section\n", stderr)
     exit(1)
 }
 

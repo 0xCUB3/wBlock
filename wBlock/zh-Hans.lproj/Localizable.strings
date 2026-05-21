@@ -82,6 +82,7 @@
 "Scripts" = "脚本";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 用户脚本需要 \\(filterName)";
 "Foreign" = "外语";
+"International" = "国际";
 "Minimal" = "最小";
 "Base filter only." = "仅基础过滤器。";
 "Balanced defaults." = "平衡的默认设置。";

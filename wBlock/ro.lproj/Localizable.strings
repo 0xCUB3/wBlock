@@ -82,6 +82,7 @@
 "Scripts" = "Scripturi";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Scriptul utilizator \\(bypassScript.name) necesită \\(filterName)";
 "Foreign" = "Străine";
+"International" = "Internaționale";
 "Minimal" = "Minim";
 "Base filter only." = "Doar filtrul de bază.";
 "Balanced defaults." = "Setări implicite echilibrate.";

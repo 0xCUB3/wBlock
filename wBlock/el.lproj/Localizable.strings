@@ -82,6 +82,7 @@
 "Scripts" = "Κώδικας";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Ο κώδικας χρήστη \(bypassScript.name) απαιτεί το \(filterName)";
 "Foreign" = "Άλλες γλώσσες";
+"International" = "Διεθνή";
 "Minimal" = "Ελάχιστο";
 "Base filter only." = "Μόνο βασικό φίλτρο.";
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";

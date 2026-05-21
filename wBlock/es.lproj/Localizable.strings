@@ -82,6 +82,7 @@
 "Scripts" = "Guiones";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "El script de usuario \\(bypassScript.name) requiere \\(filterName)";
 "Foreign" = "Extranjeros";
+"International" = "Internacionales";
 "Minimal" = "Mínimo";
 "Base filter only." = "Solo filtro base.";
 "Balanced defaults." = "Valores predeterminados equilibrados.";

@@ -129,7 +129,7 @@ struct UserScriptManagerView: View {
             sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
         }
         if !foreignScripts.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .foreign, title: "Foreign", scripts: foreignScripts))
+            sections.append(UserScriptDisplaySection(id: .foreign, title: "International", scripts: foreignScripts))
         }
 
         return sections
@@ -473,7 +473,7 @@ struct UserScriptManagerView: View {
                 }
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             } label: {
-                Text("Foreign")
+                Text("International")
                     .font(.headline)
                     .foregroundStyle(.primary)
             }

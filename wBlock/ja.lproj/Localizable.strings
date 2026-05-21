@@ -82,6 +82,7 @@
 "Scripts" = "スクリプト";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) ユーザースクリプトには \\(filterName) が必要です";
 "Foreign" = "海外";
+"International" = "国際";
 "Minimal" = "最小";
 "Base filter only." = "ベースフィルターのみ。";
 "Balanced defaults." = "バランスの取れた既定設定。";

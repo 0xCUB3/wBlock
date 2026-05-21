@@ -82,6 +82,7 @@
 "Scripts" = "Roteiros";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "O script de usuário \\(bypassScript.name) requer o \\(filterName)";
 "Foreign" = "Estrangeiro";
+"International" = "Internacionais";
 "Minimal" = "Mínimo";
 "Base filter only." = "Somente o filtro base.";
 "Balanced defaults." = "Padrões equilibrados.";

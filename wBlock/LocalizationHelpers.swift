@@ -126,7 +126,7 @@ enum ForeignFilterOrganizer {
 
     private static func languageTitle(for languageCode: String) -> String {
         guard languageCode != ungroupedLanguageCode else {
-            return LocalizedStrings.text("Foreign", comment: "Filter list category")
+            return LocalizedStrings.text("International", comment: "Filter list category")
         }
 
         let name = languageSortTitle(for: languageCode)
@@ -136,7 +136,7 @@ enum ForeignFilterOrganizer {
 
     private static func languageSortTitle(for languageCode: String) -> String {
         guard languageCode != ungroupedLanguageCode else {
-            return LocalizedStrings.text("Foreign", comment: "Filter list category")
+            return LocalizedStrings.text("International", comment: "Filter list category")
         }
 
         return Locale.current.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
@@ -222,7 +222,12 @@ extension UserScript {
 
 extension FilterListCategory {
     var localizedName: String {
-        NSLocalizedString(rawValue, comment: "Filter list category")
+        switch self {
+        case .foreign:
+            NSLocalizedString("International", comment: "Filter list category")
+        default:
+            NSLocalizedString(rawValue, comment: "Filter list category")
+        }
     }
 }
 

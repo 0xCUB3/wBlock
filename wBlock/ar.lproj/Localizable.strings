@@ -82,6 +82,7 @@
 "Scripts" = "السكريبتات";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "سكريبت المستخدم \\(bypassScript.name) يتطلب \\(filterName)";
 "Foreign" = "أجنبي";
+"International" = "دولية";
 "Minimal" = "الحد الأدنى";
 "Base filter only." = "الفلتر الأساسي فقط.";
 "Balanced defaults." = "الإعدادات الافتراضية المتوازنة.";

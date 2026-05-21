@@ -82,6 +82,7 @@
 "Scripts" = "Skripte";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Das Userskript \\(bypassScript.name) erfordert \\(filterName)";
 "Foreign" = "Länderspezifisch";
+"International" = "International";
 "Minimal" = "Minimal";
 "Base filter only." = "Nur Basisfilter.";
 "Balanced defaults." = "Ausgewogene Standardeinstellungen.";

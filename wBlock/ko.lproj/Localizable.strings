@@ -82,6 +82,7 @@
 "Scripts" = "스크립트";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 유저스크립트는 \\(filterName)이(가) 필요합니다";
 "Foreign" = "해외";
+"International" = "국제";
 "Minimal" = "최소";
 "Base filter only." = "기본 필터만 사용.";
 "Balanced defaults." = "균형 잡힌 기본 설정.";
