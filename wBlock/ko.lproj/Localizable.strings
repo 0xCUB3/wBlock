@@ -495,7 +495,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "업데이트 확인 중...";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard의 포괄적인 광고 차단 규칙.";
-"Comprehensive block list for ads and trackers." = "광고 및 추적기에 대한 포괄적인 차단 목록입니다.";
 "Contains new rules and fixes not yet included in other filters." = "아직 다른 필터에 포함되지 않은 새로운 규칙과 수정 사항이 포함되어 있습니다.";
 "Converting %@…" = "%@ 변환 중…";
 "Current Safari rules: %@" = "현재 Safari 규칙: %@";
@@ -630,7 +629,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "적용되지 않은 필터 변경사항이 있습니다. 종료하기 전에 적용하시겠습니까?";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud 동기화가 iCloud에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud 저장 공간이 가득 차서 iCloud 동기화를 저장할 수 없습니다.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud 동기화에는 iCloud 계정에 쓸 수 있는 권한이 없습니다.";

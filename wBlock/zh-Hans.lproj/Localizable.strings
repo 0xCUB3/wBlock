@@ -495,7 +495,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "正在检查更新...";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard 的综合广告拦截规则。";
-"Comprehensive block list for ads and trackers." = "广告和跟踪器的综合阻止列表。";
 "Contains new rules and fixes not yet included in other filters." = "包含其他过滤器中尚未包含的新规则和修复。";
 "Converting %@…" = "转换 %@…";
 "Current Safari rules: %@" = "当前 Safari 规则：%@";
@@ -630,7 +629,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "您有未应用的过滤器更改。您想在戒烟前应用它们吗？";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud 同步无法到达 iCloud。检查您的连接并重试。";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud 同步无法保存，因为您的 iCloud 存储空间已满。";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync 无权写入您的 iCloud 帐户。";

@@ -495,7 +495,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "Sprawdzam dostępność aktualizacji...";
 "Comprehensive ad-blocking rules by AdGuard." = "Kompleksowe zasady blokowania reklam przez AdGuard.";
-"Comprehensive block list for ads and trackers." = "Kompleksowa lista zablokowanych reklam i modułów śledzących.";
 "Contains new rules and fixes not yet included in other filters." = "Zawiera nowe zasady i poprawki, które nie zostały jeszcze uwzględnione w innych filtrach.";
 "Converting %@…" = "Konwersja %@â¦";
 "Current Safari rules: %@" = "Aktualne zasady Safari: %@";
@@ -630,7 +629,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Niezastosowane zmiany filtrów. Czy chcesz je zastosować przed rzuceniem palenia?";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync nie może połączyć się z iCloud. Sprawdź połączenie i spróbuj ponownie.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "Nie można zapisać iCloud Sync, ponieważ pamięć iCloud jest pełna.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync nie ma uprawnień do zapisu na Twoim koncie iCloud.";

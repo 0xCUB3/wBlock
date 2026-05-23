@@ -495,7 +495,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "アップデートをチェックしています...";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard による包括的な広告ブロック ルール。";
-"Comprehensive block list for ads and trackers." = "広告とトラッカーの包括的なブロック リスト。";
 "Contains new rules and fixes not yet included in other filters." = "他のフィルターにはまだ含まれていない新しいルールと修正が含まれています。";
 "Converting %@…" = "%@ を変換中...";
 "Current Safari rules: %@" = "現在の Safari ルール: %@";
@@ -630,7 +629,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "未適用のフィルター変更があります。やめる前に適用しますか?";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud 同期が iCloud に到達できませんでした。接続を確認して、もう一度試してください。";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud ストレージがいっぱいのため、iCloud 同期は保存できませんでした。";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud 同期には、iCloud アカウントに書き込む権限がありません。";

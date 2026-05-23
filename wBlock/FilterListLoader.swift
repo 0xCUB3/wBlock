@@ -15,12 +15,7 @@ class FilterListLoader {
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
             "Online Security Filter",
-            "d3Host List by d3ward",
-            "AdGuard Cookie Notices",
-            "AdGuard Popups",
-            "AdGuard Mobile App Banners",
-            "AdGuard Other Annoyances",
-            "AdGuard Widgets",
+            "Peter Lowe's Blocklist",
             "Anti-Adblock List",
         ]
     #else
@@ -29,12 +24,7 @@ class FilterListLoader {
             "AdGuard Tracking Protection Filter",
             "EasyPrivacy",
             "Online Security Filter",
-            "d3Host List by d3ward",
-            "AdGuard Cookie Notices",
-            "AdGuard Popups",
-            "AdGuard Mobile App Banners",
-            "AdGuard Other Annoyances",
-            "AdGuard Widgets",
+            "Peter Lowe's Blocklist",
             "Anti-Adblock List",
             "AdGuard Mobile Filter",
         ]
@@ -214,13 +204,6 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt"
                 )!, category: FilterListCategory.annoyances, isSelected: true,
                 description: "Blocks ads and tracking servers to enhance privacy."),
-            FilterList(
-                id: UUID(), name: "d3Host List by d3ward",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock")!,
-                category: FilterListCategory.annoyances, isSelected: true,
-                description: "Comprehensive block list for ads and trackers."),
             FilterList(
                 id: UUID(), name: "Anti-Adblock List",
                 url: URL(

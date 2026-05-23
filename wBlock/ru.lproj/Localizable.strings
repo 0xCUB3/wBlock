@@ -495,7 +495,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "Проверяем наличие обновлений...";
 "Comprehensive ad-blocking rules by AdGuard." = "Комплексные правила блокировки рекламы от AdGuard.";
-"Comprehensive block list for ads and trackers." = "Полный список блокировки для рекламы и трекеров.";
 "Contains new rules and fixes not yet included in other filters." = "Содержит новые правила и исправления, еще не включенные в другие фильтры.";
 "Converting %@…" = "Преобразование %@â¦";
 "Current Safari rules: %@" = "Текущие правила Safari: %@.";
@@ -630,7 +629,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "У вас есть непримененные изменения фильтра. Хотите ли вы применить их перед тем, как бросить курить?";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "Синхронизации iCloud не удалось достичь iCloud. Проверьте подключение и повторите попытку.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync не удалось сохранить, поскольку ваше хранилище iCloud заполнено.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "У iCloud Sync нет разрешения на запись в вашу учетную запись iCloud.";

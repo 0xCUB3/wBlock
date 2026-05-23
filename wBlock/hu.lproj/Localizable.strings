@@ -496,7 +496,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "Frissítések keresése...";
 "Comprehensive ad-blocking rules by AdGuard." = "Átfogó hirdetésblokkolási szabályok az AdGuardtól.";
-"Comprehensive block list for ads and trackers." = "Átfogó blokkolista hirdetések és nyomkövetők számára.";
 "Contains new rules and fixes not yet included in other filters." = "Új szabályokat és javításokat tartalmaz, amelyek még nem szerepelnek más szűrőkben.";
 "Converting %@…" = "%@â¦ konvertálása";
 "Current Safari rules: %@" = "A jelenlegi Safari szabályok: %@";
@@ -631,7 +630,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Nem alkalmazott szűrőmódosítások vannak. Alkalmazni szeretné őket a kilépés előtt?";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "Az iCloud Sync nem tudta elérni az iCloudot. Ellenőrizze a kapcsolatot, és próbálja újra.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "Az iCloud Sync nem tudta menteni, mert az iCloud-tárhely megtelt.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "Az iCloud Sync nem jogosult arra, hogy az Ön iCloud-fiókjába írjon.";

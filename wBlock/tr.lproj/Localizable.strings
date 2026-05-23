@@ -495,7 +495,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "Güncellemeler kontrol ediliyor...";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard'ın kapsamlı reklam engelleme kuralları.";
-"Comprehensive block list for ads and trackers." = "Reklamlar ve izleyiciler için kapsamlı engelleme listesi.";
 "Contains new rules and fixes not yet included in other filters." = "Henüz diğer filtrelere dahil edilmeyen yeni kurallar ve düzeltmeler içerir.";
 "Converting %@…" = "%@â¦ dönüştürülüyor";
 "Current Safari rules: %@" = "Mevcut Safari kuralları: %@";
@@ -630,7 +629,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Uygulanmamış filtre değişiklikleriniz var. Bunları bırakmadan önce uygulamak ister misiniz?";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync, iCloud'a erişemedi. Bağlantınızı kontrol edip tekrar deneyin.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync, iCloud depolama alanınız dolu olduğundan kaydedilemedi.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync'in iCloud hesabınıza yazma izni yok.";

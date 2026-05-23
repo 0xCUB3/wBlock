@@ -495,7 +495,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Checking for updates..." = "Έλεγχος για ενημερώσεις...";
 "Comprehensive ad-blocking rules by AdGuard." = "Πλήρεις κανόνες αποκλεισμού διαφημίσεων από το AdGuard.";
-"Comprehensive block list for ads and trackers." = "Ολοκληρωμένη λίστα μπλοκ για διαφημίσεις και trackers.";
 "Contains new rules and fixes not yet included in other filters." = "Περιέχει νέους κανόνες και διορθώσεις που δεν περιλαμβάνονται ακόμη σε άλλα φίλτρα.";
 "Converting %@…" = "Μετατροπή %@â¦";
 "Current Safari rules: %@" = "Τρέχοντες κανόνες Safari: %@";
@@ -630,7 +629,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Xfiles" = "Xfiles";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Έχετε μη εφαρμοσμένες αλλαγές φίλτρων. Θέλετε να τα εφαρμόσετε πριν τα παρατήσετε;";
 "YousList" = "YousList";
-"d3Host List by d3ward" = "d3Host List by d3ward";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "Το iCloud Sync δεν μπόρεσε να φτάσει στο iCloud. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "Δεν ήταν δυνατή η αποθήκευση του iCloud Sync επειδή ο αποθηκευτικός σας χώρος iCloud είναι γεμάτος.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "Το iCloud Sync δεν έχει άδεια εγγραφής στον λογαριασμό σας iCloud.";

@@ -242,14 +242,18 @@ class AppFilterManager: ObservableObject {
         let deprecatedFilterLists = storedFilterLists.filter { filter in
             !filter.isCustom
                 && (filter.name == "AdGuard URL Tracking Filter"
-                    || filter.url.absoluteString.contains("filter_17_TrackParam"))
+                    || filter.url.absoluteString.contains("filter_17_TrackParam")
+                    || filter.name == "d3Host List by d3ward"
+                    || filter.url.absoluteString.contains("d3ward/toolz"))
         }
         if !deprecatedFilterLists.isEmpty {
             let removedSelected = deprecatedFilterLists.contains(where: { $0.isSelected })
             storedFilterLists.removeAll { filter in
                 !filter.isCustom
                     && (filter.name == "AdGuard URL Tracking Filter"
-                        || filter.url.absoluteString.contains("filter_17_TrackParam"))
+                        || filter.url.absoluteString.contains("filter_17_TrackParam")
+                        || filter.name == "d3Host List by d3ward"
+                        || filter.url.absoluteString.contains("d3ward/toolz"))
             }
 
             let deprecatedFilterIDs = deprecatedFilterLists.map(\.id)
