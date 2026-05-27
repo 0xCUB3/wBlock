@@ -25033,8 +25033,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "wblock:clearCache") {
       cache.clear();
       engineTimestamp = 0;
+      await scheduleInstallRemoveParamDNRRules(true);
       return {
         ok: true
+      };
+    }
+    if (message && message.action === "wblock:installRemoveParamDNRRules") {
+      await scheduleInstallRemoveParamDNRRules(true);
+      return {
+        ok: true
+      };
+    }
+    if (message && message.action === "wblock:getCleanURL") {
+      const url = typeof message.url === "string" ? message.url : "";
+      const cleanUrl = await getCleanURLWithRemoveParamRules(url);
+      return {
+        ok: true,
+        cleanUrl
       };
     }
     if (message && message.action === "wblock:zapper:syncRules") {
@@ -25582,7 +25597,230 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
   }
+  const REMOVE_PARAM_DNR_CHUNK_SIZE = 250;
+  const REMOVE_PARAM_DNR_STORAGE_KEY = "wblockRemoveParamDNRVersion";
+  const REMOVE_PARAM_DNR_CHECK_INTERVAL_MS = 60000;
+  let removeParamDNRInstallPromise = null;
+  let removeParamDNRRulesCache = null;
+  let removeParamDNRVersion = "";
+  let lastRemoveParamDNRCheck = 0;
+  const loadRemoveParamDNRRules = async () => {
+    const firstChunk = await sendQueuedNativeMessage({
+      action: "getRemoveParamDNRRules",
+      offset: 0,
+      limit: REMOVE_PARAM_DNR_CHUNK_SIZE
+    });
+    if (!firstChunk || firstChunk.ok !== true) {
+      throw new Error(firstChunk && firstChunk.error ? firstChunk.error : "Failed to load removeparam DNR rules");
+    }
+    const version = String(firstChunk.version || "");
+    const count = Math.max(0, Number(firstChunk.count) || 0);
+    if (removeParamDNRRulesCache && removeParamDNRVersion === version && removeParamDNRRulesCache.length === count) {
+      return {
+        version,
+        count,
+        ruleIdBase: Number(firstChunk.ruleIdBase) || 1500000,
+        ruleIdLimit: Number(firstChunk.ruleIdLimit) || 1650000,
+        rules: removeParamDNRRulesCache
+      };
+    }
+    const rules = Array.isArray(firstChunk.rules) ? firstChunk.rules.slice() : [];
+    for (let offset = REMOVE_PARAM_DNR_CHUNK_SIZE; offset < count; offset += REMOVE_PARAM_DNR_CHUNK_SIZE) {
+      const chunk = await sendQueuedNativeMessage({
+        action: "getRemoveParamDNRRules",
+        offset,
+        limit: REMOVE_PARAM_DNR_CHUNK_SIZE
+      });
+      if (!chunk || chunk.ok !== true) {
+        throw new Error(chunk && chunk.error ? chunk.error : `Failed to load removeparam DNR rules at ${offset}`);
+      }
+      if (Array.isArray(chunk.rules)) {
+        rules.push(...chunk.rules);
+      }
+    }
+    removeParamDNRRulesCache = rules;
+    removeParamDNRVersion = version;
+    return {
+      version,
+      count,
+      ruleIdBase: Number(firstChunk.ruleIdBase) || 1500000,
+      ruleIdLimit: Number(firstChunk.ruleIdLimit) || 1650000,
+      rules
+    };
+  };
+  const getTrackedRemoveParamDNRRules = async (ruleIdBase, ruleIdLimit) => {
+    if (!browser.declarativeNetRequest || typeof browser.declarativeNetRequest.getDynamicRules !== "function") {
+      return [];
+    }
+    const dynamicRules = await browser.declarativeNetRequest.getDynamicRules();
+    return dynamicRules.filter(rule => rule && rule.id >= ruleIdBase && rule.id < ruleIdLimit);
+  };
+  const installRemoveParamDNRRules = async () => {
+    if (!browser.declarativeNetRequest || typeof browser.declarativeNetRequest.updateDynamicRules !== "function") {
+      return;
+    }
+    const loaded = await loadRemoveParamDNRRules();
+    const { version, count, ruleIdBase, ruleIdLimit, rules } = loaded;
+    const stored = await browser.storage.local.get(REMOVE_PARAM_DNR_STORAGE_KEY);
+    const trackedRules = await getTrackedRemoveParamDNRRules(ruleIdBase, ruleIdLimit);
+    if (stored && stored[REMOVE_PARAM_DNR_STORAGE_KEY] === version && trackedRules.length === count) {
+      return;
+    }
+    const removeRuleIds = trackedRules.map(rule => rule.id);
+    if (removeRuleIds.length > 0) {
+      await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds });
+    }
+    const addChunk = async rules => {
+      if (!Array.isArray(rules) || rules.length === 0) return;
+      await browser.declarativeNetRequest.updateDynamicRules({ addRules: rules });
+    };
+    for (let offset = 0; offset < rules.length; offset += REMOVE_PARAM_DNR_CHUNK_SIZE) {
+      await addChunk(rules.slice(offset, offset + REMOVE_PARAM_DNR_CHUNK_SIZE));
+    }
+    await browser.storage.local.set({ [REMOVE_PARAM_DNR_STORAGE_KEY]: version });
+  };
+  const removeParamURLFilterRegexCache = new Map();
+  const dnrSeparatorPattern = "(?:[^A-Za-z0-9_.%-]|$)";
+  const domainMatches = (host, domain) => {
+    const normalizedHost = String(host || "").toLowerCase();
+    const normalizedDomain = String(domain || "").toLowerCase();
+    return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
+  };
+  const urlFilterToRegex = urlFilter => {
+    if (!urlFilter) return null;
+    if (removeParamURLFilterRegexCache.has(urlFilter)) {
+      return removeParamURLFilterRegexCache.get(urlFilter);
+    }
+    let source = String(urlFilter);
+    let regexSource = "";
+    if (source.startsWith("||")) {
+      source = source.slice(2);
+      let domainPart = "";
+      while (domainPart.length < source.length && /[A-Za-z0-9._-]/.test(source[domainPart.length])) {
+        domainPart += source[domainPart.length];
+      }
+      source = source.slice(domainPart.length);
+      const escapedDomain = domainPart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      regexSource = `^[a-z][a-z0-9+.-]*://([^/?#]*\\.)?${escapedDomain}`;
+    }
+    for (const char of source) {
+      if (char === "*") {
+        regexSource += ".*";
+      } else if (char === "^") {
+        regexSource += dnrSeparatorPattern;
+      } else if (char === "|") {
+        regexSource += "^";
+      } else {
+        regexSource += char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+    }
+    try {
+      const regex = new RegExp(regexSource);
+      removeParamURLFilterRegexCache.set(urlFilter, regex);
+      return regex;
+    } catch (_error) {
+      removeParamURLFilterRegexCache.set(urlFilter, null);
+      return null;
+    }
+  };
+  const conditionMatchesTopLevelURL = (condition, url) => {
+    if (!condition) return true;
+    if (Array.isArray(condition.resourceTypes) && !condition.resourceTypes.includes("main_frame")) {
+      return false;
+    }
+    if (condition.domainType) {
+      return false;
+    }
+    const host = url.hostname.toLowerCase();
+    if (Array.isArray(condition.requestDomains) && !condition.requestDomains.some(domain => domainMatches(host, domain))) {
+      return false;
+    }
+    if (Array.isArray(condition.excludedRequestDomains) && condition.excludedRequestDomains.some(domain => domainMatches(host, domain))) {
+      return false;
+    }
+    if (Array.isArray(condition.initiatorDomains) && condition.initiatorDomains.length > 0) {
+      return false;
+    }
+    if (Array.isArray(condition.excludedInitiatorDomains) && condition.excludedInitiatorDomains.some(domain => domainMatches(host, domain))) {
+      return false;
+    }
+    const regex = urlFilterToRegex(condition.urlFilter || "");
+    return regex ? regex.test(url.href) : true;
+  };
+  const applyRemoveParamRuleToURL = (rule, url) => {
+    const transform = rule && rule.action && rule.action.redirect && rule.action.redirect.transform;
+    if (!transform) return false;
+    if (transform.query === "") {
+      if (!url.search) return false;
+      url.search = "";
+      return true;
+    }
+    const params = transform.queryTransform && Array.isArray(transform.queryTransform.removeParams)
+      ? transform.queryTransform.removeParams
+      : [];
+    let changed = false;
+    for (const param of params) {
+      if (url.searchParams.has(param)) {
+        url.searchParams.delete(param);
+        changed = true;
+      }
+    }
+    return changed;
+  };
+  const getCleanURLWithRemoveParamRules = async urlString => {
+    if (!urlString || !/^https?:/i.test(urlString)) return urlString;
+    const loaded = await loadRemoveParamDNRRules();
+    if (!loaded.rules || loaded.rules.length === 0) return urlString;
+    const originalURL = new URL(urlString);
+    let url = new URL(urlString);
+    const rules = loaded.rules;
+    for (let pass = 0; pass < 8; pass += 1) {
+      let changed = false;
+      for (const rule of rules) {
+        if (!rule || !rule.action || !conditionMatchesTopLevelURL(rule.condition, url)) {
+          continue;
+        }
+        if (rule.action.type === "allow") {
+          return originalURL.href;
+        }
+        if (rule.action.type === "redirect") {
+          changed = applyRemoveParamRuleToURL(rule, url) || changed;
+        }
+      }
+      if (!changed) break;
+    }
+    return url.href;
+  };
+  const scheduleInstallRemoveParamDNRRules = (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastRemoveParamDNRCheck < REMOVE_PARAM_DNR_CHECK_INTERVAL_MS) {
+      return removeParamDNRInstallPromise || Promise.resolve();
+    }
+    lastRemoveParamDNRCheck = now;
+    if (!removeParamDNRInstallPromise) {
+      removeParamDNRInstallPromise = installRemoveParamDNRRules().catch(error => {
+        console.error("[wBlock] Failed to install removeparam DNR rules:", error);
+      }).finally(() => {
+        removeParamDNRInstallPromise = null;
+      });
+    }
+    return removeParamDNRInstallPromise;
+  };
+  if (browser.runtime.onInstalled) {
+    browser.runtime.onInstalled.addListener(() => {
+      scheduleInstallRemoveParamDNRRules(true);
+    });
+  }
+  if (browser.runtime.onStartup) {
+    browser.runtime.onStartup.addListener(() => {
+      scheduleInstallRemoveParamDNRRules(true);
+    });
+  }
+  scheduleInstallRemoveParamDNRRules(true);
   refreshActionStateForAllTabs();
   // Start handling messages from content scripts.
-  browser.runtime.onMessage.addListener(handleMessages);
+  browser.runtime.onMessage.addListener((request, sender) => {
+    scheduleInstallRemoveParamDNRRules(false);
+    return handleMessages(request, sender);
+  });
 })(browser);

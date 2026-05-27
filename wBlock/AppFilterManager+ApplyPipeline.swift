@@ -231,6 +231,9 @@ extension AppFilterManager {
                     try ContentBlockerService.clearFilterEngine(
                         groupIdentifier: groupIdentifier
                     )
+                    _ = try RemoveParamDNRRuleGenerator.clearSavedRules(
+                        groupIdentifier: groupIdentifier
+                    )
 
                     let platformTargets = ContentBlockerTargetManager.shared.allTargets(
                         forPlatform: currentPlatform
@@ -334,6 +337,32 @@ extension AppFilterManager {
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
         let disabledSites = self.dataManager.disabledSites
+        let removeParamDNRSummary = await Task.detached(priority: .utility) {
+            try? RemoveParamDNRRuleGenerator.saveRules(
+                for: allSelectedFilters,
+                disabledSites: disabledSites,
+                groupIdentifier: GroupIdentifier.shared.value
+            )
+        }.value
+        if let removeParamDNRSummary {
+            await ConcurrentLogManager.shared.info(
+                .filterApply,
+                "Prepared removeparam DNR rules",
+                metadata: [
+                    "generated": "\(removeParamDNRSummary.generatedRules)",
+                    "sourceRemoveparam": "\(removeParamDNRSummary.removeParamRules)",
+                    "exceptions": "\(removeParamDNRSummary.exceptionRules)",
+                    "skipped": "\(removeParamDNRSummary.skippedRules)",
+                    "disabledAllow": "\(removeParamDNRSummary.disabledSiteAllowRules)",
+                ]
+            )
+        } else {
+            await ConcurrentLogManager.shared.warning(
+                .filterApply,
+                "Failed to prepare removeparam DNR rules",
+                metadata: [:]
+            )
+        }
         let affinityFilterIDs: Set<UUID> = await Task.detached(priority: .utility) {
             guard let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value

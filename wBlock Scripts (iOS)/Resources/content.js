@@ -30397,3 +30397,55 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     wBlockLogger.error('Error in content script: ', error);
   });
 })(browser);
+
+// Best-effort top-frame URL cleanup fallback for Safari builds where
+// declarativeNetRequest redirect/queryTransform does not run for main_frame
+// requests. The background page uses the same generated $removeparam rules as
+// the DNR installer, then this content script performs a same-page replace as
+// early as Safari allows content scripts to run.
+(async () => {
+  try {
+    if (window.top !== window) return;
+    if (!/^https?:/i.test(window.location.href)) return;
+    if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;
+    const response = await browser.runtime.sendMessage({
+      action: "wblock:getCleanURL",
+      url: window.location.href
+    });
+    let cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : "";
+    if (!cleanUrl || cleanUrl === window.location.href) {
+      const fallbackUrl = new URL(window.location.href);
+      let changed = false;
+      for (const key of Array.from(fallbackUrl.searchParams.keys())) {
+        if (/^(utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|msclkid$|mc_cid$|mc_eid$|igshid$|yclid$|_hsenc$|_hsmi$|mkt_tok$|vero_id$|oly_anon_id$|oly_enc_id$)/i.test(key)) {
+          fallbackUrl.searchParams.delete(key);
+          changed = true;
+        }
+      }
+      if (changed) {
+        cleanUrl = fallbackUrl.href;
+      }
+    }
+    if (cleanUrl && cleanUrl !== window.location.href) {
+      console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
+      window.location.replace(cleanUrl);
+    }
+  } catch (error) {
+    try {
+      const fallbackUrl = new URL(window.location.href);
+      let changed = false;
+      for (const key of Array.from(fallbackUrl.searchParams.keys())) {
+        if (/^(utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|msclkid$|mc_cid$|mc_eid$|igshid$|yclid$|_hsenc$|_hsmi$|mkt_tok$|vero_id$|oly_anon_id$|oly_enc_id$)/i.test(key)) {
+          fallbackUrl.searchParams.delete(key);
+          changed = true;
+        }
+      }
+      if (changed && fallbackUrl.href !== window.location.href) {
+        console.info("[wBlock] Removing common tracking parameters:", window.location.href, "→", fallbackUrl.href);
+        window.location.replace(fallbackUrl.href);
+      }
+    } catch (_fallbackError) {
+      console.warn("[wBlock] URL cleanup fallback failed:", error);
+    }
+  }
+})();

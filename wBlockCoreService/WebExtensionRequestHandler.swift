@@ -93,6 +93,9 @@ public enum WebExtensionRequestHandler {
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
                 return
+            case "getRemoveParamDNRRules":
+                handleGetRemoveParamDNRRules(message: message!, context: context)
+                return
             case "syncZapperRules":
                 handleSyncZapperRules(message: message!, context: context)
                 return
@@ -339,6 +342,19 @@ public enum WebExtensionRequestHandler {
 
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
 
+            let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
+            await Task.detached(priority: .utility) {
+                do {
+                    _ = try RemoveParamDNRRuleGenerator.saveRules(
+                        for: selectedFilters,
+                        disabledSites: list,
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                } catch {
+                    os_log(.error, "Failed to refresh removeparam DNR rules for disabled site change: %@", error.localizedDescription)
+                }
+            }.value
+
             // Apply the change immediately by fast-updating the existing blocker JSON
             // and reloading each relevant content blocker target for the current platform.
             #if os(macOS)
@@ -363,6 +379,18 @@ public enum WebExtensionRequestHandler {
             ])
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func handleGetRemoveParamDNRRules(message: [String: Any?], context: NSExtensionContext) {
+        let offset = message["offset"] as? Int ?? 0
+        let limit = message["limit"] as? Int ?? 250
+        let payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
+            groupIdentifier: GroupIdentifier.shared.value,
+            offset: offset,
+            limit: limit
+        )
+        let response = createResponse(with: payload.mapValues { Optional($0) })
+        context.completeRequest(returningItems: [response])
     }
 
     private static func handleOpenContainingApp(context: NSExtensionContext) {

@@ -964,6 +964,9 @@ function setupListeners() {
 
 async function refreshUi() {
     setError('');
+    browser.runtime.sendMessage({ action: 'wblock:installRemoveParamDNRRules' }).catch((error) => {
+        console.warn('[wBlock] Failed to refresh removeparam DNR rules:', error);
+    });
 
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('disable-toggle');

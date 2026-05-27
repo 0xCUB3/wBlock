@@ -59,7 +59,8 @@
         "unlimitedStorage",
         "scripting",
         "tabs",
-        "declarativeNetRequest"
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess"
     ],
     "host_permissions": [
         "<all_urls>"
