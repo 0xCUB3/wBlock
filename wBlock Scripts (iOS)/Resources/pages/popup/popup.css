@@ -122,8 +122,8 @@ body {
 }
 
 .pill.is-disabled {
-  background: rgba(255, 59, 48, 0.2);
-  border-color: rgba(255, 59, 48, 0.45);
+  background: rgba(142, 142, 147, 0.22);
+  border-color: rgba(142, 142, 147, 0.5);
 }
 
 .pill.is-neutral {

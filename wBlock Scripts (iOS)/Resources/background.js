@@ -25034,6 +25034,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       cache.clear();
       engineTimestamp = 0;
       await scheduleInstallRemoveParamDNRRules(true);
+      await refreshActionStateForAllTabs();
       return {
         ok: true
       };
@@ -25323,8 +25324,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   const POPUP_PATH = "pages/popup/popup.html";
   const SUPPORTED_PAGE_PROTOCOLS = new Set(["http:", "https:"]);
+  const DEFAULT_ACTION_ICON = {
+    48: "assets/images/icon-48.png",
+    96: "assets/images/icon-96.png",
+    128: "assets/images/icon-128.png",
+    256: "assets/images/icon-256.png",
+    512: "assets/images/icon-512.png"
+  };
+  const DISABLED_ACTION_ICON = {
+    48: "assets/images/icon-disabled-48.png",
+    96: "assets/images/icon-disabled-96.png",
+    128: "assets/images/icon-disabled-128.png",
+    256: "assets/images/icon-disabled-256.png",
+    512: "assets/images/icon-disabled-512.png"
+  };
   const canControlActionState = typeof browser !== "undefined" && !!(browser.action && browser.action.enable && browser.action.disable);
   const canSetActionPopup = typeof browser !== "undefined" && !!(browser.action && browser.action.setPopup);
+  const canSetActionIcon = typeof browser !== "undefined" && !!(browser.action && browser.action.setIcon);
+  const canSetActionTitle = typeof browser !== "undefined" && !!(browser.action && browser.action.setTitle);
   const canObserveTabs = typeof browser !== "undefined" && !!browser.tabs;
   const supportStateByTab = new Map();
   const menuCommandsByTab = new Map();
@@ -25501,12 +25518,46 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       host: urlSupport.host
     };
   };
+  const actionMessage = (key, fallback) => {
+    try {
+      const value = browser.i18n && browser.i18n.getMessage ? browser.i18n.getMessage(key) : "";
+      return value || fallback;
+    } catch (_error) {
+      return fallback;
+    }
+  };
+  const actionTitleForState = (supported, siteDisabled) => {
+    const extensionName = actionMessage("extension_name", "wBlock Scripts");
+    if (!supported) {
+      return `${extensionName} — ${actionMessage("popup_status_unsupported", "Unsupported")}`;
+    }
+    if (siteDisabled) {
+      return `${extensionName} — ${actionMessage("popup_status_disabled", "Disabled")}`;
+    }
+    return extensionName;
+  };
+  const getSiteDisabledForAction = async host => {
+    if (typeof host !== "string" || host.length === 0) {
+      return false;
+    }
+    try {
+      const response = await sendQueuedNativeMessage({
+        action: "getSiteDisabledState",
+        host
+      });
+      return Boolean(response && response.disabled);
+    } catch (error) {
+      console.warn("[wBlock] Failed to resolve action disabled state:", error);
+      return false;
+    }
+  };
   const syncActionStateForTab = async tab => {
     if (!tab || typeof tab.id !== "number") {
       return;
     }
     const support = await resolveTabSupport(tab);
     const supported = support.supported;
+    const siteDisabled = supported ? await getSiteDisabledForAction(support.host || "") : false;
     const updates = [];
     if (canControlActionState) {
       updates.push((supported ? browser.action.enable(tab.id) : browser.action.disable(tab.id)).catch(error => {
@@ -25521,11 +25572,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.warn("[wBlock] Failed to update action popup:", error);
       }));
     }
+    if (canSetActionIcon) {
+      updates.push(browser.action.setIcon({
+        tabId: tab.id,
+        path: siteDisabled ? DISABLED_ACTION_ICON : DEFAULT_ACTION_ICON
+      }).catch(error => {
+        console.warn("[wBlock] Failed to update action icon:", error);
+      }));
+    }
+    if (canSetActionTitle) {
+      updates.push(browser.action.setTitle({
+        tabId: tab.id,
+        title: actionTitleForState(supported, siteDisabled)
+      }).catch(error => {
+        console.warn("[wBlock] Failed to update action title:", error);
+      }));
+    }
     if (updates.length > 0) {
       await Promise.all(updates);
     }
     const fingerprint = JSON.stringify({
       supported: support.supported,
+      siteDisabled,
       reason: support.reason,
       protocol: support.protocol || "",
       host: support.host || "",
