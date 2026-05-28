@@ -602,7 +602,7 @@ extension AppDelegate: UIApplicationDelegate {
         for outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome
     ) -> AutoUpdateDiagnosticResult {
         switch outcome {
-        case .completed, .skipped(_):
+        case .completed(_), .skipped(_):
             return .completed
         case .cancelled:
             return .timedOut
@@ -669,7 +669,7 @@ extension AppDelegate: UIApplicationDelegate {
             let result = diagnosticResult(for: outcome)
 
             switch outcome {
-            case .completed, .skipped(_):
+            case .completed(_), .skipped(_):
                 os_log("%{public}@ completed successfully", type: .info, taskLabel)
             case let .deferred(phase):
                 os_log("%{public}@ deferred at %{public}@", type: .info, taskLabel, phase)

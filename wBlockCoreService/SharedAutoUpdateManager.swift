@@ -113,8 +113,36 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    public enum AutoUpdateRunOutcome: Sendable {
-        case completed
+    public enum AutoUpdateCompletionResult: Sendable, Equatable {
+        case appliedUpdates
+        case noFilterUpdates
+        case noSelectedFilters
+    }
+
+    public struct AutoUpdateCompletion: Sendable, Equatable {
+        public let result: AutoUpdateCompletionResult
+        public let checkedFilters: Int
+        public let updatedFilters: Int
+        public let updatedScripts: Int
+        public let failedScripts: Int
+
+        public init(
+            result: AutoUpdateCompletionResult,
+            checkedFilters: Int,
+            updatedFilters: Int,
+            updatedScripts: Int,
+            failedScripts: Int
+        ) {
+            self.result = result
+            self.checkedFilters = checkedFilters
+            self.updatedFilters = updatedFilters
+            self.updatedScripts = updatedScripts
+            self.failedScripts = failedScripts
+        }
+    }
+
+    public enum AutoUpdateRunOutcome: Sendable, Equatable {
+        case completed(AutoUpdateCompletion)
         case skipped(reason: String)
         case cancelled
         case deferred(phase: String)
@@ -122,7 +150,7 @@ public actor SharedAutoUpdateManager {
 
         public var isSuccessfulForBackgroundTask: Bool {
             switch self {
-            case .completed, .skipped(_):
+            case .completed(_), .skipped(_):
                 return true
             case .cancelled, .deferred(_), .failed(_):
                 return false
@@ -789,7 +817,15 @@ public actor SharedAutoUpdateManager {
                     ]
                 )
 
-                return await finishStartedRun(.completed)
+                return await finishStartedRun(.completed(
+                    AutoUpdateCompletion(
+                        result: .noSelectedFilters,
+                        checkedFilters: 0,
+                        updatedFilters: 0,
+                        updatedScripts: scriptsResult.updated,
+                        failedScripts: scriptsResult.failed
+                    )
+                ))
             }
 
             try checkBudget(
@@ -859,7 +895,15 @@ public actor SharedAutoUpdateManager {
                     ]
                 )
 
-                return await finishStartedRun(.completed)
+                return await finishStartedRun(.completed(
+                    AutoUpdateCompletion(
+                        result: .noFilterUpdates,
+                        checkedFilters: updateResult.checkedCount,
+                        updatedFilters: 0,
+                        updatedScripts: scriptsResult.updated,
+                        failedScripts: scriptsResult.failed
+                    )
+                ))
             }
 
             try requireFullRebuildAllowed(policy, phase: AutoUpdateBudgetPhase.fullRebuild)
@@ -934,7 +978,15 @@ public actor SharedAutoUpdateManager {
                 ]
             )
 
-            return await finishStartedRun(.completed)
+            return await finishStartedRun(.completed(
+                AutoUpdateCompletion(
+                    result: .appliedUpdates,
+                    checkedFilters: updateResult.checkedCount,
+                    updatedFilters: updatedFilterSet.count,
+                    updatedScripts: scriptsResult.updated,
+                    failedScripts: scriptsResult.failed
+                )
+            ))
         } catch is CancellationError {
             os_log("Auto-update cancelled (trigger: %{public}@)", log: log, type: .info, trigger)
             appendSharedLog("Auto-update cancelled: trigger=\(trigger)")
