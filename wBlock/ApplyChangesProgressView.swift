@@ -27,9 +27,6 @@ struct ApplyChangesProgressView: View {
                             } else if let summary = viewModel.state.summary {
                                 summaryCard(summary)
                                     .transition(.opacity)
-                            } else if let completion = viewModel.state.completion {
-                                completionCard(completion)
-                                    .transition(.opacity)
                             }
                         }
                         .animation(.easeInOut(duration: 0.25), value: viewModel.state.isLoading)
@@ -107,35 +104,6 @@ struct ApplyChangesProgressView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func completionCard(_ completion: ApplyChangesCompletion) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: completion.style.systemImage)
-                    .foregroundStyle(completionColor(for: completion.style))
-
-                Text(completion.title)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-            }
-
-            Text(completion.message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private func completionColor(for style: ApplyChangesCompletionStyle) -> Color {
-        switch style {
-        case .success: return .green
-        case .warning: return .orange
-        case .failure: return .red
         }
     }
 

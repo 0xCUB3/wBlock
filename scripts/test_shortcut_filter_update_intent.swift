@@ -13,6 +13,13 @@ func assertContains(_ haystack: String, _ needle: String, _ message: String) {
     }
 }
 
+func assertNotContains(_ haystack: String, _ needle: String, _ message: String) {
+    guard !haystack.contains(needle) else {
+        fputs("FAIL: \(message)\nUnexpected: \(needle)\n", stderr)
+        exit(1)
+    }
+}
+
 let intent = try read("wBlock/FilterUpdateShortcuts.swift")
 let progressViewModel = try read("wBlock/ApplyChangesViewModel.swift")
 let progressView = try read("wBlock/ApplyChangesProgressView.swift")
@@ -23,22 +30,10 @@ let localizationRoot = URL(fileURLWithPath: "wBlock")
 let localizationKeys = [
     "Update wBlock Filters",
     "Checks for wBlock filter updates and applies them when available.",
-    "Force Check",
-    "Check now even if automatic updates are not due yet.",
-    "wBlock filters updated.",
-    "No filter updates found.",
-    "wBlock filter update skipped because it is not due yet.",
-    "wBlock filter update failed. Open wBlock for details.",
-    "Updating wBlock Filters",
-    "Checking for filter updates...",
-    "wBlock Filters Updated",
-    "No Filter Updates",
-    "Filter Update Skipped",
-    "Filter Update Deferred",
-    "Filter Update Failed",
-    "Filter Update Cancelled",
+    "wBlock filter update started.",
     "Update Filters",
 ]
+
 assertContains(
     intent,
     "struct UpdateWBlockFiltersIntent: AppIntent",
@@ -47,17 +42,27 @@ assertContains(
 assertContains(
     intent,
     "static var openAppWhenRun: Bool { true }",
-    "Shortcut update must run with the app opened to avoid a silent long background job"
+    "Shortcut update must run with the app opened to show the normal apply flow"
+)
+assertNotContains(
+    intent,
+    "@Parameter",
+    "Shortcut update must not expose a force option"
+)
+assertNotContains(
+    intent,
+    "forceCheck",
+    "Shortcut update must always use the forced apply path"
 )
 assertContains(
+    intent,
+    "ShortcutFilterUpdateRequest.shared.requestUpdate()",
+    "Shortcut must request the app to run the normal apply flow"
+)
+assertNotContains(
     intent,
     "maybeRunAutoUpdate(",
-    "Shortcut update must use the shared auto-update pipeline"
-)
-assertContains(
-    intent,
-    "policy: .foreground(trigger: trigger)",
-    "Shortcut update must use the foreground auto-update policy"
+    "Shortcut must not use a separate shared auto-update UI path"
 )
 assertContains(
     intent,
@@ -65,34 +70,29 @@ assertContains(
     "Shortcut must be discoverable in Shortcuts"
 )
 assertContains(
-    intent,
-    "ShortcutFilterUpdatePresentation.shared.start()",
-    "Shortcut must announce start so the opened app shows visible progress"
-)
-assertContains(
-    intent,
-    "ShortcutFilterUpdatePresentation.shared.finish(",
-    "Shortcut must announce completion so the progress sheet shows the result"
+    contentView,
+    "shortcutFilterUpdateRequested",
+    "Main view must listen for shortcut update requests"
 )
 assertContains(
     contentView,
-    "shortcutFilterUpdatePresentationChanged",
-    "Main view must listen for shortcut progress presentation changes"
+    "checkAndEnableFilters(forceReload: true)",
+    "Shortcut must use the same forced apply entry point as Apply Changes"
 )
 assertContains(
     contentView,
-    "prepareShortcutFilterUpdate()",
-    "Main view must show the apply-style sheet while shortcut updates run"
+    "applyFilterChangesFromExternalTrigger()",
+    "Notification and shortcut triggers must share one apply path"
 )
-assertContains(
+assertNotContains(
     progressViewModel,
-    "func completeShortcutFilterUpdate(",
-    "Progress view model must support shortcut completion states"
+    "prepareShortcutFilterUpdate",
+    "Shortcut must not add a separate progress state"
 )
-assertContains(
+assertNotContains(
     progressView,
     "completionCard(",
-    "Apply progress sheet must render shortcut completion results"
+    "Shortcut must not add a separate completion UI"
 )
 assertContains(
     project,

@@ -731,7 +731,7 @@ struct ContentModifiers: ViewModifier {
                 }
                 filterManager.setUserScriptManager(userScriptManager)
                 #if canImport(AppIntents) && !os(visionOS)
-                applyShortcutFilterUpdatePresentation(ShortcutFilterUpdatePresentation.shared.state)
+                applyShortcutFilterUpdateIfNeeded()
                 #endif
             }
             // Show onboarding/setup sheets only on initial load
@@ -754,9 +754,9 @@ struct ContentModifiers: ViewModifier {
             }
             #if canImport(AppIntents) && !os(visionOS)
                 .onReceive(
-                    NotificationCenter.default.publisher(for: .shortcutFilterUpdatePresentationChanged)
+                    NotificationCenter.default.publisher(for: .shortcutFilterUpdateRequested)
                 ) { _ in
-                    applyShortcutFilterUpdatePresentation(ShortcutFilterUpdatePresentation.shared.state)
+                    applyShortcutFilterUpdateIfNeeded()
                 }
             #endif
             #if os(iOS)
@@ -768,10 +768,7 @@ struct ContentModifiers: ViewModifier {
                 .onReceive(
                     NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)
                 ) { _ in
-                    filterManager.showingApplyProgressSheet = true
-                    Task {
-                        await filterManager.checkAndEnableFilters(forceReload: true)
-                    }
+                    applyFilterChangesFromExternalTrigger()
                 }
                 .fullScreenCover(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
@@ -791,36 +788,17 @@ struct ContentModifiers: ViewModifier {
         }
     }
 
-    #if canImport(AppIntents) && !os(visionOS)
-    private func applyShortcutFilterUpdatePresentation(_ state: ShortcutFilterUpdatePresentationState?) {
-        guard let state else { return }
-
-        switch state.style {
-        case .running:
-            filterManager.applyProgressViewModel.prepareShortcutFilterUpdate()
-            filterManager.showingApplyProgressSheet = true
-        case .success:
-            filterManager.applyProgressViewModel.completeShortcutFilterUpdate(
-                title: state.title,
-                message: state.message,
-                style: .success
-            )
-            filterManager.showingApplyProgressSheet = true
-        case .warning:
-            filterManager.applyProgressViewModel.completeShortcutFilterUpdate(
-                title: state.title,
-                message: state.message,
-                style: .warning
-            )
-            filterManager.showingApplyProgressSheet = true
-        case .failure:
-            filterManager.applyProgressViewModel.completeShortcutFilterUpdate(
-                title: state.title,
-                message: state.message,
-                style: .failure
-            )
-            filterManager.showingApplyProgressSheet = true
+    private func applyFilterChangesFromExternalTrigger() {
+        guard !filterManager.isLoading else { return }
+        Task {
+            await filterManager.checkAndEnableFilters(forceReload: true)
         }
+    }
+
+    #if canImport(AppIntents) && !os(visionOS)
+    private func applyShortcutFilterUpdateIfNeeded() {
+        guard ShortcutFilterUpdateRequest.shared.consumePendingRequest() else { return }
+        applyFilterChangesFromExternalTrigger()
     }
     #endif
     #if os(iOS)
