@@ -730,6 +730,9 @@ struct ContentModifiers: ViewModifier {
                         .startup, "wBlock application appeared", metadata: [:])
                 }
                 filterManager.setUserScriptManager(userScriptManager)
+                #if canImport(AppIntents) && !os(visionOS)
+                applyShortcutFilterUpdatePresentation(ShortcutFilterUpdatePresentation.shared.state)
+                #endif
             }
             // Show onboarding/setup sheets only on initial load
             .task {
@@ -749,6 +752,13 @@ struct ContentModifiers: ViewModifier {
                     showOnboardingSheet = true
                 }
             }
+            #if canImport(AppIntents) && !os(visionOS)
+                .onReceive(
+                    NotificationCenter.default.publisher(for: .shortcutFilterUpdatePresentationChanged)
+                ) { _ in
+                    applyShortcutFilterUpdatePresentation(ShortcutFilterUpdatePresentation.shared.state)
+                }
+            #endif
             #if os(iOS)
                 .onChangeCompat(of: scenePhase) { _, newPhase in
                     if newPhase == .background && filterManager.hasUnappliedChanges {
@@ -781,6 +791,38 @@ struct ContentModifiers: ViewModifier {
         }
     }
 
+    #if canImport(AppIntents) && !os(visionOS)
+    private func applyShortcutFilterUpdatePresentation(_ state: ShortcutFilterUpdatePresentationState?) {
+        guard let state else { return }
+
+        switch state.style {
+        case .running:
+            filterManager.applyProgressViewModel.prepareShortcutFilterUpdate()
+            filterManager.showingApplyProgressSheet = true
+        case .success:
+            filterManager.applyProgressViewModel.completeShortcutFilterUpdate(
+                title: state.title,
+                message: state.message,
+                style: .success
+            )
+            filterManager.showingApplyProgressSheet = true
+        case .warning:
+            filterManager.applyProgressViewModel.completeShortcutFilterUpdate(
+                title: state.title,
+                message: state.message,
+                style: .warning
+            )
+            filterManager.showingApplyProgressSheet = true
+        case .failure:
+            filterManager.applyProgressViewModel.completeShortcutFilterUpdate(
+                title: state.title,
+                message: state.message,
+                style: .failure
+            )
+            filterManager.showingApplyProgressSheet = true
+        }
+    }
+    #endif
     #if os(iOS)
         private func scheduleNotification(delay: TimeInterval = 1.0) {
             let content = UNMutableNotificationContent()

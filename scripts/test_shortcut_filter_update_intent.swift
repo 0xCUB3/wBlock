@@ -14,6 +14,9 @@ func assertContains(_ haystack: String, _ needle: String, _ message: String) {
 }
 
 let intent = try read("wBlock/FilterUpdateShortcuts.swift")
+let progressViewModel = try read("wBlock/ApplyChangesViewModel.swift")
+let progressView = try read("wBlock/ApplyChangesProgressView.swift")
+let contentView = try read("wBlock/ContentView.swift")
 let project = try read("wBlock.xcodeproj/project.pbxproj")
 let fileManager = FileManager.default
 let localizationRoot = URL(fileURLWithPath: "wBlock")
@@ -26,9 +29,16 @@ let localizationKeys = [
     "No filter updates found.",
     "wBlock filter update skipped because it is not due yet.",
     "wBlock filter update failed. Open wBlock for details.",
+    "Updating wBlock Filters",
+    "Checking for filter updates...",
+    "wBlock Filters Updated",
+    "No Filter Updates",
+    "Filter Update Skipped",
+    "Filter Update Deferred",
+    "Filter Update Failed",
+    "Filter Update Cancelled",
     "Update Filters",
 ]
-
 assertContains(
     intent,
     "struct UpdateWBlockFiltersIntent: AppIntent",
@@ -53,6 +63,36 @@ assertContains(
     intent,
     "struct WBlockShortcutsProvider: AppShortcutsProvider",
     "Shortcut must be discoverable in Shortcuts"
+)
+assertContains(
+    intent,
+    "ShortcutFilterUpdatePresentation.shared.start()",
+    "Shortcut must announce start so the opened app shows visible progress"
+)
+assertContains(
+    intent,
+    "ShortcutFilterUpdatePresentation.shared.finish(",
+    "Shortcut must announce completion so the progress sheet shows the result"
+)
+assertContains(
+    contentView,
+    "shortcutFilterUpdatePresentationChanged",
+    "Main view must listen for shortcut progress presentation changes"
+)
+assertContains(
+    contentView,
+    "prepareShortcutFilterUpdate()",
+    "Main view must show the apply-style sheet while shortcut updates run"
+)
+assertContains(
+    progressViewModel,
+    "func completeShortcutFilterUpdate(",
+    "Progress view model must support shortcut completion states"
+)
+assertContains(
+    progressView,
+    "completionCard(",
+    "Apply progress sheet must render shortcut completion results"
 )
 assertContains(
     project,

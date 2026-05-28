@@ -701,3 +701,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Open wBlock to update filters." = "Open wBlock to update filters.";
 "wBlock filter update skipped." = "wBlock filter update skipped.";
 "Update Filters" = "Update Filters";
+
+"Updating wBlock Filters" = "Updating wBlock Filters";
+"Checking for filter updates..." = "Checking for filter updates...";
+"wBlock Filters Updated" = "wBlock Filters Updated";
+"No Filter Updates" = "No Filter Updates";
+"Filter Update Skipped" = "Filter Update Skipped";
+"Filter Update Deferred" = "Filter Update Deferred";
+"Filter Update Failed" = "Filter Update Failed";
+"Filter Update Cancelled" = "Filter Update Cancelled";

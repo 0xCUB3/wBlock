@@ -67,6 +67,26 @@ struct ApplyChangesSummary: Equatable {
     var blockersApproachingLimit: Set<String>
 }
 
+enum ApplyChangesCompletionStyle: Equatable {
+    case success
+    case warning
+    case failure
+
+    var systemImage: String {
+        switch self {
+        case .success: return "checkmark.circle.fill"
+        case .warning: return "exclamationmark.triangle.fill"
+        case .failure: return "xmark.circle.fill"
+        }
+    }
+}
+
+struct ApplyChangesCompletion: Equatable {
+    var title: String
+    var message: String
+    var style: ApplyChangesCompletionStyle
+}
+
 /// Consolidated state for the apply progress presentation.
 struct ApplyChangesState: Equatable {
     var isLoading: Bool = false
@@ -83,13 +103,14 @@ struct ApplyChangesState: Equatable {
     var updatesFound: Int = 0
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map { ApplyChangesPhaseProgress(phase: $0, status: .pending) }
     var summary: ApplyChangesSummary? = nil
+    var completion: ApplyChangesCompletion? = nil
 
     var progressPercentage: Int {
         Int((0...1).clamp(progress) * 100)
     }
 
     var isComplete: Bool {
-        summary != nil
+        summary != nil || completion != nil
     }
 }
 
@@ -210,6 +231,38 @@ class ApplyChangesViewModel: ObservableObject {
             state.statusMessage = statusMessage
         } else if state.statusMessage.isEmpty || state.statusMessage.lowercased().contains("reloading") {
             state.statusMessage = String(localized: "Filters applied successfully.")
+        }
+    }
+
+    func prepareShortcutFilterUpdate() {
+        reset()
+        state.isLoading = true
+        state.statusMessage = String(localized: "Checking for filter updates...")
+        state.phases = ApplyChangesPhase.allCases.map { phase in
+            ApplyChangesPhaseProgress(phase: phase, status: phase == .updating ? .active : .pending)
+        }
+        state.progress = 0
+        resetProgressTracking()
+    }
+
+    func completeShortcutFilterUpdate(title: String, message: String, style: ApplyChangesCompletionStyle) {
+        state.isLoading = false
+        state.progress = 1
+        state.statusMessage = message
+        state.completion = ApplyChangesCompletion(title: title, message: message, style: style)
+        lastProgressValue = 1
+        lastProgressUpdate = Date()
+
+        let completedStatus: ApplyChangesPhaseStatus = style == .failure ? .failed : .complete
+        state.phases = state.phases.map { phase in
+            var updated = phase
+            switch phase.phase {
+            case .updating, .scripts:
+                updated.status = completedStatus
+            case .reading, .converting, .saving, .reloading:
+                updated.status = .pending
+            }
+            return updated
         }
     }
 
