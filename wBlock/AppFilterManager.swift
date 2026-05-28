@@ -62,6 +62,7 @@ class AppFilterManager: ObservableObject {
     private(set) var filterUpdater: FilterListUpdater
     let logManager: ConcurrentLogManager
     let dataManager = ProtobufDataManager.shared
+    private var setupTask: Task<Void, Never>?
 
     // Per-site disable tracking
     var lastKnownDisabledSites: [String] = []
@@ -167,9 +168,9 @@ class AppFilterManager: ObservableObject {
             self.currentPlatform = .iOS
         #endif
 
-        // Wait for ProtobufDataManager to finish loading before setting up
-        Task {
-            await setupAsync()
+        // Wait for ProtobufDataManager to finish loading before setting up.
+        setupTask = Task { @MainActor [weak self] in
+            await self?.setupAsync()
         }
     }
 
@@ -224,9 +225,14 @@ class AppFilterManager: ObservableObject {
         isLoading = false
     }
 
-    func setupAsync() async {
+    func waitUntilReady() async {
+        await setupTask?.value
+    }
+
+    private func setupAsync() async {
         await dataManager.waitUntilLoaded()
         setup()
+        setupTask = nil
     }
 
     func setup() {

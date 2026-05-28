@@ -676,3 +676,9 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+
+"Update wBlock Filters" = "Update wBlock Filters";
+"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Update Filters" = "Update Filters";
+
+"wBlock filter update started." = "wBlock filter update started.";

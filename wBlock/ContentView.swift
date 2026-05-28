@@ -158,9 +158,7 @@ struct ContentView: View {
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
-        Task {
-            await filterManager.checkAndEnableFilters(forceReload: true)
-        }
+        filterManager.checkAndEnableFilters(forceReload: true)
     }
 
     private var applyChangesToolbarButton: some View {
@@ -730,6 +728,9 @@ struct ContentModifiers: ViewModifier {
                         .startup, "wBlock application appeared", metadata: [:])
                 }
                 filterManager.setUserScriptManager(userScriptManager)
+                #if canImport(AppIntents) && !os(visionOS)
+                applyShortcutFilterUpdateIfNeeded()
+                #endif
             }
             // Show onboarding/setup sheets only on initial load
             .task {
@@ -749,6 +750,13 @@ struct ContentModifiers: ViewModifier {
                     showOnboardingSheet = true
                 }
             }
+            #if canImport(AppIntents) && !os(visionOS)
+                .onReceive(
+                    NotificationCenter.default.publisher(for: .shortcutFilterUpdateRequested)
+                ) { _ in
+                    applyShortcutFilterUpdateIfNeeded()
+                }
+            #endif
             #if os(iOS)
                 .onChangeCompat(of: scenePhase) { _, newPhase in
                     if newPhase == .background && filterManager.hasUnappliedChanges {
@@ -758,10 +766,7 @@ struct ContentModifiers: ViewModifier {
                 .onReceive(
                     NotificationCenter.default.publisher(for: .applyWBlockChangesNotification)
                 ) { _ in
-                    filterManager.showingApplyProgressSheet = true
-                    Task {
-                        await filterManager.checkAndEnableFilters(forceReload: true)
-                    }
+                    applyFilterChangesFromExternalTrigger()
                 }
                 .fullScreenCover(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
@@ -781,6 +786,20 @@ struct ContentModifiers: ViewModifier {
         }
     }
 
+    private func applyFilterChangesFromExternalTrigger() {
+        guard !filterManager.isLoading else { return }
+        filterManager.checkAndEnableFilters(forceReload: true)
+    }
+
+    #if canImport(AppIntents) && !os(visionOS)
+    private func applyShortcutFilterUpdateIfNeeded() {
+        Task { @MainActor in
+            await filterManager.waitUntilReady()
+            guard ShortcutFilterUpdateRequest.shared.consumePendingRequest() else { return }
+            applyFilterChangesFromExternalTrigger()
+        }
+    }
+    #endif
     #if os(iOS)
         private func scheduleNotification(delay: TimeInterval = 1.0) {
             let content = UNMutableNotificationContent()
