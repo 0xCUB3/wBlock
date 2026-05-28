@@ -676,3 +676,28 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+
+"Filter Update Result" = "Filter Update Result";
+"Updated" = "Updated";
+"No Updates" = "No Updates";
+"Skipped" = "Skipped";
+"Deferred" = "Deferred";
+"Cancelled" = "Cancelled";
+"Update wBlock Filters" = "Update wBlock Filters";
+"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Force Check" = "Force Check";
+"Check now even if automatic updates are not due yet." = "Check now even if automatic updates are not due yet.";
+"wBlock filter update was cancelled." = "wBlock filter update was cancelled.";
+"wBlock filter update was deferred. Open wBlock to finish updating." = "wBlock filter update was deferred. Open wBlock to finish updating.";
+"wBlock filter update failed. Open wBlock for details." = "wBlock filter update failed. Open wBlock for details.";
+"wBlock filters updated." = "wBlock filters updated.";
+"No filter updates found. Userscripts updated." = "No filter updates found. Userscripts updated.";
+"No filter updates found." = "No filter updates found.";
+"No filters are selected. Userscripts updated." = "No filters are selected. Userscripts updated.";
+"No filters are selected." = "No filters are selected.";
+"wBlock filter update is already running." = "wBlock filter update is already running.";
+"wBlock filter auto-update is disabled." = "wBlock filter auto-update is disabled.";
+"wBlock filter update skipped because it is not due yet." = "wBlock filter update skipped because it is not due yet.";
+"Open wBlock to update filters." = "Open wBlock to update filters.";
+"wBlock filter update skipped." = "wBlock filter update skipped.";
+"Update Filters" = "Update Filters";
