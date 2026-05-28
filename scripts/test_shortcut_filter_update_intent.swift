@@ -56,6 +56,16 @@ assertNotContains(
 )
 assertContains(
     intent,
+    "@MainActor\n    func perform()",
+    "Shortcut intent must run its request handoff on the main actor"
+)
+assertContains(
+    intent,
+    "IntentDialog(\"wBlock filter update started.\")",
+    "Shortcut intent dialog must be explicitly localized"
+)
+assertContains(
+    intent,
     "ShortcutFilterUpdateRequest.shared.requestUpdate()",
     "Shortcut must request the app to run the normal apply flow"
 )
@@ -83,6 +93,11 @@ assertContains(
     contentView,
     "applyFilterChangesFromExternalTrigger()",
     "Notification and shortcut triggers must share one apply path"
+)
+assertNotContains(
+    contentView,
+    "await filterManager.checkAndEnableFilters(forceReload: true)",
+    "External triggers should call the synchronous apply entry point directly"
 )
 assertNotContains(
     progressViewModel,

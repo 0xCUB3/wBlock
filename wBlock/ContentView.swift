@@ -158,9 +158,7 @@ struct ContentView: View {
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
-        Task {
-            await filterManager.checkAndEnableFilters(forceReload: true)
-        }
+        filterManager.checkAndEnableFilters(forceReload: true)
     }
 
     private var applyChangesToolbarButton: some View {
@@ -790,9 +788,7 @@ struct ContentModifiers: ViewModifier {
 
     private func applyFilterChangesFromExternalTrigger() {
         guard !filterManager.isLoading else { return }
-        Task {
-            await filterManager.checkAndEnableFilters(forceReload: true)
-        }
+        filterManager.checkAndEnableFilters(forceReload: true)
     }
 
     #if canImport(AppIntents) && !os(visionOS)

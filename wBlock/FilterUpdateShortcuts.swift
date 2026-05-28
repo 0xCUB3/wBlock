@@ -34,9 +34,10 @@ struct UpdateWBlockFiltersIntent: AppIntent {
 
     init() {}
 
+    @MainActor
     func perform() async throws -> some ProvidesDialog {
-        await ShortcutFilterUpdateRequest.shared.requestUpdate()
-        return .result(dialog: "wBlock filter update started.")
+        ShortcutFilterUpdateRequest.shared.requestUpdate()
+        return .result(dialog: IntentDialog("wBlock filter update started."))
     }
 }
 
