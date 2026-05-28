@@ -24,6 +24,7 @@ let intent = try read("wBlock/FilterUpdateShortcuts.swift")
 let progressViewModel = try read("wBlock/ApplyChangesViewModel.swift")
 let progressView = try read("wBlock/ApplyChangesProgressView.swift")
 let contentView = try read("wBlock/ContentView.swift")
+let appFilterManager = try read("wBlock/AppFilterManager.swift")
 let project = try read("wBlock.xcodeproj/project.pbxproj")
 let fileManager = FileManager.default
 let localizationRoot = URL(fileURLWithPath: "wBlock")
@@ -94,10 +95,20 @@ assertContains(
     "applyFilterChangesFromExternalTrigger()",
     "Notification and shortcut triggers must share one apply path"
 )
+assertContains(
+    contentView,
+    "await filterManager.waitUntilReady()",
+    "Shortcut apply requests must wait until filter lists are loaded"
+)
 assertNotContains(
     contentView,
     "await filterManager.checkAndEnableFilters(forceReload: true)",
     "External triggers should call the synchronous apply entry point directly"
+)
+assertContains(
+    appFilterManager,
+    "func waitUntilReady() async",
+    "Filter manager must expose a readiness await point for cold-launch shortcut requests"
 )
 assertNotContains(
     progressViewModel,

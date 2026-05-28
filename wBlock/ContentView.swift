@@ -793,8 +793,11 @@ struct ContentModifiers: ViewModifier {
 
     #if canImport(AppIntents) && !os(visionOS)
     private func applyShortcutFilterUpdateIfNeeded() {
-        guard ShortcutFilterUpdateRequest.shared.consumePendingRequest() else { return }
-        applyFilterChangesFromExternalTrigger()
+        Task { @MainActor in
+            await filterManager.waitUntilReady()
+            guard ShortcutFilterUpdateRequest.shared.consumePendingRequest() else { return }
+            applyFilterChangesFromExternalTrigger()
+        }
     }
     #endif
     #if os(iOS)
