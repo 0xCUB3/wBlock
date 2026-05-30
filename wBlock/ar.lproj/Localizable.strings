@@ -682,3 +682,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "تحرير القائمة";
+"Filter list not found." = "لم يتم العثور على قائمة الفلترة.";
+"Filter list updated. Apply changes to enable it." = "تم تحديث قائمة الفلترة. طبّق التغييرات لتمكينها.";

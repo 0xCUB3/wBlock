@@ -263,12 +263,18 @@ extension AppFilterManager {
         FilterList.countRules(in: content)
     }
 
-    func updateCustomFilterListName(id: UUID, newName: String) {
-        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+    @discardableResult
+    func updateCustomFilterList(id: UUID, name: String, category: FilterListCategory) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
 
         guard let index = filterListIndexByID[id], filterLists[index].isCustom else {
-            return
+            statusDescription = LocalizedStrings.text(
+                "Filter list not found.",
+                comment: "Custom filter lookup error"
+            )
+            hasError = true
+            return false
         }
 
         // Avoid confusing duplicate names in the UI.
@@ -280,19 +286,35 @@ extension AppFilterManager {
                 comment: "Custom filter duplicate name error"
             )
             hasError = true
-            return
+            return false
         }
 
+        let oldCategory = filterLists[index].category
         filterLists[index].name = trimmed
+        filterLists[index].category = category
         filterLists[index].hasUserProvidedName = true
         saveFilterListsCoalesced()
 
-        Task {
-            await ConcurrentLogManager.shared.info(
-                .system, "Renamed custom filter list",
-                metadata: ["filterId": id.uuidString, "name": trimmed]
+        if oldCategory != category {
+            markNonSelectionChangesPending()
+            statusDescription = LocalizedStrings.text(
+                "Filter list updated. Apply changes to enable it.",
+                comment: "Custom filter updated status"
             )
         }
+        hasError = false
+
+        Task {
+            await ConcurrentLogManager.shared.info(
+                .system, "Updated custom filter list",
+                metadata: [
+                    "filterId": id.uuidString,
+                    "name": trimmed,
+                    "category": category.rawValue,
+                ]
+            )
+        }
+        return true
     }
 
     func updateUserList(id: UUID, name: String, description: String, category: FilterListCategory, content: String) {

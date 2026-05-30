@@ -133,7 +133,7 @@ struct ContentView: View {
             if isInlineUserList(filter) {
                 EditUserListView(filterManager: filterManager, filter: filter)
             } else {
-                EditCustomFilterNameView(filterManager: filterManager, filter: filter)
+                EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
         }
         .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
@@ -483,7 +483,7 @@ struct FilterRowView: View {
             Button {
                 onEdit()
             } label: {
-                Label(isInlineUserList ? "Edit Rules" : "Edit Name", systemImage: "pencil")
+                Label(isInlineUserList ? "Edit Rules" : "Edit Filter List", systemImage: "pencil")
             }
 
             Button(role: .destructive) {
@@ -1395,7 +1395,7 @@ struct AddFilterListView: View {
 
 }
 
-struct EditCustomFilterNameView: View {
+struct EditCustomFilterView: View {
     @ObservedObject var filterManager: AppFilterManager
     let filter: FilterList
 
@@ -1403,11 +1403,14 @@ struct EditCustomFilterNameView: View {
     @FocusState private var nameFieldIsFocused: Bool
 
     @State private var name: String
+    @State private var selectedCategory: FilterListCategory
+    @State private var errorMessage: String?
 
     init(filterManager: AppFilterManager, filter: FilterList) {
         self.filterManager = filterManager
         self.filter = filter
         self._name = State(initialValue: filter.name)
+        self._selectedCategory = State(initialValue: filter.category)
     }
 
     var body: some View {
@@ -1428,6 +1431,8 @@ struct EditCustomFilterNameView: View {
                                     }
                                 }
 
+                            userListCategoryPicker(selection: $selectedCategory)
+
                             Text(filter.url.absoluteString)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
@@ -1439,7 +1444,7 @@ struct EditCustomFilterNameView: View {
                             }
                         }
                     }
-                    .navigationTitle("Edit Name")
+                    .navigationTitle("Edit Filter List")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -1456,7 +1461,7 @@ struct EditCustomFilterNameView: View {
                 }
             #else
                 SheetContainer {
-                    SheetHeader(title: "Edit Name") {
+                    SheetHeader(title: "Edit Filter List") {
                         dismiss()
                     }
 
@@ -1477,6 +1482,13 @@ struct EditCustomFilterNameView: View {
                                             nameFieldIsFocused = false
                                         }
                                     }
+
+                                Text("Category")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                userListCategoryPicker(selection: $selectedCategory)
+                                    .labelsHidden()
 
                                 Text(filter.url.absoluteString)
                                     .font(.caption2)
@@ -1508,6 +1520,17 @@ struct EditCustomFilterNameView: View {
                 }
             #endif
         }
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { _ in errorMessage = nil }
+            )
+        ) {
+            Button("OK", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private var trimmedName: String {
@@ -1536,8 +1559,15 @@ struct EditCustomFilterNameView: View {
     }
 
     private func save() {
-        filterManager.updateCustomFilterListName(id: filter.id, newName: trimmedName)
-        dismiss()
+        if filterManager.updateCustomFilterList(
+            id: filter.id,
+            name: trimmedName,
+            category: selectedCategory
+        ) {
+            dismiss()
+        } else {
+            errorMessage = filterManager.statusDescription
+        }
     }
 }
 

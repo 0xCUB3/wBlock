@@ -682,3 +682,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "Edytuj liste";
+"Filter list not found." = "Nie znaleziono listy filtrów.";
+"Filter list updated. Apply changes to enable it." = "Lista filtrów zaktualizowana. Zastosuj zmiany, aby ją włączyć.";

@@ -683,3 +683,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "Lista szerkesztése";
+"Filter list not found." = "Szűrőlista nem található.";
+"Filter list updated. Apply changes to enable it." = "Szűrőlista frissítve. Alkalmazza a módosításokat az engedélyezéséhez.";

@@ -682,3 +682,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "Modifica lista";
+"Filter list not found." = "Elenco filtri non trovato.";
+"Filter list updated. Apply changes to enable it." = "Elenco filtri aggiornato. Applica le modifiche per abilitarlo.";

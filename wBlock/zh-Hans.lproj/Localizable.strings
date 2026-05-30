@@ -682,3 +682,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "编辑列表";
+"Filter list not found." = "未找到过滤器列表。";
+"Filter list updated. Apply changes to enable it." = "过滤器列表已更新。应用更改以启用它。";

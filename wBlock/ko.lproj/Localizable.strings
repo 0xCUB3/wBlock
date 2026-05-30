@@ -682,3 +682,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "목록 편집";
+"Filter list not found." = "필터 목록을 찾을 수 없습니다.";
+"Filter list updated. Apply changes to enable it." = "필터 목록이 업데이트되었습니다. 활성화하려면 변경 사항을 적용하세요.";

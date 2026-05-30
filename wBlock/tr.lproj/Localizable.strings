@@ -682,3 +682,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri kapatıp d
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "Listeyi düzenle";
+"Filter list not found." = "Filtre listesi bulunamadı.";
+"Filter list updated. Apply changes to enable it." = "Filtre listesi güncellendi. Etkinleştirmek için değişiklikleri uygulayın.";

@@ -682,3 +682,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Update Filters" = "Update Filters";
 
 "wBlock filter update started." = "wBlock filter update started.";
+"Edit Filter List" = "Editează lista";
+"Filter list not found." = "Lista de filtre nu a fost găsită.";
+"Filter list updated. Apply changes to enable it." = "Lista de filtre a fost actualizată. Aplicați modificările pentru a o activa.";
