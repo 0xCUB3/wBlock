@@ -167,7 +167,7 @@
 "Enable all 5 Content Blocker extensions" = "5 İçerik Engelleyici genişletmesinin tümünü etkinleştirin";
 "Title (optional)" = "Başlık (isteğe bağlı)";
 "Display" = "Görüntüleme";
-"We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud'da (\(remoteConfigUpdatedAtText)) mevcut bir wBlock yapılandırması bulundu. Kurulum sürecini atlayıp bunun yerine onu kullanabilirsiniz.";
+"We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud'da (\\(remoteConfigUpdatedAtText)) mevcut bir wBlock yapılandırması bulundu. Kurulum sürecini atlayıp bunun yerine onu kullanabilirsiniz.";
 "Danger Zone" = "Tehlikeli Alan";
 "Save" = "Kaydet";
 "Auto Update" = "Otomatik Güncelleme";
@@ -234,7 +234,7 @@
 "Search" = "Ara";
 "Ads" = "Reklam";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Tercih ettiğiniz engelleme düzeyini seçin. Etkinleştirilen filtreleri daha sonra değiştirebilirsiniz.";
-"Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Ön izleme gösteriliyor ((formatFileSize(previewLength)) / (formatFileSize(script.content.count)))";
+"Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Ön izleme gösteriliyor (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Az önce denetlendi";
 "wBlock will fetch and enable the script automatically." = "wBlock, betiği otomatik olarak indirip etkinleştirecektir.";
 "Add domains to disable ad blocking on specific sites" = "wBlock'un devre dışı kalacağı alan adlarını ekle";
@@ -617,7 +617,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Title is required." = "Başlık gerekli.";
 "URL Patterns (%d)" = "URL şablonları (%d)";
 "Unapplied Filter Changes" = "Uygulanmayan filtre değişiklikleri";
-"Updated %d/%d extensions in %@" = "%@ içindeki %d/%d genişletmeleri güncellendi";
+"Updated %d/%d extensions in %@" = "%d/%d genişletme %@ içinde güncellendi";
 "Updating disabled sites..." = "Devre dışı bırakılan siteler güncelleniyor...";
 "User list added. Apply changes to enable it." = "Kullanıcı listesi eklendi. Etkinleştirmek için değişiklikleri uygulayın.";
 "User list is empty." = "Kullanıcı listesi boş.";
