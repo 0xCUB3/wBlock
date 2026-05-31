@@ -152,7 +152,7 @@
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube reklamlarını engelleyebilmek için wBlock Scripts'in etkinleştirilmesi ve tüm web sitelerinde 'Her Zaman İzin Ver' olarak ayarlanması gerekir.";
 "Privacy" = "Gizlilik";
 "Rules" = "Kural";
-"Enabled Lists" = "Etkin liste";
+"Enabled Lists" = "Etkin listeler";
 "Paste from Clipboard" = "Panodan yapıştır";
 "No Userscripts" = "Kullanıcı betiği yok";
 "Userscripts" = "Kullanıcı betikleri";
