@@ -181,6 +181,22 @@ final class CloudSyncManager: ObservableObject {
         saveDeletedLocalUserScriptMarkers(markers)
     }
 
+    private func clearDeletedLocalUserScriptNames(_ names: Set<String>) {
+        guard !names.isEmpty else { return }
+        var markers = loadDeletedLocalUserScriptMarkers()
+        var changed = false
+        for name in names {
+            let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
+            guard !normalized.isEmpty else { continue }
+            if markers.removeValue(forKey: normalized) != nil {
+                changed = true
+            }
+        }
+        if changed {
+            saveDeletedLocalUserScriptMarkers(markers)
+        }
+    }
+
     func attach(filterManager: AppFilterManager) {
         self.filterManager = filterManager
     }
@@ -889,8 +905,34 @@ final class CloudSyncManager: ObservableObject {
         }
 
         let remoteDeletedLocalNames = Set(scripts.deletedLocalNames ?? [])
-        if !remoteDeletedLocalNames.isEmpty {
-            mergeDeletedLocalUserScriptNames(remoteDeletedLocalNames)
+        let localNames = userScriptManager.userScripts.filter(\.isLocal).map(\.name)
+        let remoteLocalScripts = scripts.local.map {
+            CloudSyncLocalUserScript(
+                name: $0.name,
+                content: $0.content,
+                isEnabled: $0.isEnabled,
+                updatesAutomatically: $0.updatesAutomatically
+            )
+        }
+
+        let deletedLocalNamesToClear =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
+                existingDeletedNames: deletedLocalUserScriptNameSet(),
+                remoteLocalScripts: remoteLocalScripts,
+                localNames: localNames
+            )
+        if !deletedLocalNamesToClear.isEmpty {
+            clearDeletedLocalUserScriptNames(deletedLocalNamesToClear)
+        }
+
+        let remoteDeletedLocalNamesToMerge =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringRemoteApply(
+                remoteDeletedNames: remoteDeletedLocalNames,
+                remoteLocalScripts: remoteLocalScripts,
+                localNames: localNames
+            )
+        if !remoteDeletedLocalNamesToMerge.isEmpty {
+            mergeDeletedLocalUserScriptNames(remoteDeletedLocalNamesToMerge)
         }
 
         // Remote scripts (URL-based)
@@ -916,19 +958,8 @@ final class CloudSyncManager: ObservableObject {
 
         // Local scripts (content-based)
         // The newer remote payload is authoritative for synced local imports.
-        for local in scripts.local {
-            clearDeletedLocalUserScriptName(local.name)
-        }
 
         let deletedLocalNames = deletedLocalUserScriptNameSet()
-        let remoteLocalScripts = scripts.local.map {
-            CloudSyncLocalUserScript(
-                name: $0.name,
-                content: $0.content,
-                isEnabled: $0.isEnabled,
-                updatesAutomatically: $0.updatesAutomatically
-            )
-        }
         let localNamesToDelete = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
             localNames: userScriptManager.userScripts.filter(\.isLocal).map(\.name),
             remoteScripts: remoteLocalScripts,
@@ -1023,8 +1054,24 @@ final class CloudSyncManager: ObservableObject {
         }
 
         let remoteDeletedLocalNames = Set(remotePayload.userScripts.deletedLocalNames ?? [])
-        if !remoteDeletedLocalNames.isEmpty {
-            mergeDeletedLocalUserScriptNames(remoteDeletedLocalNames)
+        let localNames = userScriptManager.userScripts.filter(\.isLocal).map(\.name)
+
+        let deletedLocalNamesToClear =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringUploadReconciliation(
+                existingDeletedNames: deletedLocalUserScriptNameSet(),
+                localNames: localNames
+            )
+        if !deletedLocalNamesToClear.isEmpty {
+            clearDeletedLocalUserScriptNames(deletedLocalNamesToClear)
+        }
+
+        let remoteDeletedLocalNamesToMerge =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringUploadReconciliation(
+                remoteDeletedNames: remoteDeletedLocalNames,
+                localNames: localNames
+            )
+        if !remoteDeletedLocalNamesToMerge.isEmpty {
+            mergeDeletedLocalUserScriptNames(remoteDeletedLocalNamesToMerge)
         }
 
         let deletedCustomURLs = deletedCustomURLSet()
