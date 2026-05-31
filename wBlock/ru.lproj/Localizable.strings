@@ -360,6 +360,7 @@
 "Reminders" = "Напоминания";
 "Restore" = "Восстановить";
 "Restore Settings?" = "Восстановить настройки?";
+"Restore from backup…" = "Восстановить из резервной копии…";
 "Rule deleted" = "Правило удалено";
 "Scheduler error" = "Ошибка планировщика";
 "Scheduling: %@" = "Планирование: %@";

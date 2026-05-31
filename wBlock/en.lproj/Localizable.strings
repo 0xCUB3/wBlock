@@ -359,6 +359,7 @@
 "Reminders" = "Reminders";
 "Restore" = "Restore";
 "Restore Settings?" = "Restore Settings?";
+"Restore from backup…" = "Restore from backup…";
 "Rule deleted" = "Rule deleted";
 "Scheduler error" = "Scheduler error";
 "Scheduling: %@" = "Scheduling: %@";

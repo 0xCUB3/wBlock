@@ -360,6 +360,7 @@
 "Reminders" = "Recordatorios";
 "Restore" = "Restaurar";
 "Restore Settings?" = "¿Restaurar ajustes?";
+"Restore from backup…" = "Restaurar desde copia de seguridad…";
 "Rule deleted" = "Regla eliminada";
 "Scheduler error" = "Error del programador";
 "Scheduling: %@" = "Programación: %@";

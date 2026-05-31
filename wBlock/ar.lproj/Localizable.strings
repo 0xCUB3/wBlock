@@ -360,6 +360,7 @@
 "Reminders" = "التذكيرات";
 "Restore" = "استعادة";
 "Restore Settings?" = "استعادة الإعدادات؟";
+"Restore from backup…" = "استعادة من نسخة احتياطية…";
 "Rule deleted" = "تم حذف القاعدة";
 "Scheduler error" = "خطأ في المجدول";
 "Scheduling: %@" = "الجدولة: %@";
