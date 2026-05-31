@@ -2,7 +2,7 @@
 "Security" = "Güvenlik";
 "Checking for Updates" = "Güncellemeler denetleniyor";
 "Already done this? Just check the boxes above." = "Bunu zaten yaptınız mı? Yukarıdaki kutuları işaretlemeniz yeterli.";
-"Search logs" = "Günlükleri ara";
+"Search logs" = "Günlüklerde ara";
 "FilterUpdate" = "Filtreyi Güncelle";
 "Experimental" = "Deneysel";
 "Next: \\(compactStatusLine)" = "Sonraki: \\(compactStatusLine)";
@@ -94,7 +94,7 @@
 "Annoyances" = "Can sıkıcı";
 "Requirements" = "Gereksinimler";
 "Userscripts: %@" = "Kullanıcı betiği: %@";
-"in %@ (%@)" = "%@ içinde (%@)";
+"in %@ (%@)" = "%@ sonra (%@)";
 "Filter name" = "Filtre adı";
 "Every %d days" = "Her %d günde";
 "Continue" = "Devam";
@@ -276,14 +276,14 @@
 "Importing…" = "İçe aktarılıyor…";
 "Choose File…" = "Dosya seç…";
 "Disable on this site" = "Bu sitede devre dışı bırak";
-"Element zapper" = "Öğe seçici";
+"Element zapper" = "Öğe gizleyici";
 "Activate" = "Etkinleştir";
 "Click an element on the page to hide it." = "Sayfadaki bir öğeyi gizlemek için üzerine tıklayın.";
 "Blocked requests (%d)" = "Engellenen istek (%d)";
 "No blocked requests yet." = "Henüz engellenmiş istek yok.";
 "Refresh" = "Yenile";
-"Zapper rules (%d)" = "Zapper kuralı (%d)";
-"No zapper rules for this site." = "Bu site için zapper kuralı yok.";
+"Zapper rules (%d)" = "Öğe gizleyici kuralı (%d)";
+"No zapper rules for this site." = "Bu site için öğe gizleyici kuralı yok.";
 "(empty rule)" = "(kural boş)";
 "Restart Onboarding…" = "Kurulum yeniden başlatılıyor…";
 "Download Script" = "Betiği indir";
@@ -317,7 +317,7 @@
 "Apply" = "Uygula";
 "Apply changes" = "Değişiklikleri uygula";
 "Apply your pending changes" = "Bekleyen değişikliklerinizi uygulayın";
-"Background Diagnostics" = "Arka plan tanıları";
+"Background Diagnostics" = "Arka plan görevleri";
 "Backup" = "Yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "BGAppRefresh" = "Arka planda uygulama yenileme";
@@ -327,7 +327,7 @@
 "Completed" = "Tamamlandı";
 "Due soon catch-up" = "Yaklaşan telafi";
 "Edit" = "Düzenle";
-"Element Zapper Rules" = "Öğe Gizleme Kuralları";
+"Element Zapper Rules" = "Öğe gizleyici kuralları";
 "Execution: %@" = "Çalıştırma: %@";
 "Expired %@" = "%@ süresi doldu";
 "Export Settings" = "Ayarları dışa aktar";
@@ -341,7 +341,7 @@
 "Import failed: %@" = "İçe aktarılamadı: %@";
 "Info.plist missing" = "Info.plist eksik";
 "Near Safari limit: %@" = "Safari sınırına yakın: %@";
-"No Element Zapper Rules" = "Öğe gizleme kuralı yok";
+"No Element Zapper Rules" = "Öğe gizleyici kuralı yok";
 "No background run recorded" = "Kayıtlı arka plan çalıştırması yok";
 "No foreground catch-up recorded" = "Ön planda yakalama kaydı yok";
 "No silent push received yet" = "Henüz sessiz bildirim alınmadı";
