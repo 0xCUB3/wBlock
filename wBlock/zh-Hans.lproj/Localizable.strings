@@ -360,6 +360,7 @@
 "Reminders" = "提醒";
 "Restore" = "恢复";
 "Restore Settings?" = "恢复设置？";
+"Restore from backup…" = "从备份恢复…";
 "Rule deleted" = "规则已删除";
 "Scheduler error" = "调度器错误";
 "Scheduling: %@" = "调度：%@";

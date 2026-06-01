@@ -360,6 +360,7 @@
 "Reminders" = "Promemoria";
 "Restore" = "Ripristina";
 "Restore Settings?" = "Ripristinare le impostazioni?";
+"Restore from backup…" = "Ripristina da backup…";
 "Rule deleted" = "Regola eliminata";
 "Scheduler error" = "Errore dello scheduler";
 "Scheduling: %@" = "Pianificazione: %@";

@@ -360,6 +360,7 @@
 "Reminders" = "リマインダー";
 "Restore" = "復元";
 "Restore Settings?" = "設定を復元しますか？";
+"Restore from backup…" = "バックアップから復元…";
 "Rule deleted" = "ルールを削除しました";
 "Scheduler error" = "スケジューラエラー";
 "Scheduling: %@" = "スケジュール: %@";

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import wBlockCoreService
 #if os(iOS)
 import UIKit
@@ -67,6 +68,10 @@ struct OnboardingView: View {
     @State private var hasEnabledAdvanced = false
     @State private var detectedScriptsExtensionEnabled: Bool?
     @State private var isRefreshingScriptsExtensionState = false
+    @State private var showingBackupImporter = false
+    @State private var showingRestoreBackupConfirmation = false
+    @State private var pendingBackup: WBlockBackup?
+    @State private var backupRestoreError: String?
 
     @ObservedObject var filterManager: AppFilterManager
     
@@ -241,6 +246,44 @@ struct OnboardingView: View {
             seedSelectedUserscriptsIfNeeded()
             syncBaselineUserscriptSelection()
         }
+        .fileImporter(
+            isPresented: $showingBackupImporter,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleBackupImportResult(result)
+        }
+        .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation) {
+            Button("Cancel", role: .cancel) { pendingBackup = nil }
+            Button("Restore") {
+                Task { await performBackupRestore() }
+            }
+        } message: {
+            if let backup = pendingBackup {
+                let dateStr = backup.createdAt.formatted(date: .abbreviated, time: .shortened)
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString(
+                            "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.",
+                            comment: "Restore backup confirmation message"
+                        ),
+                        dateStr,
+                        backup.appVersion,
+                        backup.filterSelections.count.formatted()
+                    )
+                )
+            } else {
+                Text("This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.")
+            }
+        }
+        .alert("Backup", isPresented: Binding(
+            get: { backupRestoreError != nil },
+            set: { if !$0 { backupRestoreError = nil } }
+        )) {
+            Button("OK") { backupRestoreError = nil }
+        } message: {
+            Text(backupRestoreError ?? "")
+        }
         .confirmationDialog(
             "Use existing iCloud setup?",
             isPresented: $showRemoteConfigPrompt,
@@ -305,6 +348,14 @@ struct OnboardingView: View {
                 .foregroundStyle(.secondary)
             }
 
+            if step == .protection {
+                Button(String(localized: "Restore from backup…")) {
+                    showingBackupImporter = true
+                }
+                .font(.subheadline)
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -1181,5 +1232,41 @@ struct OnboardingView: View {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         return values.isEmpty ? nil : values
+    }
+
+    private func handleBackupImportResult(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            Task { @MainActor in
+                do {
+                    try url.withSecurityScopedAccess { accessibleURL in
+                        let data = try Data(contentsOf: accessibleURL)
+                        let backup = try BackupManager.importData(from: data)
+                        pendingBackup = backup
+                        showingRestoreBackupConfirmation = true
+                    }
+                } catch {
+                    backupRestoreError = String.localizedStringWithFormat(
+                        NSLocalizedString("Failed to read backup: %@", comment: "Backup import read failure"),
+                        error.localizedDescription
+                    )
+                }
+            }
+        case .failure(let error):
+            backupRestoreError = String.localizedStringWithFormat(
+                NSLocalizedString("Import failed: %@", comment: "Backup import failure"),
+                error.localizedDescription
+            )
+        }
+    }
+
+    @MainActor
+    private func performBackupRestore() async {
+        guard let backup = pendingBackup else { return }
+        pendingBackup = nil
+        await BackupManager.restoreBackup(backup, filterManager: filterManager)
+        dismiss()
+        filterManager.checkAndEnableFilters(forceReload: true)
     }
 }

@@ -359,6 +359,7 @@
 "Reminders" = "Emlékeztetők";
 "Restore" = "Visszaállítás";
 "Restore Settings?" = "Beállítások visszaállítása?";
+"Restore from backup…" = "Visszaállítás biztonsági másolatból…";
 "Rule deleted" = "Szabály törölve";
 "Scheduler error" = "Ütemezőhiba";
 "Scheduling: %@" = "Ütemezés: %@";

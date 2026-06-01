@@ -23,6 +23,7 @@ func assertNotContains(_ haystack: String, _ needle: String, _ message: String) 
 let service = try read("FilterUpdateService/FilterUpdateService.swift")
 let runner = try read("wBlockCoreService/FilterAutoUpdateRunner.swift")
 let agentEntitlements = try read("FilterUpdateAgent/FilterUpdateAgent.entitlements")
+let groupIdentifier = try read("wBlockCoreService/GroupIdentifier.swift")
 let sharedAutoUpdate = try read("wBlockCoreService/SharedAutoUpdateManager.swift")
 
 assertContains(
@@ -54,6 +55,21 @@ assertContains(
     agentEntitlements,
     "com.apple.security.network.client",
     "Launch agent fallback needs network access to fetch filters"
+)
+assertContains(
+    groupIdentifier,
+    "SecTaskCopyValueForEntitlement",
+    "Launch agent must derive direct-distribution app group from its own entitlements"
+)
+assertContains(
+    groupIdentifier,
+    "com.apple.security.application-groups",
+    "Launch agent must inspect app-group entitlements before falling back to Info.plist"
+)
+assertContains(
+    groupIdentifier,
+    "prefix.contains(\"$(\")",
+    "Unpatched AppIdentifierPrefix placeholders must not be used as app-group identifiers"
 )
 assertContains(
     sharedAutoUpdate,

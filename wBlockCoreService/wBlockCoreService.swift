@@ -19,7 +19,7 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "3"
+    private static let embeddedCompatibilityRulesVersion = "4"
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
@@ -36,6 +36,17 @@ public enum ContentBlockerService {
 /js/pagead.js$script
 /widget/pagead.js$script
 ##.adbox.banner_ads.adsbox
+
+! NameMC Ad-Shield/Network N compatibility
+||html-load.com^$script,domain=namemc.com
+||kumo.network-n.com^$script,domain=namemc.com
+||btloader.com^$script,domain=namemc.com
+||securepubads.g.doubleclick.net/tag/js/gpt.js$script,domain=namemc.com
+||ad-delivery.net^$domain=namemc.com
+||k.streamrail.com^$domain=namemc.com
+namemc.com##.ad-container
+namemc.com##[id^="nn_"]
+namemc.com##iframe[src*="html-load.com"]
 
 ! AdBlock Tester diagnostic bait compatibility
 ||ymatuhin.ru/ads/ads.js$script,domain=adblock-tester.com|checkadblock.ru

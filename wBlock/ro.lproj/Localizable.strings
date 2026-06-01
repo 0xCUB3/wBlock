@@ -360,6 +360,7 @@
 "Reminders" = "Mementouri";
 "Restore" = "Restaurează";
 "Restore Settings?" = "Restaurezi setările?";
+"Restore from backup…" = "Restaurează din backup…";
 "Rule deleted" = "Regulă ștearsă";
 "Scheduler error" = "Eroare de planificare";
 "Scheduling: %@" = "Programare: %@";

@@ -303,5 +303,9 @@ enum BackupManager {
 
         // 7. Refresh ZapperRuleManager
         ZapperRuleManager.shared.refresh()
+
+        // 8. Restored backups represent an existing configuration — skip the setup wizard.
+        await ProtobufDataManager.shared.setHasCompletedOnboarding(true)
+        UserScriptManager.shared.markInitialSetupComplete()
     }
 }

@@ -52,4 +52,60 @@ enum CloudSyncLocalUserScriptReconciler {
             deletedNormalized.contains(normalizedLocal) || !desiredRemote.contains(normalizedLocal)
         }
     }
+
+    static func deletedNamesToClearDuringUploadReconciliation(
+        existingDeletedNames: Set<String>,
+        localNames: [String]
+    ) -> Set<String> {
+        normalizedNames(existingDeletedNames)
+            .intersection(normalizedNames(localNames))
+    }
+
+    static func deletedNamesToMergeDuringUploadReconciliation(
+        remoteDeletedNames: Set<String>,
+        localNames: [String]
+    ) -> Set<String> {
+        deletedNamesToMerge(
+            remoteDeletedNames: remoteDeletedNames,
+            liveLocalNames: normalizedNames(localNames)
+        )
+    }
+
+    static func deletedNamesToMergeDuringRemoteApply(
+        remoteDeletedNames: Set<String>,
+        remoteLocalScripts: [CloudSyncLocalUserScript],
+        localNames: [String]
+    ) -> Set<String> {
+        deletedNamesToMerge(
+            remoteDeletedNames: remoteDeletedNames,
+            liveLocalNames: normalizedNames(remoteLocalScripts.map(\.name))
+                .union(normalizedNames(localNames))
+        )
+    }
+
+    static func deletedNamesToClearDuringReconciliation(
+        existingDeletedNames: Set<String>,
+        remoteLocalScripts: [CloudSyncLocalUserScript],
+        localNames: [String]
+    ) -> Set<String> {
+        normalizedNames(existingDeletedNames)
+            .intersection(normalizedNames(remoteLocalScripts.map(\.name)).union(normalizedNames(localNames)))
+    }
+
+    private static func deletedNamesToMerge(
+        remoteDeletedNames: Set<String>,
+        liveLocalNames: Set<String>
+    ) -> Set<String> {
+        normalizedNames(remoteDeletedNames).filter { remoteName in
+            !remoteName.isEmpty && !liveLocalNames.contains(remoteName)
+        }
+    }
+
+    private static func normalizedNames(_ names: [String]) -> Set<String> {
+        Set(names.map(normalizedName).filter { !$0.isEmpty })
+    }
+
+    private static func normalizedNames(_ names: Set<String>) -> Set<String> {
+        Set(names.map(normalizedName).filter { !$0.isEmpty })
+    }
 }

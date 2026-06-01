@@ -46,6 +46,83 @@ struct CloudSyncLocalUserScriptTests {
         let normalized = CloudSyncLocalUserScriptReconciler.normalizedName("  Bypass Paywalls Clean  ")
         expect(normalized == "bypass paywalls clean", "names should be normalized consistently")
 
+        // 1. deletedNamesToMergeDuringUploadReconciliation
+        let mergedWithLocalReAdd =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringUploadReconciliation(
+                remoteDeletedNames: ["bypass paywalls clean"],
+                localNames: ["Bypass Paywalls Clean"]
+            )
+        expect(
+            mergedWithLocalReAdd.isEmpty,
+            "a locally re-added local userscript should not be re-deleted by a stale tombstone"
+        )
+
+        let mergedWithoutLocalCopy =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringUploadReconciliation(
+                remoteDeletedNames: ["bypass paywalls clean"],
+                localNames: []
+            )
+        expect(
+            mergedWithoutLocalCopy == ["bypass paywalls clean"],
+            "remote local script tombstones should still merge when the script is absent locally"
+        )
+
+        // 2. deletedNamesToMergeDuringRemoteApply
+        let mergedDuringRemoteApplyWithLiveLocal =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringRemoteApply(
+                remoteDeletedNames: ["bypass paywalls clean"],
+                remoteLocalScripts: [bypass],
+                localNames: []
+            )
+        expect(
+            mergedDuringRemoteApplyWithLiveLocal.isEmpty,
+            "a live local userscript should win over a stale tombstone during remote apply"
+        )
+
+        // 3. deletedNamesToClearDuringUploadReconciliation
+        let deletedToKeepDuringUpload =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringUploadReconciliation(
+                existingDeletedNames: ["bypass paywalls clean"],
+                localNames: []
+            )
+        expect(
+            deletedToKeepDuringUpload.isEmpty,
+            "a local delete marker must survive upload reconciliation while only the stale remote payload still has the script"
+        )
+
+        let deletedToClearAfterLocalReAdd =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringUploadReconciliation(
+                existingDeletedNames: ["bypass paywalls clean"],
+                localNames: ["Bypass Paywalls Clean"]
+            )
+        expect(
+            deletedToClearAfterLocalReAdd == ["bypass paywalls clean"],
+            "re-adding a local userscript locally should clear the local delete marker before upload"
+        )
+
+        // 4. deletedNamesToClearDuringReconciliation
+        let deletedToClearFromRemoteApply =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
+                existingDeletedNames: ["bypass paywalls clean"],
+                remoteLocalScripts: [bypass],
+                localNames: []
+            )
+        expect(
+            deletedToClearFromRemoteApply == ["bypass paywalls clean"],
+            "a live remote local userscript should clear a stale local delete marker during remote apply"
+        )
+
+        let deletedToClear =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
+                existingDeletedNames: ["bypass paywalls clean"],
+                remoteLocalScripts: [],
+                localNames: ["Bypass Paywalls Clean"]
+            )
+        expect(
+            deletedToClear == ["bypass paywalls clean"],
+            "re-adding a local userscript locally should clear the local delete marker"
+        )
+
         print("PASS")
     }
 }

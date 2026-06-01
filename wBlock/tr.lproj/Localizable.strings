@@ -359,6 +359,7 @@
 "Reminders" = "Hatırlatmalar";
 "Restore" = "Geri yükle";
 "Restore Settings?" = "Ayarlar geri yüklensin mi?";
+"Restore from backup…" = "Yedekten geri yükle…";
 "Rule deleted" = "Kural silindi";
 "Scheduler error" = "Zamanlayıcı hatası";
 "Scheduling: %@" = "Zamanlama: %@";

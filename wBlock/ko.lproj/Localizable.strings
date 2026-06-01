@@ -360,6 +360,7 @@
 "Reminders" = "알림";
 "Restore" = "복원";
 "Restore Settings?" = "설정을 복원할까요?";
+"Restore from backup…" = "백업에서 복원…";
 "Rule deleted" = "규칙이 삭제됨";
 "Scheduler error" = "스케줄러 오류";
 "Scheduling: %@" = "예약: %@";

@@ -87,6 +87,39 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var isDownloaded: Bool {
         !content.isEmpty
     }
+
+    public var executableContent: String {
+        Self.executableContent(from: content)
+    }
+
+    public static func executableContent(from content: String) -> String {
+        guard let metadataStart = content.range(of: "// ==UserScript==")?.lowerBound,
+              let metadataEndRange = content.range(
+                of: "// ==/UserScript==",
+                range: metadataStart..<content.endIndex
+              )
+        else {
+            return content
+        }
+
+        var bodyStart = metadataEndRange.upperBound
+        if bodyStart < content.endIndex, content[bodyStart] == "\r" {
+            bodyStart = content.index(after: bodyStart)
+        }
+        if bodyStart < content.endIndex, content[bodyStart] == "\n" {
+            bodyStart = content.index(after: bodyStart)
+        }
+
+        if metadataStart == content.startIndex {
+            return String(content[bodyStart...])
+        }
+
+        var stripped = String()
+        stripped.reserveCapacity(content.count - content[metadataStart..<bodyStart].count)
+        stripped.append(contentsOf: content[..<metadataStart])
+        stripped.append(contentsOf: content[bodyStart...])
+        return stripped
+    }
     
     public init(id: UUID = UUID(), name: String, url: URL? = nil, content: String = "") {
         self.id = id
@@ -294,11 +327,11 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     
     /// Check if userscript matches a given URL
     public func matches(url: String) -> Bool {
-        guard URL(string: url) != nil else { return false }
+        guard let parsedURL = Self.parsedMatchURL(from: url) else { return false }
         let urlRange = NSRange(location: 0, length: url.utf16.count)
 
         let isIncludedByMatch = matches.contains {
-            matchesPattern(pattern: $0, url: url, urlRange: urlRange)
+            matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
         }
         let isIncludedByInclude = includes.contains {
             matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange)
@@ -307,7 +340,9 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
 
         guard isIncluded else { return false }
 
-        if excludeMatches.contains(where: { matchesPattern(pattern: $0, url: url, urlRange: urlRange) }) {
+        if excludeMatches.contains(where: {
+            matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
+        }) {
             return false
         }
 
@@ -317,18 +352,65 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
 
         return true
     }
-    
-    private func matchesPattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
-        // Handle @match patterns which follow a specific format: <scheme>://<host><path>
-        // Examples: 
-        // "*://*.youtube.com/*" should match "https://www.youtube.com/watch?v=..."
-        // "https://example.com/*" should match "https://example.com/path"
+
+    private struct ParsedMatchURL {
+        let scheme: String
+        let host: String
+        let hostWithPort: String
+        let pathAndSuffix: String
+    }
+
+    private static func parsedMatchURL(from url: String) -> ParsedMatchURL? {
+        guard let components = URLComponents(string: url),
+              let scheme = components.scheme?.lowercased(),
+              let host = components.host?.lowercased()
+        else {
+            return nil
+        }
+
+        let hostWithPort: String
+        if let port = components.port {
+            hostWithPort = "\(host):\(port)"
+        } else {
+            hostWithPort = host
+        }
+
+        var pathAndSuffix = components.percentEncodedPath
+        if pathAndSuffix.isEmpty {
+            pathAndSuffix = "/"
+        }
+        if let query = components.percentEncodedQuery {
+            pathAndSuffix += "?\(query)"
+        }
+        if let fragment = components.percentEncodedFragment {
+            pathAndSuffix += "#\(fragment)"
+        }
+
+        return ParsedMatchURL(
+            scheme: scheme,
+            host: host,
+            hostWithPort: hostWithPort,
+            pathAndSuffix: pathAndSuffix
+        )
+    }
+
+    private func matchesPattern(
+        pattern: String,
+        url: String,
+        parsedURL: ParsedMatchURL,
+        urlRange: NSRange
+    ) -> Bool {
+        // Fast path for normal @match patterns. Large userscripts such as tinyShield
+        // carry tens of thousands of matches, and compiling regexes for each candidate
+        // adds enough document-start latency to lose races against page scripts.
+        if let result = Self.matchesStructuredPattern(pattern: pattern, parsedURL: parsedURL) {
+            return result
+        }
 
         guard let regex = Self.cachedRegex(
             for: pattern,
             cache: Self.matchRegexCache,
             buildRegexPattern: { sourcePattern in
-                // Convert userscript @match wildcard semantics to a concrete regex once per source pattern.
                 var regexPattern = NSRegularExpression.escapedPattern(for: sourcePattern)
                 regexPattern = regexPattern.replacingOccurrences(of: "\\*:\\/\\/", with: "(https?|ftp)://")
                 regexPattern = regexPattern.replacingOccurrences(of: "\\*\\.", with: "([^/]*\\.)?")
@@ -340,6 +422,80 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             return false
         }
         return regex.firstMatch(in: url, options: [], range: urlRange) != nil
+    }
+
+    private static func matchesStructuredPattern(pattern: String, parsedURL: ParsedMatchURL) -> Bool? {
+        guard let schemeSeparator = pattern.range(of: "://") else { return nil }
+        let schemePattern = pattern[..<schemeSeparator.lowerBound].lowercased()
+        let remainder = pattern[schemeSeparator.upperBound...]
+        guard let pathStart = remainder.firstIndex(of: "/") else { return nil }
+
+        let hostPattern = String(remainder[..<pathStart]).lowercased()
+        let pathPattern = remainder[pathStart...]
+
+        switch schemePattern {
+        case "*":
+            guard parsedURL.scheme == "http" || parsedURL.scheme == "https" || parsedURL.scheme == "ftp" else {
+                return false
+            }
+        case parsedURL.scheme:
+            break
+        default:
+            return false
+        }
+
+        let hostValue = hostPattern.contains(":") ? parsedURL.hostWithPort : parsedURL.host
+        guard matchesHostPattern(hostPattern, host: hostValue) else { return false }
+        return wildcardMatch(pattern: pathPattern, value: parsedURL.pathAndSuffix)
+    }
+
+    private static func matchesHostPattern(_ pattern: String, host: String) -> Bool {
+        if pattern == "*" {
+            return true
+        }
+
+        if pattern.hasPrefix("*.") {
+            let base = pattern.dropFirst(2)
+            return host == base || host.hasSuffix(".\(base)")
+        }
+
+        return wildcardMatch(pattern: pattern[...], value: host)
+    }
+
+    private static func wildcardMatch(pattern: Substring, value: String) -> Bool {
+        if pattern == "*" {
+            return true
+        }
+
+        if pattern == "/*" {
+            return value.hasPrefix("/")
+        }
+
+        guard pattern.contains("*") else {
+            return value == pattern
+        }
+
+        let parts = pattern.split(separator: "*", omittingEmptySubsequences: false)
+        var searchStart = value.startIndex
+
+        if let first = parts.first, !first.isEmpty {
+            guard value[searchStart...].hasPrefix(first) else { return false }
+            searchStart = value.index(searchStart, offsetBy: first.count)
+        }
+
+        for part in parts.dropFirst().dropLast() where !part.isEmpty {
+            guard let range = value[searchStart...].range(of: part) else { return false }
+            searchStart = range.upperBound
+        }
+
+        if let last = parts.last, !last.isEmpty {
+            if pattern.last == "*" {
+                return value[searchStart...].range(of: last) != nil
+            }
+            return value[searchStart...].hasSuffix(last)
+        }
+
+        return pattern.last == "*" || searchStart == value.endIndex
     }
     
     private func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange) -> Bool {

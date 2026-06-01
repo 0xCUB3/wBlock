@@ -55,22 +55,11 @@ function getCspNonce() {
     }
 }
 
-// Detect sandboxed iframes that do not allow scripts (injection will always fail)
+// Avoid inspecting frameElement. Safari logs cross-origin access errors even when
+// they are caught, and content scripts run in ad iframes with cross-origin parents.
+// Page-context injection already verifies execution with a DOM side effect.
 function isSandboxedWithoutScripts() {
-    try {
-        const frameEl = window.frameElement;
-        if (!frameEl) return false;
-        if (!frameEl.getAttribute || !frameEl.hasAttribute || !frameEl.hasAttribute('sandbox')) return false;
-        const sandbox = frameEl.sandbox;
-        if (sandbox && typeof sandbox.contains === 'function') {
-            return !sandbox.contains('allow-scripts');
-        }
-        const attr = String(frameEl.getAttribute('sandbox') || '').trim();
-        if (attr === '') return true;
-        return !attr.split(/\s+/).includes('allow-scripts');
-    } catch (e) {
-        return false;
-    }
+    return false;
 }
 
 // Prevent multiple executions of this entire script in the same context
@@ -461,10 +450,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         getPreferredChunkSize() {
-            // Safari's WebExtension/native messaging bridge has tighter payload limits
-            // than Chromium-style environments. Keep chunks small for both the
-            // browser.runtime and Safari App Extension code paths.
-            return 32 * 1024; // bytes, before base64 expansion
+            // 32 KB chunks were too conservative and forced dozens of native round-trips
+            // for large scripts. 512 KB keeps chunked hydration bounded without making
+            // individual native messages unusually large.
+            return 512 * 1024; // bytes, before base64 expansion
         }
 
         base64ToBytes(base64) {
@@ -502,14 +491,31 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
             chunks[0] = first.chunk;
 
-            for (let i = 1; i < totalChunks; i++) {
-                const resp = await this.sendNativeRequest(action, { ...params, chunkIndex: i, chunkSize });
-                if (resp && resp.error) throw new Error(resp.error);
-                if (!resp || typeof resp.chunk !== 'string') {
-                    throw new Error('Missing userscript chunk data');
+            // Request the remaining chunks with bounded concurrency instead of strictly
+            // sequentially. On the Safari App Extension path these run in parallel; on the
+            // browser.runtime path the background serializes native messages anyway, but
+            // issuing them together avoids per-chunk JS await stalls. Either way this
+            // shortens hydration so even chunked document-start scripts inject sooner.
+            const maxConcurrentChunkRequests = 6;
+            let nextChunkIndex = 1;
+            const fetchChunkWorker = async () => {
+                for (;;) {
+                    const i = nextChunkIndex++;
+                    if (i >= totalChunks) return;
+                    const resp = await this.sendNativeRequest(action, { ...params, chunkIndex: i, chunkSize });
+                    if (resp && resp.error) throw new Error(resp.error);
+                    if (!resp || typeof resp.chunk !== 'string') {
+                        throw new Error('Missing userscript chunk data');
+                    }
+                    chunks[i] = resp.chunk;
                 }
-                chunks[i] = resp.chunk;
+            };
+            const workerCount = Math.min(maxConcurrentChunkRequests, Math.max(0, totalChunks - 1));
+            const workers = [];
+            for (let w = 0; w < workerCount; w++) {
+                workers.push(fetchChunkWorker());
             }
+            await Promise.all(workers);
 
             const byteArrays = chunks.map(c => this.base64ToBytes(c));
             return decoder.decode(this.concatBytes(byteArrays));
@@ -606,6 +612,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.sendNativeRequest('getUserScripts', {
                 url,
                 includeContent: true,
+                // Conservative per-script cap for ordinary scripts. The native side grants
+                // document-start scripts a larger allowance so timing-critical shims arrive
+                // inline (no chunked round-trips) and can run before the page's own code.
                 maxInlineContentBytes: 128 * 1024
             })
                 .then((response) => {

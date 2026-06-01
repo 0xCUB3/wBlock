@@ -560,7 +560,28 @@ public enum WebExtensionRequestHandler {
             var userScriptDescriptors: [[String: Any]] = []
             userScriptDescriptors.reserveCapacity(userScripts.count)
 
-            for script in userScripts {
+            // Inlining content in this single response lets the injector run a script
+            // without extra native round-trips. That timing matters most for
+            // `document-start` scripts (for example anti-adblock shims), which must
+            // execute before the page's own code. The payload uses executable userscript
+            // content with the metadata block removed; matching and UI metadata stay on
+            // the native side.
+            let documentStartInlineCap = max(maxInlineContentBytes, Self.documentStartInlineContentCap)
+            var remainingInlineBudget = Self.totalInlineResponseBudget
+
+            // Process timing-critical scripts first so they win the inline budget, but emit
+            // descriptors in the original order the manager returned.
+            let inlineOrder = userScripts.indices.sorted { lhs, rhs in
+                let lhsStart = userScripts[lhs].runAt == "document-start"
+                let rhsStart = userScripts[rhs].runAt == "document-start"
+                if lhsStart != rhsStart { return lhsStart }
+                return lhs < rhs
+            }
+
+            var descriptorsByIndex = [Int: [String: Any]](minimumCapacity: userScripts.count)
+
+            for index in inlineOrder {
+                let script = userScripts[index]
                 // Prefer cached resource names, but fall back to parsing metadata so scripts
                 // installed before resource caching still request the right dependencies.
                 let resourceNames =
@@ -589,23 +610,44 @@ public enum WebExtensionRequestHandler {
                     "storageSnapshot": storageSnapshot
                 ]
                 if includeContent, !script.content.isEmpty {
-                    let inlinePayloadBytes = script.content.utf8.count
+                    let executableContent = script.executableContent
+                    let inlinePayloadBytes = executableContent.utf8.count
                         + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
-                    if inlinePayloadBytes <= maxInlineContentBytes {
-                        descriptor["content"] = script.content
+                    let perScriptCap = script.runAt == "document-start"
+                        ? documentStartInlineCap
+                        : maxInlineContentBytes
+                    if inlinePayloadBytes <= perScriptCap, inlinePayloadBytes <= remainingInlineBudget {
+                        descriptor["content"] = executableContent
                         if !script.resourceContents.isEmpty {
                             descriptor["resources"] = script.resourceContents
                         }
+                        remainingInlineBudget -= inlinePayloadBytes
                     }
                 }
 
-                userScriptDescriptors.append(descriptor)
+                descriptorsByIndex[index] = descriptor
+            }
+
+            for index in userScripts.indices {
+                if let descriptor = descriptorsByIndex[index] {
+                    userScriptDescriptors.append(descriptor)
+                }
             }
 
             let response = createResponse(with: ["userScripts": userScriptDescriptors])
             context.completeRequest(returningItems: [response])
         }
     }
+
+    /// Per-script inline allowance for `document-start` userscripts. Timing-critical
+    /// scripts should arrive in the first response; scripts that still exceed this
+    /// after metadata stripping fall back to chunked hydration.
+    private static let documentStartInlineContentCap = 4 * 1024 * 1024
+
+    /// Ceiling for the total inlined payload in a single `getUserScripts` response.
+    /// This prevents multiple large matching scripts from producing an oversized
+    /// native-messaging response.
+    private static let totalInlineResponseBudget = 16 * 1024 * 1024
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         guard let urlString = message["url"] as? String else {
@@ -948,7 +990,7 @@ public enum WebExtensionRequestHandler {
         }
 
         let chunkIndex = message["chunkIndex"] as? Int ?? 0
-        let chunkSize = message["chunkSize"] as? Int ?? 256 * 1024
+        let chunkSize = message["chunkSize"] as? Int ?? 512 * 1024
 
         if chunkIndex < 0 || chunkSize <= 0 {
             let response = createResponse(with: ["error": "Invalid chunkIndex/chunkSize"])
@@ -981,7 +1023,7 @@ public enum WebExtensionRequestHandler {
             let text: String?
             switch kind {
             case .content:
-                text = script.content
+                text = script.executableContent
             case .resource:
                 // Lazily populate missing resources for scripts installed before caching existed.
                 text = await manager.ensureResourceContent(forScriptId: scriptId, resourceName: resourceName!)

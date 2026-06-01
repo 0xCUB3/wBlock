@@ -360,6 +360,7 @@
 "Reminders" = "Υπενθυμίσεις";
 "Restore" = "Επαναφορά";
 "Restore Settings?" = "Επαναφορά ρυθμίσεων;";
+"Restore from backup…" = "Επαναφορά από αντίγραφο…";
 "Rule deleted" = "Ο κανόνας διαγράφηκε";
 "Scheduler error" = "Σφάλμα προγραμματιστή";
 "Scheduling: %@" = "Προγραμματισμός: %@";
