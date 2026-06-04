@@ -1,18 +1,9 @@
+internal import ContentBlockerConverter
 import CryptoKit
 import Foundation
 
 public enum SafariContentBlockerAffinityProcessor {
     private static let directivePrefix = "!#safari_cb_affinity"
-
-    private enum BlockDestination {
-        case baseRulesOnly
-        case targetSlots(Set<Int>)
-    }
-
-    private enum Directive {
-        case start(BlockDestination)
-        case end
-    }
 
     public static func sourceURL(for filter: FilterList, containerURL: URL) -> URL? {
         let primaryURL = containerURL.appendingPathComponent(
@@ -86,99 +77,70 @@ public enum SafariContentBlockerAffinityProcessor {
         target: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo]
     ) -> String {
-        let availableSlots = Set(allTargets.map(\.slot))
-        var destinationStack: [BlockDestination] = []
+        guard allTargets.contains(target),
+              let targetTypes = contentBlockerTypes(for: target),
+              !targetTypes.isEmpty
+        else {
+            return includeBaseRules ? content : ""
+        }
+
+        let defaultType = includeBaseRules
+            ? defaultContentBlockerType(for: target)
+            : excludedDefaultContentBlockerType(for: targetTypes)
+        let groupedRules = AffinityRulesGrouper.group(rules: [
+            (defaultType, content.components(separatedBy: .newlines))
+        ])
+
         var includedLines: [String] = []
-
-        content.enumerateLines { line, _ in
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if let directive = parseDirective(trimmed, availableSlots: availableSlots) {
-                switch directive {
-                case .start(let destination):
-                    destinationStack.append(destination)
-                case .end:
-                    if !destinationStack.isEmpty {
-                        destinationStack.removeLast()
-                    }
-                }
-                return
-            }
-
-            let shouldInclude: Bool
-            if let destination = destinationStack.last {
-                switch destination {
-                case .baseRulesOnly:
-                    shouldInclude = includeBaseRules
-                case .targetSlots(let slots):
-                    shouldInclude = slots.contains(target.slot)
-                }
-            } else {
-                shouldInclude = includeBaseRules
-            }
-
-            if shouldInclude {
-                includedLines.append(line)
+        var seenLines: Set<String> = []
+        for contentType in targetTypes {
+            guard let rules = groupedRules[contentType] else { continue }
+            for rule in rules where seenLines.insert(rule).inserted {
+                includedLines.append(rule)
             }
         }
 
         return includedLines.joined(separator: "\n")
     }
 
-    private static func parseDirective(
-        _ trimmed: String,
-        availableSlots: Set<Int>
-    ) -> Directive? {
-        guard trimmed.hasPrefix(directivePrefix) else { return nil }
-
-        if trimmed == directivePrefix {
-            return .end
-        }
-
-        let suffix = String(trimmed.dropFirst(directivePrefix.count))
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard suffix.first == "(", suffix.last == ")" else {
-            return .start(.baseRulesOnly)
-        }
-
-        let tokenBody = suffix.dropFirst().dropLast()
-        let rawTokens = tokenBody.split(separator: ",", omittingEmptySubsequences: true)
-        var slots: Set<Int> = []
-
-        for rawToken in rawTokens {
-            let token = String(rawToken)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-            slots.formUnion(mappedSlots(for: token, availableSlots: availableSlots))
-        }
-
-        if slots.isEmpty {
-            return .start(.baseRulesOnly)
-        }
-
-        return .start(.targetSlots(slots))
-    }
-
-    private static func mappedSlots(
-        for token: String,
-        availableSlots: Set<Int>
-    ) -> Set<Int> {
-        switch token {
-        case "all":
-            return availableSlots
-        case "general":
-            return availableSlots.contains(1) ? [1] : []
-        case "privacy":
-            return availableSlots.contains(2) ? [2] : []
-        case "social", "security":
-            return availableSlots.contains(3) ? [3] : []
-        case "other":
-            return availableSlots.contains(4) ? [4] : []
-        case "custom":
-            return availableSlots.contains(5) ? [5] : []
+    private static func defaultContentBlockerType(for target: ContentBlockerTargetInfo) -> ContentBlockerType {
+        switch target.slot {
+        case 1:
+            return .general
+        case 2:
+            return .privacy
+        case 3:
+            return .security
+        case 4:
+            return .other
+        case 5:
+            return .custom
         default:
-            return []
+            return .other
         }
     }
+
+    private static func contentBlockerTypes(for target: ContentBlockerTargetInfo) -> [ContentBlockerType]? {
+        switch target.slot {
+        case 1:
+            return [.general]
+        case 2:
+            return [.privacy]
+        case 3:
+            return [.socialWidgetsAndAnnoyances, .security]
+        case 4:
+            return [.other]
+        case 5:
+            return [.custom]
+        default:
+            return nil
+        }
+    }
+
+    private static func excludedDefaultContentBlockerType(
+        for targetTypes: [ContentBlockerType]
+    ) -> ContentBlockerType {
+        ContentBlockerType.allCases.first { !targetTypes.contains($0) } ?? .general
+    }
+
 }
