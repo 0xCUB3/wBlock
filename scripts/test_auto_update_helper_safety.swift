@@ -25,6 +25,7 @@ let runner = try read("wBlockCoreService/FilterAutoUpdateRunner.swift")
 let agentEntitlements = try read("FilterUpdateAgent/FilterUpdateAgent.entitlements")
 let groupIdentifier = try read("wBlockCoreService/GroupIdentifier.swift")
 let sharedAutoUpdate = try read("wBlockCoreService/SharedAutoUpdateManager.swift")
+let buildDMG = try read("scripts/build-dmg.sh")
 
 assertContains(
     service,
@@ -70,6 +71,21 @@ assertContains(
     groupIdentifier,
     "prefix.contains(\"$(\")",
     "Unpatched AppIdentifierPrefix placeholders must not be used as app-group identifiers"
+)
+assertContains(
+    buildDMG,
+    "Delete :com.apple.security.application-groups",
+    "Direct-distribution signing must remove unprovisioned group.* app groups"
+)
+assertContains(
+    buildDMG,
+    "Add :com.apple.security.application-groups:0 string ${TEAM_GROUP}",
+    "Direct-distribution signing must keep only the TeamID-prefixed app group"
+)
+assertNotContains(
+    buildDMG,
+    "Add :com.apple.security.application-groups: string ${TEAM_GROUP}",
+    "Direct-distribution signing must not add the TeamID group alongside the legacy group"
 )
 assertContains(
     sharedAutoUpdate,
