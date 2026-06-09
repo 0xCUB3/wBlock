@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "应用更改并退出";
 "Applying filters..." = "应用过滤器...";
-"Applying filters...\\n(This may take a while)" = "正在应用过滤器...\\n（这可能需要一段时间）";
+"Applying filters...\n(This may take a while)" = "正在应用过滤器...\n（这可能需要一段时间）";
 "Available Updates" = "可用更新";
 "Background agent error: %@" = "后台代理错误：%@";
 "Background agent needs approval in Login Items" = "后台代理需要在登录项中获得批准";

@@ -465,7 +465,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Aplicar cambios y salir";
 "Applying filters..." = "Aplicando filtros...";
-"Applying filters...\\n(This may take a while)" = "Aplicando filtros...\\n(Esto puede tardar un poco)";
+"Applying filters...\n(This may take a while)" = "Aplicando filtros...\n(Esto puede tardar un poco)";
 "Available Updates" = "Actualizaciones disponibles";
 "Background agent error: %@" = "Error del agente en segundo plano: %@";
 "Background agent needs approval in Login Items" = "El agente en segundo plano necesita aprobación en elementos de inicio de sesión";

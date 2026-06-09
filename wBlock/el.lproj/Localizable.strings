@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Εφαρμόστε τις αλλαγές και τερματίστε";
 "Applying filters..." = "Εφαρμογή φίλτρων...";
-"Applying filters...\\n(This may take a while)" = "Εφαρμογή φίλτρων...\\n(Αυτό μπορεί να διαρκέσει λίγο)";
+"Applying filters...\n(This may take a while)" = "Εφαρμογή φίλτρων...\n(Αυτό μπορεί να διαρκέσει λίγο)";
 "Available Updates" = "Διαθέσιμες ενημερώσεις";
 "Background agent error: %@" = "Σφάλμα παρασκηνίου παρασκηνίου: %@";
 "Background agent needs approval in Login Items" = "Ο παράγοντας παρασκηνίου χρειάζεται έγκριση στα Στοιχεία σύνδεσης";

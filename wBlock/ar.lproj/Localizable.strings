@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "تطبيق التغييرات والخروج";
 "Applying filters..." = "جارٍ تطبيق المرشحات...";
-"Applying filters...\\n(This may take a while)" = "جارٍ تطبيق عوامل التصفية...\\n(قد يستغرق هذا بعض الوقت)";
+"Applying filters...\n(This may take a while)" = "جارٍ تطبيق عوامل التصفية...\n(قد يستغرق هذا بعض الوقت)";
 "Available Updates" = "التحديثات المتاحة";
 "Background agent error: %@" = "خطأ في عامل الخلفية: %@";
 "Background agent needs approval in Login Items" = "يحتاج وكيل الخلفية إلى الموافقة في عناصر تسجيل الدخول";

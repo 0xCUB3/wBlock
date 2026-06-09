@@ -466,7 +466,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Alkalmazza a módosításokat és lépjen ki";
 "Applying filters..." = "Szűrők alkalmazása...";
-"Applying filters...\\n(This may take a while)" = "Szűrők alkalmazása...\\n(Ez eltarthat egy ideig)";
+"Applying filters...\n(This may take a while)" = "Szűrők alkalmazása...\n(Ez eltarthat egy ideig)";
 "Available Updates" = "Elérhető frissítések";
 "Background agent error: %@" = "Háttérügynök hiba: %@";
 "Background agent needs approval in Login Items" = "A háttérügynök jóváhagyása szükséges a bejelentkezési elemeknél";

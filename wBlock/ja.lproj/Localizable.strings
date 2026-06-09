@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "変更を適用して終了";
 "Applying filters..." = "フィルターを適用しています...";
-"Applying filters...\\n(This may take a while)" = "フィルタを適用しています...\\n(時間がかかる場合があります)";
+"Applying filters...\n(This may take a while)" = "フィルタを適用しています...\n(時間がかかる場合があります)";
 "Available Updates" = "利用可能なアップデート";
 "Background agent error: %@" = "バックグラウンド エージェント エラー: %@";
 "Background agent needs approval in Login Items" = "バックグラウンド エージェントはログイン項目で承認が必要です";

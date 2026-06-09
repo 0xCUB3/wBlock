@@ -465,7 +465,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Appliquer les modifications et quitter";
 "Applying filters..." = "Application de filtres...";
-"Applying filters...\\n(This may take a while)" = "Application de filtres...\\n(Cela peut prendre un certain temps)";
+"Applying filters...\n(This may take a while)" = "Application de filtres...\n(Cela peut prendre un certain temps)";
 "Available Updates" = "Mises à jour disponibles";
 "Background agent error: %@" = "Erreur de l'agent en arrière-plan : %@";
 "Background agent needs approval in Login Items" = "L'agent d'arrière-plan doit être approuvé dans les éléments de connexion";

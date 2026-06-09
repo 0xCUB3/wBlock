@@ -465,7 +465,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Applica le modifiche ed esci";
 "Applying filters..." = "Applicazione dei filtri...";
-"Applying filters...\\n(This may take a while)" = "Applicazione filtri...\\n(L'operazione potrebbe richiedere del tempo)";
+"Applying filters...\n(This may take a while)" = "Applicazione filtri...\n(L'operazione potrebbe richiedere del tempo)";
 "Available Updates" = "Aggiornamenti disponibili";
 "Background agent error: %@" = "Errore dell'agente in background: %@";
 "Background agent needs approval in Login Items" = "L'agente in background necessita dell'approvazione negli elementi di accesso";

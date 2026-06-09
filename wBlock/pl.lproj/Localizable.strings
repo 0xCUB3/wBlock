@@ -465,7 +465,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Zastosuj zmiany i zakończ";
 "Applying filters..." = "Stosowanie filtrów...";
-"Applying filters...\\n(This may take a while)" = "Stosowanie filtrów...\\n(To może chwilę potrwać)";
+"Applying filters...\n(This may take a while)" = "Stosowanie filtrów...\n(To może chwilę potrwać)";
 "Available Updates" = "Dostępne aktualizacje";
 "Background agent error: %@" = "Błąd agenta działającego w tle: %@";
 "Background agent needs approval in Login Items" = "Agent działający w tle wymaga zatwierdzenia w elementach logowania";
