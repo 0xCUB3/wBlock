@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "변경 사항 적용 및 종료";
 "Applying filters..." = "필터 적용 중...";
-"Applying filters...\\n(This may take a while)" = "필터 적용 중...\\n(시간이 걸릴 수 있음)";
+"Applying filters...\n(This may take a while)" = "필터 적용 중...\n(시간이 걸릴 수 있음)";
 "Available Updates" = "사용 가능한 업데이트";
 "Background agent error: %@" = "백그라운드 에이전트 오류: %@";
 "Background agent needs approval in Login Items" = "백그라운드 에이전트는 로그인 항목에서 승인이 필요합니다.";

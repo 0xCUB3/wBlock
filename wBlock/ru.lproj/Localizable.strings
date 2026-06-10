@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Применить изменения и выйти";
 "Applying filters..." = "Применение фильтров...";
-"Applying filters...\\n(This may take a while)" = "Применение фильтров...\\n(Это может занять некоторое время)";
+"Applying filters...\n(This may take a while)" = "Применение фильтров...\n(Это может занять некоторое время)";
 "Available Updates" = "Доступные обновления";
 "Background agent error: %@" = "Ошибка фонового агента: %@.";
 "Background agent needs approval in Login Items" = "Фоновому агенту требуется одобрение элементов входа.";

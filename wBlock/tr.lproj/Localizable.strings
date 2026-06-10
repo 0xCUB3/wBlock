@@ -465,7 +465,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Değişiklikleri uygula ve çık";
 "Applying filters..." = "Filtreler uygulanıyor...";
-"Applying filters...\\n(This may take a while)" = "Filtreler uygulanıyor...\n(Bu biraz zaman alabilir)";
+"Applying filters...\n(This may take a while)" = "Filtreler uygulanıyor...\n(Bu biraz zaman alabilir)";
 "Available Updates" = "Mevcut güncellemeler";
 "Background agent error: %@" = "Arka plan görevi hatası: %@";
 "Background agent needs approval in Login Items" = "Arka plan görevi için Giriş Öğeleri bölümünde onay gerekiyor";

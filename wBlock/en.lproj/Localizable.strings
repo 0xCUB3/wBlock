@@ -465,7 +465,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Apply Changes and Quit";
 "Applying filters..." = "Applying filters...";
-"Applying filters...\\n(This may take a while)" = "Applying filters...\\n(This may take a while)";
+"Applying filters...\n(This may take a while)" = "Applying filters...\n(This may take a while)";
 "Available Updates" = "Available Updates";
 "Background agent error: %@" = "Background agent error: %@";
 "Background agent needs approval in Login Items" = "Background agent needs approval in Login Items";

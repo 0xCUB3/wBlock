@@ -465,7 +465,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Änderungen übernehmen und beenden";
 "Applying filters..." = "Filter anwenden...";
-"Applying filters...\\n(This may take a while)" = "Filter werden angewendet...\\n(Dies kann eine Weile dauern)";
+"Applying filters...\n(This may take a while)" = "Filter werden angewendet...\n(Dies kann eine Weile dauern)";
 "Available Updates" = "Verfügbare Updates";
 "Background agent error: %@" = "Fehler im Hintergrundagenten: %@";
 "Background agent needs approval in Login Items" = "Der Hintergrundagent muss in den Anmeldeobjekten genehmigt werden";

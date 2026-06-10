@@ -98,17 +98,20 @@ if [[ -n "${SIGNING_IDENTITY}" ]]; then
 
   TEAM_GROUP="${TEAM_ID}.group.skula.wBlock"
 
-  # Create a modified entitlements file that adds the team-prefixed app group.
-  # On macOS Sequoia, non-MAS apps accessing a group container without a team
-  # prefix trigger repeated "access data from other apps" TCC prompts.
+  # Create a modified entitlements file that uses only the team-prefixed app group.
+  # On macOS 15+, direct-distributed apps with unprovisioned `group.*` app-group
+  # entitlements can trigger repeated "access data from other apps" TCC prompts.
+  # The TeamID-prefixed group is authorized by the signing team without an
+  # embedded provisioning profile, so direct builds must not keep the legacy group.
   prepare_entitlements() {
     local src="$1"
     local tmp
     tmp=$(mktemp)
     cp "${src}" "${tmp}"
-    # Check if application-groups array exists and add team-prefixed group
     if /usr/libexec/PlistBuddy -c "Print :com.apple.security.application-groups" "${tmp}" &>/dev/null; then
-      /usr/libexec/PlistBuddy -c "Add :com.apple.security.application-groups: string ${TEAM_GROUP}" "${tmp}" 2>/dev/null || true
+      /usr/libexec/PlistBuddy -c "Delete :com.apple.security.application-groups" "${tmp}"
+      /usr/libexec/PlistBuddy -c "Add :com.apple.security.application-groups array" "${tmp}"
+      /usr/libexec/PlistBuddy -c "Add :com.apple.security.application-groups:0 string ${TEAM_GROUP}" "${tmp}"
     fi
     echo "${tmp}"
   }

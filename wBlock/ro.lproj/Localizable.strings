@@ -465,7 +465,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Anti-Adblock List" = "Anti-Adblock List";
 "Apply Changes and Quit" = "Aplicați modificări și ieșiți";
 "Applying filters..." = "Se aplică filtre...";
-"Applying filters...\\n(This may take a while)" = "Se aplică filtre...\\n(Acest lucru poate dura ceva timp)";
+"Applying filters...\n(This may take a while)" = "Se aplică filtre...\n(Acest lucru poate dura ceva timp)";
 "Available Updates" = "Actualizări disponibile";
 "Background agent error: %@" = "Eroare agent de fundal: %@";
 "Background agent needs approval in Login Items" = "Agentul de fundal necesită aprobare în Elementele de conectare";
