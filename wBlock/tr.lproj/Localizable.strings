@@ -438,6 +438,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "AdGuard Social Media Filter" = "AdGuard Sosyal Medya Filtresi";
 "AdGuard Spanish/Portuguese filter" = "AdGuard İspanyolca/Portekizce filtresi";
 "AdGuard Tracking Protection Filter" = "AdGuard İzleme Koruması Filtresi";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL İzleme Koruması Filtresi";
 "AdGuard Turkish filter" = "AdGuard Türkçe filtresi";
 "AdGuard Ukrainian filter" = "AdGuard Ukraynaca filtresi";
 "AdGuard Widgets" = "AdGuard Araçlar";
@@ -481,6 +482,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks cookie consent notices on web pages." = "Web sayfalarındaki çerez onay bildirimlerini engeller.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
 "Blocks online tracking and web analytics systems." = "Çevrim içi izleme ve web analitik sistemlerini engeller.";
+"Removes tracking parameters from URLs." = "URL'lerden izleme parametrelerini kaldırır.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Ödeme duvarı (paywall) ile ilgili öğeleri engeller. En iyi sonuçlar için ilgili kullanıcı betiğini etkinleştirin.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
 "Blocks social media content on webpages." = "Web sayfalarındaki sosyal medya içeriklerini engeller.";

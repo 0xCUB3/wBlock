@@ -438,6 +438,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +482,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks cookie consent notices on web pages." = "Αποκλείει τις ειδοποιήσεις συναίνεσης για cookie σε ιστοσελίδες.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Αποκλείει διάφορα ερεθιστικά στοιχεία που δεν καλύπτονται από άλλα φίλτρα.";
 "Blocks online tracking and web analytics systems." = "Αποκλείει τα διαδικτυακά συστήματα παρακολούθησης και ανάλυσης ιστού.";
+"Removes tracking parameters from URLs." = "Αφαιρεί παραμέτρους παρακολούθησης από URL.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Αποκλείει στοιχεία που σχετίζονται με το paywall. Ενεργοποιήστε το αντίστοιχο userscript για καλύτερα αποτελέσματα.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
 "Blocks social media content on webpages." = "Αποκλείει το περιεχόμενο των μέσων κοινωνικής δικτύωσης σε ιστοσελίδες.";

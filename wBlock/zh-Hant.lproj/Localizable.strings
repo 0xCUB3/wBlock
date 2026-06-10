@@ -438,6 +438,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +482,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks cookie consent notices on web pages." = "封鎖網頁上的 cookie 同意通知。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "阻擋其他過濾器未覆蓋的各種刺激性元素。";
 "Blocks online tracking and web analytics systems." = "阻止線上追蹤和網路分析系統。";
+"Removes tracking parameters from URLs." = "從 URL 中移除追蹤參數。";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "阻止與付費專區相關的元素。啟用相應的使用者腳本以獲得最佳結果。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "阻止促銷彈出視窗、時事通訊註冊和通知請求。";
 "Blocks social media content on webpages." = "封鎖網頁上的社群媒體內容。";

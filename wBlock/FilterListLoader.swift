@@ -13,6 +13,7 @@ class FilterListLoader {
         static let recommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "AdGuard URL Tracking Protection Filter",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -22,6 +23,7 @@ class FilterListLoader {
         static let recommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "AdGuard URL Tracking Protection Filter",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -123,6 +125,14 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy,
                 description:
                     "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt"
+                )!, category: FilterListCategory.privacy, isSelected: true,
+                description: "Removes tracking parameters from URLs.",
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Cookie Notices",

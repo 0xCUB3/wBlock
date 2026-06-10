@@ -438,6 +438,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +482,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Blocks cookie consent notices on web pages." = "Bloque les avis de consentement aux cookies sur les pages Web.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Bloque divers éléments irritants non couverts par d’autres filtres.";
 "Blocks online tracking and web analytics systems." = "Bloque les systèmes de suivi en ligne et d’analyse Web.";
+"Removes tracking parameters from URLs." = "Supprime les paramètres de suivi des URL.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Bloque les éléments liés au paywall. Activez le script utilisateur correspondant pour de meilleurs résultats.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Bloque les fenêtres contextuelles promotionnelles, les inscriptions à la newsletter et les demandes de notification.";
 "Blocks social media content on webpages." = "Bloque le contenu des réseaux sociaux sur les pages Web.";

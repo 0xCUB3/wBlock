@@ -438,6 +438,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +482,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Blocks cookie consent notices on web pages." = "Blochează notificările privind consimțământul cookie-urilor pe paginile web.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blochează diversele elemente iritante neacoperite de alte filtre.";
 "Blocks online tracking and web analytics systems." = "Blochează sistemele de urmărire online și de analiză web.";
+"Removes tracking parameters from URLs." = "Elimină parametrii de urmărire din URL-uri.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Blochează elementele legate de paywall. Activați scriptul de utilizator corespunzător pentru cele mai bune rezultate.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blochează ferestrele pop-up promoționale, înscrierile la buletine informative și solicitările de notificare.";
 "Blocks social media content on webpages." = "Blochează conținutul rețelelor sociale de pe paginile web.";
