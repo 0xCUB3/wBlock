@@ -1028,10 +1028,14 @@ public class UserScriptManager: ObservableObject {
 
             for script in hydratedScripts {
                 logger.info("📖 Loading content for script: \(script.name) (ID: \(script.id))")
-                logger.info("📖 Script enabled: \(script.isEnabled), matches: \(script.matches)")
+                logger.info("📖 Script enabled: \(script.isEnabled), matches: \(script.matches.count)")
 
                 if script.content.isEmpty {
-                    logger.warning("⚠️ Failed to load content for \(script.name)")
+                    if script.isEnabled {
+                        logger.warning("⚠️ Failed to load content for \(script.name)")
+                    } else {
+                        logger.info("📖 Skipped content for disabled script \(script.name)")
+                    }
                 } else {
                     logger.info(
                         "✅ Loaded content for \(script.name) (\(script.content.count) characters)")
