@@ -24788,6 +24788,79 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * in the background.
    */
   const cache = new Map();
+  /**
+   * Persistent copy of the configuration cache (top frames only).
+   *
+   * The background page is not persistent, so the in-memory cache dies with
+   * it (e.g. whenever Safari restarts). The first page load after a cold
+   * start would then have to wait for the native host to spawn and load the
+   * filter engine, which can take long enough that scriptlets miss their
+   * injection window. To avoid that, top-frame configurations are mirrored
+   * to browser.storage.local and restored on startup: stale entries are
+   * served instantly and revalidated in the background, and the regular
+   * engineTimestamp check drops them as soon as the native host reports a
+   * newer engine.
+   */
+  const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV1";
+  const PERSISTED_CONFIG_CACHE_LIMIT = 40;
+  const PERSIST_CONFIG_CACHE_DELAY_MS = 1000;
+  let persistConfigCacheTimer = null;
+  const persistConfigCache = () => {
+    if (persistConfigCacheTimer !== null) {
+      return;
+    }
+    persistConfigCacheTimer = setTimeout(async () => {
+      persistConfigCacheTimer = null;
+      try {
+        const entries = [];
+        for (const [key, configuration] of cache) {
+          // Top-frame cache keys have no topUrl component.
+          if (key.endsWith("#")) {
+            entries.push([key, configuration]);
+          }
+        }
+        await browser.storage.local.set({
+          [PERSISTED_CONFIG_CACHE_KEY]: {
+            engineTimestamp,
+            entries: entries.slice(-PERSISTED_CONFIG_CACHE_LIMIT)
+          }
+        });
+      } catch (error) {
+        console.warn("[wBlock] Failed to persist config cache:", error);
+      }
+    }, PERSIST_CONFIG_CACHE_DELAY_MS);
+  };
+  const clearPersistedConfigCache = () => {
+    if (persistConfigCacheTimer !== null) {
+      clearTimeout(persistConfigCacheTimer);
+      persistConfigCacheTimer = null;
+    }
+    return browser.storage.local.remove(PERSISTED_CONFIG_CACHE_KEY).catch(error => {
+      console.warn("[wBlock] Failed to clear persisted config cache:", error);
+    });
+  };
+  const configCacheHydration = (async () => {
+    try {
+      const stored = await browser.storage.local.get(PERSISTED_CONFIG_CACHE_KEY);
+      const persisted = stored && stored[PERSISTED_CONFIG_CACHE_KEY];
+      if (!persisted || typeof persisted.engineTimestamp !== "number" || !Array.isArray(persisted.entries)) {
+        return;
+      }
+      // A native response that arrived before hydration finished is fresher
+      // than anything on disk; in that case keep what we have.
+      if (cache.size > 0 || engineTimestamp !== 0) {
+        return;
+      }
+      engineTimestamp = persisted.engineTimestamp;
+      for (const entry of persisted.entries) {
+        if (Array.isArray(entry) && typeof entry[0] === "string" && entry[1] && typeof entry[1] === "object") {
+          cache.set(entry[0], entry[1]);
+        }
+      }
+    } catch (error) {
+      console.warn("[wBlock] Failed to hydrate config cache:", error);
+    }
+  })();
   let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
@@ -24846,9 +24919,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       cache.clear();
       engineTimestamp = configuration.engineTimestamp;
     }
-    // Save the new message in the cache for the given URL.
+    // Save the new message in the cache for the given URL. Delete the key
+    // first so Map insertion order doubles as LRU order for the persisted
+    // slice.
     const key = cacheKey(url, topUrl);
+    cache.delete(key);
     cache.set(key, configuration);
+    persistConfigCache();
     return configuration;
   };
   /**
@@ -24861,6 +24938,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns The response message from the native host.
    */
   const getConfiguration = async (message, url, topUrl) => {
+    await configCacheHydration;
     const key = cacheKey(url, topUrl);
     // If there is already a cached response for this URL:
     if (cache.has(key)) {
@@ -25033,6 +25111,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "wblock:clearCache") {
       cache.clear();
       engineTimestamp = 0;
+      await clearPersistedConfigCache();
       await scheduleInstallRemoveParamDNRRules(true);
       await refreshActionStateForAllTabs();
       return {
@@ -25884,6 +25963,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       scheduleInstallRemoveParamDNRRules(true);
     });
   }
+  /**
+   * Warm up the native host as soon as the background page starts so the
+   * extension process spawns and the filter engine is deserialized before
+   * the first real page request needs it. Runs after hydration so a fresh
+   * native engineTimestamp can validate (or drop) the restored cache.
+   */
+  const NATIVE_WARMUP_URL = "https://warmup.wblock.invalid/";
+  const warmUpNativeHost = async () => {
+    try {
+      await requestConfiguration({}, NATIVE_WARMUP_URL, undefined);
+    } catch (error) {
+      console.warn("[wBlock] Native host warm-up failed:", error);
+    } finally {
+      cache.delete(cacheKey(NATIVE_WARMUP_URL, undefined));
+    }
+  };
+  configCacheHydration.then(warmUpNativeHost);
   scheduleInstallRemoveParamDNRRules(true);
   refreshActionStateForAllTabs();
   // Start handling messages from content scripts.
