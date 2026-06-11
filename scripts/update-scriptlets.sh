@@ -6,6 +6,11 @@ set -euo pipefail
 # Example: ./scripts/update-scriptlets.sh 4.2.1 2.3.0   (override scriptlets)
 # If no version argument is given, the script auto-detects npm latest.
 #
+# Flow: the fresh upstream build is spliced into the unminified sources in
+# extension-src/ (preserving the wBlock custom sections), then
+# scripts/minify-extension-js.sh regenerates the shipped minified artifacts
+# in "wBlock Scripts (iOS)/Resources/". Never edit the Resources copies.
+#
 # Prerequisites: node, pnpm, git (all available via Homebrew on macOS)
 
 # ---------------------------------------------------------------------------
@@ -27,8 +32,8 @@ error()   { echo -e "${RED}[error]${RESET} $*" >&2; }
 # ---------------------------------------------------------------------------
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-BACKGROUND_JS="${ROOT_DIR}/wBlock Scripts (iOS)/Resources/background.js"
-CONTENT_JS="${ROOT_DIR}/wBlock Scripts (iOS)/Resources/content.js"
+BACKGROUND_SRC="${ROOT_DIR}/extension-src/background.js"
+CONTENT_SRC="${ROOT_DIR}/extension-src/content.js"
 
 # ---------------------------------------------------------------------------
 # Version detection
@@ -195,12 +200,12 @@ info "--- Splicing files ---"
 
 splice_file \
   "${CLONE_DIR}/extensions/webext/dist/background.js" \
-  "${BACKGROUND_JS}" \
+  "${BACKGROUND_SRC}" \
   "@file Background script for the WebExtension"
 
 splice_file \
   "${CLONE_DIR}/extensions/webext/dist/content.js" \
-  "${CONTENT_JS}" \
+  "${CONTENT_SRC}" \
   "@file Content script for the WebExtension"
 
 # ---------------------------------------------------------------------------
@@ -234,16 +239,16 @@ check_syntax() {
 }
 
 # Version marker in both files
-check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${BACKGROUND_JS}"
-check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${CONTENT_JS}"
+check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${BACKGROUND_SRC}"
+check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${CONTENT_SRC}"
 
 # wBlock custom code symbols
-check_grep "engineTimestamp"       "engineTimestamp"        "${BACKGROUND_JS}"
-check_grep "window.adguard"        "window.adguard"         "${CONTENT_JS}"
+check_grep "engineTimestamp"       "engineTimestamp"        "${BACKGROUND_SRC}"
+check_grep "window.adguard"        "window.adguard"         "${CONTENT_SRC}"
 
 # JS syntax
-check_syntax "${BACKGROUND_JS}"
-check_syntax "${CONTENT_JS}"
+check_syntax "${BACKGROUND_SRC}"
+check_syntax "${CONTENT_SRC}"
 
 if [[ "${FAIL}" -ne 0 ]]; then
   echo ""
@@ -251,6 +256,13 @@ if [[ "${FAIL}" -ne 0 ]]; then
   error "Temp directory left for debugging: ${WORK_DIR}"
   exit 1
 fi
+
+# ---------------------------------------------------------------------------
+# Step 7: Minify sources into the shipped Resources artifacts
+# ---------------------------------------------------------------------------
+echo ""
+info "--- Minifying into wBlock Scripts (iOS)/Resources ---"
+"${ROOT_DIR}/scripts/minify-extension-js.sh"
 
 # ---------------------------------------------------------------------------
 # Cleanup (only on success)
@@ -265,16 +277,18 @@ echo -e "${GREEN}${BOLD}--- Done ---${RESET}"
 echo ""
 echo -e "  Version updated to: ${BOLD}@adguard/safari-extension ${VERSION}${RESET}"
 echo "  Files modified:"
-echo "    - wBlock Scripts (iOS)/Resources/background.js"
-echo "    - wBlock Scripts (iOS)/Resources/content.js"
+echo "    - extension-src/background.js (unminified source)"
+echo "    - extension-src/content.js (unminified source)"
+echo "    - wBlock Scripts (iOS)/Resources/background.js (minified artifact)"
+echo "    - wBlock Scripts (iOS)/Resources/content.js (minified artifact)"
 echo ""
-echo "  Next step: commit both files:"
-echo -e "  ${BOLD}git add 'wBlock Scripts (iOS)/Resources/background.js' \\"
+echo "  Next step: commit all four files:"
+echo -e "  ${BOLD}git add extension-src 'wBlock Scripts (iOS)/Resources/background.js' \\"
 echo "        'wBlock Scripts (iOS)/Resources/content.js'"
 echo ""
 
 # Detect scriptlets version embedded in the output for the commit message hint
-SCRIPTLETS_VER="$(grep -o 'scriptlets [0-9]*\.[0-9]*\.[0-9]*' "${BACKGROUND_JS}" | head -1 | awk '{print $2}' || true)"
+SCRIPTLETS_VER="$(grep -o 'scriptlets [0-9]*\.[0-9]*\.[0-9]*' "${BACKGROUND_SRC}" | head -1 | awk '{print $2}' || true)"
 if [[ -n "${SCRIPTLETS_VER}" ]]; then
   echo -e "  git commit -m \"rebuild extension JS with safari-extension ${VERSION} (scriptlets ${SCRIPTLETS_VER})\"${RESET}"
 else
