@@ -39,12 +39,21 @@ public enum UserScriptURLSupport {
             return String(filename.dropLast(".js".count))
         }
 
+        if lowercased.hasSuffix(".user.css") {
+            return String(filename.dropLast(".user.css".count))
+        }
+
+        if lowercased.hasSuffix(".css") {
+            return String(filename.dropLast(".css".count))
+        }
+
         return URL(fileURLWithPath: filename).deletingPathExtension().lastPathComponent
     }
 
     private static func hasSupportedExtension(in path: String) -> Bool {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+            || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
     }
 }
 
@@ -76,6 +85,10 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var resource: [UserScriptResource] = []
     public var resourceContents: [String: String] = [:] // Cached resource content
     public var noframes: Bool = false
+    /// True when this entry is a UserCSS userstyle rather than a userscript.
+    /// Styles reuse the userscript pipeline; `matches` then stores serialized
+    /// `@-moz-document` conditions and `content` holds the full .user.css source.
+    public var isUserStyle: Bool = false
     public var isLocal: Bool = true
     public var updateURL: String?
     public var downloadURL: String?
@@ -186,7 +199,28 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             .trimmingCharacters(in: .whitespaces)
     }
 
-    /// Extract metadata from userscript content
+    /// True when the content carries a line-anchored userscript metadata block.
+    public static func containsUserScriptMetadataBlock(_ content: String) -> Bool {
+        var sawStart = false
+        for line in content.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if !sawStart {
+                if trimmed.hasPrefix("// ==UserScript==") { sawStart = true }
+            } else if trimmed.hasPrefix("// ==/UserScript==") {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// True when the content should be treated as a UserCSS userstyle. A userscript
+    /// metadata block wins, so scripts embedding usercss text in string literals
+    /// never get reclassified.
+    public static func detectsUserStyle(in content: String) -> Bool {
+        UserStyleSupport.isUserStyleContent(content) && !containsUserScriptMetadataBlock(content)
+    }
+
+    /// Extract metadata from userscript or userstyle content
     public mutating func parseMetadata() {
         // Reset metadata-backed fields so repeated parsing stays idempotent.
         description = ""
@@ -203,6 +237,12 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         noframes = false
         updateURL = nil
         downloadURL = nil
+        isUserStyle = false
+
+        if Self.detectsUserStyle(in: content), let style = UserStyleSupport.parsed(from: content) {
+            applyUserStyleMetadata(style)
+            return
+        }
 
         // Resolve the user's preferred language code for locale-aware metadata.
         let preferredLang = Locale.current.languageCode?.lowercased() ?? "en"
@@ -324,9 +364,33 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             ?? bareDescription
             ?? self.description
     }
+
+    /// Populates metadata-backed fields from a parsed UserCSS style. The remaining
+    /// fields were already reset by `parseMetadata()`.
+    private mutating func applyUserStyleMetadata(_ style: UserStyleSupport.ParsedStyle) {
+        isUserStyle = true
+        if let styleName = style.name {
+            let cleaned = removeEmojis(from: styleName)
+            if !cleaned.isEmpty { name = cleaned }
+        }
+        if let styleDescription = style.description {
+            description = removeEmojis(from: styleDescription)
+        }
+        version = style.version ?? ""
+        matches = style.serializedConditions
+        // Styles must be present before first paint; the injector inserts them as
+        // <style> elements, so script-context concepts do not apply.
+        runAt = "document-start"
+        injectInto = "content"
+        updateURL = style.updateURL
+    }
     
-    /// Check if userscript matches a given URL
+    /// Check if userscript or userstyle matches a given URL
     public func matches(url: String) -> Bool {
+        if isUserStyle {
+            return UserStyleSupport.matches(serializedConditions: matches, url: url)
+        }
+
         guard let parsedURL = Self.parsedMatchURL(from: url) else { return false }
         let urlRange = NSRange(location: 0, length: url.utf16.count)
 

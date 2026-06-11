@@ -101,6 +101,9 @@ struct WBlockBackup: Codable, Sendable {
             script.downloadURL = downloadURL
             script.lastUpdated = lastUpdated
             script.updatesAutomatically = updatesAutomatically
+            // Old backups predate the flag; the content always travels with the
+            // entry, so re-derive instead of persisting a new schema field.
+            script.isUserStyle = UserScript.detectsUserStyle(in: content)
             return script
         }
     }

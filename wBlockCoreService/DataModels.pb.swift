@@ -408,6 +408,11 @@ struct Wblock_Data_UserScriptData: @unchecked Sendable {
   /// Clears the value of `updatesAutomatically`. Subsequent reads from it will return its default value.
   mutating func clearUpdatesAutomatically() {_uniqueStorage()._updatesAutomatically = nil}
 
+  var isUserStyle: Bool {
+    get {_storage._isUserStyle}
+    set {_uniqueStorage()._isUserStyle = newValue}
+  }
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -994,7 +999,7 @@ extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".UserScriptData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0\u{3}updates_automatically\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0\u{3}updates_automatically\0\u{3}is_user_style\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1016,6 +1021,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
     var _content: String = String()
     var _lastUpdated: Int64 = 0
     var _updatesAutomatically: Bool? = nil
+    var _isUserStyle: Bool = false
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1045,6 +1051,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
       _content = source._content
       _lastUpdated = source._lastUpdated
       _updatesAutomatically = source._updatesAutomatically
+      _isUserStyle = source._isUserStyle
     }
   }
 
@@ -1082,6 +1089,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
         case 17: try { try decoder.decodeSingularStringField(value: &_storage._content) }()
         case 18: try { try decoder.decodeSingularInt64Field(value: &_storage._lastUpdated) }()
         case 19: try { try decoder.decodeSingularBoolField(value: &_storage._updatesAutomatically) }()
+        case 20: try { try decoder.decodeSingularBoolField(value: &_storage._isUserStyle) }()
         default: break
         }
       }
@@ -1151,6 +1159,9 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
       try { if let v = _storage._updatesAutomatically {
         try visitor.visitSingularBoolField(value: v, fieldNumber: 19)
       } }()
+      if _storage._isUserStyle != false {
+        try visitor.visitSingularBoolField(value: _storage._isUserStyle, fieldNumber: 20)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1179,6 +1190,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
         if _storage._content != rhs_storage._content {return false}
         if _storage._lastUpdated != rhs_storage._lastUpdated {return false}
         if _storage._updatesAutomatically != rhs_storage._updatesAutomatically {return false}
+        if _storage._isUserStyle != rhs_storage._isUserStyle {return false}
         return true
       }
       if !storagesAreEqual {return false}

@@ -11,7 +11,7 @@
 "Userscript" = "ユーザースクリプト";
 "Welcome to wBlock!" = "wBlockへようこそ！";
 "Trust: \\(trust.capitalized)" = "信頼: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "ユーザースクリプトを追加してブラウジング体験をカスタマイズ";
+"Add userscripts and userstyles to customize your browsing experience" = "ユーザースクリプトとユーザースタイルを追加してブラウジング体験をカスタマイズ";
 "Country or region" = "国または地域";
 "Never checked" = "未確認";
 "Apply & Finish" = "適用して完了";
@@ -19,6 +19,7 @@
 "Restart" = "再起動";
 "%@%" = "%@%";
 "Script Content" = "スクリプト内容";
+"Style Content" = "スタイル内容";
 "Showing preview (%@) of %@))" = "プレビューを表示中 (%@) / %@))";
 "Applied Rules" = "適用済みルール";
 "Export" = "書き出し";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "ファイル";
 "Scripts" = "スクリプト";
+"Styles" = "スタイル";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) ユーザースクリプトには \\(filterName) が必要です";
 "Foreign" = "海外";
 "International" = "国際";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "クリップボードから貼り付け";
 "No Userscripts" = "ユーザースクリプトはありません";
 "Userscripts" = "ユーザースクリプト";
+"Userstyles" = "ユーザースタイル";
 "URL Patterns (\\(script.matches.count))" = "URLパターン (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "有効にしたいユーザースクリプトを選択してください。追加機能や修正が適用されます。後で設定からいつでも追加できます。";
 "Updating Scripts" = "スクリプトを更新中";
@@ -209,7 +212,7 @@
 "Progress" = "進行状況";
 "Logs" = "ログ";
 "Preparing %d extension" = "%d個の拡張機能を準備中";
-"Add Userscript" = "ユーザースクリプトを追加";
+"Add Userscript or Userstyle" = "ユーザースクリプトまたはユーザースタイルを追加";
 "URL Patterns (%@)" = "URLパターン (%@)";
 "Copy URL" = "URLをコピー";
 "Trust: %@" = "信頼: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "待機中";
 "Back" = "戻る";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = ".user.js または .js ファイルに対応。ローカルインポートは自動更新されないため、置き換えるには再インポートしてください。";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = ".user.js、.js、.user.css ファイルに対応。ローカルインポートは自動更新されないため、置き換えるには再インポートしてください。";
 "Category" = "カテゴリ";
 "Open Safari Settings" = "Safariの設定を開く";
 "Search" = "検索";
@@ -247,9 +250,10 @@
 "Description" = "説明";
 "2." = "2.";
 "AutoUpdate" = "自動更新";
-"Script URL" = "スクリプトURL";
+"Script or Style URL" = "スクリプトまたはユーザースタイルのURL";
 "Review your choices and apply settings." = "選択内容を確認して設定を適用してください。";
 "Local Import" = "ローカルインポート";
+"Userstyle" = "ユーザースタイル";
 "Send me reminders about unapplied changes" = "未適用の変更をリマインドする";
 "Version \\(script.version)" = "バージョン \\(script.version)";
 "Syncing iCloud configuration…" = "iCloud設定を同期中…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "コミュニティ管理のリストのみ利用できます。問題なければ有効にしてください。";
 "Open Login Items" = "ログイン項目を開く";
 "Overdue catch-up" = "期限超過の追いつき実行";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "直接の .user.js または .js リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "直接の .user.js、.js、または .user.css リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
 "Recorded" = "記録済み";
 "Received %@, %@ %@" = "%@ に受信、%@ %@";
 "Received %@, waiting for completion" = "%@ に受信、完了待ち";
@@ -619,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "このリストには、ノルウェー、デンマーク、アイスランド、デンマーク領土、および先住民族サーミ人の Web サイトが含まれています。";
 "Title is required." = "タイトルは必須です。";
 "URL Patterns (%d)" = "URL パターン (%d)";
+"Applies To (%d)" = "適用先 (%d)";
+"All websites" = "すべてのWebサイト";
 "Unapplied Filter Changes" = "適用されていないフィルターの変更";
 "Updated %d/%d extensions in %@" = "%@ の %d/%d 拡張機能を更新しました";
 "Updating disabled sites..." = "無効になっているサイトを更新しています...";
@@ -673,9 +679,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "標準のメタデータブロックを含むユーザースクリプトまたはユーザースタイルを貼り付けるか記述してください。";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "// ==UserScript== メタデータブロック（ユーザースタイルの場合は /* ==UserStyle== */）を含めて、wBlock が名前とURLパターンを読み取れるようにしてください。";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = ".js、.user.js、または .user.css で終わる有効な http:// または https:// リンクを指定してください";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

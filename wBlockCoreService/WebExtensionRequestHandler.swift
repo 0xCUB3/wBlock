@@ -582,6 +582,37 @@ public enum WebExtensionRequestHandler {
 
             for index in inlineOrder {
                 let script = userScripts[index]
+
+                if script.isUserStyle {
+                    // Userstyles inline the effective CSS for this URL up front; there is
+                    // no GM machinery, no resources, and no namespace to ship. Oversized
+                    // payloads hydrate through the chunk path, which recomputes the same
+                    // effective CSS from the page URL.
+                    guard let css = UserStyleSupport.effectiveCSS(forContent: script.content, url: urlString) else {
+                        continue
+                    }
+                    var descriptor: [String: Any] = [
+                        "id": script.id.uuidString,
+                        "kind": "style",
+                        "name": script.name,
+                        "version": script.version,
+                        "description": script.description,
+                        "runAt": "document-start",
+                        "noframes": false,
+                        "updateURL": script.updateURL ?? "",
+                        "downloadURL": script.downloadURL ?? ""
+                    ]
+                    if includeContent {
+                        let cssBytes = css.utf8.count
+                        if cssBytes <= documentStartInlineCap, cssBytes <= remainingInlineBudget {
+                            descriptor["content"] = css
+                            remainingInlineBudget -= cssBytes
+                        }
+                    }
+                    descriptorsByIndex[index] = descriptor
+                    continue
+                }
+
                 // Prefer cached resource names, but fall back to parsing metadata so scripts
                 // installed before resource caching still request the right dependencies.
                 let resourceNames =
@@ -672,6 +703,7 @@ public enum WebExtensionRequestHandler {
             let descriptors = pageScripts.map { item -> [String: Any] in
                 [
                     "id": item.script.id.uuidString,
+                    "kind": item.script.isUserStyle ? "style" : "script",
                     "name": item.script.name,
                     "version": item.script.version,
                     "description": item.script.description,
@@ -1023,7 +1055,13 @@ public enum WebExtensionRequestHandler {
             let text: String?
             switch kind {
             case .content:
-                text = script.executableContent
+                if script.isUserStyle, let pageURL = message["url"] as? String, !pageURL.isEmpty {
+                    // Style chunks carry the same effective CSS the inline path would
+                    // have produced for this page; recomputation is deterministic.
+                    text = UserStyleSupport.effectiveCSS(forContent: script.content, url: pageURL)
+                } else {
+                    text = script.executableContent
+                }
             case .resource:
                 // Lazily populate missing resources for scripts installed before caching existed.
                 text = await manager.ensureResourceContent(forScriptId: scriptId, resourceName: resourceName!)

@@ -11,7 +11,7 @@
 "Userscript" = "유저스크립트";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
 "Trust: \\(trust.capitalized)" = "신뢰도: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "유저스크립트를 추가하여 브라우징 경험을 맞춤 설정하세요";
+"Add userscripts and userstyles to customize your browsing experience" = "유저스크립트와 유저스타일을 추가하여 브라우징 경험을 맞춤 설정하세요";
 "Country or region" = "국가 또는 지역";
 "Never checked" = "확인 안 함";
 "Apply & Finish" = "적용 및 완료";
@@ -19,6 +19,7 @@
 "Restart" = "재시작";
 "%@%" = "%@%";
 "Script Content" = "스크립트 내용";
+"Style Content" = "스타일 내용";
 "Showing preview (%@) of %@))" = "미리보기 표시 중 (%@ / %@))";
 "Applied Rules" = "적용된 규칙";
 "Export" = "내보내기";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "파일";
 "Scripts" = "스크립트";
+"Styles" = "스타일";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 유저스크립트는 \\(filterName)이(가) 필요합니다";
 "Foreign" = "해외";
 "International" = "국제";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "클립보드에서 붙여넣기";
 "No Userscripts" = "유저스크립트 없음";
 "Userscripts" = "유저스크립트";
+"Userstyles" = "유저스타일";
 "URL Patterns (\\(script.matches.count))" = "URL 패턴 (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "활성화할 유저스크립트를 선택하세요. 기능 추가나 수정사항을 제공합니다. 나중에 설정에서 언제든지 추가할 수 있습니다.";
 "Updating Scripts" = "스크립트 업데이트 중";
@@ -209,7 +212,7 @@
 "Progress" = "진행 상황";
 "Logs" = "로그";
 "Preparing %d extension" = "확장 프로그램 %d개 준비 중";
-"Add Userscript" = "유저스크립트 추가";
+"Add Userscript or Userstyle" = "유저스크립트 또는 유저스타일 추가";
 "URL Patterns (%@)" = "URL 패턴 (%@)";
 "Copy URL" = "URL 복사";
 "Trust: %@" = "신뢰도: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "대기 중";
 "Back" = "뒤로";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = ".user.js 또는 .js 파일을 지원합니다. 로컬 가져오기는 자동 업데이트되지 않으며, 교체하려면 다시 가져와야 합니다.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = ".user.js, .js 및 .user.css 파일을 지원합니다. 로컬 가져오기는 자동 업데이트되지 않으며, 교체하려면 다시 가져와야 합니다.";
 "Category" = "카테고리";
 "Open Safari Settings" = "Safari 설정 열기";
 "Search" = "검색";
@@ -247,9 +250,10 @@
 "Description" = "설명";
 "2." = "2.";
 "AutoUpdate" = "자동 업데이트";
-"Script URL" = "스크립트 URL";
+"Script or Style URL" = "스크립트 또는 유저스타일 URL";
 "Review your choices and apply settings." = "선택 사항을 검토하고 설정을 적용하세요.";
 "Local Import" = "로컬 가져오기";
+"Userstyle" = "유저스타일";
 "Send me reminders about unapplied changes" = "적용되지 않은 변경 사항에 대한 알림 받기";
 "Version \\(script.version)" = "버전 \\(script.version)";
 "Syncing iCloud configuration…" = "iCloud 구성 동기화 중…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "커뮤니티에서 관리하는 목록만 사용할 수 있습니다. 괜찮다면 활성화하세요.";
 "Open Login Items" = "로그인 항목 열기";
 "Overdue catch-up" = "기한이 지난 보충 실행";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "직접 .user.js 또는 .js 링크를 붙여넣으세요. wBlock이 다운로드하고 설치합니다.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "직접 .user.js, .js 또는 .user.css 링크를 붙여넣으세요. wBlock이 다운로드하고 설치합니다.";
 "Recorded" = "기록됨";
 "Received %@, %@ %@" = "%@ 수신, %@ %@";
 "Received %@, waiting for completion" = "%@ 수신, 완료 대기 중";
@@ -619,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "이 목록에는 노르웨이, 덴마크, 아이슬란드, 덴마크 영토 및 사미 원주민을 위한 웹사이트가 포함되어 있습니다.";
 "Title is required." = "제목이 필요합니다.";
 "URL Patterns (%d)" = "URL 패턴(%d)";
+"Applies To (%d)" = "적용 대상 (%d)";
+"All websites" = "모든 웹사이트";
 "Unapplied Filter Changes" = "적용되지 않은 필터 변경 사항";
 "Updated %d/%d extensions in %@" = "%@에서 %d/%d 확장을 업데이트했습니다.";
 "Updating disabled sites..." = "비활성화된 사이트 업데이트 중...";
@@ -673,9 +679,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "표준 메타데이터 블록이 포함된 유저스크립트 또는 유저스타일을 붙여넣거나 작성하세요.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "wBlock이 이름과 URL 패턴을 읽을 수 있도록 // ==UserScript== 메타데이터 블록(또는 유저스타일의 경우 /* ==UserStyle== */)을 포함하세요.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = ".js, .user.js 또는 .user.css로 끝나는 유효한 http:// 또는 https:// 링크를 제공하세요";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

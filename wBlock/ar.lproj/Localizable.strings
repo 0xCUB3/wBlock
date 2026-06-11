@@ -11,7 +11,7 @@
 "Userscript" = "سكريبت مستخدم";
 "Welcome to wBlock!" = "مرحبًا بك في wBlock!";
 "Trust: \\(trust.capitalized)" = "الثقة: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "أضف سكريبتات مستخدم لتخصيص تجربة التصفح";
+"Add userscripts and userstyles to customize your browsing experience" = "أضف سكريبتات وأنماط مستخدم لتخصيص تجربة التصفح";
 "Country or region" = "البلد أو المنطقة";
 "Never checked" = "لم يتم التحقق مطلقًا";
 "Apply & Finish" = "تطبيق وإنهاء";
@@ -19,6 +19,7 @@
 "Restart" = "إعادة البدء";
 "%@%" = "%@%";
 "Script Content" = "محتوى السكريبت";
+"Style Content" = "محتوى النمط";
 "Showing preview (%@) of %@))" = "عرض معاينة (%@) من %@))";
 "Applied Rules" = "القواعد المطبَّقة";
 "Export" = "تصدير";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "ملف";
 "Scripts" = "السكريبتات";
+"Styles" = "الأنماط";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "سكريبت المستخدم \\(bypassScript.name) يتطلب \\(filterName)";
 "Foreign" = "أجنبي";
 "International" = "دولية";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "لصق من الحافظة";
 "No Userscripts" = "لا توجد سكريبتات مستخدم";
 "Userscripts" = "سكريبتات المستخدم";
+"Userstyles" = "أنماط المستخدم";
 "URL Patterns (\\(script.matches.count))" = "أنماط الرابط (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "حدّد أي سكريبتات مستخدم تريد تفعيلها. تضيف هذه ميزات إضافية أو إصلاحات. يمكنك دائمًا إضافة المزيد لاحقًا في الإعدادات.";
 "Updating Scripts" = "جارٍ تحديث السكريبتات";
@@ -209,7 +212,7 @@
 "Progress" = "التقدم";
 "Logs" = "السجلات";
 "Preparing %d extension" = "جارٍ تجهيز %d امتداد";
-"Add Userscript" = "إضافة سكريبت مستخدم";
+"Add Userscript or Userstyle" = "إضافة سكريبت مستخدم أو نمط مستخدم";
 "URL Patterns (%@)" = "أنماط الرابط (%@)";
 "Copy URL" = "نسخ الرابط";
 "Trust: %@" = "الثقة: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "انتظار";
 "Back" = "رجوع";
 "\\(Int(refreshProgress * 100))%" = "\\(كثافة العمليات(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "يدعم ملفات .user.js أو .js. لن تتحدث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "يدعم ملفات .user.js و .js و .user.css. لن تتحدث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
 "Category" = "الفئة";
 "Open Safari Settings" = "فتح إعدادات Safari";
 "Search" = "بحث";
@@ -247,9 +250,10 @@
 "Description" = "الوصف";
 "2." = "2.";
 "AutoUpdate" = "تحديث تلقائي";
-"Script URL" = "رابط السكريبت";
+"Script or Style URL" = "رابط السكريبت أو نمط مستخدم";
 "Review your choices and apply settings." = "راجع اختياراتك وطبّق الإعدادات.";
 "Local Import" = "استيراد محلي";
+"Userstyle" = "نمط مستخدم";
 "Send me reminders about unapplied changes" = "أرسل لي تذكيرات بشأن التغييرات غير المطبقة";
 "Version \\(script.version)" = "الإصدار \\(script.version)";
 "Syncing iCloud configuration…" = "جارٍ مزامنة إعداد iCloud…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "لا تتوفر إلا القوائم التي يديرها المجتمع. فعّلها إذا كان ذلك مناسبًا لك.";
 "Open Login Items" = "فتح عناصر تسجيل الدخول";
 "Overdue catch-up" = "استدراك متأخر";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "ألصق الرابط المباشر لملف .user.js أو .js. سيقوم wBlock بتنزيله وتثبيته لك.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "ألصق الرابط المباشر لملف .user.js أو .js أو .user.css. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Recorded" = "تم التسجيل";
 "Received %@, %@ %@" = "تم الاستلام %@، %@ %@";
 "Received %@, waiting for completion" = "تم الاستلام %@، بانتظار الاكتمال";
@@ -619,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "تغطي هذه القائمة مواقع الويب الخاصة بالنرويج والدنمارك وأيسلندا والأراضي الدنماركية والسكان الأصليين الصاميين.";
 "Title is required." = "العنوان مطلوب.";
 "URL Patterns (%d)" = "أنماط عناوين URL (%d)";
+"Applies To (%d)" = "ينطبق على (%d)";
+"All websites" = "كل المواقع الإلكترونية";
 "Unapplied Filter Changes" = "تغييرات التصفية غير المطبقة";
 "Updated %d/%d extensions in %@" = "تم تحديث ملحقات %d/%d في %@";
 "Updating disabled sites..." = "جارٍ تحديث المواقع المعطلة...";
@@ -673,9 +679,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "الصق أو اكتب سكريبت مستخدم أو نمط مستخدم مع كتلة بيانات وصفية قياسية.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "ضمّن كتلة البيانات الوصفية // ==UserScript== (أو /* ==UserStyle== */ لأنماط المستخدم) حتى يتمكن wBlock من قراءة الاسم وأنماط عناوين URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "قدّم رابط http:// أو https:// صالحًا ينتهي بـ .js أو .user.js أو .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

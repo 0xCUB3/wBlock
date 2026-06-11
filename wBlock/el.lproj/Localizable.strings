@@ -11,7 +11,7 @@
 "Userscript" = "Κώδικας χρήστη";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Trust: \\(trust.capitalized)" = "Εμπιστοσύνη: \(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "Προσθήκη κώδικα χρήστη για να προσαρμόσετε την εμπειρία περιήγησής σας";
+"Add userscripts and userstyles to customize your browsing experience" = "Προσθήκη κώδικα χρήστη και στυλ χρήστη για να προσαρμόσετε την εμπειρία περιήγησής σας";
 "Country or region" = "Χώρα ή περιοχή";
 "Never checked" = "Δεν έχει ελεγχθεί ποτέ";
 "Apply & Finish" = "Εφαρμογή & Ολοκλήρωση";
@@ -19,6 +19,7 @@
 "Restart" = "Επανεκκίνηση";
 "%@%" = "%@%";
 "Script Content" = "Περιεχόμενο κώδικα";
+"Style Content" = "Περιεχόμενο στυλ";
 "Showing preview (%@) of %@))" = "Εμφάνιση προεπισκόπησης (%@) από %@))";
 "Applied Rules" = "Εφαρμοσμένοι Κανόνες";
 "Export" = "Εξαγωγή";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "Αρχείο";
 "Scripts" = "Κώδικας";
+"Styles" = "Στυλ";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Ο κώδικας χρήστη \(bypassScript.name) απαιτεί το \(filterName)";
 "Foreign" = "Άλλες γλώσσες";
 "International" = "Διεθνή";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "Επικόλληση από το Πρόχειρο";
 "No Userscripts" = "Χωρίς κώδικα χρήστη";
 "Userscripts" = "Κώδικας Χρήστη";
+"Userstyles" = "Στυλ Χρήστη";
 "URL Patterns (\\(script.matches.count))" = "Μοτίβα URL (\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Επιλέξτε τυχόν κώδικα χρήστη που θέλετε να ενεργοποιήσετε. Αυτά προσθέτουν επιπλέον λειτουργίες ή διορθώσεις. Μπορείτε πάντα να προσθέσετε περισσότερα στις ρυθμίσεις αργότερα.";
 "Updating Scripts" = "Ενημέρωση κώδικα";
@@ -209,7 +212,7 @@
 "Progress" = "Πρόοδος";
 "Logs" = "Αρχεία Καταγραφής";
 "Preparing %d extension" = "Προετοιμασία %d επέκτασης";
-"Add Userscript" = "Προσθήκη κώδικα χρήστη";
+"Add Userscript or Userstyle" = "Προσθήκη κώδικα χρήστη ή στυλ χρήστη";
 "URL Patterns (%@)" = "Μοτίβα URL(%@)";
 "Copy URL" = "Αντιγραφή URL";
 "Trust: %@" = "Αξιόπιστο: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "Αναμονή";
 "Back" = "Πίσω";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "Υποστηρίζει αρχεία .user.js ή .js. Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα. επανεισαγάγετε για αντικατάσταση.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Υποστηρίζει αρχεία .user.js, .js και .user.css. Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα. επανεισαγάγετε για αντικατάσταση.";
 "Category" = "Κατηγορία";
 "Open Safari Settings" = "Άνοιγμα ρυθμίσεων Safari";
 "Search" = "Αναζήτηση";
@@ -247,9 +250,10 @@
 "Description" = "Περιγραφή";
 "2." = "2.";
 "AutoUpdate" = "Αυτόματη Ενημέρωση";
-"Script URL" = "URL Κώδικα";
+"Script or Style URL" = "URL Κώδικα ή Στυλ χρήστη";
 "Review your choices and apply settings." = "Ελέγξτε τις επιλογές σας και εφαρμόστε τις ρυθμίσεις.";
 "Local Import" = "Τοπική Εισαγωγή";
+"Userstyle" = "Στυλ χρήστη";
 "Send me reminders about unapplied changes" = "Αποστολή υπενθυμίσεων σχετικά με μη εφαρμοσμένες αλλαγές";
 "Version \\(script.version)" = "Έκδοση \(script.version)";
 "Syncing iCloud configuration…" = "Συγχρονισμός διαμόρφωσης iCloud…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "Διατίθενται μόνο λίστες που συντηρούνται από την κοινότητα. Ενεργοποίησέ τες αν νιώθεις άνετα.";
 "Open Login Items" = "Άνοιγμα στοιχείων σύνδεσης";
 "Overdue catch-up" = "Καθυστερημένη ανάκτηση";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js ή .js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js, .js ή .user.css. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
 "Recorded" = "Καταγράφηκε";
 "Received %@, %@ %@" = "Ελήφθη %@, %@ %@";
 "Received %@, waiting for completion" = "Ελήφθη %@, αναμονή για ολοκλήρωση";
@@ -619,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Αυτή η λίστα καλύπτει ιστότοπους για τη Νορβηγία, τη Δανία, την Ισλανδία, τα δανικά εδάφη και τον αυτόχθονα πληθυσμό των Σάμι.";
 "Title is required." = "Απαιτείται τίτλος.";
 "URL Patterns (%d)" = "Μοτίβα URL (%d)";
+"Applies To (%d)" = "Ισχύει για (%d)";
+"All websites" = "Όλοι οι ιστότοποι";
 "Unapplied Filter Changes" = "Μη εφαρμοσμένες αλλαγές φίλτρου";
 "Updated %d/%d extensions in %@" = "Ενημερώθηκαν οι επεκτάσεις %d/%d στο %@";
 "Updating disabled sites..." = "Ενημέρωση απενεργοποιημένων ιστότοπων...";
@@ -673,9 +679,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "Επικολλήστε ή γράψτε κώδικα χρήστη ή στυλ χρήστη με ένα τυπικό μπλοκ μεταδεδομένων.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Συμπεριλάβετε το μπλοκ μεταδεδομένων // ==UserScript== (ή /* ==UserStyle== */ για στυλ χρήστη), ώστε το wBlock να μπορεί να διαβάσει το όνομα και τα μοτίβα URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Παρέχετε έναν έγκυρο σύνδεσμο http:// ή https:// που τελειώνει σε .js, .user.js ή .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

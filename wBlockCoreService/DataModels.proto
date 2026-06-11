@@ -92,6 +92,7 @@ message UserScriptData {
   string content = 17;
   int64 last_updated = 18;
   optional bool updates_automatically = 19;
+  bool is_user_style = 20;
 }
 
 // Whitelist/disabled sites data

@@ -11,7 +11,7 @@
 "Userscript" = "Script utilizator";
 "Welcome to wBlock!" = "Bine ai venit la wBlock!";
 "Trust: \\(trust.capitalized)" = "Încredere: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "Adaugă scripturi utilizator pentru a-ți personaliza experiența de navigare";
+"Add userscripts and userstyles to customize your browsing experience" = "Adaugă scripturi și stiluri utilizator pentru a-ți personaliza experiența de navigare";
 "Country or region" = "Țară sau regiune";
 "Never checked" = "Nu a fost verificat niciodată";
 "Apply & Finish" = "Aplică și finalizează";
@@ -19,6 +19,7 @@
 "Restart" = "Repornește";
 "%@%" = "%@%";
 "Script Content" = "Conținut script";
+"Style Content" = "Conținut stil";
 "Showing preview (%@) of %@))" = "Se afișează previzualizarea (%@) din %@))";
 "Applied Rules" = "Reguli aplicate";
 "Export" = "Exportă";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "Fișier";
 "Scripts" = "Scripturi";
+"Styles" = "Stiluri";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Scriptul utilizator \\(bypassScript.name) necesită \\(filterName)";
 "Foreign" = "Străine";
 "International" = "Internaționale";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "Lipește din clipboard";
 "No Userscripts" = "Niciun script utilizator";
 "Userscripts" = "Scripturi utilizator";
+"Userstyles" = "Stiluri utilizator";
 "URL Patterns (\\(script.matches.count))" = "Modele URL (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Selectează scripturile utilizator pe care vrei să le activezi. Acestea adaugă funcții sau remedieri suplimentare. Poți adăuga oricând altele mai târziu din setări.";
 "Updating Scripts" = "Se actualizează scripturile";
@@ -209,7 +212,7 @@
 "Progress" = "Progres";
 "Logs" = "Jurnale";
 "Preparing %d extension" = "Se pregătește %d extensie";
-"Add Userscript" = "Adaugă script utilizator";
+"Add Userscript or Userstyle" = "Adaugă script utilizator sau stil utilizator";
 "URL Patterns (%@)" = "Modele URL (%@)";
 "Copy URL" = "Copiază URL-ul";
 "Trust: %@" = "Încredere: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "În așteptare";
 "Back" = "Înapoi";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "Acceptă fișiere .user.js sau .js. Importurile locale nu se actualizează automat; reimportă pentru înlocuire.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Acceptă fișiere .user.js, .js și .user.css. Importurile locale nu se actualizează automat; reimportă pentru înlocuire.";
 "Category" = "Categorie";
 "Open Safari Settings" = "Deschide setările Safari";
 "Search" = "Caută";
@@ -247,9 +250,10 @@
 "Description" = "Descriere";
 "2." = "2.";
 "AutoUpdate" = "Actualizare automată";
-"Script URL" = "URL script";
+"Script or Style URL" = "URL script sau stil utilizator";
 "Review your choices and apply settings." = "Revizuiește opțiunile și aplică setările.";
 "Local Import" = "Import local";
+"Userstyle" = "Stil utilizator";
 "Send me reminders about unapplied changes" = "Trimite-mi reamintiri despre modificările neaplicate";
 "Version \\(script.version)" = "Versiunea \\(script.version)";
 "Syncing iCloud configuration…" = "Se sincronizează configurația iCloud…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "Sunt disponibile doar liste întreținute de comunitate. Activează-le dacă ești confortabil cu asta.";
 "Open Login Items" = "Deschide elementele de autentificare";
 "Overdue catch-up" = "Recuperare întârziată";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Lipește linkul direct .user.js sau .js. wBlock îl va descărca și instala pentru tine.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Lipește linkul direct .user.js, .js sau .user.css. wBlock îl va descărca și instala pentru tine.";
 "Recorded" = "Înregistrat";
 "Received %@, %@ %@" = "Primit %@, %@ %@";
 "Received %@, waiting for completion" = "Primit %@, în așteptarea finalizării";
@@ -619,6 +623,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Această listă acoperă site-uri web pentru Norvegia, Danemarca, Islanda, teritoriile daneze și populația indigenă Sami.";
 "Title is required." = "Titlul este obligatoriu.";
 "URL Patterns (%d)" = "Modele de adrese URL (%d)";
+"Applies To (%d)" = "Se aplică la (%d)";
+"All websites" = "Toate site-urile web";
 "Unapplied Filter Changes" = "Modificări neaplicate ale filtrului";
 "Updated %d/%d extensions in %@" = "Extensii %d/%d actualizate în %@";
 "Updating disabled sites..." = "Se actualizează site-urile dezactivate...";
@@ -673,9 +679,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "Lipește sau scrie un script ori stil utilizator cu un bloc standard de metadate.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Include blocul de metadate // ==UserScript== (sau /* ==UserStyle== */ pentru stiluri utilizator), astfel încât wBlock să poată citi numele și modelele URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Furnizează un link http:// sau https:// valid care se termină cu .js, .user.js sau .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

@@ -14,17 +14,20 @@ public enum UserScriptImportError: LocalizedError {
     case unreadableFile
     case emptyContent
     case missingMetadata
+    case unsupportedStylePreprocessor(String)
 
     public var errorDescription: String? {
         switch self {
         case .unsupportedType:
-            return "Choose a .user.js or .js userscript file."
+            return "Choose a .user.js, .js, or .user.css file."
         case .unreadableFile:
             return "Couldn't read the selected file."
         case .emptyContent:
             return "The file is empty."
         case .missingMetadata:
-            return "Not a userscript: missing metadata block."
+            return "Not a userscript or userstyle: missing metadata block."
+        case .unsupportedStylePreprocessor(let preprocessor):
+            return "This userstyle needs the \"\(preprocessor)\" preprocessor, which isn't supported yet."
         }
     }
 }
@@ -1591,6 +1594,8 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func hasMetadataBlock(in content: String) -> Bool {
+        if UserScript.detectsUserStyle(in: content) { return true }
+
         let lines = content.split(whereSeparator: \.isNewline)
         var sawStart = false
 
@@ -1630,6 +1635,7 @@ public class UserScriptManager: ObservableObject {
         copy.updateURL = script.updateURL
         copy.downloadURL = script.downloadURL
         copy.lastUpdated = script.lastUpdated
+        copy.isUserStyle = script.isUserStyle
         copy.updatesAutomatically = script.updatesAutomatically
         return copy
     }
@@ -1682,7 +1688,8 @@ public class UserScriptManager: ObservableObject {
 
     public func addUserScript(from url: URL) async {
         isLoading = true
-        statusDescription = "Downloading userscript..."
+        statusDescription = UserStyleSupport.isUserStylePath(url.path)
+            ? "Downloading userstyle..." : "Downloading userscript..."
         hasError = false
 
         do {
@@ -1704,6 +1711,27 @@ public class UserScriptManager: ObservableObject {
                 name: UserScriptURLSupport.displayName(forRemoteURL: url),
                 url: url, content: content)
             newUserScript.parseMetadata()
+
+            // A .css URL must actually carry a UserStyle metadata block; otherwise the
+            // content would be misclassified as a userscript and injected as JS.
+            if UserStyleSupport.isUserStylePath(url.path), !newUserScript.isUserStyle {
+                hasError = true
+                errorMessage = UserScriptImportError.missingMetadata.errorDescription ?? ""
+                statusDescription = "Download failed"
+                isLoading = false
+                return
+            }
+            if newUserScript.isUserStyle,
+               let style = UserStyleSupport.parsed(from: newUserScript.content),
+               !style.isPreprocessorSupported
+            {
+                hasError = true
+                errorMessage = UserScriptImportError
+                    .unsupportedStylePreprocessor(style.preprocessor).errorDescription ?? ""
+                statusDescription = "Download failed"
+                isLoading = false
+                return
+            }
             newUserScript.isEnabled = true
             newUserScript.isLocal = false
             newUserScript.lastUpdated = Date()
@@ -1718,10 +1746,10 @@ public class UserScriptManager: ObservableObject {
             if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
                 newUserScript.updatesAutomatically = userScripts[existingIndex].updatesAutomatically
                 userScripts[existingIndex] = newUserScript
-                statusDescription = "Updated userscript: \(newUserScript.name)"
+                statusDescription = "Updated \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
             } else {
                 userScripts.append(newUserScript)
-                statusDescription = "Added userscript: \(newUserScript.name)"
+                statusDescription = "Added \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
             }
 
             _ = writeUserScriptContent(newUserScript)
@@ -1748,7 +1776,8 @@ public class UserScriptManager: ObservableObject {
 
     public func addUserScript(fromLocalFile fileURL: URL) async -> Error? {
         isLoading = true
-        statusDescription = "Importing userscript..."
+        statusDescription = UserStyleSupport.isUserStylePath(fileURL.lastPathComponent)
+            ? "Importing userstyle..." : "Importing userscript..."
         hasError = false
 
         let accessed = fileURL.startAccessingSecurityScopedResource()
@@ -1762,6 +1791,7 @@ public class UserScriptManager: ObservableObject {
             let filename = fileURL.lastPathComponent
             let lowercased = filename.lowercased()
             let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+                || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
 
             guard isSupportedType else { throw UserScriptImportError.unsupportedType }
 
@@ -1838,6 +1868,13 @@ public class UserScriptManager: ObservableObject {
         var tempScript = UserScript(name: "", content: rawContent)
         tempScript.parseMetadata()
 
+        if tempScript.isUserStyle,
+           let style = UserStyleSupport.parsed(from: rawContent),
+           !style.isPreprocessorSupported
+        {
+            throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+        }
+
         let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let fallbackName = fallbackName.trimmingCharacters(in: .whitespacesAndNewlines)
         let canonicalName = !metadataName.isEmpty
@@ -1871,6 +1908,7 @@ public class UserScriptManager: ObservableObject {
         newUserScript.noframes = tempScript.noframes
         newUserScript.updateURL = tempScript.updateURL
         newUserScript.downloadURL = tempScript.downloadURL
+        newUserScript.isUserStyle = tempScript.isUserStyle
 
         let processedContent = await processRequireDirectives(newUserScript)
         let resourceContents = await processResourceDirectives(newUserScript)
@@ -1879,10 +1917,10 @@ public class UserScriptManager: ObservableObject {
 
         if let existingIndex {
             userScripts[existingIndex] = newUserScript
-            statusDescription = "\(replacedStatusVerb) userscript: \(newUserScript.name)"
+            statusDescription = "\(replacedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
         } else {
             userScripts.append(newUserScript)
-            statusDescription = "\(importedStatusVerb) userscript: \(newUserScript.name)"
+            statusDescription = "\(importedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
         }
 
         _ = writeUserScriptContent(newUserScript)
@@ -2293,6 +2331,14 @@ public class UserScriptManager: ObservableObject {
         var tempUserScript = UserScript(name: candidate.name, content: rawContent)
         tempUserScript.parseMetadata()
 
+        // Never swap a working userstyle for one we cannot compile natively.
+        if tempUserScript.isUserStyle,
+           let style = UserStyleSupport.parsed(from: rawContent),
+           !style.isPreprocessorSupported
+        {
+            return false
+        }
+
         let processedContent = await processRequireDirectives(tempUserScript)
         let resourceContents = await processResourceDirectives(tempUserScript)
 
@@ -2318,6 +2364,7 @@ public class UserScriptManager: ObservableObject {
         userScripts[index].require = tempUserScript.require
         userScripts[index].updateURL = tempUserScript.updateURL
         userScripts[index].downloadURL = tempUserScript.downloadURL
+        userScripts[index].isUserStyle = tempUserScript.isUserStyle
         userScripts[index].lastUpdated = Date()
 
         _ = writeUserScriptContent(userScripts[index])

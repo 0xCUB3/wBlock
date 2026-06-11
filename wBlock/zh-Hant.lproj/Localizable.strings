@@ -11,7 +11,7 @@
 "Userscript" = "使用者腳本";
 "Welcome to wBlock!" = "歡迎使用 wBlock！";
 "Trust: \\(trust.capitalized)" = "信任度：\\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "新增使用者腳本以自訂你的瀏覽體驗";
+"Add userscripts and userstyles to customize your browsing experience" = "新增使用者腳本和使用者樣式以自訂你的瀏覽體驗";
 "Country or region" = "國家或地區";
 "Never checked" = "從未檢查過";
 "Apply & Finish" = "套用並完成";
@@ -19,6 +19,7 @@
 "Restart" = "重新啟動";
 "%@%" = "%@%";
 "Script Content" = "腳本內容";
+"Style Content" = "樣式內容";
 "Showing preview (%@) of %@))" = "顯示預覽 (%@)，共 %@))";
 "Applied Rules" = "已套用規則";
 "Export" = "匯出";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "檔案";
 "Scripts" = "腳本";
+"Styles" = "樣式";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 使用者腳本需要 \\(filterName)";
 "Foreign" = "國外";
 "International" = "國際";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "從剪貼簿貼上";
 "No Userscripts" = "沒有使用者腳本";
 "Userscripts" = "使用者腳本";
+"Userstyles" = "使用者樣式";
 "URL Patterns (\\(script.matches.count))" = "URL 模式 (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "選取你想啟用的使用者腳本。這些會新增額外功能或修正。你之後也可在設定中再新增。";
 "Updating Scripts" = "正在更新腳本";
@@ -209,7 +212,7 @@
 "Progress" = "進度";
 "Logs" = "日誌";
 "Preparing %d extension" = "正在準備 %d 個延伸功能";
-"Add Userscript" = "新增使用者腳本";
+"Add Userscript or Userstyle" = "新增使用者腳本或使用者樣式";
 "URL Patterns (%@)" = "URL 模式 (%@)";
 "Copy URL" = "複製 URL";
 "Trust: %@" = "信任度：%@";
@@ -228,7 +231,7 @@
 "Waiting" = "等待中";
 "Back" = "返回";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(刷新進度 * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "支援 .user.js 或 .js 檔案。本機匯入不會自動更新；請重新匯入以取代。";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "支援 .user.js、.js 和 .user.css 檔案。本機匯入不會自動更新；請重新匯入以取代。";
 "Category" = "分類";
 "Open Safari Settings" = "開啟 Safari 設定";
 "Search" = "搜尋";
@@ -247,9 +250,10 @@
 "Description" = "描述";
 "2." = "2.";
 "AutoUpdate" = "自動更新";
-"Script URL" = "腳本 URL";
+"Script or Style URL" = "腳本或樣式 URL";
 "Review your choices and apply settings." = "檢查你的選擇並套用設定。";
 "Local Import" = "本機匯入";
+"Userstyle" = "使用者樣式";
 "Send me reminders about unapplied changes" = "提醒我未套用的變更";
 "Version \\(script.version)" = "版本 \\(script.version)";
 "Syncing iCloud configuration…" = "正在同步 iCloud 設定…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "目前只有社群維護的清單可用。如果你可以接受，請啟用它們。";
 "Open Login Items" = "開啟登入項目";
 "Overdue catch-up" = "逾期補跑";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "貼上直接的 .user.js 或 .js 連結。wBlock 會為你下載並安裝。";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js 或 .user.css 連結。wBlock 會為你下載並安裝。";
 "Recorded" = "已記錄";
 "Received %@, %@ %@" = "已收到 %@，%@ %@";
 "Received %@, waiting for completion" = "已收到 %@，等待完成";
@@ -619,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "這份名單涵蓋挪威、丹麥、冰島、丹麥領土和薩米原住民的網站。";
 "Title is required." = "標題為必填項。";
 "URL Patterns (%d)" = "URL 模式 (%d)";
+"Applies To (%d)" = "適用於 (%d)";
+"All websites" = "所有網站";
 "Unapplied Filter Changes" = "未套用的過濾器更改";
 "Updated %d/%d extensions in %@" = "更新了 %@ 中的 %d/%d 擴展";
 "Updating disabled sites..." = "正在更新已停用的網站...";
@@ -673,9 +679,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "貼上或撰寫含標準中繼資料區塊的使用者腳本或使用者樣式。";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 中繼資料區塊（或用於使用者樣式的 /* ==UserStyle== */），以便 wBlock 讀取名稱和 URL 模式。";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "提供以 .js、.user.js 或 .user.css 結尾的有效 http:// 或 https:// 連結";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";

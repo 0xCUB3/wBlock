@@ -11,7 +11,7 @@
 "Userscript" = "Script de usuario";
 "Welcome to wBlock!" = "¡Te damos la bienvenida a wBlock!";
 "Trust: \\(trust.capitalized)" = "Confianza: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "Agrega scripts de usuario para personalizar tu experiencia de navegación";
+"Add userscripts and userstyles to customize your browsing experience" = "Agrega scripts y estilos de usuario para personalizar tu experiencia de navegación";
 "Country or region" = "País o región";
 "Never checked" = "Nunca revisado";
 "Apply & Finish" = "Aplicar y finalizar";
@@ -19,6 +19,7 @@
 "Restart" = "Reiniciar";
 "%@%" = "%@%";
 "Script Content" = "Contenido del script";
+"Style Content" = "Contenido del estilo";
 "Showing preview (%@) of %@))" = "Mostrando vista previa (%@) de %@))";
 "Applied Rules" = "Reglas aplicadas";
 "Export" = "Exportar";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "Archivo";
 "Scripts" = "Guiones";
+"Styles" = "Estilos";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "El script de usuario \\(bypassScript.name) requiere \\(filterName)";
 "Foreign" = "Extranjeros";
 "International" = "Internacionales";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "Pegar desde el portapapeles";
 "No Userscripts" = "No hay scripts de usuario";
 "Userscripts" = "Scripts de usuario";
+"Userstyles" = "Estilos de usuario";
 "URL Patterns (\\(script.matches.count))" = "Patrones de URL (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Selecciona los scripts de usuario que quieras activar. Añaden funciones o correcciones extra. Siempre puedes agregar más después en la configuración.";
 "Updating Scripts" = "Actualizando scripts";
@@ -209,7 +212,7 @@
 "Progress" = "Progreso";
 "Logs" = "Registros";
 "Preparing %d extension" = "Preparando %d extensión";
-"Add Userscript" = "Agregar script de usuario";
+"Add Userscript or Userstyle" = "Agregar script de usuario o estilo de usuario";
 "URL Patterns (%@)" = "Patrones de URL (%@)";
 "Copy URL" = "Copiar URL";
 "Trust: %@" = "Confianza: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "Esperando";
 "Back" = "Atrás";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(actualizarProgreso * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "Admite archivos .user.js o .js. Las importaciones locales no se actualizarán automáticamente; vuelve a importar para reemplazar.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Admite archivos .user.js, .js y .user.css. Las importaciones locales no se actualizarán automáticamente; vuelve a importar para reemplazar.";
 "Category" = "Categoría";
 "Open Safari Settings" = "Abrir ajustes de Safari";
 "Search" = "Buscar";
@@ -247,9 +250,10 @@
 "Description" = "Descripción";
 "2." = "2.";
 "AutoUpdate" = "Actualización automática";
-"Script URL" = "URL del script";
+"Script or Style URL" = "URL del script o del estilo de usuario";
 "Review your choices and apply settings." = "Revisa tus elecciones y aplica la configuración.";
 "Local Import" = "Importación local";
+"Userstyle" = "Estilo de usuario";
 "Send me reminders about unapplied changes" = "Enviarme recordatorios sobre cambios sin aplicar";
 "Version \\(script.version)" = "Versión \\(script.version)";
 "Syncing iCloud configuration…" = "Sincronizando configuración de iCloud…";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "Solo hay listas mantenidas por la comunidad. Actívalas si te parece bien.";
 "Open Login Items" = "Abrir ítems de inicio de sesión";
 "Overdue catch-up" = "Puesta al día atrasada";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Pega el enlace directo .user.js o .js. wBlock lo descargará e instalará por ti.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Pega el enlace directo .user.js, .js o .user.css. wBlock lo descargará e instalará por ti.";
 "Recorded" = "Registrado";
 "Received %@, %@ %@" = "Recibido %@, %@ %@";
 "Received %@, waiting for completion" = "Recibido %@, esperando a que finalice";
@@ -619,6 +623,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Esta lista cubre sitios web de Noruega, Dinamarca, Islandia, territorios daneses y la población indígena sami.";
 "Title is required." = "Se requiere título.";
 "URL Patterns (%d)" = "Patrones de URL (%d)";
+"Applies To (%d)" = "Se aplica a (%d)";
+"All websites" = "Todos los sitios web";
 "Unapplied Filter Changes" = "Cambios de filtro no aplicados";
 "Updated %d/%d extensions in %@" = "Extensiones %d/%d actualizadas en %@";
 "Updating disabled sites..." = "Actualizando sitios deshabilitados...";
@@ -673,9 +679,9 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "Pega o escribe un script o estilo de usuario con un bloque de metadatos estándar.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Incluye el bloque de metadatos // ==UserScript== (o /* ==UserStyle== */ para estilos de usuario) para que wBlock pueda leer el nombre y los patrones de URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Proporciona un enlace http:// o https:// válido que termine en .js, .user.js o .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
