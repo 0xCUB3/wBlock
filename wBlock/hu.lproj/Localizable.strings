@@ -675,6 +675,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "Válaszd ki, milyen nyelveken böngészel webhelyeket. A wBlock ezt csak regionális hirdetésszűrők ajánlásához használja.";
 "This doesn't change the app's display language, which always follows your device settings." = "Ez nem módosítja az app megjelenítési nyelvét, az mindig az eszköz beállításait követi.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Nincs szükség regionális szűrőkre. Az alapértelmezett szűrőlisták már lefedik az angol és a nemzetközi oldalakat.";
+"No recommended regional filters." = "Nincsenek ajánlott regionális szűrők.";
 "Other" = "Egyéb";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

@@ -311,12 +311,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        var steps: [OnboardingStep] = [.protection, .region]
-        if !selectedFilterLanguageOptions.isEmpty {
-            steps.append(.regionalFilters)
-        }
-        steps.append(contentsOf: [.userscripts, .sync, .setup])
-        return steps
+        [.protection, .region, .regionalFilters, .userscripts, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -538,6 +533,16 @@ struct OnboardingView: View {
         languagePickerOptions.contains { selectedLanguages.contains($0.code) }
     }
 
+    private var languagesWithoutRegionalFilters: [LanguageOption] {
+        let matchedCodes = Set(
+            (recommendedRegionalFilters + optionalRegionalFilters)
+                .flatMap { filter in filter.languages.map { $0.lowercased() } }
+        )
+        return languagePickerOptions.filter {
+            selectedLanguages.contains($0.code) && !matchedCodes.contains($0.code)
+        }
+    }
+
     private var languagePickerGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
             ForEach(languagePickerOptions) { lang in
@@ -619,12 +624,15 @@ struct OnboardingView: View {
                     .padding(.horizontal, 4)
             }
 
-            if !recommendedRegionalFilters.isEmpty {
+            if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Recommended")
                         .font(.headline)
                     ForEach(ForeignFilterOrganizer.groups(for: recommendedRegionalFilters, preferredLanguages: selectedLanguages)) { group in
                         regionalFilterGroup(group, expandsCommunity: false)
+                    }
+                    ForEach(languagesWithoutRegionalFilters) { lang in
+                        emptyRegionalFilterGroup(for: lang)
                     }
                 }
             }
@@ -644,6 +652,21 @@ struct OnboardingView: View {
                 .padding(14)
                 .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
             }
+        }
+    }
+
+    private func emptyRegionalFilterGroup(for lang: LanguageOption) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(lang.name)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 4)
+
+            Text("No recommended regional filters.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
         }
     }
 

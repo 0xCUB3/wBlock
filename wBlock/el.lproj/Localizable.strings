@@ -674,6 +674,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "Επιλέξτε τις γλώσσες στις οποίες περιηγείστε σε ιστότοπους. Το wBlock το χρησιμοποιεί μόνο για να προτείνει τοπικά φίλτρα διαφημίσεων.";
 "This doesn't change the app's display language, which always follows your device settings." = "Αυτό δεν αλλάζει τη γλώσσα εμφάνισης της εφαρμογής, η οποία ακολουθεί πάντα τις ρυθμίσεις της συσκευής σας.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Δεν χρειάζονται τοπικά φίλτρα. Οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
+"No recommended regional filters." = "Δεν υπάρχουν προτεινόμενα τοπικά φίλτρα.";
 "Other" = "Άλλη";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

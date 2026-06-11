@@ -10,6 +10,7 @@ struct LanguageSelectionLocalizationTests {
             "Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters.",
             "This doesn't change the app's display language, which always follows your device settings.",
             "No regional filters needed. The default filter lists already cover English and international sites.",
+            "No recommended regional filters.",
             "Other"
         ]
 

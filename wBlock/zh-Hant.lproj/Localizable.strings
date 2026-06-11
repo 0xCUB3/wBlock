@@ -674,6 +674,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "選擇你瀏覽網站時使用的語言。wBlock 只會用它來推薦地區性廣告過濾器。";
 "This doesn't change the app's display language, which always follows your device settings." = "這不會變更應用程式的顯示語言；顯示語言一律跟隨你的裝置設定。";
 "No regional filters needed. The default filter lists already cover English and international sites." = "不需要地區性過濾器。預設過濾清單已涵蓋英文與國際網站。";
+"No recommended regional filters." = "沒有建議的地區性過濾器。";
 "Other" = "其他";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

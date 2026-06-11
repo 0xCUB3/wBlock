@@ -674,6 +674,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "Wybierz języki, w których przeglądasz strony. wBlock używa tego tylko do rekomendowania regionalnych filtrów reklam.";
 "This doesn't change the app's display language, which always follows your device settings." = "Nie zmienia to języka wyświetlania aplikacji, który zawsze zależy od ustawień urządzenia.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Filtry regionalne nie są potrzebne. Domyślne listy filtrów obejmują już strony anglojęzyczne i międzynarodowe.";
+"No recommended regional filters." = "Brak polecanych filtrów regionalnych.";
 "Other" = "Inny";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
