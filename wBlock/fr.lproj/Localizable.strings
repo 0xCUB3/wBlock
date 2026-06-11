@@ -671,7 +671,10 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "Sélectionnez les langues dans lesquelles vous consultez des sites web. wBlock les utilise uniquement pour recommander des filtres publicitaires régionaux.";
+"This doesn't change the app's display language, which always follows your device settings." = "Cela ne modifie pas la langue d’affichage de l’app, qui suit toujours les réglages de votre appareil.";
+"No regional filters needed. The default filter lists already cover English and international sites." = "Aucun filtre régional nécessaire. Les listes de filtres par défaut couvrent déjà les sites en anglais et les sites internationaux.";
+"Other" = "Autre";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";

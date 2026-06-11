@@ -77,6 +77,8 @@ struct OnboardingView: View {
     
     private static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
     private static let cloudSyncEnabledDefaultsKey = "cloudSyncEnabled"
+    private static let englishLanguageCode = "en"
+    private static let otherLanguagesCode = "other"
 
     // Helper to look up canonical filter metadata from filterManager instead of loading separately
     private func foreignFilterMetadata(for url: String) -> FilterList? {
@@ -407,6 +409,8 @@ struct OnboardingView: View {
         switch step {
         case .protection:
             return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .region:
+            return !hasLanguagePickerSelection
         case .setup:
             return !hasEnabledContentBlockers || !hasEnabledAdvanced
         default:
@@ -466,6 +470,7 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
@@ -509,9 +514,33 @@ struct OnboardingView: View {
         availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
     }
 
+    private var languagePickerOptions: [LanguageOption] {
+        var options = availableFilterLanguages
+        if !options.contains(where: { $0.code == Self.englishLanguageCode }) {
+            let englishName =
+                Locale.current.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
+            options.insert(
+                LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: ""),
+                at: 0
+            )
+        }
+        options.append(
+            LanguageOption(
+                code: Self.otherLanguagesCode,
+                name: String(localized: "Other"),
+                flag: "\u{1F310}"
+            )
+        )
+        return options
+    }
+
+    private var hasLanguagePickerSelection: Bool {
+        languagePickerOptions.contains { selectedLanguages.contains($0.code) }
+    }
+
     private var languagePickerGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(availableFilterLanguages) { lang in
+            ForEach(languagePickerOptions) { lang in
                 languageToggle(for: lang)
             }
         }
@@ -542,6 +571,7 @@ struct OnboardingView: View {
             .font(.subheadline)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
@@ -552,14 +582,23 @@ struct OnboardingView: View {
 
     private var regionStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose the languages you browse in. wBlock will recommend matching filters next.")
+            Text("Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters.")
                 .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("This doesn't change the app's display language, which always follows your device settings.")
+                .font(.caption)
                 .foregroundStyle(.secondary)
 
             languagePickerGrid
 
             if !selectedFilterLanguageOptions.isEmpty {
                 Text("Next: review matching filters.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+            } else if hasLanguagePickerSelection {
+                Text("No regional filters needed. The default filter lists already cover English and international sites.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
@@ -657,6 +696,7 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
@@ -929,6 +969,7 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
