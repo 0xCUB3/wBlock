@@ -698,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "リストを編集";
 "Filter list not found." = "フィルターリストが見つかりません。";
 "Filter list updated. Apply changes to enable it." = "フィルターリストを更新しました。変更を適用して有効にします。";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "アルバニア語およびコソボのWebサイトの広告をブロックする、コミュニティ管理のフィルターリスト。";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "タイ語、ギリシャ語、スロベニア語、クロアチア語、セルビア語、ボスニア語、フィリピン語のWebサイト向けの、eyeoによるEasyList補助リスト。";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "ディベヒ語（モルディブ語）のWebサイトの広告をブロックする、コミュニティ管理のフィルターリスト。";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "ウクライナ語、カザフ語、ウズベク語のWebサイトもカバーする、ロシア語向けフィルターリスト。";

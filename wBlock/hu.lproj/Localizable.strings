@@ -699,3 +699,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Edit Filter List" = "Lista szerkesztése";
 "Filter list not found." = "Szűrőlista nem található.";
 "Filter list updated. Apply changes to enable it." = "Szűrőlista frissítve. Alkalmazza a módosításokat az engedélyezéséhez.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket az albán és koszovói webhelyeken.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "EasyList-kiegészítés az eyeo-tól thai, görög, szlovén, horvát, szerb, bosnyák és filippínó nyelvű webhelyekhez.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket a divehi (maldív) nyelvű webhelyeken.";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Orosz nyelvű szűrőlista, amely az ukrán, kazah és üzbég webhelyeket is lefedi.";

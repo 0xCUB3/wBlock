@@ -698,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "编辑列表";
 "Filter list not found." = "未找到过滤器列表。";
 "Filter list updated. Apply changes to enable it." = "过滤器列表已更新。应用更改以启用它。";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "由社区维护的过滤器列表，用于拦截阿尔巴尼亚语和科索沃网站上的广告。";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "由 eyeo 提供的 EasyList 补充列表，适用于泰语、希腊语、斯洛文尼亚语、克罗地亚语、塞尔维亚语、波斯尼亚语和菲律宾语网站。";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "由社区维护的过滤器列表，用于拦截迪维希语（马尔代夫语）网站上的广告。";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "俄语过滤器列表，也涵盖乌克兰语、哈萨克语和乌兹别克语网站。";

@@ -509,14 +509,13 @@ struct OnboardingView: View {
         availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
     }
 
-    private var languagePickerOptions: [LanguageOption] {
-        var options = availableFilterLanguages
-        if !options.contains(where: { $0.code == Self.englishLanguageCode }) {
+    private var pinnedLanguagePickerOptions: [LanguageOption] {
+        var options: [LanguageOption] = []
+        if !availableFilterLanguages.contains(where: { $0.code == Self.englishLanguageCode }) {
             let englishName =
                 Locale.current.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
-            options.insert(
-                LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: ""),
-                at: 0
+            options.append(
+                LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
             )
         }
         options.append(
@@ -527,6 +526,10 @@ struct OnboardingView: View {
             )
         )
         return options
+    }
+
+    private var languagePickerOptions: [LanguageOption] {
+        pinnedLanguagePickerOptions + availableFilterLanguages
     }
 
     private var hasLanguagePickerSelection: Bool {
@@ -543,10 +546,39 @@ struct OnboardingView: View {
         }
     }
 
+    private struct LanguagePickerSection: Identifiable {
+        let letter: String
+        let options: [LanguageOption]
+        var id: String { letter }
+    }
+
+    private var languagePickerSections: [LanguagePickerSection] {
+        let grouped = Dictionary(grouping: availableFilterLanguages) { option in
+            String(option.name.prefix(1)).uppercased(with: Locale.current)
+        }
+        return grouped
+            .map { LanguagePickerSection(letter: $0.key, options: $0.value) }
+            .sorted { $0.letter.localizedCaseInsensitiveCompare($1.letter) == .orderedAscending }
+    }
+
     private var languagePickerGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(languagePickerOptions) { lang in
+            ForEach(pinnedLanguagePickerOptions) { lang in
                 languageToggle(for: lang)
+            }
+            ForEach(languagePickerSections) { section in
+                Section {
+                    ForEach(section.options) { lang in
+                        languageToggle(for: lang)
+                    }
+                } header: {
+                    Text(section.letter)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                        .padding(.top, 6)
+                }
             }
         }
     }

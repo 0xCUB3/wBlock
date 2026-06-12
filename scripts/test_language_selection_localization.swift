@@ -11,7 +11,15 @@ struct LanguageSelectionLocalizationTests {
             "This doesn't change the app's display language, which always follows your device settings.",
             "No regional filters needed. The default filter lists already cover English and international sites.",
             "No recommended regional filters.",
-            "Other"
+            "Other",
+            "Adblock List for Albania and Kosovo",
+            "Global Filters",
+            "Raajje AdList",
+            "RU AdList",
+            "Community filter list that blocks ads on Albanian and Kosovar websites.",
+            "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino.",
+            "Community filter list that blocks ads on Dhivehi (Maldivian) websites.",
+            "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites."
         ]
 
         do {

@@ -698,3 +698,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Edit Filter List" = "Listeyi düzenle";
 "Filter list not found." = "Filtre listesi bulunamadı.";
 "Filter list updated. Apply changes to enable it." = "Filtre listesi güncellendi. Etkinleştirmek için değişiklikleri uygulayın.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Arnavutça ve Kosova sitelerinde reklamları engelleyen, topluluk tarafından yönetilen filtre listesi.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Tayca, Yunanca, Slovence, Hırvatça, Sırpça, Boşnakça ve Filipince siteler için eyeo tarafından hazırlanan EasyList eki.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Divehi (Maldivce) sitelerde reklamları engelleyen, topluluk tarafından yönetilen filtre listesi.";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Ukraynaca, Kazakça ve Özbekçe siteleri de kapsayan Rusça filtre listesi.";

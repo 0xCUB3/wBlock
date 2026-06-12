@@ -698,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "Επεξεργασία λίστας";
 "Filter list not found." = "Η λίστα φίλτρων δεν βρέθηκε.";
 "Filter list updated. Apply changes to enable it." = "Η λίστα φίλτρων ενημερώθηκε. Εφαρμόστε τις αλλαγές για να την ενεργοποιήσετε.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Συμπλήρωμα του EasyList από την eyeo για ιστότοπους στα ταϊλανδικά, ελληνικά, σλοβενικά, κροατικά, σερβικά, βοσνιακά και φιλιππινέζικα.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε ιστότοπους στα ντιβέχι (μαλδιβικά).";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Λίστα φίλτρων ρωσικής γλώσσας που καλύπτει επίσης ουκρανικούς, καζακικούς και ουζμπεκικούς ιστότοπους.";

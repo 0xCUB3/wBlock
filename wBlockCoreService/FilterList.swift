@@ -69,22 +69,29 @@ public struct FilterList: Identifiable, Codable, Hashable {
         self.hasUserProvidedName = hasUserProvidedName
     }
     
-    /// Maps ISO 639-1 language codes to their primary region's flag emoji
+    /// Maps ISO 639 language codes to their primary region's flag emoji
     public static let languageToFlag: [String: String] = [
-        "ar": "\u{1F1F8}\u{1F1E6}", "bg": "\u{1F1E7}\u{1F1EC}", "cs": "\u{1F1E8}\u{1F1FF}",
-        "da": "\u{1F1E9}\u{1F1F0}", "de": "\u{1F1E9}\u{1F1EA}", "el": "\u{1F1EC}\u{1F1F7}",
-        "es": "\u{1F1EA}\u{1F1F8}", "et": "\u{1F1EA}\u{1F1EA}", "fa": "\u{1F1EE}\u{1F1F7}",
-        "fi": "\u{1F1EB}\u{1F1EE}", "fo": "\u{1F1EB}\u{1F1F4}", "fr": "\u{1F1EB}\u{1F1F7}",
-        "he": "\u{1F1EE}\u{1F1F1}", "hi": "\u{1F1EE}\u{1F1F3}", "hr": "\u{1F1ED}\u{1F1F7}",
-        "hu": "\u{1F1ED}\u{1F1FA}", "id": "\u{1F1EE}\u{1F1E9}", "is": "\u{1F1EE}\u{1F1F8}",
-        "it": "\u{1F1EE}\u{1F1F9}", "ja": "\u{1F1EF}\u{1F1F5}", "ko": "\u{1F1F0}\u{1F1F7}",
-        "lt": "\u{1F1F1}\u{1F1F9}", "lv": "\u{1F1F1}\u{1F1FB}", "mk": "\u{1F1F2}\u{1F1F0}",
-        "nl": "\u{1F1F3}\u{1F1F1}", "no": "\u{1F1F3}\u{1F1F4}", "pl": "\u{1F1F5}\u{1F1F1}",
-        "ps": "\u{1F1E6}\u{1F1EB}", "pt": "\u{1F1E7}\u{1F1F7}", "ro": "\u{1F1F7}\u{1F1F4}",
-        "ru": "\u{1F1F7}\u{1F1FA}", "sk": "\u{1F1F8}\u{1F1F0}", "sr": "\u{1F1F7}\u{1F1F8}",
-        "sv": "\u{1F1F8}\u{1F1EA}", "tg": "\u{1F1F9}\u{1F1EF}", "th": "\u{1F1F9}\u{1F1ED}",
-        "tr": "\u{1F1F9}\u{1F1F7}", "uk": "\u{1F1FA}\u{1F1E6}", "vi": "\u{1F1FB}\u{1F1F3}",
-        "zh": "\u{1F1E8}\u{1F1F3}",
+        "ar": "\u{1F1F8}\u{1F1E6}", "as": "\u{1F1EE}\u{1F1F3}", "bg": "\u{1F1E7}\u{1F1EC}",
+        "bn": "\u{1F1E7}\u{1F1E9}", "bs": "\u{1F1E7}\u{1F1E6}", "cnr": "\u{1F1F2}\u{1F1EA}",
+        "cs": "\u{1F1E8}\u{1F1FF}", "da": "\u{1F1E9}\u{1F1F0}", "de": "\u{1F1E9}\u{1F1EA}",
+        "dv": "\u{1F1F2}\u{1F1FB}", "el": "\u{1F1EC}\u{1F1F7}", "es": "\u{1F1EA}\u{1F1F8}",
+        "et": "\u{1F1EA}\u{1F1EA}", "fa": "\u{1F1EE}\u{1F1F7}", "fi": "\u{1F1EB}\u{1F1EE}",
+        "fil": "\u{1F1F5}\u{1F1ED}", "fo": "\u{1F1EB}\u{1F1F4}", "fr": "\u{1F1EB}\u{1F1F7}",
+        "gu": "\u{1F1EE}\u{1F1F3}", "he": "\u{1F1EE}\u{1F1F1}", "hi": "\u{1F1EE}\u{1F1F3}",
+        "hr": "\u{1F1ED}\u{1F1F7}", "hu": "\u{1F1ED}\u{1F1FA}", "id": "\u{1F1EE}\u{1F1E9}",
+        "is": "\u{1F1EE}\u{1F1F8}", "it": "\u{1F1EE}\u{1F1F9}", "ja": "\u{1F1EF}\u{1F1F5}",
+        "kk": "\u{1F1F0}\u{1F1FF}", "kl": "\u{1F1EC}\u{1F1F1}", "kn": "\u{1F1EE}\u{1F1F3}",
+        "ko": "\u{1F1F0}\u{1F1F7}", "lt": "\u{1F1F1}\u{1F1F9}", "lv": "\u{1F1F1}\u{1F1FB}",
+        "mai": "\u{1F1EE}\u{1F1F3}", "mk": "\u{1F1F2}\u{1F1F0}", "ml": "\u{1F1EE}\u{1F1F3}",
+        "mr": "\u{1F1EE}\u{1F1F3}", "ne": "\u{1F1F3}\u{1F1F5}", "nl": "\u{1F1F3}\u{1F1F1}",
+        "no": "\u{1F1F3}\u{1F1F4}", "or": "\u{1F1EE}\u{1F1F3}", "pa": "\u{1F1EE}\u{1F1F3}",
+        "pl": "\u{1F1F5}\u{1F1F1}", "ps": "\u{1F1E6}\u{1F1EB}", "pt": "\u{1F1E7}\u{1F1F7}",
+        "ro": "\u{1F1F7}\u{1F1F4}", "ru": "\u{1F1F7}\u{1F1FA}", "si": "\u{1F1F1}\u{1F1F0}",
+        "sk": "\u{1F1F8}\u{1F1F0}", "sl": "\u{1F1F8}\u{1F1EE}", "sq": "\u{1F1E6}\u{1F1F1}",
+        "sr": "\u{1F1F7}\u{1F1F8}", "sv": "\u{1F1F8}\u{1F1EA}", "ta": "\u{1F1EE}\u{1F1F3}",
+        "te": "\u{1F1EE}\u{1F1F3}", "tg": "\u{1F1F9}\u{1F1EF}", "th": "\u{1F1F9}\u{1F1ED}",
+        "tr": "\u{1F1F9}\u{1F1F7}", "uk": "\u{1F1FA}\u{1F1E6}", "uz": "\u{1F1FA}\u{1F1FF}",
+        "vi": "\u{1F1FB}\u{1F1F3}", "zh": "\u{1F1E8}\u{1F1F3}",
     ]
 
     /// Returns flag emojis for this filter's languages, or nil if none
