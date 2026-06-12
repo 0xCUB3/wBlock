@@ -300,7 +300,7 @@
 "Enable extra fixes and finish setup." = "Ative correções extras e conclua a configuração.";
 "No userscripts selected" = "Nenhum script de usuário selecionado";
 "%d userscripts selected" = "%d scripts de usuário selecionados";
-"Choose filters for websites in other languages. You can fine-tune them later." = "Escolha filtros para sites em outros idiomas. Você pode ajustá-los depois.";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Estes filtros adicionam mais poder de bloqueio para os seus idiomas além das listas de filtros padrão, que já cobrem sites em inglês e internacionais. Você pode ajustá-los depois.";
 "Best default" = "Melhor padrão";
 "Community-maintained options for additional regional coverage." = "Opções mantidas pela comunidade para cobertura regional adicional.";
 "Choose optional userscripts. These are disabled by default." = "Escolha scripts de usuário opcionais. Eles ficam desativados por padrão.";
@@ -671,10 +671,10 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "Selecione os idiomas em que você navega em sites. O wBlock usa isso apenas para recomendar filtros regionais de anúncios.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Selecione os idiomas (um ou mais) em que você navega em sites. O wBlock usa isso apenas para recomendar filtros regionais de anúncios.";
 "This doesn't change the app's display language, which always follows your device settings." = "Isso não altera o idioma de exibição do app, que sempre segue os ajustes do seu dispositivo.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Nenhum filtro regional necessário. As listas de filtros padrão já cobrem sites em inglês e internacionais.";
-"No recommended regional filters." = "Nenhum filtro regional recomendado.";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "Nenhum filtro regional disponível. No entanto, as listas de filtros padrão já cobrem sites em inglês e internacionais.";
 "Other" = "Outro";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

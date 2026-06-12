@@ -619,7 +619,7 @@ struct OnboardingView: View {
 
     private var regionStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters.")
+            Text("Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -645,7 +645,7 @@ struct OnboardingView: View {
 
     private var regionalFiltersStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose filters for websites in other languages. You can fine-tune them later.")
+            Text("These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -695,10 +695,16 @@ struct OnboardingView: View {
                 .textCase(.uppercase)
                 .padding(.horizontal, 4)
 
-            Text("No recommended regional filters.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
+            Group {
+                if lang.code == Self.englishLanguageCode {
+                    Text("No regional filters needed. The default filter lists already cover English and international sites.")
+                } else {
+                    Text("No regional filters available. However, the default filter lists already cover English and international sites.")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
         }
     }
 

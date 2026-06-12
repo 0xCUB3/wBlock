@@ -300,7 +300,7 @@
 "Enable extra fixes and finish setup." = "Ενεργοποίηση επιπλέον διορθώσεων και ολοκλήρωση ρύθμισης.";
 "No userscripts selected" = "Δεν έχουν επιλεγεί κώδικες";
 "%d userscripts selected" = "%d επιλεγμένοι κώδικες";
-"Choose filters for websites in other languages. You can fine-tune them later." = "Επιλέξτε φίλτρα για ιστότοπους σε άλλες γλώσσες. Μπορείτε να τα ρυθμίσετε αργότερα.";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Αυτά τα φίλτρα προσθέτουν επιπλέον ισχύ αποκλεισμού για τις γλώσσες σας πάνω από τις προεπιλεγμένες λίστες, οι οποίες καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους. Μπορείτε να τα ρυθμίσετε αργότερα.";
 "Best default" = "Καλύτερη προεπιλογή";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά σενάρια χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";
@@ -671,10 +671,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters." = "Επιλέξτε τις γλώσσες στις οποίες περιηγείστε σε ιστότοπους. Το wBlock το χρησιμοποιεί μόνο για να προτείνει τοπικά φίλτρα διαφημίσεων.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Επιλέξτε τις γλώσσες (μία ή περισσότερες) στις οποίες περιηγείστε σε ιστότοπους. Το wBlock το χρησιμοποιεί μόνο για να προτείνει τοπικά φίλτρα διαφημίσεων.";
 "This doesn't change the app's display language, which always follows your device settings." = "Αυτό δεν αλλάζει τη γλώσσα εμφάνισης της εφαρμογής, η οποία ακολουθεί πάντα τις ρυθμίσεις της συσκευής σας.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Δεν χρειάζονται τοπικά φίλτρα. Οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
-"No recommended regional filters." = "Δεν υπάρχουν προτεινόμενα τοπικά φίλτρα.";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "Δεν υπάρχουν διαθέσιμα τοπικά φίλτρα. Ωστόσο, οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
 "Other" = "Άλλη";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

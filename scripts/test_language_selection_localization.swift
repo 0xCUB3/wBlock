@@ -5,12 +5,18 @@ struct LanguageSelectionLocalizationTests {
     static func main() {
         let rootURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let localizationRootURL = rootURL.appendingPathComponent("wBlock", isDirectory: true)
-        let removedKey = "Choose the languages you browse in. wBlock will recommend matching filters next."
-        let expectedKeys = [
+        let removedKeys = [
+            "Choose the languages you browse in. wBlock will recommend matching filters next.",
             "Select the languages you browse websites in. wBlock only uses this to recommend regional ad filters.",
+            "Choose filters for websites in other languages. You can fine-tune them later.",
+            "No recommended regional filters."
+        ]
+        let expectedKeys = [
+            "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters.",
+            "These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later.",
             "This doesn't change the app's display language, which always follows your device settings.",
             "No regional filters needed. The default filter lists already cover English and international sites.",
-            "No recommended regional filters.",
+            "No regional filters available. However, the default filter lists already cover English and international sites.",
             "Other",
             "Adblock List for Albania and Kosovo",
             "Global Filters",
@@ -41,8 +47,8 @@ struct LanguageSelectionLocalizationTests {
                     fail("failed to parse \(stringsURL.path)")
                 }
 
-                guard table[removedKey] == nil else {
-                    fail("found removed language picker key in \(locale)")
+                for key in removedKeys where table[key] != nil {
+                    fail("found removed key \"\(key)\" in \(locale)")
                 }
 
                 for key in expectedKeys {
