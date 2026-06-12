@@ -257,6 +257,12 @@ Yes. You can add any AdGuard-compatible filter list by URL, paste rules directly
 </details>
 
 <details>
+<summary><b>Should I enable more filter lists for better blocking?</b></summary>
+<br>
+Usually not. The recommended defaults already cover most ads and trackers, and most other general-purpose lists overlap with them. Enabling more mainly uses up Safari's rule limit and increases the chance of site breakage. The exceptions are Annoyances filters (cookie banners, popups, social widgets) and regional filters for non-English sites, which block things the defaults don't.
+</details>
+
+<details>
 <summary><b>Does wBlock slow down Safari?</b></summary>
 <br>
 No. wBlock uses Safari's native declarative content blocking API, which processes rules in a separate process. Memory overhead is ~40 MB at idle with no measurable impact on page load times.

@@ -601,6 +601,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Romanian ad blocking filter subscription." = "Román hirdetésblokkoló szűrő előfizetés.";
 "Rule Capacity" = "Szabálykapacitás";
 "Rule Limit Warning" = "Figyelmeztetés a szabály korlátozására";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "A több lista ritkán jelent jobb blokkolást: a legtöbb átfedésben van az ajánlott alapértelmezett listákkal, és főleg a szabálykapacitást fogyasztja. A zavaró elemek szűrői és a regionális szűrők a fő kivételek.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "A Safari az egyes tartalomblokkoló-bővítményeket %@ szabályokra korlátozza.\\nTeljes kapacitás (minden wBlock blokkoló): %@ szabályok.\\n\\n%@\\n\\nwBlock több blokkoló között osztja el az engedélyezett szűrőlistákat a kapacitás maximalizálása érdekében, de előfordulhat, hogy a Safari túl sok korlátot is elér, ha engedélyezi.";
 "Show preview only" = "Csak az előnézet megjelenítése";
 "Showing preview (%@ of %@)" = "Előnézet megjelenítése (%@/%@)";

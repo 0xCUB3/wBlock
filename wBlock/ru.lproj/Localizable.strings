@@ -600,6 +600,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Romanian ad blocking filter subscription." = "Подписка на румынский фильтр блокировки рекламы.";
 "Rule Capacity" = "Емкость правила";
 "Rule Limit Warning" = "Предупреждение об ограничении правила";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Больше списков редко означает лучшую блокировку: большинство пересекается с рекомендуемыми списками по умолчанию и в основном расходует емкость правил. Фильтры раздражителей и региональные фильтры — главные исключения.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari ограничивает каждое расширение блокировщика контента правилами %@.\\nОбщая емкость (все блокировщики wBlock): правила %@.\\n\\n%@\\n\\nwBlock распределяет включенные списки фильтров по нескольким блокировщикам, чтобы максимизировать емкость, но вы все равно можете достичь ограничений Safari, если включите слишком много больших списков.";
 "Show preview only" = "Показать только предварительный просмотр";
 "Showing preview (%@ of %@)" = "Показ предварительного просмотра (%@ из %@)";

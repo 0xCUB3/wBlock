@@ -580,6 +580,12 @@ class AppFilterManager: ObservableObject {
                 .joined(separator: "\n")
         }
 
+        message += "\n\n"
+        message += LocalizedStrings.text(
+            "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions.",
+            comment: "Rule limit warning footer note about extra lists"
+        )
+
         let isNearLimit = totalRules >= totalWarningThreshold || !nearLimitBlockers.isEmpty
         ruleLimitWarningTitle = isNearLimit
             ? LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")

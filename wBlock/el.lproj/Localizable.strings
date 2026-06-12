@@ -600,6 +600,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Romanian ad blocking filter subscription." = "Ρουμανική συνδρομή φίλτρου αποκλεισμού διαφημίσεων.";
 "Rule Capacity" = "Κανόνας Χωρητικότητα";
 "Rule Limit Warning" = "Προειδοποίηση ορίου κανόνα";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Περισσότερες λίστες σπάνια σημαίνουν καλύτερο αποκλεισμό: οι περισσότερες επικαλύπτονται με τις προτεινόμενες προεπιλογές και κυρίως καταναλώνουν χωρητικότητα κανόνων. Τα φίλτρα ενοχλήσεων και τα τοπικά φίλτρα είναι οι κύριες εξαιρέσεις.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Το Safari περιορίζει κάθε επέκταση αποκλεισμού περιεχομένου σε κανόνες %@.\\nΣυνολική χωρητικότητα (όλα τα προγράμματα αποκλεισμού wBlock): Κανόνες %@.\\n\\n%@\\n\\nwΑποκλεισμός διανέμει τις ενεργοποιημένες λίστες φίλτρων σας σε πολλούς αποκλειστές για να μεγιστοποιήσει τη χωρητικότητα, αλλά μπορεί ακόμα να αγγίξετε τα υπερβολικά μεγάλα όρια του Safari, εάν έχετε μεγάλες λίστες.";
 "Show preview only" = "Εμφάνιση μόνο προεπισκόπησης";
 "Showing preview (%@ of %@)" = "Εμφάνιση προεπισκόπησης (%@ από %@)";

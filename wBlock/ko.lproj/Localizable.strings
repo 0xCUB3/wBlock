@@ -600,6 +600,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Romanian ad blocking filter subscription." = "루마니아어 광고 차단 필터 구독.";
 "Rule Capacity" = "규칙 용량";
 "Rule Limit Warning" = "규칙 제한 경고";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "목록을 늘린다고 차단이 더 잘되는 경우는 드뭅니다. 대부분 권장 기본 목록과 겹치며 주로 규칙 용량만 차지합니다. 방해 요소 필터와 지역 필터가 주요 예외입니다.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari는 각 콘텐츠 차단기 확장 프로그램을 %@ 규칙으로 제한합니다.\\n총 용량(모든 wBlock 차단기): %@ 규칙.\\n\\n%@\\n\\nwBlock은 활성화된 필터 목록을 여러 차단기에 분산하여 용량을 최대화하지만, 큰 목록을 너무 많이 활성화하면 여전히 Safari의 한계에 도달할 수 있습니다.";
 "Show preview only" = "미리보기만 표시";
 "Showing preview (%@ of %@)" = "미리보기 표시 중(%@의 %@)";

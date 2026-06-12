@@ -600,6 +600,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Romanian ad blocking filter subscription." = "Romence reklam engelleme filtre listesi.";
 "Rule Capacity" = "Kural Kapasitesi";
 "Rule Limit Warning" = "Kural sınırı uyarısı";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Daha fazla liste nadiren daha iyi engelleme anlamına gelir: çoğu önerilen varsayılan listelerle örtüşür ve esas olarak kural kapasitesini tüketir. Can sıkıcı filtreler ve bölgesel filtreler başlıca istisnalardır.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari, her içerik engelleyici genişletmesini %@ kural ile sınırlar.\nToplam kapasite (tüm wBlock engelleyicileri): %@ kural.\n\n%@\n\nwBlock, kapasiteyi en üst düzeye çıkarmak için etkinleştirdiğiniz filtre listelerini birden fazla engelleyiciye dağıtır, ancak çok fazla büyük liste etkinleştirirseniz, Safari'nin sınırlamalarına takılabilirsiniz.";
 "Show preview only" = "Sadece önizlemeyi göster";
 "Showing preview (%@ of %@)" = "Önizleme gösteriliyor (%@ / %@)";

@@ -600,6 +600,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Romanian ad blocking filter subscription." = "Rumuńska subskrypcja filtra blokującego reklamy.";
 "Rule Capacity" = "Pojemność reguły";
 "Rule Limit Warning" = "Ostrzeżenie o limicie reguły";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Więcej list rzadko oznacza lepsze blokowanie: większość pokrywa się z zalecanymi domyślnymi listami i głównie zużywa pojemność reguł. Filtry uciążliwości i filtry regionalne to główne wyjątki.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari ogranicza każde rozszerzenie blokowania treści do reguł %@.\\nCałkowita pojemność (wszystkie blokery wBlock): reguły %@.\\n\\n%@\\n\\nwBlock rozdziela włączone listy filtrów pomiędzy wiele blokerów, aby zmaksymalizować pojemność, ale w dalszym ciągu możesz przekroczyć limity Safari, jeśli włączysz zbyt wiele dużych list.";
 "Show preview only" = "Pokaż tylko podgląd";
 "Showing preview (%@ of %@)" = "Wyświetlanie podglądu (%@ z %@)";

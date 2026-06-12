@@ -600,6 +600,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Romanian ad blocking filter subscription." = "羅馬尼亞廣告攔截過濾器訂閱。";
 "Rule Capacity" = "規則容量";
 "Rule Limit Warning" = "規則限制警告";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "更多清單很少代表更好的攔截：大多數清單與建議的預設清單重疊，主要只是佔用規則容量。惱人內容過濾器和區域過濾器是主要的例外。";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari 將每個內容攔截器擴充功能限制為 %@ 規則。 \\n總容量（所有 wBlock 攔截器）：%@ 規則。 \\n\\n%@\\n\\nwBlock 將啟用的過濾器列表分佈在多個攔截器之間，以最大限度地提高容量，但如果啟用太多大型列表，您仍然可能會達到 Safari 的限制。";
 "Show preview only" = "僅顯示預覽";
 "Showing preview (%@ of %@)" = "顯示預覽（%@ 的 %@）";
