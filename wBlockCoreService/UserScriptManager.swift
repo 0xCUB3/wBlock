@@ -87,6 +87,8 @@ enum BuiltInUserScripts {
         "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
     static let tinyShieldURL =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
+    static let tinyShieldGroupedURLPrefix =
+        "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
         "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
 
@@ -98,7 +100,7 @@ enum BuiltInUserScripts {
         let initial = domainGroup.prefix(1).lowercased()
         return BuiltInUserScriptDefinition(
             name: "tinyShield (\(displayDomain ?? domainGroup))",
-            url: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/\(initial)/tinyShield-\(domainGroup).user.js",
+            url: "\(tinyShieldGroupedURLPrefix)\(initial)/tinyShield-\(domainGroup).user.js",
             isEnabledByDefault: false,
             section: .foreign,
             description: tinyShieldDescription,
@@ -130,7 +132,7 @@ enum BuiltInUserScripts {
         BuiltInUserScriptDefinition(
             name: "tinyShield",
             url: tinyShieldURL,
-            isEnabledByDefault: false,
+            isEnabledByDefault: true,
             description: tinyShieldDescription
         ),
         BuiltInUserScriptDefinition(
@@ -2421,9 +2423,11 @@ public class UserScriptManager: ObservableObject {
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
         let host = URL(string: url)?.host ?? ""
-        let runnableScripts = matchingScripts.filter {
-            !isUserScript($0, disabledOnHost: host)
-        }
+        let runnableScripts = Self.suppressingRedundantTinyShieldVariants(
+            matchingScripts.filter {
+                !isUserScript($0, disabledOnHost: host)
+            }
+        )
 
         #if DEBUG
         logger.debug(
@@ -2434,13 +2438,37 @@ public class UserScriptManager: ObservableObject {
         return runnableScripts
     }
 
+    /// The grouped regional tinyShield scripts are strict subsets of the full tinyShield
+    /// script. When both would run on a page, the same code would execute twice, so the
+    /// full script wins and the grouped variants are dropped.
+    private static func suppressingRedundantTinyShieldVariants(_ scripts: [UserScript]) -> [UserScript] {
+        guard scripts.contains(where: { $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL }) else {
+            return scripts
+        }
+        return scripts.filter { script in
+            guard let urlString = script.url?.absoluteString else { return true }
+            return !urlString.hasPrefix(BuiltInUserScripts.tinyShieldGroupedURLPrefix)
+        }
+    }
+
     public func pageUserScripts(for url: String) -> [(script: UserScript, disabledForSite: Bool)] {
         let host = URL(string: url)?.host ?? ""
-        return userScripts
+        let pageScripts = userScripts
             .filter { $0.isEnabled && $0.matches(url: url) }
             .map { script in
                 (script: script, disabledForSite: isUserScript(script, disabledOnHost: host))
             }
+
+        // Mirror the injection-time dedup: hide grouped tinyShield variants whenever the
+        // full script actually runs on this page, so the popup reflects what is injected.
+        let fullTinyShieldRuns = pageScripts.contains {
+            !$0.disabledForSite && $0.script.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
+        }
+        guard fullTinyShieldRuns else { return pageScripts }
+        return pageScripts.filter { item in
+            guard let urlString = item.script.url?.absoluteString else { return true }
+            return !urlString.hasPrefix(BuiltInUserScripts.tinyShieldGroupedURLPrefix)
+        }
     }
 
     @discardableResult

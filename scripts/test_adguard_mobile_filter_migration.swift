@@ -25,6 +25,14 @@ struct AdGuardMobileFilterMigrationTests {
             "expected AdGuard URL Tracking Protection Filter to use the TrackParam endpoint"
         )
         expect(
+            occurrenceCount(of: "Actually Legitimate URL Shortener Tool", in: loaderSource) >= 3,
+            "expected Actually Legitimate URL Shortener Tool to be in the default catalog and recommended sets"
+        )
+        expect(
+            loaderSource.contains("https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt"),
+            "expected Actually Legitimate URL Shortener Tool to use the upstream DandelionSprout endpoint"
+        )
+        expect(
             appFilterManagerSource.contains("filter_17_TrackParam") == false,
             "expected URL tracking protection not to be treated as deprecated"
         )

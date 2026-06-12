@@ -39,8 +39,13 @@ guard source.contains(tinyShieldURL) else {
     exit(1)
 }
 
-guard source.contains("name: \"tinyShield\",\n            url: tinyShieldURL,\n            isEnabledByDefault: false,\n            description: tinyShieldDescription") else {
-    fputs("FAIL: tinyShield should be available but disabled by default with a usable description\n", stderr)
+guard source.contains("name: \"tinyShield\",\n            url: tinyShieldURL,\n            isEnabledByDefault: true,\n            description: tinyShieldDescription") else {
+    fputs("FAIL: tinyShield should be enabled by default with a usable description\n", stderr)
+    exit(1)
+}
+
+guard source.contains("suppressingRedundantTinyShieldVariants") else {
+    fputs("FAIL: grouped tinyShield variants should be suppressed when the full script runs\n", stderr)
     exit(1)
 }
 
@@ -109,9 +114,19 @@ else {
 guard onboardingSource.contains("Baseline userscripts are enabled by default. You can adjust them here.")
     && onboardingSource.contains("isBaselineUserscriptEnabledByDefault")
     && onboardingSource.contains("AdGuard Extra")
+    && onboardingSource.contains("localizedCaseInsensitiveCompare(\"tinyShield\")")
     && onboardingSource.contains("visibleBaselineIDs")
 else {
     fputs("FAIL: onboarding should enable baseline userscripts by default\n", stderr)
+    exit(1)
+}
+
+guard onboardingSource.contains("regionalUserscriptGroups")
+    && onboardingSource.contains("languagesWithoutRegionalUserscripts")
+    && onboardingSource.contains("No regional userscripts needed. The default userscripts already cover English and international sites.")
+    && onboardingSource.contains("No regional userscripts available. However, the default userscripts already cover English and international sites.")
+else {
+    fputs("FAIL: onboarding should group regional userscripts by language with empty-language fallbacks\n", stderr)
     exit(1)
 }
 

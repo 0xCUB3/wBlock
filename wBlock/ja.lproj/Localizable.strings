@@ -430,6 +430,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
+"Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -474,6 +475,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks miscellaneous irritating elements not covered by other filters." = "他のフィルターではカバーできないさまざまな刺激的な要素をブロックします。";
 "Blocks online tracking and web analytics systems." = "オンライン追跡システムと Web 分析システムをブロックします。";
 "Removes tracking parameters from URLs." = "URL から追跡パラメータを削除します。";
+"Shortens links by removing unnecessary tracking and clutter parameters." = "不要なトラッキングパラメーターや余分なパラメーターを取り除いてリンクを短くします。";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "ペイウォール関連の要素をブロックします。最良の結果を得るには、対応するユーザースクリプトを有効にしてください。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "プロモーションのポップアップ、ニュースレターの登録、通知リクエストをブロックします。";
 "Blocks social media content on webpages." = "Web ページ上のソーシャル メディア コンテンツをブロックします。";
@@ -662,6 +664,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This doesn't change the app's display language, which always follows your device settings." = "これによってアプリの表示言語は変わりません。表示言語は常にデバイスの設定に従います。";
 "No regional filters needed. The default filter lists already cover English and international sites." = "地域向けフィルターは不要です。既定のフィルターリストで、英語サイトと国際的なサイトはすでにカバーされています。";
 "No regional filters available. However, the default filter lists already cover English and international sites." = "利用可能な地域向けフィルターはありません。ただし、既定のフィルターリストで、英語サイトと国際的なサイトはすでにカバーされています。";
+"No regional userscripts needed. The default userscripts already cover English and international sites." = "地域向けユーザースクリプトは不要です。既定のユーザースクリプトで、英語サイトと国際的なサイトはすでにカバーされています。";
+"No regional userscripts available. However, the default userscripts already cover English and international sites." = "利用可能な地域向けユーザースクリプトはありません。ただし、既定のユーザースクリプトで、英語サイトと国際的なサイトはすでにカバーされています。";
+"Regional" = "地域向け";
 "Other" = "その他";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

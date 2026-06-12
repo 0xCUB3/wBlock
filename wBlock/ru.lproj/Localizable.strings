@@ -430,6 +430,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
+"Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -474,6 +475,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks miscellaneous irritating elements not covered by other filters." = "Блокирует различные раздражающие элементы, не улавливаемые другими фильтрами.";
 "Blocks online tracking and web analytics systems." = "Блокирует системы онлайн-слежения и веб-аналитики.";
 "Removes tracking parameters from URLs." = "Удаляет параметры отслеживания из URL.";
+"Shortens links by removing unnecessary tracking and clutter parameters." = "Сокращает ссылки, удаляя ненужные параметры отслеживания и прочие лишние параметры.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Блокирует элементы, связанные с платным доступом. Включите соответствующий пользовательский скрипт для достижения наилучших результатов.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Блокирует рекламные всплывающие окна, подписку на рассылку новостей и запросы на уведомления.";
 "Blocks social media content on webpages." = "Блокирует контент социальных сетей на веб-страницах.";
@@ -662,6 +664,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This doesn't change the app's display language, which always follows your device settings." = "Это не меняет язык интерфейса приложения: он всегда соответствует настройкам вашего устройства.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Региональные фильтры не нужны. Стандартные списки фильтров уже покрывают англоязычные и международные сайты.";
 "No regional filters available. However, the default filter lists already cover English and international sites." = "Нет доступных региональных фильтров. Однако стандартные списки фильтров уже покрывают англоязычные и международные сайты.";
+"No regional userscripts needed. The default userscripts already cover English and international sites." = "Региональные пользовательские скрипты не нужны. Стандартные пользовательские скрипты уже покрывают англоязычные и международные сайты.";
+"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Нет доступных региональных пользовательских скриптов. Однако стандартные пользовательские скрипты уже покрывают англоязычные и международные сайты.";
+"Regional" = "Региональные";
 "Other" = "Другой";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";

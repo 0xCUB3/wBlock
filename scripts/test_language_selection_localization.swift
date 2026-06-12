@@ -25,7 +25,12 @@ struct LanguageSelectionLocalizationTests {
             "Community filter list that blocks ads on Albanian and Kosovar websites.",
             "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino.",
             "Community filter list that blocks ads on Dhivehi (Maldivian) websites.",
-            "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites."
+            "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites.",
+            "Actually Legitimate URL Shortener Tool",
+            "Shortens links by removing unnecessary tracking and clutter parameters.",
+            "Regional",
+            "No regional userscripts needed. The default userscripts already cover English and international sites.",
+            "No regional userscripts available. However, the default userscripts already cover English and international sites."
         ]
 
         do {

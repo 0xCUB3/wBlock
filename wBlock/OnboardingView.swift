@@ -119,6 +119,8 @@ struct OnboardingView: View {
         let version: String
         let sourceHost: String?
         let isBaselineEnabledByDefault: Bool
+        let isRegional: Bool
+        let languages: [String]
     }
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
@@ -160,9 +162,57 @@ struct OnboardingView: View {
                     description: resolvedUserscriptDescription(for: script),
                     version: script.version.trimmingCharacters(in: .whitespacesAndNewlines),
                     sourceHost: script.url?.host,
-                    isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script)
+                    isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
+                    isRegional: userScriptManager.builtInSection(for: script) == .foreign,
+                    languages: userScriptManager.builtInLanguages(for: script).map { $0.lowercased() }
                 )
             }
+    }
+
+    private var generalDefaultUserScripts: [OnboardingUserScriptItem] {
+        defaultUserScripts.filter { !$0.isRegional }
+    }
+
+    private struct RegionalUserscriptGroup: Identifiable {
+        let language: LanguageOption
+        let scripts: [OnboardingUserScriptItem]
+        var id: String { language.code }
+    }
+
+    private var regionalUserscriptGroups: [RegionalUserscriptGroup] {
+        var scriptsByLanguage: [String: [OnboardingUserScriptItem]] = [:]
+        for script in defaultUserScripts where script.isRegional {
+            for code in script.languages where selectedLanguages.contains(code) {
+                scriptsByLanguage[code, default: []].append(script)
+            }
+        }
+        return scriptsByLanguage
+            .map { code, scripts in
+                RegionalUserscriptGroup(language: languageOption(forCode: code), scripts: scripts)
+            }
+            .sorted {
+                $0.language.name.localizedCaseInsensitiveCompare($1.language.name) == .orderedAscending
+            }
+    }
+
+    private var languagesWithoutRegionalUserscripts: [LanguageOption] {
+        let matchedCodes = Set(
+            defaultUserScripts.filter(\.isRegional).flatMap(\.languages)
+        )
+        return languagePickerOptions.filter {
+            selectedLanguages.contains($0.code) && !matchedCodes.contains($0.code)
+        }
+    }
+
+    private func languageOption(forCode code: String) -> LanguageOption {
+        if let existing = languagePickerOptions.first(where: { $0.code == code }) {
+            return existing
+        }
+        return LanguageOption(
+            code: code,
+            name: Locale.current.localizedString(forLanguageCode: code) ?? code,
+            flag: FilterList.languageToFlag[code] ?? ""
+        )
     }
 
     // Helper to get the Bypass Paywalls userscript and filter list names
@@ -783,8 +833,21 @@ struct OnboardingView: View {
                 .padding(14)
                 .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
             } else {
-                ForEach(defaultUserScripts) { script in
+                ForEach(generalDefaultUserScripts) { script in
                     userscriptCard(for: script)
+                }
+
+                if !regionalUserscriptGroups.isEmpty || !languagesWithoutRegionalUserscripts.isEmpty {
+                    Text("Regional")
+                        .font(.headline)
+                        .padding(.top, 4)
+
+                    ForEach(regionalUserscriptGroups) { group in
+                        regionalUserscriptGroup(for: group)
+                    }
+                    ForEach(languagesWithoutRegionalUserscripts) { lang in
+                        emptyRegionalUserscriptGroup(for: lang)
+                    }
                 }
             }
 
@@ -814,6 +877,45 @@ struct OnboardingView: View {
                 .liquidGlassCompat(cornerRadius: 14, material: .regularMaterial)
             }
         }
+    }
+
+    private func regionalUserscriptGroup(for group: RegionalUserscriptGroup) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            regionalUserscriptGroupHeader(for: group.language)
+            ForEach(group.scripts) { script in
+                userscriptCard(for: script)
+            }
+        }
+    }
+
+    private func emptyRegionalUserscriptGroup(for lang: LanguageOption) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            regionalUserscriptGroupHeader(for: lang)
+
+            Group {
+                if lang.code == Self.englishLanguageCode {
+                    Text("No regional userscripts needed. The default userscripts already cover English and international sites.")
+                } else {
+                    Text("No regional userscripts available. However, the default userscripts already cover English and international sites.")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func regionalUserscriptGroupHeader(for lang: LanguageOption) -> some View {
+        HStack(spacing: 4) {
+            if !lang.flag.isEmpty {
+                Text(lang.flag)
+            }
+            Text(lang.name)
+                .textCase(.uppercase)
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 4)
     }
 
     private var syncStep: some View {
@@ -1106,6 +1208,7 @@ struct OnboardingView: View {
         }
 
         return script.name.localizedCaseInsensitiveCompare("AdGuard Extra") == .orderedSame
+            || script.name.localizedCaseInsensitiveCompare("tinyShield") == .orderedSame
     }
     
     func applySettings() async {

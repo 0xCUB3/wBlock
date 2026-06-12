@@ -14,6 +14,7 @@ class FilterListLoader {
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "AdGuard URL Tracking Protection Filter",
+            "Actually Legitimate URL Shortener Tool",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -24,6 +25,7 @@ class FilterListLoader {
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
             "AdGuard URL Tracking Protection Filter",
+            "Actually Legitimate URL Shortener Tool",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -133,6 +135,14 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt"
                 )!, category: FilterListCategory.privacy, isSelected: true,
                 description: "Removes tracking parameters from URLs.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "Actually Legitimate URL Shortener Tool",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt"
+                )!, category: FilterListCategory.privacy, isSelected: true,
+                description: "Shortens links by removing unnecessary tracking and clutter parameters.",
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Cookie Notices",

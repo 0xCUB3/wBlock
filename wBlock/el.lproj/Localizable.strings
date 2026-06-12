@@ -430,6 +430,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
+"Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -474,6 +475,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks miscellaneous irritating elements not covered by other filters." = "Αποκλείει διάφορα ερεθιστικά στοιχεία που δεν καλύπτονται από άλλα φίλτρα.";
 "Blocks online tracking and web analytics systems." = "Αποκλείει τα διαδικτυακά συστήματα παρακολούθησης και ανάλυσης ιστού.";
 "Removes tracking parameters from URLs." = "Αφαιρεί παραμέτρους παρακολούθησης από URL.";
+"Shortens links by removing unnecessary tracking and clutter parameters." = "Συντομεύει τους συνδέσμους αφαιρώντας περιττές παραμέτρους παρακολούθησης και άλλες άχρηστες παραμέτρους.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Αποκλείει στοιχεία που σχετίζονται με το paywall. Ενεργοποιήστε το αντίστοιχο userscript για καλύτερα αποτελέσματα.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
 "Blocks social media content on webpages." = "Αποκλείει το περιεχόμενο των μέσων κοινωνικής δικτύωσης σε ιστοσελίδες.";
@@ -662,6 +664,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This doesn't change the app's display language, which always follows your device settings." = "Αυτό δεν αλλάζει τη γλώσσα εμφάνισης της εφαρμογής, η οποία ακολουθεί πάντα τις ρυθμίσεις της συσκευής σας.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Δεν χρειάζονται τοπικά φίλτρα. Οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
 "No regional filters available. However, the default filter lists already cover English and international sites." = "Δεν υπάρχουν διαθέσιμα τοπικά φίλτρα. Ωστόσο, οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
+"No regional userscripts needed. The default userscripts already cover English and international sites." = "Δεν χρειάζονται τοπικά userscripts. Τα προεπιλεγμένα userscripts καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
+"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Δεν υπάρχουν διαθέσιμα τοπικά userscripts. Ωστόσο, τα προεπιλεγμένα userscripts καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
+"Regional" = "Τοπικά";
 "Other" = "Άλλη";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
