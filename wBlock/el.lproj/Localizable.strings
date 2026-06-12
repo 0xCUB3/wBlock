@@ -11,7 +11,7 @@
 "Userscript" = "Κώδικας χρήστη";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Trust: \\(trust.capitalized)" = "Εμπιστοσύνη: \(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "Προσθήκη κώδικα χρήστη για να προσαρμόσετε την εμπειρία περιήγησής σας";
+"Add userscripts and userstyles to customize your browsing experience" = "Προσθήκη κώδικα χρήστη και στυλ χρήστη για να προσαρμόσετε την εμπειρία περιήγησής σας";
 "Country or region" = "Χώρα ή περιοχή";
 "Never checked" = "Δεν έχει ελεγχθεί ποτέ";
 "Apply & Finish" = "Εφαρμογή & Ολοκλήρωση";
@@ -19,6 +19,7 @@
 "Restart" = "Επανεκκίνηση";
 "%@%" = "%@%";
 "Script Content" = "Περιεχόμενο κώδικα";
+"Style Content" = "Περιεχόμενο στυλ";
 "Showing preview (%@) of %@))" = "Εμφάνιση προεπισκόπησης (%@) από %@))";
 "Applied Rules" = "Εφαρμοσμένοι Κανόνες";
 "Export" = "Εξαγωγή";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "Αρχείο";
 "Scripts" = "Κώδικας";
+"Styles" = "Στυλ";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Ο κώδικας χρήστη \(bypassScript.name) απαιτεί το \(filterName)";
 "Foreign" = "Άλλες γλώσσες";
 "International" = "Διεθνή";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "Επικόλληση από το Πρόχειρο";
 "No Userscripts" = "Χωρίς κώδικα χρήστη";
 "Userscripts" = "Κώδικας Χρήστη";
+"Userstyles" = "Στυλ Χρήστη";
 "URL Patterns (\\(script.matches.count))" = "Μοτίβα URL (\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Επιλέξτε τυχόν κώδικα χρήστη που θέλετε να ενεργοποιήσετε. Αυτά προσθέτουν επιπλέον λειτουργίες ή διορθώσεις. Μπορείτε πάντα να προσθέσετε περισσότερα στις ρυθμίσεις αργότερα.";
 "Updating Scripts" = "Ενημέρωση κώδικα";
@@ -209,7 +212,7 @@
 "Progress" = "Πρόοδος";
 "Logs" = "Αρχεία Καταγραφής";
 "Preparing %d extension" = "Προετοιμασία %d επέκτασης";
-"Add Userscript" = "Προσθήκη κώδικα χρήστη";
+"Add Userscript or Userstyle" = "Προσθήκη κώδικα χρήστη ή στυλ χρήστη";
 "URL Patterns (%@)" = "Μοτίβα URL(%@)";
 "Copy URL" = "Αντιγραφή URL";
 "Trust: %@" = "Αξιόπιστο: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "Αναμονή";
 "Back" = "Πίσω";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "Υποστηρίζει αρχεία .user.js ή .js. Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα. επανεισαγάγετε για αντικατάσταση.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Υποστηρίζει αρχεία .user.js, .js και .user.css. Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα. επανεισαγάγετε για αντικατάσταση.";
 "Category" = "Κατηγορία";
 "Open Safari Settings" = "Άνοιγμα ρυθμίσεων Safari";
 "Search" = "Αναζήτηση";
@@ -247,9 +250,10 @@
 "Description" = "Περιγραφή";
 "2." = "2.";
 "AutoUpdate" = "Αυτόματη Ενημέρωση";
-"Script URL" = "URL Κώδικα";
+"Script or Style URL" = "URL Κώδικα ή Στυλ χρήστη";
 "Review your choices and apply settings." = "Ελέγξτε τις επιλογές σας και εφαρμόστε τις ρυθμίσεις.";
 "Local Import" = "Τοπική Εισαγωγή";
+"Userstyle" = "Στυλ χρήστη";
 "Send me reminders about unapplied changes" = "Αποστολή υπενθυμίσεων σχετικά με μη εφαρμοσμένες αλλαγές";
 "Version \\(script.version)" = "Έκδοση \(script.version)";
 "Syncing iCloud configuration…" = "Συγχρονισμός διαμόρφωσης iCloud…";
@@ -296,7 +300,7 @@
 "Enable extra fixes and finish setup." = "Ενεργοποίηση επιπλέον διορθώσεων και ολοκλήρωση ρύθμισης.";
 "No userscripts selected" = "Δεν έχουν επιλεγεί κώδικες";
 "%d userscripts selected" = "%d επιλεγμένοι κώδικες";
-"Choose filters for websites in other languages. You can fine-tune them later." = "Επιλέξτε φίλτρα για ιστότοπους σε άλλες γλώσσες. Μπορείτε να τα ρυθμίσετε αργότερα.";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Αυτά τα φίλτρα προσθέτουν επιπλέον ισχύ αποκλεισμού για τις γλώσσες σας πάνω από τις προεπιλεγμένες λίστες, οι οποίες καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους. Μπορείτε να τα ρυθμίσετε αργότερα.";
 "Best default" = "Καλύτερη προεπιλογή";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά σενάρια χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "Διατίθενται μόνο λίστες που συντηρούνται από την κοινότητα. Ενεργοποίησέ τες αν νιώθεις άνετα.";
 "Open Login Items" = "Άνοιγμα στοιχείων σύνδεσης";
 "Overdue catch-up" = "Καθυστερημένη ανάκτηση";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js ή .js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js, .js ή .user.css. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
 "Recorded" = "Καταγράφηκε";
 "Received %@, %@ %@" = "Ελήφθη %@, %@ %@";
 "Received %@, waiting for completion" = "Ελήφθη %@, αναμονή για ολοκλήρωση";
@@ -438,6 +442,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +486,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks cookie consent notices on web pages." = "Αποκλείει τις ειδοποιήσεις συναίνεσης για cookie σε ιστοσελίδες.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Αποκλείει διάφορα ερεθιστικά στοιχεία που δεν καλύπτονται από άλλα φίλτρα.";
 "Blocks online tracking and web analytics systems." = "Αποκλείει τα διαδικτυακά συστήματα παρακολούθησης και ανάλυσης ιστού.";
+"Removes tracking parameters from URLs." = "Αφαιρεί παραμέτρους παρακολούθησης από URL.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Αποκλείει στοιχεία που σχετίζονται με το paywall. Ενεργοποιήστε το αντίστοιχο userscript για καλύτερα αποτελέσματα.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
 "Blocks social media content on webpages." = "Αποκλείει το περιεχόμενο των μέσων κοινωνικής δικτύωσης σε ιστοσελίδες.";
@@ -617,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Αυτή η λίστα καλύπτει ιστότοπους για τη Νορβηγία, τη Δανία, την Ισλανδία, τα δανικά εδάφη και τον αυτόχθονα πληθυσμό των Σάμι.";
 "Title is required." = "Απαιτείται τίτλος.";
 "URL Patterns (%d)" = "Μοτίβα URL (%d)";
+"Applies To (%d)" = "Ισχύει για (%d)";
+"All websites" = "Όλοι οι ιστότοποι";
 "Unapplied Filter Changes" = "Μη εφαρμοσμένες αλλαγές φίλτρου";
 "Updated %d/%d extensions in %@" = "Ενημερώθηκαν οι επεκτάσεις %d/%d στο %@";
 "Updating disabled sites..." = "Ενημέρωση απενεργοποιημένων ιστότοπων...";
@@ -663,7 +671,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Επιλέξτε τις γλώσσες (μία ή περισσότερες) στις οποίες περιηγείστε σε ιστότοπους. Το wBlock το χρησιμοποιεί μόνο για να προτείνει τοπικά φίλτρα διαφημίσεων.";
+"This doesn't change the app's display language, which always follows your device settings." = "Αυτό δεν αλλάζει τη γλώσσα εμφάνισης της εφαρμογής, η οποία ακολουθεί πάντα τις ρυθμίσεις της συσκευής σας.";
+"No regional filters needed. The default filter lists already cover English and international sites." = "Δεν χρειάζονται τοπικά φίλτρα. Οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "Δεν υπάρχουν διαθέσιμα τοπικά φίλτρα. Ωστόσο, οι προεπιλεγμένες λίστες φίλτρων καλύπτουν ήδη αγγλικούς και διεθνείς ιστότοπους.";
+"Other" = "Άλλη";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
@@ -671,9 +683,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "Επικολλήστε ή γράψτε κώδικα χρήστη ή στυλ χρήστη με ένα τυπικό μπλοκ μεταδεδομένων.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Συμπεριλάβετε το μπλοκ μεταδεδομένων // ==UserScript== (ή /* ==UserStyle== */ για στυλ χρήστη), ώστε το wBlock να μπορεί να διαβάσει το όνομα και τα μοτίβα URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Παρέχετε έναν έγκυρο σύνδεσμο http:// ή https:// που τελειώνει σε .js, .user.js ή .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
@@ -686,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "Επεξεργασία λίστας";
 "Filter list not found." = "Η λίστα φίλτρων δεν βρέθηκε.";
 "Filter list updated. Apply changes to enable it." = "Η λίστα φίλτρων ενημερώθηκε. Εφαρμόστε τις αλλαγές για να την ενεργοποιήσετε.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Συμπλήρωμα του EasyList από την eyeo για ιστότοπους στα ταϊλανδικά, ελληνικά, σλοβενικά, κροατικά, σερβικά, βοσνιακά και φιλιππινέζικα.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε ιστότοπους στα ντιβέχι (μαλδιβικά).";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Λίστα φίλτρων ρωσικής γλώσσας που καλύπτει επίσης ουκρανικούς, καζακικούς και ουζμπεκικούς ιστότοπους.";

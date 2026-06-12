@@ -75,6 +75,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 ### Content modification
 - **Element Zapper** (macOS, iOS, iPadOS, visionOS) — visually select and hide page elements in Safari
 - **Userscript engine** with Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
+- **Userstyle support** — install UserCSS themes (.user.css) applied natively as CSS, no JS wrapper needed
 - **Custom filter lists** via URL, paste, or file import — supports any AdGuard-syntax blocklist
 - **Toolbar search** for quickly finding filters and userscripts
 - **Automatic rule distribution** across all 5 content blocker slots for maximum coverage
@@ -196,8 +197,8 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 <td width="50%" valign="top">
 
 **Dependencies & Standards**
-- SafariConverterLib v4.2.1 for AdGuard to Safari rule conversion
-- AdGuard Scriptlets v2.3.0 for advanced blocking techniques
+- SafariConverterLib v4.3.0 for AdGuard to Safari rule conversion
+- AdGuard Scriptlets v2.3.1 for advanced blocking techniques
 - Swift 5.9+ with strict concurrency checking enabled
 - WCAG 2.1 AA compliance with full VoiceOver and Dynamic Type support
 - SwiftProtobuf for cross-platform filter storage format

@@ -539,7 +539,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
 
             const payloadPromise = (async () => {
-                const content = await this.fetchTextFromChunks('getUserScriptContentChunk', { scriptId: script.id });
+                const chunkParams = { scriptId: script.id };
+                if (script.kind === 'style') {
+                    // Style chunks are computed per page URL on the native side
+                    // (effective CSS = global + matching @-moz-document sections).
+                    chunkParams.url = window.location.href;
+                }
+                const content = await this.fetchTextFromChunks('getUserScriptContentChunk', chunkParams);
                 const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
                 const resources = {};
                 for (const resourceName of resourceNames) {
@@ -788,6 +794,25 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog(`[wBlock] Skipping ${script.name} in iframe due to @noframes directive`);
                 return;
             }
+            // Userstyles bypass the userscript machinery entirely: the payload is
+            // ready-to-apply CSS, so inject a <style> element and stop.
+            if (script.kind === 'style') {
+                if (this.injectedScripts.has(script.name) || this.injectingScripts.has(script.name)) {
+                    return;
+                }
+                this.injectingScripts.add(script.name);
+                try {
+                    const fullStyle = await this.ensureScriptPayload(script);
+                    const css = typeof fullStyle.content === 'string' ? fullStyle.content : '';
+                    if (css.length > 0) {
+                        this.injectStyleElement(fullStyle, css);
+                        this.injectedScripts.add(script.name);
+                    }
+                } finally {
+                    this.injectingScripts.delete(script.name);
+                }
+                return;
+            }
 
             if (!this.shouldRunScript(script)) {
                 // Add to pending scripts if it's not ready to run
@@ -900,6 +925,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } catch (error) {
                 wBlockError(`[wBlock] Content context execution failed for ${script.name}:`, error);
             }
+        }
+
+        // Userstyle injection: CSS applied through a <style> element. Works under any
+        // CSP (style-src does not block extension-inserted inline styles in Safari
+        // content-script worlds the way script-src blocks scripts) and applies before
+        // first paint when injected at document_start.
+        injectStyleElement(style, css) {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = css;
+            styleElement.setAttribute('data-wblock-userstyle', style.name || '');
+            (document.head || document.documentElement).appendChild(styleElement);
+            wBlockLog(`[wBlock] Injected userstyle ${style.name} (${css.length} chars)`);
         }
 
         shouldRunScript(script) {

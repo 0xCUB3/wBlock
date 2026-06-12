@@ -11,7 +11,7 @@
 "Userscript" = "Felhasználói szkript";
 "Welcome to wBlock!" = "Üdv a wBlockban!";
 "Trust: \\(trust.capitalized)" = "Megbízhatóság: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "Adj hozzá felhasználói szkripteket a böngészési élmény testreszabásához";
+"Add userscripts and userstyles to customize your browsing experience" = "Adj hozzá felhasználói szkripteket és stílusokat a böngészési élmény testreszabásához";
 "Country or region" = "Ország vagy régió";
 "Never checked" = "Soha nem ellenőrizve";
 "Apply & Finish" = "Alkalmazás és befejezés";
@@ -19,6 +19,7 @@
 "Restart" = "Újraindítás";
 "%@%" = "%@%";
 "Script Content" = "Szkript tartalma";
+"Style Content" = "Stílus tartalma";
 "Showing preview (%@) of %@))" = "Előnézet megjelenítése (%@) / %@))";
 "Applied Rules" = "Alkalmazott szabályok";
 "Export" = "Exportálás";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "Fájl";
 "Scripts" = "Szkriptek";
+"Styles" = "Stílusok";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "A(z) \\(bypassScript.name) felhasználói szkripthez szükséges ez: \\(filterName)";
 "Foreign" = "Nemzetközi";
 "International" = "Nemzetközi";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "Beillesztés vágólapról";
 "No Userscripts" = "Nincsenek felhasználói szkriptek";
 "Userscripts" = "Felhasználói szkriptek";
+"Userstyles" = "Felhasználói stílusok";
 "URL Patterns (\\(script.matches.count))" = "URL minták (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Válaszd ki az engedélyezni kívánt felhasználói szkripteket. Ezek extra funkciókat vagy javításokat adnak. Később bármikor hozzáadhatsz többet a beállításokban.";
 "Updating Scripts" = "Szkriptek frissítése";
@@ -209,7 +212,7 @@
 "Progress" = "Folyamat";
 "Logs" = "Naplók";
 "Preparing %d extension" = "%d bővítmény előkészítése";
-"Add Userscript" = "Felhasználói szkript hozzáadása";
+"Add Userscript or Userstyle" = "Felhasználói szkript vagy felhasználói stílus hozzáadása";
 "URL Patterns (%@)" = "URL minták (%@)";
 "Copy URL" = "URL másolása";
 "Trust: %@" = "Megbízhatóság: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "Várakozás";
 "Back" = "Vissza";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "Támogatja a .user.js vagy .js fájlokat. A helyi importok nem frissülnek automatikusan; cseréhez importáld újra.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Támogatja a .user.js, .js és .user.css fájlokat. A helyi importok nem frissülnek automatikusan; cseréhez importáld újra.";
 "Category" = "Kategória";
 "Open Safari Settings" = "Safari beállítások megnyitása";
 "Search" = "Keresés";
@@ -247,9 +250,10 @@
 "Description" = "Leírás";
 "2." = "2.";
 "AutoUpdate" = "Automatikus frissítés";
-"Script URL" = "Szkript URL";
+"Script or Style URL" = "Szkript- vagy felhasználói stílus URL";
 "Review your choices and apply settings." = "Ellenőrizd a választásaidat, és alkalmazd a beállításokat.";
 "Local Import" = "Helyi import";
+"Userstyle" = "Felhasználói stílus";
 "Send me reminders about unapplied changes" = "Küldj emlékeztetőt a nem alkalmazott módosításokról";
 "Version \\(script.version)" = "Verzió \\(script.version)";
 "Syncing iCloud configuration…" = "iCloud-konfiguráció szinkronizálása…";
@@ -296,7 +300,7 @@
 "Enable extra fixes and finish setup." = "Engedélyezd az extra javításokat, és fejezd be a beállítást.";
 "No userscripts selected" = "Nincs felhasználói szkript kiválasztva";
 "%d userscripts selected" = "%d felhasználói szkript kiválasztva";
-"Choose filters for websites in other languages. You can fine-tune them later." = "Válassz szűrőket más nyelvű webhelyekhez. Később finomhangolhatod őket.";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Ezek a szűrők az alapértelmezett szűrőlistákon felül további blokkolási erőt adnak a nyelveidhez; az alapértelmezett listák már lefedik az angol és a nemzetközi oldalakat. Később finomhangolhatod őket.";
 "Best default" = "Legjobb alapértelmezett";
 "Community-maintained options for additional regional coverage." = "Közösség által karbantartott lehetőségek további regionális lefedettséghez.";
 "Choose optional userscripts. These are disabled by default." = "Válassz opcionális felhasználói szkripteket. Ezek alapértelmezetten le vannak tiltva.";
@@ -349,7 +353,7 @@
 "Not recorded" = "Nincs rögzítve";
 "Open Login Items" = "Bejelentkezési elemek megnyitása";
 "Overdue catch-up" = "Túllépett felzárkózás";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js vagy .js linket. A wBlock letölti és telepíti neked.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js, .js vagy .user.css linket. A wBlock letölti és telepíti neked.";
 "Recorded" = "Rögzítve";
 "Received %@, %@ %@" = "Fogadva %@, %@ %@";
 "Received %@, waiting for completion" = "Fogadva %@, befejezésre vár";
@@ -439,6 +443,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -482,6 +487,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Blocks cookie consent notices on web pages." = "Letiltja a cookie-k engedélyezésére vonatkozó értesítéseket a weboldalakon.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blokkolja a különféle irritáló elemeket, amelyeket más szűrők nem fednek le.";
 "Blocks online tracking and web analytics systems." = "Blokkolja az online nyomkövető és webelemző rendszereket.";
+"Removes tracking parameters from URLs." = "Eltávolítja a nyomkövetési paramétereket az URL-ekből.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Blokkolja a fizetőfallal kapcsolatos elemeket. A legjobb eredmény érdekében engedélyezze a megfelelő felhasználói szkriptet.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Letiltja a promóciós előugró ablakokat, a hírlevélre való feliratkozást és az értesítési kéréseket.";
 "Blocks social media content on webpages." = "Letiltja a közösségi média tartalmat a weboldalakon.";
@@ -618,6 +624,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Ez a lista Norvégia, Dánia, Izland, dán területek és a számi bennszülött lakosság webhelyeit tartalmazza.";
 "Title is required." = "A cím kötelező.";
 "URL Patterns (%d)" = "URL-minták (%d)";
+"Applies To (%d)" = "Érvényes erre: (%d)";
+"All websites" = "Minden webhely";
 "Unapplied Filter Changes" = "Nem alkalmazott szűrőmódosítások";
 "Updated %d/%d extensions in %@" = "Frissített %d/%d bővítmények a %@-ben";
 "Updating disabled sites..." = "Letiltott webhelyek frissítése...";
@@ -664,7 +672,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Válaszd ki, milyen nyelveken (egy vagy több) böngészel webhelyeket. A wBlock ezt csak regionális hirdetésszűrők ajánlásához használja.";
+"This doesn't change the app's display language, which always follows your device settings." = "Ez nem módosítja az app megjelenítési nyelvét, az mindig az eszköz beállításait követi.";
+"No regional filters needed. The default filter lists already cover English and international sites." = "Nincs szükség regionális szűrőkre. Az alapértelmezett szűrőlisták már lefedik az angol és a nemzetközi oldalakat.";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "Nincsenek elérhető regionális szűrők. Az alapértelmezett szűrőlisták azonban már lefedik az angol és a nemzetközi oldalakat.";
+"Other" = "Egyéb";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
@@ -672,9 +684,9 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "Illessz be vagy írj egy felhasználói szkriptet vagy stílust szabványos metaadatblokkal.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Add meg a // ==UserScript== metaadatblokkot (vagy /* ==UserStyle== */ blokkot felhasználói stílusokhoz), hogy a wBlock ki tudja olvasni a nevet és az URL mintákat.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Adj meg egy érvényes http:// vagy https:// linket, amely .js, .user.js vagy .user.css végződésű";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
@@ -687,3 +699,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Edit Filter List" = "Lista szerkesztése";
 "Filter list not found." = "Szűrőlista nem található.";
 "Filter list updated. Apply changes to enable it." = "Szűrőlista frissítve. Alkalmazza a módosításokat az engedélyezéséhez.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket az albán és koszovói webhelyeken.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "EasyList-kiegészítés az eyeo-tól thai, görög, szlovén, horvát, szerb, bosnyák és filippínó nyelvű webhelyekhez.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket a divehi (maldív) nyelvű webhelyeken.";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Orosz nyelvű szűrőlista, amely az ukrán, kazah és üzbég webhelyeket is lefedi.";

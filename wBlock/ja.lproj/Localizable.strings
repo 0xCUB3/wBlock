@@ -11,7 +11,7 @@
 "Userscript" = "ユーザースクリプト";
 "Welcome to wBlock!" = "wBlockへようこそ！";
 "Trust: \\(trust.capitalized)" = "信頼: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "ユーザースクリプトを追加してブラウジング体験をカスタマイズ";
+"Add userscripts and userstyles to customize your browsing experience" = "ユーザースクリプトとユーザースタイルを追加してブラウジング体験をカスタマイズ";
 "Country or region" = "国または地域";
 "Never checked" = "未確認";
 "Apply & Finish" = "適用して完了";
@@ -19,6 +19,7 @@
 "Restart" = "再起動";
 "%@%" = "%@%";
 "Script Content" = "スクリプト内容";
+"Style Content" = "スタイル内容";
 "Showing preview (%@) of %@))" = "プレビューを表示中 (%@) / %@))";
 "Applied Rules" = "適用済みルール";
 "Export" = "書き出し";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "ファイル";
 "Scripts" = "スクリプト";
+"Styles" = "スタイル";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) ユーザースクリプトには \\(filterName) が必要です";
 "Foreign" = "海外";
 "International" = "国際";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "クリップボードから貼り付け";
 "No Userscripts" = "ユーザースクリプトはありません";
 "Userscripts" = "ユーザースクリプト";
+"Userstyles" = "ユーザースタイル";
 "URL Patterns (\\(script.matches.count))" = "URLパターン (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "有効にしたいユーザースクリプトを選択してください。追加機能や修正が適用されます。後で設定からいつでも追加できます。";
 "Updating Scripts" = "スクリプトを更新中";
@@ -209,7 +212,7 @@
 "Progress" = "進行状況";
 "Logs" = "ログ";
 "Preparing %d extension" = "%d個の拡張機能を準備中";
-"Add Userscript" = "ユーザースクリプトを追加";
+"Add Userscript or Userstyle" = "ユーザースクリプトまたはユーザースタイルを追加";
 "URL Patterns (%@)" = "URLパターン (%@)";
 "Copy URL" = "URLをコピー";
 "Trust: %@" = "信頼: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "待機中";
 "Back" = "戻る";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = ".user.js または .js ファイルに対応。ローカルインポートは自動更新されないため、置き換えるには再インポートしてください。";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = ".user.js、.js、.user.css ファイルに対応。ローカルインポートは自動更新されないため、置き換えるには再インポートしてください。";
 "Category" = "カテゴリ";
 "Open Safari Settings" = "Safariの設定を開く";
 "Search" = "検索";
@@ -247,9 +250,10 @@
 "Description" = "説明";
 "2." = "2.";
 "AutoUpdate" = "自動更新";
-"Script URL" = "スクリプトURL";
+"Script or Style URL" = "スクリプトまたはユーザースタイルのURL";
 "Review your choices and apply settings." = "選択内容を確認して設定を適用してください。";
 "Local Import" = "ローカルインポート";
+"Userstyle" = "ユーザースタイル";
 "Send me reminders about unapplied changes" = "未適用の変更をリマインドする";
 "Version \\(script.version)" = "バージョン \\(script.version)";
 "Syncing iCloud configuration…" = "iCloud設定を同期中…";
@@ -296,7 +300,7 @@
 "Enable extra fixes and finish setup." = "追加の修正を有効にして設定を完了します。";
 "No userscripts selected" = "ユーザースクリプトが選択されていません";
 "%d userscripts selected" = "%d 個のユーザースクリプトを選択中";
-"Choose filters for websites in other languages. You can fine-tune them later." = "他の言語のウェブサイト向けのフィルターを選択してください。後で細かく調整できます。";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "これらのフィルターは、既定のフィルターリストに加えて、選択した言語でのブロック力を強化します。既定のフィルターリストでは、英語サイトと国際的なサイトはすでにカバーされています。後で細かく調整できます。";
 "Best default" = "おすすめの既定値";
 "Community-maintained options for additional regional coverage." = "地域カバーを強化するコミュニティ管理オプション。";
 "Choose optional userscripts. These are disabled by default." = "任意のユーザースクリプトを選択してください。初期状態では無効です。";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "コミュニティ管理のリストのみ利用できます。問題なければ有効にしてください。";
 "Open Login Items" = "ログイン項目を開く";
 "Overdue catch-up" = "期限超過の追いつき実行";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "直接の .user.js または .js リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "直接の .user.js、.js、または .user.css リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
 "Recorded" = "記録済み";
 "Received %@, %@ %@" = "%@ に受信、%@ %@";
 "Received %@, waiting for completion" = "%@ に受信、完了待ち";
@@ -438,6 +442,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +486,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks cookie consent notices on web pages." = "Web ページ上の Cookie 同意通知をブロックします。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "他のフィルターではカバーできないさまざまな刺激的な要素をブロックします。";
 "Blocks online tracking and web analytics systems." = "オンライン追跡システムと Web 分析システムをブロックします。";
+"Removes tracking parameters from URLs." = "URL から追跡パラメータを削除します。";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "ペイウォール関連の要素をブロックします。最良の結果を得るには、対応するユーザースクリプトを有効にしてください。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "プロモーションのポップアップ、ニュースレターの登録、通知リクエストをブロックします。";
 "Blocks social media content on webpages." = "Web ページ上のソーシャル メディア コンテンツをブロックします。";
@@ -617,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "このリストには、ノルウェー、デンマーク、アイスランド、デンマーク領土、および先住民族サーミ人の Web サイトが含まれています。";
 "Title is required." = "タイトルは必須です。";
 "URL Patterns (%d)" = "URL パターン (%d)";
+"Applies To (%d)" = "適用先 (%d)";
+"All websites" = "すべてのWebサイト";
 "Unapplied Filter Changes" = "適用されていないフィルターの変更";
 "Updated %d/%d extensions in %@" = "%@ の %d/%d 拡張機能を更新しました";
 "Updating disabled sites..." = "無効になっているサイトを更新しています...";
@@ -663,7 +671,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Webサイトを閲覧する言語（1つ以上）を選択してください。wBlock は地域向け広告フィルターをおすすめするためにのみ使用します。";
+"This doesn't change the app's display language, which always follows your device settings." = "これによってアプリの表示言語は変わりません。表示言語は常にデバイスの設定に従います。";
+"No regional filters needed. The default filter lists already cover English and international sites." = "地域向けフィルターは不要です。既定のフィルターリストで、英語サイトと国際的なサイトはすでにカバーされています。";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "利用可能な地域向けフィルターはありません。ただし、既定のフィルターリストで、英語サイトと国際的なサイトはすでにカバーされています。";
+"Other" = "その他";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
@@ -671,9 +683,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "標準のメタデータブロックを含むユーザースクリプトまたはユーザースタイルを貼り付けるか記述してください。";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "// ==UserScript== メタデータブロック（ユーザースタイルの場合は /* ==UserStyle== */）を含めて、wBlock が名前とURLパターンを読み取れるようにしてください。";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = ".js、.user.js、または .user.css で終わる有効な http:// または https:// リンクを指定してください";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
@@ -686,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "リストを編集";
 "Filter list not found." = "フィルターリストが見つかりません。";
 "Filter list updated. Apply changes to enable it." = "フィルターリストを更新しました。変更を適用して有効にします。";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "アルバニア語およびコソボのWebサイトの広告をブロックする、コミュニティ管理のフィルターリスト。";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "タイ語、ギリシャ語、スロベニア語、クロアチア語、セルビア語、ボスニア語、フィリピン語のWebサイト向けの、eyeoによるEasyList補助リスト。";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "ディベヒ語（モルディブ語）のWebサイトの広告をブロックする、コミュニティ管理のフィルターリスト。";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "ウクライナ語、カザフ語、ウズベク語のWebサイトもカバーする、ロシア語向けフィルターリスト。";

@@ -77,6 +77,8 @@ struct OnboardingView: View {
     
     private static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
     private static let cloudSyncEnabledDefaultsKey = "cloudSyncEnabled"
+    private static let englishLanguageCode = "en"
+    private static let otherLanguagesCode = "other"
 
     // Helper to look up canonical filter metadata from filterManager instead of loading separately
     private func foreignFilterMetadata(for url: String) -> FilterList? {
@@ -309,12 +311,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        var steps: [OnboardingStep] = [.protection, .region]
-        if !selectedFilterLanguageOptions.isEmpty {
-            steps.append(.regionalFilters)
-        }
-        steps.append(contentsOf: [.userscripts, .sync, .setup])
-        return steps
+        [.protection, .region, .regionalFilters, .userscripts, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -407,6 +404,8 @@ struct OnboardingView: View {
         switch step {
         case .protection:
             return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .region:
+            return !hasLanguagePickerSelection
         case .setup:
             return !hasEnabledContentBlockers || !hasEnabledAdvanced
         default:
@@ -466,6 +465,7 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
@@ -509,10 +509,76 @@ struct OnboardingView: View {
         availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
     }
 
+    private var pinnedLanguagePickerOptions: [LanguageOption] {
+        var options: [LanguageOption] = []
+        if !availableFilterLanguages.contains(where: { $0.code == Self.englishLanguageCode }) {
+            let englishName =
+                Locale.current.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
+            options.append(
+                LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
+            )
+        }
+        options.append(
+            LanguageOption(
+                code: Self.otherLanguagesCode,
+                name: String(localized: "Other"),
+                flag: "\u{1F310}"
+            )
+        )
+        return options
+    }
+
+    private var languagePickerOptions: [LanguageOption] {
+        pinnedLanguagePickerOptions + availableFilterLanguages
+    }
+
+    private var hasLanguagePickerSelection: Bool {
+        languagePickerOptions.contains { selectedLanguages.contains($0.code) }
+    }
+
+    private var languagesWithoutRegionalFilters: [LanguageOption] {
+        let matchedCodes = Set(
+            (recommendedRegionalFilters + optionalRegionalFilters)
+                .flatMap { filter in filter.languages.map { $0.lowercased() } }
+        )
+        return languagePickerOptions.filter {
+            selectedLanguages.contains($0.code) && !matchedCodes.contains($0.code)
+        }
+    }
+
+    private struct LanguagePickerSection: Identifiable {
+        let letter: String
+        let options: [LanguageOption]
+        var id: String { letter }
+    }
+
+    private var languagePickerSections: [LanguagePickerSection] {
+        let grouped = Dictionary(grouping: availableFilterLanguages) { option in
+            String(option.name.prefix(1)).uppercased(with: Locale.current)
+        }
+        return grouped
+            .map { LanguagePickerSection(letter: $0.key, options: $0.value) }
+            .sorted { $0.letter.localizedCaseInsensitiveCompare($1.letter) == .orderedAscending }
+    }
+
     private var languagePickerGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(availableFilterLanguages) { lang in
+            ForEach(pinnedLanguagePickerOptions) { lang in
                 languageToggle(for: lang)
+            }
+            ForEach(languagePickerSections) { section in
+                Section {
+                    ForEach(section.options) { lang in
+                        languageToggle(for: lang)
+                    }
+                } header: {
+                    Text(section.letter)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                        .padding(.top, 6)
+                }
             }
         }
     }
@@ -542,6 +608,7 @@ struct OnboardingView: View {
             .font(.subheadline)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
@@ -552,8 +619,12 @@ struct OnboardingView: View {
 
     private var regionStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose the languages you browse in. wBlock will recommend matching filters next.")
+            Text("Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters.")
                 .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("This doesn't change the app's display language, which always follows your device settings.")
+                .font(.caption)
                 .foregroundStyle(.secondary)
 
             languagePickerGrid
@@ -563,13 +634,18 @@ struct OnboardingView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
+            } else if hasLanguagePickerSelection {
+                Text("No regional filters needed. The default filter lists already cover English and international sites.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
             }
         }
     }
 
     private var regionalFiltersStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose filters for websites in other languages. You can fine-tune them later.")
+            Text("These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -580,12 +656,15 @@ struct OnboardingView: View {
                     .padding(.horizontal, 4)
             }
 
-            if !recommendedRegionalFilters.isEmpty {
+            if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Recommended")
                         .font(.headline)
                     ForEach(ForeignFilterOrganizer.groups(for: recommendedRegionalFilters, preferredLanguages: selectedLanguages)) { group in
                         regionalFilterGroup(group, expandsCommunity: false)
+                    }
+                    ForEach(languagesWithoutRegionalFilters) { lang in
+                        emptyRegionalFilterGroup(for: lang)
                     }
                 }
             }
@@ -605,6 +684,27 @@ struct OnboardingView: View {
                 .padding(14)
                 .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
             }
+        }
+    }
+
+    private func emptyRegionalFilterGroup(for lang: LanguageOption) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(lang.name)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 4)
+
+            Group {
+                if lang.code == Self.englishLanguageCode {
+                    Text("No regional filters needed. The default filter lists already cover English and international sites.")
+                } else {
+                    Text("No regional filters available. However, the default filter lists already cover English and international sites.")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
         }
     }
 
@@ -657,6 +757,7 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(
@@ -929,6 +1030,7 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .liquidGlassCompat(

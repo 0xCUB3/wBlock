@@ -27,6 +27,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isLocal: Bool
     let isDownloaded: Bool
     let updatesAutomatically: Bool
+    let isUserStyle: Bool
     let builtInSection: BuiltInUserScriptSection?
 
     init(script: UserScript, builtInSection: BuiltInUserScriptSection?) {
@@ -42,12 +43,19 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isLocal = script.isLocal
         isDownloaded = script.isDownloaded
         updatesAutomatically = script.updatesAutomatically
+        isUserStyle = script.isUserStyle
         self.builtInSection = builtInSection
     }
 }
 
+private enum UserScriptSectionKind: Hashable {
+    case general
+    case styles
+    case foreign
+}
+
 private struct UserScriptDisplaySection: Identifiable {
-    let id: BuiltInUserScriptSection
+    let id: UserScriptSectionKind
     let title: LocalizedStringKey
     let scripts: [UserScriptListItem]
 }
@@ -75,7 +83,11 @@ struct UserScriptManagerView: View {
     @State private var dropErrorMessage: String?
 
     private var totalScriptsCount: Int {
-        scripts.count
+        scripts.filter { !$0.isUserStyle }.count
+    }
+
+    private var totalStylesCount: Int {
+        scripts.filter(\.isUserStyle).count
     }
 
     private var enabledScriptsCount: Int {
@@ -121,12 +133,16 @@ struct UserScriptManagerView: View {
     }
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
-        let standardScripts = displayedScripts.filter { $0.builtInSection != .foreign }
-        let foreignScripts = displayedScripts.filter { $0.builtInSection == .foreign }
+        let styles = displayedScripts.filter(\.isUserStyle)
+        let standardScripts = displayedScripts.filter { !$0.isUserStyle && $0.builtInSection != .foreign }
+        let foreignScripts = displayedScripts.filter { !$0.isUserStyle && $0.builtInSection == .foreign }
         var sections: [UserScriptDisplaySection] = []
 
         if !standardScripts.isEmpty {
             sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
+        }
+        if !styles.isEmpty {
+            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: styles))
         }
         if !foreignScripts.isEmpty {
             sections.append(UserScriptDisplaySection(id: .foreign, title: "International", scripts: foreignScripts))
@@ -311,7 +327,7 @@ struct UserScriptManagerView: View {
                     Button {
                         showingAddScriptSheet = true
                     } label: {
-                        Label("Add Userscript", systemImage: "plus")
+                        Label("Add Userscript or Userstyle", systemImage: "plus")
                     }
 
                     Button {
@@ -402,6 +418,19 @@ struct UserScriptManagerView: View {
             #if os(iOS)
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
+
+            if totalStylesCount > 0 {
+                StatCard(
+                    title: "Styles",
+                    value: "\(totalStylesCount)",
+                    icon: "paintbrush",
+                    pillColor: .clear,
+                    valueColor: .primary
+                )
+                #if os(iOS)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                #endif
+            }
 
             StatCard(
                 title: "Enabled",
@@ -651,13 +680,13 @@ struct UserScriptManagerView: View {
             Text("No Userscripts")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Add userscripts to customize your browsing experience")
+            Text("Add userscripts and userstyles to customize your browsing experience")
                 .font(.body)
                 .foregroundStyle(.secondary)
             Button {
                 showingAddScriptSheet = true
             } label: {
-                Label("Add Userscript", systemImage: "plus")
+                Label("Add Userscript or Userstyle", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
         }
@@ -697,6 +726,12 @@ private struct ScriptStatusBadgesView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
+                if script.isUserStyle {
+                    Badge(
+                        text: LocalizedStrings.text("Userstyle", comment: "Userstyle type badge"),
+                        color: .purple
+                    )
+                }
                 if !script.version.isEmpty {
                     Badge(
                         text: LocalizedStrings.format(
@@ -774,6 +809,21 @@ private struct ScriptMatchPatternRowView: View {
 private struct ScriptMatchPatternsView: View {
     let script: UserScript
     @Binding var isPatternsExpanded: Bool
+
+    /// Userstyles persist serialized @-moz-document conditions in `matches`;
+    /// render them in a human-readable form instead of the storage format.
+    private func displayPattern(_ pattern: String) -> String {
+        guard script.isUserStyle else { return pattern }
+        if pattern == "global" {
+            return LocalizedStrings.text("All websites", comment: "Userstyle condition that applies everywhere")
+        }
+        for prefix in ["domain:", "url-prefix:", "url:", "regexp:"] where pattern.hasPrefix(prefix) {
+            let value = String(pattern.dropFirst(prefix.count))
+            return prefix == "url-prefix:" ? value + "…" : value
+        }
+        return pattern
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
@@ -783,11 +833,17 @@ private struct ScriptMatchPatternsView: View {
             } label: {
                 HStack(spacing: 8) {
                     Text(
-                        LocalizedStrings.format(
-                            "URL Patterns (%d)",
-                            comment: "Userscript URL pattern section title",
-                            script.matches.count
-                        )
+                        script.isUserStyle
+                            ? LocalizedStrings.format(
+                                "Applies To (%d)",
+                                comment: "Userstyle condition section title",
+                                script.matches.count
+                            )
+                            : LocalizedStrings.format(
+                                "URL Patterns (%d)",
+                                comment: "Userscript URL pattern section title",
+                                script.matches.count
+                            )
                     )
                         .font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
                     Spacer()
@@ -801,7 +857,10 @@ private struct ScriptMatchPatternsView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(script.matches.indices, id: \.self) { indexInForEach in
-                            ScriptMatchPatternRowView(index: indexInForEach, pattern: script.matches[indexInForEach])
+                            ScriptMatchPatternRowView(
+                                index: indexInForEach,
+                                pattern: displayPattern(script.matches[indexInForEach])
+                            )
                         }
                     }
                     .padding(.horizontal, 4)
@@ -869,6 +928,7 @@ struct UserScriptInfoSidebar: View {
 struct ScriptContentMainView: View {
     let previewContent: String
     let contentLength: Int
+    let isUserStyle: Bool
     let formatFileSize: (Int) -> String
     let onShowSource: () -> Void
 
@@ -876,7 +936,7 @@ struct ScriptContentMainView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Script Content").font(.headline).fontWeight(.medium)
+                    (isUserStyle ? Text("Style Content") : Text("Script Content")).font(.headline).fontWeight(.medium)
                     if contentLength > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle").font(.caption2).foregroundStyle(.orange)
@@ -966,7 +1026,7 @@ struct UserScriptContentView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(alignment: .center, spacing: 12) {
-                                        Text("Script Content")
+                                        (script.isUserStyle ? Text("Style Content") : Text("Script Content"))
                                             .font(.headline)
                                             .fontWeight(.medium)
                                         Spacer()
@@ -1055,6 +1115,7 @@ struct UserScriptContentView: View {
                     ScriptContentMainView(
                         previewContent: previewContent,
                         contentLength: loadedContent.count,
+                        isUserStyle: script.isUserStyle,
                         formatFileSize: formatFileSize,
                         onShowSource: { isShowingSourceSheet = true }
                     )
@@ -1182,7 +1243,7 @@ private struct UserScriptSourceSheet: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(script.localizedDisplayName)
                         .font(.headline)
-                    Text("Script Content")
+                    (script.isUserStyle ? Text("Style Content") : Text("Script Content"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1348,7 +1409,7 @@ struct AddUserScriptView: View {
     private var iosBody: some View {
         CompatibleNavigationStack {
             addTabs
-                .navigationTitle("Add Userscript")
+                .navigationTitle("Add Userscript or Userstyle")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -1395,7 +1456,7 @@ struct AddUserScriptView: View {
                         prompt: Text(verbatim: "https://example.com/script.user.js")
                             .foregroundColor(.secondary)
                     ) {
-                        Text("Script URL")
+                        Text("Script or Style URL")
                     }
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -1428,7 +1489,7 @@ struct AddUserScriptView: View {
                 Text("Script Content")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Paste or write a userscript with a standard metadata block.")
+                Text("Paste or write a userscript or userstyle with a standard metadata block.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1483,7 +1544,7 @@ struct AddUserScriptView: View {
     #if os(macOS)
     private var macosBody: some View {
         SheetContainer {
-            SheetHeader(title: "Add Userscript", isLoading: isAdding) {
+            SheetHeader(title: "Add Userscript or Userstyle", isLoading: isAdding) {
                 dismiss()
             }
 
@@ -1545,10 +1606,10 @@ struct AddUserScriptView: View {
     private var macosURLCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Script URL")
+                Text("Script or Style URL")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Paste the direct .user.js or .js link. wBlock will download and install it for you.")
+                Text("Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1589,7 +1650,7 @@ struct AddUserScriptView: View {
                 Text("Script Content")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Paste or write a userscript with a standard metadata block.")
+                Text("Paste or write a userscript or userstyle with a standard metadata block.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1621,7 +1682,7 @@ struct AddUserScriptView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
+                Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1674,7 +1735,7 @@ struct AddUserScriptView: View {
         DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
             VStack(alignment: .leading, spacing: 8) {
                 requirementRow(icon: "link", text: "Starts with http:// or https://")
-                requirementRow(icon: "doc.text", text: "Ends with .js or .user.js")
+                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
                 requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
             }
             .padding(.top, 8)
@@ -1697,7 +1758,7 @@ struct AddUserScriptView: View {
 
     private var editorImportMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.")
+            Text("Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns.")
                 .foregroundStyle(.secondary)
             if let editorImportError {
                 Text(editorImportError)
@@ -1709,7 +1770,7 @@ struct AddUserScriptView: View {
 
     private var fileImportMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Supports .user.js or .js files. Local imports won't auto-update; re-import to replace.")
+            Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
                 .foregroundStyle(.secondary)
             if let fileImportError {
                 Text(fileImportError)
@@ -1723,7 +1784,7 @@ struct AddUserScriptView: View {
         DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
             VStack(alignment: .leading, spacing: 8) {
                 requirementRow(icon: "link", text: "Starts with http:// or https://")
-                requirementRow(icon: "doc.text", text: "Ends with .js or .user.js")
+                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
                 requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
             }
             .padding(.top, 8)
@@ -1896,6 +1957,16 @@ struct AddUserScriptView: View {
             types.append(userJsExt)
         }
 
+        // Userstyles (.user.css / .css)
+        types.append(UTType(filenameExtension: "css") ?? .plainText)
+
+        let userCssTypes = UTType.types(tag: "user.css", tagClass: .filenameExtension, conformingTo: nil)
+        if !userCssTypes.isEmpty {
+            types.append(contentsOf: userCssTypes)
+        } else if let userCssExt = UTType(filenameExtension: "user.css", conformingTo: .data) {
+            types.append(userCssExt)
+        }
+
         return types
     }
 
@@ -1957,7 +2028,7 @@ struct AddUserScriptView: View {
         }
 
         guard let url = UserScriptURLSupport.validatedRemoteURL(from: trimmed) else {
-            validationState = .invalid("Provide a valid http:// or https:// link ending in .js or .user.js")
+            validationState = .invalid("Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css")
             return
         }
 

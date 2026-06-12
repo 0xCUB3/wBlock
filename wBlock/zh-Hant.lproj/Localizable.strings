@@ -11,7 +11,7 @@
 "Userscript" = "使用者腳本";
 "Welcome to wBlock!" = "歡迎使用 wBlock！";
 "Trust: \\(trust.capitalized)" = "信任度：\\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "新增使用者腳本以自訂你的瀏覽體驗";
+"Add userscripts and userstyles to customize your browsing experience" = "新增使用者腳本和使用者樣式以自訂你的瀏覽體驗";
 "Country or region" = "國家或地區";
 "Never checked" = "從未檢查過";
 "Apply & Finish" = "套用並完成";
@@ -19,6 +19,7 @@
 "Restart" = "重新啟動";
 "%@%" = "%@%";
 "Script Content" = "腳本內容";
+"Style Content" = "樣式內容";
 "Showing preview (%@) of %@))" = "顯示預覽 (%@)，共 %@))";
 "Applied Rules" = "已套用規則";
 "Export" = "匯出";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "檔案";
 "Scripts" = "腳本";
+"Styles" = "樣式";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 使用者腳本需要 \\(filterName)";
 "Foreign" = "國外";
 "International" = "國際";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "從剪貼簿貼上";
 "No Userscripts" = "沒有使用者腳本";
 "Userscripts" = "使用者腳本";
+"Userstyles" = "使用者樣式";
 "URL Patterns (\\(script.matches.count))" = "URL 模式 (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "選取你想啟用的使用者腳本。這些會新增額外功能或修正。你之後也可在設定中再新增。";
 "Updating Scripts" = "正在更新腳本";
@@ -209,7 +212,7 @@
 "Progress" = "進度";
 "Logs" = "日誌";
 "Preparing %d extension" = "正在準備 %d 個延伸功能";
-"Add Userscript" = "新增使用者腳本";
+"Add Userscript or Userstyle" = "新增使用者腳本或使用者樣式";
 "URL Patterns (%@)" = "URL 模式 (%@)";
 "Copy URL" = "複製 URL";
 "Trust: %@" = "信任度：%@";
@@ -228,7 +231,7 @@
 "Waiting" = "等待中";
 "Back" = "返回";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(刷新進度 * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "支援 .user.js 或 .js 檔案。本機匯入不會自動更新；請重新匯入以取代。";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "支援 .user.js、.js 和 .user.css 檔案。本機匯入不會自動更新；請重新匯入以取代。";
 "Category" = "分類";
 "Open Safari Settings" = "開啟 Safari 設定";
 "Search" = "搜尋";
@@ -247,9 +250,10 @@
 "Description" = "描述";
 "2." = "2.";
 "AutoUpdate" = "自動更新";
-"Script URL" = "腳本 URL";
+"Script or Style URL" = "腳本或樣式 URL";
 "Review your choices and apply settings." = "檢查你的選擇並套用設定。";
 "Local Import" = "本機匯入";
+"Userstyle" = "使用者樣式";
 "Send me reminders about unapplied changes" = "提醒我未套用的變更";
 "Version \\(script.version)" = "版本 \\(script.version)";
 "Syncing iCloud configuration…" = "正在同步 iCloud 設定…";
@@ -296,7 +300,7 @@
 "Enable extra fixes and finish setup." = "啟用額外修正並完成設定。";
 "No userscripts selected" = "未選取使用者腳本";
 "%d userscripts selected" = "已選取 %d 個使用者腳本";
-"Choose filters for websites in other languages. You can fine-tune them later." = "選擇其他語言網站的過濾器。稍後可再微調。";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "這些過濾器會在預設清單之外，為你的語言提供額外的攔截能力；預設過濾清單已涵蓋英文與國際網站。稍後可再微調。";
 "Best default" = "最佳預設";
 "Community-maintained options for additional regional coverage." = "由社群維護的額外區域涵蓋選項。";
 "Choose optional userscripts. These are disabled by default." = "選擇可選的使用者腳本。它們預設為停用。";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "目前只有社群維護的清單可用。如果你可以接受，請啟用它們。";
 "Open Login Items" = "開啟登入項目";
 "Overdue catch-up" = "逾期補跑";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "貼上直接的 .user.js 或 .js 連結。wBlock 會為你下載並安裝。";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js 或 .user.css 連結。wBlock 會為你下載並安裝。";
 "Recorded" = "已記錄";
 "Received %@, %@ %@" = "已收到 %@，%@ %@";
 "Received %@, waiting for completion" = "已收到 %@，等待完成";
@@ -438,6 +442,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +486,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks cookie consent notices on web pages." = "封鎖網頁上的 cookie 同意通知。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "阻擋其他過濾器未覆蓋的各種刺激性元素。";
 "Blocks online tracking and web analytics systems." = "阻止線上追蹤和網路分析系統。";
+"Removes tracking parameters from URLs." = "從 URL 中移除追蹤參數。";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "阻止與付費專區相關的元素。啟用相應的使用者腳本以獲得最佳結果。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "阻止促銷彈出視窗、時事通訊註冊和通知請求。";
 "Blocks social media content on webpages." = "封鎖網頁上的社群媒體內容。";
@@ -617,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "這份名單涵蓋挪威、丹麥、冰島、丹麥領土和薩米原住民的網站。";
 "Title is required." = "標題為必填項。";
 "URL Patterns (%d)" = "URL 模式 (%d)";
+"Applies To (%d)" = "適用於 (%d)";
+"All websites" = "所有網站";
 "Unapplied Filter Changes" = "未套用的過濾器更改";
 "Updated %d/%d extensions in %@" = "更新了 %@ 中的 %d/%d 擴展";
 "Updating disabled sites..." = "正在更新已停用的網站...";
@@ -663,7 +671,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "選擇你瀏覽網站時使用的一種或多種語言。wBlock 只會用它來推薦地區性廣告過濾器。";
+"This doesn't change the app's display language, which always follows your device settings." = "這不會變更應用程式的顯示語言；顯示語言一律跟隨你的裝置設定。";
+"No regional filters needed. The default filter lists already cover English and international sites." = "不需要地區性過濾器。預設過濾清單已涵蓋英文與國際網站。";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "沒有可用的地區性過濾器。不過，預設過濾清單已涵蓋英文與國際網站。";
+"Other" = "其他";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
@@ -671,9 +683,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "貼上或撰寫含標準中繼資料區塊的使用者腳本或使用者樣式。";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 中繼資料區塊（或用於使用者樣式的 /* ==UserStyle== */），以便 wBlock 讀取名稱和 URL 模式。";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "提供以 .js、.user.js 或 .user.css 結尾的有效 http:// 或 https:// 連結";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
@@ -686,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "編輯清單";
 "Filter list not found." = "未找到過濾器清單。";
 "Filter list updated. Apply changes to enable it." = "過濾器清單已更新。套用更改以啟用它。";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "由社群維護的過濾器清單，用於封鎖阿爾巴尼亞語和科索沃網站上的廣告。";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "由 eyeo 提供的 EasyList 補充清單，適用於泰語、希臘語、斯洛維尼亞語、克羅埃西亞語、塞爾維亞語、波斯尼亞語和菲律賓語網站。";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "由社群維護的過濾器清單，用於封鎖迪維希語（馬爾地夫語）網站上的廣告。";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "俄語過濾器清單，也涵蓋烏克蘭語、哈薩克語和烏茲別克語網站。";

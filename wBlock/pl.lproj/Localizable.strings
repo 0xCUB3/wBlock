@@ -11,7 +11,7 @@
 "Userscript" = "Skrypt użytkownika";
 "Welcome to wBlock!" = "Witaj w wBlock!";
 "Trust: \\(trust.capitalized)" = "Zaufanie: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "Dodaj skrypty użytkownika, aby dostosować przeglądanie";
+"Add userscripts and userstyles to customize your browsing experience" = "Dodaj skrypty i style użytkownika, aby dostosować przeglądanie";
 "Country or region" = "Kraj lub region";
 "Never checked" = "Nigdy nie sprawdzano";
 "Apply & Finish" = "Zastosuj i zakończ";
@@ -19,6 +19,7 @@
 "Restart" = "Uruchom ponownie";
 "%@%" = "%@%";
 "Script Content" = "Zawartość skryptu";
+"Style Content" = "Zawartość stylu";
 "Showing preview (%@) of %@))" = "Podgląd (%@) z %@))";
 "Applied Rules" = "Zastosowane reguły";
 "Export" = "Eksportuj";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "Plik";
 "Scripts" = "Skrypty";
+"Styles" = "Style";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Skrypt użytkownika \\(bypassScript.name) wymaga \\(filterName)";
 "Foreign" = "Zagraniczne";
 "International" = "Międzynarodowe";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "Wklej ze schowka";
 "No Userscripts" = "Brak skryptów użytkownika";
 "Userscripts" = "Skrypty użytkownika";
+"Userstyles" = "Style użytkownika";
 "URL Patterns (\\(script.matches.count))" = "Wzorce URL (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Wybierz skrypty użytkownika, które chcesz włączyć. Dodają dodatkowe funkcje lub poprawki. Zawsze możesz dodać więcej później w ustawieniach.";
 "Updating Scripts" = "Aktualizowanie skryptów";
@@ -209,7 +212,7 @@
 "Progress" = "Postęp";
 "Logs" = "Logi";
 "Preparing %d extension" = "Przygotowywanie %d rozszerzenia";
-"Add Userscript" = "Dodaj skrypt użytkownika";
+"Add Userscript or Userstyle" = "Dodaj skrypt użytkownika lub styl użytkownika";
 "URL Patterns (%@)" = "Wzorce URL (%@)";
 "Copy URL" = "Kopiuj URL";
 "Trust: %@" = "Zaufanie: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "Oczekiwanie";
 "Back" = "Wstecz";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "Obsługuje pliki .user.js lub .js. Importy lokalne nie aktualizują się automatycznie; zaimportuj ponownie, aby zastąpić.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Obsługuje pliki .user.js, .js i .user.css. Importy lokalne nie aktualizują się automatycznie; zaimportuj ponownie, aby zastąpić.";
 "Category" = "Kategoria";
 "Open Safari Settings" = "Otwórz ustawienia Safari";
 "Search" = "Szukaj";
@@ -247,9 +250,10 @@
 "Description" = "Opis";
 "2." = "2.";
 "AutoUpdate" = "Automatyczna aktualizacja";
-"Script URL" = "URL skryptu";
+"Script or Style URL" = "URL skryptu lub stylu użytkownika";
 "Review your choices and apply settings." = "Przejrzyj wybory i zastosuj ustawienia.";
 "Local Import" = "Import lokalny";
+"Userstyle" = "Styl użytkownika";
 "Send me reminders about unapplied changes" = "Wysyłaj mi przypomnienia o niezastosowanych zmianach";
 "Version \\(script.version)" = "Wersja \\(script.version)";
 "Syncing iCloud configuration…" = "Synchronizowanie konfiguracji iCloud…";
@@ -296,7 +300,7 @@
 "Enable extra fixes and finish setup." = "Włącz dodatkowe poprawki i zakończ konfigurację.";
 "No userscripts selected" = "Nie wybrano userscriptów";
 "%d userscripts selected" = "%d userscriptów wybrano";
-"Choose filters for websites in other languages. You can fine-tune them later." = "Wybierz filtry dla stron w innych językach. Możesz je dopracować później.";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Te filtry dodają dodatkową siłę blokowania dla Twoich języków oprócz domyślnych list, które już obejmują strony anglojęzyczne i międzynarodowe. Możesz je dopracować później.";
 "Best default" = "Najlepszy domyślny wybór";
 "Community-maintained options for additional regional coverage." = "Opcje utrzymywane przez społeczność dla dodatkowego pokrycia regionalnego.";
 "Choose optional userscripts. These are disabled by default." = "Wybierz opcjonalne userskrypty. Domyślnie są wyłączone.";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "Dostępne są tylko listy utrzymywane przez społeczność. Włącz je, jeśli Ci to odpowiada.";
 "Open Login Items" = "Otwórz elementy logowania";
 "Overdue catch-up" = "Spóźnione wyrównanie";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "Wklej bezpośredni link .user.js lub .js. wBlock pobierze go i zainstaluje za Ciebie.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Wklej bezpośredni link .user.js, .js lub .user.css. wBlock pobierze go i zainstaluje za Ciebie.";
 "Recorded" = "Zapisano";
 "Received %@, %@ %@" = "Otrzymano %@, %@ %@";
 "Received %@, waiting for completion" = "Otrzymano %@, oczekiwanie na zakończenie";
@@ -438,6 +442,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +486,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Blocks cookie consent notices on web pages." = "Blokuje powiadomienia o zgodzie na pliki cookie na stronach internetowych.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blokuje różne irytujące elementy, których nie pokrywają inne filtry.";
 "Blocks online tracking and web analytics systems." = "Blokuje systemy śledzenia online i analityki internetowej.";
+"Removes tracking parameters from URLs." = "Usuwa parametry śledzące z adresów URL.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Blokuje elementy związane z paywallem. Aby uzyskać najlepsze wyniki, włącz odpowiedni skrypt użytkownika.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blokuje promocyjne wyskakujące okienka, zapisy do biuletynu i prośby o powiadomienia.";
 "Blocks social media content on webpages." = "Blokuje treści z mediów społecznościowych na stronach internetowych.";
@@ -617,6 +623,8 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Ta lista obejmuje strony internetowe dotyczące Norwegii, Danii, Islandii, terytoriów duńskich i rdzennej ludności Lapończyków.";
 "Title is required." = "Tytuł jest wymagany.";
 "URL Patterns (%d)" = "Wzorce adresów URL (%d)";
+"Applies To (%d)" = "Dotyczy (%d)";
+"All websites" = "Wszystkie witryny";
 "Unapplied Filter Changes" = "Niezastosowane zmiany filtrów";
 "Updated %d/%d extensions in %@" = "Zaktualizowano rozszerzenia %d/%d w %@";
 "Updating disabled sites..." = "Aktualizowanie wyłączonych witryn...";
@@ -663,7 +671,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Wybierz języki (jeden lub więcej), w których przeglądasz strony. wBlock używa tego tylko do rekomendowania regionalnych filtrów reklam.";
+"This doesn't change the app's display language, which always follows your device settings." = "Nie zmienia to języka wyświetlania aplikacji, który zawsze zależy od ustawień urządzenia.";
+"No regional filters needed. The default filter lists already cover English and international sites." = "Filtry regionalne nie są potrzebne. Domyślne listy filtrów obejmują już strony anglojęzyczne i międzynarodowe.";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "Brak dostępnych filtrów regionalnych. Mimo to domyślne listy filtrów obejmują już strony anglojęzyczne i międzynarodowe.";
+"Other" = "Inny";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
@@ -671,9 +683,9 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "Wklej lub napisz skrypt albo styl użytkownika ze standardowym blokiem metadanych.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Dołącz blok metadanych // ==UserScript== (lub /* ==UserStyle== */ dla stylów użytkownika), aby wBlock mógł odczytać nazwę i wzorce URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Podaj prawidłowy link http:// lub https:// kończący się na .js, .user.js lub .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
@@ -686,3 +698,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Edit Filter List" = "Edytuj liste";
 "Filter list not found." = "Nie znaleziono listy filtrów.";
 "Filter list updated. Apply changes to enable it." = "Lista filtrów zaktualizowana. Zastosuj zmiany, aby ją włączyć.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Społecznościowa lista filtrów blokująca reklamy na stronach albańskich i kosowskich.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Dodatek EasyList od eyeo dla stron w języku tajskim, greckim, słoweńskim, chorwackim, serbskim, bośniackim i filipińskim.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Społecznościowa lista filtrów blokująca reklamy na stronach w języku dhivehi (malediwskim).";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Rosyjskojęzyczna lista filtrów obejmująca także strony w języku ukraińskim, kazachskim i uzbeckim.";

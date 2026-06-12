@@ -11,7 +11,7 @@
 "Userscript" = "سكريبت مستخدم";
 "Welcome to wBlock!" = "مرحبًا بك في wBlock!";
 "Trust: \\(trust.capitalized)" = "الثقة: \\(trust.capitalized)";
-"Add userscripts to customize your browsing experience" = "أضف سكريبتات مستخدم لتخصيص تجربة التصفح";
+"Add userscripts and userstyles to customize your browsing experience" = "أضف سكريبتات وأنماط مستخدم لتخصيص تجربة التصفح";
 "Country or region" = "البلد أو المنطقة";
 "Never checked" = "لم يتم التحقق مطلقًا";
 "Apply & Finish" = "تطبيق وإنهاء";
@@ -19,6 +19,7 @@
 "Restart" = "إعادة البدء";
 "%@%" = "%@%";
 "Script Content" = "محتوى السكريبت";
+"Style Content" = "محتوى النمط";
 "Showing preview (%@) of %@))" = "عرض معاينة (%@) من %@))";
 "Applied Rules" = "القواعد المطبَّقة";
 "Export" = "تصدير";
@@ -80,6 +81,7 @@
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "File" = "ملف";
 "Scripts" = "السكريبتات";
+"Styles" = "الأنماط";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "سكريبت المستخدم \\(bypassScript.name) يتطلب \\(filterName)";
 "Foreign" = "أجنبي";
 "International" = "دولية";
@@ -156,6 +158,7 @@
 "Paste from Clipboard" = "لصق من الحافظة";
 "No Userscripts" = "لا توجد سكريبتات مستخدم";
 "Userscripts" = "سكريبتات المستخدم";
+"Userstyles" = "أنماط المستخدم";
 "URL Patterns (\\(script.matches.count))" = "أنماط الرابط (\\(script.matches.count))";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "حدّد أي سكريبتات مستخدم تريد تفعيلها. تضيف هذه ميزات إضافية أو إصلاحات. يمكنك دائمًا إضافة المزيد لاحقًا في الإعدادات.";
 "Updating Scripts" = "جارٍ تحديث السكريبتات";
@@ -209,7 +212,7 @@
 "Progress" = "التقدم";
 "Logs" = "السجلات";
 "Preparing %d extension" = "جارٍ تجهيز %d امتداد";
-"Add Userscript" = "إضافة سكريبت مستخدم";
+"Add Userscript or Userstyle" = "إضافة سكريبت مستخدم أو نمط مستخدم";
 "URL Patterns (%@)" = "أنماط الرابط (%@)";
 "Copy URL" = "نسخ الرابط";
 "Trust: %@" = "الثقة: %@";
@@ -228,7 +231,7 @@
 "Waiting" = "انتظار";
 "Back" = "رجوع";
 "\\(Int(refreshProgress * 100))%" = "\\(كثافة العمليات(refreshProgress * 100))%";
-"Supports .user.js or .js files. Local imports won't auto-update; re-import to replace." = "يدعم ملفات .user.js أو .js. لن تتحدث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
+"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "يدعم ملفات .user.js و .js و .user.css. لن تتحدث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
 "Category" = "الفئة";
 "Open Safari Settings" = "فتح إعدادات Safari";
 "Search" = "بحث";
@@ -247,9 +250,10 @@
 "Description" = "الوصف";
 "2." = "2.";
 "AutoUpdate" = "تحديث تلقائي";
-"Script URL" = "رابط السكريبت";
+"Script or Style URL" = "رابط السكريبت أو نمط مستخدم";
 "Review your choices and apply settings." = "راجع اختياراتك وطبّق الإعدادات.";
 "Local Import" = "استيراد محلي";
+"Userstyle" = "نمط مستخدم";
 "Send me reminders about unapplied changes" = "أرسل لي تذكيرات بشأن التغييرات غير المطبقة";
 "Version \\(script.version)" = "الإصدار \\(script.version)";
 "Syncing iCloud configuration…" = "جارٍ مزامنة إعداد iCloud…";
@@ -296,7 +300,7 @@
 "Enable extra fixes and finish setup." = "فعّل إصلاحات إضافية وأنهِ الإعداد.";
 "No userscripts selected" = "لم يتم تحديد أي سكربتات مستخدم";
 "%d userscripts selected" = "تم تحديد %d سكربتات مستخدم";
-"Choose filters for websites in other languages. You can fine-tune them later." = "اختر فلاتر للمواقع بلغات أخرى. يمكنك ضبطها لاحقًا.";
+"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "تضيف هذه الفلاتر قوة حجب إضافية للغاتك فوق القوائم الافتراضية، التي تغطي بالفعل المواقع الإنجليزية والدولية. يمكنك ضبطها لاحقًا.";
 "Best default" = "الخيار الأفضل افتراضيًا";
 "Community-maintained options for additional regional coverage." = "خيارات يديرها المجتمع لتغطية إقليمية إضافية.";
 "Choose optional userscripts. These are disabled by default." = "اختر سكربتات مستخدم اختيارية. تكون معطلة افتراضيًا.";
@@ -350,7 +354,7 @@
 "Only community-maintained lists available. Enable them if you're comfortable." = "لا تتوفر إلا القوائم التي يديرها المجتمع. فعّلها إذا كان ذلك مناسبًا لك.";
 "Open Login Items" = "فتح عناصر تسجيل الدخول";
 "Overdue catch-up" = "استدراك متأخر";
-"Paste the direct .user.js or .js link. wBlock will download and install it for you." = "ألصق الرابط المباشر لملف .user.js أو .js. سيقوم wBlock بتنزيله وتثبيته لك.";
+"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "ألصق الرابط المباشر لملف .user.js أو .js أو .user.css. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Recorded" = "تم التسجيل";
 "Received %@, %@ %@" = "تم الاستلام %@، %@ %@";
 "Received %@, waiting for completion" = "تم الاستلام %@، بانتظار الاكتمال";
@@ -438,6 +442,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
 "AdGuard Widgets" = "AdGuard Widgets";
@@ -481,6 +486,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks cookie consent notices on web pages." = "يحظر إشعارات الموافقة على ملفات تعريف الارتباط على صفحات الويب.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "يحجب العناصر المهيجة المتنوعة التي لا تغطيها المرشحات الأخرى.";
 "Blocks online tracking and web analytics systems." = "يحظر أنظمة التتبع عبر الإنترنت وتحليلات الويب.";
+"Removes tracking parameters from URLs." = "يزيل معلمات التتبع من عناوين URL.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "كتل العناصر ذات الصلة بنظام حظر الاشتراك غير المدفوع. قم بتمكين نص المستخدم المقابل للحصول على أفضل النتائج.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "يحظر النوافذ المنبثقة الترويجية والاشتراكات في الرسائل الإخبارية وطلبات الإشعارات.";
 "Blocks social media content on webpages." = "يحظر محتوى الوسائط الاجتماعية على صفحات الويب.";
@@ -617,6 +623,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "تغطي هذه القائمة مواقع الويب الخاصة بالنرويج والدنمارك وأيسلندا والأراضي الدنماركية والسكان الأصليين الصاميين.";
 "Title is required." = "العنوان مطلوب.";
 "URL Patterns (%d)" = "أنماط عناوين URL (%d)";
+"Applies To (%d)" = "ينطبق على (%d)";
+"All websites" = "كل المواقع الإلكترونية";
 "Unapplied Filter Changes" = "تغييرات التصفية غير المطبقة";
 "Updated %d/%d extensions in %@" = "تم تحديث ملحقات %d/%d في %@";
 "Updating disabled sites..." = "جارٍ تحديث المواقع المعطلة...";
@@ -663,7 +671,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
-"Choose the languages you browse in. wBlock will recommend matching filters next." = "Choose the languages you browse in. wBlock will recommend matching filters next.";
+"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "اختر اللغات (واحدة أو أكثر) التي تتصفح بها مواقع الويب. يستخدم wBlock هذا فقط لاقتراح فلاتر إعلانات إقليمية.";
+"This doesn't change the app's display language, which always follows your device settings." = "هذا لا يغيّر لغة عرض التطبيق، فهي تتبع دائمًا إعدادات جهازك.";
+"No regional filters needed. The default filter lists already cover English and international sites." = "لا حاجة إلى فلاتر إقليمية. تغطي قوائم الفلاتر الافتراضية المواقع الإنجليزية والدولية بالفعل.";
+"No regional filters available. However, the default filter lists already cover English and international sites." = "لا توجد فلاتر إقليمية متاحة. ومع ذلك، تغطي قوائم الفلاتر الافتراضية المواقع الإنجليزية والدولية بالفعل.";
+"Other" = "أخرى";
 "Next: review matching filters." = "Next: review matching filters.";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
@@ -671,9 +683,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Add" = "Add";
 "Adding…" = "Adding…";
 "Editor" = "Editor";
-"Paste or write a userscript with a standard metadata block." = "Paste or write a userscript with a standard metadata block.";
-"Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns." = "Include the // ==UserScript== metadata block so wBlock can read the script name and URL patterns.";
-"Provide a valid http:// or https:// link ending in .js or .user.js" = "Provide a valid http:// or https:// link ending in .js or .user.js";
+"Paste or write a userscript or userstyle with a standard metadata block." = "الصق أو اكتب سكريبت مستخدم أو نمط مستخدم مع كتلة بيانات وصفية قياسية.";
+"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "ضمّن كتلة البيانات الوصفية // ==UserScript== (أو /* ==UserStyle== */ لأنماط المستخدم) حتى يتمكن wBlock من قراءة الاسم وأنماط عناوين URL.";
+"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "قدّم رابط http:// أو https:// صالحًا ينتهي بـ .js أو .user.js أو .user.css";
 
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
@@ -686,3 +698,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Filter List" = "تحرير القائمة";
 "Filter list not found." = "لم يتم العثور على قائمة الفلترة.";
 "Filter list updated. Apply changes to enable it." = "تم تحديث قائمة الفلترة. طبّق التغييرات لتمكينها.";
+"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
+"Global Filters" = "Global Filters";
+"Raajje AdList" = "Raajje AdList";
+"RU AdList" = "RU AdList";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "قائمة فلاتر يديرها المجتمع تحظر الإعلانات على المواقع الألبانية والكوسوفية.";
+"EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "ملحق EasyList من eyeo للمواقع باللغة التايلاندية واليونانية والسلوفينية والكرواتية والصربية والبوسنية والفلبينية.";
+"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "قائمة فلاتر يديرها المجتمع تحظر الإعلانات على المواقع باللغة الديفيهية (المالديفية).";
+"Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "قائمة فلاتر باللغة الروسية تغطي أيضًا المواقع الأوكرانية والكازاخية والأوزبكية.";

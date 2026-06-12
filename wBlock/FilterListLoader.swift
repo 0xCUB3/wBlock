@@ -13,6 +13,7 @@ class FilterListLoader {
         static let recommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "AdGuard URL Tracking Protection Filter",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -22,6 +23,7 @@ class FilterListLoader {
         static let recommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
+            "AdGuard URL Tracking Protection Filter",
             "EasyPrivacy",
             "Online Security Filter",
             "Peter Lowe's Blocklist",
@@ -123,6 +125,14 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy,
                 description:
                     "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt"
+                )!, category: FilterListCategory.privacy, isSelected: true,
+                description: "Removes tracking parameters from URLs.",
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Cookie Notices",
@@ -261,6 +271,14 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Indonesian.",
                 languages: ["id"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Adblock List for Albania and Kosovo",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt"
+                )!, category: .foreign,
+                description: "Community filter list that blocks ads on Albanian and Kosovar websites.",
+                languages: ["sq"], trustLevel: "low"),
+            FilterList(
                 id: UUID(), name: "AdGuard Chinese filter",
                 url: URL(
                     string:
@@ -359,7 +377,7 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description:
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
-                languages: ["no", "da", "is", "fo"], trustLevel: "high"),
+                languages: ["no", "da", "is", "fo", "kl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Dandelion Sprout's Serbo-Croatian List",
                 url: URL(
@@ -368,7 +386,7 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description:
                     "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian.",
-                languages: ["sr", "hr"], trustLevel: "high"),
+                languages: ["sr", "hr", "bs", "cnr"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "EasyList China",
                 url: URL(
@@ -459,6 +477,14 @@ class FilterListLoader {
                     "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc.",
                 languages: ["sv"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Global Filters",
+                url: URL(
+                    string: "https://easylist-downloads.adblockplus.org/global-filters.txt")!,
+                category: .foreign,
+                description:
+                    "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino.",
+                languages: ["th", "el", "sl", "hr", "sr", "bs", "fil"], trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "Greek AdBlock Filter",
                 url: URL(string: "https://www.void.gr/kargig/void-gr-filters.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Greek.",
@@ -483,7 +509,10 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages.",
-                languages: ["hi"], trustLevel: "low"),
+                languages: [
+                    "hi", "as", "bn", "gu", "kn", "mai", "ml", "mr", "ne", "or", "pa", "si",
+                    "ta", "te"
+                ], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
                 url: URL(
@@ -586,6 +615,14 @@ class FilterListLoader {
                 description: "Polish filter list for social widgets, popups, etc.",
                 languages: ["pl"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Raajje AdList",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt"
+                )!, category: .foreign,
+                description: "Community filter list that blocks ads on Dhivehi (Maldivian) websites.",
+                languages: ["dv"], trustLevel: "low"),
+            FilterList(
                 id: UUID(), name: "road-block light",
                 url: URL(
                     string:
@@ -603,6 +640,13 @@ class FilterListLoader {
                 description:
                     "This is a complementary list for ROList with annoyances that are not necessarily banners. It is a very aggressive list and not recommended for beginners.",
                 languages: ["ro"], trustLevel: "low"),
+            FilterList(
+                id: UUID(), name: "RU AdList",
+                url: URL(string: "https://easylist-downloads.adblockplus.org/advblock.txt")!,
+                category: .foreign,
+                description:
+                    "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites.",
+                languages: ["ru", "uk", "kk", "uz"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "RU AdList: Counters",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/cntblock.txt")!,
