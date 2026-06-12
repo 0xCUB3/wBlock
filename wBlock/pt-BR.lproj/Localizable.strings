@@ -115,7 +115,6 @@
 "Enabled" = "Ativado";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) entradas";
 "Disabled" = "Desativado";
-"Whitelisted Domains" = "Exceções de sites";
 "It will be enabled automatically." = "Ele será ativado automaticamente.";
 "Debug" = "Depurar";
 "Next: Loading…" = "Próximo: Carregando…";
@@ -131,14 +130,11 @@
 "Title" = "Título";
 "No updates available" = "Nenhuma atualização disponível";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Encontramos uma configuração existente do wBlock no iCloud. Você pode pular a configuração inicial e usar essa configuração.";
-"example.com" = "example.com";
-"Add Domain" = "Adicionar domínio";
 "Regional filters: %@" = "Filtros regionais: %@";
 "Done" = "Concluído";
 "Use iCloud Setup" = "Usar configuração do iCloud";
 "Tell us where you browse so we can enable the right regional filters." = "Diga onde você navega para que possamos ativar os filtros regionais corretos.";
 "Updated %d scripts" = "Atualizados %d scripts";
-"Delete Selected" = "Excluir selecionados";
 "File Information" = "Informações do arquivo";
 "Search scripts" = "Pesquisar scripts";
 "Remove" = "Remover";
@@ -146,7 +142,6 @@
 "Applied" = "Aplicado";
 "7d" = "7d";
 "Critical Setup Required" = "Configuração crítica necessária";
-"No Whitelisted Domains" = "Nenhuma exceção de sites";
 "Paste" = "Colar";
 "Cancel" = "Cancelar";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "Esse título já está sendo usado por outra lista de filtros.";
 "N/A" = "N/A";
 "Import Failed" = "Falha na importação";
-"Manage Whitelist" = "Gerenciar lista de permissões";
-"Manage Element Zapper Rules" = "Gerenciar regras do ocultador de elementos";
 "FilterApply" = "Aplicação de filtros";
 "Every %d hours" = "A cada %d horas";
 "Update Interval" = "Intervalo de atualização";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Mostrando prévia (\\(formatFileSize(previewLength)) de \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Verificado agora mesmo";
 "wBlock will fetch and enable the script automatically." = "O wBlock buscará e ativará o script automaticamente.";
-"Add domains to disable ad blocking on specific sites" = "Adicione domínios onde o wBlock deve permanecer desativado";
 "1." = "1.";
 "Add Mode" = "Modo de adição";
 "Keep All" = "Manter todos";
@@ -271,7 +263,6 @@
 "Summary" = "Resumo";
 "Blocked: %d" = "Bloqueados: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Apenas listas mantidas pela comunidade estão disponíveis para %@. Ative-as se você se sentir confortável.";
-"Remove from Whitelist" = "Remover exceção";
 "Downloaded %d update" = "Baixada %d atualização";
 "Safari → Settings → Extensions" = "Safari → Ajustes → Extensões";
 "Settings → Apps → Safari → Extensions" = "Ajustes → Apps → Safari → Extensões";
@@ -331,7 +322,6 @@
 "Completed" = "Concluído";
 "Due soon catch-up" = "Recuperação prestes a vencer";
 "Edit" = "Editar";
-"Element Zapper Rules" = "Regras de ocultação de elementos";
 "Execution: %@" = "Execução: %@";
 "Expired %@" = "Expirado %@";
 "Export Settings" = "Exportar ajustes";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "Falha ao importar: %@";
 "Info.plist missing" = "Info.plist ausente";
 "Near Safari limit: %@" = "Perto do limite do Safari: %@";
-"No Element Zapper Rules" = "Nenhuma regra de ocultação de elementos";
 "No background run recorded" = "Nenhuma execução em segundo plano registrada";
 "No foreground catch-up recorded" = "Nenhuma recuperação em primeiro plano registrada";
 "No silent push received yet" = "Nenhum push silencioso recebido ainda";
@@ -358,7 +347,6 @@
 "Recorded" = "Registrado";
 "Received %@, %@ %@" = "Recebido %@, %@ %@";
 "Received %@, waiting for completion" = "Recebido %@, aguardando conclusão";
-"Refresh rules" = "Atualizar regras";
 "Registered" = "Registrado";
 "Registration: %@" = "Registro: %@";
 "Reminders" = "Lembretes";
@@ -392,7 +380,6 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Unavailable" = "Indisponível";
 "Undo" = "Desfazer";
 "Updating…" = "Atualizando…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Oculte elementos com a extensão wBlock no Safari e gerencie as regras aqui.";
 "due now" = "vence agora";
 "never" = "nunca";
 "%d rule" = "%d regra";
@@ -706,3 +693,18 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Suplemento do EasyList da eyeo para sites em tailandês, grego, esloveno, croata, sérvio, bósnio e filipino.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Lista de filtros mantida pela comunidade que bloqueia anúncios em sites em divehi (maldivo).";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Lista de filtros em russo que também cobre sites em ucraniano, cazaque e uzbeque.";
+
+/* Site Settings hub */
+"Site Settings" = "Ajustes do site";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Sites adicionados ficam na lista de permissões: o wBlock é completamente desativado neles.";
+"Whitelisted" = "Na lista de permissões";
+"%d script off" = "%d script desativado";
+"%d scripts off" = "%d scripts desativados";
+"No Site Settings" = "Nenhum ajuste de site";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adicione um site à lista de permissões aqui ou ajuste scripts de usuário e regras do ocultador de elementos por site no popup do wBlock no Safari.";
+"Reset Site Settings" = "Redefinir ajustes do site";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Isso remove a entrada na lista de permissões, as exceções de scripts de usuário e as regras do ocultador para %@.";
+"Run on this site" = "Executar neste site";
+"Apply rules on this site" = "Aplicar regras neste site";
+"Changes take full effect after the next apply." = "As alterações entram em vigor totalmente após a próxima aplicação.";

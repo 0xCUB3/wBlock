@@ -115,7 +115,6 @@
 "Enabled" = "Включено";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) записей";
 "Disabled" = "Отключено";
-"Whitelisted Domains" = "Исключения для сайтов";
 "It will be enabled automatically." = "Будет включено автоматически.";
 "Debug" = "Отладка";
 "Next: Loading…" = "Далее: Загрузка…";
@@ -131,14 +130,11 @@
 "Title" = "Название";
 "No updates available" = "Нет доступных обновлений";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Мы нашли существующую конфигурацию wBlock в iCloud. Можно пропустить начальную настройку и использовать ее.";
-"example.com" = "example.com";
-"Add Domain" = "Добавить домен";
 "Regional filters: %@" = "Региональные фильтры: %@";
 "Done" = "Готово";
 "Use iCloud Setup" = "Использовать настройку iCloud";
 "Tell us where you browse so we can enable the right regional filters." = "Укажите, где вы обычно просматриваете сайты, чтобы мы включили подходящие региональные фильтры.";
 "Updated %d scripts" = "Обновлено %d скриптов";
-"Delete Selected" = "Удалить выбранное";
 "File Information" = "Информация о файле";
 "Search scripts" = "Поиск скриптов";
 "Remove" = "Удалить";
@@ -146,7 +142,6 @@
 "Applied" = "Применено";
 "7d" = "7д";
 "Critical Setup Required" = "Требуется критическая настройка";
-"No Whitelisted Domains" = "Нет исключений для сайтов";
 "Paste" = "Вставить";
 "Cancel" = "Отмена";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "Это название уже используется другим списком фильтров.";
 "N/A" = "Н/Д";
 "Import Failed" = "Импорт не удался";
-"Manage Whitelist" = "Управление белым списком";
-"Manage Element Zapper Rules" = "Управление правилами скрытия элементов";
 "FilterApply" = "Применение фильтров";
 "Every %d hours" = "Каждые %d часов";
 "Update Interval" = "Интервал обновления";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Показан предпросмотр (\\(formatFileSize(previewLength)) из \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Проверено только что";
 "wBlock will fetch and enable the script automatically." = "wBlock автоматически загрузит и включит скрипт.";
-"Add domains to disable ad blocking on specific sites" = "Добавьте домены, где wBlock должен оставаться отключенным";
 "1." = "1.";
 "Add Mode" = "Режим добавления";
 "Keep All" = "Оставить все";
@@ -271,7 +263,6 @@
 "Summary" = "Сводка";
 "Blocked: %d" = "Заблокировано: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Для %@ доступны только списки, поддерживаемые сообществом. Включайте их, если вам это подходит.";
-"Remove from Whitelist" = "Удалить исключение";
 "Downloaded %d update" = "Загружено %d обновление";
 "Safari → Settings → Extensions" = "Safari → Настройки → Расширения";
 "Settings → Apps → Safari → Extensions" = "Настройки → Приложения → Safari → Расширения";
@@ -331,7 +322,6 @@
 "Completed" = "Завершено";
 "Due soon catch-up" = "Скоро потребуется догоняющий запуск";
 "Edit" = "Изменить";
-"Element Zapper Rules" = "Правила скрытия элементов";
 "Execution: %@" = "Выполнение: %@";
 "Expired %@" = "Истекло %@";
 "Export Settings" = "Экспортировать настройки";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "Ошибка импорта: %@";
 "Info.plist missing" = "Отсутствует Info.plist";
 "Near Safari limit: %@" = "Близко к лимиту Safari: %@";
-"No Element Zapper Rules" = "Нет правил скрытия элементов";
 "No background run recorded" = "Нет записей о фоновом запуске";
 "No foreground catch-up recorded" = "Нет записей о догоняющем запуске в активном режиме";
 "No silent push received yet" = "Тихий push ещё не получен";
@@ -358,7 +347,6 @@
 "Recorded" = "Записано";
 "Received %@, %@ %@" = "Получено %@, %@ %@";
 "Received %@, waiting for completion" = "Получено %@, ожидание завершения";
-"Refresh rules" = "Обновить правила";
 "Registered" = "Зарегистрировано";
 "Registration: %@" = "Регистрация: %@";
 "Reminders" = "Напоминания";
@@ -392,7 +380,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Недоступно";
 "Undo" = "Отменить";
 "Updating…" = "Обновление…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Скрывайте элементы с помощью расширения wBlock в Safari, затем управляйте правилами здесь.";
 "due now" = "пора выполнить сейчас";
 "never" = "никогда";
 "%d rule" = "%d правило";
@@ -706,3 +693,18 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Дополнение EasyList от eyeo для сайтов на тайском, греческом, словенском, хорватском, сербском, боснийском и филиппинском языках.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Список фильтров, поддерживаемый сообществом, который блокирует рекламу на сайтах на дивехи (мальдивском языке).";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Русскоязычный список фильтров, который также охватывает украинские, казахские и узбекские сайты.";
+
+/* Site Settings hub */
+"Site Settings" = "Настройки сайта";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Добавленные сайты находятся в белом списке: wBlock полностью отключается на них.";
+"Whitelisted" = "В белом списке";
+"%d script off" = "%d скрипт отключен";
+"%d scripts off" = "%d скриптов отключено";
+"No Site Settings" = "Нет настроек сайта";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Добавьте сайт в белый список здесь или настройте пользовательские скрипты и правила скрытия элементов для каждого сайта во всплывающем окне wBlock в Safari.";
+"Reset Site Settings" = "Сбросить настройки сайта";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Это удалит запись в белом списке, исключения пользовательских скриптов и правила скрытия для %@.";
+"Run on this site" = "Запускать на этом сайте";
+"Apply rules on this site" = "Применять правила на этом сайте";
+"Changes take full effect after the next apply." = "Изменения полностью вступят в силу после следующего применения.";

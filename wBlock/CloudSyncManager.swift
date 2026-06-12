@@ -629,7 +629,7 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.setWhitelistedDomains(payload.whitelistDomains)
 
         // Element zapper rules
-        await applyRemoteZapperRules(payload.zapperRules ?? [:])
+        await applyRemoteZapperRules(payload.zapperRules ?? [:], disabledDomains: payload.zapperDisabledDomains)
 
         await applyRemoteFilters(payload.filters, remoteUpdatedAt: payload.updatedAt)
 
@@ -1010,9 +1010,28 @@ final class CloudSyncManager: ObservableObject {
                 await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
             }
         }
+
+        for remote in scripts.remote {
+            guard let disabledHosts = remote.disabledHosts else { continue }
+            guard let url = URL(string: remote.url) else { continue }
+            guard let script = userScriptManager.userScripts.first(where: { $0.url == url }) else { continue }
+            await dataManager.setUserScriptDisabledHosts(disabledHosts, forScriptID: script.id.uuidString)
+        }
+
+        for local in scripts.local {
+            guard let disabledHosts = local.disabledHosts else { continue }
+            guard let script = userScriptManager.userScripts.first(where: {
+                $0.isLocal
+                    && CloudSyncLocalUserScriptReconciler.normalizedName($0.name)
+                        == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
+            }) else {
+                continue
+            }
+            await dataManager.setUserScriptDisabledHosts(disabledHosts, forScriptID: script.id.uuidString)
+        }
     }
 
-    private func applyRemoteZapperRules(_ zapperRules: [String: [String]]) async {
+    private func applyRemoteZapperRules(_ zapperRules: [String: [String]], disabledDomains: [String]?) async {
         let normalizedRemoteRules = Self.normalizedZapperRules(zapperRules)
         let currentDomains = Set(dataManager.getZapperDomains())
         let remoteDomains = Set(normalizedRemoteRules.keys)
@@ -1023,6 +1042,13 @@ final class CloudSyncManager: ObservableObject {
 
         for domain in normalizedRemoteRules.keys.sorted() {
             await dataManager.setZapperRules(forHost: domain, rules: normalizedRemoteRules[domain] ?? [])
+        }
+
+        if let disabledDomains {
+            let disabledDomainSet = Set(Self.normalizedDisabledHosts(disabledDomains))
+            for domain in normalizedRemoteRules.keys.sorted() {
+                await dataManager.setZapperRulesDisabled(disabledDomainSet.contains(domain), forHost: domain)
+            }
         }
 
         await ZapperRuleManager.shared.refreshNow()
@@ -1289,7 +1315,8 @@ final class CloudSyncManager: ObservableObject {
             filters: content.filters,
             userScripts: content.userScripts,
             whitelistDomains: content.whitelistDomains,
-            zapperRules: content.zapperRules
+            zapperRules: content.zapperRules,
+            zapperDisabledDomains: content.zapperDisabledDomains
         )
     }
 
@@ -1338,14 +1365,18 @@ final class CloudSyncManager: ObservableObject {
             deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs
         )
 
+        let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
         let remoteScripts = userScriptManager.userScripts
             .filter { !$0.isLocal && $0.url != nil }
             .compactMap { script -> SyncPayload.RemoteUserScript? in
                 guard let url = script.url else { return nil }
+                let disabledHosts = Self.normalizedDisabledHosts(
+                    userScriptDisabledHosts[script.id.uuidString] ?? [])
                 return SyncPayload.RemoteUserScript(
                     url: url.absoluteString,
                     isEnabled: script.isEnabled,
-                    updatesAutomatically: script.updatesAutomatically
+                    updatesAutomatically: script.updatesAutomatically,
+                    disabledHosts: disabledHosts
                 )
             }
             .sorted { $0.url < $1.url }
@@ -1353,11 +1384,14 @@ final class CloudSyncManager: ObservableObject {
         let localScripts = userScriptManager.userScripts
             .filter { $0.isLocal }
             .map { script in
-                SyncPayload.LocalUserScript(
+                let disabledHosts = Self.normalizedDisabledHosts(
+                    userScriptDisabledHosts[script.id.uuidString] ?? [])
+                return SyncPayload.LocalUserScript(
                     name: script.name,
                     content: script.content,
                     isEnabled: script.isEnabled,
-                    updatesAutomatically: script.updatesAutomatically
+                    updatesAutomatically: script.updatesAutomatically,
+                    disabledHosts: disabledHosts
                 )
             }
             .sorted { $0.name < $1.name }
@@ -1379,13 +1413,15 @@ final class CloudSyncManager: ObservableObject {
                 }
             )
         )
+        let zapperDisabledDomains = dataManager.getDisabledZapperDomains()
 
         return SyncPayload.Content(
             settings: settings,
             filters: filters,
             userScripts: userScripts,
             whitelistDomains: whitelistDomains,
-            zapperRules: zapperRules
+            zapperRules: zapperRules,
+            zapperDisabledDomains: zapperDisabledDomains
         )
     }
 
@@ -1442,6 +1478,12 @@ final class CloudSyncManager: ObservableObject {
         }
 
         return normalized
+    }
+
+    private static func normalizedDisabledHosts(_ hosts: [String]) -> [String] {
+        Array(Set(hosts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { !$0.isEmpty }))
+            .sorted()
     }
 
     // MARK: - CloudKit I/O
@@ -1859,6 +1901,7 @@ private struct SyncPayload: Codable {
         let url: String
         let isEnabled: Bool
         let updatesAutomatically: Bool?
+        let disabledHosts: [String]?
 
         var resolvedUpdatesAutomatically: Bool {
             updatesAutomatically ?? true
@@ -1870,6 +1913,7 @@ private struct SyncPayload: Codable {
         let content: String
         let isEnabled: Bool
         let updatesAutomatically: Bool?
+        let disabledHosts: [String]?
 
         var resolvedUpdatesAutomatically: Bool {
             updatesAutomatically ?? true
@@ -1889,6 +1933,7 @@ private struct SyncPayload: Codable {
         let userScripts: UserScripts
         let whitelistDomains: [String]
         let zapperRules: [String: [String]]?
+        let zapperDisabledDomains: [String]?
     }
 
     let schemaVersion: Int
@@ -1899,6 +1944,7 @@ private struct SyncPayload: Codable {
     let userScripts: UserScripts
     let whitelistDomains: [String]
     let zapperRules: [String: [String]]?
+    let zapperDisabledDomains: [String]?
 }
 
 private extension SyncPayload.CustomFilterList {

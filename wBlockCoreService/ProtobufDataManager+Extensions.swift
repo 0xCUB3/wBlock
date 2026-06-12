@@ -351,6 +351,7 @@ extension ProtobufDataManager {
         }
         
         updatedData.userScripts.removeAll { $0.id == id.uuidString }
+        updatedData.userScriptDisabledHosts.removeValue(forKey: id.uuidString)
         
         await MainActor.run {
             appData = updatedData

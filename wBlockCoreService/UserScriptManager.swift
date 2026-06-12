@@ -951,6 +951,7 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔧 Setting up UserScriptManager...")
         checkAndCreateUserScriptsFolder()
         await loadUserScripts()
+        await migrateUserScriptSiteExceptionsIfNeeded()
         prefetchDefaultUserScriptMetadataIfNeeded()
         logger.info("✅ UserScriptManager initialized with \(self.userScripts.count) userscript(s)")
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
@@ -2442,36 +2443,40 @@ public class UserScriptManager: ObservableObject {
             }
     }
 
-    public func setUserScript(withId scriptID: UUID, disabledOnHost host: String, disabled: Bool) -> Bool {
+    @discardableResult
+    public func setUserScript(withId scriptID: UUID, disabledOnHost host: String, disabled: Bool) async -> Bool {
         guard indexOfUserScript(withId: scriptID) != nil else { return false }
         let normalizedHost = normalizedDisabledHost(host)
         guard !normalizedHost.isEmpty else { return false }
 
-        var map = userScriptDisabledHostsByID()
-        var disabledHosts = map[scriptID.uuidString] ?? []
+        var disabledHosts = dataManager.getUserScriptDisabledHosts(forScriptID: scriptID.uuidString)
         disabledHosts.removeAll { $0 == normalizedHost }
         if disabled {
             disabledHosts.append(normalizedHost)
         }
-
-        if disabledHosts.isEmpty {
-            map.removeValue(forKey: scriptID.uuidString)
-        } else {
-            map[scriptID.uuidString] = disabledHosts.sorted()
-        }
-
-        sharedDefaults.set(map, forKey: userScriptSiteDisabledDefaultsKey)
-        sharedDefaults.synchronize()
+        await dataManager.setUserScriptDisabledHosts(disabledHosts.sorted(), forScriptID: scriptID.uuidString)
         return true
     }
 
     public func isUserScript(_ userScript: UserScript, disabledOnHost host: String) -> Bool {
-        let disabledHosts = userScriptDisabledHostsByID()[userScript.id.uuidString] ?? []
+        let disabledHosts = dataManager.getUserScriptDisabledHosts(forScriptID: userScript.id.uuidString)
         return HostMatcher.isHostDisabled(host: host, disabledSites: disabledHosts)
     }
 
-    private func userScriptDisabledHostsByID() -> [String: [String]] {
-        sharedDefaults.dictionary(forKey: userScriptSiteDisabledDefaultsKey) as? [String: [String]] ?? [:]
+    /// One-time move of the legacy UserDefaults exceptions map into protobuf,
+    /// so backup/sync/UI all read one store. Idempotent: the key is removed after merge.
+    private func migrateUserScriptSiteExceptionsIfNeeded() async {
+        guard let legacy = sharedDefaults.dictionary(forKey: userScriptSiteDisabledDefaultsKey) as? [String: [String]] else {
+            return
+        }
+        for (scriptID, hosts) in legacy {
+            let normalized = hosts.map(normalizedDisabledHost).filter { !$0.isEmpty }
+            guard !normalized.isEmpty else { continue }
+            let merged = Set(normalized).union(dataManager.getUserScriptDisabledHosts(forScriptID: scriptID))
+            await dataManager.setUserScriptDisabledHosts(merged.sorted(), forScriptID: scriptID)
+        }
+        sharedDefaults.removeObject(forKey: userScriptSiteDisabledDefaultsKey)
+        logger.info("✅ Migrated per-site userscript exceptions to protobuf (\(legacy.count) script(s))")
     }
 
     private func normalizedDisabledHost(_ host: String) -> String {

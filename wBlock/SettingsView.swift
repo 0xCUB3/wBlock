@@ -203,15 +203,9 @@ struct SettingsView: View {
         }
 
         NavigationLink {
-            WhitelistManagerView(filterManager: filterManager)
+            SiteSettingsView(filterManager: filterManager)
         } label: {
-            Label("Manage Whitelist", systemImage: "list.bullet")
-        }
-
-        NavigationLink {
-            ZapperRuleManagerView()
-        } label: {
-            Label("Manage Element Zapper Rules", systemImage: "wand.and.stars")
+            Label("Site Settings", systemImage: "globe")
         }
     }
 

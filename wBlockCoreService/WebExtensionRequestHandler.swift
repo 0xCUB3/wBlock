@@ -102,6 +102,9 @@ public enum WebExtensionRequestHandler {
             case "getZapperRules":
                 handleGetZapperRules(message: message!, context: context)
                 return
+            case "setSiteZapperDisabled":
+                handleSetSiteZapperDisabled(message: message!, context: context)
+                return
             case "openContainingApp":
                 handleOpenContainingApp(context: context)
                 return
@@ -731,7 +734,7 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             let manager = UserScriptManager.shared
             await manager.waitUntilReady()
-            let ok = manager.setUserScript(
+            let ok = await manager.setUserScript(
                 withId: scriptID,
                 disabledOnHost: host,
                 disabled: disabled
@@ -1005,7 +1008,29 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
-            let response = createResponse(with: ["ok": true, "rules": rules])
+            let disabled = ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
+            let response = createResponse(with: ["ok": true, "rules": rules, "disabled": disabled])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleSetSiteZapperDisabled(message: [String: Any?], context: NSExtensionContext) {
+        let hostname = (message["hostname"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !hostname.isEmpty else {
+            let response = createResponse(with: ["ok": false, "error": "Missing hostname"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        let disabled = message["disabled"] as? Bool ?? false
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            await ProtobufDataManager.shared.setZapperRulesDisabled(disabled, forHost: hostname)
+            let response = createResponse(with: [
+                "ok": true,
+                "disabled": ProtobufDataManager.shared.isZapperDisabled(forHost: hostname),
+            ])
             context.completeRequest(returningItems: [response])
         }
     }

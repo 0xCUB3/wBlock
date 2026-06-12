@@ -13,6 +13,7 @@ struct WBlockBackup: Codable, Sendable {
     var customFilterLists: [CustomFilterEntry]
     var whitelistedDomains: [String]
     var zapperRules: [String: [String]]
+    var disabledZapperDomains: [String]
 
     var userScripts: [UserScriptEntry]
     struct FilterSelection: Codable, Sendable {
@@ -54,7 +55,8 @@ struct WBlockBackup: Codable, Sendable {
         var lastUpdated: Date?
         var updatesAutomatically: Bool
 
-        init(userScript: UserScript) {
+        var disabledHosts: [String]?
+        init(userScript: UserScript, disabledHosts: [String] = []) {
             id = userScript.id
             name = userScript.name
             url = userScript.url?.absoluteString
@@ -78,6 +80,7 @@ struct WBlockBackup: Codable, Sendable {
             content = userScript.content
             lastUpdated = userScript.lastUpdated
             updatesAutomatically = userScript.updatesAutomatically
+            self.disabledHosts = disabledHosts.isEmpty ? nil : disabledHosts
         }
 
         var userScript: UserScript {
@@ -116,6 +119,7 @@ struct WBlockBackup: Codable, Sendable {
         customFilterLists: [CustomFilterEntry],
         whitelistedDomains: [String],
         zapperRules: [String: [String]],
+        disabledZapperDomains: [String],
         userScripts: [UserScriptEntry]
     ) {
         self.version = version
@@ -125,6 +129,7 @@ struct WBlockBackup: Codable, Sendable {
         self.customFilterLists = customFilterLists
         self.whitelistedDomains = whitelistedDomains
         self.zapperRules = zapperRules
+        self.disabledZapperDomains = disabledZapperDomains
         self.userScripts = userScripts
     }
 
@@ -136,6 +141,7 @@ struct WBlockBackup: Codable, Sendable {
         case customFilterLists
         case whitelistedDomains
         case zapperRules
+        case disabledZapperDomains
         case userScripts
     }
 
@@ -148,6 +154,7 @@ struct WBlockBackup: Codable, Sendable {
         customFilterLists = try container.decode([CustomFilterEntry].self, forKey: .customFilterLists)
         whitelistedDomains = try container.decode([String].self, forKey: .whitelistedDomains)
         zapperRules = try container.decode([String: [String]].self, forKey: .zapperRules)
+        disabledZapperDomains = try container.decodeIfPresent([String].self, forKey: .disabledZapperDomains) ?? []
         userScripts = try container.decodeIfPresent([UserScriptEntry].self, forKey: .userScripts) ?? []
     }
 }
@@ -206,20 +213,34 @@ enum BackupManager {
                 )
             }
 
-        let userScriptEntries = await UserScriptManager.shared.userScriptsForBackup()
-            .map(WBlockBackup.UserScriptEntry.init(userScript:))
+        let backedUpUserScripts = await UserScriptManager.shared.userScriptsForBackup()
+        let userScriptDisabledHosts = await MainActor.run {
+            Dictionary(
+                uniqueKeysWithValues: backedUpUserScripts.map { script in
+                    (script.id, ProtobufDataManager.shared.getUserScriptDisabledHosts(forScriptID: script.id.uuidString))
+                }
+            )
+        }
+        let userScriptEntries = backedUpUserScripts.map { script in
+            WBlockBackup.UserScriptEntry(
+                userScript: script,
+                disabledHosts: userScriptDisabledHosts[script.id] ?? []
+            )
+        }
 
         // Whitelist
         let whitelistedDomains = defaults?.stringArray(forKey: "disabledSites") ?? []
 
-        // Zapper rules (from protobuf)
-        var zapperRules: [String: [String]] = [:]
-        let zapperDomains = ProtobufDataManager.shared.getZapperDomains()
-        for domain in zapperDomains {
-            let rules = ProtobufDataManager.shared.getZapperRules(forHost: domain)
-            if !rules.isEmpty {
-                zapperRules[domain] = rules
+        let (zapperRules, disabledZapperDomains) = await MainActor.run {
+            var zapperRules: [String: [String]] = [:]
+            let zapperDomains = ProtobufDataManager.shared.getZapperDomains()
+            for domain in zapperDomains {
+                let rules = ProtobufDataManager.shared.getZapperRules(forHost: domain)
+                if !rules.isEmpty {
+                    zapperRules[domain] = rules
+                }
             }
+            return (zapperRules, ProtobufDataManager.shared.getDisabledZapperDomains())
         }
 
         return WBlockBackup(
@@ -230,6 +251,7 @@ enum BackupManager {
             customFilterLists: customEntries,
             whitelistedDomains: whitelistedDomains,
             zapperRules: zapperRules,
+            disabledZapperDomains: disabledZapperDomains,
             userScripts: userScriptEntries
         )
     }
@@ -297,9 +319,30 @@ enum BackupManager {
             await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: rules)
         }
 
+        for domain in backup.disabledZapperDomains {
+            await ProtobufDataManager.shared.setZapperRulesDisabled(true, forHost: domain)
+        }
+
         // 5. Restore userscripts, including custom script content and enabled/update state
         let userScripts = backup.userScripts.map(\.userScript)
         await UserScriptManager.shared.restoreUserScriptsFromBackup(userScripts)
+        let restoredUserScripts = await MainActor.run {
+            UserScriptManager.shared.userScripts
+        }
+        for entry in backup.userScripts {
+            guard let disabledHosts = entry.disabledHosts, !disabledHosts.isEmpty else { continue }
+            guard let restoredScript = restoredUserScripts.first(where: { script in
+                if let entryURL = entry.url.flatMap(URL.init(string:)) {
+                    return script.url == entryURL
+                }
+                return script.isLocal
+                    && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                        == entry.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            }) else {
+                continue
+            }
+            await ProtobufDataManager.shared.setUserScriptDisabledHosts(disabledHosts, forScriptID: restoredScript.id.uuidString)
+        }
 
         // 6. Mark unapplied changes so user can apply
         filterManager.markNonSelectionChangesPending()

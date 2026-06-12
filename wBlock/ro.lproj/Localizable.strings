@@ -115,7 +115,6 @@
 "Enabled" = "Activat";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) intrări";
 "Disabled" = "Dezactivat";
-"Whitelisted Domains" = "Excepții pentru site-uri";
 "It will be enabled automatically." = "Va fi activat automat.";
 "Debug" = "Depanare";
 "Next: Loading…" = "Următorul: Se încarcă…";
@@ -131,14 +130,11 @@
 "Title" = "Titlu";
 "No updates available" = "Nu sunt actualizări disponibile";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud. Poți sări peste configurarea inițială și să o folosești pe aceea.";
-"example.com" = "example.com";
-"Add Domain" = "Adaugă domeniu";
 "Regional filters: %@" = "Filtre regionale: %@";
 "Done" = "Gata";
 "Use iCloud Setup" = "Folosește configurarea iCloud";
 "Tell us where you browse so we can enable the right regional filters." = "Spune-ne unde navighezi ca să putem activa filtrele regionale potrivite.";
 "Updated %d scripts" = "S-au actualizat %d scripturi";
-"Delete Selected" = "Șterge selecția";
 "File Information" = "Informații despre fișier";
 "Search scripts" = "Caută scripturi";
 "Remove" = "Elimină";
@@ -146,7 +142,6 @@
 "Applied" = "Aplicat";
 "7d" = "7d";
 "Critical Setup Required" = "Configurare critică necesară";
-"No Whitelisted Domains" = "Nicio excepție pentru site-uri";
 "Paste" = "Lipește";
 "Cancel" = "Anulează";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "Acest titlu este deja folosit de altă listă de filtre.";
 "N/A" = "N/A";
 "Import Failed" = "Importul a eșuat";
-"Manage Whitelist" = "Gestionează lista albă";
-"Manage Element Zapper Rules" = "Gestionează regulile pentru eliminatorul de elemente";
 "FilterApply" = "Aplicare filtre";
 "Every %d hours" = "La fiecare %d ore";
 "Update Interval" = "Interval de actualizare";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Se afișează previzualizarea (\\(formatFileSize(previewLength)) din \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Verificat chiar acum";
 "wBlock will fetch and enable the script automatically." = "wBlock va prelua și activa scriptul automat.";
-"Add domains to disable ad blocking on specific sites" = "Adaugă domenii unde wBlock trebuie să rămână dezactivat";
 "1." = "1.";
 "Add Mode" = "Mod adăugare";
 "Keep All" = "Păstrează tot";
@@ -271,7 +263,6 @@
 "Summary" = "Rezumat";
 "Blocked: %d" = "Blocate: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Pentru %@ sunt disponibile doar liste menținute de comunitate. Activează-le dacă te simți confortabil.";
-"Remove from Whitelist" = "Elimină excepția";
 "Downloaded %d update" = "S-a descărcat %d actualizare";
 "Safari → Settings → Extensions" = "Safari → Configurări → Extensii";
 "Settings → Apps → Safari → Extensions" = "Configurări → Aplicații → Safari → Extensii";
@@ -331,7 +322,6 @@
 "Completed" = "Finalizat";
 "Due soon catch-up" = "Recuperare scadentă în curând";
 "Edit" = "Editează";
-"Element Zapper Rules" = "Reguli de ascundere a elementelor";
 "Execution: %@" = "Executare: %@";
 "Expired %@" = "Expirat %@";
 "Export Settings" = "Exportă setările";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "Importul a eșuat: %@";
 "Info.plist missing" = "Lipsește Info.plist";
 "Near Safari limit: %@" = "Aproape de limita Safari: %@";
-"No Element Zapper Rules" = "Nicio regula de ascundere a elementelor";
 "No background run recorded" = "Nicio rulare în fundal înregistrată";
 "No foreground catch-up recorded" = "Nicio recuperare în prim-plan înregistrată";
 "No silent push received yet" = "Nu a fost primit încă niciun push silențios";
@@ -358,7 +347,6 @@
 "Recorded" = "Înregistrat";
 "Received %@, %@ %@" = "Primit %@, %@ %@";
 "Received %@, waiting for completion" = "Primit %@, în așteptarea finalizării";
-"Refresh rules" = "Reîmprospătează regulile";
 "Registered" = "Înregistrat";
 "Registration: %@" = "Înregistrare: %@";
 "Reminders" = "Mementouri";
@@ -392,7 +380,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Unavailable" = "Indisponibil";
 "Undo" = "Anulează";
 "Updating…" = "Se actualizează…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Ascunde elemente cu extensia wBlock în Safari, apoi gestionează regulile aici.";
 "due now" = "scadent acum";
 "never" = "niciodată";
 "%d rule" = "%d regulă";
@@ -706,3 +693,18 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Supliment EasyList de la eyeo pentru site-uri în thailandeză, greacă, slovenă, croată, sârbă, bosniacă și filipineză.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Listă de filtre menținută de comunitate care blochează reclamele pe site-uri în divehi (maldiveană).";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Listă de filtre în limba rusă care acoperă și site-uri în ucraineană, kazahă și uzbecă.";
+
+/* Site Settings hub */
+"Site Settings" = "Setări site";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Site-urile adăugate sunt în lista albă: wBlock este complet dezactivat pe ele.";
+"Whitelisted" = "În lista albă";
+"%d script off" = "%d script dezactivat";
+"%d scripts off" = "%d scripturi dezactivate";
+"No Site Settings" = "Nicio setare de site";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adaugă un site în lista albă aici sau ajustează scripturile utilizator și regulile eliminatorului de elemente pe site din popup-ul wBlock din Safari.";
+"Reset Site Settings" = "Resetează setările site-ului";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Aceasta elimină intrarea din lista albă, excepțiile pentru scripturi utilizator și regulile eliminatorului pentru %@.";
+"Run on this site" = "Rulează pe acest site";
+"Apply rules on this site" = "Aplică regulile pe acest site";
+"Changes take full effect after the next apply." = "Modificările intră complet în vigoare după următoarea aplicare.";

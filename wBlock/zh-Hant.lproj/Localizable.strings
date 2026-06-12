@@ -115,7 +115,6 @@
 "Enabled" = "已啟用";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 筆";
 "Disabled" = "已停用";
-"Whitelisted Domains" = "網站例外";
 "It will be enabled automatically." = "將會自動啟用。";
 "Debug" = "偵錯";
 "Next: Loading…" = "下一步：載入中…";
@@ -131,14 +130,11 @@
 "Title" = "標題";
 "No updates available" = "沒有可用更新";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "我們在 iCloud 找到既有的 wBlock 設定。你可以略過初始設定並改用它。";
-"example.com" = "example.com";
-"Add Domain" = "新增網域";
 "Regional filters: %@" = "區域過濾器：%@";
 "Done" = "完成";
 "Use iCloud Setup" = "使用 iCloud 設定";
 "Tell us where you browse so we can enable the right regional filters." = "告訴我們你在哪裡瀏覽，我們就能啟用合適的區域過濾器。";
 "Updated %d scripts" = "已更新 %d 個腳本";
-"Delete Selected" = "刪除所選";
 "File Information" = "檔案資訊";
 "Search scripts" = "搜尋腳本";
 "Remove" = "移除";
@@ -146,7 +142,6 @@
 "Applied" = "已套用";
 "7d" = "7d";
 "Critical Setup Required" = "需要完成關鍵設定";
-"No Whitelisted Domains" = "沒有網站例外";
 "Paste" = "貼上";
 "Cancel" = "取消";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "該標題已被另一個過濾清單使用。";
 "N/A" = "N/A";
 "Import Failed" = "匯入失敗";
-"Manage Whitelist" = "管理白名單";
-"Manage Element Zapper Rules" = "管理元素消除器規則";
 "FilterApply" = "套用過濾器";
 "Every %d hours" = "每 %d 小時";
 "Update Interval" = "更新間隔";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "顯示預覽 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "剛剛檢查過";
 "wBlock will fetch and enable the script automatically." = "wBlock 會自動擷取並啟用該腳本。";
-"Add domains to disable ad blocking on specific sites" = "新增需要讓 wBlock 保持關閉的網域";
 "1." = "1.";
 "Add Mode" = "新增模式";
 "Keep All" = "全部保留";
@@ -271,7 +263,6 @@
 "Summary" = "摘要";
 "Blocked: %d" = "已封鎖：%d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ 僅提供社群維護清單。若你可以接受，請啟用它們。";
-"Remove from Whitelist" = "移除例外";
 "Downloaded %d update" = "已下載 %d 項更新";
 "Safari → Settings → Extensions" = "Safari → 設定 → 延伸功能";
 "Settings → Apps → Safari → Extensions" = "設定 → App → Safari → 延伸功能";
@@ -331,7 +322,6 @@
 "Completed" = "已完成";
 "Due soon catch-up" = "即將到期的補跑";
 "Edit" = "編輯";
-"Element Zapper Rules" = "元素隱藏規則";
 "Execution: %@" = "執行：%@";
 "Expired %@" = "已過期 %@";
 "Export Settings" = "匯出設定";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "匯入失敗：%@";
 "Info.plist missing" = "缺少 Info.plist";
 "Near Safari limit: %@" = "接近 Safari 限制：%@";
-"No Element Zapper Rules" = "沒有元素隱藏規則";
 "No background run recorded" = "沒有記錄到背景執行";
 "No foreground catch-up recorded" = "沒有記錄到前景補跑";
 "No silent push received yet" = "尚未收到靜默推播";
@@ -358,7 +347,6 @@
 "Recorded" = "已記錄";
 "Received %@, %@ %@" = "已收到 %@，%@ %@";
 "Received %@, waiting for completion" = "已收到 %@，等待完成";
-"Refresh rules" = "重新整理規則";
 "Registered" = "已註冊";
 "Registration: %@" = "註冊：%@";
 "Reminders" = "提醒";
@@ -392,7 +380,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "無法使用";
 "Undo" = "復原";
 "Updating…" = "更新中…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "使用 Safari 中的 wBlock 擴充功能隱藏元素，然後在這裡管理規則。";
 "due now" = "現在到期";
 "never" = "從未";
 "%d rule" = "%d 條規則";
@@ -706,3 +693,18 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "由 eyeo 提供的 EasyList 補充清單，適用於泰語、希臘語、斯洛維尼亞語、克羅埃西亞語、塞爾維亞語、波斯尼亞語和菲律賓語網站。";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "由社群維護的過濾器清單，用於封鎖迪維希語（馬爾地夫語）網站上的廣告。";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "俄語過濾器清單，也涵蓋烏克蘭語、哈薩克語和烏茲別克語網站。";
+
+/* Site Settings hub */
+"Site Settings" = "網站設定";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "新增的網站會列入白名單：wBlock 會在這些網站上完全關閉。";
+"Whitelisted" = "已列入白名單";
+"%d script off" = "%d 個腳本已關閉";
+"%d scripts off" = "%d 個腳本已關閉";
+"No Site Settings" = "沒有網站設定";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "在這裡將網站列入白名單，或從 Safari 中的 wBlock 彈出視窗按網站調整使用者腳本和元素消除器規則。";
+"Reset Site Settings" = "重置網站設定";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "這會移除 %@ 的白名單項目、使用者腳本例外和消除器規則。";
+"Run on this site" = "在此網站執行";
+"Apply rules on this site" = "在此網站套用規則";
+"Changes take full effect after the next apply." = "變更會在下次套用後完全生效。";

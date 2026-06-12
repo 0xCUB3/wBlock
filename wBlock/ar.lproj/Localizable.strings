@@ -115,7 +115,6 @@
 "Enabled" = "مفعّل";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) إدخالات";
 "Disabled" = "معطّل";
-"Whitelisted Domains" = "استثناءات المواقع";
 "It will be enabled automatically." = "سيتم تفعيله تلقائيًا.";
 "Debug" = "تصحيح";
 "Next: Loading…" = "التالي: جارٍ التحميل…";
@@ -131,14 +130,11 @@
 "Title" = "العنوان";
 "No updates available" = "لا توجد تحديثات متاحة";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "وجدنا إعداد wBlock موجودًا في iCloud. يمكنك تخطي الإعداد الأولي واستخدامه بدلًا من ذلك.";
-"example.com" = "example.com";
-"Add Domain" = "إضافة نطاق";
 "Regional filters: %@" = "الفلاتر الإقليمية: %@";
 "Done" = "تم";
 "Use iCloud Setup" = "استخدام إعداد iCloud";
 "Tell us where you browse so we can enable the right regional filters." = "أخبرنا أين تتصفح حتى نتمكن من تفعيل الفلاتر الإقليمية المناسبة.";
 "Updated %d scripts" = "تم تحديث %d سكريبتات";
-"Delete Selected" = "حذف المحدد";
 "File Information" = "معلومات الملف";
 "Search scripts" = "البحث في السكريبتات";
 "Remove" = "إزالة";
@@ -146,7 +142,6 @@
 "Applied" = "مطبَّق";
 "7d" = "7d";
 "Critical Setup Required" = "إعداد حرج مطلوب";
-"No Whitelisted Domains" = "لا توجد استثناءات للمواقع";
 "Paste" = "لصق";
 "Cancel" = "إلغاء";
 "URL" = "الرابط";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "هذا العنوان مستخدم بالفعل بواسطة قائمة فلترة أخرى.";
 "N/A" = "غير متاح";
 "Import Failed" = "فشل الاستيراد";
-"Manage Whitelist" = "إدارة القائمة البيضاء";
-"Manage Element Zapper Rules" = "إدارة قواعد أداة إخفاء العناصر";
 "FilterApply" = "تطبيق الفلتر";
 "Every %d hours" = "كل %d ساعات";
 "Update Interval" = "فاصل التحديث";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "عرض معاينة (\\(formatFileSize(previewLength)) من \\(formatFileSize(script.content.count)))";
 "Checked just now" = "تم التحقق للتو";
 "wBlock will fetch and enable the script automatically." = "سيقوم wBlock بجلب السكريبت وتفعيله تلقائيًا.";
-"Add domains to disable ad blocking on specific sites" = "أضف نطاقات يجب أن يظل wBlock معطلاً عليها";
 "1." = "1.";
 "Add Mode" = "وضع الإضافة";
 "Keep All" = "الاحتفاظ بالكل";
@@ -271,7 +263,6 @@
 "Summary" = "الملخص";
 "Blocked: %d" = "المحظور: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "لا تتوفر لـ %@ إلا القوائم التي يديرها المجتمع. فعّلها إذا كنت مرتاحًا لذلك.";
-"Remove from Whitelist" = "إزالة الاستثناء";
 "Downloaded %d update" = "تم تنزيل %d تحديث";
 "Safari → Settings → Extensions" = "Safari → الإعدادات → الإضافات";
 "Settings → Apps → Safari → Extensions" = "الإعدادات → التطبيقات → Safari → الإضافات";
@@ -331,7 +322,6 @@
 "Completed" = "مكتمل";
 "Due soon catch-up" = "استدراك مستحق قريبًا";
 "Edit" = "تحرير";
-"Element Zapper Rules" = "قواعد إخفاء العناصر";
 "Execution: %@" = "التنفيذ: %@";
 "Expired %@" = "انتهت صلاحيته %@";
 "Export Settings" = "تصدير الإعدادات";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "فشل الاستيراد: %@";
 "Info.plist missing" = "ملف Info.plist مفقود";
 "Near Safari limit: %@" = "بالقرب من حد Safari: %@";
-"No Element Zapper Rules" = "لا توجد قواعد لإخفاء العناصر";
 "No background run recorded" = "لم يتم تسجيل أي تشغيل في الخلفية";
 "No foreground catch-up recorded" = "لم يتم تسجيل أي استدراك في الواجهة الأمامية";
 "No silent push received yet" = "لم يتم استلام أي إشعار push صامت بعد";
@@ -358,7 +347,6 @@
 "Recorded" = "تم التسجيل";
 "Received %@, %@ %@" = "تم الاستلام %@، %@ %@";
 "Received %@, waiting for completion" = "تم الاستلام %@، بانتظار الاكتمال";
-"Refresh rules" = "تحديث القواعد";
 "Registered" = "تم التسجيل";
 "Registration: %@" = "التسجيل: %@";
 "Reminders" = "التذكيرات";
@@ -392,7 +380,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "غير متاح";
 "Undo" = "تراجع";
 "Updating…" = "جارٍ التحديث…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "أخفِ العناصر باستخدام إضافة wBlock في Safari، ثم أدر القواعد من هنا.";
 "due now" = "مستحق الآن";
 "never" = "أبدًا";
 "%d rule" = "%d قاعدة";
@@ -706,3 +693,18 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "ملحق EasyList من eyeo للمواقع باللغة التايلاندية واليونانية والسلوفينية والكرواتية والصربية والبوسنية والفلبينية.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "قائمة فلاتر يديرها المجتمع تحظر الإعلانات على المواقع باللغة الديفيهية (المالديفية).";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "قائمة فلاتر باللغة الروسية تغطي أيضًا المواقع الأوكرانية والكازاخية والأوزبكية.";
+
+/* Site Settings hub */
+"Site Settings" = "إعدادات الموقع";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "المواقع المضافة مستثناة: يتم إيقاف wBlock تمامًا عليها.";
+"Whitelisted" = "مستثنى";
+"%d script off" = "%d سكريبت معطّل";
+"%d scripts off" = "%d سكريبتات معطّلة";
+"No Site Settings" = "لا توجد إعدادات للمواقع";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "استثنِ موقعًا هنا، أو اضبط سكريبتات المستخدم وقواعد أداة إخفاء العناصر لكل موقع من نافذة wBlock المنبثقة في Safari.";
+"Reset Site Settings" = "إعادة تعيين إعدادات الموقع";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "يزيل هذا استثناء القائمة البيضاء، واستثناءات سكريبتات المستخدم، وقواعد الإخفاء الخاصة بـ %@.";
+"Run on this site" = "تشغيل على هذا الموقع";
+"Apply rules on this site" = "تطبيق القواعد على هذا الموقع";
+"Changes take full effect after the next apply." = "تسري التغييرات بالكامل بعد التطبيق التالي.";

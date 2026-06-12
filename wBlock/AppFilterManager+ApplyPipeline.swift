@@ -203,11 +203,7 @@ extension AppFilterManager {
 
         let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
         let generatedZapperRules = ZapperContentBlockerRuleGenerator.generatedRules(
-            from: Dictionary(
-                uniqueKeysWithValues: self.dataManager.getZapperDomains().map { host in
-                    (host, self.dataManager.getZapperRules(forHost: host))
-                }
-            )
+            from: self.dataManager.getActiveZapperRulesByHost()
         )
         let generatedZapperRulesText = generatedZapperRules.isEmpty
             ? nil

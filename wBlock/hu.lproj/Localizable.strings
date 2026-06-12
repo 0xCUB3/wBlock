@@ -115,7 +115,6 @@
 "Enabled" = "Engedélyezve";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) bejegyzés";
 "Disabled" = "Letiltva";
-"Whitelisted Domains" = "Webhely-kivételek";
 "It will be enabled automatically." = "Automatikusan engedélyezve lesz.";
 "Debug" = "Hibakeresés";
 "Next: Loading…" = "Következő: Betöltés…";
@@ -131,14 +130,11 @@
 "Title" = "Cím";
 "No updates available" = "Nincs elérhető frissítés";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban. Kihagyhatod a kezdő beállítást, és ezt használhatod.";
-"example.com" = "example.com";
-"Add Domain" = "Domain hozzáadása";
 "Regional filters: %@" = "Regionális szűrők: %@";
 "Done" = "Kész";
 "Use iCloud Setup" = "iCloud beállítás használata";
 "Tell us where you browse so we can enable the right regional filters." = "Mondd meg, hol böngészel, hogy a megfelelő regionális szűrőket tudjuk engedélyezni.";
 "Updated %d scripts" = "%d szkript frissítve";
-"Delete Selected" = "Kijelöltek törlése";
 "File Information" = "Fájlinformációk";
 "Search scripts" = "Szkriptek keresése";
 "Remove" = "Eltávolítás";
@@ -146,7 +142,6 @@
 "Applied" = "Alkalmazva";
 "7d" = "7d";
 "Critical Setup Required" = "Kritikus beállítás szükséges";
-"No Whitelisted Domains" = "Nincsenek webhely-kivételek";
 "Paste" = "Beillesztés";
 "Cancel" = "Mégse";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "Ezt a címet már használja egy másik szűrőlista.";
 "N/A" = "N/A";
 "Import Failed" = "Importálás sikertelen";
-"Manage Whitelist" = "Engedélyezőlista kezelése";
-"Manage Element Zapper Rules" = "Elemeltávolító szabályok kezelése";
 "FilterApply" = "Szűrő Alkalmaz";
 "Every %d hours" = "%d óránként";
 "Update Interval" = "Frissítési időköz";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Előnézet megjelenítése (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Ellenőrizve épp most";
 "wBlock will fetch and enable the script automatically." = "A wBlock automatikusan letölti és engedélyezi a szkriptet.";
-"Add domains to disable ad blocking on specific sites" = "Adj hozzá domaineket, ahol a wBlock kikapcsolva maradjon";
 "1." = "1.";
 "Add Mode" = "Hozzáadási mód";
 "Keep All" = "Összes megtartása";
@@ -271,7 +263,6 @@
 "Summary" = "Összegzés";
 "Blocked: %d" = "Blokkolva: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ esetén csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
-"Remove from Whitelist" = "Kivétel eltávolítása";
 "Downloaded %d update" = "%d frissítés letöltve";
 "Safari → Settings → Extensions" = "Safari → Beállítások → Bővítmények";
 "Settings → Apps → Safari → Extensions" = "Beállítások → Alkalmazások → Safari → Bővítmények";
@@ -331,7 +322,6 @@
 "Completed" = "Befejezve";
 "Due soon catch-up" = "Hamarosan esedékes felzárkózás";
 "Edit" = "Szerkesztés";
-"Element Zapper Rules" = "Elemelrejtési szabályok";
 "Execution: %@" = "Végrehajtás: %@";
 "Expired %@" = "Lejárt %@";
 "Export Settings" = "Beállítások exportálása";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "Importálás sikertelen: %@";
 "Info.plist missing" = "Hiányzik az Info.plist";
 "Near Safari limit: %@" = "Közel a Safari korlátjához: %@";
-"No Element Zapper Rules" = "Nincsenek elemelrejtési szabályok";
 "No background run recorded" = "Nincs rögzített háttérfutás";
 "No foreground catch-up recorded" = "Nincs rögzített előtérbeli felzárkózás";
 "No silent push received yet" = "Még nem érkezett csendes push";
@@ -357,7 +346,6 @@
 "Recorded" = "Rögzítve";
 "Received %@, %@ %@" = "Fogadva %@, %@ %@";
 "Received %@, waiting for completion" = "Fogadva %@, befejezésre vár";
-"Refresh rules" = "Szabályok frissítése";
 "Registered" = "Regisztrálva";
 "Registration: %@" = "Regisztráció: %@";
 "Reminders" = "Emlékeztetők";
@@ -390,7 +378,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Undo" = "Visszavonás";
 "Unavailable" = "Nem érhető el";
 "Updating…" = "Frissítés…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Rejts el elemeket a wBlock Safari-bővítményével, majd itt kezeld a szabályokat.";
 "due now" = "most esedékes";
 "never" = "soha";
 "%d rule" = "%d szabály";
@@ -707,3 +694,18 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "EasyList-kiegészítés az eyeo-tól thai, görög, szlovén, horvát, szerb, bosnyák és filippínó nyelvű webhelyekhez.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket a divehi (maldív) nyelvű webhelyeken.";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Orosz nyelvű szűrőlista, amely az ukrán, kazah és üzbég webhelyeket is lefedi.";
+
+/* Site Settings hub */
+"Site Settings" = "Webhelybeállítások";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "A hozzáadott webhelyek engedélyezőlistára kerülnek: a wBlock teljesen kikapcsol rajtuk.";
+"Whitelisted" = "Engedélyezőlistán";
+"%d script off" = "%d szkript kikapcsolva";
+"%d scripts off" = "%d szkript kikapcsolva";
+"No Site Settings" = "Nincsenek webhelybeállítások";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Tegyél itt engedélyezőlistára egy webhelyet, vagy állítsd be webhelyenként a felhasználói szkripteket és az elemeltávolító szabályokat a wBlock Safari felugró ablakában.";
+"Reset Site Settings" = "Webhelybeállítások visszaállítása";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Ez eltávolítja %@ engedélyezőlista-bejegyzését, felhasználói szkript kivételeit és elemeltávolító szabályait.";
+"Run on this site" = "Futtatás ezen a webhelyen";
+"Apply rules on this site" = "Szabályok alkalmazása ezen a webhelyen";
+"Changes take full effect after the next apply." = "A módosítások a következő alkalmazás után lépnek teljesen életbe.";

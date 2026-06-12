@@ -115,7 +115,6 @@
 "Enabled" = "Ενεργοποιημένο";
 "\\(filteredEntries.count) entries" = "\(filteredEntries.count) καταχωρήσεις";
 "Disabled" = "Απενεργοποιημένο";
-"Whitelisted Domains" = "Εξαιρέσεις ιστότοπων";
 "It will be enabled automatically." = "Θα ενεργοποιηθεί αυτόματα.";
 "Debug" = "Εντοπισμός σφαλμάτων";
 "Next: Loading…" = "Επόμενο: Φόρτωση…";
@@ -131,14 +130,11 @@
 "Title" = "Τίτλος";
 "No updates available" = "Δεν υπάρχουν διαθέσιμες ενημερώσεις";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Βρήκαμε μια υπάρχουσα διαμόρφωση wBlock στο iCloud. Μπορείτε να παραλείψετε την ενσωμάτωση και να χρησιμοποιήσετε αυτήν.";
-"example.com" = "example.com";
-"Add Domain" = "Προσθήκη τομέα";
 "Regional filters: %@" = "Τοπικά φίλτρα: %@";
 "Done" = "Ολοκληρώθηκε";
 "Use iCloud Setup" = "Χρήση ρύθμισης iCloud";
 "Tell us where you browse so we can enable the right regional filters." = "Πείτε μας πού περιηγείστε, ώστε να μπορέσουμε να ενεργοποιήσουμε τα σωστά τοπικά φίλτρα.";
 "Updated %d scripts" = "Ενημερωμένος %d κώδικας";
-"Delete Selected" = "Διαγραφή επιλεγμένων";
 "File Information" = "Πληροφορίες αρχείου";
 "Search scripts" = "Αναζήτηση κώδικα";
 "Remove" = "Κατάργηση";
@@ -146,7 +142,6 @@
 "Applied" = "Εφαρμοσμένο";
 "7d" = "7d";
 "Critical Setup Required" = "Απαιτείται κρίσιμη ρύθμιση";
-"No Whitelisted Domains" = "Δεν υπάρχουν εξαιρέσεις ιστότοπων";
 "Paste" = "Επικόλληση";
 "Cancel" = "Ακύρωση";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "Αυτός ο τίτλος χρησιμοποιείται ήδη από άλλη λίστα φίλτρων.";
 "N/A" = "-";
 "Import Failed" = "Η εισαγωγή απέτυχε";
-"Manage Whitelist" = "Διαχείριση λευκής λίστας";
-"Manage Element Zapper Rules" = "Διαχείριση κανόνων αποκλεισμού στοιχείων";
 "FilterApply" = "Εφαρμογή φίλτρου";
 "Every %d hours" = "Κάθε %d ώρες";
 "Update Interval" = "Διάστημα ενημέρωσης";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Εμφάνιση προεπισκόπησης (\\(formatFileSize(previewLength)) από \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Ελέγχθηκε μόλις τώρα";
 "wBlock will fetch and enable the script automatically." = "το wBlock θα ανακτήσει και θα ενεργοποιήσει αυτόματα τον κώδικα.";
-"Add domains to disable ad blocking on specific sites" = "Προσθέστε τομείς όπου το wBlock πρέπει να παραμένει απενεργοποιημένο";
 "1." = "1.";
 "Add Mode" = "Προσθήκη λειτουργίας";
 "Keep All" = "Διατήρηση όλων";
@@ -271,7 +263,6 @@
 "Summary" = "Σύνοψη";
 "Blocked: %d" = "Αποκλεισμένο: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Μόνο λίστες που διατηρούνται από την κοινότητα είναι διαθέσιμες για %@. Ενεργοποιήστε τις αν νιώθετε άνετα.";
-"Remove from Whitelist" = "Κατάργηση εξαίρεσης";
 "Downloaded %d update" = "Λήψη %d ενημέρωσης";
 "Safari → Settings → Extensions" = "Safari → Ρυθμίσεις → Επεκτάσεις";
 "Settings → Apps → Safari → Extensions" = "Ρυθμίσεις → Εφαρμογές → Safari → Επεκτάσεις";
@@ -331,7 +322,6 @@
 "Completed" = "Ολοκληρώθηκε";
 "Due soon catch-up" = "Επίκειται σύντομα ανάκτηση";
 "Edit" = "Επεξεργασία";
-"Element Zapper Rules" = "Κανόνες απόκρυψης στοιχείων";
 "Execution: %@" = "Εκτέλεση: %@";
 "Expired %@" = "Έληξε %@";
 "Export Settings" = "Εξαγωγή ρυθμίσεων";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "Η εισαγωγή απέτυχε: %@";
 "Info.plist missing" = "Λείπει το Info.plist";
 "Near Safari limit: %@" = "Κοντά στο όριο του Safari: %@";
-"No Element Zapper Rules" = "Δεν υπάρχουν κανόνες απόκρυψης στοιχείων";
 "No background run recorded" = "Δεν έχει καταγραφεί εκτέλεση παρασκηνίου";
 "No foreground catch-up recorded" = "Δεν έχει καταγραφεί ανάκτηση στο προσκήνιο";
 "No silent push received yet" = "Δεν έχει ληφθεί ακόμη σιωπηλή ειδοποίηση push";
@@ -358,7 +347,6 @@
 "Recorded" = "Καταγράφηκε";
 "Received %@, %@ %@" = "Ελήφθη %@, %@ %@";
 "Received %@, waiting for completion" = "Ελήφθη %@, αναμονή για ολοκλήρωση";
-"Refresh rules" = "Ανανέωση κανόνων";
 "Registered" = "Καταχωρήθηκε";
 "Registration: %@" = "Καταχώριση: %@";
 "Reminders" = "Υπενθυμίσεις";
@@ -392,7 +380,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Μη διαθέσιμο";
 "Undo" = "Αναίρεση";
 "Updating…" = "Γίνεται ενημέρωση…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Αποκρύψτε στοιχεία με την επέκταση wBlock στο Safari και διαχειριστείτε εδώ τους κανόνες.";
 "due now" = "λήγει τώρα";
 "never" = "ποτέ";
 "%d rule" = "%d κανόνας";
@@ -706,3 +693,18 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Συμπλήρωμα του EasyList από την eyeo για ιστότοπους στα ταϊλανδικά, ελληνικά, σλοβενικά, κροατικά, σερβικά, βοσνιακά και φιλιππινέζικα.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε ιστότοπους στα ντιβέχι (μαλδιβικά).";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Λίστα φίλτρων ρωσικής γλώσσας που καλύπτει επίσης ουκρανικούς, καζακικούς και ουζμπεκικούς ιστότοπους.";
+
+/* Site Settings hub */
+"Site Settings" = "Ρυθμίσεις ιστότοπου";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Οι ιστότοποι που προστίθενται μπαίνουν στη λευκή λίστα: το wBlock απενεργοποιείται πλήρως σε αυτούς.";
+"Whitelisted" = "Στη λευκή λίστα";
+"%d script off" = "%d κώδικας ανενεργός";
+"%d scripts off" = "%d κώδικες ανενεργοί";
+"No Site Settings" = "Δεν υπάρχουν ρυθμίσεις ιστότοπου";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Βάλτε έναν ιστότοπο στη λευκή λίστα εδώ ή προσαρμόστε τον κώδικα χρήστη και τους κανόνες αποκλεισμού στοιχείων ανά ιστότοπο από το αναδυόμενο παράθυρο του wBlock στο Safari.";
+"Reset Site Settings" = "Επαναφορά ρυθμίσεων ιστότοπου";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Αυτό καταργεί την εγγραφή λευκής λίστας, τις εξαιρέσεις κώδικα χρήστη και τους κανόνες απόκρυψης για %@.";
+"Run on this site" = "Εκτέλεση σε αυτόν τον ιστότοπο";
+"Apply rules on this site" = "Εφαρμογή κανόνων σε αυτόν τον ιστότοπο";
+"Changes take full effect after the next apply." = "Οι αλλαγές εφαρμόζονται πλήρως μετά την επόμενη εφαρμογή.";

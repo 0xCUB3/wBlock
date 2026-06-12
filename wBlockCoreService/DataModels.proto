@@ -12,6 +12,13 @@ message AppData {
   PerformanceData performance = 6;
   AutoUpdateMetadata auto_update = 7;
   ExtensionData extension_data = 8;
+  // Per-site userscript exceptions: script UUID -> hosts where it is disabled
+  map<string, HostList> user_script_disabled_hosts = 9;
+}
+
+// Reusable wrapper for a list of hostnames (proto3 maps cannot hold repeated values)
+message HostList {
+  repeated string hosts = 1;
 }
 
 // App-wide settings
@@ -134,6 +141,7 @@ enum Platform {
 message ZapperRuleList {
   repeated string selectors = 1;
   repeated string pending_deletions = 2;
+  bool disabled = 3;  // per-host kill switch; rules are kept but not applied
 }
 
 // Extension-specific data for Safari extensions

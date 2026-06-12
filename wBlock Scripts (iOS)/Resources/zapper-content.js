@@ -9,7 +9,6 @@
 
   const STORAGE_PREFIX = 'wblock.zapperRules.v1:';
   const META_PREFIX = 'wblock.zapperMeta.v1:';
-  const ZAPPER_DISABLED_STORAGE_PREFIX = 'wblock.zapperRulesDisabled.v1:';
   const STYLE_ID = 'wblock-zapper-style';
   const UI_STYLE_ID = 'wblock-zapper-ui-style';
   const UI_ROOT_ID = 'wblock-zapper-root';
@@ -71,6 +70,7 @@
       navGroup: null,
       defaultGroup: null,
     },
+    rulesDisabled: false,
   };
 
   let ruleSyncIntervalId = null;
@@ -129,16 +129,33 @@
     return `${META_PREFIX}${host}`;
   }
 
-  function zapperDisabledStorageKey(host) {
-    return `${ZAPPER_DISABLED_STORAGE_PREFIX}${host}`;
+  async function setSiteZapperDisabled(host, disabled) {
+    if (!host) return null;
+    try {
+      return await sendNativeMessageWithTimeout({
+        action: 'setSiteZapperDisabled',
+        hostname: host,
+        disabled: Boolean(disabled)
+      });
+    } catch {
+      return null;
+    }
   }
 
-  async function getZapperRulesDisabled(host) {
+  async function migrateLegacyZapperRulesDisabled(host, rules = null) {
     if (!host) return false;
+    const key = `wblock.zapperRulesDisabled.v1:${host}`;
     try {
-      const key = zapperDisabledStorageKey(host);
       const result = await browser.storage.local.get(key);
-      return result[key] === true;
+      if (result[key] !== true) {
+        return false;
+      }
+      if (Array.isArray(rules) && rules.length > 0) {
+        await syncRulesToNative(host, rules);
+      }
+      const response = await setSiteZapperDisabled(host, true);
+      await browser.storage.local.remove(key);
+      return Boolean(response && response.disabled);
     } catch {
       return false;
     }
@@ -158,7 +175,7 @@
   }
 
   async function shouldSuppressZapperRules(host) {
-    return (await getZapperRulesDisabled(host)) || (await getSiteDisabledState(host));
+    return state.rulesDisabled === true || (await getSiteDisabledState(host));
   }
 
   function normalizeRules(rules) {
@@ -176,26 +193,53 @@
 
   function normalizeMeta(raw) {
     if (!raw || typeof raw !== 'object') {
-      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0 };
+      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
     }
     const lastLocalEditAt = Number(raw.lastLocalEditAt);
     const lastSyncAt = Number(raw.lastSyncAt);
     return {
       pendingSync: Boolean(raw.pendingSync),
       lastLocalEditAt: Number.isFinite(lastLocalEditAt) ? lastLocalEditAt : 0,
-      lastSyncAt: Number.isFinite(lastSyncAt) ? lastSyncAt : 0
+      lastSyncAt: Number.isFinite(lastSyncAt) ? lastSyncAt : 0,
+      disabled: raw.disabled === true
     };
   }
 
   async function getSyncMeta(host) {
-    if (!host) return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0 };
+    if (!host) return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
     try {
       const key = metaKey(host);
       const result = await browser.storage.local.get(key);
       return normalizeMeta(result[key]);
     } catch {
-      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0 };
+      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
     }
+  }
+
+  async function loadCachedRulesDisabled(host) {
+    if (!host) return false;
+    return (await getSyncMeta(host)).disabled === true;
+  }
+
+  async function cacheZapperState(host, rules, disabled) {
+    if (!host) return;
+    const key = storageKey(host);
+    await browser.storage.local.set({ [key]: normalizeRules(rules) });
+    await setSyncMeta(host, {
+      pendingSync: false,
+      lastSyncAt: Date.now(),
+      disabled: disabled === true
+    });
+  }
+
+  function normalizeNativeZapperState(response) {
+    if (!response || !Array.isArray(response.rules)) {
+      return null;
+    }
+    return {
+      rules: normalizeRules(response.rules),
+      disabled: response.disabled === true
+    };
   }
 
   async function setSyncMeta(host, patch) {
@@ -272,54 +316,48 @@
         action: 'wblock:zapper:getRules',
         hostname: host
       }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper fetch timed out.');
-      if (!response || !Array.isArray(response.rules)) {
+      const nativeState = normalizeNativeZapperState(response);
+      if (!nativeState) {
         return null;
       }
-      const normalized = Array.from(new Set(
-        response.rules
-          .filter((s) => typeof s === 'string')
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0)
-      ));
       const localRules = await loadRulesForHost(host);
       const localSig = rulesSignature(localRules);
-      const nativeSig = rulesSignature(normalized);
+      const nativeSig = rulesSignature(nativeState.rules);
       const meta = await getSyncMeta(host);
       if (meta.pendingSync && localSig !== nativeSig) {
         const reconciled = await syncRulesToNative(host, localRules);
-        return Array.isArray(reconciled) ? reconciled : localRules;
+        const rules = Array.isArray(reconciled) ? reconciled : localRules;
+        const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
+        await setSyncMeta(host, { disabled });
+        return { rules, disabled };
       }
-      const key = storageKey(host);
-      await browser.storage.local.set({ [key]: normalized });
-      await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
-      return normalized;
+      const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
+      await cacheZapperState(host, nativeState.rules, disabled);
+      return { rules: nativeState.rules, disabled };
     } catch {
       try {
         const response = await sendNativeMessageWithTimeout({
           action: 'getZapperRules',
           hostname: host
         });
-        if (!response || !Array.isArray(response.rules)) {
+        const nativeState = normalizeNativeZapperState(response);
+        if (!nativeState) {
           return null;
         }
-        const normalized = Array.from(new Set(
-          response.rules
-            .filter((s) => typeof s === 'string')
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0)
-        ));
         const localRules = await loadRulesForHost(host);
         const localSig = rulesSignature(localRules);
-        const nativeSig = rulesSignature(normalized);
+        const nativeSig = rulesSignature(nativeState.rules);
         const meta = await getSyncMeta(host);
         if (meta.pendingSync && localSig !== nativeSig) {
           const reconciled = await syncRulesToNative(host, localRules);
-          return Array.isArray(reconciled) ? reconciled : localRules;
+          const rules = Array.isArray(reconciled) ? reconciled : localRules;
+          const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
+          await setSyncMeta(host, { disabled });
+          return { rules, disabled };
         }
-        const key = storageKey(host);
-        await browser.storage.local.set({ [key]: normalized });
-        await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
-        return normalized;
+        const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
+        await cacheZapperState(host, nativeState.rules, disabled);
+        return { rules: nativeState.rules, disabled };
       } catch {
         return null;
       }
@@ -1193,15 +1231,15 @@
       state.host = currentHost;
     }
 
-    const nativeRules = await fetchRulesFromNative(state.host);
-    if (!Array.isArray(nativeRules)) return;
+    const nativeState = await fetchRulesFromNative(state.host);
+    if (!nativeState || !Array.isArray(nativeState.rules)) return;
 
-    if (rulesSignature(nativeRules) === rulesSignature(state.rules)) {
-      return;
+    const wasDisabled = state.rulesDisabled;
+    state.rulesDisabled = nativeState.disabled === true;
+    if (state.rulesDisabled !== wasDisabled || rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
+      state.rules = nativeState.rules;
+      await applyRulesToPage(state.rules);
     }
-
-    state.rules = nativeRules;
-    await applyRulesToPage(state.rules);
   }
 
   function startRuleSyncLoop() {
@@ -1227,14 +1265,20 @@
   async function reloadRulesAndApply() {
     state.host = safeHostname();
     state.rules = await loadRulesForHost(state.host);
+    state.rulesDisabled = await loadCachedRulesDisabled(state.host);
+    if (await migrateLegacyZapperRulesDisabled(state.host, state.rules)) {
+      state.rulesDisabled = true;
+      await setSyncMeta(state.host, { disabled: true });
+    }
     await applyRulesToPage(state.rules);
 
-    const nativeRules = await fetchRulesFromNative(state.host);
-    if (Array.isArray(nativeRules)) {
-      if (rulesSignature(nativeRules) !== rulesSignature(state.rules)) {
-        state.rules = nativeRules;
-        await applyRulesToPage(state.rules);
+    const nativeState = await fetchRulesFromNative(state.host);
+    if (nativeState && Array.isArray(nativeState.rules)) {
+      state.rulesDisabled = nativeState.disabled === true;
+      if (rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
+        state.rules = nativeState.rules;
       }
+      await applyRulesToPage(state.rules);
       return;
     }
 

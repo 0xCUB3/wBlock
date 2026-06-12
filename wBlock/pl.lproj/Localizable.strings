@@ -115,7 +115,6 @@
 "Enabled" = "Włączone";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) wpisów";
 "Disabled" = "Wyłączone";
-"Whitelisted Domains" = "Wyjątki witryn";
 "It will be enabled automatically." = "Zostanie włączone automatycznie.";
 "Debug" = "Debugowanie";
 "Next: Loading…" = "Dalej: Ładowanie…";
@@ -131,14 +130,11 @@
 "Title" = "Tytuł";
 "No updates available" = "Brak dostępnych aktualizacji";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Znaleziono istniejącą konfigurację wBlock w iCloud. Możesz pominąć konfigurację początkową i użyć jej zamiast tego.";
-"example.com" = "example.com";
-"Add Domain" = "Dodaj domenę";
 "Regional filters: %@" = "Filtry regionalne: %@";
 "Done" = "Gotowe";
 "Use iCloud Setup" = "Użyj konfiguracji iCloud";
 "Tell us where you browse so we can enable the right regional filters." = "Powiedz nam, gdzie przeglądasz internet, abyśmy mogli włączyć odpowiednie filtry regionalne.";
 "Updated %d scripts" = "Zaktualizowano %d skryptów";
-"Delete Selected" = "Usuń zaznaczone";
 "File Information" = "Informacje o pliku";
 "Search scripts" = "Szukaj skryptów";
 "Remove" = "Usuń";
@@ -146,7 +142,6 @@
 "Applied" = "Zastosowano";
 "7d" = "7d";
 "Critical Setup Required" = "Wymagana krytyczna konfiguracja";
-"No Whitelisted Domains" = "Brak wyjątków witryn";
 "Paste" = "Wklej";
 "Cancel" = "Anuluj";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "Ten tytuł jest już używany przez inną listę filtrów.";
 "N/A" = "N/A";
 "Import Failed" = "Import nie powiódł się";
-"Manage Whitelist" = "Zarządzaj białą listą";
-"Manage Element Zapper Rules" = "Zarządzaj regułami usuwacza elementów";
 "FilterApply" = "Stosowanie filtrów";
 "Every %d hours" = "Co %d godzin";
 "Update Interval" = "Interwał aktualizacji";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Podgląd (\\(formatFileSize(previewLength)) z \\(formatFileSize(script.content.count)))";
 "Checked just now" = "Sprawdzono przed chwilą";
 "wBlock will fetch and enable the script automatically." = "wBlock automatycznie pobierze i włączy skrypt.";
-"Add domains to disable ad blocking on specific sites" = "Dodaj domeny, na których wBlock ma pozostać wyłączony";
 "1." = "1.";
 "Add Mode" = "Tryb dodawania";
 "Keep All" = "Zachowaj wszystko";
@@ -271,7 +263,6 @@
 "Summary" = "Podsumowanie";
 "Blocked: %d" = "Zablokowane: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Dla %@ dostępne są tylko listy utrzymywane przez społeczność. Włącz je, jeśli Ci to odpowiada.";
-"Remove from Whitelist" = "Usuń wyjątek";
 "Downloaded %d update" = "Pobrano %d aktualizację";
 "Safari → Settings → Extensions" = "Safari → Ustawienia → Rozszerzenia";
 "Settings → Apps → Safari → Extensions" = "Ustawienia → Aplikacje → Safari → Rozszerzenia";
@@ -331,7 +322,6 @@
 "Completed" = "Ukończono";
 "Due soon catch-up" = "Wyrównanie wkrótce do wykonania";
 "Edit" = "Edytuj";
-"Element Zapper Rules" = "Reguły ukrywania elementów";
 "Execution: %@" = "Wykonanie: %@";
 "Expired %@" = "Wygasło %@";
 "Export Settings" = "Eksportuj ustawienia";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "Import nie powiódł się: %@";
 "Info.plist missing" = "Brak pliku Info.plist";
 "Near Safari limit: %@" = "Blisko limitu Safari: %@";
-"No Element Zapper Rules" = "Brak reguł ukrywania elementów";
 "No background run recorded" = "Nie zapisano żadnego uruchomienia w tle";
 "No foreground catch-up recorded" = "Nie zapisano żadnego wyrównania na pierwszym planie";
 "No silent push received yet" = "Nie odebrano jeszcze cichego powiadomienia push";
@@ -358,7 +347,6 @@
 "Recorded" = "Zapisano";
 "Received %@, %@ %@" = "Otrzymano %@, %@ %@";
 "Received %@, waiting for completion" = "Otrzymano %@, oczekiwanie na zakończenie";
-"Refresh rules" = "Odśwież reguły";
 "Registered" = "Zarejestrowano";
 "Registration: %@" = "Rejestracja: %@";
 "Reminders" = "Przypomnienia";
@@ -392,7 +380,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Unavailable" = "Niedostępne";
 "Undo" = "Cofnij";
 "Updating…" = "Aktualizowanie…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Ukrywaj elementy za pomocą rozszerzenia wBlock w Safari, a następnie zarządzaj tutaj regułami.";
 "due now" = "termin teraz";
 "never" = "nigdy";
 "%d rule" = "%d reguła";
@@ -706,3 +693,18 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "Dodatek EasyList od eyeo dla stron w języku tajskim, greckim, słoweńskim, chorwackim, serbskim, bośniackim i filipińskim.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Społecznościowa lista filtrów blokująca reklamy na stronach w języku dhivehi (malediwskim).";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Rosyjskojęzyczna lista filtrów obejmująca także strony w języku ukraińskim, kazachskim i uzbeckim.";
+
+/* Site Settings hub */
+"Site Settings" = "Ustawienia witryny";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Dodane witryny są na białej liście: wBlock jest na nich całkowicie wyłączony.";
+"Whitelisted" = "Na białej liście";
+"%d script off" = "%d skrypt wyłączony";
+"%d scripts off" = "%d skryptów wyłączonych";
+"No Site Settings" = "Brak ustawień witryn";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Dodaj tutaj witrynę do białej listy albo dostosuj skrypty użytkownika i reguły usuwacza elementów dla poszczególnych witryn z okna wBlock w Safari.";
+"Reset Site Settings" = "Resetuj ustawienia witryny";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "To usuwa wpis na białej liście, wyjątki skryptów użytkownika i reguły usuwacza dla %@.";
+"Run on this site" = "Uruchamiaj w tej witrynie";
+"Apply rules on this site" = "Stosuj reguły w tej witrynie";
+"Changes take full effect after the next apply." = "Zmiany w pełni zaczną obowiązywać po następnym zastosowaniu.";

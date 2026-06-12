@@ -1544,11 +1544,7 @@ public actor SharedAutoUpdateManager {
         let hasAffinityFilters = !affinityFilterIDs.isEmpty
         let mirroredZapperRulesText = await MainActor.run {
             ZapperContentBlockerRuleGenerator.generatedRulesText(
-                from: Dictionary(
-                    uniqueKeysWithValues: ProtobufDataManager.shared.getZapperDomains().map { host in
-                        (host, ProtobufDataManager.shared.getZapperRules(forHost: host))
-                    }
-                )
+                from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
             )
         }
         var targetMetrics: [RebuildTargetMetrics] = []

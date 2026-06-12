@@ -115,7 +115,6 @@
 "Enabled" = "활성화됨";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count)개 항목";
 "Disabled" = "비활성화됨";
-"Whitelisted Domains" = "사이트 예외";
 "It will be enabled automatically." = "자동으로 활성화됩니다.";
 "Debug" = "디버그";
 "Next: Loading…" = "다음: 로딩 중…";
@@ -131,14 +130,11 @@
 "Title" = "제목";
 "No updates available" = "사용 가능한 업데이트 없음";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성을 찾았습니다. 초기 설정을 건너뛰고 해당 구성을 사용할 수 있습니다.";
-"example.com" = "example.com";
-"Add Domain" = "도메인 추가";
 "Regional filters: %@" = "지역 필터: %@";
 "Done" = "완료";
 "Use iCloud Setup" = "iCloud 설정 사용";
 "Tell us where you browse so we can enable the right regional filters." = "적절한 지역 필터를 활성화할 수 있도록 주로 인터넷을 탐색하는 지역을 알려주세요.";
 "Updated %d scripts" = "스크립트 %d개 업데이트됨";
-"Delete Selected" = "선택 항목 삭제";
 "File Information" = "파일 정보";
 "Search scripts" = "스크립트 검색";
 "Remove" = "제거";
@@ -146,7 +142,6 @@
 "Applied" = "적용됨";
 "7d" = "7일";
 "Critical Setup Required" = "중요 설정 필요";
-"No Whitelisted Domains" = "사이트 예외가 없습니다";
 "Paste" = "붙여넣기";
 "Cancel" = "취소";
 "URL" = "URL";
@@ -186,8 +181,6 @@
 "That title is already used by another filter list." = "해당 제목은 이미 다른 필터 목록에서 사용 중입니다.";
 "N/A" = "해당 없음";
 "Import Failed" = "가져오기 실패";
-"Manage Whitelist" = "허용 목록 관리";
-"Manage Element Zapper Rules" = "요소 제거기 규칙 관리";
 "FilterApply" = "필터 적용";
 "Every %d hours" = "%d시간마다";
 "Update Interval" = "업데이트 간격";
@@ -240,7 +233,6 @@
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "미리보기 표시 중 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
 "Checked just now" = "방금 확인됨";
 "wBlock will fetch and enable the script automatically." = "wBlock이 자동으로 스크립트를 가져와 활성화합니다.";
-"Add domains to disable ad blocking on specific sites" = "wBlock을 꺼 둬야 하는 도메인을 추가하세요";
 "1." = "1.";
 "Add Mode" = "추가 모드";
 "Keep All" = "모두 유지";
@@ -271,7 +263,6 @@
 "Summary" = "요약";
 "Blocked: %d" = "차단됨: %d";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@에 대해서는 커뮤니티 관리 목록만 사용할 수 있습니다. 괜찮으시다면 활성화하세요.";
-"Remove from Whitelist" = "예외 제거";
 "Downloaded %d update" = "업데이트 %d개 다운로드됨";
 "Safari → Settings → Extensions" = "Safari → 설정 → 확장 프로그램";
 "Settings → Apps → Safari → Extensions" = "설정 → 앱 → Safari → 확장 프로그램";
@@ -331,7 +322,6 @@
 "Completed" = "완료됨";
 "Due soon catch-up" = "곧 기한이 오는 보충 실행";
 "Edit" = "편집";
-"Element Zapper Rules" = "요소 숨김 규칙";
 "Execution: %@" = "실행: %@";
 "Expired %@" = "만료됨 %@";
 "Export Settings" = "설정 내보내기";
@@ -345,7 +335,6 @@
 "Import failed: %@" = "가져오기 실패: %@";
 "Info.plist missing" = "Info.plist가 없습니다";
 "Near Safari limit: %@" = "Safari 제한에 가까움: %@";
-"No Element Zapper Rules" = "요소 숨김 규칙이 없습니다";
 "No background run recorded" = "기록된 백그라운드 실행이 없습니다";
 "No foreground catch-up recorded" = "기록된 포그라운드 보충 실행이 없습니다";
 "No silent push received yet" = "아직 무음 푸시를 받지 못했습니다";
@@ -358,7 +347,6 @@
 "Recorded" = "기록됨";
 "Received %@, %@ %@" = "%@ 수신, %@ %@";
 "Received %@, waiting for completion" = "%@ 수신, 완료 대기 중";
-"Refresh rules" = "규칙 새로 고침";
 "Registered" = "등록됨";
 "Registration: %@" = "등록: %@";
 "Reminders" = "알림";
@@ -392,7 +380,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "사용할 수 없음";
 "Undo" = "실행 취소";
 "Updating…" = "업데이트 중…";
-"Zap elements on any website using the wBlock extension in Safari, then manage them here." = "Safari의 wBlock 확장으로 요소를 숨기고 여기에서 규칙을 관리하세요.";
 "due now" = "지금 실행 예정";
 "never" = "없음";
 "%d rule" = "규칙 %d개";
@@ -706,3 +693,18 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino." = "태국어, 그리스어, 슬로베니아어, 크로아티아어, 세르비아어, 보스니아어 및 필리핀어 웹사이트를 위한 eyeo의 EasyList 보충 필터입니다.";
 "Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "디베히어(몰디브어) 웹사이트에서 광고를 차단하는 커뮤니티 필터 목록입니다.";
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "우크라이나어, 카자흐어 및 우즈베크어 웹사이트도 포함하는 러시아어 필터 목록입니다.";
+
+/* Site Settings hub */
+"Site Settings" = "사이트 설정";
+"example.com" = "example.com";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "추가한 사이트는 예외로 등록되어 wBlock이 완전히 꺼집니다.";
+"Whitelisted" = "예외 등록됨";
+"%d script off" = "스크립트 %d개 꺼짐";
+"%d scripts off" = "스크립트 %d개 꺼짐";
+"No Site Settings" = "사이트 설정 없음";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "여기에서 사이트를 예외로 등록하거나, Safari의 wBlock 팝업에서 사이트별 유저스크립트와 요소 제거기 규칙을 조정하세요.";
+"Reset Site Settings" = "사이트 설정 재설정";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@의 예외 항목, 유저스크립트 예외, 제거기 규칙을 삭제합니다.";
+"Run on this site" = "이 사이트에서 실행";
+"Apply rules on this site" = "이 사이트에서 규칙 적용";
+"Changes take full effect after the next apply." = "변경 사항은 다음 적용 후 완전히 반영됩니다.";

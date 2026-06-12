@@ -14,6 +14,9 @@ final class ZapperRuleManager: ObservableObject {
     /// Sorted list of hostnames that have at least one zapper rule.
     @Published private(set) var domains: [String] = []
 
+    /// Hostnames whose zapper rules are kept but currently not applied.
+    @Published private(set) var disabledDomains: Set<String> = []
+
     /// Convenience binding target: rules for the currently selected domain.
     @Published private(set) var rulesForSelectedDomain: [String] = []
 
@@ -87,6 +90,19 @@ final class ZapperRuleManager: ObservableObject {
         return rules(for: hostname).count
     }
 
+    /// True when the hostname's rules are kept but not applied.
+    func isDisabled(_ hostname: String) -> Bool {
+        disabledDomains.contains(hostname)
+    }
+
+    /// Flips the per-host kill switch and refreshes local state.
+    func setDisabled(_ disabled: Bool, forDomain hostname: String) {
+        Task { @MainActor in
+            await ProtobufDataManager.shared.setZapperRulesDisabled(disabled, forHost: hostname)
+            await refreshFromDisk()
+        }
+    }
+
     /// Re-inserts a previously deleted rule and refreshes local state.
     func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
         Task { @MainActor in
@@ -107,6 +123,7 @@ final class ZapperRuleManager: ObservableObject {
     private func publishStateFromDataManager() {
         let discovered = ProtobufDataManager.shared.getZapperDomains()
         domains = discovered
+        disabledDomains = Set(ProtobufDataManager.shared.getDisabledZapperDomains())
         if let selectedDomain {
             rulesForSelectedDomain = rules(for: selectedDomain)
         }

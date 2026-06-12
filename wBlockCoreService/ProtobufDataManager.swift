@@ -745,6 +745,7 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     /// Sets/replaces rules for a host. If rules are empty, removes the key.
+    /// Preserves the host's `disabled` flag so content-script syncs cannot reset it.
     @MainActor
     public func setZapperRules(forHost host: String, rules: [String]) async {
         let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
@@ -754,6 +755,7 @@ public class ProtobufDataManager: ObservableObject {
             } else {
                 var ruleList = Wblock_Data_ZapperRuleList()
                 ruleList.selectors = filtered
+                ruleList.disabled = data.extensionData.zapperRulesByHost[host]?.disabled ?? false
                 data.extensionData.zapperRulesByHost[host] = ruleList
             }
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
@@ -867,6 +869,81 @@ public class ProtobufDataManager: ObservableObject {
             ruleList.selectors.insert(selector, at: insertIndex)
             data.extensionData.zapperRulesByHost[host] = ruleList
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    /// True when the host's zapper rules are kept but not applied.
+    public func isZapperDisabled(forHost host: String) -> Bool {
+        appData.extensionData.zapperRulesByHost[host]?.disabled ?? false
+    }
+
+    /// Sorted hostnames whose zapper rules are currently disabled.
+    public func getDisabledZapperDomains() -> [String] {
+        appData.extensionData.zapperRulesByHost
+            .filter { $0.value.disabled && !$0.value.selectors.isEmpty }
+            .map { $0.key }
+            .sorted()
+    }
+
+    /// Flips the per-host kill switch. No-op for hosts without rules.
+    @MainActor
+    public func setZapperRulesDisabled(_ disabled: Bool, forHost host: String) async {
+        await updateDataImmediately { data in
+            guard var ruleList = data.extensionData.zapperRulesByHost[host] else { return }
+            ruleList.disabled = disabled
+            data.extensionData.zapperRulesByHost[host] = ruleList
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    /// Rules per host with disabled hosts and empty selectors filtered out.
+    /// This is the only input rule generation should use.
+    public func getActiveZapperRulesByHost() -> [String: [String]] {
+        appData.extensionData.zapperRulesByHost.compactMapValues { ruleList in
+            guard !ruleList.disabled else { return nil }
+            let selectors = ruleList.selectors.filter {
+                !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            return selectors.isEmpty ? nil : selectors
+        }
+    }
+
+    // MARK: - Per-Site Userscript Exceptions
+
+    /// Map of script UUID string -> hosts where that script is disabled.
+    public func getUserScriptDisabledHosts() -> [String: [String]] {
+        appData.userScriptDisabledHosts.mapValues { $0.hosts }
+    }
+
+    /// Hosts where the given script is disabled.
+    public func getUserScriptDisabledHosts(forScriptID id: String) -> [String] {
+        appData.userScriptDisabledHosts[id]?.hosts ?? []
+    }
+
+    /// Replaces the disabled-host list for one script; empty list removes the entry.
+    @MainActor
+    public func setUserScriptDisabledHosts(_ hosts: [String], forScriptID id: String) async {
+        await updateDataImmediately { data in
+            if hosts.isEmpty {
+                data.userScriptDisabledHosts.removeValue(forKey: id)
+            } else {
+                var list = Wblock_Data_HostList()
+                list.hosts = hosts
+                data.userScriptDisabledHosts[id] = list
+            }
+        }
+    }
+
+    /// Replaces the whole exceptions map (backup restore / cloud sync / migration).
+    @MainActor
+    public func setAllUserScriptDisabledHosts(_ map: [String: [String]]) async {
+        await updateDataImmediately { data in
+            data.userScriptDisabledHosts.removeAll()
+            for (id, hosts) in map where !hosts.isEmpty {
+                var list = Wblock_Data_HostList()
+                list.hosts = hosts
+                data.userScriptDisabledHosts[id] = list
+            }
         }
     }
 

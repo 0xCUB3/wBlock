@@ -93,7 +93,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 - **Auto-updates** from every hour to every 7 days, or manual. macOS can keep checking through a bundled launch agent and background update service, iOS background checks are best-effort
 - **Per-site controls** — disable blocking on specific sites from the Safari toolbar
 - **Blocked request logger** (macOS) — see what's being blocked on each page
-- **Whitelist** for trusted domains
+- **Per-site settings** — whitelist trusted domains, toggle userscripts per site, and switch element zapper rules on or off per domain
 - **Regional filters** with auto-detection based on your locale
 - **Homebrew cask** for macOS: `brew tap 0xcub3/wblock && brew install --cask wblock`
 

@@ -200,11 +200,30 @@ struct Wblock_Data_AppData: @unchecked Sendable {
   /// Clears the value of `extensionData`. Subsequent reads from it will return its default value.
   mutating func clearExtensionData() {_uniqueStorage()._extensionData = nil}
 
+  /// Per-site userscript exceptions: script UUID -> hosts where it is disabled
+  var userScriptDisabledHosts: Dictionary<String,Wblock_Data_HostList> {
+    get {_storage._userScriptDisabledHosts}
+    set {_uniqueStorage()._userScriptDisabledHosts = newValue}
+  }
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 
   fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+/// Reusable wrapper for a list of hostnames (proto3 maps cannot hold repeated values)
+struct Wblock_Data_HostList: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var hosts: [String] = []
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
 }
 
 /// App-wide settings
@@ -495,6 +514,9 @@ struct Wblock_Data_ZapperRuleList: Sendable {
 
   var pendingDeletions: [String] = []
 
+  /// per-host kill switch; rules are kept but not applied
+  var disabled: Bool = false
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -706,7 +728,7 @@ extension Wblock_Data_Platform: SwiftProtobuf._ProtoNameProviding {
 
 extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{3}filter_lists\0\u{3}user_scripts\0\u{1}whitelist\0\u{3}rule_counts\0\u{1}performance\0\u{3}auto_update\0\u{3}extension_data\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{3}filter_lists\0\u{3}user_scripts\0\u{1}whitelist\0\u{3}rule_counts\0\u{1}performance\0\u{3}auto_update\0\u{3}extension_data\0\u{3}user_script_disabled_hosts\0")
 
   fileprivate class _StorageClass {
     var _settings: Wblock_Data_AppSettings? = nil
@@ -717,6 +739,7 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     var _performance: Wblock_Data_PerformanceData? = nil
     var _autoUpdate: Wblock_Data_AutoUpdateMetadata? = nil
     var _extensionData: Wblock_Data_ExtensionData? = nil
+    var _userScriptDisabledHosts: Dictionary<String,Wblock_Data_HostList> = [:]
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -735,6 +758,7 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
       _performance = source._performance
       _autoUpdate = source._autoUpdate
       _extensionData = source._extensionData
+      _userScriptDisabledHosts = source._userScriptDisabledHosts
     }
   }
 
@@ -761,6 +785,7 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
         case 6: try { try decoder.decodeSingularMessageField(value: &_storage._performance) }()
         case 7: try { try decoder.decodeSingularMessageField(value: &_storage._autoUpdate) }()
         case 8: try { try decoder.decodeSingularMessageField(value: &_storage._extensionData) }()
+        case 9: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_HostList>.self, value: &_storage._userScriptDisabledHosts) }()
         default: break
         }
       }
@@ -797,6 +822,9 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
       try { if let v = _storage._extensionData {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
       } }()
+      if !_storage._userScriptDisabledHosts.isEmpty {
+        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_HostList>.self, value: _storage._userScriptDisabledHosts, fieldNumber: 9)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -814,10 +842,41 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
         if _storage._performance != rhs_storage._performance {return false}
         if _storage._autoUpdate != rhs_storage._autoUpdate {return false}
         if _storage._extensionData != rhs_storage._extensionData {return false}
+        if _storage._userScriptDisabledHosts != rhs_storage._userScriptDisabledHosts {return false}
         return true
       }
       if !storagesAreEqual {return false}
     }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Wblock_Data_HostList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".HostList"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hosts\0")
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedStringField(value: &self.hosts) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.hosts.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.hosts, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Wblock_Data_HostList, rhs: Wblock_Data_HostList) -> Bool {
+    if lhs.hosts != rhs.hosts {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1357,7 +1416,7 @@ extension Wblock_Data_PerformanceData: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ZapperRuleList"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}selectors\0\u{3}pending_deletions\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}selectors\0\u{3}pending_deletions\0\u{1}disabled\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1367,6 +1426,7 @@ extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._Mess
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedStringField(value: &self.selectors) }()
       case 2: try { try decoder.decodeRepeatedStringField(value: &self.pendingDeletions) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.disabled) }()
       default: break
       }
     }
@@ -1379,12 +1439,16 @@ extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._Mess
     if !self.pendingDeletions.isEmpty {
       try visitor.visitRepeatedStringField(value: self.pendingDeletions, fieldNumber: 2)
     }
+    if self.disabled != false {
+      try visitor.visitSingularBoolField(value: self.disabled, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Wblock_Data_ZapperRuleList, rhs: Wblock_Data_ZapperRuleList) -> Bool {
     if lhs.selectors != rhs.selectors {return false}
     if lhs.pendingDeletions != rhs.pendingDeletions {return false}
+    if lhs.disabled != rhs.disabled {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
