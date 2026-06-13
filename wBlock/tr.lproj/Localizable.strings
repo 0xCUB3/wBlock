@@ -430,7 +430,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "AdGuard Spanish/Portuguese filter" = "AdGuard İspanyolca/Portekizce filtresi";
 "AdGuard Tracking Protection Filter" = "AdGuard İzleme Koruması Filtresi";
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL İzleme Koruması Filtresi";
-"Actually Legitimate URL Shortener Tool" = "Gerçekten Meşru URL Kısaltıcı Aracı";
+"Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "AdGuard Turkish filter" = "AdGuard Türkçe filtresi";
 "AdGuard Ukrainian filter" = "AdGuard Ukraynaca filtresi";
 "AdGuard Widgets" = "AdGuard Araçlar";
@@ -475,7 +475,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
 "Blocks online tracking and web analytics systems." = "Çevrim içi izleme ve web analitik sistemlerini engeller.";
 "Removes tracking parameters from URLs." = "URL'lerden izleme parametrelerini kaldırır.";
-"Shortens links by removing unnecessary tracking and clutter parameters." = "Gereksiz izleme ve fazlalık parametrelerini kaldırarak bağlantıları kısaltır.";
+"Shortens links by removing unnecessary tracking and clutter parameters." = "Gereksiz takip parametrelerini ve fazlalıkları temizleyerek URL'leri kısaltır.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Ödeme duvarı (paywall) ile ilgili öğeleri engeller. En iyi sonuçlar için ilgili kullanıcı betiğini etkinleştirin.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
 "Blocks social media content on webpages." = "Web sayfalarındaki sosyal medya içeriklerini engeller.";
@@ -600,7 +600,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Romanian ad blocking filter subscription." = "Romence reklam engelleme filtre listesi.";
 "Rule Capacity" = "Kural Kapasitesi";
 "Rule Limit Warning" = "Kural sınırı uyarısı";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Daha fazla liste nadiren daha iyi engelleme anlamına gelir: çoğu önerilen varsayılan listelerle örtüşür ve esas olarak kural kapasitesini tüketir. Can sıkıcı filtreler ve bölgesel filtreler başlıca istisnalardır.";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Daha çok liste, daha iyi engelleme demek değildir. Çoğu liste, önerilen varsayılan filtrelere dâhildir ve sadece kural sınırınızı doldurur. Can sıkıcı öğeler ile bölgesel filtreler bu duruma dâhil değildir.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari, her içerik engelleyici genişletmesini %@ kural ile sınırlar.\nToplam kapasite (tüm wBlock engelleyicileri): %@ kural.\n\n%@\n\nwBlock, kapasiteyi en üst düzeye çıkarmak için etkinleştirdiğiniz filtre listelerini birden fazla engelleyiciye dağıtır, ancak çok fazla büyük liste etkinleştirirseniz, Safari'nin sınırlamalarına takılabilirsiniz.";
 "Show preview only" = "Sadece önizlemeyi göster";
 "Showing preview (%@ of %@)" = "Önizleme gösteriliyor (%@ / %@)";
@@ -665,8 +665,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This doesn't change the app's display language, which always follows your device settings." = "Bu, uygulamanın görüntüleme dilini değiştirmez, uygulama dili her zaman cihaz ayarlarınızı temel alır.";
 "No regional filters needed. The default filter lists already cover English and international sites." = "Bölgesel filtreye gerek yok. Varsayılan filtre listeleri zaten İngilizce ve uluslararası siteleri kapsamaktadır.";
 "No regional filters available. However, the default filter lists already cover English and international sites." = "Bölgesel filtre mevcut değil. Ancak, varsayılan filtre listeleri zaten İngilizce ve uluslararası siteleri kapsamaktadır.";
-"No regional userscripts needed. The default userscripts already cover English and international sites." = "Bölgesel kullanıcı betiğine gerek yok. Varsayılan kullanıcı betikleri zaten İngilizce ve uluslararası siteleri kapsamaktadır.";
-"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Bölgesel kullanıcı betiği mevcut değil. Ancak, varsayılan kullanıcı betikleri zaten İngilizce ve uluslararası siteleri kapsamaktadır.";
+"No regional userscripts needed. The default userscripts already cover English and international sites." = "Bölgesel kullanıcı betiklerine gerek yoktur. Varsayılan kullanıcı betikleri zaten İngilizce ve uluslararası siteleri kapsamaktadır.";
+"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Bölgesel kullanıcı betikleri mevcut değil. Ancak, varsayılan kullanıcı betikleri zaten İngilizce ve uluslararası siteleri kapsamaktadır.";
 "Regional" = "Bölgesel";
 "Other" = "Diğer";
 "Next: review matching filters." = "Sonraki: eşleşen filtreleri incele.";
@@ -703,14 +703,14 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Site Settings hub */
 "Site Settings" = "Site ayarları";
 "example.com" = "example.com";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "Eklenen siteler izin listesine alınır: wBlock bu sitelerde tamamen devre dışı kalır.";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Eklenen siteler izin listesine alınır: wBlock bu sitelerde tamamen kapatılır.";
 "Whitelisted" = "İzin listesinde";
-"%d script off" = "%d betik kapalı";
-"%d scripts off" = "%d betik kapalı";
-"No Site Settings" = "Site ayarı yok";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Buradan bir siteyi izin listesine alın veya kullanıcı betiklerini ve öğe gizleyici kurallarını Safari'deki wBlock açılır penceresinden siteye göre ayarlayın.";
+"%d script off" = "%d betik devre dışı";
+"%d scripts off" = "%d betik devre dışı";
+"No Site Settings" = "Site ayarları yok";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Bir siteyi buradan izin listesine ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiği ve öğe gizleme kurallarını ayarlayabilirsiniz.";
 "Reset Site Settings" = "Site ayarlarını sıfırla";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Bu, %@ için izin listesi kaydını, kullanıcı betiği istisnalarını ve gizleyici kurallarını kaldırır.";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Bu işlem, %@ için izin listesi girdisini, kullanıcı betiği istisnalarını ve öğe gizleme kurallarını kaldırır.";
 "Run on this site" = "Bu sitede çalıştır";
 "Apply rules on this site" = "Kuralları bu sitede uygula";
-"Changes take full effect after the next apply." = "Değişiklikler bir sonraki uygulamadan sonra tamamen etkili olur.";
+"Changes take full effect after the next apply." = "Değişiklikler bir sonraki uygulama işleminden sonra tamamen geçerli olacaktır.";
