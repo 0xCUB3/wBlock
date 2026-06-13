@@ -42,14 +42,42 @@ enum CloudSyncLocalUserScriptReconciler {
     static func localNamesToDeleteDuringRemoteApply(
         localNames: [String],
         remoteScripts: [CloudSyncLocalUserScript],
-        deletedNames: Set<String>
+        deletedNames: Set<String>,
+        lastSyncedNames: Set<String>
     ) -> Set<String> {
         let localNormalized = Set(localNames.map(normalizedName))
         let desiredRemote = Set(remoteScripts.map { normalizedName($0.name) }).filter { !$0.isEmpty }
-        let deletedNormalized = Set(deletedNames.map(normalizedName))
+        let deletedNormalized = normalizedNames(deletedNames)
+        let syncedNormalized = normalizedNames(lastSyncedNames)
 
         return localNormalized.filter { normalizedLocal in
-            deletedNormalized.contains(normalizedLocal) || !desiredRemote.contains(normalizedLocal)
+            if deletedNormalized.contains(normalizedLocal) {
+                return true
+            }
+            // Only remove a local script the user previously had synced and that the winning
+            // remote payload no longer contains. A local script that was never synced (e.g. a
+            // brand-new import that has not uploaded yet) must be kept, not deleted — otherwise
+            // it is silently and unrecoverably lost (#437).
+            return syncedNormalized.contains(normalizedLocal) && !desiredRemote.contains(normalizedLocal)
+        }
+    }
+
+    /// Local scripts that should be kept and scheduled for upload during a remote apply: ones that
+    /// were never synced, are not tombstoned, and are absent from the winning remote payload.
+    static func localNamesNeverSyncedToUpload(
+        localNames: [String],
+        remoteScripts: [CloudSyncLocalUserScript],
+        deletedNames: Set<String>,
+        lastSyncedNames: Set<String>
+    ) -> Set<String> {
+        let desiredRemote = Set(remoteScripts.map { normalizedName($0.name) }).filter { !$0.isEmpty }
+        let deletedNormalized = normalizedNames(deletedNames)
+        let syncedNormalized = normalizedNames(lastSyncedNames)
+
+        return normalizedNames(localNames).filter { normalizedLocal in
+            !deletedNormalized.contains(normalizedLocal)
+                && !syncedNormalized.contains(normalizedLocal)
+                && !desiredRemote.contains(normalizedLocal)
         }
     }
 
