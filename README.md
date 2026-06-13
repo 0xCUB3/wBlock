@@ -275,6 +275,18 @@ Yes. The userscript engine implements the Greasemonkey API (GM_getValue, GM_setV
 </details>
 
 <details>
+<summary><b>How do I block Twitch ads?</b></summary>
+<br>
+wBlock already bundles the <b>AdGuard Extra</b> userscript, which removes Twitch ads by talking to Twitch's GraphQL API (gql.twitch.tv) — the same approach uBlock Origin users rely on. It ships <b>disabled by default</b>, so enable it to block Twitch ads:
+<br><br>
+1. Open wBlock and go to the <i>Userscripts</i> section.<br>
+2. Find <b>AdGuard Extra</b> in the built-in list and toggle it on.<br>
+3. Reload any open Twitch tabs.
+<br><br>
+This is best-effort, community-style ad blocking: Twitch frequently changes how ads are served, so it may occasionally break until the userscript is updated. There is no guarantee every ad is removed.
+</details>
+
+<details>
 <summary><b>How often do filters update?</b></summary>
 <br>
 Auto-update intervals are configurable from 1 hour to 7 days, or manually triggered. On macOS, enabling auto-update registers a bundled launch agent that can keep checking while the app is closed through a background update service. On iOS and iPadOS, background checks are best-effort and may wait until the system wakes wBlock or you reopen it. Opening Safari does not trigger updates. Updates use HTTP conditional requests (If-Modified-Since/ETag headers) to minimize bandwidth usage.
