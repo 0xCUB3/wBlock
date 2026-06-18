@@ -714,3 +714,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Run on this site" = "在此網站執行";
 "Apply rules on this site" = "在此網站套用規則";
 "Changes take full effect after the next apply." = "變更會在下次套用後完全生效。";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "暫停封鎖";
+"Blocking" = "封鎖";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "暫時停用所有封鎖（內容封鎖器、使用者腳本和樣式），而無需在 Safari 設定中關閉擴充功能。";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "封鎖已暫停。所有過濾器、使用者腳本和樣式都會保持關閉，直到您重新開啟。";
+"Pausing blocking..." = "正在暫停封鎖…";
+"Blocking paused" = "封鎖已暫停";
+"Blocking resumed" = "封鎖已恢復";
+"Blocking is paused" = "封鎖已暫停";
+"Resume" = "恢復";
+"Resume Blocking" = "恢復封鎖";
+"Blocking is paused. Tap Resume to re-enable." = "封鎖已暫停。點一下「恢復」以重新啟用所有封鎖。";

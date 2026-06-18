@@ -714,3 +714,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Run on this site" = "Run on this site";
 "Apply rules on this site" = "Apply rules on this site";
 "Changes take full effect after the next apply." = "Changes take full effect after the next apply.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Pause Blocking";
+"Blocking" = "Blocking";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Temporarily disable all blocking — content blockers, userscripts, and styles — without turning extensions off in Safari Settings.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Blocking is paused. All filters, userscripts, and styles stay off until you turn this back on.";
+"Pausing blocking..." = "Pausing blocking...";
+"Blocking paused" = "Blocking paused";
+"Blocking resumed" = "Blocking resumed";
+"Blocking is paused" = "Blocking is paused";
+"Resume" = "Resume";
+"Resume Blocking" = "Resume Blocking";
+"Blocking is paused. Tap Resume to re-enable." = "Blocking is paused. Tap Resume to re-enable all blocking.";

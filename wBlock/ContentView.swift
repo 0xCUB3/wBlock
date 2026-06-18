@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
+    @State private var selectedTab: Int = 0
     @Environment(\.scenePhase) var scenePhase
 
     private var hasCompletedOnboarding: Bool {
@@ -107,16 +108,19 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             filtersView
+                .tag(0)
                 .tabItem {
                     Label("Filters", systemImage: "list.bullet.rectangle")
                 }
             userscriptsView
+                .tag(1)
                 .tabItem {
                     Label("Userscripts", systemImage: "doc.text.fill")
                 }
             settingsView
+                .tag(2)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
@@ -179,6 +183,11 @@ struct ContentView: View {
     private var filtersView: some View {
         CompatibleNavigationStack {
             nativeFiltersListView
+                .safeAreaInset(edge: .top) {
+                    if filterManager.isBlockingPaused {
+                        pauseBlockingBanner
+                    }
+                }
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -335,6 +344,50 @@ struct ContentView: View {
 
     private var settingsView: some View {
         SettingsView(filterManager: filterManager)
+    }
+
+    @ViewBuilder
+    private var pauseBlockingBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "pause.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.orange)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pause Blocking")
+                    .font(.subheadline.weight(.semibold))
+                Text("Blocking is paused. Tap Resume to re-enable all blocking.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                Task { await filterManager.setBlockingPaused(false) }
+            } label: {
+                if filterManager.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Resume")
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+            .controlSize(.small)
+            .disabled(filterManager.isLoading)
+            .accessibilityLabel("Resume Blocking")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .overlay(alignment: .bottom) {
+            Divider()
+        }
+        .accessibilityElement(children: .contain)
     }
 
     private var statsCardsView: some View {

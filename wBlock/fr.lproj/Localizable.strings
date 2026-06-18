@@ -714,3 +714,17 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Run on this site" = "Exécuter sur ce site";
 "Apply rules on this site" = "Appliquer les règles sur ce site";
 "Changes take full effect after the next apply." = "Les changements prendront pleinement effet après la prochaine application.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Mettre en pause le blocage";
+"Blocking" = "Blocage";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Désactivez temporairement tout le blocage (bloqueurs de contenu, userscripts et styles) sans désactiver d'extensions dans les Réglages Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Le blocage est en pause. Tous les filtres, userscripts et styles restent désactivés jusqu'à ce que vous les réactiviez.";
+"Pausing blocking..." = "Mise en pause du blocage…";
+"Blocking paused" = "Blocage en pause";
+"Blocking resumed" = "Blocage repris";
+"Blocking is paused" = "Le blocage est en pause";
+"Resume" = "Reprendre";
+"Resume Blocking" = "Reprendre le blocage";
+"Blocking is paused. Tap Resume to re-enable." = "Le blocage est en pause. Appuyez sur Reprendre pour tout réactiver.";

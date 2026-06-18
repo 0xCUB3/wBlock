@@ -714,3 +714,17 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Run on this site" = "Rulează pe acest site";
 "Apply rules on this site" = "Aplică regulile pe acest site";
 "Changes take full effect after the next apply." = "Modificările intră complet în vigoare după următoarea aplicare.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Pauză blocare";
+"Blocking" = "Blocare";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Dezactivează temporar toată blocarea (blocante de conținut, userscripturi și stiluri) fără să oprești extensiile din Setările Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Blocarea este în pauză. Toate filtrele, userscripturile și stilurile rămân dezactivate până le reactivezi.";
+"Pausing blocking..." = "Se pun în pauză blocarea…";
+"Blocking paused" = "Blocare în pauză";
+"Blocking resumed" = "Blocare reluată";
+"Blocking is paused" = "Blocarea este în pauză";
+"Resume" = "Reia";
+"Resume Blocking" = "Reia blocarea";
+"Blocking is paused. Tap Resume to re-enable." = "Blocarea este în pauză. Atinge Reia pentru a reactiva toată blocarea.";

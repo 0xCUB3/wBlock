@@ -714,3 +714,17 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Run on this site" = "Auf dieser Website ausführen";
 "Apply rules on this site" = "Regeln auf dieser Website anwenden";
 "Changes take full effect after the next apply." = "Änderungen werden nach dem nächsten Anwenden vollständig wirksam.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Blockieren pausieren";
+"Blocking" = "Blockierung";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Alle Blockierung vorübergehend deaktivieren – Content-Blocker, Userskripte und Styles – ohne Erweiterungen in den Safari-Einstellungen auszuschalten.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Blockieren ist pausiert. Alle Filter, Userskripte und Styles bleiben deaktiviert, bis du dies wieder aktivierst.";
+"Pausing blocking..." = "Blockieren wird pausiert …";
+"Blocking paused" = "Blockieren pausiert";
+"Blocking resumed" = "Blockieren fortgesetzt";
+"Blocking is paused" = "Blockieren ist pausiert";
+"Resume" = "Fortsetzen";
+"Resume Blocking" = "Blockieren fortsetzen";
+"Blocking is paused. Tap Resume to re-enable." = "Blockieren ist pausiert. Tippe auf Fortsetzen, um alles wieder zu aktivieren.";

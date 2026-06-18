@@ -714,3 +714,17 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Run on this site" = "Esegui su questo sito";
 "Apply rules on this site" = "Applica regole su questo sito";
 "Changes take full effect after the next apply." = "Le modifiche avranno pieno effetto dopo la prossima applicazione.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Sospendi blocco";
+"Blocking" = "Blocco";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Disattiva temporaneamente tutto il blocco (blocker dei contenuti, userscript e stili) senza spegnere le estensioni nelle Impostazioni di Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Il blocco è sospeso. Tutti i filtri, userscript e stili restano disattivati finché non lo riattivi.";
+"Pausing blocking..." = "Sospensione del blocco…";
+"Blocking paused" = "Blocco sospeso";
+"Blocking resumed" = "Blocco ripreso";
+"Blocking is paused" = "Il blocco è sospeso";
+"Resume" = "Riprendi";
+"Resume Blocking" = "Riprendi blocco";
+"Blocking is paused. Tap Resume to re-enable." = "Il blocco è sospeso. Tocca Riprendi per riattivare tutto.";

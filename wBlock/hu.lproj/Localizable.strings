@@ -715,3 +715,17 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Run on this site" = "Futtatás ezen a webhelyen";
 "Apply rules on this site" = "Szabályok alkalmazása ezen a webhelyen";
 "Changes take full effect after the next apply." = "A módosítások a következő alkalmazás után lépnek teljesen életbe.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Blokkolás szüneteltetése";
+"Blocking" = "Blokkolás";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Az összes blokkolás (tartalomblokkolók, userscriptek, stílusok) ideiglenes kikapcsolása a Safari Beállításokban való kikapcsolásuk nélkül.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "A blokkolás szünetelve. Minden szűrő, userscript és stílus kikapcsolva marad, amíg újra be nem kapcsolod.";
+"Pausing blocking..." = "Blokkolás szüneteltetése…";
+"Blocking paused" = "Blokkolás szünetelve";
+"Blocking resumed" = "Blokkolás folytatva";
+"Blocking is paused" = "A blokkolás szünetelve";
+"Resume" = "Folytatás";
+"Resume Blocking" = "Blokkolás folytatása";
+"Blocking is paused. Tap Resume to re-enable." = "A blokkolás szünetelve. Koppints a Folytatás gombra az összes blokkolás újraengedélyezéséhez.";

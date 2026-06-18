@@ -714,3 +714,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Run on this site" = "Запускать на этом сайте";
 "Apply rules on this site" = "Применять правила на этом сайте";
 "Changes take full effect after the next apply." = "Изменения полностью вступят в силу после следующего применения.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Приостановить блокировку";
+"Blocking" = "Блокировка";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Временно отключите всю блокировку (блокировщики контента, пользовательские скрипты и стили), не выключая расширения в Настройках Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Блокировка приостановлена. Все фильтры, пользовательские скрипты и стили остаются выключенными, пока вы не включите их снова.";
+"Pausing blocking..." = "Приостановка блокировки…";
+"Blocking paused" = "Блокировка приостановлена";
+"Blocking resumed" = "Блокировка возобновлена";
+"Blocking is paused" = "Блокировка приостановлена";
+"Resume" = "Возобновить";
+"Resume Blocking" = "Возобновить блокировку";
+"Blocking is paused. Tap Resume to re-enable." = "Блокировка приостановлена. Нажмите «Возобновить», чтобы включить всю блокировку.";

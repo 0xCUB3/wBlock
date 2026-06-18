@@ -714,3 +714,17 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Run on this site" = "Executar neste site";
 "Apply rules on this site" = "Aplicar regras neste site";
 "Changes take full effect after the next apply." = "As alterações entram em vigor totalmente após a próxima aplicação.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Pausar bloqueio";
+"Blocking" = "Bloqueio";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Desative temporariamente todo o bloqueio (bloqueadores de conteúdo, userscripts e estilos) sem desligar extensões nos Ajustes do Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "O bloqueio está pausado. Todos os filtros, userscripts e estilos ficam desativados até você ligar de novo.";
+"Pausing blocking..." = "Pausando o bloqueio…";
+"Blocking paused" = "Bloqueio pausado";
+"Blocking resumed" = "Bloqueio retomado";
+"Blocking is paused" = "O bloqueio está pausado";
+"Resume" = "Retomar";
+"Resume Blocking" = "Retomar bloqueio";
+"Blocking is paused. Tap Resume to re-enable." = "O bloqueio está pausado. Toque em Retomar para reativar tudo.";

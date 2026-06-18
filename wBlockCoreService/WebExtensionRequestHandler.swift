@@ -538,6 +538,14 @@ public enum WebExtensionRequestHandler {
     /// Returns enabled userscripts for a URL. By default this uses lightweight descriptors,
     /// but callers can request hydrated payloads to avoid repeated native chunk messages.
     private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
+        // While blocking is globally paused, serve no userscripts so the paused state also
+        // suppresses userscript/userstyle injection — not just the declarative blockers.
+        if BlockingPauseStore.isPaused() {
+            let response = createResponse(with: ["userScripts": []])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
         guard let urlString = message["url"] as? String else {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
@@ -684,6 +692,13 @@ public enum WebExtensionRequestHandler {
     private static let totalInlineResponseBudget = 16 * 1024 * 1024
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
+        // Mirrors the pause check above so the page‑level userscript listing also reports none.
+        if BlockingPauseStore.isPaused() {
+            let response = createResponse(with: ["userScripts": []])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
         guard let urlString = message["url"] as? String else {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])

@@ -714,3 +714,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Run on this site" = "Εκτέλεση σε αυτόν τον ιστότοπο";
 "Apply rules on this site" = "Εφαρμογή κανόνων σε αυτόν τον ιστότοπο";
 "Changes take full effect after the next apply." = "Οι αλλαγές εφαρμόζονται πλήρως μετά την επόμενη εφαρμογή.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Παύση αποκλεισμού";
+"Blocking" = "Αποκλεισμός";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Προσωρινή απενεργοποίηση όλων των αποκλεισμών (αποκλειστές περιεχομένου, userscripts, στυλ) χωρίς να κλείσετε τις επεκτάσεις στις Ρυθμίσεις Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Ο αποκλεισμός είναι σε παύση. Όλα τα φίλτρα, τα userscripts και τα στυλ παραμένουν ανενεργά μέχρι να τα ενεργοποιήσετε ξανά.";
+"Pausing blocking..." = "Παύση αποκλεισμού…";
+"Blocking paused" = "Ο αποκλεισμός σε παύση";
+"Blocking resumed" = "Ο αποκλεισμός συνεχίστηκε";
+"Blocking is paused" = "Ο αποκλεισμός είναι σε παύση";
+"Resume" = "Συνέχιση";
+"Resume Blocking" = "Συνέχιση αποκλεισμού";
+"Blocking is paused. Tap Resume to re-enable." = "Ο αποκλεισμός είναι σε παύση. Πατήστε Συνέχιση για επανενεργοποίηση όλων.";

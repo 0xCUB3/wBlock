@@ -99,6 +99,41 @@ extension AppFilterManager {
 
         await MainActor.run { self.prepareApplyRunState() }
 
+        // While blocking is globally paused, never write real rules back to disk — leave the
+        // content blockers empty until the user explicitly resumes. This keeps manual Apply
+        // Changes, auto-update runs, and fast disabled-site updates consistent with pause.
+        if await MainActor.run(body: { self.isBlockingPaused }) {
+            await MainActor.run {
+                self.statusDescription = LocalizedStrings.text(
+                    "Blocking is paused",
+                    comment: "Apply pipeline pause status"
+                )
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text(
+                        "Blocking is paused",
+                        comment: "Apply pipeline stage"
+                    )
+                )
+                self.applyProgressViewModel.updatePhaseCompletion(
+                    updating: true,
+                    scripts: true
+                )
+            }
+            let cleared = await clearAllExtensionsAndEngine()
+            await MainActor.run {
+                self.lastRuleCount = 0
+                self.ruleCountsByExtension.removeAll()
+                self.extensionsApproachingLimit.removeAll()
+                self.saveRuleCounts()
+                self.isLoading = false
+                self.showingApplyProgressSheet = false
+                if cleared {
+                    self.markCurrentStateApplied()
+                }
+            }
+            return
+        }
+
         // Allow the apply progress UI to render fully before heavy work begins.
         let shouldDelayForUI = await MainActor.run { self.showingApplyProgressSheet }
         if shouldDelayForUI {
@@ -219,48 +254,8 @@ extension AppFilterManager {
             await ConcurrentLogManager.shared.info(
                 .filterApply, "No filters selected - clearing all extensions", metadata: [:])
 
-            let currentPlatform = self.currentPlatform
-
-            do {
-                try await Task.detached {
-                    let groupIdentifier = GroupIdentifier.shared.value
-                    try ContentBlockerService.clearFilterEngine(
-                        groupIdentifier: groupIdentifier
-                    )
-                    _ = try RemoveParamDNRRuleGenerator.clearSavedRules(
-                        groupIdentifier: groupIdentifier
-                    )
-
-                    let platformTargets = ContentBlockerTargetManager.shared.allTargets(
-                        forPlatform: currentPlatform
-                    )
-                    for targetInfo in platformTargets {
-                        let savedRuleCount = ContentBlockerService.saveContentBlocker(
-                            jsonRules: "[]",
-                            groupIdentifier: groupIdentifier,
-                            targetRulesFilename: targetInfo.rulesFilename
-                        )
-                        let outputMatchesEmptyArray = Self.contentBlockerOutputMatchesEmptyArray(
-                            targetRulesFilename: targetInfo.rulesFilename,
-                            groupIdentifier: groupIdentifier
-                        )
-                        guard savedRuleCount == 0, outputMatchesEmptyArray else {
-                            throw ApplyPipelineError.emptyRulesSaveFailed(
-                                targetName: targetInfo.displayName
-                            )
-                        }
-
-                        let reloadResult = await ContentBlockerService.reloadWithRetry(
-                            identifier: targetInfo.bundleIdentifier
-                        )
-                        guard reloadResult.success else {
-                            throw ApplyPipelineError.emptyRulesReloadFailed(
-                                targetName: targetInfo.displayName
-                            )
-                        }
-                    }
-                }.value
-
+            let cleared = await clearAllExtensionsAndEngine()
+            if cleared {
                 await MainActor.run {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
@@ -270,11 +265,6 @@ extension AppFilterManager {
                     self.extensionsApproachingLimit.removeAll()
                     self.saveRuleCounts()
                 }
-            } catch {
-                await failApplyRun(
-                    logMessage: "Failed to clear extensions and advanced engine",
-                    metadata: ["error": error.localizedDescription]
-                )
             }
             return
         }
@@ -669,6 +659,118 @@ extension AppFilterManager {
         } else {
             await ConcurrentLogManager.shared.error(
                 .filterApply, "Process completed with errors", metadata: ["status": statusDesc])
+        }
+    }
+
+    /// Clears the advanced (WebExtension) filter engine, remove-param DNR rules, and writes
+    /// an empty `[]` rule list to every content blocker target, then reloads each target.
+    /// Used both by the "no filters selected" apply path and by the global pause toggle.
+    /// Returns `true` on success, `false` after reporting the failure via `failApplyRun`.
+    func clearAllExtensionsAndEngine() async -> Bool {
+        let currentPlatform = self.currentPlatform
+
+        do {
+            try await Task.detached {
+                let groupIdentifier = GroupIdentifier.shared.value
+                try ContentBlockerService.clearFilterEngine(
+                    groupIdentifier: groupIdentifier
+                )
+                _ = try RemoveParamDNRRuleGenerator.clearSavedRules(
+                    groupIdentifier: groupIdentifier
+                )
+
+                let platformTargets = ContentBlockerTargetManager.shared.allTargets(
+                    forPlatform: currentPlatform
+                )
+                for targetInfo in platformTargets {
+                    let savedRuleCount = ContentBlockerService.saveContentBlocker(
+                        jsonRules: "[]",
+                        groupIdentifier: groupIdentifier,
+                        targetRulesFilename: targetInfo.rulesFilename
+                    )
+                    let outputMatchesEmptyArray = Self.contentBlockerOutputMatchesEmptyArray(
+                        targetRulesFilename: targetInfo.rulesFilename,
+                        groupIdentifier: groupIdentifier
+                    )
+                    guard savedRuleCount == 0, outputMatchesEmptyArray else {
+                        throw ApplyPipelineError.emptyRulesSaveFailed(
+                            targetName: targetInfo.displayName
+                        )
+                    }
+
+                    let reloadResult = await ContentBlockerService.reloadWithRetry(
+                        identifier: targetInfo.bundleIdentifier
+                    )
+                    guard reloadResult.success else {
+                        throw ApplyPipelineError.emptyRulesReloadFailed(
+                            targetName: targetInfo.displayName
+                        )
+                    }
+                }
+            }.value
+            return true
+        } catch {
+            await failApplyRun(
+                logMessage: "Failed to clear extensions and advanced engine",
+                metadata: ["error": error.localizedDescription]
+            )
+            return false
+        }
+    }
+
+    /// Toggles the global "blocking paused" state.
+    ///
+    /// When pausing: persists the flag, empties every content blocker (writes `[]`),
+    /// clears the advanced WebExtension engine, and reloads Safari. Blocking stays off
+    /// across launches and tab switches until the user resumes — see GitHub issue #439.
+    ///
+    /// When resuming: clears the flag and runs the standard apply pipeline to rebuild
+    /// and reload the real rule sets.
+    func setBlockingPaused(_ paused: Bool) async {
+        BlockingPauseStore.setPaused(paused)
+        await MainActor.run { self.isBlockingPaused = paused }
+
+        if paused {
+            await MainActor.run {
+                self.statusDescription = LocalizedStrings.text(
+                    "Pausing blocking...",
+                    comment: "Apply pipeline pause status"
+                )
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text(
+                        "Pausing blocking...",
+                        comment: "Apply pipeline stage"
+                    )
+                )
+                self.applyProgressViewModel.updatePhaseCompletion(
+                    updating: true,
+                    scripts: true
+                )
+            }
+            let cleared = await clearAllExtensionsAndEngine()
+            await MainActor.run {
+                self.lastRuleCount = 0
+                self.ruleCountsByExtension.removeAll()
+                self.extensionsApproachingLimit.removeAll()
+                self.saveRuleCounts()
+                self.isLoading = false
+                self.showingApplyProgressSheet = false
+                if cleared {
+                    self.markCurrentStateApplied()
+                    self.statusDescription = LocalizedStrings.text(
+                        "Blocking paused",
+                        comment: "Apply pipeline pause status"
+                    )
+                }
+            }
+        } else {
+            await applyChanges(allowUserInteraction: true)
+            await MainActor.run {
+                self.statusDescription = LocalizedStrings.text(
+                    "Blocking resumed",
+                    comment: "Apply pipeline resume status"
+                )
+            }
         }
     }
 

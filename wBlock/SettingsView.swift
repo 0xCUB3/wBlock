@@ -194,6 +194,15 @@ struct SettingsView: View {
         )
     }
 
+    private var pauseBlockingBinding: Binding<Bool> {
+        Binding(
+            get: { filterManager.isBlockingPaused },
+            set: { newValue in
+                Task { await filterManager.setBlockingPaused(newValue) }
+            }
+        )
+    }
+
     @ViewBuilder
     private var actionsSection: some View {
         NavigationLink {
@@ -401,6 +410,25 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
+    private var pauseBlockingSection: some View {
+        Section {
+            Toggle("Pause Blocking", isOn: pauseBlockingBinding)
+                .disabled(filterManager.isLoading)
+                #if os(macOS)
+                .toggleStyle(.switch)
+                #endif
+        } header: {
+            Text("Blocking")
+        } footer: {
+            Text(
+                filterManager.isBlockingPaused
+                    ? "Blocking is paused. All filters, userscripts, and styles stay off until you turn this back on."
+                    : "Temporarily disable all blocking — content blockers, userscripts, and styles — without turning extensions off in Safari Settings."
+            )
+        }
+    }
+
+    @ViewBuilder
     private var aboutSection: some View {
         Section("About") {
             CompatibleLabeledContent("wBlock Version") {
@@ -440,6 +468,8 @@ struct SettingsView: View {
         #if os(iOS)
         CompatibleNavigationStack {
             List {
+                pauseBlockingSection
+
                 Section {
                     actionsSection
                     backupButtons
@@ -460,6 +490,8 @@ struct SettingsView: View {
         #else
         CompatibleNavigationStack {
             Form {
+                pauseBlockingSection
+
                 Section {
                     actionsSection
                     backupButtons

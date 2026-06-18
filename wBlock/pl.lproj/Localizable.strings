@@ -714,3 +714,17 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Run on this site" = "Uruchamiaj w tej witrynie";
 "Apply rules on this site" = "Stosuj reguły w tej witrynie";
 "Changes take full effect after the next apply." = "Zmiany w pełni zaczną obowiązywać po następnym zastosowaniu.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "Wstrzymaj blokowanie";
+"Blocking" = "Blokowanie";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Tymczasowo wyłącz całe blokowanie (blokery treści, skrypty użytkownika i style) bez wyłączania rozszerzeń w Ustawieniach Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Blokowanie jest wstrzymane. Wszystkie filtry, skrypty użytkownika i style pozostają wyłączone, dopóki nie włączysz ich ponownie.";
+"Pausing blocking..." = "Wstrzymywanie blokowania…";
+"Blocking paused" = "Blokowanie wstrzymane";
+"Blocking resumed" = "Blokowanie wznowione";
+"Blocking is paused" = "Blokowanie jest wstrzymane";
+"Resume" = "Wznów";
+"Resume Blocking" = "Wznów blokowanie";
+"Blocking is paused. Tap Resume to re-enable." = "Blokowanie jest wstrzymane. Stuknij Wznów, aby włączyć całe blokowanie.";

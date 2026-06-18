@@ -714,3 +714,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Run on this site" = "이 사이트에서 실행";
 "Apply rules on this site" = "이 사이트에서 규칙 적용";
 "Changes take full effect after the next apply." = "변경 사항은 다음 적용 후 완전히 반영됩니다.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "차단 일시정지";
+"Blocking" = "차단";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Safari 설정에서 확장을 끄지 않고 모든 차단(콘텐츠 차단기, 사용자 스크립트, 스타일)을 임시로 비활성화합니다.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "차단이 일시정지되었습니다. 다시 켤 때까지 모든 필터, 사용자 스크립트 및 스타일이 꺼진 채로 유지됩니다.";
+"Pausing blocking..." = "차단을 일시정지하는 중…";
+"Blocking paused" = "차단 일시정지됨";
+"Blocking resumed" = "차단이 다시 시작됨";
+"Blocking is paused" = "차단이 일시정지되었습니다";
+"Resume" = "다시 시작";
+"Resume Blocking" = "차단 다시 시작";
+"Blocking is paused. Tap Resume to re-enable." = "차단이 일시정지되었습니다. 다시 시작을 눌러 모든 차단을 활성화하세요.";

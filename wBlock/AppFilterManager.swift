@@ -34,6 +34,7 @@ class AppFilterManager: ObservableObject {
     @Published var hasUnappliedChanges = false
     @Published var showingApplyProgressSheet = false
     @Published var suppressBlockingOverlay = false
+    @Published var isBlockingPaused: Bool = false
     @Published var autoDisabledFilters: [FilterList] = []  // Filters auto-disabled due to rule limits
     @Published var showingAutoDisabledAlert = false
 
@@ -167,6 +168,8 @@ class AppFilterManager: ObservableObject {
         #else
             self.currentPlatform = .iOS
         #endif
+
+        self.isBlockingPaused = BlockingPauseStore.isPaused()
 
         // Wait for ProtobufDataManager to finish loading before setting up.
         setupTask = Task { @MainActor [weak self] in

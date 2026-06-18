@@ -714,3 +714,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Run on this site" = "تشغيل على هذا الموقع";
 "Apply rules on this site" = "تطبيق القواعد على هذا الموقع";
 "Changes take full effect after the next apply." = "تسري التغييرات بالكامل بعد التطبيق التالي.";
+
+
+// Pause Blocking feature (issue #439)
+"Pause Blocking" = "إيقاف الحظر مؤقتًا";
+"Blocking" = "الحظر";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "أوقف جميع الحظر (حاصرات المحتوى، النصوص البرمجية، والأنماط) مؤقتًا دون إيقاف الإضافات في إعدادات Safari.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "الحظر متوقف مؤقتًا. تظل جميع الفلاتر والنصوص البرمجية والأنماط معطّلة حتى تعيد تشغيلها.";
+"Pausing blocking..." = "جارٍ إيقاف الحظر مؤقتًا…";
+"Blocking paused" = "الحظر متوقف مؤقتًا";
+"Blocking resumed" = "تم استئناف الحظر";
+"Blocking is paused" = "الحظر متوقف مؤقتًا";
+"Resume" = "استئناف";
+"Resume Blocking" = "استئناف الحظر";
+"Blocking is paused. Tap Resume to re-enable." = "الحظر متوقف مؤقتًا. اضغط على استئناف لإعادة تشغيل جميع الحظر.";
