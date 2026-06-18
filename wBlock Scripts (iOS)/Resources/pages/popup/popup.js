@@ -517,6 +517,18 @@ function renderZapperRules(rules) {
     }
 }
 
+async function getBlockingPausedState() {
+    try {
+        const response = await sendNativeMessageWithTimeout({
+            action: 'getBlockingPausedState',
+        });
+        return Boolean(response && response.paused);
+    } catch (error) {
+        console.error('[wBlock] Failed to get pause state:', error);
+        return false;
+    }
+}
+
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
@@ -1053,6 +1065,7 @@ async function refreshUi() {
         return;
     }
 
+    const blockingPausedPromise = getBlockingPausedState();
     const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
     let pageUserScriptsRenderedDisabled = null;
     const renderPageUserScriptsPromise = pageUserScriptsPromise.then((scripts) => {
@@ -1067,34 +1080,38 @@ async function refreshUi() {
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const [disabled, zapperState, contentScriptReachable] = await Promise.all([
+    const [blockingPaused, disabled, zapperState, contentScriptReachable] = await Promise.all([
+        blockingPausedPromise,
         disabledPromise,
         zapperStatePromise,
         contentScriptReachablePromise,
     ]);
+    const effectiveDisabled = blockingPaused || disabled;
     const zapperRulesDisabled = zapperState.disabled === true;
     if (disableToggle) {
         disableToggle.checked = disabled;
-        disableToggle.disabled = false;
+        disableToggle.disabled = blockingPaused;
     }
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
-        zapperEnabledToggle.disabled = disabled;
+        zapperEnabledToggle.disabled = effectiveDisabled;
     }
-    setStatus(disabled
-        ? t('popup_status_disabled', undefined, 'Disabled')
-        : t('popup_status_active', undefined, 'Active'),
-    disabled ? 'disabled' : 'active');
+    setStatus(blockingPaused
+        ? t('popup_status_paused', undefined, 'Paused')
+        : disabled
+            ? t('popup_status_disabled', undefined, 'Disabled')
+            : t('popup_status_active', undefined, 'Active'),
+    effectiveDisabled ? 'disabled' : 'active');
 
     if (zapperActivate) {
-        zapperActivate.disabled = disabled || zapperRulesDisabled;
+        zapperActivate.disabled = effectiveDisabled || zapperRulesDisabled;
     }
     if (rulesToggle) {
         rulesToggle.disabled = false;
     }
     await renderPageUserScriptsPromise;
-    if (pageUserScriptsRenderedDisabled !== disabled) {
-        renderPageUserScripts(await pageUserScriptsPromise, disabled);
+    if (pageUserScriptsRenderedDisabled !== effectiveDisabled) {
+        renderPageUserScripts(await pageUserScriptsPromise, effectiveDisabled);
     }
     currentZapperRules = zapperState.rules;
     await zapperCountPromise;

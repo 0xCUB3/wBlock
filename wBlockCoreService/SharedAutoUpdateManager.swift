@@ -657,6 +657,24 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "already_running")
         }
 
+        if BlockingPauseStore.isPaused() {
+            let persistedOutputsContainRules = contentBlockerOutputsContainRules()
+            let repairedOutputs = persistedOutputsContainRules
+                ? await clearPersistedBlockingOutputsForPause()
+                : false
+            appendSharedLog(
+                repairedOutputs
+                    ? "Auto-update skipped: blocking is paused; cleared persisted blocker outputs"
+                    : "Auto-update skipped: blocking is paused"
+            )
+            appendSkipTelemetry(
+                trigger: trigger,
+                reason: "blocking_paused",
+                extra: ["repaired_outputs": repairedOutputs ? "true" : "false"]
+            )
+            return .skipped(reason: "blocking_paused")
+        }
+
         let interval = await getAutoUpdateIntervalHours()
         let forceFlag = await getAutoUpdateForceNext()
         let shouldForce = force || forceFlag
@@ -1445,6 +1463,57 @@ public actor SharedAutoUpdateManager {
             }
         }
 
+        return false
+    }
+
+    private func clearPersistedBlockingOutputsForPause() async -> Bool {
+        #if os(iOS)
+        let platform: Platform = .iOS
+        #else
+        let platform: Platform = .macOS
+        #endif
+
+        var failedTargets: [String] = []
+        let groupIdentifier = GroupIdentifier.shared.value
+
+        do {
+            try ContentBlockerService.clearFilterEngine(groupIdentifier: groupIdentifier)
+        } catch {
+            appendSharedLog("Failed to clear paused advanced engine during auto-update: \(error.localizedDescription)")
+        }
+
+        do {
+            _ = try RemoveParamDNRRuleGenerator.clearSavedRules(groupIdentifier: groupIdentifier)
+        } catch {
+            appendSharedLog("Failed to clear paused removeparam rules during auto-update: \(error.localizedDescription)")
+        }
+
+        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
+            let savedRuleCount = ContentBlockerService.saveContentBlocker(
+                jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: target.rulesFilename
+            )
+            if savedRuleCount != ContentBlockerService.inertContentBlockerRuleCount {
+                failedTargets.append(target.displayName)
+                continue
+            }
+
+            let reloadResult = await ContentBlockerService.reloadWithRetry(
+                identifier: target.bundleIdentifier
+            )
+            if !reloadResult.success {
+                failedTargets.append(target.displayName)
+            }
+        }
+
+        if failedTargets.isEmpty {
+            return true
+        }
+
+        appendSharedLog(
+            "Failed to clear paused blocker outputs for: \(failedTargets.prefix(3).joined(separator: ", "))"
+        )
         return false
     }
 

@@ -28,14 +28,22 @@ public enum ContentBlockerExtensionRequestHandler {
         let bundleIdentifier = Bundle.main.bundleIdentifier ?? "Unknown"
         guard let targetInfo = ContentBlockerTargetManager.shared.targetInfo(forBundleIdentifier: bundleIdentifier, platform: platform) else {
             os_log(.fault, "CRITICAL: Could not find ContentBlockerTargetInfo for bundleIdentifier '%@' on platform '%@'.", bundleIdentifier, String(describing: platform))
-            let emptyRules = "[]"
+            let inertRules = ContentBlockerService.inertContentBlockerRulesJSON
             let item = NSExtensionItem()
-            item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+            item.attachments = [NSItemProvider(item: inertRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
             context.completeRequest(returningItems: [item])
             return
         }
 
         handleRequest(with: context, groupIdentifier: GroupIdentifier.shared.value, rulesFilenameInAppGroup: targetInfo.rulesFilename)
+    }
+
+    private static func completeWithEmptyRules(_ context: NSExtensionContext, reason: String) {
+        os_log(.info, "Loading inert content blocker rules: %@", reason)
+        let inertRules = ContentBlockerService.inertContentBlockerRulesJSON
+        let item = NSExtensionItem()
+        item.attachments = [NSItemProvider(item: inertRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+        context.completeRequest(returningItems: [item])
     }
 
     /// Handles content blocking extension request for rules.
@@ -48,6 +56,11 @@ public enum ContentBlockerExtensionRequestHandler {
     ///   - groupIdentifier: The app group identifier used to access the shared container.
     public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String, rulesFilenameInAppGroup: String) {
         os_log(.info, "ContentBlockerExtensionRequestHandler: Preparing to load rules for target file: %@", rulesFilenameInAppGroup)
+
+        if BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier) {
+            completeWithEmptyRules(context, reason: "blocking is paused")
+            return
+        }
 
         guard let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             os_log(.error, "Failed to access App Group container.")
@@ -70,11 +83,11 @@ public enum ContentBlockerExtensionRequestHandler {
                 os_log(.info, "Using bundled fallback: %@", bundledFallbackURL.path)
             } else {
                 os_log(.error, "FATAL: Bundled blockerList.json also not found for extension trying to load rules for %@.", rulesFilenameInAppGroup)
-                let emptyRules = "[]"
+                let inertRules = ContentBlockerService.inertContentBlockerRulesJSON
                 let item = NSExtensionItem()
-                item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+                item.attachments = [NSItemProvider(item: inertRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
                 context.completeRequest(returningItems: [item]) { _ in
-                    os_log(.info, "Finished loading EMPTY content blocker due to missing files for originally sought: %@", rulesFilenameInAppGroup)
+                    os_log(.info, "Finished loading inert content blocker due to missing files for originally sought: %@", rulesFilenameInAppGroup)
                 }
                 return
             }
@@ -82,11 +95,11 @@ public enum ContentBlockerExtensionRequestHandler {
 
         guard let finalURL = rulesToLoadURL, let attachment = NSItemProvider(contentsOf: finalURL) else {
             os_log(.error, "Failed to create attachment from URL: %@", rulesToLoadURL?.path ?? "nil URL")
-            let emptyRules = "[]"
+            let inertRules = ContentBlockerService.inertContentBlockerRulesJSON
             let item = NSExtensionItem()
-            item.attachments = [NSItemProvider(item: emptyRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
+            item.attachments = [NSItemProvider(item: inertRules.data(using: .utf8) as NSData?, typeIdentifier: UTType.json.identifier as String)]
             context.completeRequest(returningItems: [item]) { _ in
-                os_log(.info, "Finished loading EMPTY content blocker due to attachment failure for: %@", rulesFilenameInAppGroup)
+                os_log(.info, "Finished loading inert content blocker due to attachment failure for: %@", rulesFilenameInAppGroup)
             }
             return
         }

@@ -16,6 +16,22 @@ import os.log
 /// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
 /// and manage content blocker extensions.
 public enum ContentBlockerService {
+    /// A valid Safari content blocker list that performs no blocking.
+    ///
+    /// Some Safari versions fail to reload an extension backed by a literal empty
+    /// array with WKErrorDomain error 6, so pause/clear paths use this inert rule
+    /// instead of `[]`.
+    public static let inertContentBlockerRulesJSON = """
+    [
+      {
+        "trigger": { "url-filter": "^https?://wblock-pause-never-match[.]invalid/" },
+        "action": { "type": "ignore-previous-rules" }
+      }
+    ]
+    """
+
+    public static let inertContentBlockerRuleCount = 1
+
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.

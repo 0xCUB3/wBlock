@@ -71,6 +71,10 @@
     "message": "Disabled",
     "description": "Status label indicating blocking is disabled on the current site."
   },
+  "popup_status_paused": {
+    "message": "Paused",
+    "description": "Status label indicating blocking is globally paused."
+  },
   "popup_status_active": {
     "message": "Active",
     "description": "Status label indicating blocking is active on the current site."

@@ -87,6 +87,9 @@ public enum WebExtensionRequestHandler {
             case "gmXmlhttpRequestNative", "gmXmlhttpRequest":
                 handleNativeGMXmlhttpRequest(message: message!, context: context)
                 return
+            case "getBlockingPausedState":
+                handleGetBlockingPausedState(context: context)
+                return
             case "getSiteDisabledState":
                 handleGetSiteDisabledState(message: message!, context: context)
                 return
@@ -119,35 +122,39 @@ public enum WebExtensionRequestHandler {
         let payload = message?["payload"] as? [String: Any] ?? [:]
         if let urlString = payload["url"] as? String {
             if let url = URL(string: urlString) {
-                // Respect per-site disable immediately for both content blockers and scripts.
+                // Respect global pause and per-site disable immediately for advanced rules.
                 Task { @MainActor in
-                    let disabledSites = await currentDisabledSites()
-                    let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
-                    if disabled {
+                    if BlockingPauseStore.isPaused() {
                         message?["payload"] = emptyRulesPayload()
                     } else {
-                        do {
-                            var topUrl: URL?
-                            if let topUrlString = payload["topUrl"] as? String {
-                                topUrl = URL(string: topUrlString)
-                            }
+                        let disabledSites = await currentDisabledSites()
+                        let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
+                        if disabled {
+                            message?["payload"] = emptyRulesPayload()
+                        } else {
+                            do {
+                                var topUrl: URL?
+                                if let topUrlString = payload["topUrl"] as? String {
+                                    topUrl = URL(string: topUrlString)
+                                }
 
-                            let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
-                                let webExtension = try WebExtension.shared(
-                                    groupID: GroupIdentifier.shared.value
+                                let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
+                                    let webExtension = try WebExtension.shared(
+                                        groupID: GroupIdentifier.shared.value
+                                    )
+                                    return webExtension.lookup(pageUrl: url, topUrl: topUrl)
+                                }
+
+                                if let configuration {
+                                    message?["payload"] = convertToPayload(configuration)
+                                }
+                            } catch {
+                                os_log(
+                                    .error,
+                                    "Failed to get WebExtension instance: %@",
+                                    error.localizedDescription
                                 )
-                                return webExtension.lookup(pageUrl: url, topUrl: topUrl)
                             }
-
-                            if let configuration {
-                                message?["payload"] = convertToPayload(configuration)
-                            }
-                        } catch {
-                            os_log(
-                                .error,
-                                "Failed to get WebExtension instance: %@",
-                                error.localizedDescription
-                            )
                         }
                     }
 
@@ -384,14 +391,24 @@ public enum WebExtensionRequestHandler {
         }
     }
 
+    private static func handleGetBlockingPausedState(context: NSExtensionContext) {
+        let response = createResponse(with: ["paused": BlockingPauseStore.isPaused()])
+        context.completeRequest(returningItems: [response])
+    }
+
     private static func handleGetRemoveParamDNRRules(message: [String: Any?], context: NSExtensionContext) {
         let offset = message["offset"] as? Int ?? 0
         let limit = message["limit"] as? Int ?? 250
-        let payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
-            groupIdentifier: GroupIdentifier.shared.value,
-            offset: offset,
-            limit: limit
-        )
+        let payload: [String: Any]
+        if BlockingPauseStore.isPaused() {
+            payload = RemoveParamDNRRuleGenerator.emptyRulesPayload(offset: offset, limit: limit)
+        } else {
+            payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
+                groupIdentifier: GroupIdentifier.shared.value,
+                offset: offset,
+                limit: limit
+            )
+        }
         let response = createResponse(with: payload.mapValues { Optional($0) })
         context.completeRequest(returningItems: [response])
     }

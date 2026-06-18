@@ -201,6 +201,21 @@ public enum RemoveParamDNRRuleGenerator {
         )
     }
 
+    public static func emptyRulesPayload(offset: Int, limit: Int) -> [String: Any] {
+        let safeOffset = max(0, offset)
+        let safeLimit = max(1, min(limit, 500))
+        return [
+            "ok": true,
+            "version": versionHex(for: []),
+            "offset": safeOffset,
+            "limit": safeLimit,
+            "count": 0,
+            "rules": [] as [[String: Any]],
+            "ruleIdBase": ruleIDBase,
+            "ruleIdLimit": ruleIDLimit
+        ]
+    }
+
     public static func loadRulesPayload(
         groupIdentifier: String,
         offset: Int,
@@ -209,14 +224,7 @@ public enum RemoveParamDNRRuleGenerator {
         let safeOffset = max(0, offset)
         let safeLimit = max(1, min(limit, 500))
         guard let data = savedRulesData(groupIdentifier: groupIdentifier) else {
-            return [
-                "ok": true,
-                "version": versionHex(for: []),
-                "offset": safeOffset,
-                "limit": safeLimit,
-                "count": 0,
-                "rules": [] as [[String: Any]]
-            ]
+            return emptyRulesPayload(offset: safeOffset, limit: safeLimit)
         }
 
         let version = sha256Hex(data: data)

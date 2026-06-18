@@ -25,9 +25,10 @@ extension AppFilterManager {
         }
     }
 
-    nonisolated private static func contentBlockerOutputMatchesEmptyArray(
+    nonisolated private static func contentBlockerOutputMatchesRules(
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        expectedRulesJSON: String
     ) -> Bool {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -40,7 +41,8 @@ extension AppFilterManager {
             return false
         }
 
-        return fileContents.trimmingCharacters(in: .whitespacesAndNewlines) == "[]"
+        return fileContents.trimmingCharacters(in: .whitespacesAndNewlines)
+            == expectedRulesJSON.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func failApplyRun(
@@ -682,30 +684,49 @@ extension AppFilterManager {
                 let platformTargets = ContentBlockerTargetManager.shared.allTargets(
                     forPlatform: currentPlatform
                 )
+                var saveFailures: [String] = []
+                var targetsToReload: [ContentBlockerTargetInfo] = []
+
                 for targetInfo in platformTargets {
                     let savedRuleCount = ContentBlockerService.saveContentBlocker(
-                        jsonRules: "[]",
+                        jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                         groupIdentifier: groupIdentifier,
                         targetRulesFilename: targetInfo.rulesFilename
                     )
-                    let outputMatchesEmptyArray = Self.contentBlockerOutputMatchesEmptyArray(
+                    let outputMatchesInertRules = Self.contentBlockerOutputMatchesRules(
                         targetRulesFilename: targetInfo.rulesFilename,
-                        groupIdentifier: groupIdentifier
+                        groupIdentifier: groupIdentifier,
+                        expectedRulesJSON: ContentBlockerService.inertContentBlockerRulesJSON
                     )
-                    guard savedRuleCount == 0, outputMatchesEmptyArray else {
-                        throw ApplyPipelineError.emptyRulesSaveFailed(
-                            targetName: targetInfo.displayName
-                        )
+                    if savedRuleCount == ContentBlockerService.inertContentBlockerRuleCount,
+                       outputMatchesInertRules
+                    {
+                        targetsToReload.append(targetInfo)
+                    } else {
+                        saveFailures.append(targetInfo.displayName)
                     }
+                }
 
+                if !saveFailures.isEmpty {
+                    throw ApplyPipelineError.emptyRulesSaveFailed(
+                        targetName: saveFailures.joined(separator: ", ")
+                    )
+                }
+
+                var reloadFailures: [String] = []
+                for targetInfo in targetsToReload {
                     let reloadResult = await ContentBlockerService.reloadWithRetry(
                         identifier: targetInfo.bundleIdentifier
                     )
-                    guard reloadResult.success else {
-                        throw ApplyPipelineError.emptyRulesReloadFailed(
-                            targetName: targetInfo.displayName
-                        )
+                    if !reloadResult.success {
+                        reloadFailures.append(targetInfo.displayName)
                     }
+                }
+
+                if !reloadFailures.isEmpty {
+                    throw ApplyPipelineError.emptyRulesReloadFailed(
+                        targetName: reloadFailures.joined(separator: ", ")
+                    )
                 }
             }.value
             return true

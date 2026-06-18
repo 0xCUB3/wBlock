@@ -71,6 +71,10 @@
     "message": "Dezactivat",
     "description": "Status label indicating blocking is disabled on the current site."
   },
+  "popup_status_paused": {
+    "message": "În pauză",
+    "description": "Status label indicating blocking is globally paused."
+  },
   "popup_status_active": {
     "message": "Activ",
     "description": "Status label indicating blocking is active on the current site."
