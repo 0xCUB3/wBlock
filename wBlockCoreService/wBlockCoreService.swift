@@ -907,15 +907,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'un
         }
     }
     #endif
-    
-    /// Backward compatibility function that builds the filter engine immediately (legacy behavior).
-    /// This function is deprecated and should not be used for new code.
-    ///
-    /// - Parameters:
-    ///   - rules: AdGuard rules to be converted.
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    ///   - targetRulesFilename: Target filename for the rules.
-    /// - Returns: The number of Safari content blocker rules generated from the conversion.
 }
 
 // MARK: - Safari Content Blocker functions
