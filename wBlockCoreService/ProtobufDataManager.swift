@@ -511,22 +511,21 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setFilterValidators(_ updates: [String: (etag: String?, lastModified: String?)]) async {
         guard !updates.isEmpty else { return }
-        var updatedData = await latestAppDataSnapshot()
-        for (uuid, update) in updates {
-            if let etag = update.etag {
-                updatedData.autoUpdate.filterEtags[uuid] = etag
-            } else {
-                updatedData.autoUpdate.filterEtags.removeValue(forKey: uuid)
-            }
+        await updateDataImmediately { data in
+            for (uuid, update) in updates {
+                if let etag = update.etag {
+                    data.autoUpdate.filterEtags[uuid] = etag
+                } else {
+                    data.autoUpdate.filterEtags.removeValue(forKey: uuid)
+                }
 
-            if let lastModified = update.lastModified {
-                updatedData.autoUpdate.filterLastModified[uuid] = lastModified
-            } else {
-                updatedData.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+                if let lastModified = update.lastModified {
+                    data.autoUpdate.filterLastModified[uuid] = lastModified
+                } else {
+                    data.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+                }
             }
         }
-        appData = updatedData
-        await saveData()
     }
 
     @MainActor
@@ -537,23 +536,22 @@ public class ProtobufDataManager: ObservableObject {
         updateETag: Bool = true,
         updateLastModified: Bool = true
     ) async {
-        var updatedData = await latestAppDataSnapshot()
-        if updateETag {
-            if let etag = etag {
-                updatedData.autoUpdate.filterEtags[uuid] = etag
-            } else {
-                updatedData.autoUpdate.filterEtags.removeValue(forKey: uuid)
+        await updateDataImmediately { data in
+            if updateETag {
+                if let etag = etag {
+                    data.autoUpdate.filterEtags[uuid] = etag
+                } else {
+                    data.autoUpdate.filterEtags.removeValue(forKey: uuid)
+                }
+            }
+            if updateLastModified {
+                if let lastModified = lastModified {
+                    data.autoUpdate.filterLastModified[uuid] = lastModified
+                } else {
+                    data.autoUpdate.filterLastModified.removeValue(forKey: uuid)
+                }
             }
         }
-        if updateLastModified {
-            if let lastModified = lastModified {
-                updatedData.autoUpdate.filterLastModified[uuid] = lastModified
-            } else {
-                updatedData.autoUpdate.filterLastModified.removeValue(forKey: uuid)
-            }
-        }
-        appData = updatedData
-        await saveData()
     }
 
     /// Indicates if userscripts initial setup has been completed
@@ -679,48 +677,44 @@ public class ProtobufDataManager: ObservableObject {
 
     @MainActor
     public func setTabDisabled(_ tabId: String, isDisabled: Bool) async {
-        var updatedData = await latestAppDataSnapshot()
-        var tabData = updatedData.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
-        tabData.isDisabled = isDisabled
-        tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        updatedData.extensionData.tabBlockedRequests[tabId] = tabData
-        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        appData = updatedData
-        await saveData()
+        await updateDataImmediately { data in
+            var tabData = data.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
+            tabData.isDisabled = isDisabled
+            tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
+            data.extensionData.tabBlockedRequests[tabId] = tabData
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
     }
 
     @MainActor
     public func removeTabData(_ tabId: String) async {
-        var updatedData = await latestAppDataSnapshot()
-        updatedData.extensionData.tabBlockedRequests.removeValue(forKey: tabId)
-        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        appData = updatedData
-        await saveData()
+        await updateDataImmediately { data in
+            data.extensionData.tabBlockedRequests.removeValue(forKey: tabId)
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
     }
 
     @MainActor
     public func updateTabBlockedCount(_ tabId: String, host: String, increment: Int = 1) async {
-        var updatedData = await latestAppDataSnapshot()
-        var tabData = updatedData.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
-        tabData.blockedCount += Int32(increment)
-        tabData.host = host
-        tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        updatedData.extensionData.tabBlockedRequests[tabId] = tabData
-        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        appData = updatedData
-        await saveData()
+        await updateDataImmediately { data in
+            var tabData = data.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
+            tabData.blockedCount += Int32(increment)
+            tabData.host = host
+            tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
+            data.extensionData.tabBlockedRequests[tabId] = tabData
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
     }
 
     @MainActor
     public func clearOldTabData(olderThan: TimeInterval) async {
-        var updatedData = await latestAppDataSnapshot()
         let cutoffTime = Int64(Date().timeIntervalSince1970 - olderThan)
-        updatedData.extensionData.tabBlockedRequests = updatedData.extensionData.tabBlockedRequests.filter { _, tabData in
-            tabData.lastUpdated >= cutoffTime
+        await updateDataImmediately { data in
+            data.extensionData.tabBlockedRequests = data.extensionData.tabBlockedRequests.filter { _, tabData in
+                tabData.lastUpdated >= cutoffTime
+            }
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
-        updatedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        appData = updatedData
-        await saveData()
     }
 
     /// Get all tab IDs that have data
