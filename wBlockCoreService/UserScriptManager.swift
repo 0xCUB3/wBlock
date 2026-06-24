@@ -717,73 +717,38 @@ public class UserScriptManager: ObservableObject {
     private func detectDuplicateUserScripts() -> [(older: UserScript, newer: UserScript)] {
         guard userScripts.count > 1 else { return [] }
 
-        logger.info("🔍 Simple duplicate detection among \(self.userScripts.count) scripts...")
-
         var duplicates: [(older: UserScript, newer: UserScript)] = []
 
-        // Compare each script with every other script
         for i in 0..<userScripts.count {
             for j in (i + 1)..<userScripts.count {
-                let script1 = userScripts[i]
-                let script2 = userScripts[j]
+                let a = userScripts[i]
+                let b = userScripts[j]
 
-                // Check if they're duplicates by URL (exact match)
-                if let url1 = script1.url?.absoluteString,
-                    let url2 = script2.url?.absoluteString,
-                    !url1.isEmpty && !url2.isEmpty && url1 == url2
-                {
-
-                    logger.info(
-                        "🔍 URL DUPLICATE: '\(script1.name)' vs '\(script2.name)' (URL: \(url1))")
-
-                    // Keep the enabled one, or the first one if both have same status
-                    if script2.isEnabled && !script1.isEnabled {
-                        duplicates.append((older: script1, newer: script2))
-                    } else {
-                        duplicates.append((older: script2, newer: script1))
-                    }
+                if let urlA = a.url?.absoluteString, let urlB = b.url?.absoluteString,
+                   !urlA.isEmpty, urlA == urlB {
+                    let (older, newer) = b.isEnabled && !a.isEnabled ? (a, b) : (b, a)
+                    duplicates.append((older, newer))
                     continue
                 }
 
-                // Check if they're duplicates by name (simple case-insensitive match)
-                let name1 = script1.name.lowercased().trimmingCharacters(in: .whitespaces)
-                let name2 = script2.name.lowercased().trimmingCharacters(in: .whitespaces)
+                let nameA = a.name.lowercased().trimmingCharacters(in: .whitespaces)
+                let nameB = b.name.lowercased().trimmingCharacters(in: .whitespaces)
 
-                if name1 == name2 {
-                    logger.info(
-                        "🔍 NAME DUPLICATE: '\(script1.name)' (v\(script1.version)) vs '\(script2.name)' (v\(script2.version))"
-                    )
+                guard nameA == nameB else { continue }
 
-                    // Keep the one with the newer version
-                    if UserScript.isVersionNewer(script2.version, than: script1.version) {
-                        logger.info(
-                            "🔍 Keeping '\(script2.name)' (v\(script2.version)) over '\(script1.name)' (v\(script1.version)) - newer version"
-                        )
-                        duplicates.append((older: script1, newer: script2))
-                    } else if UserScript.isVersionNewer(script1.version, than: script2.version) {
-                        logger.info(
-                            "🔍 Keeping '\(script1.name)' (v\(script1.version)) over '\(script2.name)' (v\(script2.version)) - newer version"
-                        )
-                        duplicates.append((older: script2, newer: script1))
-                    } else {
-                        // Same version or can't parse - keep the enabled one, or the first one
-                        if script2.isEnabled && !script1.isEnabled {
-                            logger.info(
-                                "🔍 Same version - keeping enabled '\(script2.name)' over disabled '\(script1.name)'"
-                            )
-                            duplicates.append((older: script1, newer: script2))
-                        } else {
-                            logger.info(
-                                "🔍 Same version - keeping first '\(script1.name)' over '\(script2.name)'"
-                            )
-                            duplicates.append((older: script2, newer: script1))
-                        }
-                    }
+                if UserScript.isVersionNewer(b.version, than: a.version) {
+                    duplicates.append((a, b))
+                } else if UserScript.isVersionNewer(a.version, than: b.version) {
+                    duplicates.append((b, a))
+                } else {
+                    duplicates.append(b.isEnabled && !a.isEnabled ? (a, b) : (b, a))
                 }
             }
         }
 
-        logger.info("🔍 Found \(duplicates.count) duplicate pairs")
+        if !duplicates.isEmpty {
+            logger.info("🔍 Found \(duplicates.count) duplicate userscript pair(s)")
+        }
         return duplicates
     }
 
@@ -795,43 +760,19 @@ public class UserScriptManager: ObservableObject {
 
         // Get IDs of scripts to remove
         let idsToRemove = Set(duplicatesToRemove.map { $0.id })
-        logger.info("🗑️ Scripts to remove by ID: \(idsToRemove)")
 
         // Remove files first
         for script in duplicatesToRemove {
             removeUserScriptFile(script)
-            logger.info("🗑️ Removed file for: '\(script.name)' (ID: \(script.id))")
         }
 
         // Filter out the scripts to remove from the array
         let originalCount = userScripts.count
-        userScripts = userScripts.filter { script in
-            let shouldKeep = !idsToRemove.contains(script.id)
-            if !shouldKeep {
-                logger.info("🗑️ Filtering out script: '\(script.name)' (ID: \(script.id))")
-            }
-            return shouldKeep
-        }
+        userScripts = userScripts.filter { [idsToRemove] in !idsToRemove.contains($0.id) }
 
-        logger.info("🗑️ Array size changed from \(originalCount) to \(self.userScripts.count)")
+        logger.info("🗑️ Removed \(originalCount - self.userScripts.count) duplicate, \(self.userScripts.count) remaining")
 
-        // Save to protobuf immediately and await completion
-        logger.info("💾 About to save \(self.userScripts.count) scripts to protobuf...")
         await dataManager.updateUserScripts(userScripts)
-        logger.info(
-            "💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
-
-        // Verify the save worked by checking what's in protobuf
-        let savedScripts = dataManager.getUserScripts()
-        logger.info("💾 Verification: protobuf now contains \(savedScripts.count) scripts")
-
-        // Log the IDs of remaining scripts for debugging
-        for script in userScripts {
-            logger.info("💾 Remaining in memory: '\(script.name)' (ID: \(script.id))")
-        }
-        for script in savedScripts {
-            logger.info("💾 Saved in protobuf: '\(script.name)' (ID: \(script.id))")
-        }
     }
 
     /// Checks for duplicates and presents confirmation dialog to user
