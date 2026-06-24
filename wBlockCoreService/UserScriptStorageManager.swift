@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 actor UserScriptStorageManager {
     static let shared = UserScriptStorageManager()
@@ -198,7 +199,7 @@ actor UserScriptStorageManager {
             return didChange
         } catch {
             #if DEBUG
-            print("[wBlock] Failed to refresh userscript storage from disk: \(error.localizedDescription)")
+            Logger(subsystem: "com.skula.wBlock", category: "UserScriptStorage").error("Failed to refresh userscript storage from disk: \(error.localizedDescription)")
             #endif
             return false
         }
