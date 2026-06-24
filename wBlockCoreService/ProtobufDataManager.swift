@@ -443,23 +443,19 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setAutoUpdateIsRunning(_ value: Bool) async {
         let nowTimestamp = Int64(Date().timeIntervalSince1970)
-
-        if appData.autoUpdate.isRunning == value {
-            if value {
-                appData.autoUpdate.runningSinceTimestamp = nowTimestamp
-                await saveData()
-            } else if appData.autoUpdate.runningSinceTimestamp != 0 {
-                appData.autoUpdate.runningSinceTimestamp = 0
-                await saveData()
+        await updateDataImmediately { data in
+            // When the flag isn't actually changing, only refresh the heartbeat timestamp.
+            guard data.autoUpdate.isRunning != value else {
+                if value {
+                    data.autoUpdate.runningSinceTimestamp = nowTimestamp
+                } else {
+                    data.autoUpdate.runningSinceTimestamp = 0
+                }
+                return
             }
-            return
+            data.autoUpdate.isRunning = value
+            data.autoUpdate.runningSinceTimestamp = value ? nowTimestamp : 0
         }
-
-        var updatedData = await latestAppDataSnapshot()
-        updatedData.autoUpdate.isRunning = value
-        updatedData.autoUpdate.runningSinceTimestamp = value ? nowTimestamp : 0
-        appData = updatedData
-        await saveData()
     }
 
     /// Refreshes the running timestamp without re-writing unrelated auto-update fields.
@@ -469,11 +465,8 @@ public class ProtobufDataManager: ObservableObject {
         guard appData.autoUpdate.isRunning else { return }
         let nowTimestamp = Int64(Date().timeIntervalSince1970)
         let previous = appData.autoUpdate.runningSinceTimestamp
-        if previous > 0 && (nowTimestamp - previous) < minimumIntervalSeconds {
-            return
-        }
-        appData.autoUpdate.runningSinceTimestamp = nowTimestamp
-        await saveData()
+        guard previous == 0 || (nowTimestamp - previous) >= minimumIntervalSeconds else { return }
+        await updateDataImmediately { $0.autoUpdate.runningSinceTimestamp = nowTimestamp }
     }
 
     /// Timestamp when auto-update started running
