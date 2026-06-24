@@ -755,15 +755,12 @@ public class UserScriptManager: ObservableObject {
                     )
 
                     // Keep the one with the newer version
-                    let script1Version = parseVersionNumber(script1.version)
-                    let script2Version = parseVersionNumber(script2.version)
-
-                    if script2Version > script1Version {
+                    if UserScript.isVersionNewer(script2.version, than: script1.version) {
                         logger.info(
                             "🔍 Keeping '\(script2.name)' (v\(script2.version)) over '\(script1.name)' (v\(script1.version)) - newer version"
                         )
                         duplicates.append((older: script1, newer: script2))
-                    } else if script1Version > script2Version {
+                    } else if UserScript.isVersionNewer(script1.version, than: script2.version) {
                         logger.info(
                             "🔍 Keeping '\(script1.name)' (v\(script1.version)) over '\(script2.name)' (v\(script2.version)) - newer version"
                         )
@@ -788,29 +785,6 @@ public class UserScriptManager: ObservableObject {
 
         logger.info("🔍 Found \(duplicates.count) duplicate pairs")
         return duplicates
-    }
-
-    /// Parse version string to a comparable number (e.g., "2.3.1" -> 20301)
-    private func parseVersionNumber(_ version: String) -> Int {
-        let cleanVersion = version.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanVersion.isEmpty else { return 0 }
-
-        // Extract numeric parts from version string
-        let components = cleanVersion.components(separatedBy: CharacterSet.decimalDigits.inverted)
-            .filter { !$0.isEmpty }
-            .compactMap { Int($0) }
-
-        guard !components.isEmpty else { return 0 }
-
-        // Convert to comparable number: major*10000 + minor*100 + patch
-        var versionNumber = 0
-        for (index, component) in components.prefix(3).enumerated() {
-            let multiplier = [10000, 100, 1][index]
-            versionNumber += component * multiplier
-        }
-
-        logger.info("🔍 Parsed version '\(version)' -> \(versionNumber)")
-        return versionNumber
     }
 
     /// Simple removal of duplicate userscripts
