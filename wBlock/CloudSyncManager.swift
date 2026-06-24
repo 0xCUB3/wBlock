@@ -130,71 +130,43 @@ final class CloudSyncManager: ObservableObject {
     func recordDeletedCustomListURL(_ urlString: String) {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-
-        var markers = loadDeletedCustomURLMarkers()
-        markers[trimmed] = Date().timeIntervalSince1970
-        saveDeletedCustomURLMarkers(markers)
+        mergeDeletedMarkers([trimmed], markers: loadDeletedCustomURLMarkers(), saveKey: Keys.deletedCustomURLs)
     }
 
     func clearDeletedCustomListURL(_ urlString: String) {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-
-        var markers = loadDeletedCustomURLMarkers()
-        markers.removeValue(forKey: trimmed)
-        saveDeletedCustomURLMarkers(markers)
+        clearDeletedMarkers([trimmed], markers: loadDeletedCustomURLMarkers(), saveKey: Keys.deletedCustomURLs)
     }
 
     func recordDeletedRemoteUserScriptURL(_ urlString: String) {
         let normalized = CloudSyncRemoteUserScriptReconciler.normalizedURL(urlString)
         guard !normalized.isEmpty else { return }
-
-        var markers = loadDeletedRemoteUserScriptURLMarkers()
-        markers[normalized] = Date().timeIntervalSince1970
-        saveDeletedRemoteUserScriptURLMarkers(markers)
+        mergeDeletedMarkers([normalized], markers: loadDeletedRemoteUserScriptURLMarkers(), saveKey: Keys.deletedRemoteUserScriptURLs)
     }
 
     func clearDeletedRemoteUserScriptURL(_ urlString: String) {
         let normalized = CloudSyncRemoteUserScriptReconciler.normalizedURL(urlString)
         guard !normalized.isEmpty else { return }
-
-        var markers = loadDeletedRemoteUserScriptURLMarkers()
-        markers.removeValue(forKey: normalized)
-        saveDeletedRemoteUserScriptURLMarkers(markers)
+        clearDeletedMarkers([normalized], markers: loadDeletedRemoteUserScriptURLMarkers(), saveKey: Keys.deletedRemoteUserScriptURLs)
     }
 
     func recordDeletedLocalUserScriptName(_ name: String) {
         let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
         guard !normalized.isEmpty else { return }
-
-        var markers = loadDeletedLocalUserScriptMarkers()
-        markers[normalized] = Date().timeIntervalSince1970
-        saveDeletedLocalUserScriptMarkers(markers)
+        mergeDeletedMarkers([normalized], markers: loadDeletedLocalUserScriptMarkers(), saveKey: Keys.deletedLocalUserScriptNames)
     }
 
     func clearDeletedLocalUserScriptName(_ name: String) {
         let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
         guard !normalized.isEmpty else { return }
-
-        var markers = loadDeletedLocalUserScriptMarkers()
-        markers.removeValue(forKey: normalized)
-        saveDeletedLocalUserScriptMarkers(markers)
+        clearDeletedMarkers([normalized], markers: loadDeletedLocalUserScriptMarkers(), saveKey: Keys.deletedLocalUserScriptNames)
     }
 
     private func clearDeletedLocalUserScriptNames(_ names: Set<String>) {
-        guard !names.isEmpty else { return }
-        var markers = loadDeletedLocalUserScriptMarkers()
-        var changed = false
-        for name in names {
-            let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
-            guard !normalized.isEmpty else { continue }
-            if markers.removeValue(forKey: normalized) != nil {
-                changed = true
-            }
-        }
-        if changed {
-            saveDeletedLocalUserScriptMarkers(markers)
-        }
+        let normalizedNames = Set(names.map(CloudSyncLocalUserScriptReconciler.normalizedName).filter { !$0.isEmpty })
+        let markers = loadDeletedLocalUserScriptMarkers()
+        clearDeletedMarkers(normalizedNames, markers: markers, saveKey: Keys.deletedLocalUserScriptNames)
     }
 
     func attach(filterManager: AppFilterManager) {
@@ -1712,7 +1684,25 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func loadDeletedCustomURLMarkers() -> [String: TimeInterval] {
-        let raw = defaults.dictionary(forKey: Keys.deletedCustomURLs) ?? [:]
+        loadDeletedMarkers(forKey: Keys.deletedCustomURLs)
+    }
+
+    private func clearDeletedCustomListURLs(_ urls: Set<String>) {
+        guard !urls.isEmpty else { return }
+        let normalizedURLs = Set(urls.map(CloudSyncCustomFilterReconciler.normalizedURL).filter { !$0.isEmpty })
+        let markers = loadDeletedCustomURLMarkers()
+        clearDeletedMarkers(normalizedURLs, markers: markers, saveKey: Keys.deletedCustomURLs)
+    }
+
+    private func mergeDeletedCustomListURLs(_ urls: Set<String>) {
+        let markers = loadDeletedCustomURLMarkers()
+        mergeDeletedMarkers(urls, markers: markers, saveKey: Keys.deletedCustomURLs)
+    }
+
+    // MARK: - Deleted Marker Helpers (shared across custom lists, local scripts, remote scripts)
+
+    private func loadDeletedMarkers(forKey key: String) -> [String: TimeInterval] {
+        let raw = defaults.dictionary(forKey: key) ?? [:]
         var result: [String: TimeInterval] = [:]
         for (key, value) in raw {
             if let t = value as? TimeInterval {
@@ -1723,15 +1713,14 @@ final class CloudSyncManager: ObservableObject {
                 result[key] = n.doubleValue
             }
         }
-
-        let pruned = pruneDeletedCustomURLMarkers(result)
+        let pruned = pruneDeletedMarkers(result)
         if pruned.count != result.count {
-            saveDeletedCustomURLMarkers(pruned)
+            saveDeletedMarkers(pruned, forKey: key)
         }
         return pruned
     }
 
-    private func pruneDeletedCustomURLMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
+    private func pruneDeletedMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
         let ttl = deletedMarkerTTLDays * 24 * 60 * 60
         let now = Date().timeIntervalSince1970
         return markers.filter { _, deletedAt in
@@ -1739,37 +1728,35 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func saveDeletedCustomURLMarkers(_ markers: [String: TimeInterval]) {
-        let pruned = pruneDeletedCustomURLMarkers(markers)
-        defaults.set(pruned, forKey: Keys.deletedCustomURLs)
+    private func saveDeletedMarkers(_ markers: [String: TimeInterval], forKey key: String) {
+        let pruned = pruneDeletedMarkers(markers)
+        defaults.set(pruned, forKey: key)
     }
 
-    private func clearDeletedCustomListURLs(_ urls: Set<String>) {
-        guard !urls.isEmpty else { return }
-        var markers = loadDeletedCustomURLMarkers()
+    private func mergeDeletedMarkers(_ entries: Set<String>, markers: [String: TimeInterval], saveKey: String) {
+        guard !entries.isEmpty else { return }
+        var updated = markers
+        let now = Date().timeIntervalSince1970
+        for entry in entries {
+            if !entry.isEmpty, updated[entry] == nil {
+                updated[entry] = now
+            }
+        }
+        saveDeletedMarkers(updated, forKey: saveKey)
+    }
+
+    private func clearDeletedMarkers(_ entries: Set<String>, markers: [String: TimeInterval], saveKey: String) {
+        guard !entries.isEmpty else { return }
+        var updated = markers
         var changed = false
-        for url in urls {
-            let normalized = CloudSyncCustomFilterReconciler.normalizedURL(url)
-            guard !normalized.isEmpty else { continue }
-            if markers.removeValue(forKey: normalized) != nil {
+        for entry in entries where !entry.isEmpty {
+            if updated.removeValue(forKey: entry) != nil {
                 changed = true
             }
         }
         if changed {
-            saveDeletedCustomURLMarkers(markers)
+            saveDeletedMarkers(updated, forKey: saveKey)
         }
-    }
-
-    private func mergeDeletedCustomListURLs(_ urls: Set<String>) {
-        guard !urls.isEmpty else { return }
-        var markers = loadDeletedCustomURLMarkers()
-        let now = Date().timeIntervalSince1970
-        for url in urls {
-            if markers[url] == nil {
-                markers[url] = now
-            }
-        }
-        saveDeletedCustomURLMarkers(markers)
     }
 
     private func localUserScriptNames(in payload: SyncPayload) -> Set<String> {
@@ -1812,38 +1799,21 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        let pruned = pruneDeletedLocalUserScriptMarkers(result)
+        let pruned = pruneDeletedMarkers(result)
         if pruned.count != result.count {
-            saveDeletedLocalUserScriptMarkers(pruned)
+            saveDeletedMarkers(pruned, forKey: Keys.deletedLocalUserScriptNames)
         }
         return pruned
     }
 
-    private func pruneDeletedLocalUserScriptMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
-        let ttl = deletedMarkerTTLDays * 24 * 60 * 60
-        let now = Date().timeIntervalSince1970
-        return markers.filter { _, deletedAt in
-            deletedAt > 0 && (now - deletedAt) <= ttl
-        }
-    }
-
     private func saveDeletedLocalUserScriptMarkers(_ markers: [String: TimeInterval]) {
-        let pruned = pruneDeletedLocalUserScriptMarkers(markers)
-        defaults.set(pruned, forKey: Keys.deletedLocalUserScriptNames)
+        saveDeletedMarkers(markers, forKey: Keys.deletedLocalUserScriptNames)
     }
 
     private func mergeDeletedLocalUserScriptNames(_ names: Set<String>) {
-        guard !names.isEmpty else { return }
-        var markers = loadDeletedLocalUserScriptMarkers()
-        let now = Date().timeIntervalSince1970
-        for name in names {
-            let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(name)
-            guard !normalized.isEmpty else { continue }
-            if markers[normalized] == nil {
-                markers[normalized] = now
-            }
-        }
-        saveDeletedLocalUserScriptMarkers(markers)
+        let normalized = Set(names.map(CloudSyncLocalUserScriptReconciler.normalizedName).filter { !$0.isEmpty })
+        let markers = loadDeletedLocalUserScriptMarkers()
+        mergeDeletedMarkers(normalized, markers: markers, saveKey: Keys.deletedLocalUserScriptNames)
     }
 
     private func deletedRemoteUserScriptURLSet() -> Set<String> {
@@ -1866,49 +1836,33 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        let pruned = pruneDeletedRemoteUserScriptURLMarkers(result)
+        let pruned = pruneDeletedMarkers(result)
         if pruned.count != result.count {
-            saveDeletedRemoteUserScriptURLMarkers(pruned)
+            saveDeletedMarkers(pruned, forKey: Keys.deletedRemoteUserScriptURLs)
         }
         return pruned
     }
 
     private func pruneDeletedRemoteUserScriptURLMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
-        let ttl = deletedMarkerTTLDays * 24 * 60 * 60
-        let now = Date().timeIntervalSince1970
-        return markers.filter { _, deletedAt in
-            deletedAt > 0 && (now - deletedAt) <= ttl
-        }
+        pruneDeletedMarkers(markers)
     }
 
     private func saveDeletedRemoteUserScriptURLMarkers(_ markers: [String: TimeInterval]) {
-        let pruned = pruneDeletedRemoteUserScriptURLMarkers(markers)
-        defaults.set(pruned, forKey: Keys.deletedRemoteUserScriptURLs)
+        saveDeletedMarkers(markers, forKey: Keys.deletedRemoteUserScriptURLs)
     }
 
     private func clearDeletedRemoteUserScriptURLs(_ urls: Set<String>) {
         guard !urls.isEmpty else { return }
-        var markers = loadDeletedRemoteUserScriptURLMarkers()
-        for url in urls {
-            let normalized = CloudSyncRemoteUserScriptReconciler.normalizedURL(url)
-            guard !normalized.isEmpty else { continue }
-            markers.removeValue(forKey: normalized)
-        }
-        saveDeletedRemoteUserScriptURLMarkers(markers)
+        let normalizedURLs = Set(urls.map(CloudSyncRemoteUserScriptReconciler.normalizedURL).filter { !$0.isEmpty })
+        guard !normalizedURLs.isEmpty else { return }
+        let markers = loadDeletedRemoteUserScriptURLMarkers()
+        clearDeletedMarkers(normalizedURLs, markers: markers, saveKey: Keys.deletedRemoteUserScriptURLs)
     }
 
     private func mergeDeletedRemoteUserScriptURLs(_ urls: Set<String>) {
-        guard !urls.isEmpty else { return }
-        var markers = loadDeletedRemoteUserScriptURLMarkers()
-        let now = Date().timeIntervalSince1970
-        for url in urls {
-            let normalized = CloudSyncRemoteUserScriptReconciler.normalizedURL(url)
-            guard !normalized.isEmpty else { continue }
-            if markers[normalized] == nil {
-                markers[normalized] = now
-            }
-        }
-        saveDeletedRemoteUserScriptURLMarkers(markers)
+        let normalizedURLs = Set(urls.map(CloudSyncRemoteUserScriptReconciler.normalizedURL).filter { !$0.isEmpty })
+        let markers = loadDeletedRemoteUserScriptURLMarkers()
+        mergeDeletedMarkers(normalizedURLs, markers: markers, saveKey: Keys.deletedRemoteUserScriptURLs)
     }
 }
 
