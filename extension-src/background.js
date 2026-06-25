@@ -2,7 +2,7 @@ function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Objec
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /*
- * WebExtension v1.0.4 (build date: Thu, 11 Jun 2026 23:28:00 GMT)
+ * WebExtension v1.0.4 (build date: Thu, 25 Jun 2026 11:13:41 GMT)
  * (c) 2026 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
@@ -788,15 +788,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function noopFunc() {}
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
@@ -1437,20 +1437,767 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function noopFunc() {}
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       GoogleIma3.apply(this, updatedArgs);
+      if (source.uniqueId) {
+        Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
+          value: flag,
+          enumerable: false,
+          writable: false,
+          configurable: false
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  function GoogleIma3Dai(source, args) {
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId) {
+      if (Window.prototype.toString[uniqueIdentifier] === flag) {
+        return;
+      }
+    }
+    function GoogleIma3Dai(source) {
+      var streamEventTypes = {
+        AD_BREAK_ENDED: "adBreakEnded",
+        AD_BREAK_STARTED: "adBreakStarted",
+        AD_PERIOD_ENDED: "adPeriodEnded",
+        AD_PERIOD_STARTED: "adPeriodStarted",
+        AD_PROGRESS: "adProgress",
+        CLICK: "click",
+        COMPLETE: "complete",
+        CUEPOINTS_CHANGED: "cuepointsChanged",
+        ERROR: "error",
+        FIRST_QUARTILE: "firstquartile",
+        HIDE_AD_UI: "hideAdUi",
+        LOADED: "loaded",
+        MIDPOINT: "midpoint",
+        PAUSED: "paused",
+        RESUMED: "resumed",
+        SHOW_AD_UI: "showAdUi",
+        SKIPPABLE_STATE_CHANGED: "skippableStateChanged",
+        SKIPPED: "skip",
+        STARTED: "started",
+        STREAM_INITIALIZED: "streamInitialized",
+        THIRD_QUARTILE: "thirdquartile",
+        VIDEO_CLICKED: "videoClicked"
+      };
+      var isRecord = function isRecord(value) {
+        return typeof value === "object" && value !== null;
+      };
+      var schedule = function schedule(callback) {
+        if (typeof requestAnimationFrame === "function") {
+          requestAnimationFrame(callback);
+          return;
+        }
+        setTimeout(callback, 0);
+      };
+      var toStringRecord = function toStringRecord(value) {
+        if (!isRecord(value)) {
+          return {};
+        }
+        var result = {};
+        var propertyNames = Object.keys(value);
+        for (var propertyIndex = 0; propertyIndex < propertyNames.length; propertyIndex += 1) {
+          var propertyName = propertyNames[propertyIndex];
+          result[propertyName] = String(value[propertyName]);
+        }
+        return result;
+      };
+      var getStringValue = function getStringValue(value) {
+        return typeof value === "string" && value.length > 0 ? value : null;
+      };
+      var normalizeStreamRequestUi = function normalizeStreamRequestUi(value) {
+        if (!isRecord(value)) {
+          return {
+            custom: null
+          };
+        }
+        var normalizedUi = Object.assign({
+          custom: null
+        }, value);
+        normalizedUi.custom = isRecord(normalizedUi.custom) ? normalizedUi.custom : null;
+        return normalizedUi;
+      };
+      var initializeEventHandler = function initializeEventHandler(instance) {
+        instance.listeners = new Map();
+      };
+      var normalizeEventTypes = function normalizeEventTypes(type) {
+        if (typeof type === "string") {
+          return [type];
+        }
+        if (!Array.isArray(type)) {
+          return [];
+        }
+        var eventTypes = [];
+        for (var eventTypeIndex = 0; eventTypeIndex < type.length; eventTypeIndex += 1) {
+          var eventType = type[eventTypeIndex];
+          if (typeof eventType === "string") {
+            eventTypes.push(eventType);
+          }
+        }
+        return eventTypes;
+      };
+      var initializeStreamRequest = function initializeStreamRequest(instance, streamRequest) {
+        instance.adTagParameters = {};
+        instance.apiKey = null;
+        instance.authToken = null;
+        instance.format = "hls";
+        instance.networkCode = null;
+        instance.omidAccessModeRules = null;
+        instance.streamActivityMonitorId = null;
+        instance.ui = {
+          custom: null
+        };
+        if (isRecord(streamRequest)) {
+          Object.assign(instance, streamRequest);
+        }
+        instance.adTagParameters = toStringRecord(instance.adTagParameters);
+        instance.ui = normalizeStreamRequestUi(instance.ui);
+        if (typeof instance.format !== "string" || instance.format.length === 0) {
+          instance.format = "hls";
+        }
+      };
+      var initializePodStreamRequest = function initializePodStreamRequest(instance, podStreamRequest) {
+        initializeStreamRequest(instance, podStreamRequest);
+        instance.customAssetKey = typeof instance.customAssetKey === "string" ? instance.customAssetKey : "";
+      };
+      var EventHandler = function EventHandler() {
+        initializeEventHandler(this);
+      };
+      EventHandler.prototype.addEventListener = function (type, listener) {
+        if (typeof listener !== "function") {
+          return;
+        }
+        var eventTypes = normalizeEventTypes(type);
+        for (var eventTypeIndex = 0; eventTypeIndex < eventTypes.length; eventTypeIndex += 1) {
+          var eventType = eventTypes[eventTypeIndex];
+          if (!this.listeners.has(eventType)) {
+            this.listeners.set(eventType, new Set());
+          }
+          var listeners = this.listeners.get(eventType);
+          if (listeners) {
+            listeners.add(listener);
+          }
+        }
+      };
+      EventHandler.prototype.removeEventListener = function (type, listener) {
+        if (typeof listener !== "function") {
+          return;
+        }
+        var eventTypes = normalizeEventTypes(type);
+        for (var eventTypeIndex = 0; eventTypeIndex < eventTypes.length; eventTypeIndex += 1) {
+          var listeners = this.listeners.get(eventTypes[eventTypeIndex]);
+          if (!listeners) {
+            continue;
+          }
+          listeners.delete(listener);
+        }
+      };
+      EventHandler.prototype.dispatchEvent = function (streamEvent) {
+        var listeners = this.listeners.get(streamEvent.type);
+        if (!listeners) {
+          return;
+        }
+        for (var _i = 0, _Array$from = Array.from(listeners); _i < _Array$from.length; _i++) {
+          var _listener = _Array$from[_i];
+          try {
+            _listener(streamEvent);
+          } catch (error) {
+            logMessage(source, error);
+          }
+        }
+      };
+      var streamFormats = {
+        DASH: "dash",
+        HLS: "hls"
+      };
+      var StreamRequest = function StreamRequest(streamRequest) {
+        initializeStreamRequest(this, streamRequest);
+      };
+      StreamRequest.StreamFormat = streamFormats;
+      var LiveStreamRequest = function LiveStreamRequest(liveStreamRequest) {
+        initializeStreamRequest(this, liveStreamRequest);
+        this.assetKey = typeof this.assetKey === "string" ? this.assetKey : "";
+      };
+      Object.setPrototypeOf(LiveStreamRequest.prototype, StreamRequest.prototype);
+      var PodStreamRequest = function PodStreamRequest(podStreamRequest) {
+        initializePodStreamRequest(this, podStreamRequest);
+      };
+      Object.setPrototypeOf(PodStreamRequest.prototype, StreamRequest.prototype);
+      var VideoStitcherLiveStreamRequest = function VideoStitcherLiveStreamRequest(videoStitcherLiveStreamRequest) {
+        initializePodStreamRequest(this, videoStitcherLiveStreamRequest);
+        this.liveStreamEventId = typeof this.liveStreamEventId === "string" ? this.liveStreamEventId : "";
+        this.oAuthToken = typeof this.oAuthToken === "string" ? this.oAuthToken : null;
+        this.projectNumber = typeof this.projectNumber === "string" ? this.projectNumber : null;
+        this.region = typeof this.region === "string" ? this.region : null;
+        this.videoStitcherSessionOptions = isRecord(this.videoStitcherSessionOptions) ? this.videoStitcherSessionOptions : null;
+      };
+      Object.setPrototypeOf(VideoStitcherLiveStreamRequest.prototype, PodStreamRequest.prototype);
+      var VideoStitcherVodStreamRequest = function VideoStitcherVodStreamRequest(videoStitcherVodStreamRequest) {
+        initializeStreamRequest(this, videoStitcherVodStreamRequest);
+        this.adTagUrl = typeof this.adTagUrl === "string" ? this.adTagUrl : "";
+        this.contentSourceUrl = typeof this.contentSourceUrl === "string" ? this.contentSourceUrl : "";
+        this.oAuthToken = typeof this.oAuthToken === "string" ? this.oAuthToken : null;
+        this.projectNumber = typeof this.projectNumber === "string" ? this.projectNumber : null;
+        this.region = typeof this.region === "string" ? this.region : null;
+        this.videoStitcherSessionOptions = isRecord(this.videoStitcherSessionOptions) ? this.videoStitcherSessionOptions : null;
+        this.vodConfigId = typeof this.vodConfigId === "string" ? this.vodConfigId : "";
+      };
+      Object.setPrototypeOf(VideoStitcherVodStreamRequest.prototype, StreamRequest.prototype);
+      var VODStreamRequest = function VODStreamRequest(vodStreamRequest) {
+        initializeStreamRequest(this, vodStreamRequest);
+        this.contentSourceId = typeof this.contentSourceId === "string" ? this.contentSourceId : "";
+        this.videoId = typeof this.videoId === "string" ? this.videoId : "";
+      };
+      Object.setPrototypeOf(VODStreamRequest.prototype, StreamRequest.prototype);
+      var StreamData = function StreamData(streamData) {
+        this.adPeriodData = null;
+        this.adProgressData = null;
+        this.cuepoints = [];
+        this.errorMessage = null;
+        this.manifestFormat = "HLS";
+        this.streamId = null;
+        this.subtitles = [];
+        this.url = "";
+        if (isRecord(streamData)) {
+          Object.assign(this, streamData);
+        }
+      };
+      var StreamEvent = function StreamEvent(type, streamData, ad) {
+        this.type = type;
+        this.streamData = streamData || new StreamData();
+        this.ad = ad || null;
+      };
+      StreamEvent.Type = streamEventTypes;
+      StreamEvent.prototype.getAd = function () {
+        return this.ad;
+      };
+      StreamEvent.prototype.getStreamData = function () {
+        return this.streamData;
+      };
+      var UiSettings = function UiSettings() {
+        this.locale = "en";
+      };
+      UiSettings.prototype.getLocale = function () {
+        return this.locale;
+      };
+      UiSettings.prototype.setLocale = function (locale) {
+        if (typeof locale === "string" && locale.length > 0) {
+          this.locale = locale;
+        }
+      };
+      var uiKeys = {
+        ABOUT_THIS_AD_FALLBACK_IMAGE: "aboutThisAdFallbackImage",
+        ABOUT_THIS_AD_ICON: "aboutThisAdIcon",
+        AD_TITLE: "adTitle",
+        ATTRIBUTION: "attribution",
+        AUTHOR_ICON: "authorIcon",
+        AUTHOR_TITLE: "authorTitle",
+        CALL_TO_ACTION: "callToAction",
+        PRE_SKIP: "preSkip",
+        SKIP_BUTTON: "skipButton",
+        VIDEO_OVERLAY: "videoOverlay"
+      };
+      var clickThroughNavigation = {
+        EXTERNAL: "external",
+        NOT_SUPPORTED: "notSupported"
+      };
+      var UiImage = function UiImage(uiImage) {
+        this.altText = "";
+        this.height = 0;
+        this.url = "";
+        this.width = 0;
+        if (isRecord(uiImage)) {
+          Object.assign(this, uiImage);
+        }
+        this.altText = getStringValue(this.altText) || "";
+        this.height = typeof this.height === "number" ? this.height : 0;
+        this.url = getStringValue(this.url) || "";
+        this.width = typeof this.width === "number" ? this.width : 0;
+      };
+      var UiData = function UiData(uiData) {
+        this.clickable = false;
+        this.required = false;
+        if (isRecord(uiData)) {
+          Object.assign(this, uiData);
+        }
+        this.clickable = Boolean(this.clickable);
+        this.required = Boolean(this.required);
+        if (Array.isArray(this.imageVariants)) {
+          var imageVariants = [];
+          for (var imageVariantIndex = 0; imageVariantIndex < this.imageVariants.length; imageVariantIndex += 1) {
+            imageVariants.push(new UiImage(this.imageVariants[imageVariantIndex]));
+          }
+          this.imageVariants = imageVariants;
+        }
+      };
+      UiData.UiImage = UiImage;
+      var UiOptions = function UiOptions(uiOptions) {
+        this.aboutThisAdSupport = false;
+        this.clickThroughNavigation = clickThroughNavigation.NOT_SUPPORTED;
+        this.skippableSupport = false;
+        if (isRecord(uiOptions)) {
+          Object.assign(this, uiOptions);
+        }
+        this.aboutThisAdSupport = Boolean(this.aboutThisAdSupport);
+        this.clickThroughNavigation = this.clickThroughNavigation === clickThroughNavigation.EXTERNAL ? clickThroughNavigation.EXTERNAL : clickThroughNavigation.NOT_SUPPORTED;
+        this.skippableSupport = Boolean(this.skippableSupport);
+      };
+      UiOptions.ClickThroughNavigation = clickThroughNavigation;
+      var CustomUiOptions = function CustomUiOptions(uiOptions) {
+        this.aboutThisAdSupport = false;
+        this.skippableSupport = false;
+        if (isRecord(uiOptions)) {
+          Object.assign(this, uiOptions);
+        }
+        this.aboutThisAdSupport = Boolean(this.aboutThisAdSupport);
+        this.skippableSupport = Boolean(this.skippableSupport);
+      };
+      var uiDelegates = new WeakMap();
+      var Ui = function Ui(uiDelegate) {
+        uiDelegates.set(this, isRecord(uiDelegate) ? uiDelegate : {});
+      };
+      Ui.prototype.onClick = function (uiKey, eventData) {
+        var uiDelegate = uiDelegates.get(this);
+        if (uiDelegate && typeof uiDelegate.onClick === "function") {
+          uiDelegate.onClick(uiKey, eventData);
+        }
+      };
+      Ui.prototype.setVisibleElements = function (uiElements) {
+        var uiDelegate = uiDelegates.get(this);
+        if (uiDelegate && typeof uiDelegate.setVisibleElements === "function") {
+          uiDelegate.setVisibleElements(uiElements);
+        }
+      };
+      Ui.prototype.getConfig = function () {
+        var uiDelegate = uiDelegates.get(this);
+        if (!uiDelegate || typeof uiDelegate.getConfig !== "function") {
+          return new Map();
+        }
+        var uiConfig = uiDelegate.getConfig();
+        return uiConfig instanceof Map ? uiConfig : new Map();
+      };
+      Ui.UiData = UiData;
+      Ui.UiKey = uiKeys;
+      Ui.UiOptions = UiOptions;
+      var daiSdkFeatureFlagsStorage = new WeakMap();
+      var getStoredDaiSdkFeatureFlags = function getStoredDaiSdkFeatureFlags(instance) {
+        var storedFeatureFlags = daiSdkFeatureFlagsStorage.get(instance);
+        if (storedFeatureFlags) {
+          return storedFeatureFlags;
+        }
+        var nextFeatureFlags = {};
+        daiSdkFeatureFlagsStorage.set(instance, nextFeatureFlags);
+        return nextFeatureFlags;
+      };
+      var DaiSdkSettingsContainer = function DaiSdkSettingsContainer() {
+        daiSdkFeatureFlagsStorage.set(this, {});
+      };
+      DaiSdkSettingsContainer.prototype.getFeatureFlags = function () {
+        return getStoredDaiSdkFeatureFlags(this);
+      };
+      DaiSdkSettingsContainer.prototype.setFeatureFlags = function (featureFlags) {
+        daiSdkFeatureFlagsStorage.set(this, Object.assign({}, featureFlags));
+      };
+      var normalizeStreamRequest = function normalizeStreamRequest(streamRequest) {
+        if (streamRequest instanceof StreamRequest) {
+          return streamRequest;
+        }
+        if (isRecord(streamRequest)) {
+          if (typeof streamRequest.liveStreamEventId === "string") {
+            return new VideoStitcherLiveStreamRequest(streamRequest);
+          }
+          if (typeof streamRequest.contentSourceUrl === "string" || typeof streamRequest.vodConfigId === "string" || typeof streamRequest.adTagUrl === "string") {
+            return new VideoStitcherVodStreamRequest(streamRequest);
+          }
+          if (typeof streamRequest.customAssetKey === "string") {
+            return new PodStreamRequest(streamRequest);
+          }
+          if (typeof streamRequest.assetKey === "string") {
+            return new LiveStreamRequest(streamRequest);
+          }
+          if (typeof streamRequest.contentSourceId === "string" || typeof streamRequest.videoId === "string") {
+            return new VODStreamRequest(streamRequest);
+          }
+        }
+        return new StreamRequest();
+      };
+      var hasLiveIdentifiers = function hasLiveIdentifiers(streamRequest) {
+        var liveStreamRequest = streamRequest;
+        return typeof liveStreamRequest.assetKey === "string" && liveStreamRequest.assetKey.length > 0;
+      };
+      var hasVideoStitcherLiveIdentifiers = function hasVideoStitcherLiveIdentifiers(streamRequest) {
+        var videoStitcherLiveStreamRequest = streamRequest;
+        return typeof videoStitcherLiveStreamRequest.liveStreamEventId === "string" && videoStitcherLiveStreamRequest.liveStreamEventId.length > 0;
+      };
+      var hasPodIdentifiers = function hasPodIdentifiers(streamRequest) {
+        var podStreamRequest = streamRequest;
+        return typeof podStreamRequest.networkCode === "string" && podStreamRequest.networkCode.length > 0 && typeof podStreamRequest.customAssetKey === "string" && podStreamRequest.customAssetKey.length > 0;
+      };
+      var hasVideoStitcherVodIdentifiers = function hasVideoStitcherVodIdentifiers(streamRequest) {
+        var videoStitcherVodStreamRequest = streamRequest;
+        var hasContentSourceUrl = typeof videoStitcherVodStreamRequest.contentSourceUrl === "string" && videoStitcherVodStreamRequest.contentSourceUrl.length > 0;
+        var hasVodConfigId = typeof videoStitcherVodStreamRequest.vodConfigId === "string" && videoStitcherVodStreamRequest.vodConfigId.length > 0;
+        return hasContentSourceUrl || hasVodConfigId;
+      };
+      var hasVodIdentifiers = function hasVodIdentifiers(streamRequest) {
+        var vodStreamRequest = streamRequest;
+        return typeof vodStreamRequest.contentSourceId === "string" && vodStreamRequest.contentSourceId.length > 0 && typeof vodStreamRequest.videoId === "string" && vodStreamRequest.videoId.length > 0;
+      };
+      var hasIdentifiers = function hasIdentifiers(streamRequest) {
+        return hasLiveIdentifiers(streamRequest) || hasPodIdentifiers(streamRequest) || hasVideoStitcherLiveIdentifiers(streamRequest) || hasVideoStitcherVodIdentifiers(streamRequest) || hasVodIdentifiers(streamRequest);
+      };
+      var getFallbackStreamId = function getFallbackStreamId(streamRequest) {
+        var liveStreamRequest = streamRequest;
+        var videoStitcherLiveStreamRequest = streamRequest;
+        var videoStitcherVodStreamRequest = streamRequest;
+        var vodStreamRequest = streamRequest;
+        if (typeof videoStitcherVodStreamRequest.vodConfigId === "string" && videoStitcherVodStreamRequest.vodConfigId.length > 0) {
+          return `mock-video-stitcher-vod-${videoStitcherVodStreamRequest.vodConfigId}`;
+        }
+        if (typeof videoStitcherVodStreamRequest.contentSourceUrl === "string" && videoStitcherVodStreamRequest.contentSourceUrl.length > 0) {
+          return "mock-video-stitcher-vod";
+        }
+        if (typeof videoStitcherLiveStreamRequest.liveStreamEventId === "string" && videoStitcherLiveStreamRequest.liveStreamEventId.length > 0) {
+          return `mock-video-stitcher-live-${videoStitcherLiveStreamRequest.liveStreamEventId}`;
+        }
+        if (typeof liveStreamRequest.assetKey === "string" && liveStreamRequest.assetKey.length > 0) {
+          return `mock-live-${liveStreamRequest.assetKey}`;
+        }
+        if (typeof vodStreamRequest.videoId === "string" && vodStreamRequest.videoId.length > 0) {
+          return `mock-vod-${vodStreamRequest.videoId}`;
+        }
+        return "mock-stream";
+      };
+      var getDefaultManifestFormat = function getDefaultManifestFormat(streamRequest) {
+        return typeof streamRequest.format === "string" && streamRequest.format.toLowerCase() === "dash" ? "DASH" : "HLS";
+      };
+      var createStreamData = function createStreamData(streamRequest, cuepoints, errorMessage, streamDataOverrides) {
+        var streamData = new StreamData({
+          cuepoints: cuepoints.slice(),
+          errorMessage: errorMessage,
+          manifestFormat: getDefaultManifestFormat(streamRequest),
+          streamId: getFallbackStreamId(streamRequest),
+          url: ""
+        });
+        if (isRecord(streamDataOverrides)) {
+          Object.assign(streamData, streamDataOverrides);
+        }
+        return streamData;
+      };
+      var appendRequestParameters = function appendRequestParameters(requestUrl, streamRequest) {
+        var parameterNames = Object.keys(streamRequest.adTagParameters);
+        for (var parameterIndex = 0; parameterIndex < parameterNames.length; parameterIndex += 1) {
+          var parameterName = parameterNames[parameterIndex];
+          requestUrl.searchParams.set(parameterName, streamRequest.adTagParameters[parameterName]);
+        }
+        if (streamRequest.apiKey) {
+          requestUrl.searchParams.set("api-key", streamRequest.apiKey);
+        }
+        if (streamRequest.authToken) {
+          requestUrl.searchParams.set("auth-token", streamRequest.authToken);
+        }
+        if (streamRequest.streamActivityMonitorId) {
+          requestUrl.searchParams.set("dai-sam-id", streamRequest.streamActivityMonitorId);
+        }
+      };
+      var buildLiveRequestUrl = function buildLiveRequestUrl(streamRequest, hostName) {
+        var requestUrl = new URL(`${hostName}/ssai/event/${streamRequest.assetKey}/streams`);
+        appendRequestParameters(requestUrl, streamRequest);
+        return requestUrl.toString();
+      };
+      var buildPodRequestUrl = function buildPodRequestUrl(streamRequest, hostName) {
+        var requestUrl = new URL(`${hostName}/ssai/pods/api/v1/network/${streamRequest.networkCode}` + `/custom_asset/${streamRequest.customAssetKey}/stream`);
+        var manifestType = streamRequest.format.toLowerCase() === "dash" ? "dash" : "hls";
+        appendRequestParameters(requestUrl, streamRequest);
+        requestUrl.searchParams.set("manifest-type", manifestType);
+        return requestUrl.toString();
+      };
+      var buildVodRequestUrl = function buildVodRequestUrl(streamRequest, hostName) {
+        var requestFormat = streamRequest.format.toLowerCase() === "dash" ? "dash" : "hls";
+        var requestUrl = new URL(`${hostName}/ondemand/${requestFormat}/content/${streamRequest.contentSourceId}` + `/vid/${streamRequest.videoId}/streams`);
+        appendRequestParameters(requestUrl, streamRequest);
+        return requestUrl.toString();
+      };
+      var MAIN_HOST_NAME = "https://dai.google.com";
+      var FALLBACK_HOST_NAME = "https://pubads.g.doubleclick.net";
+      var getStreamRequestUrls = function getStreamRequestUrls(streamRequest) {
+        if (hasPodIdentifiers(streamRequest)) {
+          return [buildPodRequestUrl(streamRequest, MAIN_HOST_NAME), buildPodRequestUrl(streamRequest, FALLBACK_HOST_NAME)];
+        }
+        if (hasLiveIdentifiers(streamRequest)) {
+          return [buildLiveRequestUrl(streamRequest, MAIN_HOST_NAME), buildLiveRequestUrl(streamRequest, FALLBACK_HOST_NAME)];
+        }
+        if (hasVodIdentifiers(streamRequest)) {
+          return [buildVodRequestUrl(streamRequest, MAIN_HOST_NAME), buildVodRequestUrl(streamRequest, FALLBACK_HOST_NAME)];
+        }
+        return [];
+      };
+      var readFetchResponseData = async function readFetchResponseData(response) {
+        var typedResponse = response;
+        if (typedResponse && typedResponse.ok === false) {
+          throw new Error(`Stream initialization failed with status ${String(typedResponse.status || 0)}`);
+        }
+        if (typedResponse && typeof typedResponse.json === "function") {
+          var jsonResponse = await typedResponse.json();
+          return isRecord(jsonResponse) ? jsonResponse : {};
+        }
+        return isRecord(response) ? response : {};
+      };
+      var getResponseErrorMessage = function getResponseErrorMessage(responseData) {
+        return getStringValue(responseData.errorMessage) || getStringValue(responseData.error_message);
+      };
+      var createStreamDataFromResponse = function createStreamDataFromResponse(streamRequest, cuepoints, responseData) {
+        var podManifestUrl = getStringValue(responseData.pod_manifest_url) || getStringValue(responseData.podManifestUrl) || "";
+        var responseStreamId = getStringValue(responseData.stream_id) || getStringValue(responseData.streamId);
+        var streamUrl = getStringValue(responseData.stream_manifest) || getStringValue(responseData.streamUrl) || podManifestUrl || "";
+        var responseErrorMessage = getResponseErrorMessage(responseData);
+        var hasInitializedStream = streamUrl.length > 0 || responseStreamId !== null && responseStreamId.length > 0;
+        var errorMessage = responseErrorMessage || (hasInitializedStream ? null : "Stream initialization response missing stream URL");
+        var manifestFormat = getStringValue(responseData.manifest_format) || getStringValue(responseData.manifestFormat) || getDefaultManifestFormat(streamRequest);
+        var streamId = responseStreamId || getFallbackStreamId(streamRequest);
+        var subtitles = Array.isArray(responseData.subtitles) ? responseData.subtitles : [];
+        return createStreamData(streamRequest, cuepoints, errorMessage, {
+          manifestFormat: manifestFormat,
+          podManifestUrl: podManifestUrl,
+          pod_manifest_url: podManifestUrl,
+          streamId: streamId,
+          subtitles: subtitles,
+          url: streamUrl
+        });
+      };
+      var getErrorMessage = function getErrorMessage(error) {
+        if (isRecord(error) && typeof error.message === "string" && error.message.length > 0) {
+          return error.message;
+        }
+        return "Stream initialization failed";
+      };
+      var hideAdUiElement = function hideAdUiElement(streamManager) {
+        if (!streamManager.adUiElement) {
+          return;
+        }
+        streamManager.adUiElement.style.display = "none";
+      };
+      var showVideoControls = function showVideoControls(streamManager) {
+        if (!streamManager.videoElement || streamManager.videoElement.controls) {
+          return;
+        }
+        streamManager.videoElement.controls = true;
+      };
+      var handleContentLoaded = function handleContentLoaded(streamManager) {
+        hideAdUiElement(streamManager);
+        showVideoControls(streamManager);
+      };
+      var isContentLoadedEventType = function isContentLoadedEventType(eventType) {
+        return eventType === StreamEvent.Type.LOADED || eventType === StreamEvent.Type.STREAM_INITIALIZED;
+      };
+      var StreamManager = function StreamManager(videoElement, adUiElement, uiSettings) {
+        initializeEventHandler(this);
+        this.videoElement = videoElement || null;
+        this.adUiElement = adUiElement || null;
+        this.uiSettings = uiSettings || new UiSettings();
+        this.clickElement = adUiElement || null;
+        this.streamData = new StreamData();
+        this.streamMonitor = {};
+        this.streamRequest = null;
+        this.cuepoints = [];
+        this.lastMetadata = null;
+        this.lastTimedMetadata = null;
+      };
+      Object.setPrototypeOf(StreamManager.prototype, EventHandler.prototype);
+      StreamManager.prototype.contentTimeForStreamTime = function (streamTime) {
+        return typeof streamTime === "number" ? streamTime : 0;
+      };
+      StreamManager.prototype.destroy = function () {
+        this.reset();
+      };
+      StreamManager.prototype.focus = function () {
+        var clickElement = this.clickElement;
+        if (!clickElement || typeof clickElement.focus !== "function") {
+          return;
+        }
+        try {
+          clickElement.focus();
+        } catch (error) {
+          logMessage(source, error);
+        }
+      };
+      StreamManager.prototype.getAdSkippableState = function () {
+        return true;
+      };
+      StreamManager.prototype.getStreamData = function () {
+        return this.streamData;
+      };
+      StreamManager.prototype.loadStreamMetadata = function () {
+        handleContentLoaded(this);
+        this.dispatchEvent(new StreamEvent(StreamEvent.Type.LOADED, this.streamData));
+      };
+      StreamManager.prototype.onTimedMetadata = function (metadata) {
+        this.lastTimedMetadata = metadata;
+      };
+      StreamManager.prototype.previousCuePointForStreamTime = function (streamTime) {
+        var previousCuePoint = null;
+        for (var cuepointIndex = 0; cuepointIndex < this.cuepoints.length; cuepointIndex += 1) {
+          var cuepoint = this.cuepoints[cuepointIndex];
+          if (typeof cuepoint.start !== "number") {
+            continue;
+          }
+          if (cuepoint.start <= streamTime) {
+            previousCuePoint = cuepoint;
+          }
+        }
+        return previousCuePoint;
+      };
+      StreamManager.prototype.processMetadata = function (type, data, timestamp) {
+        this.lastMetadata = {
+          data: data,
+          timestamp: timestamp,
+          type: type
+        };
+      };
+      StreamManager.prototype.replaceAdTagParameters = function (adTagParameters) {
+        if (!this.streamRequest) {
+          this.streamRequest = new StreamRequest();
+        }
+        this.streamRequest.adTagParameters = toStringRecord(adTagParameters);
+      };
+      StreamManager.prototype.requestStream = function (streamRequest) {
+        var _this = this;
+        var normalizedRequest = normalizeStreamRequest(streamRequest);
+        this.streamRequest = normalizedRequest;
+        var dispatchStreamEvent = function dispatchStreamEvent(eventType, streamData) {
+          _this.streamData = streamData;
+          if (isContentLoadedEventType(eventType)) {
+            handleContentLoaded(_this);
+          }
+          schedule(function () {
+            _this.dispatchEvent(new StreamEvent(StreamEvent.Type.STREAM_INITIALIZED, streamData));
+            _this.dispatchEvent(new StreamEvent(eventType, streamData));
+          });
+        };
+        if (!hasIdentifiers(normalizedRequest)) {
+          dispatchStreamEvent(StreamEvent.Type.ERROR, createStreamData(normalizedRequest, this.cuepoints, "Missing stream request identifiers"));
+          return;
+        }
+        var requestUrls = getStreamRequestUrls(normalizedRequest);
+        if (requestUrls.length > 0) {
+          var activeRequest = normalizedRequest;
+          var _fetchStreamData = async function fetchStreamData(requestIndex) {
+            try {
+              var fetchResponse = await fetch(requestUrls[requestIndex], {
+                method: "POST",
+                credentials: "include"
+              });
+              var responseData = await readFetchResponseData(fetchResponse);
+              if (_this.streamRequest !== activeRequest) {
+                return;
+              }
+              var _streamData = createStreamDataFromResponse(activeRequest, _this.cuepoints, responseData);
+              var eventType = _streamData.errorMessage ? StreamEvent.Type.ERROR : StreamEvent.Type.LOADED;
+              dispatchStreamEvent(eventType, _streamData);
+            } catch (error) {
+              if (_this.streamRequest !== activeRequest) {
+                return;
+              }
+              if (requestIndex + 1 < requestUrls.length) {
+                await _fetchStreamData(requestIndex + 1);
+                return;
+              }
+              dispatchStreamEvent(StreamEvent.Type.ERROR, createStreamData(activeRequest, _this.cuepoints, getErrorMessage(error)));
+            }
+          };
+          _fetchStreamData(0);
+          return;
+        }
+        dispatchStreamEvent(StreamEvent.Type.LOADED, createStreamData(normalizedRequest, this.cuepoints, null));
+      };
+      StreamManager.prototype.reset = function () {
+        this.cuepoints = [];
+        this.lastMetadata = null;
+        this.lastTimedMetadata = null;
+        this.streamData = new StreamData();
+        this.streamRequest = null;
+      };
+      StreamManager.prototype.setClickElement = function (clickElement) {
+        if (this.adUiElement) {
+          return;
+        }
+        this.clickElement = clickElement;
+      };
+      StreamManager.prototype.streamTimeForContentTime = function (contentTime) {
+        return typeof contentTime === "number" ? contentTime : 0;
+      };
+      var api = {
+        customUi: {
+          UiOptions: CustomUiOptions
+        },
+        DaiSdkSettings: new DaiSdkSettingsContainer(),
+        LiveStreamRequest: LiveStreamRequest,
+        PodStreamRequest: PodStreamRequest,
+        StreamData: StreamData,
+        StreamEvent: StreamEvent,
+        StreamManager: StreamManager,
+        StreamRequest: StreamRequest,
+        ui: Ui,
+        UiSettings: UiSettings,
+        VideoStitcherLiveStreamRequest: VideoStitcherLiveStreamRequest,
+        VideoStitcherVodStreamRequest: VideoStitcherVodStreamRequest,
+        VODStreamRequest: VODStreamRequest
+      };
+      var globalWindow = window;
+      var googleNamespace = isRecord(globalWindow.google) ? globalWindow.google : {};
+      if (!isRecord(globalWindow.google)) {
+        globalWindow.google = googleNamespace;
+      }
+      var imaNamespace = isRecord(googleNamespace.ima) ? googleNamespace.ima : {};
+      googleNamespace.ima = imaNamespace;
+      var daiNamespace = isRecord(imaNamespace.dai) ? imaNamespace.dai : {};
+      imaNamespace.dai = daiNamespace;
+      var apiNamespace = isRecord(daiNamespace.api) ? daiNamespace.api : {};
+      daiNamespace.api = apiNamespace;
+      Object.assign(apiNamespace, api);
+      hit(source);
+    }
+    function hit(e) {
+      if (e.verbose) {
+        try {
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
+        } catch (e) {}
+        "function" == typeof window.__debug && window.__debug(e);
+      }
+    }
+    function logMessage(e, o) {
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: n,
+          verbose: g
+        } = e;
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
+      }
+    }
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
+    try {
+      GoogleIma3Dai.apply(this, updatedArgs);
       if (source.uniqueId) {
         Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
           value: flag,
@@ -1710,6 +2457,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var clickUrl = "";
         var collapseEmptyDiv = null;
         var services = new Set();
+        var config = {};
         var slot = {
           addService(e) {
             services.add(e);
@@ -1744,6 +2492,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           },
           getCollapseEmptyDiv: function getCollapseEmptyDiv() {
             return collapseEmptyDiv;
+          },
+          getConfig: function getConfig(keys) {
+            var configKeys = Array.isArray(keys) ? keys : [keys];
+            var googleTagServicesConfig = {};
+            for (var i = 0; i < configKeys.length; i += 1) {
+              var key = configKeys[i];
+              if (key === "clickUrl") {
+                googleTagServicesConfig[key] = clickUrl;
+              } else if (key === "targeting") {
+                googleTagServicesConfig[key] = targeting;
+              } else {
+                googleTagServicesConfig[key] = config[key];
+              }
+            }
+            return Object.freeze(googleTagServicesConfig);
           },
           getContentUrl: function getContentUrl() {
             return "";
@@ -1812,6 +2575,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             collapseEmptyDiv = !!v;
             return slot;
           },
+          setConfig(obj) {
+            try {
+              var entries = Object.entries(obj);
+              for (var i = 0; i < entries.length; i += 1) {
+                var entry = entries[i];
+                var key = entry[0];
+                var value = entry[1];
+                if (key === "clickUrl") {
+                  clickUrl = value;
+                } else if (key === "targeting") {
+                  updateTargeting(targeting, value);
+                } else {
+                  config[key] = value;
+                }
+              }
+            } catch (ex) {}
+          },
           setSafeFrameConfig: noopThis,
           setTagForChildDirectedTreatment: noopThis,
           setTargeting(k, v) {
@@ -1831,6 +2611,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         slotCreatives.set(optDiv, creatives);
         return slot;
       };
+      var initialLoadDisabled = false;
       var pubAdsService = {
         addEventListener: addEventListener,
         removeEventListener: removeEventListener,
@@ -1851,7 +2632,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         definePassback() {
           return new PassbackSlot();
         },
-        disableInitialLoad: noopFunc,
+        disableInitialLoad() {
+          initialLoadDisabled = true;
+        },
         display: noopFunc,
         enableAsyncRendering: noopFunc,
         enableLazyLoad: noopFunc,
@@ -1863,7 +2646,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         getTargeting: noopArray,
         getTargetingKeys: noopArray,
         getSlots: noopArray,
-        isInitialLoadDisabled: trueFunc,
+        isInitialLoadDisabled: function isInitialLoadDisabled() {
+          return initialLoadDisabled;
+        },
         refresh: noopFunc,
         set: noopThis,
         setCategoryExclusion: noopThis,
@@ -1880,6 +2665,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         setVideoContent: noopThis,
         updateCorrelator: noopFunc
       };
+      var config = {};
       var {
         googletag = {}
       } = window;
@@ -1919,12 +2705,44 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         displaySlot(slotsById.get(id));
       };
       googletag.enableServices = noopFunc;
+      googletag.getConfig = function (keys) {
+        var configKeys = Array.isArray(keys) ? keys : [keys];
+        var googleTagServicesConfig = {};
+        for (var i = 0; i < configKeys.length; i += 1) {
+          var key = configKeys[i];
+          if (key === "disableInitialLoad") {
+            googleTagServicesConfig[key] = initialLoadDisabled;
+          } else if (key === "targeting") {
+            googleTagServicesConfig[key] = gTargeting;
+          } else {
+            googleTagServicesConfig[key] = config[key];
+          }
+        }
+        return Object.freeze(googleTagServicesConfig);
+      };
       googletag.getVersion = noopStr;
       googletag.pubads = function () {
         return pubAdsService;
       };
       googletag.pubadsReady = true;
       googletag.setAdIframeTitle = noopFunc;
+      googletag.setConfig = function (obj) {
+        try {
+          var entries = Object.entries(obj);
+          for (var i = 0; i < entries.length; i += 1) {
+            var entry = entries[i];
+            var key = entry[0];
+            var value = entry[1];
+            if (key === "disableInitialLoad") {
+              initialLoadDisabled = !!value;
+            } else if (key === "targeting") {
+              updateTargeting(gTargeting, value);
+            } else {
+              config[key] = value;
+            }
+          }
+        } catch (ex) {}
+      };
       googletag.sizeMapping = function () {
         return new SizeMappingBuilder();
       };
@@ -1956,9 +2774,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function noopStr() {
       return "";
-    }
-    function trueFunc() {
-      return true;
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -2425,15 +3240,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isEmptyObject(t) {
@@ -2884,15 +3699,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -3089,15 +3904,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return shouldMatchAnyDelay(a) || e === getMatchDelay(a);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -3197,15 +4012,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return shouldMatchAnyDelay(a) || e === getMatchDelay(a);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -3309,15 +4124,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isEmptyObject(t) {
@@ -3481,15 +4296,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isEmptyObject(t) {
@@ -3974,15 +4789,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -4290,15 +5105,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return new RegExp(c);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
@@ -4743,15 +5558,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function throttle(n, t) {
@@ -4848,15 +5663,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function hijackAttachShadow(t, a, e) {
@@ -4893,26 +5708,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function jsonPrune(source, propsToRemove, requiredInitialProps) {
       var stack = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
-      var prunePaths = getPrunePath(propsToRemove);
-      var requiredPaths = getPrunePath(requiredInitialProps);
+      var mode = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
+      var syntaxModeDetails = resolveJsonSyntaxMode(propsToRemove, mode);
+      var prunePaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsToRemove) : [];
+      var requiredPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(requiredInitialProps) : [];
       var nativeObjects = {
+        nativeParse: window.JSON.parse,
         nativeStringify: window.JSON.stringify
       };
-      var nativeJSONParse = JSON.parse;
+      var pruneJsonValue = function pruneJsonValue(root) {
+        if (syntaxModeDetails.mode === "jsonpath") {
+          return jsonPath(source, root, propsToRemove, nativeObjects, function () {
+            return hit(source);
+          }, stack);
+        }
+        return jsonPruner(source, root, prunePaths, requiredPaths, stack, nativeObjects);
+      };
       var jsonParseWrapper = function jsonParseWrapper() {
         for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
           args[_key] = arguments[_key];
         }
-        var root = nativeJSONParse.apply(JSON, args);
-        return jsonPruner(source, root, prunePaths, requiredPaths, stack, nativeObjects);
+        var root = nativeObjects.nativeParse.apply(JSON, args);
+        return pruneJsonValue(root);
       };
-      jsonParseWrapper.toString = nativeJSONParse.toString.bind(nativeJSONParse);
+      jsonParseWrapper.toString = nativeObjects.nativeParse.toString.bind(nativeObjects.nativeParse);
       JSON.parse = jsonParseWrapper;
       var nativeResponseJson = Response.prototype.json;
       var responseJsonWrapper = function responseJsonWrapper() {
         var promise = nativeResponseJson.apply(this);
         return promise.then(function (obj) {
-          return jsonPruner(source, obj, prunePaths, requiredPaths, stack, nativeObjects);
+          return pruneJsonValue(obj);
         });
       };
       if (typeof Response === "undefined") {
@@ -5000,15 +5825,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isPruningNeeded(n, t, r, e, a, i) {
@@ -5199,6 +6024,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.log(n);
       }
     }
+    function nativeIsNaN(N) {
+      return (Number.isNaN || window.isNaN)(N);
+    }
     function isKeyInObject(t, r, e) {
       var n = r.split("."),
         _check3 = function _check(t, r) {
@@ -5217,6 +6045,646 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return !!Object.prototype.hasOwnProperty.call(t, n) && _check3(t[n], i);
         };
       return _check3(t, n);
+    }
+    function jsonPath(e, r, t, a, n) {
+      var i = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : "",
+        s = arguments.length > 6 && void 0 !== arguments[6] && arguments[6],
+        o = "$",
+        l = ".",
+        u = "..",
+        p = "",
+        c = "\\",
+        f = ")",
+        h = "[",
+        v = "@",
+        d = "contains",
+        g = "equal",
+        m = "exists",
+        y = "greater_than",
+        k = "greater_than_or_equal",
+        P = "less_than",
+        b = "less_than_or_equal",
+        S = "not_equal",
+        x = "regex",
+        $ = ["==", "!=", "<=", ">=", "*=", "=~", "<", ">", "="],
+        C = 1e5,
+        w = /^[A-Za-z_$][\w$]*$/;
+      function isObjectLike(e) {
+        return null !== e && "object" == typeof e;
+      }
+      function isPlainObject(e) {
+        if (!isObjectLike(e) || Array.isArray(e)) return false;
+        var r = Object.getPrototypeOf(e);
+        return r === Object.prototype || null === r;
+      }
+      function isQuoteCharacter(e) {
+        return "'" === e || '"' === e;
+      }
+      function isEscaped(e, r) {
+        for (var t = 0, a = r - 1; a >= 0 && e[a] === c;) t += 1, a -= 1;
+        return t % 2 != 0;
+      }
+      function stripQuotes(e) {
+        var r = e.trim();
+        if (r.length < 2) return r;
+        var t = r[0],
+          a = r[r.length - 1];
+        return isQuoteCharacter(t) && t === a ? r.slice(1, -1).split("\\'").join("'").split('\\"').join('"').split(c + c).join(c) : r;
+      }
+      function appendPath(e, r) {
+        return "number" == typeof r || /^\d+$/.test(String(r)) ? `${e}[${r}]` : w.test(String(r)) ? `${e}.${r}` : `${e}['${String(r).replace(/'/g, "\\'")}']`;
+      }
+      function createCandidate(e, r, t, a) {
+        return {
+          key: t,
+          parent: r,
+          path: a,
+          value: e
+        };
+      }
+      function walkTopLevelChars(e, r) {
+        for (var t = 0, a = 0, n = 0, i = null, s = 0; s < e.length; s += 1) {
+          var o = e[s];
+          if (i) {
+            if (o !== i || isEscaped(e, s) || (i = null), r(s, false)) return;
+          } else if (isQuoteCharacter(o)) {
+            if (i = o, r(s, false)) return;
+          } else {
+            var l = true;
+            if (o === h ? t += 1 : "]" === o ? t -= 1 : "{" === o ? a += 1 : "}" === o ? a -= 1 : "(" === o ? n += 1 : o === f ? n -= 1 : l = false, r(s, !l && 0 === t && 0 === a && 0 === n)) return;
+          }
+        }
+      }
+      function findClosingBracket(e, r) {
+        for (var t = 0, a = null, n = r; n < e.length; n += 1) {
+          var i = e[n];
+          if (a) i !== a || isEscaped(e, n) || (a = null);else if (isQuoteCharacter(i)) a = i;else if (i !== h) {
+            if ("]" === i && 0 === (t -= 1)) return n;
+          } else t += 1;
+        }
+        return -1;
+      }
+      function splitByTopLevelToken(e, r) {
+        var t = [],
+          a = p,
+          n = new Set();
+        return walkTopLevelChars(e, function (i, s) {
+          if (!n.has(i)) if (s && e.startsWith(r, i)) {
+            t.push(a.trim()), a = p;
+            for (var o = 1; o < r.length; o += 1) n.add(i + o);
+          } else a += e[i];
+        }), a !== p && t.push(a.trim()), t;
+      }
+      function normalizeFilterPath(e) {
+        var r = e.trim();
+        return r.startsWith(v) && (r = r.slice(1)), r === p ? o : r.startsWith(o) ? r : r.startsWith(l) || r.startsWith(u) || r.startsWith(h) ? `${o}${r}` : `${o}${l}${r}`;
+      }
+      function parseFilterExpression(e) {
+        var r = e.trim();
+        if (r.startsWith("(") && r.endsWith(f)) {
+          for (var t = 0, a = null, n = false, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            if (a) s !== a || isEscaped(r, i) || (a = null);else if (isQuoteCharacter(s)) a = s;else if ("(" === s) t += 1;else if (s === f && 0 === (t -= 1)) {
+              n = i === r.length - 1;
+              break;
+            }
+          }
+          n && (r = r.slice(1, -1).trim());
+        }
+        var u = splitByTopLevelToken(r, "||");
+        if (u.length > 1) return {
+          conditions: u.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "or"
+        };
+        var p = splitByTopLevelToken(r, "&&");
+        if (p.length > 1) return {
+          conditions: p.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "and"
+        };
+        if (r.startsWith("!") && !r.startsWith("!=")) return {
+          condition: parseFilterExpression(r.slice(1).trim()),
+          operator: "not"
+        };
+        var c,
+          C,
+          w = (C = null, walkTopLevelChars(c = r, function (e, r) {
+            if (!r) return false;
+            for (var t = null, a = 0; a < $.length; a += 1) {
+              var n = $[a];
+              c.startsWith(n, e) && (null === t || n.length > t.length) && (t = n);
+            }
+            return null !== t && (C = {
+              index: e,
+              operator: t
+            }, true);
+          }), C);
+        if (!w) return {
+          operator: m,
+          selectorPath: normalizeFilterPath(r)
+        };
+        var W = r.slice(0, w.index).trim(),
+          O = r.slice(w.index + w.operator.length).trim(),
+          A = g;
+        "!=" === w.operator ? A = S : "<" === w.operator ? A = P : "<=" === w.operator ? A = b : ">" === w.operator ? A = y : ">=" === w.operator ? A = k : "*=" === w.operator ? A = d : ("=~" === w.operator || "=" === w.operator && /^\/.*\/[a-z]*$/i.test(O)) && (A = x);
+        var j,
+          E,
+          L = O.trim(),
+          F = L === o || L.startsWith(o + l) || L.startsWith(o + h),
+          M = L === v || L.startsWith(v + l) || L.startsWith(v + h);
+        return F || M ? {
+          comparisonSelectorPath: normalizeFilterPath(L),
+          operator: A,
+          resolveComparisonAgainstRoot: F,
+          selectorPath: normalizeFilterPath(W)
+        } : {
+          comparisonValue: (j = O, E = j.trim(), "true" === E || "false" !== E && ("null" === E ? null : /^-?\d+(?:\.\d+)?$/.test(E) ? Number(E) : /^\/.*\/[a-z]*$/i.test(E) ? toRegExp(E) : stripQuotes(E))),
+          operator: A,
+          selectorPath: normalizeFilterPath(W)
+        };
+      }
+      function parseBracketStep(e, r) {
+        if ("*" === e) return {
+          mode: "wildcard",
+          recursive: r
+        };
+        if (e.startsWith("?")) return {
+          filter: parseFilterExpression(e.slice(1)),
+          mode: "filter",
+          recursive: r
+        };
+        if (/^\(@\.length(?:-\d+)?\)$/.test(e)) {
+          var t = e.match(/^\(@\.length(?:-(\d+))?\)$/);
+          return {
+            mode: "computed-index",
+            recursive: r,
+            subtractLength: t && t[1] ? Number(t[1]) : 0
+          };
+        }
+        var a = function (e) {
+          var r = [],
+            t = p;
+          return walkTopLevelChars(e, function (a, n) {
+            n && ":" === e[a] ? (r.push(t.trim()), t = p) : t += e[a];
+          }), r.push(t.trim()), r;
+        }(e);
+        if (a.length > 1) {
+          var n = a[0] === p ? void 0 : Number(a[0]);
+          return {
+            mode: "slice",
+            recursive: r,
+            slice: {
+              end: a[1] === p ? void 0 : Number(a[1]),
+              start: n,
+              step: a.length > 2 && a[2] !== p ? Number(a[2]) : 1
+            }
+          };
+        }
+        var i = function (e, r) {
+          var t = [],
+            a = p;
+          return walkTopLevelChars(e, function (n, i) {
+            i && e[n] === r ? (t.push(a.trim()), a = p) : a += e[n];
+          }), a !== p && t.push(a.trim()), t;
+        }(e, ",");
+        return i.every(function (e) {
+          return /^-?\d+$/.test(e);
+        }) ? {
+          indexes: i.map(function (e) {
+            return Number(e);
+          }),
+          mode: "index",
+          recursive: r
+        } : {
+          mode: "property",
+          properties: i.map(function (e) {
+            return r = e.trim(), /^\/.*\/[a-z]*$/i.test(r) ? toRegExp(r) : stripQuotes(r);
+            var r;
+          }),
+          recursive: r
+        };
+      }
+      function parseJsonPathSelector(e) {
+        var r = [],
+          t = 0;
+        for (e.startsWith(o) && (t = 1); t < e.length;) {
+          var a = false;
+          if (e.startsWith(u, t) ? (a = true, t += 2) : e[t] === l && (t += 1), t >= e.length) break;
+          if (e[t] !== h) {
+            if ("*" !== e[t]) {
+              for (var n = t; n < e.length && e[n] !== l && e[n] !== h;) n += 1;
+              var i = e.slice(t, n).trim();
+              i && r.push({
+                mode: "property",
+                properties: [i],
+                recursive: a
+              }), t = n;
+            } else r.push({
+              mode: "wildcard",
+              recursive: a
+            }), t += 1;
+          } else {
+            var s = findClosingBracket(e, t);
+            if (-1 === s) throw new Error(`Invalid JSONPath expression: ${e}`);
+            var p = e.slice(t + 1, s).trim();
+            r.push(parseBracketStep(p, a)), t = s + 1;
+          }
+        }
+        return {
+          steps: r
+        };
+      }
+      function buildAppendUpdater(e, r, t) {
+        var a,
+          n = e.trim();
+        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+          var i = t(n);
+          if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
+          a = i.constantValue;
+        }
+        return function (e) {
+          return Array.isArray(e) ? Array.isArray(a) ? e.concat(a) : e.concat([a]) : isPlainObject(e) && isPlainObject(a) ? Object.assign({}, e, a) : "string" == typeof e && "string" == typeof a ? `${e}${a}` : a;
+        };
+      }
+      function buildSetUpdater(e, r, t) {
+        var a = e.trim();
+        if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
+          var t = r(e.slice(8, -1));
+          if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          return function (e) {
+            return "string" != typeof e ? e : e.replace(a, t.replacement);
+          };
+        }(a, r);
+        var n = t(a);
+        if (!n) throw new Error(`Invalid set value: ${e}`);
+        return function (e) {
+          return getJsonSetValue(e, n);
+        };
+      }
+      function getChildCandidates(e) {
+        if (!isObjectLike(e.value)) return [];
+        if (ArrayBuffer.isView(e.value)) return [];
+        for (var r = Object.keys(e.value), t = [], a = 0; a < r.length; a += 1) {
+          var n = r[a];
+          t.push(createCandidate(e.value[n], e.value, n, appendPath(e.path, n)));
+        }
+        return t;
+      }
+      function getRecursiveCandidates(r) {
+        var t = [r],
+          a = [0],
+          n = new WeakSet();
+        isObjectLike(r.value) && n.add(r.value);
+        for (var i = false, s = isObjectLike(r.value) ? 1 : 0, o = getChildCandidates(r), l = 0; l < o.length; l += 1) {
+          if (isObjectLike(o[l].value)) {
+            if (n.has(o[l].value)) continue;
+            if (n.add(o[l].value), (s += 1) >= C) {
+              i = true;
+              break;
+            }
+          }
+          t.push(o[l]), a.push(1);
+        }
+        for (var u = 1; u < t.length && !i;) {
+          var p = a[u] + 1;
+          if (p > 1e3) {
+            i = true;
+            break;
+          }
+          for (var c = getChildCandidates(t[u]), f = 0; f < c.length; f += 1) {
+            if (isObjectLike(c[f].value)) {
+              if (n.has(c[f].value)) continue;
+              if (n.add(c[f].value), (s += 1) >= C) {
+                i = true;
+                break;
+              }
+            }
+            t.push(c[f]), a.push(p);
+          }
+          u += 1;
+        }
+        return i && logMessage(e, "JSONPath recursive descent exceeded its traversal budget, results may be incomplete"), t;
+      }
+      function resolveIndex(e, r) {
+        return r < 0 ? e + r : r;
+      }
+      function applyDirectStep(e, r) {
+        var t = [];
+        if ("property" === r.mode) {
+          if (!isObjectLike(e.value) || !r.properties) return t;
+          for (var a = new Set(), n = 0; n < r.properties.length; n += 1) {
+            var i = r.properties[n];
+            if (i instanceof RegExp) for (var s = Object.keys(e.value), o = 0; o < s.length; o += 1) {
+              var l = s[o];
+              i.lastIndex = 0, i.test(l) && !a.has(l) && (a.add(l), t.push(createCandidate(e.value[l], e.value, l, appendPath(e.path, l))));
+            } else !a.has(i) && Object.prototype.hasOwnProperty.call(e.value, i) && (a.add(i), t.push(createCandidate(e.value[i], e.value, i, appendPath(e.path, i))));
+          }
+          return t;
+        }
+        if ("wildcard" === r.mode) return getChildCandidates(e);
+        if ("index" === r.mode) {
+          if (!Array.isArray(e.value) || !r.indexes) return t;
+          for (var u = 0; u < r.indexes.length; u += 1) {
+            var p = resolveIndex(e.value.length, r.indexes[u]);
+            p >= 0 && p < e.value.length && t.push(createCandidate(e.value[p], e.value, p, appendPath(e.path, p)));
+          }
+          return t;
+        }
+        if ("computed-index" === r.mode) {
+          if (!Array.isArray(e.value)) return t;
+          var c = e.value.length - (r.subtractLength || 0);
+          return c >= 0 && c < e.value.length && t.push(createCandidate(e.value[c], e.value, c, appendPath(e.path, c))), t;
+        }
+        if ("slice" === r.mode) {
+          if (!Array.isArray(e.value) || !r.slice) return t;
+          for (var f = function (e, r) {
+              var t,
+                a,
+                n = [],
+                i = void 0 === r.step ? 1 : r.step;
+              if (0 === i) return n;
+              if (t = void 0 === r.start ? i > 0 ? 0 : e - 1 : resolveIndex(e, r.start), a = void 0 === r.end ? i > 0 ? e : -1 : resolveIndex(e, r.end), i > 0) {
+                for (var s = Math.max(0, t); s < Math.min(e, a); s += i) n.push(s);
+                return n;
+              }
+              for (var o = Math.min(e - 1, t); o > Math.max(-1, a); o += i) n.push(o);
+              return n;
+            }(e.value.length, r.slice), h = 0; h < f.length; h += 1) {
+            var v = f[h];
+            t.push(createCandidate(e.value[v], e.value, v, appendPath(e.path, v)));
+          }
+        }
+        return t;
+      }
+      function evaluateSelector(e, t) {
+        function matchesFilterValue(e, t) {
+          if ("conditions" in t) return "and" === t.operator ? t.conditions.every(function (r) {
+            return matchesFilterValue(e, r);
+          }) : t.conditions.some(function (r) {
+            return matchesFilterValue(e, r);
+          });
+          if ("condition" in t) return !matchesFilterValue(e, t.condition);
+          var a = evaluateSelector(e, parseJsonPathSelector(t.selectorPath));
+          if (t.operator === m) return a.length > 0;
+          var n = t.comparisonValue;
+          if (t.comparisonSelectorPath) {
+            var i = evaluateSelector(t.resolveComparisonAgainstRoot ? r : e, parseJsonPathSelector(t.comparisonSelectorPath));
+            if (0 === i.length) return false;
+            n = i[0].value;
+          }
+          for (var s = 0; s < a.length; s += 1) {
+            var o = a[s].value;
+            if (t.operator !== d) {
+              if (t.operator !== x) {
+                if (t.operator === g && o === n) return true;
+                if (t.operator === S && o !== n) return true;
+                if (t.operator === P && o < n) return true;
+                if (t.operator === b && o <= n) return true;
+                if (t.operator === y && o > n) return true;
+                if (t.operator === k && o >= n) return true;
+              } else if ("string" == typeof o && n instanceof RegExp && (n.lastIndex = 0, n.test(o))) return true;
+            } else if ("string" == typeof o && o.includes(String(n))) return true;
+          }
+          return false;
+        }
+        function applyFilterStep(e, r) {
+          for (var t = [], a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (Array.isArray(n.value)) for (var i = 0; i < n.value.length; i += 1) matchesFilterValue(n.value[i], r) && t.push(createCandidate(n.value[i], n.value, i, appendPath(n.path, i)));else matchesFilterValue(n.value, r) && t.push(n);
+          }
+          return t;
+        }
+        for (var a = [createCandidate(e, null, null, o)], n = 0; n < t.steps.length; n += 1) {
+          var i = t.steps[n];
+          if ("filter" === i.mode && i.filter) {
+            var s = a;
+            if (i.recursive) {
+              s = [];
+              for (var l = 0; l < a.length; l += 1) for (var u = getRecursiveCandidates(a[l]), p = 0; p < u.length; p += 1) s.push(u[p]);
+            }
+            a = applyFilterStep(s, i.filter);
+          } else {
+            for (var c = [], f = 0; f < a.length; f += 1) for (var h = a[f], v = i.recursive ? getRecursiveCandidates(h) : [h], $ = 0; $ < v.length; $ += 1) for (var C = applyDirectStep(v[$], i), w = 0; w < C.length; w += 1) c.push(C[w]);
+            a = c;
+          }
+        }
+        return a;
+      }
+      var W = false;
+      function markMutated() {
+        W = true;
+      }
+      if (!isObjectLike(r)) return r;
+      var O,
+        A = (O = a) && O.nativeParse ? O.nativeParse : JSON.parse,
+        j = function (e) {
+          return e && e.nativeStringify ? e.nativeStringify : JSON.stringify;
+        }(a),
+        E = new Error().stack || "";
+      if (i && !matchStackTrace(i, E)) return r;
+      if (!t) return logMessage(e, `${window.location.hostname}\n${j(r, null, 2)}\nStack trace:\n${E}`, true), logMessage(e, r, true, false), r;
+      try {
+        for (var L = function (e, r, t) {
+            var a,
+              n,
+              i = function (e) {
+                var r = -1,
+                  t = "remove",
+                  a = 0;
+                return walkTopLevelChars(e, function (n, i) {
+                  return !!i && (e.startsWith("+=", n) ? (r = n, t = "append", a = 2, !0) : "=" === e[n] && (r = n, t = "set", a = 1, !0));
+                }), -1 === r ? {
+                  mode: "remove",
+                  selectorPart: e.trim(),
+                  valuePart: p
+                } : {
+                  mode: t,
+                  selectorPart: e.slice(0, r).trim(),
+                  valuePart: e.slice(r + a).trim()
+                };
+              }(e),
+              s = function (e) {
+                for (var r = [], t = e.trim(); t.startsWith("[?");) {
+                  var a = findClosingBracket(t, 0);
+                  if (-1 === a) break;
+                  var n = t.slice(1, a);
+                  r.push(parseFilterExpression(n.slice(1))), t = t.slice(a + 1).trim();
+                }
+                return {
+                  guards: r,
+                  selectorPart: t
+                };
+              }(i.selectorPart),
+              c = parseJsonPathSelector((a = s.selectorPart, (n = a.trim()) === p ? o : n.startsWith(o) ? n : n.startsWith(l) || n.startsWith(h) || n.startsWith(u) ? `${o}${n}` : `${o}${l}${n}`)),
+              f = {
+                mode: i.mode
+              };
+            return "append" === i.mode ? f = {
+              mode: "append",
+              updater: buildAppendUpdater(i.valuePart, r, t)
+            } : "set" === i.mode && (f = {
+              mode: "set",
+              updater: buildSetUpdater(i.valuePart, r, t)
+            }), {
+              guards: s.guards,
+              mutation: f,
+              selector: c
+            };
+          }(t, A, function (r) {
+            return parseJsonSetArgumentValue(e, r, A);
+          }), F = 0; F < L.guards.length; F += 1) {
+          if (0 === evaluateSelector(r, {
+            steps: [{
+              filter: L.guards[F],
+              mode: "filter",
+              recursive: !1
+            }]
+          }).length) return r;
+        }
+        var M = evaluateSelector(r, L.selector);
+        if (s) return M.length > 0 && n && n(), r;
+        if (!("remove" === L.mutation.mode || "string" == typeof e.name && e.name.startsWith("trusted-"))) return logMessage(e, "JSONPath set and append operations are allowed only in trusted scriptlets"), r;
+        if ("remove" === L.mutation.mode) return function (e) {
+          for (var r = new Set(), t = new Map(), a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (null !== n.parent && null !== n.key && !r.has(n.path)) if (r.add(n.path), Array.isArray(n.parent)) {
+              var i = t.get(n.parent) || [];
+              i.push(Number(n.key)), t.set(n.parent, i);
+            } else delete n.parent[n.key], markMutated();
+          }
+          t.forEach(function (e, r) {
+            for (var t = Array.from(new Set(e)).sort(function (e, r) {
+                return r - e;
+              }), a = 0; a < t.length; a += 1) {
+              var n = t[a];
+              n >= 0 && n < r.length && (r.splice(n, 1), markMutated());
+            }
+          });
+        }(M), W && n && n(), r;
+        L.mutation.updater && (r = function (e, r, t) {
+          for (var a = new Set(), n = e, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            a.has(s.path) || (a.add(s.path), null !== s.parent || null !== s.key || s.path !== o ? null !== s.parent && null !== s.key && (s.parent[s.key] = t(s.parent[s.key]), markMutated()) : (n = t(n), markMutated()));
+          }
+          return n;
+        }(r, M, L.mutation.updater), W && n && n());
+      } catch (r) {
+        logMessage(e, `JSONPath processing failed for expression '${t}': ${r.message}`);
+      }
+      return r;
+    }
+    function resolveJsonSyntaxMode(t, r) {
+      var e = "legacy",
+        o = "jsonpath",
+        s = "string" == typeof r ? r.trim().toLowerCase() : "";
+      if (s === e || s === o) return {
+        mode: s
+      };
+      var n = "string" == typeof t ? t.trim() : "";
+      return n.startsWith("$") || n.startsWith("[?") ? {
+        mode: o
+      } : {
+        mode: e
+      };
+    }
+    function getJsonSetValue(e, t) {
+      return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
+    }
+    function parseJsonSetArgumentValue(e, l, n) {
+      var s,
+        a = "json:",
+        r = "replace:",
+        t = "",
+        o = false,
+        u = false;
+      if (l.startsWith(r)) {
+        var i = extractRegexAndReplacement(l);
+        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        t = i.regexPart, s = i.replacementPart, o = true;
+      } else if (l.startsWith(a)) try {
+        s = n(l.slice(a.length)), u = !0;
+      } catch (n) {
+        return logMessage(e, `Invalid JSON argument value: ${l}`), null;
+      } else {
+        var c = noopArray(),
+          f = noopObject();
+        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
+          if (s = parseFloat(l), nativeIsNaN(s)) return null;
+        } else s = l;
+      }
+      return {
+        constantValue: s,
+        replaceRegexValue: t,
+        shouldReplaceArgument: o,
+        shouldMergeJsonValue: u
+      };
+    }
+    function noopArray() {
+      return [];
+    }
+    function noopObject() {
+      return {};
+    }
+    function noopCallbackFunc() {
+      return noopFunc;
+    }
+    function noopFunc() {}
+    function trueFunc() {
+      return true;
+    }
+    function falseFunc() {
+      return false;
+    }
+    function throwFunc() {
+      throw new Error();
+    }
+    function noopPromiseReject() {
+      return Promise.reject();
+    }
+    function noopPromiseResolve() {
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      if ("undefined" != typeof Response) {
+        var n = new Response(e, {
+          headers: {
+            "Content-Length": `${e.length}`
+          },
+          status: 200,
+          statusText: "OK"
+        });
+        return "opaque" === s ? Object.defineProperties(n, {
+          body: {
+            value: null
+          },
+          status: {
+            value: 0
+          },
+          ok: {
+            value: false
+          },
+          statusText: {
+            value: ""
+          },
+          url: {
+            value: ""
+          },
+          type: {
+            value: s
+          }
+        }) : Object.defineProperties(n, {
+          url: {
+            value: t
+          },
+          type: {
+            value: s
+          }
+        }), Promise.resolve(n);
+      }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -5244,15 +6712,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function jsonPruneFetchResponse(source, propsToRemove, obligatoryProps) {
       var propsToMatch = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
       var stack = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
+      var mode = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
       if (typeof fetch === "undefined" || typeof Proxy === "undefined" || typeof Response === "undefined") {
         return;
       }
-      var prunePaths = getPrunePath(propsToRemove);
-      var requiredPaths = getPrunePath(obligatoryProps);
-      var nativeStringify = window.JSON.stringify;
+      var syntaxModeDetails = resolveJsonSyntaxMode(propsToRemove, mode);
+      var prunePaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsToRemove) : [];
+      var requiredPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(obligatoryProps) : [];
       var nativeRequestClone = window.Request.prototype.clone;
       var nativeResponseClone = window.Response.prototype.clone;
       var nativeFetch = window.fetch;
+      var nativeObjects = {
+        nativeParse: window.JSON.parse,
+        nativeStringify: window.JSON.stringify
+      };
+      var pruneJsonValue = function pruneJsonValue(root) {
+        if (syntaxModeDetails.mode === "jsonpath") {
+          return jsonPath(source, root, propsToRemove, nativeObjects, function () {
+            return hit(source);
+          }, stack);
+        }
+        return jsonPruner(source, root, prunePaths, requiredPaths, stack, nativeObjects);
+      };
       var fetchHandlerWrapper = async function fetchHandlerWrapper(target, thisArg, args) {
         var fetchData = getFetchData(args, nativeRequestClone);
         if (!matchRequestProps(source, propsToMatch, fetchData)) {
@@ -5275,13 +6756,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           logMessage(source, message);
           return clonedResponse;
         }
-        var modifiedJson = jsonPruner(source, json, prunePaths, requiredPaths, stack, {
-          nativeStringify: nativeStringify,
-          nativeRequestClone: nativeRequestClone,
-          nativeResponseClone: nativeResponseClone,
-          nativeFetch: nativeFetch
-        });
-        var forgedResponse = forgeResponse(originalResponse, nativeStringify(modifiedJson));
+        var modifiedJson = pruneJsonValue(json);
+        var forgedResponse = forgeResponse(originalResponse, nativeObjects.nativeStringify(modifiedJson));
         hit(source);
         return forgedResponse;
       };
@@ -5301,15 +6777,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function getFetchData(e, t) {
@@ -5372,6 +6848,632 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(e, r);
       }
       return r;
+    }
+    function jsonPath(e, r, t, a, n) {
+      var i = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : "",
+        s = arguments.length > 6 && void 0 !== arguments[6] && arguments[6],
+        o = "$",
+        l = ".",
+        u = "..",
+        p = "",
+        c = "\\",
+        f = ")",
+        h = "[",
+        v = "@",
+        d = "contains",
+        g = "equal",
+        m = "exists",
+        y = "greater_than",
+        k = "greater_than_or_equal",
+        P = "less_than",
+        b = "less_than_or_equal",
+        S = "not_equal",
+        x = "regex",
+        $ = ["==", "!=", "<=", ">=", "*=", "=~", "<", ">", "="],
+        C = 1e5,
+        w = /^[A-Za-z_$][\w$]*$/;
+      function isObjectLike(e) {
+        return null !== e && "object" == typeof e;
+      }
+      function isPlainObject(e) {
+        if (!isObjectLike(e) || Array.isArray(e)) return false;
+        var r = Object.getPrototypeOf(e);
+        return r === Object.prototype || null === r;
+      }
+      function isQuoteCharacter(e) {
+        return "'" === e || '"' === e;
+      }
+      function isEscaped(e, r) {
+        for (var t = 0, a = r - 1; a >= 0 && e[a] === c;) t += 1, a -= 1;
+        return t % 2 != 0;
+      }
+      function stripQuotes(e) {
+        var r = e.trim();
+        if (r.length < 2) return r;
+        var t = r[0],
+          a = r[r.length - 1];
+        return isQuoteCharacter(t) && t === a ? r.slice(1, -1).split("\\'").join("'").split('\\"').join('"').split(c + c).join(c) : r;
+      }
+      function appendPath(e, r) {
+        return "number" == typeof r || /^\d+$/.test(String(r)) ? `${e}[${r}]` : w.test(String(r)) ? `${e}.${r}` : `${e}['${String(r).replace(/'/g, "\\'")}']`;
+      }
+      function createCandidate(e, r, t, a) {
+        return {
+          key: t,
+          parent: r,
+          path: a,
+          value: e
+        };
+      }
+      function walkTopLevelChars(e, r) {
+        for (var t = 0, a = 0, n = 0, i = null, s = 0; s < e.length; s += 1) {
+          var o = e[s];
+          if (i) {
+            if (o !== i || isEscaped(e, s) || (i = null), r(s, false)) return;
+          } else if (isQuoteCharacter(o)) {
+            if (i = o, r(s, false)) return;
+          } else {
+            var l = true;
+            if (o === h ? t += 1 : "]" === o ? t -= 1 : "{" === o ? a += 1 : "}" === o ? a -= 1 : "(" === o ? n += 1 : o === f ? n -= 1 : l = false, r(s, !l && 0 === t && 0 === a && 0 === n)) return;
+          }
+        }
+      }
+      function findClosingBracket(e, r) {
+        for (var t = 0, a = null, n = r; n < e.length; n += 1) {
+          var i = e[n];
+          if (a) i !== a || isEscaped(e, n) || (a = null);else if (isQuoteCharacter(i)) a = i;else if (i !== h) {
+            if ("]" === i && 0 === (t -= 1)) return n;
+          } else t += 1;
+        }
+        return -1;
+      }
+      function splitByTopLevelToken(e, r) {
+        var t = [],
+          a = p,
+          n = new Set();
+        return walkTopLevelChars(e, function (i, s) {
+          if (!n.has(i)) if (s && e.startsWith(r, i)) {
+            t.push(a.trim()), a = p;
+            for (var o = 1; o < r.length; o += 1) n.add(i + o);
+          } else a += e[i];
+        }), a !== p && t.push(a.trim()), t;
+      }
+      function normalizeFilterPath(e) {
+        var r = e.trim();
+        return r.startsWith(v) && (r = r.slice(1)), r === p ? o : r.startsWith(o) ? r : r.startsWith(l) || r.startsWith(u) || r.startsWith(h) ? `${o}${r}` : `${o}${l}${r}`;
+      }
+      function parseFilterExpression(e) {
+        var r = e.trim();
+        if (r.startsWith("(") && r.endsWith(f)) {
+          for (var t = 0, a = null, n = false, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            if (a) s !== a || isEscaped(r, i) || (a = null);else if (isQuoteCharacter(s)) a = s;else if ("(" === s) t += 1;else if (s === f && 0 === (t -= 1)) {
+              n = i === r.length - 1;
+              break;
+            }
+          }
+          n && (r = r.slice(1, -1).trim());
+        }
+        var u = splitByTopLevelToken(r, "||");
+        if (u.length > 1) return {
+          conditions: u.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "or"
+        };
+        var p = splitByTopLevelToken(r, "&&");
+        if (p.length > 1) return {
+          conditions: p.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "and"
+        };
+        if (r.startsWith("!") && !r.startsWith("!=")) return {
+          condition: parseFilterExpression(r.slice(1).trim()),
+          operator: "not"
+        };
+        var c,
+          C,
+          w = (C = null, walkTopLevelChars(c = r, function (e, r) {
+            if (!r) return false;
+            for (var t = null, a = 0; a < $.length; a += 1) {
+              var n = $[a];
+              c.startsWith(n, e) && (null === t || n.length > t.length) && (t = n);
+            }
+            return null !== t && (C = {
+              index: e,
+              operator: t
+            }, true);
+          }), C);
+        if (!w) return {
+          operator: m,
+          selectorPath: normalizeFilterPath(r)
+        };
+        var W = r.slice(0, w.index).trim(),
+          O = r.slice(w.index + w.operator.length).trim(),
+          A = g;
+        "!=" === w.operator ? A = S : "<" === w.operator ? A = P : "<=" === w.operator ? A = b : ">" === w.operator ? A = y : ">=" === w.operator ? A = k : "*=" === w.operator ? A = d : ("=~" === w.operator || "=" === w.operator && /^\/.*\/[a-z]*$/i.test(O)) && (A = x);
+        var j,
+          E,
+          L = O.trim(),
+          F = L === o || L.startsWith(o + l) || L.startsWith(o + h),
+          M = L === v || L.startsWith(v + l) || L.startsWith(v + h);
+        return F || M ? {
+          comparisonSelectorPath: normalizeFilterPath(L),
+          operator: A,
+          resolveComparisonAgainstRoot: F,
+          selectorPath: normalizeFilterPath(W)
+        } : {
+          comparisonValue: (j = O, E = j.trim(), "true" === E || "false" !== E && ("null" === E ? null : /^-?\d+(?:\.\d+)?$/.test(E) ? Number(E) : /^\/.*\/[a-z]*$/i.test(E) ? toRegExp(E) : stripQuotes(E))),
+          operator: A,
+          selectorPath: normalizeFilterPath(W)
+        };
+      }
+      function parseBracketStep(e, r) {
+        if ("*" === e) return {
+          mode: "wildcard",
+          recursive: r
+        };
+        if (e.startsWith("?")) return {
+          filter: parseFilterExpression(e.slice(1)),
+          mode: "filter",
+          recursive: r
+        };
+        if (/^\(@\.length(?:-\d+)?\)$/.test(e)) {
+          var t = e.match(/^\(@\.length(?:-(\d+))?\)$/);
+          return {
+            mode: "computed-index",
+            recursive: r,
+            subtractLength: t && t[1] ? Number(t[1]) : 0
+          };
+        }
+        var a = function (e) {
+          var r = [],
+            t = p;
+          return walkTopLevelChars(e, function (a, n) {
+            n && ":" === e[a] ? (r.push(t.trim()), t = p) : t += e[a];
+          }), r.push(t.trim()), r;
+        }(e);
+        if (a.length > 1) {
+          var n = a[0] === p ? void 0 : Number(a[0]);
+          return {
+            mode: "slice",
+            recursive: r,
+            slice: {
+              end: a[1] === p ? void 0 : Number(a[1]),
+              start: n,
+              step: a.length > 2 && a[2] !== p ? Number(a[2]) : 1
+            }
+          };
+        }
+        var i = function (e, r) {
+          var t = [],
+            a = p;
+          return walkTopLevelChars(e, function (n, i) {
+            i && e[n] === r ? (t.push(a.trim()), a = p) : a += e[n];
+          }), a !== p && t.push(a.trim()), t;
+        }(e, ",");
+        return i.every(function (e) {
+          return /^-?\d+$/.test(e);
+        }) ? {
+          indexes: i.map(function (e) {
+            return Number(e);
+          }),
+          mode: "index",
+          recursive: r
+        } : {
+          mode: "property",
+          properties: i.map(function (e) {
+            return r = e.trim(), /^\/.*\/[a-z]*$/i.test(r) ? toRegExp(r) : stripQuotes(r);
+            var r;
+          }),
+          recursive: r
+        };
+      }
+      function parseJsonPathSelector(e) {
+        var r = [],
+          t = 0;
+        for (e.startsWith(o) && (t = 1); t < e.length;) {
+          var a = false;
+          if (e.startsWith(u, t) ? (a = true, t += 2) : e[t] === l && (t += 1), t >= e.length) break;
+          if (e[t] !== h) {
+            if ("*" !== e[t]) {
+              for (var n = t; n < e.length && e[n] !== l && e[n] !== h;) n += 1;
+              var i = e.slice(t, n).trim();
+              i && r.push({
+                mode: "property",
+                properties: [i],
+                recursive: a
+              }), t = n;
+            } else r.push({
+              mode: "wildcard",
+              recursive: a
+            }), t += 1;
+          } else {
+            var s = findClosingBracket(e, t);
+            if (-1 === s) throw new Error(`Invalid JSONPath expression: ${e}`);
+            var p = e.slice(t + 1, s).trim();
+            r.push(parseBracketStep(p, a)), t = s + 1;
+          }
+        }
+        return {
+          steps: r
+        };
+      }
+      function buildAppendUpdater(e, r, t) {
+        var a,
+          n = e.trim();
+        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+          var i = t(n);
+          if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
+          a = i.constantValue;
+        }
+        return function (e) {
+          return Array.isArray(e) ? Array.isArray(a) ? e.concat(a) : e.concat([a]) : isPlainObject(e) && isPlainObject(a) ? Object.assign({}, e, a) : "string" == typeof e && "string" == typeof a ? `${e}${a}` : a;
+        };
+      }
+      function buildSetUpdater(e, r, t) {
+        var a = e.trim();
+        if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
+          var t = r(e.slice(8, -1));
+          if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          return function (e) {
+            return "string" != typeof e ? e : e.replace(a, t.replacement);
+          };
+        }(a, r);
+        var n = t(a);
+        if (!n) throw new Error(`Invalid set value: ${e}`);
+        return function (e) {
+          return getJsonSetValue(e, n);
+        };
+      }
+      function getChildCandidates(e) {
+        if (!isObjectLike(e.value)) return [];
+        if (ArrayBuffer.isView(e.value)) return [];
+        for (var r = Object.keys(e.value), t = [], a = 0; a < r.length; a += 1) {
+          var n = r[a];
+          t.push(createCandidate(e.value[n], e.value, n, appendPath(e.path, n)));
+        }
+        return t;
+      }
+      function getRecursiveCandidates(r) {
+        var t = [r],
+          a = [0],
+          n = new WeakSet();
+        isObjectLike(r.value) && n.add(r.value);
+        for (var i = false, s = isObjectLike(r.value) ? 1 : 0, o = getChildCandidates(r), l = 0; l < o.length; l += 1) {
+          if (isObjectLike(o[l].value)) {
+            if (n.has(o[l].value)) continue;
+            if (n.add(o[l].value), (s += 1) >= C) {
+              i = true;
+              break;
+            }
+          }
+          t.push(o[l]), a.push(1);
+        }
+        for (var u = 1; u < t.length && !i;) {
+          var p = a[u] + 1;
+          if (p > 1e3) {
+            i = true;
+            break;
+          }
+          for (var c = getChildCandidates(t[u]), f = 0; f < c.length; f += 1) {
+            if (isObjectLike(c[f].value)) {
+              if (n.has(c[f].value)) continue;
+              if (n.add(c[f].value), (s += 1) >= C) {
+                i = true;
+                break;
+              }
+            }
+            t.push(c[f]), a.push(p);
+          }
+          u += 1;
+        }
+        return i && logMessage(e, "JSONPath recursive descent exceeded its traversal budget, results may be incomplete"), t;
+      }
+      function resolveIndex(e, r) {
+        return r < 0 ? e + r : r;
+      }
+      function applyDirectStep(e, r) {
+        var t = [];
+        if ("property" === r.mode) {
+          if (!isObjectLike(e.value) || !r.properties) return t;
+          for (var a = new Set(), n = 0; n < r.properties.length; n += 1) {
+            var i = r.properties[n];
+            if (i instanceof RegExp) for (var s = Object.keys(e.value), o = 0; o < s.length; o += 1) {
+              var l = s[o];
+              i.lastIndex = 0, i.test(l) && !a.has(l) && (a.add(l), t.push(createCandidate(e.value[l], e.value, l, appendPath(e.path, l))));
+            } else !a.has(i) && Object.prototype.hasOwnProperty.call(e.value, i) && (a.add(i), t.push(createCandidate(e.value[i], e.value, i, appendPath(e.path, i))));
+          }
+          return t;
+        }
+        if ("wildcard" === r.mode) return getChildCandidates(e);
+        if ("index" === r.mode) {
+          if (!Array.isArray(e.value) || !r.indexes) return t;
+          for (var u = 0; u < r.indexes.length; u += 1) {
+            var p = resolveIndex(e.value.length, r.indexes[u]);
+            p >= 0 && p < e.value.length && t.push(createCandidate(e.value[p], e.value, p, appendPath(e.path, p)));
+          }
+          return t;
+        }
+        if ("computed-index" === r.mode) {
+          if (!Array.isArray(e.value)) return t;
+          var c = e.value.length - (r.subtractLength || 0);
+          return c >= 0 && c < e.value.length && t.push(createCandidate(e.value[c], e.value, c, appendPath(e.path, c))), t;
+        }
+        if ("slice" === r.mode) {
+          if (!Array.isArray(e.value) || !r.slice) return t;
+          for (var f = function (e, r) {
+              var t,
+                a,
+                n = [],
+                i = void 0 === r.step ? 1 : r.step;
+              if (0 === i) return n;
+              if (t = void 0 === r.start ? i > 0 ? 0 : e - 1 : resolveIndex(e, r.start), a = void 0 === r.end ? i > 0 ? e : -1 : resolveIndex(e, r.end), i > 0) {
+                for (var s = Math.max(0, t); s < Math.min(e, a); s += i) n.push(s);
+                return n;
+              }
+              for (var o = Math.min(e - 1, t); o > Math.max(-1, a); o += i) n.push(o);
+              return n;
+            }(e.value.length, r.slice), h = 0; h < f.length; h += 1) {
+            var v = f[h];
+            t.push(createCandidate(e.value[v], e.value, v, appendPath(e.path, v)));
+          }
+        }
+        return t;
+      }
+      function evaluateSelector(e, t) {
+        function matchesFilterValue(e, t) {
+          if ("conditions" in t) return "and" === t.operator ? t.conditions.every(function (r) {
+            return matchesFilterValue(e, r);
+          }) : t.conditions.some(function (r) {
+            return matchesFilterValue(e, r);
+          });
+          if ("condition" in t) return !matchesFilterValue(e, t.condition);
+          var a = evaluateSelector(e, parseJsonPathSelector(t.selectorPath));
+          if (t.operator === m) return a.length > 0;
+          var n = t.comparisonValue;
+          if (t.comparisonSelectorPath) {
+            var i = evaluateSelector(t.resolveComparisonAgainstRoot ? r : e, parseJsonPathSelector(t.comparisonSelectorPath));
+            if (0 === i.length) return false;
+            n = i[0].value;
+          }
+          for (var s = 0; s < a.length; s += 1) {
+            var o = a[s].value;
+            if (t.operator !== d) {
+              if (t.operator !== x) {
+                if (t.operator === g && o === n) return true;
+                if (t.operator === S && o !== n) return true;
+                if (t.operator === P && o < n) return true;
+                if (t.operator === b && o <= n) return true;
+                if (t.operator === y && o > n) return true;
+                if (t.operator === k && o >= n) return true;
+              } else if ("string" == typeof o && n instanceof RegExp && (n.lastIndex = 0, n.test(o))) return true;
+            } else if ("string" == typeof o && o.includes(String(n))) return true;
+          }
+          return false;
+        }
+        function applyFilterStep(e, r) {
+          for (var t = [], a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (Array.isArray(n.value)) for (var i = 0; i < n.value.length; i += 1) matchesFilterValue(n.value[i], r) && t.push(createCandidate(n.value[i], n.value, i, appendPath(n.path, i)));else matchesFilterValue(n.value, r) && t.push(n);
+          }
+          return t;
+        }
+        for (var a = [createCandidate(e, null, null, o)], n = 0; n < t.steps.length; n += 1) {
+          var i = t.steps[n];
+          if ("filter" === i.mode && i.filter) {
+            var s = a;
+            if (i.recursive) {
+              s = [];
+              for (var l = 0; l < a.length; l += 1) for (var u = getRecursiveCandidates(a[l]), p = 0; p < u.length; p += 1) s.push(u[p]);
+            }
+            a = applyFilterStep(s, i.filter);
+          } else {
+            for (var c = [], f = 0; f < a.length; f += 1) for (var h = a[f], v = i.recursive ? getRecursiveCandidates(h) : [h], $ = 0; $ < v.length; $ += 1) for (var C = applyDirectStep(v[$], i), w = 0; w < C.length; w += 1) c.push(C[w]);
+            a = c;
+          }
+        }
+        return a;
+      }
+      var W = false;
+      function markMutated() {
+        W = true;
+      }
+      if (!isObjectLike(r)) return r;
+      var O,
+        A = (O = a) && O.nativeParse ? O.nativeParse : JSON.parse,
+        j = function (e) {
+          return e && e.nativeStringify ? e.nativeStringify : JSON.stringify;
+        }(a),
+        E = new Error().stack || "";
+      if (i && !matchStackTrace(i, E)) return r;
+      if (!t) return logMessage(e, `${window.location.hostname}\n${j(r, null, 2)}\nStack trace:\n${E}`, true), logMessage(e, r, true, false), r;
+      try {
+        for (var L = function (e, r, t) {
+            var a,
+              n,
+              i = function (e) {
+                var r = -1,
+                  t = "remove",
+                  a = 0;
+                return walkTopLevelChars(e, function (n, i) {
+                  return !!i && (e.startsWith("+=", n) ? (r = n, t = "append", a = 2, !0) : "=" === e[n] && (r = n, t = "set", a = 1, !0));
+                }), -1 === r ? {
+                  mode: "remove",
+                  selectorPart: e.trim(),
+                  valuePart: p
+                } : {
+                  mode: t,
+                  selectorPart: e.slice(0, r).trim(),
+                  valuePart: e.slice(r + a).trim()
+                };
+              }(e),
+              s = function (e) {
+                for (var r = [], t = e.trim(); t.startsWith("[?");) {
+                  var a = findClosingBracket(t, 0);
+                  if (-1 === a) break;
+                  var n = t.slice(1, a);
+                  r.push(parseFilterExpression(n.slice(1))), t = t.slice(a + 1).trim();
+                }
+                return {
+                  guards: r,
+                  selectorPart: t
+                };
+              }(i.selectorPart),
+              c = parseJsonPathSelector((a = s.selectorPart, (n = a.trim()) === p ? o : n.startsWith(o) ? n : n.startsWith(l) || n.startsWith(h) || n.startsWith(u) ? `${o}${n}` : `${o}${l}${n}`)),
+              f = {
+                mode: i.mode
+              };
+            return "append" === i.mode ? f = {
+              mode: "append",
+              updater: buildAppendUpdater(i.valuePart, r, t)
+            } : "set" === i.mode && (f = {
+              mode: "set",
+              updater: buildSetUpdater(i.valuePart, r, t)
+            }), {
+              guards: s.guards,
+              mutation: f,
+              selector: c
+            };
+          }(t, A, function (r) {
+            return parseJsonSetArgumentValue(e, r, A);
+          }), F = 0; F < L.guards.length; F += 1) {
+          if (0 === evaluateSelector(r, {
+            steps: [{
+              filter: L.guards[F],
+              mode: "filter",
+              recursive: !1
+            }]
+          }).length) return r;
+        }
+        var M = evaluateSelector(r, L.selector);
+        if (s) return M.length > 0 && n && n(), r;
+        if (!("remove" === L.mutation.mode || "string" == typeof e.name && e.name.startsWith("trusted-"))) return logMessage(e, "JSONPath set and append operations are allowed only in trusted scriptlets"), r;
+        if ("remove" === L.mutation.mode) return function (e) {
+          for (var r = new Set(), t = new Map(), a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (null !== n.parent && null !== n.key && !r.has(n.path)) if (r.add(n.path), Array.isArray(n.parent)) {
+              var i = t.get(n.parent) || [];
+              i.push(Number(n.key)), t.set(n.parent, i);
+            } else delete n.parent[n.key], markMutated();
+          }
+          t.forEach(function (e, r) {
+            for (var t = Array.from(new Set(e)).sort(function (e, r) {
+                return r - e;
+              }), a = 0; a < t.length; a += 1) {
+              var n = t[a];
+              n >= 0 && n < r.length && (r.splice(n, 1), markMutated());
+            }
+          });
+        }(M), W && n && n(), r;
+        L.mutation.updater && (r = function (e, r, t) {
+          for (var a = new Set(), n = e, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            a.has(s.path) || (a.add(s.path), null !== s.parent || null !== s.key || s.path !== o ? null !== s.parent && null !== s.key && (s.parent[s.key] = t(s.parent[s.key]), markMutated()) : (n = t(n), markMutated()));
+          }
+          return n;
+        }(r, M, L.mutation.updater), W && n && n());
+      } catch (r) {
+        logMessage(e, `JSONPath processing failed for expression '${t}': ${r.message}`);
+      }
+      return r;
+    }
+    function getJsonSetValue(e, t) {
+      return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
+    }
+    function parseJsonSetArgumentValue(e, l, n) {
+      var s,
+        a = "json:",
+        r = "replace:",
+        t = "",
+        o = false,
+        u = false;
+      if (l.startsWith(r)) {
+        var i = extractRegexAndReplacement(l);
+        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        t = i.regexPart, s = i.replacementPart, o = true;
+      } else if (l.startsWith(a)) try {
+        s = n(l.slice(a.length)), u = !0;
+      } catch (n) {
+        return logMessage(e, `Invalid JSON argument value: ${l}`), null;
+      } else {
+        var c = noopArray(),
+          f = noopObject();
+        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
+          if (s = parseFloat(l), nativeIsNaN(s)) return null;
+        } else s = l;
+      }
+      return {
+        constantValue: s,
+        replaceRegexValue: t,
+        shouldReplaceArgument: o,
+        shouldMergeJsonValue: u
+      };
+    }
+    function noopArray() {
+      return [];
+    }
+    function noopObject() {
+      return {};
+    }
+    function noopCallbackFunc() {
+      return noopFunc;
+    }
+    function noopFunc() {}
+    function trueFunc() {
+      return true;
+    }
+    function falseFunc() {
+      return false;
+    }
+    function throwFunc() {
+      throw new Error();
+    }
+    function noopPromiseReject() {
+      return Promise.reject();
+    }
+    function noopPromiseResolve() {
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      if ("undefined" != typeof Response) {
+        var n = new Response(e, {
+          headers: {
+            "Content-Length": `${e.length}`
+          },
+          status: 200,
+          statusText: "OK"
+        });
+        return "opaque" === s ? Object.defineProperties(n, {
+          body: {
+            value: null
+          },
+          status: {
+            value: 0
+          },
+          ok: {
+            value: false
+          },
+          statusText: {
+            value: ""
+          },
+          url: {
+            value: ""
+          },
+          type: {
+            value: s
+          }
+        }) : Object.defineProperties(n, {
+          url: {
+            value: t
+          },
+          type: {
+            value: s
+          }
+        }), Promise.resolve(n);
+      }
     }
     function getPrunePath(t) {
       var r = ".[=].";
@@ -5489,6 +7591,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return e.trim();
         }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
+    }
+    function resolveJsonSyntaxMode(t, r) {
+      var e = "legacy",
+        o = "jsonpath",
+        s = "string" == typeof r ? r.trim().toLowerCase() : "";
+      if (s === e || s === o) return {
+        mode: s
+      };
+      var n = "string" == typeof t ? t.trim() : "";
+      return n.startsWith("$") || n.startsWith("[?") ? {
+        mode: o
+      } : {
+        mode: e
+      };
     }
     function toRegExp(e) {
       var r = e || "",
@@ -5735,14 +7851,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function jsonPruneXhrResponse(source, propsToRemove, obligatoryProps) {
       var propsToMatch = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
       var stack = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
+      var mode = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
       if (typeof Proxy === "undefined") {
         return;
       }
       var shouldLog = !propsToRemove && !obligatoryProps;
-      var prunePaths = getPrunePath(propsToRemove);
-      var requiredPaths = getPrunePath(obligatoryProps);
+      var syntaxModeDetails = resolveJsonSyntaxMode(propsToRemove, mode);
+      var prunePaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsToRemove) : [];
+      var requiredPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(obligatoryProps) : [];
       var nativeParse = window.JSON.parse;
       var nativeStringify = window.JSON.stringify;
+      var nativeObjects = {
+        nativeParse: nativeParse,
+        nativeStringify: nativeStringify
+      };
+      var pruneJsonValue = function pruneJsonValue(root) {
+        if (syntaxModeDetails.mode === "jsonpath") {
+          return jsonPath(source, root, propsToRemove, nativeObjects, function () {
+            return hit(source);
+          }, "");
+        }
+        return jsonPruner(source, root, prunePaths, requiredPaths, "", nativeObjects);
+      };
       var nativeOpen = window.XMLHttpRequest.prototype.open;
       var nativeSend = window.XMLHttpRequest.prototype.send;
       var matchedXhrRequests = new Map();
@@ -5807,9 +7937,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                 logMessage(source, jsonContent, true, false);
                 modifiedContent = content;
               } else {
-                modifiedContent = jsonPruner(source, jsonContent, prunePaths, requiredPaths, stack = "", {
-                  nativeStringify: nativeStringify
-                });
+                modifiedContent = pruneJsonValue(jsonContent);
                 try {
                   var {
                     responseType: responseType
@@ -5829,7 +7957,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
                       break;
                   }
                 } catch (error) {
-                  var message = `Response body cannot be converted to reponse type: '${content}'`;
+                  var message = `Response body cannot be converted to response type: '${content}'`;
                   logMessage(source, message);
                   modifiedContent = content;
                 }
@@ -5914,15 +8042,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -5969,6 +8097,632 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(e, r);
       }
       return r;
+    }
+    function jsonPath(e, r, t, a, n) {
+      var i = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : "",
+        s = arguments.length > 6 && void 0 !== arguments[6] && arguments[6],
+        o = "$",
+        l = ".",
+        u = "..",
+        p = "",
+        c = "\\",
+        f = ")",
+        h = "[",
+        v = "@",
+        d = "contains",
+        g = "equal",
+        m = "exists",
+        y = "greater_than",
+        k = "greater_than_or_equal",
+        P = "less_than",
+        b = "less_than_or_equal",
+        S = "not_equal",
+        x = "regex",
+        $ = ["==", "!=", "<=", ">=", "*=", "=~", "<", ">", "="],
+        C = 1e5,
+        w = /^[A-Za-z_$][\w$]*$/;
+      function isObjectLike(e) {
+        return null !== e && "object" == typeof e;
+      }
+      function isPlainObject(e) {
+        if (!isObjectLike(e) || Array.isArray(e)) return false;
+        var r = Object.getPrototypeOf(e);
+        return r === Object.prototype || null === r;
+      }
+      function isQuoteCharacter(e) {
+        return "'" === e || '"' === e;
+      }
+      function isEscaped(e, r) {
+        for (var t = 0, a = r - 1; a >= 0 && e[a] === c;) t += 1, a -= 1;
+        return t % 2 != 0;
+      }
+      function stripQuotes(e) {
+        var r = e.trim();
+        if (r.length < 2) return r;
+        var t = r[0],
+          a = r[r.length - 1];
+        return isQuoteCharacter(t) && t === a ? r.slice(1, -1).split("\\'").join("'").split('\\"').join('"').split(c + c).join(c) : r;
+      }
+      function appendPath(e, r) {
+        return "number" == typeof r || /^\d+$/.test(String(r)) ? `${e}[${r}]` : w.test(String(r)) ? `${e}.${r}` : `${e}['${String(r).replace(/'/g, "\\'")}']`;
+      }
+      function createCandidate(e, r, t, a) {
+        return {
+          key: t,
+          parent: r,
+          path: a,
+          value: e
+        };
+      }
+      function walkTopLevelChars(e, r) {
+        for (var t = 0, a = 0, n = 0, i = null, s = 0; s < e.length; s += 1) {
+          var o = e[s];
+          if (i) {
+            if (o !== i || isEscaped(e, s) || (i = null), r(s, false)) return;
+          } else if (isQuoteCharacter(o)) {
+            if (i = o, r(s, false)) return;
+          } else {
+            var l = true;
+            if (o === h ? t += 1 : "]" === o ? t -= 1 : "{" === o ? a += 1 : "}" === o ? a -= 1 : "(" === o ? n += 1 : o === f ? n -= 1 : l = false, r(s, !l && 0 === t && 0 === a && 0 === n)) return;
+          }
+        }
+      }
+      function findClosingBracket(e, r) {
+        for (var t = 0, a = null, n = r; n < e.length; n += 1) {
+          var i = e[n];
+          if (a) i !== a || isEscaped(e, n) || (a = null);else if (isQuoteCharacter(i)) a = i;else if (i !== h) {
+            if ("]" === i && 0 === (t -= 1)) return n;
+          } else t += 1;
+        }
+        return -1;
+      }
+      function splitByTopLevelToken(e, r) {
+        var t = [],
+          a = p,
+          n = new Set();
+        return walkTopLevelChars(e, function (i, s) {
+          if (!n.has(i)) if (s && e.startsWith(r, i)) {
+            t.push(a.trim()), a = p;
+            for (var o = 1; o < r.length; o += 1) n.add(i + o);
+          } else a += e[i];
+        }), a !== p && t.push(a.trim()), t;
+      }
+      function normalizeFilterPath(e) {
+        var r = e.trim();
+        return r.startsWith(v) && (r = r.slice(1)), r === p ? o : r.startsWith(o) ? r : r.startsWith(l) || r.startsWith(u) || r.startsWith(h) ? `${o}${r}` : `${o}${l}${r}`;
+      }
+      function parseFilterExpression(e) {
+        var r = e.trim();
+        if (r.startsWith("(") && r.endsWith(f)) {
+          for (var t = 0, a = null, n = false, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            if (a) s !== a || isEscaped(r, i) || (a = null);else if (isQuoteCharacter(s)) a = s;else if ("(" === s) t += 1;else if (s === f && 0 === (t -= 1)) {
+              n = i === r.length - 1;
+              break;
+            }
+          }
+          n && (r = r.slice(1, -1).trim());
+        }
+        var u = splitByTopLevelToken(r, "||");
+        if (u.length > 1) return {
+          conditions: u.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "or"
+        };
+        var p = splitByTopLevelToken(r, "&&");
+        if (p.length > 1) return {
+          conditions: p.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "and"
+        };
+        if (r.startsWith("!") && !r.startsWith("!=")) return {
+          condition: parseFilterExpression(r.slice(1).trim()),
+          operator: "not"
+        };
+        var c,
+          C,
+          w = (C = null, walkTopLevelChars(c = r, function (e, r) {
+            if (!r) return false;
+            for (var t = null, a = 0; a < $.length; a += 1) {
+              var n = $[a];
+              c.startsWith(n, e) && (null === t || n.length > t.length) && (t = n);
+            }
+            return null !== t && (C = {
+              index: e,
+              operator: t
+            }, true);
+          }), C);
+        if (!w) return {
+          operator: m,
+          selectorPath: normalizeFilterPath(r)
+        };
+        var W = r.slice(0, w.index).trim(),
+          O = r.slice(w.index + w.operator.length).trim(),
+          A = g;
+        "!=" === w.operator ? A = S : "<" === w.operator ? A = P : "<=" === w.operator ? A = b : ">" === w.operator ? A = y : ">=" === w.operator ? A = k : "*=" === w.operator ? A = d : ("=~" === w.operator || "=" === w.operator && /^\/.*\/[a-z]*$/i.test(O)) && (A = x);
+        var j,
+          E,
+          L = O.trim(),
+          F = L === o || L.startsWith(o + l) || L.startsWith(o + h),
+          M = L === v || L.startsWith(v + l) || L.startsWith(v + h);
+        return F || M ? {
+          comparisonSelectorPath: normalizeFilterPath(L),
+          operator: A,
+          resolveComparisonAgainstRoot: F,
+          selectorPath: normalizeFilterPath(W)
+        } : {
+          comparisonValue: (j = O, E = j.trim(), "true" === E || "false" !== E && ("null" === E ? null : /^-?\d+(?:\.\d+)?$/.test(E) ? Number(E) : /^\/.*\/[a-z]*$/i.test(E) ? toRegExp(E) : stripQuotes(E))),
+          operator: A,
+          selectorPath: normalizeFilterPath(W)
+        };
+      }
+      function parseBracketStep(e, r) {
+        if ("*" === e) return {
+          mode: "wildcard",
+          recursive: r
+        };
+        if (e.startsWith("?")) return {
+          filter: parseFilterExpression(e.slice(1)),
+          mode: "filter",
+          recursive: r
+        };
+        if (/^\(@\.length(?:-\d+)?\)$/.test(e)) {
+          var t = e.match(/^\(@\.length(?:-(\d+))?\)$/);
+          return {
+            mode: "computed-index",
+            recursive: r,
+            subtractLength: t && t[1] ? Number(t[1]) : 0
+          };
+        }
+        var a = function (e) {
+          var r = [],
+            t = p;
+          return walkTopLevelChars(e, function (a, n) {
+            n && ":" === e[a] ? (r.push(t.trim()), t = p) : t += e[a];
+          }), r.push(t.trim()), r;
+        }(e);
+        if (a.length > 1) {
+          var n = a[0] === p ? void 0 : Number(a[0]);
+          return {
+            mode: "slice",
+            recursive: r,
+            slice: {
+              end: a[1] === p ? void 0 : Number(a[1]),
+              start: n,
+              step: a.length > 2 && a[2] !== p ? Number(a[2]) : 1
+            }
+          };
+        }
+        var i = function (e, r) {
+          var t = [],
+            a = p;
+          return walkTopLevelChars(e, function (n, i) {
+            i && e[n] === r ? (t.push(a.trim()), a = p) : a += e[n];
+          }), a !== p && t.push(a.trim()), t;
+        }(e, ",");
+        return i.every(function (e) {
+          return /^-?\d+$/.test(e);
+        }) ? {
+          indexes: i.map(function (e) {
+            return Number(e);
+          }),
+          mode: "index",
+          recursive: r
+        } : {
+          mode: "property",
+          properties: i.map(function (e) {
+            return r = e.trim(), /^\/.*\/[a-z]*$/i.test(r) ? toRegExp(r) : stripQuotes(r);
+            var r;
+          }),
+          recursive: r
+        };
+      }
+      function parseJsonPathSelector(e) {
+        var r = [],
+          t = 0;
+        for (e.startsWith(o) && (t = 1); t < e.length;) {
+          var a = false;
+          if (e.startsWith(u, t) ? (a = true, t += 2) : e[t] === l && (t += 1), t >= e.length) break;
+          if (e[t] !== h) {
+            if ("*" !== e[t]) {
+              for (var n = t; n < e.length && e[n] !== l && e[n] !== h;) n += 1;
+              var i = e.slice(t, n).trim();
+              i && r.push({
+                mode: "property",
+                properties: [i],
+                recursive: a
+              }), t = n;
+            } else r.push({
+              mode: "wildcard",
+              recursive: a
+            }), t += 1;
+          } else {
+            var s = findClosingBracket(e, t);
+            if (-1 === s) throw new Error(`Invalid JSONPath expression: ${e}`);
+            var p = e.slice(t + 1, s).trim();
+            r.push(parseBracketStep(p, a)), t = s + 1;
+          }
+        }
+        return {
+          steps: r
+        };
+      }
+      function buildAppendUpdater(e, r, t) {
+        var a,
+          n = e.trim();
+        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+          var i = t(n);
+          if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
+          a = i.constantValue;
+        }
+        return function (e) {
+          return Array.isArray(e) ? Array.isArray(a) ? e.concat(a) : e.concat([a]) : isPlainObject(e) && isPlainObject(a) ? Object.assign({}, e, a) : "string" == typeof e && "string" == typeof a ? `${e}${a}` : a;
+        };
+      }
+      function buildSetUpdater(e, r, t) {
+        var a = e.trim();
+        if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
+          var t = r(e.slice(8, -1));
+          if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          return function (e) {
+            return "string" != typeof e ? e : e.replace(a, t.replacement);
+          };
+        }(a, r);
+        var n = t(a);
+        if (!n) throw new Error(`Invalid set value: ${e}`);
+        return function (e) {
+          return getJsonSetValue(e, n);
+        };
+      }
+      function getChildCandidates(e) {
+        if (!isObjectLike(e.value)) return [];
+        if (ArrayBuffer.isView(e.value)) return [];
+        for (var r = Object.keys(e.value), t = [], a = 0; a < r.length; a += 1) {
+          var n = r[a];
+          t.push(createCandidate(e.value[n], e.value, n, appendPath(e.path, n)));
+        }
+        return t;
+      }
+      function getRecursiveCandidates(r) {
+        var t = [r],
+          a = [0],
+          n = new WeakSet();
+        isObjectLike(r.value) && n.add(r.value);
+        for (var i = false, s = isObjectLike(r.value) ? 1 : 0, o = getChildCandidates(r), l = 0; l < o.length; l += 1) {
+          if (isObjectLike(o[l].value)) {
+            if (n.has(o[l].value)) continue;
+            if (n.add(o[l].value), (s += 1) >= C) {
+              i = true;
+              break;
+            }
+          }
+          t.push(o[l]), a.push(1);
+        }
+        for (var u = 1; u < t.length && !i;) {
+          var p = a[u] + 1;
+          if (p > 1e3) {
+            i = true;
+            break;
+          }
+          for (var c = getChildCandidates(t[u]), f = 0; f < c.length; f += 1) {
+            if (isObjectLike(c[f].value)) {
+              if (n.has(c[f].value)) continue;
+              if (n.add(c[f].value), (s += 1) >= C) {
+                i = true;
+                break;
+              }
+            }
+            t.push(c[f]), a.push(p);
+          }
+          u += 1;
+        }
+        return i && logMessage(e, "JSONPath recursive descent exceeded its traversal budget, results may be incomplete"), t;
+      }
+      function resolveIndex(e, r) {
+        return r < 0 ? e + r : r;
+      }
+      function applyDirectStep(e, r) {
+        var t = [];
+        if ("property" === r.mode) {
+          if (!isObjectLike(e.value) || !r.properties) return t;
+          for (var a = new Set(), n = 0; n < r.properties.length; n += 1) {
+            var i = r.properties[n];
+            if (i instanceof RegExp) for (var s = Object.keys(e.value), o = 0; o < s.length; o += 1) {
+              var l = s[o];
+              i.lastIndex = 0, i.test(l) && !a.has(l) && (a.add(l), t.push(createCandidate(e.value[l], e.value, l, appendPath(e.path, l))));
+            } else !a.has(i) && Object.prototype.hasOwnProperty.call(e.value, i) && (a.add(i), t.push(createCandidate(e.value[i], e.value, i, appendPath(e.path, i))));
+          }
+          return t;
+        }
+        if ("wildcard" === r.mode) return getChildCandidates(e);
+        if ("index" === r.mode) {
+          if (!Array.isArray(e.value) || !r.indexes) return t;
+          for (var u = 0; u < r.indexes.length; u += 1) {
+            var p = resolveIndex(e.value.length, r.indexes[u]);
+            p >= 0 && p < e.value.length && t.push(createCandidate(e.value[p], e.value, p, appendPath(e.path, p)));
+          }
+          return t;
+        }
+        if ("computed-index" === r.mode) {
+          if (!Array.isArray(e.value)) return t;
+          var c = e.value.length - (r.subtractLength || 0);
+          return c >= 0 && c < e.value.length && t.push(createCandidate(e.value[c], e.value, c, appendPath(e.path, c))), t;
+        }
+        if ("slice" === r.mode) {
+          if (!Array.isArray(e.value) || !r.slice) return t;
+          for (var f = function (e, r) {
+              var t,
+                a,
+                n = [],
+                i = void 0 === r.step ? 1 : r.step;
+              if (0 === i) return n;
+              if (t = void 0 === r.start ? i > 0 ? 0 : e - 1 : resolveIndex(e, r.start), a = void 0 === r.end ? i > 0 ? e : -1 : resolveIndex(e, r.end), i > 0) {
+                for (var s = Math.max(0, t); s < Math.min(e, a); s += i) n.push(s);
+                return n;
+              }
+              for (var o = Math.min(e - 1, t); o > Math.max(-1, a); o += i) n.push(o);
+              return n;
+            }(e.value.length, r.slice), h = 0; h < f.length; h += 1) {
+            var v = f[h];
+            t.push(createCandidate(e.value[v], e.value, v, appendPath(e.path, v)));
+          }
+        }
+        return t;
+      }
+      function evaluateSelector(e, t) {
+        function matchesFilterValue(e, t) {
+          if ("conditions" in t) return "and" === t.operator ? t.conditions.every(function (r) {
+            return matchesFilterValue(e, r);
+          }) : t.conditions.some(function (r) {
+            return matchesFilterValue(e, r);
+          });
+          if ("condition" in t) return !matchesFilterValue(e, t.condition);
+          var a = evaluateSelector(e, parseJsonPathSelector(t.selectorPath));
+          if (t.operator === m) return a.length > 0;
+          var n = t.comparisonValue;
+          if (t.comparisonSelectorPath) {
+            var i = evaluateSelector(t.resolveComparisonAgainstRoot ? r : e, parseJsonPathSelector(t.comparisonSelectorPath));
+            if (0 === i.length) return false;
+            n = i[0].value;
+          }
+          for (var s = 0; s < a.length; s += 1) {
+            var o = a[s].value;
+            if (t.operator !== d) {
+              if (t.operator !== x) {
+                if (t.operator === g && o === n) return true;
+                if (t.operator === S && o !== n) return true;
+                if (t.operator === P && o < n) return true;
+                if (t.operator === b && o <= n) return true;
+                if (t.operator === y && o > n) return true;
+                if (t.operator === k && o >= n) return true;
+              } else if ("string" == typeof o && n instanceof RegExp && (n.lastIndex = 0, n.test(o))) return true;
+            } else if ("string" == typeof o && o.includes(String(n))) return true;
+          }
+          return false;
+        }
+        function applyFilterStep(e, r) {
+          for (var t = [], a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (Array.isArray(n.value)) for (var i = 0; i < n.value.length; i += 1) matchesFilterValue(n.value[i], r) && t.push(createCandidate(n.value[i], n.value, i, appendPath(n.path, i)));else matchesFilterValue(n.value, r) && t.push(n);
+          }
+          return t;
+        }
+        for (var a = [createCandidate(e, null, null, o)], n = 0; n < t.steps.length; n += 1) {
+          var i = t.steps[n];
+          if ("filter" === i.mode && i.filter) {
+            var s = a;
+            if (i.recursive) {
+              s = [];
+              for (var l = 0; l < a.length; l += 1) for (var u = getRecursiveCandidates(a[l]), p = 0; p < u.length; p += 1) s.push(u[p]);
+            }
+            a = applyFilterStep(s, i.filter);
+          } else {
+            for (var c = [], f = 0; f < a.length; f += 1) for (var h = a[f], v = i.recursive ? getRecursiveCandidates(h) : [h], $ = 0; $ < v.length; $ += 1) for (var C = applyDirectStep(v[$], i), w = 0; w < C.length; w += 1) c.push(C[w]);
+            a = c;
+          }
+        }
+        return a;
+      }
+      var W = false;
+      function markMutated() {
+        W = true;
+      }
+      if (!isObjectLike(r)) return r;
+      var O,
+        A = (O = a) && O.nativeParse ? O.nativeParse : JSON.parse,
+        j = function (e) {
+          return e && e.nativeStringify ? e.nativeStringify : JSON.stringify;
+        }(a),
+        E = new Error().stack || "";
+      if (i && !matchStackTrace(i, E)) return r;
+      if (!t) return logMessage(e, `${window.location.hostname}\n${j(r, null, 2)}\nStack trace:\n${E}`, true), logMessage(e, r, true, false), r;
+      try {
+        for (var L = function (e, r, t) {
+            var a,
+              n,
+              i = function (e) {
+                var r = -1,
+                  t = "remove",
+                  a = 0;
+                return walkTopLevelChars(e, function (n, i) {
+                  return !!i && (e.startsWith("+=", n) ? (r = n, t = "append", a = 2, !0) : "=" === e[n] && (r = n, t = "set", a = 1, !0));
+                }), -1 === r ? {
+                  mode: "remove",
+                  selectorPart: e.trim(),
+                  valuePart: p
+                } : {
+                  mode: t,
+                  selectorPart: e.slice(0, r).trim(),
+                  valuePart: e.slice(r + a).trim()
+                };
+              }(e),
+              s = function (e) {
+                for (var r = [], t = e.trim(); t.startsWith("[?");) {
+                  var a = findClosingBracket(t, 0);
+                  if (-1 === a) break;
+                  var n = t.slice(1, a);
+                  r.push(parseFilterExpression(n.slice(1))), t = t.slice(a + 1).trim();
+                }
+                return {
+                  guards: r,
+                  selectorPart: t
+                };
+              }(i.selectorPart),
+              c = parseJsonPathSelector((a = s.selectorPart, (n = a.trim()) === p ? o : n.startsWith(o) ? n : n.startsWith(l) || n.startsWith(h) || n.startsWith(u) ? `${o}${n}` : `${o}${l}${n}`)),
+              f = {
+                mode: i.mode
+              };
+            return "append" === i.mode ? f = {
+              mode: "append",
+              updater: buildAppendUpdater(i.valuePart, r, t)
+            } : "set" === i.mode && (f = {
+              mode: "set",
+              updater: buildSetUpdater(i.valuePart, r, t)
+            }), {
+              guards: s.guards,
+              mutation: f,
+              selector: c
+            };
+          }(t, A, function (r) {
+            return parseJsonSetArgumentValue(e, r, A);
+          }), F = 0; F < L.guards.length; F += 1) {
+          if (0 === evaluateSelector(r, {
+            steps: [{
+              filter: L.guards[F],
+              mode: "filter",
+              recursive: !1
+            }]
+          }).length) return r;
+        }
+        var M = evaluateSelector(r, L.selector);
+        if (s) return M.length > 0 && n && n(), r;
+        if (!("remove" === L.mutation.mode || "string" == typeof e.name && e.name.startsWith("trusted-"))) return logMessage(e, "JSONPath set and append operations are allowed only in trusted scriptlets"), r;
+        if ("remove" === L.mutation.mode) return function (e) {
+          for (var r = new Set(), t = new Map(), a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (null !== n.parent && null !== n.key && !r.has(n.path)) if (r.add(n.path), Array.isArray(n.parent)) {
+              var i = t.get(n.parent) || [];
+              i.push(Number(n.key)), t.set(n.parent, i);
+            } else delete n.parent[n.key], markMutated();
+          }
+          t.forEach(function (e, r) {
+            for (var t = Array.from(new Set(e)).sort(function (e, r) {
+                return r - e;
+              }), a = 0; a < t.length; a += 1) {
+              var n = t[a];
+              n >= 0 && n < r.length && (r.splice(n, 1), markMutated());
+            }
+          });
+        }(M), W && n && n(), r;
+        L.mutation.updater && (r = function (e, r, t) {
+          for (var a = new Set(), n = e, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            a.has(s.path) || (a.add(s.path), null !== s.parent || null !== s.key || s.path !== o ? null !== s.parent && null !== s.key && (s.parent[s.key] = t(s.parent[s.key]), markMutated()) : (n = t(n), markMutated()));
+          }
+          return n;
+        }(r, M, L.mutation.updater), W && n && n());
+      } catch (r) {
+        logMessage(e, `JSONPath processing failed for expression '${t}': ${r.message}`);
+      }
+      return r;
+    }
+    function getJsonSetValue(e, t) {
+      return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
+    }
+    function parseJsonSetArgumentValue(e, l, n) {
+      var s,
+        a = "json:",
+        r = "replace:",
+        t = "",
+        o = false,
+        u = false;
+      if (l.startsWith(r)) {
+        var i = extractRegexAndReplacement(l);
+        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        t = i.regexPart, s = i.replacementPart, o = true;
+      } else if (l.startsWith(a)) try {
+        s = n(l.slice(a.length)), u = !0;
+      } catch (n) {
+        return logMessage(e, `Invalid JSON argument value: ${l}`), null;
+      } else {
+        var c = noopArray(),
+          f = noopObject();
+        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
+          if (s = parseFloat(l), nativeIsNaN(s)) return null;
+        } else s = l;
+      }
+      return {
+        constantValue: s,
+        replaceRegexValue: t,
+        shouldReplaceArgument: o,
+        shouldMergeJsonValue: u
+      };
+    }
+    function noopArray() {
+      return [];
+    }
+    function noopObject() {
+      return {};
+    }
+    function noopCallbackFunc() {
+      return noopFunc;
+    }
+    function noopFunc() {}
+    function trueFunc() {
+      return true;
+    }
+    function falseFunc() {
+      return false;
+    }
+    function throwFunc() {
+      throw new Error();
+    }
+    function noopPromiseReject() {
+      return Promise.reject();
+    }
+    function noopPromiseResolve() {
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
+        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
+        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
+      if ("undefined" != typeof Response) {
+        var n = new Response(e, {
+          headers: {
+            "Content-Length": `${e.length}`
+          },
+          status: 200,
+          statusText: "OK"
+        });
+        return "opaque" === s ? Object.defineProperties(n, {
+          body: {
+            value: null
+          },
+          status: {
+            value: 0
+          },
+          ok: {
+            value: false
+          },
+          statusText: {
+            value: ""
+          },
+          url: {
+            value: ""
+          },
+          type: {
+            value: s
+          }
+        }) : Object.defineProperties(n, {
+          url: {
+            value: t
+          },
+          type: {
+            value: s
+          }
+        }), Promise.resolve(n);
+      }
     }
     function getPrunePath(t) {
       var r = ".[=].";
@@ -6047,7 +8801,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var g = u(t);
         if (toRegExp(f.join("")).test(g)) return logMessage(n, `${window.location.hostname}\n${u(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(n, t, true, false), o = false;
       }
-      if (a && !matchStackTrace(a, new Error().stack || "")) return o = false;
       for (var s, l = [".*.", "*.", ".*", ".[].", "[].", ".[]"], _loop = function _loop() {
           var n = f[p],
             r = n.split(".").pop(),
@@ -6075,6 +8828,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return e.trim();
         }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
+    }
+    function resolveJsonSyntaxMode(t, r) {
+      var e = "legacy",
+        o = "jsonpath",
+        s = "string" == typeof r ? r.trim().toLowerCase() : "";
+      if (s === e || s === o) return {
+        mode: s
+      };
+      var n = "string" == typeof t ? t.trim() : "";
+      return n.startsWith("$") || n.startsWith("[?") ? {
+        mode: o
+      } : {
+        mode: e
+      };
     }
     function getMatchPropsData(t) {
       var a = {};
@@ -6317,14 +9084,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
     }
-    function logAddEventListener(source) {
+    function logAddEventListener(source, noProtect) {
       var nativeAddEventListener = window.EventTarget.prototype.addEventListener;
+      var nativeToString = Function.prototype.toString;
       function addEventListenerWrapper(type, listener) {
         var _this$constructor;
         if (validateType(type) && validateListener(listener)) {
           var targetElement;
           var targetElementInfo;
-          var listenerInfo = listenerToString(listener);
+          var listenerInfo = listenerToString(listener, nativeToString);
           if (this) {
             if (this instanceof Window) {
               targetElementInfo = "window";
@@ -6359,16 +9127,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return nativeAddEventListener.apply(context, [type, listener, ...args]);
       }
-      var descriptor = {
-        configurable: true,
-        set: function set() {},
-        get: function get() {
-          return addEventListenerWrapper;
-        }
-      };
-      Object.defineProperty(window.EventTarget.prototype, "addEventListener", descriptor);
-      Object.defineProperty(window, "addEventListener", descriptor);
-      Object.defineProperty(document, "addEventListener", descriptor);
+      if (noProtect === "true") {
+        window.EventTarget.prototype.addEventListener = addEventListenerWrapper;
+      } else {
+        var descriptor = {
+          configurable: true,
+          set: function set() {},
+          get: function get() {
+            return addEventListenerWrapper;
+          }
+        };
+        Object.defineProperty(window.EventTarget.prototype, "addEventListener", descriptor);
+        Object.defineProperty(window, "addEventListener", descriptor);
+        Object.defineProperty(document, "addEventListener", descriptor);
+      }
     }
     function hit(e) {
       if (e.verbose) {
@@ -6386,22 +9158,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function validateListener(n) {
       return void 0 !== n && ("function" == typeof n || "object" == typeof n && null !== n && "handleEvent" in n && "function" == typeof n.handleEvent);
     }
-    function listenerToString(n) {
-      return "function" == typeof n ? n.toString() : n.handleEvent.toString();
+    function listenerToString(n, t) {
+      return "function" == typeof n ? t.call(n) : t.call(n.handleEvent);
     }
     function convertTypeToString(n) {
       return void 0 === n ? "undefined" : "object" == typeof n ? null === n ? "null" : objectToString(n) : String(n);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function objectToString(t) {
@@ -6478,15 +9250,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
@@ -6616,15 +9388,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isEmptyObject(t) {
@@ -7048,15 +9820,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return new RegExp(c);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function getXhrData(r, t, a, e, n) {
@@ -7520,15 +10292,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
@@ -7598,15 +10370,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function noopFunc() {}
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function convertRtcConfigToString(e) {
@@ -7672,11 +10444,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return false;
       };
       var nativeAddEventListener = window.EventTarget.prototype.addEventListener;
+      var nativeToString = Function.prototype.toString;
       function addEventListenerWrapper(type, listener) {
         var _this$constructor;
         var shouldPrevent = false;
         if (validateType(type) && validateListener(listener)) {
-          shouldPrevent = typeSearchRegexp.test(type.toString()) && listenerSearchRegexp.test(listenerToString(listener)) && elementMatches(this);
+          shouldPrevent = typeSearchRegexp.test(type.toString()) && listenerSearchRegexp.test(listenerToString(listener, nativeToString)) && elementMatches(this);
         }
         if (shouldPrevent) {
           hit(source);
@@ -7743,19 +10516,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function validateListener(n) {
       return void 0 !== n && ("function" == typeof n || "object" == typeof n && null !== n && "handleEvent" in n && "function" == typeof n.handleEvent);
     }
-    function listenerToString(n) {
-      return "function" == typeof n ? n.toString() : n.handleEvent.toString();
+    function listenerToString(n, t) {
+      return "function" == typeof n ? t.call(n) : t.call(n.handleEvent);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
@@ -7858,15 +10631,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
@@ -8015,15 +10788,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function parseMatchArg(t) {
@@ -8243,15 +11016,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return new RegExp(c);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function noopFunc() {}
@@ -8742,10 +11515,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     function preventFetch(source, propsToMatch) {
       var responseBody = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "emptyObj";
-      var responseType = arguments.length > 3 ? arguments[3] : undefined;
+      var responseConfig = arguments.length > 3 ? arguments[3] : undefined;
       if (typeof fetch === "undefined" || typeof Proxy === "undefined" || typeof Response === "undefined") {
         return;
       }
+      var INVALID_RESPONSE_VALUE_MARKER = null;
+      var getInvalidResponseConfigMessage = function getInvalidResponseConfigMessage(value) {
+        return `Invalid responseConfig parameter: '${value}'`;
+      };
       var nativeRequestClone = Request.prototype.clone;
       var strResponseBody;
       if (responseBody === "" || responseBody === "emptyObj") {
@@ -8760,13 +11537,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(source, `Invalid responseBody parameter: '${responseBody}'`);
         return;
       }
-      var isResponseTypeSpecified = typeof responseType !== "undefined";
-      var isResponseTypeSupported = function isResponseTypeSupported(responseType) {
-        var SUPPORTED_TYPES = ["basic", "cors", "opaque"];
-        return SUPPORTED_TYPES.includes(responseType);
-      };
-      if (isResponseTypeSpecified && !isResponseTypeSupported(responseType)) {
-        logMessage(source, `Invalid responseType parameter: '${responseType}'`);
+      var parsedResponseConfig = parseResponseConfig(responseConfig, function (invalidValue) {
+        return logMessage(source, getInvalidResponseConfigMessage(invalidValue));
+      });
+      if (parsedResponseConfig === INVALID_RESPONSE_VALUE_MARKER) {
         return;
       }
       var EXTENSION_SCHEMES = ["chrome-extension:", "moz-extension:", "ms-browser-extension:", "safari-web-extension:"];
@@ -8803,19 +11577,39 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         shouldPrevent = matchRequestProps(source, propsToMatch, fetchData);
         if (shouldPrevent) {
           hit(source);
-          var finalResponseType;
+          var resolvedResponseConfig = {};
           try {
-            finalResponseType = responseType || getResponseType(fetchData);
+            resolvedResponseConfig = getResolvedResponseConfig(parsedResponseConfig, getResponseType(fetchData));
             var origResponse = await Reflect.apply(target, thisArg, args);
             if (!origResponse.ok || isExtensionScheme(origResponse.url)) {
-              return noopPromiseResolve(strResponseBody, fetchData.url, finalResponseType);
+              return createResponse({
+                body: strResponseBody,
+                ok: resolvedResponseConfig.ok,
+                redirected: resolvedResponseConfig.redirected,
+                requestUrl: fetchData.url,
+                status: resolvedResponseConfig.status,
+                statusText: resolvedResponseConfig.statusText,
+                type: resolvedResponseConfig.type
+              });
             }
             return modifyResponse(origResponse, {
               body: strResponseBody,
-              type: finalResponseType
+              ok: resolvedResponseConfig.ok,
+              redirected: resolvedResponseConfig.redirected,
+              status: resolvedResponseConfig.status,
+              statusText: resolvedResponseConfig.statusText,
+              type: resolvedResponseConfig.type
             });
           } catch (ex) {
-            return noopPromiseResolve(strResponseBody, fetchData.url, finalResponseType);
+            return createResponse({
+              body: strResponseBody,
+              ok: resolvedResponseConfig.ok,
+              redirected: resolvedResponseConfig.redirected,
+              requestUrl: fetchData.url,
+              status: resolvedResponseConfig.status,
+              statusText: resolvedResponseConfig.statusText,
+              type: resolvedResponseConfig.type
+            });
           }
         }
         return Reflect.apply(target, thisArg, args);
@@ -8873,80 +11667,166 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return a;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
-    function noopPromiseResolve() {
-      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "{}",
-        t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : "",
-        s = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "basic";
-      if ("undefined" != typeof Response) {
-        var n = new Response(e, {
-          headers: {
-            "Content-Length": `${e.length}`
-          },
-          status: 200,
-          statusText: "OK"
-        });
-        return "opaque" === s ? Object.defineProperties(n, {
-          body: {
-            value: null
-          },
-          status: {
-            value: 0
-          },
-          ok: {
-            value: false
-          },
-          statusText: {
-            value: ""
-          },
-          url: {
-            value: ""
-          },
-          type: {
-            value: s
-          }
-        }) : Object.defineProperties(n, {
-          url: {
-            value: t
-          },
-          type: {
-            value: s
-          }
-        }), Promise.resolve(n);
-      }
-    }
-    function modifyResponse(e) {
-      var t,
-        s = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
+    function createResponse() {
+      var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {
           body: "{}"
         },
-        u = {};
-      null == e || null === (t = e.headers) || void 0 === t || t.forEach(function (e, t) {
-        u[t] = e;
+        t = void 0 === e.body ? "{}" : e.body,
+        s = getFilteredResponseDefaults(e.type),
+        o = void 0 === s.body ? t : s.body,
+        d = e.status;
+      void 0 === d && (d = void 0 === s.status ? 200 : s.status);
+      var r = e.statusText;
+      void 0 === r && (r = void 0 === s.statusText ? "OK" : s.statusText);
+      var a = e.ok;
+      void 0 === a && (a = void 0 === e.status && void 0 === s.ok || isSuccessResponseStatus(d));
+      var i = void 0 !== e.redirected && e.redirected,
+        n = void 0 === e.type ? "basic" : e.type,
+        u = s.url;
+      void 0 === u && (u = void 0 === e.requestUrl ? "" : e.requestUrl);
+      var v = void 0 !== s.body,
+        y = e.headers;
+      v ? y = {} : void 0 === y && (y = {
+        "Content-Length": null === t ? "0" : String(new TextEncoder().encode(t).length)
       });
-      var n = new Response(s.body, {
-        status: e.status,
-        statusText: e.statusText,
-        headers: u
-      });
-      return Object.defineProperties(n, {
-        url: {
-          value: e.url
+      var l = getSafeResponseStatus(d),
+        p = new Response(o, {
+          headers: y,
+          status: l < 200 ? 200 : l,
+          statusText: r
+        });
+      return defineReadonlyResponseProps(p, {
+        body: o,
+        ok: a,
+        redirected: i,
+        status: d,
+        statusText: r,
+        type: n,
+        url: u
+      }), p;
+    }
+    function copyResponseHeaders(n) {
+      var e = {};
+      return null == n || n.forEach(function (n, o) {
+        e[o] = n;
+      }), e;
+    }
+    function defineReadonlyResponseProps(e, t) {
+      var u = {};
+      void 0 !== t.body && null === t.body && null !== e.body && (u.body = {
+        value: null
+      }), void 0 !== t.status && e.status !== t.status && (u.status = {
+        value: t.status
+      }), void 0 !== t.statusText && e.statusText !== t.statusText && (u.statusText = {
+        value: t.statusText
+      }), void 0 !== t.url && e.url !== t.url && (u.url = {
+        value: t.url
+      }), void 0 !== t.type && e.type !== t.type && (u.type = {
+        value: t.type
+      }), void 0 !== t.ok && e.ok !== t.ok && (u.ok = {
+        value: t.ok
+      }), void 0 !== t.redirected && e.redirected !== t.redirected && (u.redirected = {
+        value: t.redirected
+      }), Object.keys(u).length > 0 && Object.defineProperties(e, u);
+    }
+    function getFilteredResponseDefaults(e) {
+      return "opaque" !== e && "error" !== e && "opaqueredirect" !== e ? {} : {
+        body: null,
+        ok: false,
+        status: 0,
+        statusText: "",
+        url: ""
+      };
+    }
+    function getResolvedResponseConfig(e, n) {
+      var o = {};
+      return void 0 !== n && (o.type = n), null == e ? o : Object.assign(o, e);
+    }
+    function getSafeResponseStatus(e) {
+      return "number" == typeof e && e >= 0 && e <= 599 ? e : 200;
+    }
+    function isSuccessResponseStatus(s) {
+      return s >= 200 && s <= 299;
+    }
+    function isValidResponseStatus(e) {
+      return "number" == typeof e && Number.isFinite(e) && Math.floor(e) === e && e >= 0 && e <= 599;
+    }
+    function modifyResponse(e) {
+      var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {
+          body: "{}"
         },
-        type: {
-          value: s.type || e.type
+        s = void 0 === t.body ? "{}" : t.body,
+        o = void 0 === t.type ? e.type : t.type,
+        d = getFilteredResponseDefaults(o),
+        a = void 0 === d.body ? s : d.body,
+        i = t.status;
+      void 0 === i && (i = void 0 === d.status ? e.status : d.status);
+      var r = t.statusText;
+      void 0 === r && (r = void 0 === d.statusText ? e.statusText : d.statusText);
+      var u = t.ok;
+      void 0 === u && (u = void 0 === t.status && void 0 === d.ok ? e.ok : isSuccessResponseStatus(i));
+      var v = void 0 === t.redirected ? e.redirected : t.redirected,
+        n = d.url;
+      void 0 === n && (n = e.url);
+      var y = void 0 !== d.body ? {} : copyResponseHeaders(null == e ? void 0 : e.headers),
+        p = getSafeResponseStatus(i),
+        l = new Response(a, {
+          status: p < 200 ? 200 : p,
+          statusText: r,
+          headers: y
+        });
+      return defineReadonlyResponseProps(l, {
+        body: a,
+        ok: u,
+        redirected: v,
+        status: i,
+        statusText: r,
+        type: o,
+        url: n
+      }), l;
+    }
+    function parseResponseConfig(e, t) {
+      var reportInvalid = function reportInvalid() {
+          return "function" == typeof t && t(e), null;
+        },
+        r = new Set(["basic", "cors", "error", "opaque", "opaqueredirect"]),
+        n = new Set(["", "OK", "Continue", "Not Found"]);
+      if (void 0 !== e) {
+        if (r.has(e)) return {
+          type: e
+        };
+        var s,
+          i = e.trim();
+        if (!i.startsWith("{") || !i.endsWith("}")) return reportInvalid();
+        try {
+          s = JSON.parse(i);
+        } catch (e) {
+          return reportInvalid();
         }
-      }), n;
+        if (!s || Array.isArray(s) || "object" != typeof s) return reportInvalid();
+        for (var o = {}, a = Object.keys(s), f = 0; f < a.length; f += 1) {
+          var u = a[f],
+            p = s[u];
+          if ("ok" !== u && "redirected" !== u || "boolean" != typeof p) {
+            if ("status" === u && isValidResponseStatus(p)) o[u] = p;else if ("statusText" === u && "string" == typeof p && n.has(p)) o[u] = p;else {
+              if ("type" !== u || "string" != typeof p || !r.has(p)) return reportInvalid();
+              o[u] = p;
+            }
+          } else o[u] = p;
+        }
+        return o;
+      }
     }
     function toRegExp(e) {
       var r = e || "",
@@ -9139,15 +12019,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -9254,15 +12134,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -9455,15 +12335,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return nativeIsNaN(r) ? null : r;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -9553,15 +12433,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return n instanceof Function || "string" == typeof n;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function escapeRegExp(e) {
@@ -9654,33 +12534,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var {
         callback: e,
         delay: t,
-        matchCallback: r,
-        matchDelay: l
+        matchCallback: l,
+        matchDelay: r
       } = a;
       if (!isValidCallback(e)) return false;
-      if (!isValidMatchStr(r) || l && !isValidMatchNumber(l)) return false;
+      if (!isValidMatchStr(l) || r && !isValidMatchNumber(r)) return false;
       var {
           isInvertedMatch: c,
           matchRegexp: i
-        } = parseMatchArg(r),
+        } = parseMatchArg(l),
         {
           isInvertedDelayMatch: n,
-          delayMatch: s
-        } = parseDelayArg(l),
-        d = parseRawDelay(t),
-        h = String(e);
-      return null === s ? i.test(h) !== c : r ? i.test(h) !== c && d === s !== n : d === s !== n;
+          delayMatch: s,
+          delayMinMatch: d,
+          delayMaxMatch: h,
+          isDelayRange: M
+        } = parseDelayArg(r),
+        y = parseRawDelay(t),
+        v = String(e);
+      return M || null !== s ? l ? i.test(v) !== c && isPreventDelayMatched(M, d, h, s, n, y) : isPreventDelayMatched(M, d, h, s, n, y) : i.test(v) !== c;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -9717,13 +12600,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function parseDelayArg(a) {
-      var e = null == a ? void 0 : a.startsWith("!"),
-        t = e ? a.slice(1) : a,
-        l = parseInt(t, 10);
+      var l = null == a ? void 0 : a.startsWith("!"),
+        e = l ? a.slice(1) : a,
+        n = e ? e.indexOf("-") : -1;
+      if (-1 !== n) {
+        var t = e.slice(0, n),
+          i = e.slice(n + 1),
+          s = "" === t ? null : parseFloat(t),
+          M = "" === i ? null : parseFloat(i),
+          u = "" === t || null !== s && !nativeIsNaN(s),
+          c = "" === i || null !== M && !nativeIsNaN(M);
+        return u && c && (null !== s || null !== M) ? {
+          isInvertedDelayMatch: l,
+          delayMatch: null,
+          delayMinMatch: s,
+          delayMaxMatch: M,
+          isDelayRange: true
+        } : {
+          isInvertedDelayMatch: l,
+          delayMatch: null,
+          delayMinMatch: null,
+          delayMaxMatch: null,
+          isDelayRange: true
+        };
+      }
+      var r = parseInt(e, 10);
       return {
-        isInvertedDelayMatch: e,
-        delayMatch: nativeIsNaN(l) ? null : l
+        isInvertedDelayMatch: l,
+        delayMatch: nativeIsNaN(r) ? null : r,
+        delayMinMatch: null,
+        delayMaxMatch: null,
+        isDelayRange: false
       };
+    }
+    function isPreventDelayMatched(l, n, u, e, t, r) {
+      return l ? (null !== n || null !== u) && "number" == typeof r && ((null === n || r >= n) && (null === u || r <= u)) !== t : null === e || r === e !== t;
     }
     function isValidCallback(n) {
       return n instanceof Function || "string" == typeof n;
@@ -9750,10 +12661,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isFinite || window.isFinite)(i);
     }
     function isValidMatchNumber(a) {
-      var t = a;
-      null != a && a.startsWith("!") && (t = a.slice(1));
-      var i = parseFloat(t);
-      return !nativeIsNaN(i) && nativeIsFinite(i);
+      var e = a;
+      null != a && a.startsWith("!") && (e = a.slice(1));
+      var i = e.indexOf("-");
+      if (-1 !== i) {
+        var t = e.slice(0, i),
+          s = e.slice(i + 1),
+          n = "" === t || !nativeIsNaN(parseFloat(t)) && nativeIsFinite(parseFloat(t)),
+          r = "" === s || !nativeIsNaN(parseFloat(s)) && nativeIsFinite(parseFloat(s));
+        return !(!n || !r || "" === t && "" === s);
+      }
+      var l = parseFloat(e);
+      return !nativeIsNaN(l) && nativeIsFinite(l);
     }
     function parseRawDelay(a) {
       var e = Math.floor(parseInt(a, 10));
@@ -9825,33 +12744,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var {
         callback: e,
         delay: t,
-        matchCallback: r,
-        matchDelay: l
+        matchCallback: l,
+        matchDelay: r
       } = a;
       if (!isValidCallback(e)) return false;
-      if (!isValidMatchStr(r) || l && !isValidMatchNumber(l)) return false;
+      if (!isValidMatchStr(l) || r && !isValidMatchNumber(r)) return false;
       var {
           isInvertedMatch: c,
           matchRegexp: i
-        } = parseMatchArg(r),
+        } = parseMatchArg(l),
         {
           isInvertedDelayMatch: n,
-          delayMatch: s
-        } = parseDelayArg(l),
-        d = parseRawDelay(t),
-        h = String(e);
-      return null === s ? i.test(h) !== c : r ? i.test(h) !== c && d === s !== n : d === s !== n;
+          delayMatch: s,
+          delayMinMatch: d,
+          delayMaxMatch: h,
+          isDelayRange: M
+        } = parseDelayArg(r),
+        y = parseRawDelay(t),
+        v = String(e);
+      return M || null !== s ? l ? i.test(v) !== c && isPreventDelayMatched(M, d, h, s, n, y) : isPreventDelayMatched(M, d, h, s, n, y) : i.test(v) !== c;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function parseMatchArg(t) {
@@ -9864,13 +12786,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function parseDelayArg(a) {
-      var e = null == a ? void 0 : a.startsWith("!"),
-        t = e ? a.slice(1) : a,
-        l = parseInt(t, 10);
+      var l = null == a ? void 0 : a.startsWith("!"),
+        e = l ? a.slice(1) : a,
+        n = e ? e.indexOf("-") : -1;
+      if (-1 !== n) {
+        var t = e.slice(0, n),
+          i = e.slice(n + 1),
+          s = "" === t ? null : parseFloat(t),
+          M = "" === i ? null : parseFloat(i),
+          u = "" === t || null !== s && !nativeIsNaN(s),
+          c = "" === i || null !== M && !nativeIsNaN(M);
+        return u && c && (null !== s || null !== M) ? {
+          isInvertedDelayMatch: l,
+          delayMatch: null,
+          delayMinMatch: s,
+          delayMaxMatch: M,
+          isDelayRange: true
+        } : {
+          isInvertedDelayMatch: l,
+          delayMatch: null,
+          delayMinMatch: null,
+          delayMaxMatch: null,
+          isDelayRange: true
+        };
+      }
+      var r = parseInt(e, 10);
       return {
-        isInvertedDelayMatch: e,
-        delayMatch: nativeIsNaN(l) ? null : l
+        isInvertedDelayMatch: l,
+        delayMatch: nativeIsNaN(r) ? null : r,
+        delayMinMatch: null,
+        delayMaxMatch: null,
+        isDelayRange: false
       };
+    }
+    function isPreventDelayMatched(l, n, u, e, t, r) {
+      return l ? (null !== n || null !== u) && "number" == typeof r && ((null === n || r >= n) && (null === u || r <= u)) !== t : null === e || r === e !== t;
     }
     function toRegExp(e) {
       var r = e || "",
@@ -9921,10 +12871,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isFinite || window.isFinite)(i);
     }
     function isValidMatchNumber(a) {
-      var t = a;
-      null != a && a.startsWith("!") && (t = a.slice(1));
-      var i = parseFloat(t);
-      return !nativeIsNaN(i) && nativeIsFinite(i);
+      var e = a;
+      null != a && a.startsWith("!") && (e = a.slice(1));
+      var i = e.indexOf("-");
+      if (-1 !== i) {
+        var t = e.slice(0, i),
+          s = e.slice(i + 1),
+          n = "" === t || !nativeIsNaN(parseFloat(t)) && nativeIsFinite(parseFloat(t)),
+          r = "" === s || !nativeIsNaN(parseFloat(s)) && nativeIsFinite(parseFloat(s));
+        return !(!n || !r || "" === t && "" === s);
+      }
+      var l = parseFloat(e);
+      return !nativeIsNaN(l) && nativeIsFinite(l);
     }
     function parseRawDelay(a) {
       var e = Math.floor(parseInt(a, 10));
@@ -10146,15 +13104,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return null;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function noopFunc() {}
@@ -10439,15 +13397,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -10661,15 +13619,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function throttle(n, t) {
@@ -10792,15 +13750,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function observeDOMChanges(t) {
@@ -11497,15 +14455,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function splitByNotEscapedDelimiter(t, n) {
@@ -11638,15 +14596,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t.setAttribute(e, r);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function throttle(n, t) {
@@ -11864,15 +14822,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function createSetChainPropAccessor(t) {
@@ -12210,15 +15168,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -12313,15 +15271,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -12422,15 +15380,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -12611,15 +15569,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function nativeIsNaN(N) {
@@ -13308,15 +16266,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return _wrapper8;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function parseMatchArg(t) {
@@ -13357,30 +16315,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         EventTarget.prototype.addEventListener = function (e, n, i) {
           if (!n || !t.has(e)) return r.call(this, e, n, i);
           var a = "function" == typeof n,
-            u = getMapKey(e, i),
+            s = getMapKey(e, i),
             wrapped = function wrapped(e) {
               var t = new Proxy(e, {
                 get(e, t) {
                   if ("isTrusted" === t) return true;
                   var r = Reflect.get(e, t);
                   return "function" == typeof r ? r.bind(e) : r;
+                },
+                set: function set(e, t, r) {
+                  return Reflect.set(e, t, r);
                 }
               });
               return a ? n.call(this, t) : n.handleEvent.call(n, t);
             },
-            s = n,
-            v = o.get(s);
-          v || (v = new Map(), o.set(s, v));
-          var l = v.get(u);
-          return l || v.set(u, wrapped), r.call(this, e, l || wrapped, i);
+            u = n,
+            l = o.get(u);
+          l || (l = new Map(), o.set(u, l));
+          var v = l.get(s);
+          return v || l.set(s, wrapped), r.call(this, e, v || wrapped, i);
         }, EventTarget.prototype.removeEventListener = function (e, r, i) {
           if (!r || !t.has(e)) return n.call(this, e, r, i);
           var a = r,
-            u = getMapKey(e, i),
-            s = o.get(a);
-          if (s && s.has(u)) {
-            var v = s.get(u);
-            return s.delete(u), n.call(this, e, v, i);
+            s = getMapKey(e, i),
+            u = o.get(a);
+          if (u && u.has(s)) {
+            var l = u.get(s);
+            return u.delete(s), n.call(this, e, l, i);
           }
           return n.call(this, e, r, i);
         }, EventTarget.prototype[e] = true;
@@ -13646,15 +16607,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function observeDocumentWithTimeout(e) {
@@ -13915,14 +16876,85 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function trustedJsonSet(source, methodPath, propsPath, argumentValue, requiredInitialProps) {
       var jsonSource = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "result";
       var stack = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
-      var verbose = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : "";
-      if (!methodPath || !propsPath || argumentValue === undefined) {
+      var mode = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : "";
+      var verbose = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : "";
+      var isLogOnlyMode = !propsPath;
+      var shouldLogVerboseContent = verbose === "true" && !isLogOnlyMode;
+      var syntaxModeDetails = isLogOnlyMode ? {
+        mode: "legacy"
+      } : resolveJsonSyntaxMode(propsPath, mode);
+      var jsonPathExpression = !isLogOnlyMode && syntaxModeDetails.mode === "jsonpath" ? buildJsonPathExpression(propsPath, argumentValue) : "";
+      if (!methodPath) {
         return;
       }
-      var shouldLogContent = verbose === "true";
+      if (!isLogOnlyMode && syntaxModeDetails.mode === "legacy" && argumentValue === undefined) {
+        return;
+      }
+      if (!isLogOnlyMode && syntaxModeDetails.mode === "jsonpath" && jsonPathExpression === "") {
+        logMessage(source, "JSONPath mode requires argumentValue unless propsPath already contains an inline mutation");
+        return;
+      }
+      var isStructuredCloneSupported = typeof structuredClone === "function";
       var nativeObjects = {
         nativeStringify: window.JSON.stringify,
         nativeParse: window.JSON.parse
+      };
+      var createClonedObjectLogMessage = function createClonedObjectLogMessage(label, value) {
+        if (isStructuredCloneSupported) {
+          try {
+            return [label, structuredClone(value)];
+          } catch (error) {
+            try {
+              return [label, nativeObjects.nativeParse(nativeObjects.nativeStringify(value))];
+            } catch (_unused) {
+              return [`Could not clone content of ${methodPath} (original and modified objects are the same): ${error.message}\n`, value];
+            }
+          }
+        }
+        try {
+          return [label, nativeObjects.nativeParse(nativeObjects.nativeStringify(value))];
+        } catch (_unused2) {
+          return [`Structured cloning is not supported (original and modified objects are the same) for ${label}\n`, value];
+        }
+      };
+      var logClonedObject = function logClonedObject(label, value) {
+        var message = createClonedObjectLogMessage(label, value);
+        logMessage(source, message, true, false);
+      };
+      var createContentLabel = function createContentLabel(kind) {
+        var isModified = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+        var prefix = isModified ? "Modified" : "Original";
+        var details = "";
+        if (propsPath) {
+          details = ` (propsPath: ${propsPath}, argumentValue: ${argumentValue})`;
+        } else if (isLogOnlyMode && requiredInitialProps) {
+          details = ` (requiredInitialProps: ${requiredInitialProps})`;
+        }
+        return `${prefix} content ${kind} of ${methodPath}${details}:\n`;
+      };
+      var logStringContent = function logStringContent(content, stackTrace) {
+        var isModified = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+        var logEntry = [createContentLabel("string", isModified), window.location.hostname, content, "Stack trace:", stackTrace].join("\n");
+        logMessage(source, logEntry, true);
+      };
+      var logOriginalStructuredContent = function logOriginalStructuredContent(value, stackTrace) {
+        logStringContent(nativeObjects.nativeStringify(value, null, 2), stackTrace);
+        logClonedObject(createContentLabel("object"), value);
+      };
+      var logModifiedStructuredContent = function logModifiedStructuredContent(value, stackTrace) {
+        logStringContent(nativeObjects.nativeStringify(value, null, 2), stackTrace, true);
+        var message = [createContentLabel("object", true), value];
+        logMessage(source, message, true, false);
+      };
+      var captureOriginalStructuredContent = function captureOriginalStructuredContent(value) {
+        return {
+          objectLogMessage: createClonedObjectLogMessage(createContentLabel("object"), value),
+          stringContent: nativeObjects.nativeStringify(value, null, 2)
+        };
+      };
+      var logCapturedOriginalStructuredContent = function logCapturedOriginalStructuredContent(snapshot, stackTrace) {
+        logStringContent(snapshot.stringContent, stackTrace);
+        logMessage(source, snapshot.objectLogMessage, true, false);
       };
       var JSON_SOURCES = {
         ARG: "arg",
@@ -13931,9 +16963,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         RESULT: "result",
         ALL: "all"
       };
-      var parsedArgumentValue = parseJsonSetArgumentValue(source, argumentValue, nativeObjects.nativeParse);
-      if (!parsedArgumentValue) {
-        return;
+      var parsedArgumentValue;
+      if (!isLogOnlyMode && syntaxModeDetails.mode === "legacy") {
+        var parsedLegacyArgumentValue = parseJsonSetArgumentValue(source, argumentValue, nativeObjects.nativeParse);
+        if (!parsedLegacyArgumentValue) {
+          return;
+        }
+        parsedArgumentValue = parsedLegacyArgumentValue;
       }
       var getPathParts = getPropertyInChain;
       var {
@@ -13968,10 +17004,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return jsonSource;
       };
-      var parsedSetPaths = getPrunePath(propsPath);
+      var parsedSetPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsPath) : [];
       var setPathObj = parsedSetPaths[0];
-      var requiredPaths = getPrunePath(requiredInitialProps);
+      var requiredPaths = !isLogOnlyMode && syntaxModeDetails.mode === "legacy" ? getPrunePath(requiredInitialProps) : [];
+      var logOnlyRequiredInitialPropsSyntax = isLogOnlyMode ? resolveJsonSyntaxMode(requiredInitialProps, undefined) : {
+        mode: "legacy"
+      };
+      var logOnlyRequiredPaths = isLogOnlyMode && logOnlyRequiredInitialPropsSyntax.mode === "legacy" ? getPrunePath(requiredInitialProps) : [];
       var normalizedJsonSource = normalizeJsonSource();
+      var logOnlyJsonPathFilter = isLogOnlyMode && logOnlyRequiredInitialPropsSyntax.mode === "jsonpath" ? requiredInitialProps : "";
+      var logOnlyMatchPattern = isLogOnlyMode ? logOnlyRequiredPaths.map(function (obj) {
+        return obj.path;
+      }).join("") : "";
       var getSelectedArgumentIndexes = function getSelectedArgumentIndexes(argsLength) {
         if (normalizedJsonSource === JSON_SOURCES.ARG) {
           return argsLength > 0 ? [0] : [];
@@ -13995,41 +17039,137 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return [];
       };
       var getValueToSet = function getValueToSet(currentValue) {
-        return getJsonSetValue(currentValue, parsedArgumentValue);
+        if (parsedArgumentValue === undefined) {
+          return currentValue;
+        }
+        var nonNullParsedArgumentValue = parsedArgumentValue;
+        return getJsonSetValue(currentValue, nonNullParsedArgumentValue);
+      };
+      var applyJsonMutation = function applyJsonMutation(jsonValue) {
+        var changed = false;
+        if (syntaxModeDetails.mode === "jsonpath") {
+          var _value = jsonPath(source, jsonValue, jsonPathExpression, nativeObjects, function () {
+            changed = true;
+            hit(source);
+          }, stack);
+          return {
+            changed: changed,
+            value: _value
+          };
+        }
+        var value = jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects, function () {
+          changed = true;
+        });
+        return {
+          changed: changed,
+          value: value
+        };
+      };
+      var shouldLogOriginalContent = function shouldLogOriginalContent(content, jsonValue) {
+        if (logOnlyJsonPathFilter) {
+          if (jsonValue == null || typeof jsonValue !== "object") {
+            return false;
+          }
+          return matchesJsonPath(source, jsonValue, logOnlyJsonPathFilter, nativeObjects);
+        }
+        if (!logOnlyMatchPattern) {
+          return true;
+        }
+        return toRegExp(logOnlyMatchPattern).test(content);
+      };
+      var logOriginalOnlyContent = function logOriginalOnlyContent(jsonValue, stackTrace) {
+        if (jsonValue !== null && typeof jsonValue === "object") {
+          var serializedContent = nativeObjects.nativeStringify(jsonValue);
+          if (!shouldLogOriginalContent(serializedContent, jsonValue)) {
+            return;
+          }
+          logOriginalStructuredContent(jsonValue, stackTrace);
+          return;
+        }
+        if (typeof jsonValue === "string") {
+          try {
+            var parsedValue = nativeObjects.nativeParse(jsonValue);
+            if (parsedValue !== null && typeof parsedValue === "object") {
+              var _serializedContent = nativeObjects.nativeStringify(parsedValue);
+              if (!shouldLogOriginalContent(_serializedContent, parsedValue)) {
+                return;
+              }
+              logOriginalStructuredContent(parsedValue, stackTrace);
+              return;
+            }
+          } catch (_unused3) {}
+          if (!shouldLogOriginalContent(jsonValue)) {
+            return;
+          }
+          logStringContent(jsonValue, stackTrace);
+        }
       };
       var modifyJsonValue = function modifyJsonValue(jsonValue, errorMessage) {
+        var currentStackTrace = new Error().stack || "";
+        if (isLogOnlyMode) {
+          if (!stack || matchStackTrace(stack, currentStackTrace)) {
+            try {
+              logOriginalOnlyContent(jsonValue, currentStackTrace);
+            } catch (error) {
+              logMessage(source, `${errorMessage}: ${error.message}`);
+            }
+          }
+          return jsonValue;
+        }
         if (jsonValue !== null && typeof jsonValue === "object") {
           try {
-            if (shouldLogContent) {
-              logMessage(source, `Original content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(jsonValue, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-              logMessage(source, jsonValue, true, false);
+            var originalSnapshot = shouldLogVerboseContent ? captureOriginalStructuredContent(jsonValue) : null;
+            var mutationResult = applyJsonMutation(jsonValue);
+            if (shouldLogVerboseContent) {
+              if (mutationResult.changed && originalSnapshot) {
+                logCapturedOriginalStructuredContent(originalSnapshot, currentStackTrace);
+                logModifiedStructuredContent(mutationResult.value, currentStackTrace);
+              }
             }
-            var modifiedJson = jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects);
-            if (shouldLogContent) {
-              logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(modifiedJson, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-              logMessage(source, modifiedJson, true, false);
-            }
-            return modifiedJson;
+            return mutationResult.value;
           } catch (error) {
             logMessage(source, `${errorMessage}: ${error.message}`);
             return jsonValue;
           }
         }
         if (typeof jsonValue === "string") {
+          var messageError = "";
           try {
             var parsedValue = nativeObjects.nativeParse(jsonValue);
             if (parsedValue !== null && typeof parsedValue === "object") {
-              if (shouldLogContent) {
-                logMessage(source, `Original content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(parsedValue, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-                logMessage(source, parsedValue, true, false);
+              var _originalSnapshot = shouldLogVerboseContent ? captureOriginalStructuredContent(parsedValue) : null;
+              var _mutationResult = applyJsonMutation(parsedValue);
+              if (shouldLogVerboseContent) {
+                if (_mutationResult.changed && _originalSnapshot) {
+                  logCapturedOriginalStructuredContent(_originalSnapshot, currentStackTrace);
+                  logModifiedStructuredContent(_mutationResult.value, currentStackTrace);
+                }
               }
-              var modified = jsonSetter(source, parsedValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects);
-              if (shouldLogContent) {
-                logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(modified, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-                logMessage(source, modified, true, false);
-              }
-              return nativeObjects.nativeStringify(modified);
+              return nativeObjects.nativeStringify(_mutationResult.value);
             }
+          } catch (error) {
+            messageError = error instanceof Error ? error.message : String(error);
+          }
+          try {
+            var changed = false;
+            var lineEditResult = jsonLineEdit(function (parsedLine) {
+              var mutationResult = applyJsonMutation(parsedLine);
+              if (mutationResult.changed) {
+                changed = true;
+              }
+              return mutationResult.value;
+            }, nativeObjects, jsonValue);
+            if (lineEditResult.hasJsonLines) {
+              if (shouldLogVerboseContent && changed) {
+                logStringContent(jsonValue, currentStackTrace);
+                logStringContent(lineEditResult.text, currentStackTrace, true);
+              }
+              return lineEditResult.text;
+            }
+            if (!lineEditResult.hasJsonLines) {
+              logMessage(source, `Error parsing JSON string: ${messageError}`);
+            }
+            return jsonValue;
           } catch (error) {
             logMessage(source, `${errorMessage}: ${error.message}`);
             return jsonValue;
@@ -14041,7 +17181,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var objectWrapper = function objectWrapper(target, thisArg, args) {
         try {
           if (isMatchingSuspended) {
-            isMatchingSuspended = false;
             return Reflect.apply(target, thisArg, args);
           }
           isMatchingSuspended = true;
@@ -14254,15 +17393,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isPruningNeeded(n, t, r, e, a, i) {
@@ -14300,34 +17439,37 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
-    function jsonSetter(e, t, r, n, a, o, i, s) {
+    function jsonSetter(e, n, t, r, o, a, i, s, l) {
       var {
-        nativeStringify: l
-      } = s;
-      if (!r) return logMessage(e, `${window.location.hostname}\n${l(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(e, t, true, false), t;
+          nativeStringify: c
+        } = s,
+        notifyMutation = function notifyMutation() {
+          hit(e), l && l();
+        };
+      if (!t) return logMessage(e, `${window.location.hostname}\n${c(n, null, 2)}\nStack trace:\n${new Error().stack}`, true), n && "object" == typeof n && logMessage(e, n, true, false), n;
       try {
-        if (!1 === isPruningNeeded(e, t, [{
-          path: r
-        }], o, i, s)) return t;
+        if (!1 === isPruningNeeded(e, n, [{
+          path: t
+        }], a, i, s)) return n;
         var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
-            return r.includes(e);
+            return t.includes(e);
           }),
-          c = getWildcardPropertyInChain(t, r, g, [], n);
-        if (c.length > 0) for (var f = 0; f < c.length; f += 1) {
-          var h = c[f];
-          h && h.base && (h.base[h.prop] = a(h.base[h.prop]), hit(e));
-        } else if (!g && void 0 === n) {
-          for (var u = r.split("."), v = t, p = 0; p < u.length - 1; p += 1) {
-            var d = u[p];
-            void 0 !== v[d] && null !== v[d] && "object" == typeof v[d] || (v[d] = {}), v = v[d];
+          f = getWildcardPropertyInChain(n, t, g, [], r);
+        if (f.length > 0) for (var u = 0; u < f.length; u += 1) {
+          var v = f[u];
+          v && v.base && (v.base[v.prop] = o(v.base[v.prop]), notifyMutation());
+        } else if (!g && void 0 === r) {
+          for (var h = t.split("."), p = n, d = 0; d < h.length - 1; d += 1) {
+            var b = h[d];
+            void 0 !== p[b] && null !== p[b] && "object" == typeof p[b] || (p[b] = {}), p = p[b];
           }
-          var b = u[u.length - 1];
-          v[b] = a(v[b]), hit(e);
+          var y = h[h.length - 1];
+          p[y] = o(p[y]), notifyMutation();
         }
-      } catch (t) {
-        logMessage(e, t);
+      } catch (n) {
+        logMessage(e, n);
       }
-      return t;
+      return n;
     }
     function getPrunePath(t) {
       var r = ".[=].";
@@ -14543,6 +17685,608 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         shouldMergeJsonValue: u
       };
     }
+    function jsonLineEdit(n, i) {
+      for (var e = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "", t = e.includes("\r\n") ? "\r\n" : "\n", r = e.split(/\r?\n/), s = [], a = i.nativeParse || JSON.parse, o = i.nativeStringify || JSON.stringify, v = false, h = 0; h < r.length; h += 1) {
+        var l = r[h],
+          u = void 0;
+        try {
+          u = a(l);
+        } catch (n) {}
+        if ("object" == typeof u && null !== u) {
+          v = true;
+          var f = o(u),
+            p = n(u);
+          if (void 0 !== p) {
+            var c = o(p);
+            c !== f ? s.push(c) : s.push(l);
+          } else s.push(l);
+        } else s.push(l);
+      }
+      return {
+        hasJsonLines: v,
+        text: s.join(t)
+      };
+    }
+    function jsonPath(e, r, t, a, n) {
+      var i = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : "",
+        s = arguments.length > 6 && void 0 !== arguments[6] && arguments[6],
+        o = "$",
+        l = ".",
+        u = "..",
+        p = "",
+        c = "\\",
+        f = ")",
+        h = "[",
+        v = "@",
+        d = "contains",
+        g = "equal",
+        m = "exists",
+        y = "greater_than",
+        k = "greater_than_or_equal",
+        P = "less_than",
+        b = "less_than_or_equal",
+        S = "not_equal",
+        x = "regex",
+        $ = ["==", "!=", "<=", ">=", "*=", "=~", "<", ">", "="],
+        C = 1e5,
+        w = /^[A-Za-z_$][\w$]*$/;
+      function isObjectLike(e) {
+        return null !== e && "object" == typeof e;
+      }
+      function isPlainObject(e) {
+        if (!isObjectLike(e) || Array.isArray(e)) return false;
+        var r = Object.getPrototypeOf(e);
+        return r === Object.prototype || null === r;
+      }
+      function isQuoteCharacter(e) {
+        return "'" === e || '"' === e;
+      }
+      function isEscaped(e, r) {
+        for (var t = 0, a = r - 1; a >= 0 && e[a] === c;) t += 1, a -= 1;
+        return t % 2 != 0;
+      }
+      function stripQuotes(e) {
+        var r = e.trim();
+        if (r.length < 2) return r;
+        var t = r[0],
+          a = r[r.length - 1];
+        return isQuoteCharacter(t) && t === a ? r.slice(1, -1).split("\\'").join("'").split('\\"').join('"').split(c + c).join(c) : r;
+      }
+      function appendPath(e, r) {
+        return "number" == typeof r || /^\d+$/.test(String(r)) ? `${e}[${r}]` : w.test(String(r)) ? `${e}.${r}` : `${e}['${String(r).replace(/'/g, "\\'")}']`;
+      }
+      function createCandidate(e, r, t, a) {
+        return {
+          key: t,
+          parent: r,
+          path: a,
+          value: e
+        };
+      }
+      function walkTopLevelChars(e, r) {
+        for (var t = 0, a = 0, n = 0, i = null, s = 0; s < e.length; s += 1) {
+          var o = e[s];
+          if (i) {
+            if (o !== i || isEscaped(e, s) || (i = null), r(s, false)) return;
+          } else if (isQuoteCharacter(o)) {
+            if (i = o, r(s, false)) return;
+          } else {
+            var l = true;
+            if (o === h ? t += 1 : "]" === o ? t -= 1 : "{" === o ? a += 1 : "}" === o ? a -= 1 : "(" === o ? n += 1 : o === f ? n -= 1 : l = false, r(s, !l && 0 === t && 0 === a && 0 === n)) return;
+          }
+        }
+      }
+      function findClosingBracket(e, r) {
+        for (var t = 0, a = null, n = r; n < e.length; n += 1) {
+          var i = e[n];
+          if (a) i !== a || isEscaped(e, n) || (a = null);else if (isQuoteCharacter(i)) a = i;else if (i !== h) {
+            if ("]" === i && 0 === (t -= 1)) return n;
+          } else t += 1;
+        }
+        return -1;
+      }
+      function splitByTopLevelToken(e, r) {
+        var t = [],
+          a = p,
+          n = new Set();
+        return walkTopLevelChars(e, function (i, s) {
+          if (!n.has(i)) if (s && e.startsWith(r, i)) {
+            t.push(a.trim()), a = p;
+            for (var o = 1; o < r.length; o += 1) n.add(i + o);
+          } else a += e[i];
+        }), a !== p && t.push(a.trim()), t;
+      }
+      function normalizeFilterPath(e) {
+        var r = e.trim();
+        return r.startsWith(v) && (r = r.slice(1)), r === p ? o : r.startsWith(o) ? r : r.startsWith(l) || r.startsWith(u) || r.startsWith(h) ? `${o}${r}` : `${o}${l}${r}`;
+      }
+      function parseFilterExpression(e) {
+        var r = e.trim();
+        if (r.startsWith("(") && r.endsWith(f)) {
+          for (var t = 0, a = null, n = false, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            if (a) s !== a || isEscaped(r, i) || (a = null);else if (isQuoteCharacter(s)) a = s;else if ("(" === s) t += 1;else if (s === f && 0 === (t -= 1)) {
+              n = i === r.length - 1;
+              break;
+            }
+          }
+          n && (r = r.slice(1, -1).trim());
+        }
+        var u = splitByTopLevelToken(r, "||");
+        if (u.length > 1) return {
+          conditions: u.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "or"
+        };
+        var p = splitByTopLevelToken(r, "&&");
+        if (p.length > 1) return {
+          conditions: p.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "and"
+        };
+        if (r.startsWith("!") && !r.startsWith("!=")) return {
+          condition: parseFilterExpression(r.slice(1).trim()),
+          operator: "not"
+        };
+        var c,
+          C,
+          w = (C = null, walkTopLevelChars(c = r, function (e, r) {
+            if (!r) return false;
+            for (var t = null, a = 0; a < $.length; a += 1) {
+              var n = $[a];
+              c.startsWith(n, e) && (null === t || n.length > t.length) && (t = n);
+            }
+            return null !== t && (C = {
+              index: e,
+              operator: t
+            }, true);
+          }), C);
+        if (!w) return {
+          operator: m,
+          selectorPath: normalizeFilterPath(r)
+        };
+        var W = r.slice(0, w.index).trim(),
+          O = r.slice(w.index + w.operator.length).trim(),
+          A = g;
+        "!=" === w.operator ? A = S : "<" === w.operator ? A = P : "<=" === w.operator ? A = b : ">" === w.operator ? A = y : ">=" === w.operator ? A = k : "*=" === w.operator ? A = d : ("=~" === w.operator || "=" === w.operator && /^\/.*\/[a-z]*$/i.test(O)) && (A = x);
+        var j,
+          E,
+          L = O.trim(),
+          F = L === o || L.startsWith(o + l) || L.startsWith(o + h),
+          M = L === v || L.startsWith(v + l) || L.startsWith(v + h);
+        return F || M ? {
+          comparisonSelectorPath: normalizeFilterPath(L),
+          operator: A,
+          resolveComparisonAgainstRoot: F,
+          selectorPath: normalizeFilterPath(W)
+        } : {
+          comparisonValue: (j = O, E = j.trim(), "true" === E || "false" !== E && ("null" === E ? null : /^-?\d+(?:\.\d+)?$/.test(E) ? Number(E) : /^\/.*\/[a-z]*$/i.test(E) ? toRegExp(E) : stripQuotes(E))),
+          operator: A,
+          selectorPath: normalizeFilterPath(W)
+        };
+      }
+      function parseBracketStep(e, r) {
+        if ("*" === e) return {
+          mode: "wildcard",
+          recursive: r
+        };
+        if (e.startsWith("?")) return {
+          filter: parseFilterExpression(e.slice(1)),
+          mode: "filter",
+          recursive: r
+        };
+        if (/^\(@\.length(?:-\d+)?\)$/.test(e)) {
+          var t = e.match(/^\(@\.length(?:-(\d+))?\)$/);
+          return {
+            mode: "computed-index",
+            recursive: r,
+            subtractLength: t && t[1] ? Number(t[1]) : 0
+          };
+        }
+        var a = function (e) {
+          var r = [],
+            t = p;
+          return walkTopLevelChars(e, function (a, n) {
+            n && ":" === e[a] ? (r.push(t.trim()), t = p) : t += e[a];
+          }), r.push(t.trim()), r;
+        }(e);
+        if (a.length > 1) {
+          var n = a[0] === p ? void 0 : Number(a[0]);
+          return {
+            mode: "slice",
+            recursive: r,
+            slice: {
+              end: a[1] === p ? void 0 : Number(a[1]),
+              start: n,
+              step: a.length > 2 && a[2] !== p ? Number(a[2]) : 1
+            }
+          };
+        }
+        var i = function (e, r) {
+          var t = [],
+            a = p;
+          return walkTopLevelChars(e, function (n, i) {
+            i && e[n] === r ? (t.push(a.trim()), a = p) : a += e[n];
+          }), a !== p && t.push(a.trim()), t;
+        }(e, ",");
+        return i.every(function (e) {
+          return /^-?\d+$/.test(e);
+        }) ? {
+          indexes: i.map(function (e) {
+            return Number(e);
+          }),
+          mode: "index",
+          recursive: r
+        } : {
+          mode: "property",
+          properties: i.map(function (e) {
+            return r = e.trim(), /^\/.*\/[a-z]*$/i.test(r) ? toRegExp(r) : stripQuotes(r);
+            var r;
+          }),
+          recursive: r
+        };
+      }
+      function parseJsonPathSelector(e) {
+        var r = [],
+          t = 0;
+        for (e.startsWith(o) && (t = 1); t < e.length;) {
+          var a = false;
+          if (e.startsWith(u, t) ? (a = true, t += 2) : e[t] === l && (t += 1), t >= e.length) break;
+          if (e[t] !== h) {
+            if ("*" !== e[t]) {
+              for (var n = t; n < e.length && e[n] !== l && e[n] !== h;) n += 1;
+              var i = e.slice(t, n).trim();
+              i && r.push({
+                mode: "property",
+                properties: [i],
+                recursive: a
+              }), t = n;
+            } else r.push({
+              mode: "wildcard",
+              recursive: a
+            }), t += 1;
+          } else {
+            var s = findClosingBracket(e, t);
+            if (-1 === s) throw new Error(`Invalid JSONPath expression: ${e}`);
+            var p = e.slice(t + 1, s).trim();
+            r.push(parseBracketStep(p, a)), t = s + 1;
+          }
+        }
+        return {
+          steps: r
+        };
+      }
+      function buildAppendUpdater(e, r, t) {
+        var a,
+          n = e.trim();
+        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+          var i = t(n);
+          if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
+          a = i.constantValue;
+        }
+        return function (e) {
+          return Array.isArray(e) ? Array.isArray(a) ? e.concat(a) : e.concat([a]) : isPlainObject(e) && isPlainObject(a) ? Object.assign({}, e, a) : "string" == typeof e && "string" == typeof a ? `${e}${a}` : a;
+        };
+      }
+      function buildSetUpdater(e, r, t) {
+        var a = e.trim();
+        if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
+          var t = r(e.slice(8, -1));
+          if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          return function (e) {
+            return "string" != typeof e ? e : e.replace(a, t.replacement);
+          };
+        }(a, r);
+        var n = t(a);
+        if (!n) throw new Error(`Invalid set value: ${e}`);
+        return function (e) {
+          return getJsonSetValue(e, n);
+        };
+      }
+      function getChildCandidates(e) {
+        if (!isObjectLike(e.value)) return [];
+        if (ArrayBuffer.isView(e.value)) return [];
+        for (var r = Object.keys(e.value), t = [], a = 0; a < r.length; a += 1) {
+          var n = r[a];
+          t.push(createCandidate(e.value[n], e.value, n, appendPath(e.path, n)));
+        }
+        return t;
+      }
+      function getRecursiveCandidates(r) {
+        var t = [r],
+          a = [0],
+          n = new WeakSet();
+        isObjectLike(r.value) && n.add(r.value);
+        for (var i = false, s = isObjectLike(r.value) ? 1 : 0, o = getChildCandidates(r), l = 0; l < o.length; l += 1) {
+          if (isObjectLike(o[l].value)) {
+            if (n.has(o[l].value)) continue;
+            if (n.add(o[l].value), (s += 1) >= C) {
+              i = true;
+              break;
+            }
+          }
+          t.push(o[l]), a.push(1);
+        }
+        for (var u = 1; u < t.length && !i;) {
+          var p = a[u] + 1;
+          if (p > 1e3) {
+            i = true;
+            break;
+          }
+          for (var c = getChildCandidates(t[u]), f = 0; f < c.length; f += 1) {
+            if (isObjectLike(c[f].value)) {
+              if (n.has(c[f].value)) continue;
+              if (n.add(c[f].value), (s += 1) >= C) {
+                i = true;
+                break;
+              }
+            }
+            t.push(c[f]), a.push(p);
+          }
+          u += 1;
+        }
+        return i && logMessage(e, "JSONPath recursive descent exceeded its traversal budget, results may be incomplete"), t;
+      }
+      function resolveIndex(e, r) {
+        return r < 0 ? e + r : r;
+      }
+      function applyDirectStep(e, r) {
+        var t = [];
+        if ("property" === r.mode) {
+          if (!isObjectLike(e.value) || !r.properties) return t;
+          for (var a = new Set(), n = 0; n < r.properties.length; n += 1) {
+            var i = r.properties[n];
+            if (i instanceof RegExp) for (var s = Object.keys(e.value), o = 0; o < s.length; o += 1) {
+              var l = s[o];
+              i.lastIndex = 0, i.test(l) && !a.has(l) && (a.add(l), t.push(createCandidate(e.value[l], e.value, l, appendPath(e.path, l))));
+            } else !a.has(i) && Object.prototype.hasOwnProperty.call(e.value, i) && (a.add(i), t.push(createCandidate(e.value[i], e.value, i, appendPath(e.path, i))));
+          }
+          return t;
+        }
+        if ("wildcard" === r.mode) return getChildCandidates(e);
+        if ("index" === r.mode) {
+          if (!Array.isArray(e.value) || !r.indexes) return t;
+          for (var u = 0; u < r.indexes.length; u += 1) {
+            var p = resolveIndex(e.value.length, r.indexes[u]);
+            p >= 0 && p < e.value.length && t.push(createCandidate(e.value[p], e.value, p, appendPath(e.path, p)));
+          }
+          return t;
+        }
+        if ("computed-index" === r.mode) {
+          if (!Array.isArray(e.value)) return t;
+          var c = e.value.length - (r.subtractLength || 0);
+          return c >= 0 && c < e.value.length && t.push(createCandidate(e.value[c], e.value, c, appendPath(e.path, c))), t;
+        }
+        if ("slice" === r.mode) {
+          if (!Array.isArray(e.value) || !r.slice) return t;
+          for (var f = function (e, r) {
+              var t,
+                a,
+                n = [],
+                i = void 0 === r.step ? 1 : r.step;
+              if (0 === i) return n;
+              if (t = void 0 === r.start ? i > 0 ? 0 : e - 1 : resolveIndex(e, r.start), a = void 0 === r.end ? i > 0 ? e : -1 : resolveIndex(e, r.end), i > 0) {
+                for (var s = Math.max(0, t); s < Math.min(e, a); s += i) n.push(s);
+                return n;
+              }
+              for (var o = Math.min(e - 1, t); o > Math.max(-1, a); o += i) n.push(o);
+              return n;
+            }(e.value.length, r.slice), h = 0; h < f.length; h += 1) {
+            var v = f[h];
+            t.push(createCandidate(e.value[v], e.value, v, appendPath(e.path, v)));
+          }
+        }
+        return t;
+      }
+      function evaluateSelector(e, t) {
+        function matchesFilterValue(e, t) {
+          if ("conditions" in t) return "and" === t.operator ? t.conditions.every(function (r) {
+            return matchesFilterValue(e, r);
+          }) : t.conditions.some(function (r) {
+            return matchesFilterValue(e, r);
+          });
+          if ("condition" in t) return !matchesFilterValue(e, t.condition);
+          var a = evaluateSelector(e, parseJsonPathSelector(t.selectorPath));
+          if (t.operator === m) return a.length > 0;
+          var n = t.comparisonValue;
+          if (t.comparisonSelectorPath) {
+            var i = evaluateSelector(t.resolveComparisonAgainstRoot ? r : e, parseJsonPathSelector(t.comparisonSelectorPath));
+            if (0 === i.length) return false;
+            n = i[0].value;
+          }
+          for (var s = 0; s < a.length; s += 1) {
+            var o = a[s].value;
+            if (t.operator !== d) {
+              if (t.operator !== x) {
+                if (t.operator === g && o === n) return true;
+                if (t.operator === S && o !== n) return true;
+                if (t.operator === P && o < n) return true;
+                if (t.operator === b && o <= n) return true;
+                if (t.operator === y && o > n) return true;
+                if (t.operator === k && o >= n) return true;
+              } else if ("string" == typeof o && n instanceof RegExp && (n.lastIndex = 0, n.test(o))) return true;
+            } else if ("string" == typeof o && o.includes(String(n))) return true;
+          }
+          return false;
+        }
+        function applyFilterStep(e, r) {
+          for (var t = [], a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (Array.isArray(n.value)) for (var i = 0; i < n.value.length; i += 1) matchesFilterValue(n.value[i], r) && t.push(createCandidate(n.value[i], n.value, i, appendPath(n.path, i)));else matchesFilterValue(n.value, r) && t.push(n);
+          }
+          return t;
+        }
+        for (var a = [createCandidate(e, null, null, o)], n = 0; n < t.steps.length; n += 1) {
+          var i = t.steps[n];
+          if ("filter" === i.mode && i.filter) {
+            var s = a;
+            if (i.recursive) {
+              s = [];
+              for (var l = 0; l < a.length; l += 1) for (var u = getRecursiveCandidates(a[l]), p = 0; p < u.length; p += 1) s.push(u[p]);
+            }
+            a = applyFilterStep(s, i.filter);
+          } else {
+            for (var c = [], f = 0; f < a.length; f += 1) for (var h = a[f], v = i.recursive ? getRecursiveCandidates(h) : [h], $ = 0; $ < v.length; $ += 1) for (var C = applyDirectStep(v[$], i), w = 0; w < C.length; w += 1) c.push(C[w]);
+            a = c;
+          }
+        }
+        return a;
+      }
+      var W = false;
+      function markMutated() {
+        W = true;
+      }
+      if (!isObjectLike(r)) return r;
+      var O,
+        A = (O = a) && O.nativeParse ? O.nativeParse : JSON.parse,
+        j = function (e) {
+          return e && e.nativeStringify ? e.nativeStringify : JSON.stringify;
+        }(a),
+        E = new Error().stack || "";
+      if (i && !matchStackTrace(i, E)) return r;
+      if (!t) return logMessage(e, `${window.location.hostname}\n${j(r, null, 2)}\nStack trace:\n${E}`, true), logMessage(e, r, true, false), r;
+      try {
+        for (var L = function (e, r, t) {
+            var a,
+              n,
+              i = function (e) {
+                var r = -1,
+                  t = "remove",
+                  a = 0;
+                return walkTopLevelChars(e, function (n, i) {
+                  return !!i && (e.startsWith("+=", n) ? (r = n, t = "append", a = 2, !0) : "=" === e[n] && (r = n, t = "set", a = 1, !0));
+                }), -1 === r ? {
+                  mode: "remove",
+                  selectorPart: e.trim(),
+                  valuePart: p
+                } : {
+                  mode: t,
+                  selectorPart: e.slice(0, r).trim(),
+                  valuePart: e.slice(r + a).trim()
+                };
+              }(e),
+              s = function (e) {
+                for (var r = [], t = e.trim(); t.startsWith("[?");) {
+                  var a = findClosingBracket(t, 0);
+                  if (-1 === a) break;
+                  var n = t.slice(1, a);
+                  r.push(parseFilterExpression(n.slice(1))), t = t.slice(a + 1).trim();
+                }
+                return {
+                  guards: r,
+                  selectorPart: t
+                };
+              }(i.selectorPart),
+              c = parseJsonPathSelector((a = s.selectorPart, (n = a.trim()) === p ? o : n.startsWith(o) ? n : n.startsWith(l) || n.startsWith(h) || n.startsWith(u) ? `${o}${n}` : `${o}${l}${n}`)),
+              f = {
+                mode: i.mode
+              };
+            return "append" === i.mode ? f = {
+              mode: "append",
+              updater: buildAppendUpdater(i.valuePart, r, t)
+            } : "set" === i.mode && (f = {
+              mode: "set",
+              updater: buildSetUpdater(i.valuePart, r, t)
+            }), {
+              guards: s.guards,
+              mutation: f,
+              selector: c
+            };
+          }(t, A, function (r) {
+            return parseJsonSetArgumentValue(e, r, A);
+          }), F = 0; F < L.guards.length; F += 1) {
+          if (0 === evaluateSelector(r, {
+            steps: [{
+              filter: L.guards[F],
+              mode: "filter",
+              recursive: !1
+            }]
+          }).length) return r;
+        }
+        var M = evaluateSelector(r, L.selector);
+        if (s) return M.length > 0 && n && n(), r;
+        if (!("remove" === L.mutation.mode || "string" == typeof e.name && e.name.startsWith("trusted-"))) return logMessage(e, "JSONPath set and append operations are allowed only in trusted scriptlets"), r;
+        if ("remove" === L.mutation.mode) return function (e) {
+          for (var r = new Set(), t = new Map(), a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (null !== n.parent && null !== n.key && !r.has(n.path)) if (r.add(n.path), Array.isArray(n.parent)) {
+              var i = t.get(n.parent) || [];
+              i.push(Number(n.key)), t.set(n.parent, i);
+            } else delete n.parent[n.key], markMutated();
+          }
+          t.forEach(function (e, r) {
+            for (var t = Array.from(new Set(e)).sort(function (e, r) {
+                return r - e;
+              }), a = 0; a < t.length; a += 1) {
+              var n = t[a];
+              n >= 0 && n < r.length && (r.splice(n, 1), markMutated());
+            }
+          });
+        }(M), W && n && n(), r;
+        L.mutation.updater && (r = function (e, r, t) {
+          for (var a = new Set(), n = e, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            a.has(s.path) || (a.add(s.path), null !== s.parent || null !== s.key || s.path !== o ? null !== s.parent && null !== s.key && (s.parent[s.key] = t(s.parent[s.key]), markMutated()) : (n = t(n), markMutated()));
+          }
+          return n;
+        }(r, M, L.mutation.updater), W && n && n());
+      } catch (r) {
+        logMessage(e, `JSONPath processing failed for expression '${t}': ${r.message}`);
+      }
+      return r;
+    }
+    function matchesJsonPath(n, t, o, r) {
+      if (!o) return true;
+      var a = false;
+      return jsonPath(n, t, o, r, function () {
+        a = !0;
+      }, arguments.length > 4 && void 0 !== arguments[4] ? arguments[4] : "", true), a;
+    }
+    function resolveJsonSyntaxMode(t, r) {
+      var e = "legacy",
+        o = "jsonpath",
+        s = "string" == typeof r ? r.trim().toLowerCase() : "";
+      if (s === e || s === o) return {
+        mode: s
+      };
+      var n = "string" == typeof t ? t.trim() : "";
+      return n.startsWith("$") || n.startsWith("[?") ? {
+        mode: o
+      } : {
+        mode: e
+      };
+    }
+    function buildJsonPathExpression(e, i) {
+      var r = e.trim();
+      if ("" === r) return r;
+      for (var f = 0, l = 0, s = 0, n = null, t = 0; t < r.length; t += 1) {
+        var o = r[t];
+        if (n) {
+          if (o === n) {
+            for (var u = 0, a = t - 1; a >= 0 && "\\" === r[a];) u += 1, a -= 1;
+            u % 2 == 0 && (n = null);
+          }
+        } else if ("'" !== o && '"' !== o) {
+          if ("[" !== o) {
+            if ("]" !== o) {
+              if ("{" !== o) {
+                if ("}" !== o) {
+                  if ("(" !== o) {
+                    if (")" !== o) {
+                      if (0 === f && 0 === l && 0 === s && (r.startsWith("+=", t) || "=" === o)) return r;
+                    } else s -= 1;
+                  } else s += 1;
+                } else l -= 1;
+              } else l += 1;
+            } else f -= 1;
+          } else f += 1;
+        } else n = o;
+      }
+      return "$remove$" === i ? r : void 0 === i ? "" : `${r}=${String(i)}`;
+    }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedJsonSet.apply(this, updatedArgs);
@@ -14570,65 +18314,106 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var requiredInitialProps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
       var propsToMatch = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
       var stack = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
-      var verbose = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
-      if (!propsPath || argumentValue === undefined) {
+      var mode = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
+      var verbose = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : "";
+      var syntaxModeDetails = resolveJsonSyntaxMode(propsPath, mode);
+      var jsonPathExpression = syntaxModeDetails.mode === "jsonpath" ? buildJsonPathExpression(propsPath, argumentValue) : "";
+      if (!propsPath) {
         return;
       }
       if (typeof fetch === "undefined" || typeof Proxy === "undefined" || typeof Response === "undefined") {
         return;
       }
-      var parsedArgumentValue = parseJsonSetArgumentValue(source, argumentValue, window.JSON.parse);
-      if (!parsedArgumentValue) {
+      if (syntaxModeDetails.mode === "legacy" && argumentValue === undefined) {
+        return;
+      }
+      if (syntaxModeDetails.mode === "jsonpath" && jsonPathExpression === "") {
+        logMessage(source, "JSONPath mode requires argumentValue unless propsPath already contains an inline mutation");
         return;
       }
       var shouldLogContent = verbose === "true";
-      var parsedSetPaths = getPrunePath(propsPath);
+      var nativeObjects = {
+        nativeFetch: window.fetch,
+        nativeParse: window.JSON.parse,
+        nativeStringify: window.JSON.stringify,
+        nativeRequestClone: window.Request.prototype.clone,
+        nativeResponseClone: window.Response.prototype.clone
+      };
+      var parsedArgumentValue = syntaxModeDetails.mode === "legacy" ? parseJsonSetArgumentValue(source, argumentValue, nativeObjects.nativeParse) : null;
+      if (syntaxModeDetails.mode === "legacy" && !parsedArgumentValue) {
+        return;
+      }
+      var parsedSetPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsPath) : [];
       var setPathObj = parsedSetPaths[0];
-      var requiredPaths = getPrunePath(requiredInitialProps);
-      var nativeStringify = window.JSON.stringify;
-      var nativeRequestClone = window.Request.prototype.clone;
-      var nativeResponseClone = window.Response.prototype.clone;
-      var nativeFetch = window.fetch;
+      var requiredPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(requiredInitialProps) : [];
       var getValueToSet = function getValueToSet(currentValue) {
+        if (!parsedArgumentValue) {
+          return currentValue;
+        }
         return getJsonSetValue(currentValue, parsedArgumentValue);
       };
+      var applyJsonMutation = function applyJsonMutation(jsonValue) {
+        if (syntaxModeDetails.mode === "jsonpath") {
+          return jsonPath(source, jsonValue, jsonPathExpression, nativeObjects, function () {
+            return hit(source);
+          }, stack);
+        }
+        return jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects);
+      };
       var fetchHandlerWrapper = async function fetchHandlerWrapper(target, thisArg, args) {
-        var fetchData = getFetchData(args, nativeRequestClone);
+        var fetchData = getFetchData(args, nativeObjects.nativeRequestClone);
         if (!matchRequestProps(source, propsToMatch, fetchData)) {
           return Reflect.apply(target, thisArg, args);
         }
         var originalResponse;
         var clonedResponse;
         try {
-          originalResponse = await nativeFetch.apply(null, args);
-          clonedResponse = nativeResponseClone.call(originalResponse);
+          originalResponse = await nativeObjects.nativeFetch.apply(null, args);
+          clonedResponse = nativeObjects.nativeResponseClone.call(originalResponse);
         } catch (_unused) {
           logMessage(source, `Could not make an original fetch request: ${fetchData.url}`);
           return Reflect.apply(target, thisArg, args);
         }
-        var json;
+        var textContent;
         try {
-          json = await originalResponse.json();
-          if (shouldLogContent) {
-            logMessage(source, `Original content:\n${window.location.hostname}\n${nativeStringify(json, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-            logMessage(source, json, true, false);
-          }
+          textContent = await originalResponse.text();
         } catch (_unused2) {
-          var message = `Response body can't be converted to json: ${objectToString(fetchData)}`;
+          var message = `Response body can't be converted to text: ${objectToString(fetchData)}`;
           logMessage(source, message);
           return clonedResponse;
         }
-        var modifiedJson = jsonSetter(source, json, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, {
-          nativeStringify: nativeStringify,
-          nativeRequestClone: nativeRequestClone,
-          nativeResponseClone: nativeResponseClone,
-          nativeFetch: nativeFetch
-        });
-        if (shouldLogContent) {
-          logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeStringify(modifiedJson, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
-          logMessage(source, modifiedJson, true, false);
+        try {
+          var json = nativeObjects.nativeParse(textContent);
+          if (shouldLogContent) {
+            logMessage(source, `Original content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(json, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
+            logMessage(source, json, true, false);
+          }
+          var modifiedJson = applyJsonMutation(json);
+          if (shouldLogContent) {
+            logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(modifiedJson, null, 2)}\nStack trace:\n${new Error().stack || ""}`, true);
+            logMessage(source, modifiedJson, true, false);
+          }
+          return forgeResponse(originalResponse, nativeObjects.nativeStringify(modifiedJson));
+        } catch (_unused3) {}
+        try {
+          var lineEditResult = jsonLineEdit(function (parsedLine) {
+            return applyJsonMutation(parsedLine);
+          }, nativeObjects, textContent);
+          if (lineEditResult.hasJsonLines) {
+            if (shouldLogContent) {
+              logMessage(source, `Original content:\n${window.location.hostname}\n${textContent}\nStack trace:\n${new Error().stack || ""}`, true);
+              logMessage(source, `Modified content:\n${window.location.hostname}\n${lineEditResult.text}\nStack trace:\n${new Error().stack || ""}`, true);
+            }
+            return forgeResponse(originalResponse, lineEditResult.text);
+          }
+          var _message = `Response body can't be converted to json: ${objectToString(fetchData)}`;
+          logMessage(source, _message);
+          return clonedResponse;
+        } catch (error) {
+          var _message2 = `Response body can't be converted to json: ${objectToString(fetchData)}`;
+          logMessage(source, _message2);
+          return clonedResponse;
         }
-        return forgeResponse(originalResponse, nativeStringify(modifiedJson));
       };
       var getWrapper = function getWrapper(target, propName, receiver) {
         if (propName === "toString") {
@@ -14643,15 +18428,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       window.fetch = new Proxy(window.fetch, fetchHandler);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function getFetchData(e, t) {
@@ -14691,34 +18476,568 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       } else logMessage(e, `Invalid parameter: ${t}`), a = false;
       return a;
     }
-    function jsonSetter(e, t, r, n, a, o, i, s) {
+    function jsonSetter(e, n, t, r, o, a, i, s, l) {
       var {
-        nativeStringify: l
-      } = s;
-      if (!r) return logMessage(e, `${window.location.hostname}\n${l(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(e, t, true, false), t;
+          nativeStringify: c
+        } = s,
+        notifyMutation = function notifyMutation() {
+          hit(e);
+        };
+      if (!t) return logMessage(e, `${window.location.hostname}\n${c(n, null, 2)}\nStack trace:\n${new Error().stack}`, true), n && "object" == typeof n && logMessage(e, n, true, false), n;
       try {
-        if (!1 === isPruningNeeded(e, t, [{
-          path: r
-        }], o, i, s)) return t;
+        if (!1 === isPruningNeeded(e, n, [{
+          path: t
+        }], a, i, s)) return n;
         var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
-            return r.includes(e);
+            return t.includes(e);
           }),
-          c = getWildcardPropertyInChain(t, r, g, [], n);
-        if (c.length > 0) for (var f = 0; f < c.length; f += 1) {
-          var h = c[f];
-          h && h.base && (h.base[h.prop] = a(h.base[h.prop]), hit(e));
-        } else if (!g && void 0 === n) {
-          for (var u = r.split("."), v = t, p = 0; p < u.length - 1; p += 1) {
-            var d = u[p];
-            void 0 !== v[d] && null !== v[d] && "object" == typeof v[d] || (v[d] = {}), v = v[d];
+          f = getWildcardPropertyInChain(n, t, g, [], r);
+        if (f.length > 0) for (var u = 0; u < f.length; u += 1) {
+          var v = f[u];
+          v && v.base && (v.base[v.prop] = o(v.base[v.prop]), notifyMutation());
+        } else if (!g && void 0 === r) {
+          for (var h = t.split("."), p = n, d = 0; d < h.length - 1; d += 1) {
+            var b = h[d];
+            void 0 !== p[b] && null !== p[b] && "object" == typeof p[b] || (p[b] = {}), p = p[b];
           }
-          var b = u[u.length - 1];
-          v[b] = a(v[b]), hit(e);
+          var y = h[h.length - 1];
+          p[y] = o(p[y]), notifyMutation();
         }
-      } catch (t) {
-        logMessage(e, t);
+      } catch (n) {
+        logMessage(e, n);
       }
-      return t;
+      return n;
+    }
+    function jsonPath(e, r, t, a, n) {
+      var i = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : "",
+        s = arguments.length > 6 && void 0 !== arguments[6] && arguments[6],
+        o = "$",
+        l = ".",
+        u = "..",
+        p = "",
+        c = "\\",
+        f = ")",
+        h = "[",
+        v = "@",
+        d = "contains",
+        g = "equal",
+        m = "exists",
+        y = "greater_than",
+        k = "greater_than_or_equal",
+        P = "less_than",
+        b = "less_than_or_equal",
+        S = "not_equal",
+        x = "regex",
+        $ = ["==", "!=", "<=", ">=", "*=", "=~", "<", ">", "="],
+        C = 1e5,
+        w = /^[A-Za-z_$][\w$]*$/;
+      function isObjectLike(e) {
+        return null !== e && "object" == typeof e;
+      }
+      function isPlainObject(e) {
+        if (!isObjectLike(e) || Array.isArray(e)) return false;
+        var r = Object.getPrototypeOf(e);
+        return r === Object.prototype || null === r;
+      }
+      function isQuoteCharacter(e) {
+        return "'" === e || '"' === e;
+      }
+      function isEscaped(e, r) {
+        for (var t = 0, a = r - 1; a >= 0 && e[a] === c;) t += 1, a -= 1;
+        return t % 2 != 0;
+      }
+      function stripQuotes(e) {
+        var r = e.trim();
+        if (r.length < 2) return r;
+        var t = r[0],
+          a = r[r.length - 1];
+        return isQuoteCharacter(t) && t === a ? r.slice(1, -1).split("\\'").join("'").split('\\"').join('"').split(c + c).join(c) : r;
+      }
+      function appendPath(e, r) {
+        return "number" == typeof r || /^\d+$/.test(String(r)) ? `${e}[${r}]` : w.test(String(r)) ? `${e}.${r}` : `${e}['${String(r).replace(/'/g, "\\'")}']`;
+      }
+      function createCandidate(e, r, t, a) {
+        return {
+          key: t,
+          parent: r,
+          path: a,
+          value: e
+        };
+      }
+      function walkTopLevelChars(e, r) {
+        for (var t = 0, a = 0, n = 0, i = null, s = 0; s < e.length; s += 1) {
+          var o = e[s];
+          if (i) {
+            if (o !== i || isEscaped(e, s) || (i = null), r(s, false)) return;
+          } else if (isQuoteCharacter(o)) {
+            if (i = o, r(s, false)) return;
+          } else {
+            var l = true;
+            if (o === h ? t += 1 : "]" === o ? t -= 1 : "{" === o ? a += 1 : "}" === o ? a -= 1 : "(" === o ? n += 1 : o === f ? n -= 1 : l = false, r(s, !l && 0 === t && 0 === a && 0 === n)) return;
+          }
+        }
+      }
+      function findClosingBracket(e, r) {
+        for (var t = 0, a = null, n = r; n < e.length; n += 1) {
+          var i = e[n];
+          if (a) i !== a || isEscaped(e, n) || (a = null);else if (isQuoteCharacter(i)) a = i;else if (i !== h) {
+            if ("]" === i && 0 === (t -= 1)) return n;
+          } else t += 1;
+        }
+        return -1;
+      }
+      function splitByTopLevelToken(e, r) {
+        var t = [],
+          a = p,
+          n = new Set();
+        return walkTopLevelChars(e, function (i, s) {
+          if (!n.has(i)) if (s && e.startsWith(r, i)) {
+            t.push(a.trim()), a = p;
+            for (var o = 1; o < r.length; o += 1) n.add(i + o);
+          } else a += e[i];
+        }), a !== p && t.push(a.trim()), t;
+      }
+      function normalizeFilterPath(e) {
+        var r = e.trim();
+        return r.startsWith(v) && (r = r.slice(1)), r === p ? o : r.startsWith(o) ? r : r.startsWith(l) || r.startsWith(u) || r.startsWith(h) ? `${o}${r}` : `${o}${l}${r}`;
+      }
+      function parseFilterExpression(e) {
+        var r = e.trim();
+        if (r.startsWith("(") && r.endsWith(f)) {
+          for (var t = 0, a = null, n = false, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            if (a) s !== a || isEscaped(r, i) || (a = null);else if (isQuoteCharacter(s)) a = s;else if ("(" === s) t += 1;else if (s === f && 0 === (t -= 1)) {
+              n = i === r.length - 1;
+              break;
+            }
+          }
+          n && (r = r.slice(1, -1).trim());
+        }
+        var u = splitByTopLevelToken(r, "||");
+        if (u.length > 1) return {
+          conditions: u.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "or"
+        };
+        var p = splitByTopLevelToken(r, "&&");
+        if (p.length > 1) return {
+          conditions: p.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "and"
+        };
+        if (r.startsWith("!") && !r.startsWith("!=")) return {
+          condition: parseFilterExpression(r.slice(1).trim()),
+          operator: "not"
+        };
+        var c,
+          C,
+          w = (C = null, walkTopLevelChars(c = r, function (e, r) {
+            if (!r) return false;
+            for (var t = null, a = 0; a < $.length; a += 1) {
+              var n = $[a];
+              c.startsWith(n, e) && (null === t || n.length > t.length) && (t = n);
+            }
+            return null !== t && (C = {
+              index: e,
+              operator: t
+            }, true);
+          }), C);
+        if (!w) return {
+          operator: m,
+          selectorPath: normalizeFilterPath(r)
+        };
+        var W = r.slice(0, w.index).trim(),
+          O = r.slice(w.index + w.operator.length).trim(),
+          A = g;
+        "!=" === w.operator ? A = S : "<" === w.operator ? A = P : "<=" === w.operator ? A = b : ">" === w.operator ? A = y : ">=" === w.operator ? A = k : "*=" === w.operator ? A = d : ("=~" === w.operator || "=" === w.operator && /^\/.*\/[a-z]*$/i.test(O)) && (A = x);
+        var j,
+          E,
+          L = O.trim(),
+          F = L === o || L.startsWith(o + l) || L.startsWith(o + h),
+          M = L === v || L.startsWith(v + l) || L.startsWith(v + h);
+        return F || M ? {
+          comparisonSelectorPath: normalizeFilterPath(L),
+          operator: A,
+          resolveComparisonAgainstRoot: F,
+          selectorPath: normalizeFilterPath(W)
+        } : {
+          comparisonValue: (j = O, E = j.trim(), "true" === E || "false" !== E && ("null" === E ? null : /^-?\d+(?:\.\d+)?$/.test(E) ? Number(E) : /^\/.*\/[a-z]*$/i.test(E) ? toRegExp(E) : stripQuotes(E))),
+          operator: A,
+          selectorPath: normalizeFilterPath(W)
+        };
+      }
+      function parseBracketStep(e, r) {
+        if ("*" === e) return {
+          mode: "wildcard",
+          recursive: r
+        };
+        if (e.startsWith("?")) return {
+          filter: parseFilterExpression(e.slice(1)),
+          mode: "filter",
+          recursive: r
+        };
+        if (/^\(@\.length(?:-\d+)?\)$/.test(e)) {
+          var t = e.match(/^\(@\.length(?:-(\d+))?\)$/);
+          return {
+            mode: "computed-index",
+            recursive: r,
+            subtractLength: t && t[1] ? Number(t[1]) : 0
+          };
+        }
+        var a = function (e) {
+          var r = [],
+            t = p;
+          return walkTopLevelChars(e, function (a, n) {
+            n && ":" === e[a] ? (r.push(t.trim()), t = p) : t += e[a];
+          }), r.push(t.trim()), r;
+        }(e);
+        if (a.length > 1) {
+          var n = a[0] === p ? void 0 : Number(a[0]);
+          return {
+            mode: "slice",
+            recursive: r,
+            slice: {
+              end: a[1] === p ? void 0 : Number(a[1]),
+              start: n,
+              step: a.length > 2 && a[2] !== p ? Number(a[2]) : 1
+            }
+          };
+        }
+        var i = function (e, r) {
+          var t = [],
+            a = p;
+          return walkTopLevelChars(e, function (n, i) {
+            i && e[n] === r ? (t.push(a.trim()), a = p) : a += e[n];
+          }), a !== p && t.push(a.trim()), t;
+        }(e, ",");
+        return i.every(function (e) {
+          return /^-?\d+$/.test(e);
+        }) ? {
+          indexes: i.map(function (e) {
+            return Number(e);
+          }),
+          mode: "index",
+          recursive: r
+        } : {
+          mode: "property",
+          properties: i.map(function (e) {
+            return r = e.trim(), /^\/.*\/[a-z]*$/i.test(r) ? toRegExp(r) : stripQuotes(r);
+            var r;
+          }),
+          recursive: r
+        };
+      }
+      function parseJsonPathSelector(e) {
+        var r = [],
+          t = 0;
+        for (e.startsWith(o) && (t = 1); t < e.length;) {
+          var a = false;
+          if (e.startsWith(u, t) ? (a = true, t += 2) : e[t] === l && (t += 1), t >= e.length) break;
+          if (e[t] !== h) {
+            if ("*" !== e[t]) {
+              for (var n = t; n < e.length && e[n] !== l && e[n] !== h;) n += 1;
+              var i = e.slice(t, n).trim();
+              i && r.push({
+                mode: "property",
+                properties: [i],
+                recursive: a
+              }), t = n;
+            } else r.push({
+              mode: "wildcard",
+              recursive: a
+            }), t += 1;
+          } else {
+            var s = findClosingBracket(e, t);
+            if (-1 === s) throw new Error(`Invalid JSONPath expression: ${e}`);
+            var p = e.slice(t + 1, s).trim();
+            r.push(parseBracketStep(p, a)), t = s + 1;
+          }
+        }
+        return {
+          steps: r
+        };
+      }
+      function buildAppendUpdater(e, r, t) {
+        var a,
+          n = e.trim();
+        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+          var i = t(n);
+          if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
+          a = i.constantValue;
+        }
+        return function (e) {
+          return Array.isArray(e) ? Array.isArray(a) ? e.concat(a) : e.concat([a]) : isPlainObject(e) && isPlainObject(a) ? Object.assign({}, e, a) : "string" == typeof e && "string" == typeof a ? `${e}${a}` : a;
+        };
+      }
+      function buildSetUpdater(e, r, t) {
+        var a = e.trim();
+        if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
+          var t = r(e.slice(8, -1));
+          if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          return function (e) {
+            return "string" != typeof e ? e : e.replace(a, t.replacement);
+          };
+        }(a, r);
+        var n = t(a);
+        if (!n) throw new Error(`Invalid set value: ${e}`);
+        return function (e) {
+          return getJsonSetValue(e, n);
+        };
+      }
+      function getChildCandidates(e) {
+        if (!isObjectLike(e.value)) return [];
+        if (ArrayBuffer.isView(e.value)) return [];
+        for (var r = Object.keys(e.value), t = [], a = 0; a < r.length; a += 1) {
+          var n = r[a];
+          t.push(createCandidate(e.value[n], e.value, n, appendPath(e.path, n)));
+        }
+        return t;
+      }
+      function getRecursiveCandidates(r) {
+        var t = [r],
+          a = [0],
+          n = new WeakSet();
+        isObjectLike(r.value) && n.add(r.value);
+        for (var i = false, s = isObjectLike(r.value) ? 1 : 0, o = getChildCandidates(r), l = 0; l < o.length; l += 1) {
+          if (isObjectLike(o[l].value)) {
+            if (n.has(o[l].value)) continue;
+            if (n.add(o[l].value), (s += 1) >= C) {
+              i = true;
+              break;
+            }
+          }
+          t.push(o[l]), a.push(1);
+        }
+        for (var u = 1; u < t.length && !i;) {
+          var p = a[u] + 1;
+          if (p > 1e3) {
+            i = true;
+            break;
+          }
+          for (var c = getChildCandidates(t[u]), f = 0; f < c.length; f += 1) {
+            if (isObjectLike(c[f].value)) {
+              if (n.has(c[f].value)) continue;
+              if (n.add(c[f].value), (s += 1) >= C) {
+                i = true;
+                break;
+              }
+            }
+            t.push(c[f]), a.push(p);
+          }
+          u += 1;
+        }
+        return i && logMessage(e, "JSONPath recursive descent exceeded its traversal budget, results may be incomplete"), t;
+      }
+      function resolveIndex(e, r) {
+        return r < 0 ? e + r : r;
+      }
+      function applyDirectStep(e, r) {
+        var t = [];
+        if ("property" === r.mode) {
+          if (!isObjectLike(e.value) || !r.properties) return t;
+          for (var a = new Set(), n = 0; n < r.properties.length; n += 1) {
+            var i = r.properties[n];
+            if (i instanceof RegExp) for (var s = Object.keys(e.value), o = 0; o < s.length; o += 1) {
+              var l = s[o];
+              i.lastIndex = 0, i.test(l) && !a.has(l) && (a.add(l), t.push(createCandidate(e.value[l], e.value, l, appendPath(e.path, l))));
+            } else !a.has(i) && Object.prototype.hasOwnProperty.call(e.value, i) && (a.add(i), t.push(createCandidate(e.value[i], e.value, i, appendPath(e.path, i))));
+          }
+          return t;
+        }
+        if ("wildcard" === r.mode) return getChildCandidates(e);
+        if ("index" === r.mode) {
+          if (!Array.isArray(e.value) || !r.indexes) return t;
+          for (var u = 0; u < r.indexes.length; u += 1) {
+            var p = resolveIndex(e.value.length, r.indexes[u]);
+            p >= 0 && p < e.value.length && t.push(createCandidate(e.value[p], e.value, p, appendPath(e.path, p)));
+          }
+          return t;
+        }
+        if ("computed-index" === r.mode) {
+          if (!Array.isArray(e.value)) return t;
+          var c = e.value.length - (r.subtractLength || 0);
+          return c >= 0 && c < e.value.length && t.push(createCandidate(e.value[c], e.value, c, appendPath(e.path, c))), t;
+        }
+        if ("slice" === r.mode) {
+          if (!Array.isArray(e.value) || !r.slice) return t;
+          for (var f = function (e, r) {
+              var t,
+                a,
+                n = [],
+                i = void 0 === r.step ? 1 : r.step;
+              if (0 === i) return n;
+              if (t = void 0 === r.start ? i > 0 ? 0 : e - 1 : resolveIndex(e, r.start), a = void 0 === r.end ? i > 0 ? e : -1 : resolveIndex(e, r.end), i > 0) {
+                for (var s = Math.max(0, t); s < Math.min(e, a); s += i) n.push(s);
+                return n;
+              }
+              for (var o = Math.min(e - 1, t); o > Math.max(-1, a); o += i) n.push(o);
+              return n;
+            }(e.value.length, r.slice), h = 0; h < f.length; h += 1) {
+            var v = f[h];
+            t.push(createCandidate(e.value[v], e.value, v, appendPath(e.path, v)));
+          }
+        }
+        return t;
+      }
+      function evaluateSelector(e, t) {
+        function matchesFilterValue(e, t) {
+          if ("conditions" in t) return "and" === t.operator ? t.conditions.every(function (r) {
+            return matchesFilterValue(e, r);
+          }) : t.conditions.some(function (r) {
+            return matchesFilterValue(e, r);
+          });
+          if ("condition" in t) return !matchesFilterValue(e, t.condition);
+          var a = evaluateSelector(e, parseJsonPathSelector(t.selectorPath));
+          if (t.operator === m) return a.length > 0;
+          var n = t.comparisonValue;
+          if (t.comparisonSelectorPath) {
+            var i = evaluateSelector(t.resolveComparisonAgainstRoot ? r : e, parseJsonPathSelector(t.comparisonSelectorPath));
+            if (0 === i.length) return false;
+            n = i[0].value;
+          }
+          for (var s = 0; s < a.length; s += 1) {
+            var o = a[s].value;
+            if (t.operator !== d) {
+              if (t.operator !== x) {
+                if (t.operator === g && o === n) return true;
+                if (t.operator === S && o !== n) return true;
+                if (t.operator === P && o < n) return true;
+                if (t.operator === b && o <= n) return true;
+                if (t.operator === y && o > n) return true;
+                if (t.operator === k && o >= n) return true;
+              } else if ("string" == typeof o && n instanceof RegExp && (n.lastIndex = 0, n.test(o))) return true;
+            } else if ("string" == typeof o && o.includes(String(n))) return true;
+          }
+          return false;
+        }
+        function applyFilterStep(e, r) {
+          for (var t = [], a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (Array.isArray(n.value)) for (var i = 0; i < n.value.length; i += 1) matchesFilterValue(n.value[i], r) && t.push(createCandidate(n.value[i], n.value, i, appendPath(n.path, i)));else matchesFilterValue(n.value, r) && t.push(n);
+          }
+          return t;
+        }
+        for (var a = [createCandidate(e, null, null, o)], n = 0; n < t.steps.length; n += 1) {
+          var i = t.steps[n];
+          if ("filter" === i.mode && i.filter) {
+            var s = a;
+            if (i.recursive) {
+              s = [];
+              for (var l = 0; l < a.length; l += 1) for (var u = getRecursiveCandidates(a[l]), p = 0; p < u.length; p += 1) s.push(u[p]);
+            }
+            a = applyFilterStep(s, i.filter);
+          } else {
+            for (var c = [], f = 0; f < a.length; f += 1) for (var h = a[f], v = i.recursive ? getRecursiveCandidates(h) : [h], $ = 0; $ < v.length; $ += 1) for (var C = applyDirectStep(v[$], i), w = 0; w < C.length; w += 1) c.push(C[w]);
+            a = c;
+          }
+        }
+        return a;
+      }
+      var W = false;
+      function markMutated() {
+        W = true;
+      }
+      if (!isObjectLike(r)) return r;
+      var O,
+        A = (O = a) && O.nativeParse ? O.nativeParse : JSON.parse,
+        j = function (e) {
+          return e && e.nativeStringify ? e.nativeStringify : JSON.stringify;
+        }(a),
+        E = new Error().stack || "";
+      if (i && !matchStackTrace(i, E)) return r;
+      if (!t) return logMessage(e, `${window.location.hostname}\n${j(r, null, 2)}\nStack trace:\n${E}`, true), logMessage(e, r, true, false), r;
+      try {
+        for (var L = function (e, r, t) {
+            var a,
+              n,
+              i = function (e) {
+                var r = -1,
+                  t = "remove",
+                  a = 0;
+                return walkTopLevelChars(e, function (n, i) {
+                  return !!i && (e.startsWith("+=", n) ? (r = n, t = "append", a = 2, !0) : "=" === e[n] && (r = n, t = "set", a = 1, !0));
+                }), -1 === r ? {
+                  mode: "remove",
+                  selectorPart: e.trim(),
+                  valuePart: p
+                } : {
+                  mode: t,
+                  selectorPart: e.slice(0, r).trim(),
+                  valuePart: e.slice(r + a).trim()
+                };
+              }(e),
+              s = function (e) {
+                for (var r = [], t = e.trim(); t.startsWith("[?");) {
+                  var a = findClosingBracket(t, 0);
+                  if (-1 === a) break;
+                  var n = t.slice(1, a);
+                  r.push(parseFilterExpression(n.slice(1))), t = t.slice(a + 1).trim();
+                }
+                return {
+                  guards: r,
+                  selectorPart: t
+                };
+              }(i.selectorPart),
+              c = parseJsonPathSelector((a = s.selectorPart, (n = a.trim()) === p ? o : n.startsWith(o) ? n : n.startsWith(l) || n.startsWith(h) || n.startsWith(u) ? `${o}${n}` : `${o}${l}${n}`)),
+              f = {
+                mode: i.mode
+              };
+            return "append" === i.mode ? f = {
+              mode: "append",
+              updater: buildAppendUpdater(i.valuePart, r, t)
+            } : "set" === i.mode && (f = {
+              mode: "set",
+              updater: buildSetUpdater(i.valuePart, r, t)
+            }), {
+              guards: s.guards,
+              mutation: f,
+              selector: c
+            };
+          }(t, A, function (r) {
+            return parseJsonSetArgumentValue(e, r, A);
+          }), F = 0; F < L.guards.length; F += 1) {
+          if (0 === evaluateSelector(r, {
+            steps: [{
+              filter: L.guards[F],
+              mode: "filter",
+              recursive: !1
+            }]
+          }).length) return r;
+        }
+        var M = evaluateSelector(r, L.selector);
+        if (s) return M.length > 0 && n && n(), r;
+        if (!("remove" === L.mutation.mode || "string" == typeof e.name && e.name.startsWith("trusted-"))) return logMessage(e, "JSONPath set and append operations are allowed only in trusted scriptlets"), r;
+        if ("remove" === L.mutation.mode) return function (e) {
+          for (var r = new Set(), t = new Map(), a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (null !== n.parent && null !== n.key && !r.has(n.path)) if (r.add(n.path), Array.isArray(n.parent)) {
+              var i = t.get(n.parent) || [];
+              i.push(Number(n.key)), t.set(n.parent, i);
+            } else delete n.parent[n.key], markMutated();
+          }
+          t.forEach(function (e, r) {
+            for (var t = Array.from(new Set(e)).sort(function (e, r) {
+                return r - e;
+              }), a = 0; a < t.length; a += 1) {
+              var n = t[a];
+              n >= 0 && n < r.length && (r.splice(n, 1), markMutated());
+            }
+          });
+        }(M), W && n && n(), r;
+        L.mutation.updater && (r = function (e, r, t) {
+          for (var a = new Set(), n = e, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            a.has(s.path) || (a.add(s.path), null !== s.parent || null !== s.key || s.path !== o ? null !== s.parent && null !== s.key && (s.parent[s.key] = t(s.parent[s.key]), markMutated()) : (n = t(n), markMutated()));
+          }
+          return n;
+        }(r, M, L.mutation.updater), W && n && n());
+      } catch (r) {
+        logMessage(e, `JSONPath processing failed for expression '${t}': ${r.message}`);
+      }
+      return r;
     }
     function getPrunePath(t) {
       var r = ".[=].";
@@ -14836,6 +19155,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return e.trim();
         }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
+    }
+    function resolveJsonSyntaxMode(t, r) {
+      var e = "legacy",
+        o = "jsonpath",
+        s = "string" == typeof r ? r.trim().toLowerCase() : "";
+      if (s === e || s === o) return {
+        mode: s
+      };
+      var n = "string" == typeof t ? t.trim() : "";
+      return n.startsWith("$") || n.startsWith("[?") ? {
+        mode: o
+      } : {
+        mode: e
+      };
+    }
+    function buildJsonPathExpression(e, i) {
+      var r = e.trim();
+      if ("" === r) return r;
+      for (var f = 0, l = 0, s = 0, n = null, t = 0; t < r.length; t += 1) {
+        var o = r[t];
+        if (n) {
+          if (o === n) {
+            for (var u = 0, a = t - 1; a >= 0 && "\\" === r[a];) u += 1, a -= 1;
+            u % 2 == 0 && (n = null);
+          }
+        } else if ("'" !== o && '"' !== o) {
+          if ("[" !== o) {
+            if ("]" !== o) {
+              if ("{" !== o) {
+                if ("}" !== o) {
+                  if ("(" !== o) {
+                    if (")" !== o) {
+                      if (0 === f && 0 === l && 0 === s && (r.startsWith("+=", t) || "=" === o)) return r;
+                    } else s -= 1;
+                  } else s += 1;
+                } else l -= 1;
+              } else l += 1;
+            } else f -= 1;
+          } else f += 1;
+        } else n = o;
+      }
+      return "$remove$" === i ? r : void 0 === i ? "" : `${r}=${String(i)}`;
     }
     function toRegExp(e) {
       var r = e || "",
@@ -15156,6 +19517,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getJsonSetValue(e, t) {
       return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
     }
+    function jsonLineEdit(n, i) {
+      for (var e = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "", t = e.includes("\r\n") ? "\r\n" : "\n", r = e.split(/\r?\n/), s = [], a = i.nativeParse || JSON.parse, o = i.nativeStringify || JSON.stringify, v = false, h = 0; h < r.length; h += 1) {
+        var l = r[h],
+          u = void 0;
+        try {
+          u = a(l);
+        } catch (n) {}
+        if ("object" == typeof u && null !== u) {
+          v = true;
+          var f = o(u),
+            p = n(u);
+          if (void 0 !== p) {
+            var c = o(p);
+            c !== f ? s.push(c) : s.push(l);
+          } else s.push(l);
+        } else s.push(l);
+      }
+      return {
+        hasJsonLines: v,
+        text: s.join(t)
+      };
+    }
     function hit(e) {
       if (e.verbose) {
         try {
@@ -15222,29 +19605,52 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var requiredInitialProps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
       var propsToMatch = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "";
       var stack = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "";
-      var verbose = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
-      if (!propsPath || argumentValue === undefined) {
+      var mode = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : "";
+      var verbose = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : "";
+      var syntaxModeDetails = resolveJsonSyntaxMode(propsPath, mode);
+      var jsonPathExpression = syntaxModeDetails.mode === "jsonpath" ? buildJsonPathExpression(propsPath, argumentValue) : "";
+      if (!propsPath) {
         return;
       }
       if (typeof Proxy === "undefined") {
         return;
       }
-      var parsedArgumentValue = parseJsonSetArgumentValue(source, argumentValue, window.JSON.parse);
-      if (!parsedArgumentValue) {
+      if (syntaxModeDetails.mode === "legacy" && argumentValue === undefined) {
+        return;
+      }
+      if (syntaxModeDetails.mode === "jsonpath" && jsonPathExpression === "") {
+        logMessage(source, "JSONPath mode requires argumentValue unless propsPath already contains an inline mutation");
         return;
       }
       var shouldLogContent = verbose === "true";
-      var parsedSetPaths = getPrunePath(propsPath);
+      var parsedArgumentValue = syntaxModeDetails.mode === "legacy" ? parseJsonSetArgumentValue(source, argumentValue, window.JSON.parse) : null;
+      if (syntaxModeDetails.mode === "legacy" && !parsedArgumentValue) {
+        return;
+      }
+      var parsedSetPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsPath) : [];
       var setPathObj = parsedSetPaths[0];
-      var requiredPaths = getPrunePath(requiredInitialProps);
-      var nativeParse = window.JSON.parse;
-      var nativeStringify = window.JSON.stringify;
+      var requiredPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(requiredInitialProps) : [];
+      var nativeObjects = {
+        nativeParse: window.JSON.parse,
+        nativeStringify: window.JSON.stringify
+      };
       var nativeOpen = window.XMLHttpRequest.prototype.open;
       var nativeSend = window.XMLHttpRequest.prototype.send;
       var matchedXhrRequests = new Map();
       var xhrRequestHeaders = new Map();
       var getValueToSet = function getValueToSet(currentValue) {
+        if (!parsedArgumentValue) {
+          return currentValue;
+        }
         return getJsonSetValue(currentValue, parsedArgumentValue);
+      };
+      var applyJsonMutation = function applyJsonMutation(jsonValue) {
+        if (syntaxModeDetails.mode === "jsonpath") {
+          return jsonPath(source, jsonValue, jsonPathExpression, nativeObjects, function () {
+            return hit(source);
+          }, "");
+        }
+        return jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, "", nativeObjects);
       };
       var setRequestHeaderWrapper = function setRequestHeaderWrapper(setRequestHeader, thisArgument, argsList) {
         var headers = xhrRequestHeaders.get(thisArgument);
@@ -15304,49 +19710,85 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           var modifiedContent = content;
           if (typeof content === "string") {
+            var jsonContent;
+            var parseFailed = false;
             try {
-              var jsonContent = nativeParse(content);
+              jsonContent = nativeObjects.nativeParse(content);
+            } catch (_unused) {
+              parseFailed = true;
+            }
+            if (parseFailed) {
+              try {
+                var lineEditResult = jsonLineEdit(function (parsedLine) {
+                  return applyJsonMutation(parsedLine);
+                }, nativeObjects, content);
+                if (lineEditResult.hasJsonLines) {
+                  modifiedContent = lineEditResult.text;
+                  if (shouldLogContent) {
+                    logMessage(source, `Original content:\n${window.location.hostname}\n${content}\nStack trace:\n${stackTrace}`, true);
+                    logMessage(source, `Modified content:\n${window.location.hostname}\n${modifiedContent}\nStack trace:\n${stackTrace}`, true);
+                  }
+                  try {
+                    var {
+                      responseType: responseType
+                    } = thisArg;
+                    switch (responseType) {
+                      case "arraybuffer":
+                        modifiedContent = new TextEncoder().encode(modifiedContent).buffer;
+                        break;
+                      case "blob":
+                        modifiedContent = new Blob([modifiedContent]);
+                        break;
+                      default:
+                        break;
+                    }
+                  } catch (_unused2) {
+                    modifiedContent = content;
+                  }
+                } else {
+                  var message = `Response body cannot be converted to json: '${content}'`;
+                  logMessage(source, message);
+                  modifiedContent = content;
+                }
+              } catch (_unused3) {
+                var _message = `Response body cannot be converted to json: '${content}'`;
+                logMessage(source, _message);
+                modifiedContent = content;
+              }
+            } else {
               if (shouldLogContent) {
-                logMessage(source, `Original content:\n${window.location.hostname}\n${nativeStringify(jsonContent, null, 2)}\nStack trace:\n${stackTrace}`, true);
+                logMessage(source, `Original content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(jsonContent, null, 2)}\nStack trace:\n${stackTrace}`, true);
                 logMessage(source, jsonContent, true, false);
               }
-              modifiedContent = jsonSetter(source, jsonContent, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, "", {
-                nativeStringify: nativeStringify
-              });
+              modifiedContent = applyJsonMutation(jsonContent);
               if (shouldLogContent) {
-                logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeStringify(modifiedContent, null, 2)}\nStack trace:\n${stackTrace}`, true);
+                logMessage(source, `Modified content:\n${window.location.hostname}\n${nativeObjects.nativeStringify(modifiedContent, null, 2)}\nStack trace:\n${stackTrace}`, true);
                 logMessage(source, modifiedContent, true, false);
               }
               try {
                 var {
-                  responseType: responseType
+                  responseType: _responseType
                 } = thisArg;
-                switch (responseType) {
+                switch (_responseType) {
                   case "":
                   case "text":
-                    modifiedContent = nativeStringify(modifiedContent);
+                    modifiedContent = nativeObjects.nativeStringify(modifiedContent);
                     break;
                   case "arraybuffer":
-                    modifiedContent = new TextEncoder().encode(nativeStringify(modifiedContent)).buffer;
+                    modifiedContent = new TextEncoder().encode(nativeObjects.nativeStringify(modifiedContent)).buffer;
                     break;
                   case "blob":
-                    modifiedContent = new Blob([nativeStringify(modifiedContent)]);
+                    modifiedContent = new Blob([nativeObjects.nativeStringify(modifiedContent)]);
                     break;
                   default:
                     break;
                 }
-              } catch (_unused) {
+              } catch (_unused4) {
                 modifiedContent = content;
               }
-            } catch (_unused2) {
-              var message = `Response body cannot be converted to json: '${content}'`;
-              logMessage(source, message);
-              modifiedContent = content;
             }
           } else if (content !== null) {
-            modifiedContent = jsonSetter(source, content, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, "", {
-              nativeStringify: nativeStringify
-            });
+            modifiedContent = applyJsonMutation(content);
           }
           Object.defineProperties(thisArg, {
             readyState: {
@@ -15396,7 +19838,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         matchedXhrRequests.delete(thisArg);
         try {
           Reflect.apply(nativeSend, forgedRequest, args);
-        } catch (_unused3) {
+        } catch (_unused5) {
           return Reflect.apply(target, thisArg, args);
         }
         return undefined;
@@ -15411,15 +19853,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, sendHandler);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function getPrunePath(t) {
@@ -15483,34 +19925,568 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         password: n
       };
     }
-    function jsonSetter(e, t, r, n, a, o, i, s) {
-      var {
-        nativeStringify: l
-      } = s;
-      if (!r) return logMessage(e, `${window.location.hostname}\n${l(t, null, 2)}\nStack trace:\n${new Error().stack}`, true), t && "object" == typeof t && logMessage(e, t, true, false), t;
-      try {
-        if (!1 === isPruningNeeded(e, t, [{
-          path: r
-        }], o, i, s)) return t;
-        var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
-            return r.includes(e);
-          }),
-          c = getWildcardPropertyInChain(t, r, g, [], n);
-        if (c.length > 0) for (var f = 0; f < c.length; f += 1) {
-          var h = c[f];
-          h && h.base && (h.base[h.prop] = a(h.base[h.prop]), hit(e));
-        } else if (!g && void 0 === n) {
-          for (var u = r.split("."), v = t, p = 0; p < u.length - 1; p += 1) {
-            var d = u[p];
-            void 0 !== v[d] && null !== v[d] && "object" == typeof v[d] || (v[d] = {}), v = v[d];
-          }
-          var b = u[u.length - 1];
-          v[b] = a(v[b]), hit(e);
-        }
-      } catch (t) {
-        logMessage(e, t);
+    function jsonPath(e, r, t, a, n) {
+      var i = arguments.length > 5 && void 0 !== arguments[5] ? arguments[5] : "",
+        s = arguments.length > 6 && void 0 !== arguments[6] && arguments[6],
+        o = "$",
+        l = ".",
+        u = "..",
+        p = "",
+        c = "\\",
+        f = ")",
+        h = "[",
+        v = "@",
+        d = "contains",
+        g = "equal",
+        m = "exists",
+        y = "greater_than",
+        k = "greater_than_or_equal",
+        P = "less_than",
+        b = "less_than_or_equal",
+        S = "not_equal",
+        x = "regex",
+        $ = ["==", "!=", "<=", ">=", "*=", "=~", "<", ">", "="],
+        C = 1e5,
+        w = /^[A-Za-z_$][\w$]*$/;
+      function isObjectLike(e) {
+        return null !== e && "object" == typeof e;
       }
-      return t;
+      function isPlainObject(e) {
+        if (!isObjectLike(e) || Array.isArray(e)) return false;
+        var r = Object.getPrototypeOf(e);
+        return r === Object.prototype || null === r;
+      }
+      function isQuoteCharacter(e) {
+        return "'" === e || '"' === e;
+      }
+      function isEscaped(e, r) {
+        for (var t = 0, a = r - 1; a >= 0 && e[a] === c;) t += 1, a -= 1;
+        return t % 2 != 0;
+      }
+      function stripQuotes(e) {
+        var r = e.trim();
+        if (r.length < 2) return r;
+        var t = r[0],
+          a = r[r.length - 1];
+        return isQuoteCharacter(t) && t === a ? r.slice(1, -1).split("\\'").join("'").split('\\"').join('"').split(c + c).join(c) : r;
+      }
+      function appendPath(e, r) {
+        return "number" == typeof r || /^\d+$/.test(String(r)) ? `${e}[${r}]` : w.test(String(r)) ? `${e}.${r}` : `${e}['${String(r).replace(/'/g, "\\'")}']`;
+      }
+      function createCandidate(e, r, t, a) {
+        return {
+          key: t,
+          parent: r,
+          path: a,
+          value: e
+        };
+      }
+      function walkTopLevelChars(e, r) {
+        for (var t = 0, a = 0, n = 0, i = null, s = 0; s < e.length; s += 1) {
+          var o = e[s];
+          if (i) {
+            if (o !== i || isEscaped(e, s) || (i = null), r(s, false)) return;
+          } else if (isQuoteCharacter(o)) {
+            if (i = o, r(s, false)) return;
+          } else {
+            var l = true;
+            if (o === h ? t += 1 : "]" === o ? t -= 1 : "{" === o ? a += 1 : "}" === o ? a -= 1 : "(" === o ? n += 1 : o === f ? n -= 1 : l = false, r(s, !l && 0 === t && 0 === a && 0 === n)) return;
+          }
+        }
+      }
+      function findClosingBracket(e, r) {
+        for (var t = 0, a = null, n = r; n < e.length; n += 1) {
+          var i = e[n];
+          if (a) i !== a || isEscaped(e, n) || (a = null);else if (isQuoteCharacter(i)) a = i;else if (i !== h) {
+            if ("]" === i && 0 === (t -= 1)) return n;
+          } else t += 1;
+        }
+        return -1;
+      }
+      function splitByTopLevelToken(e, r) {
+        var t = [],
+          a = p,
+          n = new Set();
+        return walkTopLevelChars(e, function (i, s) {
+          if (!n.has(i)) if (s && e.startsWith(r, i)) {
+            t.push(a.trim()), a = p;
+            for (var o = 1; o < r.length; o += 1) n.add(i + o);
+          } else a += e[i];
+        }), a !== p && t.push(a.trim()), t;
+      }
+      function normalizeFilterPath(e) {
+        var r = e.trim();
+        return r.startsWith(v) && (r = r.slice(1)), r === p ? o : r.startsWith(o) ? r : r.startsWith(l) || r.startsWith(u) || r.startsWith(h) ? `${o}${r}` : `${o}${l}${r}`;
+      }
+      function parseFilterExpression(e) {
+        var r = e.trim();
+        if (r.startsWith("(") && r.endsWith(f)) {
+          for (var t = 0, a = null, n = false, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            if (a) s !== a || isEscaped(r, i) || (a = null);else if (isQuoteCharacter(s)) a = s;else if ("(" === s) t += 1;else if (s === f && 0 === (t -= 1)) {
+              n = i === r.length - 1;
+              break;
+            }
+          }
+          n && (r = r.slice(1, -1).trim());
+        }
+        var u = splitByTopLevelToken(r, "||");
+        if (u.length > 1) return {
+          conditions: u.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "or"
+        };
+        var p = splitByTopLevelToken(r, "&&");
+        if (p.length > 1) return {
+          conditions: p.map(function (e) {
+            return parseFilterExpression(e);
+          }),
+          operator: "and"
+        };
+        if (r.startsWith("!") && !r.startsWith("!=")) return {
+          condition: parseFilterExpression(r.slice(1).trim()),
+          operator: "not"
+        };
+        var c,
+          C,
+          w = (C = null, walkTopLevelChars(c = r, function (e, r) {
+            if (!r) return false;
+            for (var t = null, a = 0; a < $.length; a += 1) {
+              var n = $[a];
+              c.startsWith(n, e) && (null === t || n.length > t.length) && (t = n);
+            }
+            return null !== t && (C = {
+              index: e,
+              operator: t
+            }, true);
+          }), C);
+        if (!w) return {
+          operator: m,
+          selectorPath: normalizeFilterPath(r)
+        };
+        var W = r.slice(0, w.index).trim(),
+          O = r.slice(w.index + w.operator.length).trim(),
+          A = g;
+        "!=" === w.operator ? A = S : "<" === w.operator ? A = P : "<=" === w.operator ? A = b : ">" === w.operator ? A = y : ">=" === w.operator ? A = k : "*=" === w.operator ? A = d : ("=~" === w.operator || "=" === w.operator && /^\/.*\/[a-z]*$/i.test(O)) && (A = x);
+        var j,
+          E,
+          L = O.trim(),
+          F = L === o || L.startsWith(o + l) || L.startsWith(o + h),
+          M = L === v || L.startsWith(v + l) || L.startsWith(v + h);
+        return F || M ? {
+          comparisonSelectorPath: normalizeFilterPath(L),
+          operator: A,
+          resolveComparisonAgainstRoot: F,
+          selectorPath: normalizeFilterPath(W)
+        } : {
+          comparisonValue: (j = O, E = j.trim(), "true" === E || "false" !== E && ("null" === E ? null : /^-?\d+(?:\.\d+)?$/.test(E) ? Number(E) : /^\/.*\/[a-z]*$/i.test(E) ? toRegExp(E) : stripQuotes(E))),
+          operator: A,
+          selectorPath: normalizeFilterPath(W)
+        };
+      }
+      function parseBracketStep(e, r) {
+        if ("*" === e) return {
+          mode: "wildcard",
+          recursive: r
+        };
+        if (e.startsWith("?")) return {
+          filter: parseFilterExpression(e.slice(1)),
+          mode: "filter",
+          recursive: r
+        };
+        if (/^\(@\.length(?:-\d+)?\)$/.test(e)) {
+          var t = e.match(/^\(@\.length(?:-(\d+))?\)$/);
+          return {
+            mode: "computed-index",
+            recursive: r,
+            subtractLength: t && t[1] ? Number(t[1]) : 0
+          };
+        }
+        var a = function (e) {
+          var r = [],
+            t = p;
+          return walkTopLevelChars(e, function (a, n) {
+            n && ":" === e[a] ? (r.push(t.trim()), t = p) : t += e[a];
+          }), r.push(t.trim()), r;
+        }(e);
+        if (a.length > 1) {
+          var n = a[0] === p ? void 0 : Number(a[0]);
+          return {
+            mode: "slice",
+            recursive: r,
+            slice: {
+              end: a[1] === p ? void 0 : Number(a[1]),
+              start: n,
+              step: a.length > 2 && a[2] !== p ? Number(a[2]) : 1
+            }
+          };
+        }
+        var i = function (e, r) {
+          var t = [],
+            a = p;
+          return walkTopLevelChars(e, function (n, i) {
+            i && e[n] === r ? (t.push(a.trim()), a = p) : a += e[n];
+          }), a !== p && t.push(a.trim()), t;
+        }(e, ",");
+        return i.every(function (e) {
+          return /^-?\d+$/.test(e);
+        }) ? {
+          indexes: i.map(function (e) {
+            return Number(e);
+          }),
+          mode: "index",
+          recursive: r
+        } : {
+          mode: "property",
+          properties: i.map(function (e) {
+            return r = e.trim(), /^\/.*\/[a-z]*$/i.test(r) ? toRegExp(r) : stripQuotes(r);
+            var r;
+          }),
+          recursive: r
+        };
+      }
+      function parseJsonPathSelector(e) {
+        var r = [],
+          t = 0;
+        for (e.startsWith(o) && (t = 1); t < e.length;) {
+          var a = false;
+          if (e.startsWith(u, t) ? (a = true, t += 2) : e[t] === l && (t += 1), t >= e.length) break;
+          if (e[t] !== h) {
+            if ("*" !== e[t]) {
+              for (var n = t; n < e.length && e[n] !== l && e[n] !== h;) n += 1;
+              var i = e.slice(t, n).trim();
+              i && r.push({
+                mode: "property",
+                properties: [i],
+                recursive: a
+              }), t = n;
+            } else r.push({
+              mode: "wildcard",
+              recursive: a
+            }), t += 1;
+          } else {
+            var s = findClosingBracket(e, t);
+            if (-1 === s) throw new Error(`Invalid JSONPath expression: ${e}`);
+            var p = e.slice(t + 1, s).trim();
+            r.push(parseBracketStep(p, a)), t = s + 1;
+          }
+        }
+        return {
+          steps: r
+        };
+      }
+      function buildAppendUpdater(e, r, t) {
+        var a,
+          n = e.trim();
+        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+          var i = t(n);
+          if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
+          a = i.constantValue;
+        }
+        return function (e) {
+          return Array.isArray(e) ? Array.isArray(a) ? e.concat(a) : e.concat([a]) : isPlainObject(e) && isPlainObject(a) ? Object.assign({}, e, a) : "string" == typeof e && "string" == typeof a ? `${e}${a}` : a;
+        };
+      }
+      function buildSetUpdater(e, r, t) {
+        var a = e.trim();
+        if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
+          var t = r(e.slice(8, -1));
+          if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          return function (e) {
+            return "string" != typeof e ? e : e.replace(a, t.replacement);
+          };
+        }(a, r);
+        var n = t(a);
+        if (!n) throw new Error(`Invalid set value: ${e}`);
+        return function (e) {
+          return getJsonSetValue(e, n);
+        };
+      }
+      function getChildCandidates(e) {
+        if (!isObjectLike(e.value)) return [];
+        if (ArrayBuffer.isView(e.value)) return [];
+        for (var r = Object.keys(e.value), t = [], a = 0; a < r.length; a += 1) {
+          var n = r[a];
+          t.push(createCandidate(e.value[n], e.value, n, appendPath(e.path, n)));
+        }
+        return t;
+      }
+      function getRecursiveCandidates(r) {
+        var t = [r],
+          a = [0],
+          n = new WeakSet();
+        isObjectLike(r.value) && n.add(r.value);
+        for (var i = false, s = isObjectLike(r.value) ? 1 : 0, o = getChildCandidates(r), l = 0; l < o.length; l += 1) {
+          if (isObjectLike(o[l].value)) {
+            if (n.has(o[l].value)) continue;
+            if (n.add(o[l].value), (s += 1) >= C) {
+              i = true;
+              break;
+            }
+          }
+          t.push(o[l]), a.push(1);
+        }
+        for (var u = 1; u < t.length && !i;) {
+          var p = a[u] + 1;
+          if (p > 1e3) {
+            i = true;
+            break;
+          }
+          for (var c = getChildCandidates(t[u]), f = 0; f < c.length; f += 1) {
+            if (isObjectLike(c[f].value)) {
+              if (n.has(c[f].value)) continue;
+              if (n.add(c[f].value), (s += 1) >= C) {
+                i = true;
+                break;
+              }
+            }
+            t.push(c[f]), a.push(p);
+          }
+          u += 1;
+        }
+        return i && logMessage(e, "JSONPath recursive descent exceeded its traversal budget, results may be incomplete"), t;
+      }
+      function resolveIndex(e, r) {
+        return r < 0 ? e + r : r;
+      }
+      function applyDirectStep(e, r) {
+        var t = [];
+        if ("property" === r.mode) {
+          if (!isObjectLike(e.value) || !r.properties) return t;
+          for (var a = new Set(), n = 0; n < r.properties.length; n += 1) {
+            var i = r.properties[n];
+            if (i instanceof RegExp) for (var s = Object.keys(e.value), o = 0; o < s.length; o += 1) {
+              var l = s[o];
+              i.lastIndex = 0, i.test(l) && !a.has(l) && (a.add(l), t.push(createCandidate(e.value[l], e.value, l, appendPath(e.path, l))));
+            } else !a.has(i) && Object.prototype.hasOwnProperty.call(e.value, i) && (a.add(i), t.push(createCandidate(e.value[i], e.value, i, appendPath(e.path, i))));
+          }
+          return t;
+        }
+        if ("wildcard" === r.mode) return getChildCandidates(e);
+        if ("index" === r.mode) {
+          if (!Array.isArray(e.value) || !r.indexes) return t;
+          for (var u = 0; u < r.indexes.length; u += 1) {
+            var p = resolveIndex(e.value.length, r.indexes[u]);
+            p >= 0 && p < e.value.length && t.push(createCandidate(e.value[p], e.value, p, appendPath(e.path, p)));
+          }
+          return t;
+        }
+        if ("computed-index" === r.mode) {
+          if (!Array.isArray(e.value)) return t;
+          var c = e.value.length - (r.subtractLength || 0);
+          return c >= 0 && c < e.value.length && t.push(createCandidate(e.value[c], e.value, c, appendPath(e.path, c))), t;
+        }
+        if ("slice" === r.mode) {
+          if (!Array.isArray(e.value) || !r.slice) return t;
+          for (var f = function (e, r) {
+              var t,
+                a,
+                n = [],
+                i = void 0 === r.step ? 1 : r.step;
+              if (0 === i) return n;
+              if (t = void 0 === r.start ? i > 0 ? 0 : e - 1 : resolveIndex(e, r.start), a = void 0 === r.end ? i > 0 ? e : -1 : resolveIndex(e, r.end), i > 0) {
+                for (var s = Math.max(0, t); s < Math.min(e, a); s += i) n.push(s);
+                return n;
+              }
+              for (var o = Math.min(e - 1, t); o > Math.max(-1, a); o += i) n.push(o);
+              return n;
+            }(e.value.length, r.slice), h = 0; h < f.length; h += 1) {
+            var v = f[h];
+            t.push(createCandidate(e.value[v], e.value, v, appendPath(e.path, v)));
+          }
+        }
+        return t;
+      }
+      function evaluateSelector(e, t) {
+        function matchesFilterValue(e, t) {
+          if ("conditions" in t) return "and" === t.operator ? t.conditions.every(function (r) {
+            return matchesFilterValue(e, r);
+          }) : t.conditions.some(function (r) {
+            return matchesFilterValue(e, r);
+          });
+          if ("condition" in t) return !matchesFilterValue(e, t.condition);
+          var a = evaluateSelector(e, parseJsonPathSelector(t.selectorPath));
+          if (t.operator === m) return a.length > 0;
+          var n = t.comparisonValue;
+          if (t.comparisonSelectorPath) {
+            var i = evaluateSelector(t.resolveComparisonAgainstRoot ? r : e, parseJsonPathSelector(t.comparisonSelectorPath));
+            if (0 === i.length) return false;
+            n = i[0].value;
+          }
+          for (var s = 0; s < a.length; s += 1) {
+            var o = a[s].value;
+            if (t.operator !== d) {
+              if (t.operator !== x) {
+                if (t.operator === g && o === n) return true;
+                if (t.operator === S && o !== n) return true;
+                if (t.operator === P && o < n) return true;
+                if (t.operator === b && o <= n) return true;
+                if (t.operator === y && o > n) return true;
+                if (t.operator === k && o >= n) return true;
+              } else if ("string" == typeof o && n instanceof RegExp && (n.lastIndex = 0, n.test(o))) return true;
+            } else if ("string" == typeof o && o.includes(String(n))) return true;
+          }
+          return false;
+        }
+        function applyFilterStep(e, r) {
+          for (var t = [], a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (Array.isArray(n.value)) for (var i = 0; i < n.value.length; i += 1) matchesFilterValue(n.value[i], r) && t.push(createCandidate(n.value[i], n.value, i, appendPath(n.path, i)));else matchesFilterValue(n.value, r) && t.push(n);
+          }
+          return t;
+        }
+        for (var a = [createCandidate(e, null, null, o)], n = 0; n < t.steps.length; n += 1) {
+          var i = t.steps[n];
+          if ("filter" === i.mode && i.filter) {
+            var s = a;
+            if (i.recursive) {
+              s = [];
+              for (var l = 0; l < a.length; l += 1) for (var u = getRecursiveCandidates(a[l]), p = 0; p < u.length; p += 1) s.push(u[p]);
+            }
+            a = applyFilterStep(s, i.filter);
+          } else {
+            for (var c = [], f = 0; f < a.length; f += 1) for (var h = a[f], v = i.recursive ? getRecursiveCandidates(h) : [h], $ = 0; $ < v.length; $ += 1) for (var C = applyDirectStep(v[$], i), w = 0; w < C.length; w += 1) c.push(C[w]);
+            a = c;
+          }
+        }
+        return a;
+      }
+      var W = false;
+      function markMutated() {
+        W = true;
+      }
+      if (!isObjectLike(r)) return r;
+      var O,
+        A = (O = a) && O.nativeParse ? O.nativeParse : JSON.parse,
+        j = function (e) {
+          return e && e.nativeStringify ? e.nativeStringify : JSON.stringify;
+        }(a),
+        E = new Error().stack || "";
+      if (i && !matchStackTrace(i, E)) return r;
+      if (!t) return logMessage(e, `${window.location.hostname}\n${j(r, null, 2)}\nStack trace:\n${E}`, true), logMessage(e, r, true, false), r;
+      try {
+        for (var L = function (e, r, t) {
+            var a,
+              n,
+              i = function (e) {
+                var r = -1,
+                  t = "remove",
+                  a = 0;
+                return walkTopLevelChars(e, function (n, i) {
+                  return !!i && (e.startsWith("+=", n) ? (r = n, t = "append", a = 2, !0) : "=" === e[n] && (r = n, t = "set", a = 1, !0));
+                }), -1 === r ? {
+                  mode: "remove",
+                  selectorPart: e.trim(),
+                  valuePart: p
+                } : {
+                  mode: t,
+                  selectorPart: e.slice(0, r).trim(),
+                  valuePart: e.slice(r + a).trim()
+                };
+              }(e),
+              s = function (e) {
+                for (var r = [], t = e.trim(); t.startsWith("[?");) {
+                  var a = findClosingBracket(t, 0);
+                  if (-1 === a) break;
+                  var n = t.slice(1, a);
+                  r.push(parseFilterExpression(n.slice(1))), t = t.slice(a + 1).trim();
+                }
+                return {
+                  guards: r,
+                  selectorPart: t
+                };
+              }(i.selectorPart),
+              c = parseJsonPathSelector((a = s.selectorPart, (n = a.trim()) === p ? o : n.startsWith(o) ? n : n.startsWith(l) || n.startsWith(h) || n.startsWith(u) ? `${o}${n}` : `${o}${l}${n}`)),
+              f = {
+                mode: i.mode
+              };
+            return "append" === i.mode ? f = {
+              mode: "append",
+              updater: buildAppendUpdater(i.valuePart, r, t)
+            } : "set" === i.mode && (f = {
+              mode: "set",
+              updater: buildSetUpdater(i.valuePart, r, t)
+            }), {
+              guards: s.guards,
+              mutation: f,
+              selector: c
+            };
+          }(t, A, function (r) {
+            return parseJsonSetArgumentValue(e, r, A);
+          }), F = 0; F < L.guards.length; F += 1) {
+          if (0 === evaluateSelector(r, {
+            steps: [{
+              filter: L.guards[F],
+              mode: "filter",
+              recursive: !1
+            }]
+          }).length) return r;
+        }
+        var M = evaluateSelector(r, L.selector);
+        if (s) return M.length > 0 && n && n(), r;
+        if (!("remove" === L.mutation.mode || "string" == typeof e.name && e.name.startsWith("trusted-"))) return logMessage(e, "JSONPath set and append operations are allowed only in trusted scriptlets"), r;
+        if ("remove" === L.mutation.mode) return function (e) {
+          for (var r = new Set(), t = new Map(), a = 0; a < e.length; a += 1) {
+            var n = e[a];
+            if (null !== n.parent && null !== n.key && !r.has(n.path)) if (r.add(n.path), Array.isArray(n.parent)) {
+              var i = t.get(n.parent) || [];
+              i.push(Number(n.key)), t.set(n.parent, i);
+            } else delete n.parent[n.key], markMutated();
+          }
+          t.forEach(function (e, r) {
+            for (var t = Array.from(new Set(e)).sort(function (e, r) {
+                return r - e;
+              }), a = 0; a < t.length; a += 1) {
+              var n = t[a];
+              n >= 0 && n < r.length && (r.splice(n, 1), markMutated());
+            }
+          });
+        }(M), W && n && n(), r;
+        L.mutation.updater && (r = function (e, r, t) {
+          for (var a = new Set(), n = e, i = 0; i < r.length; i += 1) {
+            var s = r[i];
+            a.has(s.path) || (a.add(s.path), null !== s.parent || null !== s.key || s.path !== o ? null !== s.parent && null !== s.key && (s.parent[s.key] = t(s.parent[s.key]), markMutated()) : (n = t(n), markMutated()));
+          }
+          return n;
+        }(r, M, L.mutation.updater), W && n && n());
+      } catch (r) {
+        logMessage(e, `JSONPath processing failed for expression '${t}': ${r.message}`);
+      }
+      return r;
+    }
+    function jsonSetter(e, n, t, r, o, a, i, s, l) {
+      var {
+          nativeStringify: c
+        } = s,
+        notifyMutation = function notifyMutation() {
+          hit(e);
+        };
+      if (!t) return logMessage(e, `${window.location.hostname}\n${c(n, null, 2)}\nStack trace:\n${new Error().stack}`, true), n && "object" == typeof n && logMessage(e, n, true, false), n;
+      try {
+        if (!1 === isPruningNeeded(e, n, [{
+          path: t
+        }], a, i, s)) return n;
+        var g = [".*.", "*.", ".*", ".[].", "[].", ".[]"].some(function (e) {
+            return t.includes(e);
+          }),
+          f = getWildcardPropertyInChain(n, t, g, [], r);
+        if (f.length > 0) for (var u = 0; u < f.length; u += 1) {
+          var v = f[u];
+          v && v.base && (v.base[v.prop] = o(v.base[v.prop]), notifyMutation());
+        } else if (!g && void 0 === r) {
+          for (var h = t.split("."), p = n, d = 0; d < h.length - 1; d += 1) {
+            var b = h[d];
+            void 0 !== p[b] && null !== p[b] && "object" == typeof p[b] || (p[b] = {}), p = p[b];
+          }
+          var y = h[h.length - 1];
+          p[y] = o(p[y]), notifyMutation();
+        }
+      } catch (n) {
+        logMessage(e, n);
+      }
+      return n;
     }
     function matchStackTrace(e, t) {
       if (!e || "" === e) return true;
@@ -15521,6 +20497,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return e.trim();
         }).join("\n");
       return r.length && r[0] !== RegExp.$1 && restoreRegExpValues(r), getNativeRegexpTest().call(n, a);
+    }
+    function resolveJsonSyntaxMode(t, r) {
+      var e = "legacy",
+        o = "jsonpath",
+        s = "string" == typeof r ? r.trim().toLowerCase() : "";
+      if (s === e || s === o) return {
+        mode: s
+      };
+      var n = "string" == typeof t ? t.trim() : "";
+      return n.startsWith("$") || n.startsWith("[?") ? {
+        mode: o
+      } : {
+        mode: e
+      };
+    }
+    function buildJsonPathExpression(e, i) {
+      var r = e.trim();
+      if ("" === r) return r;
+      for (var f = 0, l = 0, s = 0, n = null, t = 0; t < r.length; t += 1) {
+        var o = r[t];
+        if (n) {
+          if (o === n) {
+            for (var u = 0, a = t - 1; a >= 0 && "\\" === r[a];) u += 1, a -= 1;
+            u % 2 == 0 && (n = null);
+          }
+        } else if ("'" !== o && '"' !== o) {
+          if ("[" !== o) {
+            if ("]" !== o) {
+              if ("{" !== o) {
+                if ("}" !== o) {
+                  if ("(" !== o) {
+                    if (")" !== o) {
+                      if (0 === f && 0 === l && 0 === s && (r.startsWith("+=", t) || "=" === o)) return r;
+                    } else s -= 1;
+                  } else s += 1;
+                } else l -= 1;
+              } else l += 1;
+            } else f -= 1;
+          } else f += 1;
+        } else n = o;
+      }
+      return "$remove$" === i ? r : void 0 === i ? "" : `${r}=${String(i)}`;
     }
     function getMatchPropsData(t) {
       var a = {};
@@ -15811,6 +20829,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getJsonSetValue(e, t) {
       return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
     }
+    function jsonLineEdit(n, i) {
+      for (var e = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "", t = e.includes("\r\n") ? "\r\n" : "\n", r = e.split(/\r?\n/), s = [], a = i.nativeParse || JSON.parse, o = i.nativeStringify || JSON.stringify, v = false, h = 0; h < r.length; h += 1) {
+        var l = r[h],
+          u = void 0;
+        try {
+          u = a(l);
+        } catch (n) {}
+        if ("object" == typeof u && null !== u) {
+          v = true;
+          var f = o(u),
+            p = n(u);
+          if (void 0 !== p) {
+            var c = o(p);
+            c !== f ? s.push(c) : s.push(l);
+          } else s.push(l);
+        } else s.push(l);
+      }
+      return {
+        hasJsonLines: v,
+        text: s.join(t)
+      };
+    }
     function hit(e) {
       if (e.verbose) {
         try {
@@ -16065,15 +21105,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return e = e.slice(o + 1), void 0 !== d && getWildcardPropertyInChain(d, e, a, i, t), i;
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isPruningNeeded(n, t, r, e, a, i) {
@@ -16433,70 +21473,80 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       var isMatchingSuspended = false;
       var applyWrapper = function applyWrapper(target, thisArg, argumentsList) {
-        if (isMatchingSuspended) {
+        try {
+          if (isMatchingSuspended) {
+            return Reflect.apply(target, thisArg, argumentsList);
+          }
+          isMatchingSuspended = true;
+          if (verbose === "true") {
+            var formattedMessage = createFormattedMessage(argumentsList);
+            logMessage(source, formattedMessage);
+          }
+          if (SHOULD_LOG_ONLY) {
+            isMatchingSuspended = false;
+            return Reflect.apply(target, thisArg, argumentsList);
+          }
+          var argumentToReplace = argumentsList[Number(argumentIndex)];
+          var shouldSetArgument = checkArgument(argumentToReplace);
+          if (!shouldSetArgument) {
+            isMatchingSuspended = false;
+            return Reflect.apply(target, thisArg, argumentsList);
+          }
+          if (typeof argumentToReplace === "string" && shouldReplaceArgument) {
+            argumentsList[Number(argumentIndex)] = argumentToReplace.replace(replaceRegexValue, constantValue);
+          } else {
+            argumentsList[Number(argumentIndex)] = constantValue;
+          }
+          if (verbose === "true") {
+            var _formattedMessage = createFormattedMessage(argumentsList, "modified");
+            logMessage(source, _formattedMessage);
+          }
+          hit(source);
           isMatchingSuspended = false;
           return Reflect.apply(target, thisArg, argumentsList);
-        }
-        isMatchingSuspended = true;
-        if (verbose === "true") {
-          var formattedMessage = createFormattedMessage(argumentsList);
-          logMessage(source, formattedMessage);
-        }
-        if (SHOULD_LOG_ONLY) {
+        } catch (error) {
           isMatchingSuspended = false;
+          logMessage(source, `Unexpected error during argument replacement: ${error.message}`);
           return Reflect.apply(target, thisArg, argumentsList);
         }
-        var argumentToReplace = argumentsList[Number(argumentIndex)];
-        var shouldSetArgument = checkArgument(argumentToReplace);
-        if (!shouldSetArgument) {
-          isMatchingSuspended = false;
-          return Reflect.apply(target, thisArg, argumentsList);
-        }
-        if (typeof argumentToReplace === "string" && shouldReplaceArgument) {
-          argumentsList[Number(argumentIndex)] = argumentToReplace.replace(replaceRegexValue, constantValue);
-        } else {
-          argumentsList[Number(argumentIndex)] = constantValue;
-        }
-        if (verbose === "true") {
-          var _formattedMessage = createFormattedMessage(argumentsList, "modified");
-          logMessage(source, _formattedMessage);
-        }
-        hit(source);
-        isMatchingSuspended = false;
-        return Reflect.apply(target, thisArg, argumentsList);
       };
       var constructWrapper = function constructWrapper(target, argumentsList, newTarget) {
-        if (isMatchingSuspended) {
+        try {
+          if (isMatchingSuspended) {
+            return Reflect.construct(target, argumentsList, newTarget);
+          }
+          isMatchingSuspended = true;
+          if (verbose === "true") {
+            var formattedMessage = createFormattedMessage(argumentsList);
+            logMessage(source, formattedMessage);
+          }
+          if (SHOULD_LOG_ONLY) {
+            isMatchingSuspended = false;
+            return Reflect.construct(target, argumentsList, newTarget);
+          }
+          var argumentToReplace = argumentsList[Number(argumentIndex)];
+          var shouldSetArgument = checkArgument(argumentToReplace);
+          if (!shouldSetArgument) {
+            isMatchingSuspended = false;
+            return Reflect.construct(target, argumentsList, newTarget);
+          }
+          if (typeof argumentToReplace === "string" && shouldReplaceArgument) {
+            argumentsList[Number(argumentIndex)] = argumentToReplace.replace(replaceRegexValue, constantValue);
+          } else {
+            argumentsList[Number(argumentIndex)] = constantValue;
+          }
+          if (verbose === "true") {
+            var _formattedMessage2 = createFormattedMessage(argumentsList, "modified");
+            logMessage(source, _formattedMessage2);
+          }
+          hit(source);
           isMatchingSuspended = false;
           return Reflect.construct(target, argumentsList, newTarget);
-        }
-        isMatchingSuspended = true;
-        if (verbose === "true") {
-          var formattedMessage = createFormattedMessage(argumentsList);
-          logMessage(source, formattedMessage);
-        }
-        if (SHOULD_LOG_ONLY) {
+        } catch (error) {
           isMatchingSuspended = false;
+          logMessage(source, `Unexpected error during argument replacement: ${error.message}`);
           return Reflect.construct(target, argumentsList, newTarget);
         }
-        var argumentToReplace = argumentsList[Number(argumentIndex)];
-        var shouldSetArgument = checkArgument(argumentToReplace);
-        if (!shouldSetArgument) {
-          isMatchingSuspended = false;
-          return Reflect.construct(target, argumentsList, newTarget);
-        }
-        if (typeof argumentToReplace === "string" && shouldReplaceArgument) {
-          argumentsList[Number(argumentIndex)] = argumentToReplace.replace(replaceRegexValue, constantValue);
-        } else {
-          argumentsList[Number(argumentIndex)] = constantValue;
-        }
-        if (verbose === "true") {
-          var _formattedMessage2 = createFormattedMessage(argumentsList, "modified");
-          logMessage(source, _formattedMessage2);
-        }
-        hit(source);
-        isMatchingSuspended = false;
-        return Reflect.construct(target, argumentsList, newTarget);
       };
       var getWrapper = function getWrapper(target, propName, receiver) {
         if (propName === "toString") {
@@ -16651,15 +21701,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -16854,15 +21904,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function getFetchData(e, t) {
@@ -17142,15 +22192,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function hit(e) {
@@ -17473,15 +22523,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function shouldAbortInlineOrInjectedScript(t, i) {
@@ -17620,6 +22670,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var nativeSend = window.XMLHttpRequest.prototype.send;
       var matchedXhrRequests = new Set();
       var xhrRequestHeaders = new Map();
+      var forgedRequests = new WeakMap();
       var xhrData;
       var openWrapper = function openWrapper(target, thisArg, args) {
         xhrData = getXhrData.apply(null, args);
@@ -17645,6 +22696,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             apply: setRequestHeaderWrapper
           };
           thisArg.setRequestHeader = new Proxy(thisArg.setRequestHeader, setRequestHeaderHandler);
+          var responseHeaderWrapper = function responseHeaderWrapper(target, thisArg, args) {
+            var forgedRequest = forgedRequests.get(thisArg);
+            if (forgedRequest) {
+              return Reflect.apply(target, forgedRequest, args);
+            }
+            return Reflect.apply(target, thisArg, args);
+          };
+          var responseHeaderHandler = {
+            apply: responseHeaderWrapper
+          };
+          thisArg.getResponseHeader = new Proxy(thisArg.getResponseHeader, responseHeaderHandler);
+          thisArg.getAllResponseHeaders = new Proxy(thisArg.getAllResponseHeaders, responseHeaderHandler);
         }
         return Reflect.apply(target, thisArg, args);
       };
@@ -17713,6 +22776,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
               writable: false
             }
           });
+          forgedRequests.set(thisArg, forgedRequest);
           setTimeout(function () {
             var stateEvent = new Event("readystatechange");
             thisArg.dispatchEvent(stateEvent);
@@ -17761,15 +22825,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -17944,15 +23008,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t.setAttribute(e, r);
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function throttle(n, t) {
@@ -18095,15 +23159,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function createSetChainPropAccessor(t) {
@@ -18388,15 +23452,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function serializeCookie(e, o, i) {
@@ -18502,15 +23566,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function isCookieSetWithValue(e, t, r) {
@@ -18611,15 +23675,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function setStorageItem(e, t, s, a) {
@@ -18684,15 +23748,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function setStorageItem(e, t, s, a) {
@@ -18804,15 +23868,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function getPropertyInChain(e, r) {
@@ -19344,15 +24408,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function logMessage(e, o) {
-      var n = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
-        g = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
         {
-          name: l,
-          verbose: v
+          name: n,
+          verbose: g
         } = e;
-      if (n || v) {
-        var a = console.log;
-        g ? a(`${l}: ${o}`) : a(`${l}:`, o);
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
     function toRegExp(e) {
@@ -19477,6 +24541,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "googletagmanager-gtm": GoogleAnalytics,
     "ubo-googletagmanager_gtm.js": GoogleAnalytics,
     "googletagmanager_gtm.js": GoogleAnalytics,
+    "google-ima3-dai": GoogleIma3Dai,
     "google-ima3": GoogleIma3,
     "ubo-google-ima.js": GoogleIma3,
     "google-ima.js": GoogleIma3,
