@@ -24,7 +24,7 @@ public final class FilterUpdateClient {
 
     /// Calls the XPC service to run an update, returning true on success.
     /// If the service is missing or fails to respond within the timeout, returns false.
-    public func updateFilters(timeout seconds: TimeInterval = 2.0) async -> Bool {
+    public func updateFilters(timeout seconds: TimeInterval = 180.0) async -> Bool {
         let log = OSLog(subsystem: "wBlockCoreService", category: "FilterUpdateXPC")
         guard seconds.isFinite, seconds >= 0 else {
             os_log("Invalid XPC timeout: %.2fs", log: log, type: .error, seconds)
@@ -78,8 +78,16 @@ public final class FilterUpdateClient {
                 }
             }
 
-            guard let proxy = connection.remoteObjectProxy as? FilterUpdateProtocol else {
-                os_log("Failed to obtain remoteObjectProxy for XPC service", log: log, type: .error)
+            let proxy = connection.remoteObjectProxyWithErrorHandler { error in
+                if markFinished() {
+                    os_log("Failed to obtain remoteObjectProxy for XPC service: %{public}@", log: log, type: .error, error.localizedDescription)
+                    connection.invalidate()
+                    cont.resume(returning: false)
+                }
+            }
+
+            guard let filterProxy = proxy as? FilterUpdateProtocol else {
+                os_log("Failed to cast remoteObjectProxy to FilterUpdateProtocol", log: log, type: .error)
                 if markFinished() {
                     connection.invalidate()
                     cont.resume(returning: false)
@@ -87,7 +95,7 @@ public final class FilterUpdateClient {
                 return
             }
 
-            proxy.updateFilters { success in
+            filterProxy.updateFilters { success in
                 if markFinished() {
                     connection.invalidate()
                     cont.resume(returning: success)
