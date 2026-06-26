@@ -87,7 +87,7 @@ public final class FilterUpdateClient {
             }
 
             guard let filterProxy = proxy as? FilterUpdateProtocol else {
-                os_log("Failed to cast remoteObjectProxy to FilterUpdateProtocol", log: log, type: .error)
+                os_log("Failed to cast remoteObjectProxyWithErrorHandler to FilterUpdateProtocol", log: log, type: .error)
                 if markFinished() {
                     connection.invalidate()
                     cont.resume(returning: false)
@@ -95,7 +95,8 @@ public final class FilterUpdateClient {
                 return
             }
 
-            filterProxy.updateFilters { success in
+            filterProxy.updateFilters { [filterProxy] success in
+                _ = filterProxy
                 if markFinished() {
                     connection.invalidate()
                     cont.resume(returning: success)
