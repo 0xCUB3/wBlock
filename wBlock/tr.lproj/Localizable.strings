@@ -475,7 +475,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
 "Blocks online tracking and web analytics systems." = "Çevrim içi izleme ve web analitik sistemlerini engeller.";
 "Removes tracking parameters from URLs." = "URL'lerden izleme parametrelerini kaldırır.";
-"Shortens links by removing unnecessary tracking and clutter parameters." = "Gereksiz takip parametrelerini ve fazlalıkları temizleyerek URL'leri kısaltır.";
+"Shortens links by removing unnecessary tracking and clutter parameters." = "Gereksiz izleme ve fazlalık parametrelerini kaldırarak URL'leri kısaltır.";
 "Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Ödeme duvarı (paywall) ile ilgili öğeleri engeller. En iyi sonuçlar için ilgili kullanıcı betiğini etkinleştirin.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
 "Blocks social media content on webpages." = "Web sayfalarındaki sosyal medya içeriklerini engeller.";
@@ -703,7 +703,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Site Settings hub */
 "Site Settings" = "Site ayarları";
 "example.com" = "example.com";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "Eklenen siteler izin listesine alınır: wBlock bu sitelerde tamamen kapatılır.";
+"Added sites are whitelisted: wBlock is completely turned off on them." = "Eklenen siteler izin listesine alınır: wBlock bu sitelerde tamamen devre dışı kalır.";
 "Whitelisted" = "İzin listesinde";
 "%d script off" = "%d betik devre dışı";
 "%d scripts off" = "%d betik devre dışı";
@@ -719,12 +719,12 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 // Pause Blocking feature (issue #439)
 "Pause Blocking" = "Engellemeyi duraklat";
 "Blocking" = "Engelleme";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "Tüm engellemeyi (içerik engelleyiciler, kullanıcı betikleri ve stiller) Safari Ayarları'ndan uzantıları kapatmadan geçici olarak devre dışı bırak.";
-"Blocking is paused. Content blockers are emptied until you turn this back on." = "Engelleme duraklatıldı. Tekrar açana kadar tüm filtreler, kullanıcı betikleri ve stiller kapalı kalır.";
-"Pausing blocking..." = "Engelleme duraklatılıyor…";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Safari ayarlarından genişletmeleri kapatmadan; içerik engelleyiciler, kullanıcı betikleri ve stiller dâhil tüm engellemeleri geçici olarak devre dışı bırakır.";
+"Blocking is paused. Content blockers are emptied until you turn this back on." = "Engelleme duraklatıldı. Bunu tekrar açana kadar tüm filtreler, kullanıcı betikleri ve stiller kapalı kalacaktır.";
+"Pausing blocking..." = "Engelleme duraklatılıyor...";
 "Blocking paused" = "Engelleme duraklatıldı";
-"Blocking resumed" = "Engelleme sürdürülüyor";
+"Blocking resumed" = "Engelleme sürdürüldü";
 "Blocking is paused" = "Engelleme duraklatıldı";
 "Resume" = "Sürdür";
 "Resume Blocking" = "Engellemeyi sürdür";
-"Blocking is paused. Tap Resume to re-enable." = "Engelleme duraklatıldı. Tümünü yeniden etkinleştirmek için Sürdür'e dokunun.";
+"Blocking is paused. Tap Resume to re-enable." = "Engelleme duraklatıldı. Tüm engellemeyi yeniden etkinleştirmek için Sürdür öğesine dokunun.";
