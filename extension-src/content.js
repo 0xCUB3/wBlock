@@ -30879,6 +30879,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   function setupDelayedEventDispatcher() {
     let timeoutMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
+    // The dispatcher is armed at module init so it can intercept DOMContentLoaded
+    // / load events before the per-site disable check resolves. If the page is
+    // whitelisted, `disarm()` is called as soon as we know, which removes the
+    // listeners and stops further interception. See issue #445.
+    let armed = true;
     const interceptors = [];
     const events = [{
       name: 'DOMContentLoaded',
@@ -30902,6 +30907,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         intercepted: false,
         target: ev.target,
         listener: event => {
+          // Skip interception entirely once disarmed (e.g. whitelisted site).
+          if (!armed) {
+            return;
+          }
           // Prevent immediate propagation.
           event.stopImmediatePropagation();
           interceptor.intercepted = true;
@@ -30940,10 +30949,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const timer = setTimeout(() => {
       dispatchEvents('timeout');
     }, timeoutMs);
-    // Return a function to cancel the timer and dispatch events immediately.
-    return () => {
+    // Releases held events (only used after the configuration response arrives
+    // for an enabled site). Mirrors the previous single-function return value.
+    const cancelDispatch = () => {
       clearTimeout(timer);
       dispatchEvents('response received');
+    };
+    // Disarms the dispatcher for whitelisted sites: stops intercepting future
+    // events, removes the listeners, clears the timeout, and re-dispatches any
+    // event that was already held so the page's natural handlers still run.
+    const disarm = () => {
+      armed = false;
+      cancelDispatch();
+    };
+    return {
+      cancelDispatch,
+      disarm
     };
   }
 
@@ -30974,7 +30995,40 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Initialize the delayed event dispatcher. This may intercept DOMContentLoaded
   // and load events. The delay of 1000ms is used as a buffer to capture critical
   // initial events while waiting for the rules response.
-  const cancelDelayedDispatchAndDispatch = setupDelayedEventDispatcher(1000);
+  const dispatcherRef = setupDelayedEventDispatcher(1000);
+  // Shared per-site disable check. Resolves to `true` when wBlock has this
+  // host in its disabled-sites list. The content script must bail out before
+  // touching page events / running the removeparam rewrite when this is true —
+  // even with Safari's content blockers turned off, the wBlock Scripts
+  // content script still runs, and the held DOMContentLoaded/load events
+  // trip anti-adblock walls (e.g. Ticketmaster seat selection, issue #445).
+  // Resolves to `false` when the host is not disabled OR the lookup fails (we
+  // err on the side of applying normal filtering on errors to keep safety).
+  let resolveSiteDisabled;
+  const siteDisabledPromise = new Promise(resolve => {
+    resolveSiteDisabled = resolve;
+  });
+  (async () => {
+    try {
+      if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) {
+        resolveSiteDisabled(false);
+        return;
+      }
+      const hostname = window.location && typeof window.location.hostname === "string" ? window.location.hostname : "";
+      if (!hostname) {
+        resolveSiteDisabled(false);
+        return;
+      }
+      const response = await browser.runtime.sendMessage({
+        action: "wblock:getSiteDisabledState",
+        host: hostname
+      });
+      resolveSiteDisabled(!!(response && response.disabled));
+    } catch (error) {
+      wBlockLogger.warn('Failed to resolve site disabled state:', error);
+      resolveSiteDisabled(false);
+    }
+  })();
   /**
    * Main entry point function for the content script.
    *
@@ -30991,6 +31045,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     window.adguard = {
       contentScript: new ContentScript()
     };
+    // Bail out entirely if this site is in wBlock's disabled-sites list.
+    // Disarming the dispatcher releases any events we already captured and
+    // prevents further interception, so the page behaves as if the extension
+    // wasn't there (modulo whatever Safari content-blocker rules still apply).
+    if (await siteDisabledPromise) {
+      dispatcherRef.disarm();
+      return;
+    }
     const message = {
       type: MessageType.InitContentScript
     };
@@ -31005,62 +31067,65 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     // After processing, cancel any pending delayed event dispatch and process
     // any queued events immediately.
-    cancelDelayedDispatchAndDispatch();
+    dispatcherRef.cancelDispatch();
   };
   // Execute the main function and catch any runtime errors.
   main().catch(error => {
     wBlockLogger.error('Error in content script: ', error);
   });
-})(browser);
-
-// Best-effort top-frame URL cleanup fallback for Safari builds where
-// declarativeNetRequest redirect/queryTransform does not run for main_frame
-// requests. The background page uses the same generated $removeparam rules as
-// the DNR installer, then this content script performs a same-page replace as
-// early as Safari allows content scripts to run.
-(async () => {
-  try {
-    if (window.top !== window) return;
-    if (!/^https?:/i.test(window.location.href)) return;
-    if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;
-    const response = await browser.runtime.sendMessage({
-      action: "wblock:getCleanURL",
-      url: window.location.href
-    });
-    let cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : "";
-    if (!cleanUrl || cleanUrl === window.location.href) {
-      const fallbackUrl = new URL(window.location.href);
-      let changed = false;
-      for (const key of Array.from(fallbackUrl.searchParams.keys())) {
-        if (/^(utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|msclkid$|mc_cid$|mc_eid$|igshid$|yclid$|_hsenc$|_hsmi$|mkt_tok$|vero_id$|oly_anon_id$|oly_enc_id$)/i.test(key)) {
-          fallbackUrl.searchParams.delete(key);
-          changed = true;
-        }
-      }
-      if (changed) {
-        cleanUrl = fallbackUrl.href;
-      }
-    }
-    if (cleanUrl && cleanUrl !== window.location.href) {
-      console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
-      window.location.replace(cleanUrl);
-    }
-  } catch (error) {
+  // Best-effort top-frame URL cleanup fallback for Safari builds where
+  // declarativeNetRequest redirect/queryTransform does not run for main_frame
+  // requests. The background page uses the same generated $removeparam rules as
+  // the DNR installer, then this content script performs a same-page replace as
+  // early as Safari allows content scripts to run.
+  //
+  // Skipped on whitelisted sites: the URL replace is detectable by anti-adblock
+  // walls even when content blockers are off (issue #445).
+  (async () => {
     try {
-      const fallbackUrl = new URL(window.location.href);
-      let changed = false;
-      for (const key of Array.from(fallbackUrl.searchParams.keys())) {
-        if (/^(utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|msclkid$|mc_cid$|mc_eid$|igshid$|yclid$|_hsenc$|_hsmi$|mkt_tok$|vero_id$|oly_anon_id$|oly_enc_id$)/i.test(key)) {
-          fallbackUrl.searchParams.delete(key);
-          changed = true;
+      if (await siteDisabledPromise) return;
+      if (window.top !== window) return;
+      if (!/^https?:/i.test(window.location.href)) return;
+      if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;
+      const response = await browser.runtime.sendMessage({
+        action: "wblock:getCleanURL",
+        url: window.location.href
+      });
+      let cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : "";
+      if (!cleanUrl || cleanUrl === window.location.href) {
+        const fallbackUrl = new URL(window.location.href);
+        let changed = false;
+        for (const key of Array.from(fallbackUrl.searchParams.keys())) {
+          if (/^(utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|msclkid$|mc_cid$|mc_eid$|igshid$|yclid$|_hsenc$|_hsmi$|mkt_tok$|vero_id$|oly_anon_id$|oly_enc_id$)/i.test(key)) {
+            fallbackUrl.searchParams.delete(key);
+            changed = true;
+          }
+        }
+        if (changed) {
+          cleanUrl = fallbackUrl.href;
         }
       }
-      if (changed && fallbackUrl.href !== window.location.href) {
-        console.info("[wBlock] Removing common tracking parameters:", window.location.href, "→", fallbackUrl.href);
-        window.location.replace(fallbackUrl.href);
+      if (cleanUrl && cleanUrl !== window.location.href) {
+        console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
+        window.location.replace(cleanUrl);
       }
-    } catch (_fallbackError) {
-      console.warn("[wBlock] URL cleanup fallback failed:", error);
+    } catch (error) {
+      try {
+        const fallbackUrl = new URL(window.location.href);
+        let changed = false;
+        for (const key of Array.from(fallbackUrl.searchParams.keys())) {
+          if (/^(utm_|fbclid$|gclid$|dclid$|gbraid$|wbraid$|msclkid$|mc_cid$|mc_eid$|igshid$|yclid$|_hsenc$|_hsmi$|mkt_tok$|vero_id$|oly_anon_id$|oly_enc_id$)/i.test(key)) {
+            fallbackUrl.searchParams.delete(key);
+            changed = true;
+          }
+        }
+        if (changed && fallbackUrl.href !== window.location.href) {
+          console.info("[wBlock] Removing common tracking parameters:", window.location.href, "→", fallbackUrl.href);
+          window.location.replace(fallbackUrl.href);
+        }
+      } catch (_fallbackError) {
+        console.warn("[wBlock] URL cleanup fallback failed:", error);
+      }
     }
-  }
-})();
+  })();
+})(browser);

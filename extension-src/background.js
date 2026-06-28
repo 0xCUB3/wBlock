@@ -25747,6 +25747,34 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         cleanUrl
       };
     }
+    // Per-site disable check used by the content script to bail out before
+    // setting up the delayed-event dispatcher / removeparam rewrite. Without
+    // this, wBlock Scripts' content script still runs on whitelisted sites and
+    // (briefly) holds DOMContentLoaded/load, which trips anti-adblock walls —
+    // e.g. Ticketmaster's seat-selection screen (issue #445).
+    if (message && message.action === "wblock:getSiteDisabledState") {
+      const host = typeof message.host === "string" ? message.host.trim() : "";
+      if (!host) {
+        return { ok: false, disabled: false, error: "Missing host" };
+      }
+      try {
+        const response = await sendQueuedNativeMessage({
+          action: "getSiteDisabledState",
+          host
+        });
+        return {
+          ok: true,
+          disabled: !!(response && response.disabled)
+        };
+      } catch (error) {
+        console.warn("[wBlock] Failed to resolve site disabled state for", host, error);
+        return {
+          ok: false,
+          disabled: false,
+          error: String(error && error.message ? error.message : error)
+        };
+      }
+    }
     if (message && message.action === "wblock:zapper:syncRules") {
       const hostname = typeof message.hostname === "string" ? message.hostname : "";
       const rules = Array.isArray(message.rules) ? message.rules : [];
