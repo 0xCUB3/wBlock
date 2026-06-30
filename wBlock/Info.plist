@@ -12,6 +12,11 @@
 		<string>com.alexanderskula.wblock.filter-update</string>
 		<string>com.alexanderskula.wblock.filter-processing</string>
 	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
