@@ -187,7 +187,6 @@ enum BackupManager {
 
     static func createBackup(filterManager: AppFilterManager) async -> WBlockBackup {
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
         let loader = FilterListLoader()
 
         // Built-in filter selections (non-custom)
@@ -228,8 +227,8 @@ enum BackupManager {
             )
         }
 
-        // Whitelist
-        let whitelistedDomains = defaults?.stringArray(forKey: "disabledSites") ?? []
+        // Whitelist (live source is the protobuf store, not the legacy UserDefaults migration key)
+        let whitelistedDomains = filterManager.dataManager.disabledSites
 
         let (zapperRules, disabledZapperDomains) = await MainActor.run {
             var zapperRules: [String: [String]] = [:]
@@ -311,8 +310,7 @@ enum BackupManager {
         }
 
         // 3. Restore whitelist
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
-        defaults?.set(backup.whitelistedDomains, forKey: "disabledSites")
+        await filterManager.dataManager.setWhitelistedDomains(backup.whitelistedDomains)
 
         // 4. Restore zapper rules (to protobuf)
         for (hostname, rules) in backup.zapperRules {
