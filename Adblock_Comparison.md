@@ -106,11 +106,13 @@ References: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html
 
 # Feature comparison
 
+Legend: ✅ supported · ⚠️ partial or platform-limited (see Notes) · ❌ not supported in the compared products.
+
 | **Feature** | **wBlock** | **uBlock Origin Lite** | **Wipr 2** | **AdGuard Mini / iOS** |
 |:--|:--:|:--:|:--:|:--:|
 | macOS support | ✅ | ✅ | ✅ | ✅ via Mini |
 | iOS / iPadOS support | ✅ | ✅ | ✅ | ✅ via AdGuard for iOS<sup>20</sup> |
-| visionOS support | ✅ extension pieces | ✅ | ✅ | ❌ |
+| visionOS support | ⚠️ extension pieces | ✅ | ✅ | ❌ |
 | Static rule capacity | 750,000<sup>7</sup> | DNR-based, browser-dependent<sup>7</sup> | 4 blocklist extensions, total not published<sup>7</sup> | 900,000 Mini; iOS uses six 150k slots<sup>7</sup> |
 | Static blocking model | Safari content blockers | Packaged declarative rulesets | Safari content blockers | Safari content blockers |
 | Page-level model | Safari Web Extension scripts | Extension content scripts | Wipr Extra Web Extension | Safari Web Extension / AdGuard Extra |
@@ -120,21 +122,21 @@ References: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html
 | License | GPL-3.0 | GPL-3.0 | Proprietary | Mini: AdGuard source license; iOS: GPL-3.0 |
 | Main implementation | Swift + JavaScript | JavaScript | Swift | Swift + web UI |
 | Filter storage | Protocol Buffers + LZ4 | Packaged DNR rulesets + extension storage | Closed source | App storage + JSON/rules files |
-| Element zapper / picker | ✅ | ✅ for cosmetic filters | ❌ | ✅ |
-| Custom filter lists | ✅ | Limited, not full subscription management | ❌ | ✅ |
-| User rule editor | ✅ | Limited | ❌ | ✅ |
-| Dynamic filtering | Safari-compatible approximation<sup>12</sup> | ❌ | ❌ | Limited, not uBO-style<sup>12</sup> |
+| Element zapper / picker | ✅ | ⚠️ cosmetic filters only | ❌ | ✅ |
+| Custom filter lists | ✅ | ⚠️ limited, not full subscription management | ❌ | ✅ |
+| User rule editor | ✅ | ⚠️ limited | ❌ | ✅ |
+| Dynamic filtering | ⚠️ Safari-compatible approximation<sup>12</sup> | ❌ | ❌ | ⚠️ limited, not uBO-style<sup>12</sup> |
 | YouTube ad blocking | ✅ | ✅ / changes often | ✅ via Wipr Extra | ✅, stronger with Pro Extra |
-| Script injection / scriptlets | ✅ | Limited scriptlet support | Wipr Extra only | ✅ |
+| Script injection / scriptlets | ✅ | ⚠️ limited scriptlet support | Wipr Extra only | ✅ |
 | Userscript support | ✅ | ❌ | ❌ | ❌ in Mini / iOS<sup>15</sup> |
 | Userstyle support | ✅ | ❌ | ❌ | ❌ in Mini / iOS<sup>15</sup> |
 | URL tracking-parameter stripping | ✅<sup>21</sup> | ✅ via `removeparam` rules | ❌ | ✅ via `$removeparam`<sup>21</sup> |
 | Filter updates | Automatic, 1h to 7d configurable | Extension updates only | Automatic, twice weekly | Automatic; real-time updates require Pro |
-| Multi-device sync | ✅ iCloud | ❌ | ❌ settings sync, universal purchase | ❌ |
+| Multi-device sync | ✅ iCloud | ❌ | ⚠️ settings sync only, no filter sync | ❌ |
 | Per-site disable | ✅ | ✅ | ✅ through Safari/Wipr controls | ✅ |
 | Whitelist / allowlist | ✅ | ✅ | ✅ | ✅ |
-| Logging / debugging | ✅ macOS logger | ❌ | ❌ | ✅ |
-| DNS-level blocking | ❌ | ❌ | ❌ | ✅ on iOS |
+| Logging / debugging | ⚠️ macOS only | ❌ | ❌ | ✅ |
+| DNS-level blocking | ❌ | ❌ | ❌ | ⚠️ iOS only, not macOS Mini |
 | Regional / language filters | ✅, plus manual lists | ✅ bundled rulesets | ✅ 30+ language variants | ✅ broad AdGuard filter catalog |
 | App Store privacy label | Data Not Collected | Data Not Collected | Data Not Collected | Data Not Collected on current App Store labels |
 | Interface style | Native, detailed | Popup + web options | Native, minimal | Detailed AdGuard apps |
@@ -177,7 +179,7 @@ References: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html
 
 <sup>20</sup> **AdGuard iOS:** AdGuard for iOS is a separate app with Safari content blockers, a Safari Web Extension, DNS protection, user rules, an allowlist, and custom filters.
 
-<sup>21</sup> **URL tracking-parameter stripping:** Safari's content blocker API cannot rewrite a request URL — it can only block or ignore it. Removing UTM and other tracking parameters therefore has to happen in a Safari Web Extension content script that rewrites the link or redirect before navigation. wBlock does this in wBlock Scripts, with a bundled URL tracking protection list enabled by default. AdGuard implements the equivalent through `$removeparam` rules converted for its Safari web extension, and uBOL uses MV3 `removeparam`/redirect rules handled by the browser.
+<sup>21</sup> **URL tracking-parameter stripping:** Safari's content blocker API cannot rewrite a request URL, only block or ignore it. Removing UTM and other tracking parameters therefore has to happen in a Safari Web Extension content script that rewrites the link or redirect before navigation. wBlock does this in wBlock Scripts, with a bundled URL tracking protection list enabled by default. AdGuard implements the equivalent through `$removeparam` rules converted for its Safari web extension, and uBOL uses MV3 `removeparam`/redirect rules handled by the browser.
 
 ---
 
