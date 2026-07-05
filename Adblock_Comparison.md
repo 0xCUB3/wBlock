@@ -127,6 +127,8 @@ References: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html
 | YouTube ad blocking | ✅ | ✅ / changes often | ✅ via Wipr Extra | ✅, stronger with Pro Extra |
 | Script injection / scriptlets | ✅ | Limited scriptlet support | Wipr Extra only | ✅ |
 | Userscript support | ✅ | ❌ | ❌ | ❌ in Mini / iOS<sup>15</sup> |
+| Userstyle support | ✅ | ❌ | ❌ | ❌ in Mini / iOS<sup>15</sup> |
+| URL tracking-parameter stripping | ✅<sup>21</sup> | ✅ via `removeparam` rules | ❌ | ✅ via `$removeparam`<sup>21</sup> |
 | Filter updates | Automatic, 1h to 7d configurable | Extension updates only | Automatic, twice weekly | Automatic; real-time updates require Pro |
 | Multi-device sync | ✅ iCloud | ❌ | ❌ settings sync, universal purchase | ❌ |
 | Per-site disable | ✅ | ✅ | ✅ through Safari/Wipr controls | ✅ |
@@ -174,6 +176,8 @@ References: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html
 <sup>19</sup> **Implementation language:** GitHub language stats can be misleading because bundled JavaScript rules and generated resources count heavily. The table describes the practical app architecture rather than raw repository percentages.
 
 <sup>20</sup> **AdGuard iOS:** AdGuard for iOS is a separate app with Safari content blockers, a Safari Web Extension, DNS protection, user rules, an allowlist, and custom filters.
+
+<sup>21</sup> **URL tracking-parameter stripping:** Safari's content blocker API cannot rewrite a request URL — it can only block or ignore it. Removing UTM and other tracking parameters therefore has to happen in a Safari Web Extension content script that rewrites the link or redirect before navigation. wBlock does this in wBlock Scripts, with a bundled URL tracking protection list enabled by default. AdGuard implements the equivalent through `$removeparam` rules converted for its Safari web extension, and uBOL uses MV3 `removeparam`/redirect rules handled by the browser.
 
 ---
 

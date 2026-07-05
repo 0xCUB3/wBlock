@@ -77,6 +77,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 - **Userscript engine** with Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
 - **Userstyle support** — install UserCSS themes (.user.css) applied natively as CSS, no JS wrapper needed
 - **Custom filter lists** via URL, paste, or file import — supports any AdGuard-syntax blocklist
+- **URL tracking-parameter stripping** — removes UTM and other tracking params, unwraps shortener/redirect URLs (enabled by default via wBlock Scripts)
 - **Toolbar search** for quickly finding filters and userscripts
 - **Automatic rule distribution** across all 5 content blocker slots for maximum coverage
 
