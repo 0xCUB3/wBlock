@@ -549,7 +549,7 @@ async function setSiteDisabledState(host, disabled) {
         action: 'setSiteDisabledState',
         host,
         disabled: Boolean(disabled),
-    }, 5000);
+    }, 10000);
 }
 
 async function setSiteZapperDisabled(host, disabled) {
@@ -558,7 +558,7 @@ async function setSiteZapperDisabled(host, disabled) {
         action: 'setSiteZapperDisabled',
         hostname: host,
         disabled: Boolean(disabled),
-    }, 5000);
+    }, 10000);
     const nextDisabled = Boolean(response && response.disabled);
     await setSyncMeta(host, { disabled: nextDisabled });
     return response;

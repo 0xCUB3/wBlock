@@ -352,8 +352,12 @@ public enum WebExtensionRequestHandler {
 
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
 
+            // Regenerate RemoveParam DNR rules detached from the response: they are read
+            // on demand from disk by handleGetRemoveParamDNRRules, so a brief staleness
+            // window is harmless and removing it from the toggle's critical path keeps
+            // the popup under its timeout even on profiles with many selected filters.
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
-            await Task.detached(priority: .utility) {
+            Task.detached(priority: .utility) {
                 do {
                     _ = try RemoveParamDNRRuleGenerator.saveRules(
                         for: selectedFilters,
@@ -363,7 +367,7 @@ public enum WebExtensionRequestHandler {
                 } catch {
                     os_log(.error, "Failed to refresh removeparam DNR rules for disabled site change: %@", error.localizedDescription)
                 }
-            }.value
+            }
 
             // Apply the change immediately by fast-updating the existing blocker JSON
             // and reloading each relevant content blocker target for the current platform.
@@ -537,19 +541,28 @@ public enum WebExtensionRequestHandler {
         reloadedTargets: Int,
         failedTargets: Int
     ) {
-        var reloadedTargets = 0
-        var failedTargets = 0
-
-        for target in targets {
-            let result = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier)
-            if result.success {
-                reloadedTargets += 1
-            } else {
-                failedTargets += 1
+        // Safari reloads distinct content blocker identifiers independently, so reload
+        // them concurrently instead of serially. Behind the popup's 5s toggle timeout
+        // a sequential loop (`for target in targets { await ... }`) was the dominant
+        // cost and the reason Disable-on-this-site intermittently reported failure on
+        // profiles with several selected filter lists.
+        await withTaskGroup(of: Bool.self) { group in
+            for target in targets {
+                group.addTask {
+                    await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier).success
+                }
             }
+            var reloadedTargets = 0
+            var failedTargets = 0
+            for await success in group {
+                if success {
+                    reloadedTargets += 1
+                } else {
+                    failedTargets += 1
+                }
+            }
+            return (reloadedTargets: reloadedTargets, failedTargets: failedTargets)
         }
-
-        return (reloadedTargets: reloadedTargets, failedTargets: failedTargets)
     }
 
     /// Returns enabled userscripts for a URL. By default this uses lightweight descriptors,
