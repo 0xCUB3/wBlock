@@ -422,8 +422,8 @@ struct SettingsView: View {
         } footer: {
             Text(
                 filterManager.isBlockingPaused
-                    ? "Blocking is paused. All filters, userscripts, and styles stay off until you turn this back on."
-                    : "Temporarily disable all blocking — content blockers, userscripts, and styles — without turning extensions off in Safari Settings."
+                    ? "Blocking is paused. Content blockers are emptied until you turn this back on."
+                    : "Temporarily disable all content blockers without turning them off in Safari Settings."
             )
         }
     }
