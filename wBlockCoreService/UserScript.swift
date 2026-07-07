@@ -55,13 +55,11 @@ public enum UserScriptURLSupport {
             return true
         }
         // Some hosts (e.g. gitflic.ru raw endpoints) carry the script filename in
-        // a query parameter rather than the path. Fall back to the basename of each
-        // query item value so those legitimate URLs are not rejected as invalid.
+        // a query parameter rather than the path. Fall back to the query item value
+        // so those legitimate URLs are not rejected as invalid.
         if let queryItems = components.queryItems {
             for item in queryItems {
-                guard let value = item.value, !value.isEmpty else { continue }
-                let basename = value.split(separator: "/").last.map(String.init) ?? value
-                if hasSupportedExtension(in: basename) {
+                if let value = item.value, hasSupportedExtension(in: value) {
                     return true
                 }
             }
