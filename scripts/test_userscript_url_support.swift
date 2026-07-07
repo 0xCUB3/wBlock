@@ -21,6 +21,20 @@ struct UserScriptURLSupportTests {
             "ftp://example.com/script.js",
             "expected non-http(s) remote URLs to be rejected"
         )
+        expectValid(
+            "https://example.com/raw?file=script.user.js",
+            expectedPath: "/raw",
+            "expected userscript URLs with the filename in a query parameter to be accepted"
+        )
+        expectValid(
+            "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript/bpc.en.user.js",
+            expectedPath: "/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw",
+            "expected the gitflic BPC userscript URL (#455) to be accepted"
+        )
+        expectInvalid(
+            "https://example.com/raw?file=script.txt",
+            "expected query-parameter URLs without a supported extension to be rejected"
+        )
 
         let plainName = UserScriptURLSupport.displayName(forRemoteURL: URL(string: "https://example.com/foo.js")!)
         expectEqual(plainName, "foo", "expected .js suffix to be stripped from remote display names")

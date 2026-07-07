@@ -16,7 +16,7 @@ public enum UserScriptURLSupport {
               ["https", "http"].contains(scheme),
               let host = components.host,
               !host.isEmpty,
-              hasSupportedExtension(in: components.path),
+              hasSupportedExtension(in: components),
               let url = components.url else {
             return nil
         }
@@ -48,6 +48,23 @@ public enum UserScriptURLSupport {
         }
 
         return URL(fileURLWithPath: filename).deletingPathExtension().lastPathComponent
+    }
+
+    private static func hasSupportedExtension(in components: URLComponents) -> Bool {
+        if hasSupportedExtension(in: components.path) {
+            return true
+        }
+        // Some hosts (e.g. gitflic.ru raw endpoints) carry the script filename in
+        // a query parameter rather than the path. Fall back to the query item value
+        // so those legitimate URLs are not rejected as invalid.
+        if let queryItems = components.queryItems {
+            for item in queryItems {
+                if let value = item.value, hasSupportedExtension(in: value) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     private static func hasSupportedExtension(in path: String) -> Bool {
