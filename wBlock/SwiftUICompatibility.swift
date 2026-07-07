@@ -1,7 +1,17 @@
 import SwiftUI
 
 struct CompatibleNavigationStack<Content: View>: View {
+    /// When false, the pre-macOS-13 / pre-iOS-16 fallback renders content directly
+    /// instead of wrapping it in a NavigationView. Useful for tabs whose content
+    /// (ScrollView / VStack) doesn't use NavigationLink, so they don't inherit
+    /// NavigationView's mandatory double-column layout on macOS 12 and earlier.
+    let requiresNavigationView: Bool
     @ViewBuilder var content: () -> Content
+
+    init(requiresNavigationView: Bool = true, @ViewBuilder content: @escaping () -> Content) {
+        self.requiresNavigationView = requiresNavigationView
+        self.content = content
+    }
 
     var body: some View {
         if #available(iOS 16.0, macOS 13.0, *) {
@@ -11,7 +21,11 @@ struct CompatibleNavigationStack<Content: View>: View {
             NavigationView(content: content)
                 .navigationViewStyle(StackNavigationViewStyle())
             #else
-            NavigationView(content: content)
+            if requiresNavigationView {
+                NavigationView(content: content)
+            } else {
+                content()
+            }
             #endif
         }
     }

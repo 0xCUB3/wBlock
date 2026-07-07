@@ -181,7 +181,7 @@ struct ContentView: View {
     }
 
     private var filtersView: some View {
-        CompatibleNavigationStack {
+        CompatibleNavigationStack(requiresNavigationView: false) {
             nativeFiltersListView
                 .safeAreaInset(edge: .top) {
                     if filterManager.isBlockingPaused {
@@ -324,7 +324,7 @@ struct ContentView: View {
     }
 
     private var userscriptsView: some View {
-        CompatibleNavigationStack {
+        CompatibleNavigationStack(requiresNavigationView: false) {
             UserScriptManagerView(
                 userScriptManager: userScriptManager,
                 hasPendingChanges: hasPendingChanges,
