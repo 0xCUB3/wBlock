@@ -24,6 +24,12 @@
   }
 }
 
+html {
+  min-width: 340px;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -36,11 +42,18 @@ body {
   display: flex;
   justify-content: center;
   min-width: 340px;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .popup {
   width: 100%;
   max-width: 380px;
+  max-height: min(100vh, 640px);
+  min-height: 0;
+  flex-shrink: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 14px;
   box-sizing: border-box;
 }
@@ -259,8 +272,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 300px;
-  overflow: auto;
   padding: 4px 0;
 }
 
