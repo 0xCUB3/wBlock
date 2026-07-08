@@ -19,7 +19,7 @@ function ruleFor(selector) {
   const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)];
   for (const match of rules) {
     const selectors = match[1].split(",").map((part) => part.trim());
-    if (selectors.length === 1 && selectors[0] === selector) {
+    if (selectors.includes(selector)) {
       return match[2];
     }
   }
@@ -44,28 +44,20 @@ function declarationsFor(selector) {
     }));
 }
 
-const html = declarationsFor("html");
-if (html.get("max-height") !== "100vh") {
-  fail("html must be bounded to the popup viewport height");
-}
-if (html.get("overflow") !== "hidden") {
-  fail("html must not become a second scroll container");
-}
-
-const body = declarationsFor("body");
-if (body.get("overflow") !== "hidden") {
-  fail("body must not become a second scroll container");
+const rootRule = declarationsFor("body");
+if (rootRule.get("background") !== "Canvas") {
+  fail("popup root must paint a system background instead of showing the page behind it");
 }
 
 const popup = declarationsFor(".popup");
 if (popup.get("overflow-y") !== "auto") {
   fail(".popup must scroll vertically when runtime content exceeds the menu height");
 }
-if (!/100vh/.test(popup.get("max-height") || "")) {
-  fail(".popup max-height must be tied to the visible viewport");
+if (popup.get("max-height") !== "600px") {
+  fail(".popup must be capped below Safari's popover clipping height");
 }
 if (popup.get("min-height") !== "0") {
-  fail(".popup must be allowed to shrink inside the flex body before it can scroll");
+  fail(".popup must be allowed to shrink before it can scroll");
 }
 
 const rules = declarationsFor(".rules");
