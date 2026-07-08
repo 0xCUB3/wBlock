@@ -199,8 +199,8 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 
 **Dependencies & Standards**
 - SafariConverterLib v4.3.0 for AdGuard to Safari rule conversion
-- AdGuard Scriptlets v2.3.1 for advanced blocking techniques
-- Swift 5.9+ with strict concurrency checking enabled
+- Bundled AdGuard scriptlet engine for advanced blocking techniques
+- Swift concurrency (async/await, Task, Actor isolation) with project-level Swift 5 settings
 - VoiceOver and Dynamic Type support throughout the SwiftUI app
 - SwiftProtobuf for cross-platform filter storage format
 
