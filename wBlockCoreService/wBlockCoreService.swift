@@ -35,12 +35,12 @@ public enum ContentBlockerService {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "4"
+    private static let embeddedCompatibilityRulesVersion = "5"
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
     ///
-    /// YouTube rules use trusted-replace-fetch-response for pre-parse string
+    /// YouTube rules use trusted response replacement for pre-parse string
     /// replacement (faster than json-prune-fetch-response which works post-parse).
     /// Sourced from uAssets, translated to AdGuard syntax.
     ///
@@ -227,11 +227,20 @@ adblock.turtlecute.org##.textads
 ||notes-analytics-events.apple.com^$domain=adblock.turtlecute.org
 
 ! YouTube compatibility
+www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'player?')
+www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'player?')
 www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
 www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
+www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'get_watch?')
+www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'get_watch?')
+www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'get_watch?')
+www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'get_watch?')
 www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
 www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
+www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adSlots', 'undefined')
+www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.playerAds', 'undefined')
 www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
+www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
 """
 
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {

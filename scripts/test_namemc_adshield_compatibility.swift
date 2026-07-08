@@ -22,8 +22,8 @@ for rule in requiredRules {
     }
 }
 
-guard serviceSource.contains("embeddedCompatibilityRulesVersion = \"4\"") else {
-    fputs("FAIL: compatibility rule version should be bumped when NameMC rules change\n", stderr)
+guard serviceSource.contains("embeddedCompatibilityRulesVersion = \"5\"") else {
+    fputs("FAIL: compatibility rule version should be bumped when embedded rules change\n", stderr)
     exit(1)
 }
 
