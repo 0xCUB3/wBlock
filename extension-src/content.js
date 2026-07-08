@@ -30873,12 +30873,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * scriptlets work as expected.
    *
    * @param timeoutMs - Timeout in milliseconds after which the events are forced
-   *                  (if not already handled). Default is 1000ms.
+   *                  (if not already handled). Default is 3000ms.
    * @returns A function which, when invoked, cancels the timeout and dispatches
    *         (or removes) the interceptors.
    */
   function setupDelayedEventDispatcher() {
-    let timeoutMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
+    let timeoutMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3000;
     // The dispatcher is armed at module init so it can intercept DOMContentLoaded
     // / load events before the per-site disable check resolves. If the page is
     // whitelisted, `disarm()` is called as soon as we know, which removes the
@@ -30993,42 +30993,40 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const wBlockLogger = new ConsoleLogger('[wBlock Scripts]', LoggingLevel.Error);
   setLogger(wBlockLogger);
   // Initialize the delayed event dispatcher. This may intercept DOMContentLoaded
-  // and load events. The delay of 1000ms is used as a buffer to capture critical
+  // and load events. The delay of 3000ms is used as a buffer to capture critical
   // initial events while waiting for the rules response.
-  const dispatcherRef = setupDelayedEventDispatcher(1000);
-  // Shared per-site disable check. Resolves to `true` when wBlock has this
-  // host in its disabled-sites list. The content script must bail out before
-  // touching page events / running the removeparam rewrite when this is true —
-  // even with Safari's content blockers turned off, the wBlock Scripts
-  // content script still runs, and the held DOMContentLoaded/load events
-  // trip anti-adblock walls (e.g. Ticketmaster seat selection, issue #445).
-  // Resolves to `false` when the host is not disabled OR the lookup fails (we
-  // err on the side of applying normal filtering on errors to keep safety).
-  let resolveSiteDisabled;
-  const siteDisabledPromise = new Promise(resolve => {
-    resolveSiteDisabled = resolve;
-  });
-  (async () => {
-    try {
-      if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) {
-        resolveSiteDisabled(false);
-        return;
-      }
-      const hostname = window.location && typeof window.location.hostname === "string" ? window.location.hostname : "";
-      if (!hostname) {
-        resolveSiteDisabled(false);
-        return;
-      }
-      const response = await browser.runtime.sendMessage({
-        action: "wblock:getSiteDisabledState",
-        host: hostname
-      });
-      resolveSiteDisabled(!!(response && response.disabled));
-    } catch (error) {
-      wBlockLogger.warn('Failed to resolve site disabled state:', error);
-      resolveSiteDisabled(false);
+  const dispatcherRef = setupDelayedEventDispatcher(3000);
+  // Shared per-site disable check. Resolved lazily so the rules lookup can be
+  // sent first; the native InitContentScript path already returns an empty
+  // payload for paused/disabled sites. The removeparam fallback still waits for
+  // this check so disabled sites behave as if the extension was not there
+  // (issue #445). Resolves to `false` when the host is not disabled OR the
+  // lookup fails (we err on the side of applying normal filtering on errors).
+  let siteDisabledPromise;
+  const getSiteDisabledPromise = () => {
+    if (!siteDisabledPromise) {
+      siteDisabledPromise = (async () => {
+        try {
+          if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) {
+            return false;
+          }
+          const hostname = window.location && typeof window.location.hostname === "string" ? window.location.hostname : "";
+          if (!hostname) {
+            return false;
+          }
+          const response = await browser.runtime.sendMessage({
+            action: "wblock:getSiteDisabledState",
+            host: hostname
+          });
+          return !!(response && response.disabled);
+        } catch (error) {
+          wBlockLogger.warn('Failed to resolve site disabled state:', error);
+          return false;
+        }
+      })();
     }
-  })();
+    return siteDisabledPromise;
+  };
   /**
    * Main entry point function for the content script.
    *
@@ -31045,19 +31043,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     window.adguard = {
       contentScript: new ContentScript()
     };
-    // Bail out entirely if this site is in wBlock's disabled-sites list.
-    // Disarming the dispatcher releases any events we already captured and
-    // prevents further interception, so the page behaves as if the extension
-    // wasn't there (modulo whatever Safari content-blocker rules still apply).
-    if (await siteDisabledPromise) {
-      dispatcherRef.disarm();
-      return;
-    }
     const message = {
       type: MessageType.InitContentScript
     };
-    // Send the message to the background script and await the response.
-    const response = await browser.runtime.sendMessage(message);
+    // Start the rules lookup immediately. The native configuration path already
+    // respects global pause and per-site disable, so enabled sites should not pay
+    // for a separate disabled-site round trip before scriptlets can initialize.
+    const configPromise = browser.runtime.sendMessage(message);
+    const disabledResultPromise = getSiteDisabledPromise().then(disabled => ({
+      kind: "disabled",
+      disabled
+    }));
+    const configResultPromise = configPromise.then(response => ({
+      kind: "config",
+      response
+    }));
+    const firstResult = await Promise.race([disabledResultPromise, configResultPromise]);
+    // If the site-disabled check wins, release held page events without waiting
+    // for filtering configuration. If configuration wins first, apply it right
+    // away; the native handler returns an empty payload for disabled/paused sites.
+    if (firstResult.kind === "disabled" && firstResult.disabled) {
+      configPromise.catch(error => {
+        wBlockLogger.warn('Ignored configuration request failed after site-disabled bailout:', error);
+      });
+      dispatcherRef.disarm();
+      return;
+    }
+    const response = firstResult.kind === "config" ? firstResult.response : await configPromise;
     // If the background page returned payload with configuration, it means
     // that it cannot apply it on its own and commands the content script
     // to do that.
@@ -31083,7 +31095,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // walls even when content blockers are off (issue #445).
   (async () => {
     try {
-      if (await siteDisabledPromise) return;
+      if (await getSiteDisabledPromise()) return;
       if (window.top !== window) return;
       if (!/^https?:/i.test(window.location.href)) return;
       if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;
