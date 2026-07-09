@@ -25130,9 +25130,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      * @param scriptInjection Script injection to execute.
      */
     static async executeScript(scriptInjection) {
-      const results = await browser.scripting.executeScript(scriptInjection);
+      let results;
+      try {
+        results = await browser.scripting.executeScript(scriptInjection);
+      } catch (error) {
+        const message = String((error === null || error === void 0 ? void 0 : error.message) || error || '').toLowerCase();
+        const expectedPermissionFailure = message.includes('permission') || message.includes('not allowed') || message.includes('denied') || message.includes('cannot access') || message.includes('not granted') || message.includes('not permitted') || message.includes('does not have access');
+        if (expectedPermissionFailure) {
+          log$1.debug('Skipped script injection without website access', scriptInjection.target);
+        } else {
+          log$1.error('Failed to execute script in target', scriptInjection.target, 'error', error);
+        }
+        return;
+      }
       if (results.length === 0) {
-        log$1.error('Failed to execute script in target', scriptInjection.target);
+        log$1.debug('Skipped script injection in unavailable target', scriptInjection.target);
         return;
       }
       const result = results[0];

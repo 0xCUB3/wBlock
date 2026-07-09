@@ -29,10 +29,10 @@ const check = (name, condition) => {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const makeConfig = (css, engineTimestamp) => ({
+const makeConfig = (css, engineTimestamp, js = []) => ({
   css,
   extendedCss: [],
-  js: [],
+  js,
   scriptlets: [],
   engineTimestamp
 });
@@ -40,7 +40,7 @@ const makeConfig = (css, engineTimestamp) => ({
 // Loads the bundle with a fresh browser stub.
 // nativeHandler receives every sendNativeMessage payload and returns the
 // response (or a never-resolving promise to simulate a hung native host).
-const loadBackground = ({ storage = {}, nativeHandler }) => {
+const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () => [{}] }) => {
   const state = {
     storage,
     nativeMessages: [],
@@ -89,7 +89,10 @@ const loadBackground = ({ storage = {}, nativeHandler }) => {
       onRemoved: listenerStub
     },
     scripting: {
-      executeScript: async injection => { state.executed.push(injection); return [{}]; },
+      executeScript: async injection => {
+        state.executed.push(injection);
+        return executeScript(injection);
+      },
       insertCSS: async injection => { state.cssInserted.push(injection); }
     },
     declarativeNetRequest: {
@@ -225,6 +228,59 @@ const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
   check(
     "first run without persisted cache still applies native config",
     state.cssInserted.some(injection => String(injection.css).includes("#first-run"))
+  );
+}
+
+// Scenario E: executeScript treats unavailable targets and permission denials as
+// expected skips, while unexpected failures remain visible as errors.
+const runScriptInjectionScenario = async executeScript => {
+  const pageUrl = "https://injection.example/";
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: () => ({ payload: makeConfig([], 9, ["test script"]) }),
+    executeScript
+  });
+  const errors = [];
+  const originalConsoleError = console.error;
+  let rejected = false;
+  console.error = (...args) => { errors.push(args); };
+  try {
+    await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  } catch {
+    rejected = true;
+  } finally {
+    console.error = originalConsoleError;
+  }
+  return { errors, rejected };
+};
+
+{
+  const outcome = await runScriptInjectionScenario(async () => []);
+  check("empty executeScript results are skipped without an error", !outcome.rejected && outcome.errors.length === 0);
+}
+
+{
+  const outcome = await runScriptInjectionScenario(async () => {
+    throw new Error("The extension does not have permission to access this page");
+  });
+  check("permission-denied executeScript rejection is skipped without an error", !outcome.rejected && outcome.errors.length === 0);
+}
+
+{
+  const outcome = await runScriptInjectionScenario(async () => {
+    throw new Error("Unexpected script injection failure");
+  });
+  check(
+    "unexpected executeScript rejection is logged as an error",
+    !outcome.rejected && outcome.errors.some(args => args.some(value => String(value).includes("Failed to execute script in target")))
+  );
+}
+
+{
+  const outcome = await runScriptInjectionScenario(async () => [{ error: "Unexpected script injection result" }]);
+  check(
+    "unexpected executeScript result error is logged",
+    !outcome.rejected && outcome.errors.some(args => args.some(value => String(value).includes("Failed to execute script in target")))
   );
 }
 
