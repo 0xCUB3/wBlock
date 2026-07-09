@@ -30488,6 +30488,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     LoggingLevel[LoggingLevel["Error"] = 0] = "Error";
   })(LoggingLevel || (LoggingLevel = {}));
   const getTimestamp = () => `[${new Date().toISOString()}]`;
+  const formatLogValue = value => {
+    if (value instanceof Error) {
+      return value.stack || value.message || String(value);
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    try {
+      return JSON.stringify(value);
+    } catch (_error) {
+      return String(value);
+    }
+  };
+  const formatLogLine = (prefix, args) => [getTimestamp(), prefix, ...args.map(formatLogValue)].join(' ');
   /**
    * Console logger implementation.
    */
@@ -30531,7 +30545,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len5 = arguments.length, args = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
           args[_key5] = arguments[_key5];
         }
-        console.error(getTimestamp(), this.prefix, ...args);
+        console.error(formatLogLine(this.prefix, args), ...args);
       }
     }
   }
@@ -31020,7 +31034,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           });
           return !!(response && response.disabled);
         } catch (error) {
-          wBlockLogger.warn('Failed to resolve site disabled state:', error);
+          console.warn('[wBlock] Failed to resolve site disabled state:', error);
           return false;
         }
       })();
@@ -31064,7 +31078,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // away; the native handler returns an empty payload for disabled/paused sites.
     if (firstResult.kind === "disabled" && firstResult.disabled) {
       configPromise.catch(error => {
-        wBlockLogger.warn('Ignored configuration request failed after site-disabled bailout:', error);
+        console.warn('[wBlock] Ignored configuration request failed after site-disabled bailout:', error);
       });
       dispatcherRef.disarm();
       return;

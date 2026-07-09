@@ -25801,8 +25801,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         });
         return response || { ok: false, rules: [] };
       } catch (error) {
-        console.error("[wBlock] Failed to sync zapper rules via background bridge:", error);
-        return { ok: false, error: String(error && error.message ? error.message : error), rules: [] };
+        const errorMessage = String(error && error.message ? error.message : error);
+        console.error(`[wBlock] Failed to sync zapper rules via background bridge: ${errorMessage}`, error);
+        return { ok: false, error: errorMessage, rules: [] };
       }
     }
     if (message && message.action === "wblock:zapper:getRules") {
@@ -25817,8 +25818,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         });
         return response || { ok: false, rules: [] };
       } catch (error) {
-        console.error("[wBlock] Failed to fetch zapper rules via background bridge:", error);
-        return { ok: false, error: String(error && error.message ? error.message : error), rules: [] };
+        const errorMessage = String(error && error.message ? error.message : error);
+        console.error(`[wBlock] Failed to fetch zapper rules via background bridge: ${errorMessage}`, error);
+        return { ok: false, error: errorMessage, rules: [] };
       }
     }
     if (message && message.action === "getUserScripts") {
