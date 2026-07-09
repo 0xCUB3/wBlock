@@ -265,6 +265,8 @@ extension AppDelegate: NSApplicationDelegate {
     }
     
     func applicationWillBecomeActive(_ notification: Notification) {
+        guard !BlockingPauseStore.isPaused() else { return }
+
         // Check if update is overdue when app becomes active
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()

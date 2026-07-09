@@ -102,6 +102,11 @@ assertNotContains(
 )
 assertContains(
     appDelegate,
+    "func applicationWillBecomeActive(_ notification: Notification) {\n        guard !BlockingPauseStore.isPaused() else { return }\n\n        // Check if update is overdue when app becomes active\n        Task {",
+    "macOS foreground activation must skip opportunistic updates while blocking is paused"
+)
+assertContains(
+    appDelegate,
     "func applicationDidBecomeActive(_ application: UIApplication) {\n        guard !BlockingPauseStore.isPaused() else { return }\n\n        // Run opportunistic updates only when app is active (not during background launches).\n        Task {",
     "Foreground activation must skip opportunistic updates while blocking is paused"
 )
