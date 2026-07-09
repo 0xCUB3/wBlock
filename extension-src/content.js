@@ -30529,7 +30529,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
           args[_key3] = arguments[_key3];
         }
-        console.debug(getTimestamp(), this.prefix, ...args);
+        console.debug(formatLogLine(this.prefix, args));
       }
     }
     info() {
@@ -30537,7 +30537,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
           args[_key4] = arguments[_key4];
         }
-        console.info(getTimestamp(), this.prefix, ...args);
+        console.info(formatLogLine(this.prefix, args));
       }
     }
     error() {
@@ -30545,7 +30545,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len5 = arguments.length, args = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
           args[_key5] = arguments[_key5];
         }
-        console.error(formatLogLine(this.prefix, args), ...args);
+        console.error(formatLogLine(this.prefix, args));
       }
     }
   }
@@ -30687,7 +30687,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const code = scripts.join('\r\n');
     if (!executeScriptsViaTextContent(code)) {
       if (!executeScriptsViaBlob(code)) {
-        log$1.error('Failed to execute scripts');
+        console.warn('[wBlock] Page script injection was blocked; continuing without page-context scripts.');
       }
     }
   };
