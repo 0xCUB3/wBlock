@@ -13,9 +13,17 @@ func assertContains(_ haystack: String, _ needle: String, _ message: String) {
     }
 }
 
+func assertNotContains(_ haystack: String, _ needle: String, _ message: String) {
+    guard !haystack.contains(needle) else {
+        fputs("FAIL: \(message)\nUnexpected: \(needle)\n", stderr)
+        exit(1)
+    }
+}
+
 let contentBlockerHandler = try read("wBlockCoreService/ContentBlockerExtensionRequestHandler.swift")
 let webExtensionHandler = try read("wBlockCoreService/WebExtensionRequestHandler.swift")
 let autoUpdateManager = try read("wBlockCoreService/SharedAutoUpdateManager.swift")
+let appDelegate = try read("wBlock/AppDelegate.swift")
 let removeParamGenerator = try read("wBlockCoreService/RemoveParamDNRRuleGenerator.swift")
 let applyPipeline = try read("wBlock/AppFilterManager+ApplyPipeline.swift")
 let contentBlockerService = try read("wBlockCoreService/wBlockCoreService.swift")
@@ -81,6 +89,21 @@ assertContains(
     applyPipeline,
     "jsonRules: ContentBlockerService.inertContentBlockerRulesJSON",
     "Pause clearing must write the inert content blocker payload instead of []"
+)
+assertContains(
+    applyPipeline,
+    "        } else {\n            await applyChanges()\n            await MainActor.run {",
+    "Resuming blocking must use the standard visible apply pipeline"
+)
+assertNotContains(
+    applyPipeline,
+    "        } else {\n            await applyChanges(allowUserInteraction: true)\n            await MainActor.run {",
+    "Resuming blocking must not suppress standard apply progress"
+)
+assertContains(
+    appDelegate,
+    "func applicationDidBecomeActive(_ application: UIApplication) {\n        guard !BlockingPauseStore.isPaused() else { return }\n\n        // Run opportunistic updates only when app is active (not during background launches).\n        Task {",
+    "Foreground activation must skip opportunistic updates while blocking is paused"
 )
 assertContains(
     backgroundSource,

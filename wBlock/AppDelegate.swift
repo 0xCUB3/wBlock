@@ -374,6 +374,8 @@ extension AppDelegate: UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        guard !BlockingPauseStore.isPaused() else { return }
+
         // Run opportunistic updates only when app is active (not during background launches).
         Task {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()

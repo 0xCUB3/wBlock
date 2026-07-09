@@ -785,7 +785,7 @@ extension AppFilterManager {
                 }
             }
         } else {
-            await applyChanges(allowUserInteraction: true)
+            await applyChanges()
             await MainActor.run {
                 self.statusDescription = LocalizedStrings.text(
                     "Blocking resumed",
