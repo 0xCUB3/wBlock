@@ -250,10 +250,6 @@ struct LogsView: View {
     }
 
     private func exportLogsAsText() -> String {
-        Task {
-            return await ConcurrentLogManager.shared.exportAsText()
-        }
-        // Fallback synchronous version
         return entries.map { $0.exportFormat }.joined(separator: "\n\n")
     }
 
