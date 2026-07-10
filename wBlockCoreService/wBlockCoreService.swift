@@ -1051,3 +1051,56 @@ extension ContentBlockerService {
         }
     }
 }
+
+public nonisolated enum ContentBlockerInputWriter {
+    public enum AppendPolicy {
+        case strict
+        case permissive((Error) -> Void)
+    }
+
+    @discardableResult
+    public static func appendFile(
+        from sourceURL: URL,
+        to destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data,
+        policy: AppendPolicy,
+        chunkSize: Int = 64 * 1024
+    ) throws -> Bool {
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else { return false }
+        do {
+            let sourceHandle = try FileHandle(forReadingFrom: sourceURL)
+            defer { try? sourceHandle.close() }
+            while true {
+                let chunk = try sourceHandle.read(upToCount: chunkSize) ?? Data()
+                if chunk.isEmpty { break }
+                hasher.update(data: chunk)
+                try destinationHandle.write(contentsOf: chunk)
+            }
+            hasher.update(data: newlineData)
+            try destinationHandle.write(contentsOf: newlineData)
+            return true
+        } catch {
+            switch policy {
+            case .strict:
+                throw error
+            case let .permissive(report):
+                report(error)
+                return false
+            }
+        }
+    }
+
+    public static func appendInline(
+        _ rulesText: String,
+        to destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data
+    ) throws {
+        let rulesData = Data(rulesText.utf8)
+        hasher.update(data: rulesData)
+        try destinationHandle.write(contentsOf: rulesData)
+        hasher.update(data: newlineData)
+        try destinationHandle.write(contentsOf: newlineData)
+    }
+}

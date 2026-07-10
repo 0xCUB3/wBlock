@@ -941,19 +941,20 @@ extension AppFilterManager {
                     for: filter,
                     containerURL: containerURL
                 ) {
-                    try Self.appendFileContentsToCombinedStream(
-                        sourceURL: sourceURL,
-                        destinationHandle: fileHandle,
+                    try ContentBlockerInputWriter.appendFile(
+                        from: sourceURL,
+                        to: fileHandle,
                         hasher: &hasher,
-                        newlineData: newlineData
+                        newlineData: newlineData,
+                        policy: .strict
                     )
                 }
             }
 
             if let extraRulesText, !extraRulesText.isEmpty {
-                try Self.appendInlineRulesToCombinedStream(
+                try ContentBlockerInputWriter.appendInline(
                     extraRulesText,
-                    destinationHandle: fileHandle,
+                    to: fileHandle,
                     hasher: &hasher,
                     newlineData: newlineData
                 )
@@ -1100,39 +1101,6 @@ extension AppFilterManager {
         )
     }
 
-    nonisolated private static func appendFileContentsToCombinedStream(
-        sourceURL: URL,
-        destinationHandle: FileHandle,
-        hasher: inout SHA256,
-        newlineData: Data,
-        chunkSize: Int = 64 * 1024
-    ) throws {
-        let sourceHandle = try FileHandle(forReadingFrom: sourceURL)
-        defer { try? sourceHandle.close() }
-
-        while true {
-            let chunk = try sourceHandle.read(upToCount: chunkSize) ?? Data()
-            if chunk.isEmpty { break }
-            hasher.update(data: chunk)
-            try destinationHandle.write(contentsOf: chunk)
-        }
-
-        hasher.update(data: newlineData)
-        try destinationHandle.write(contentsOf: newlineData)
-    }
-
-    nonisolated private static func appendInlineRulesToCombinedStream(
-        _ rulesText: String,
-        destinationHandle: FileHandle,
-        hasher: inout SHA256,
-        newlineData: Data
-    ) throws {
-        let rulesData = Data(rulesText.utf8)
-        hasher.update(data: rulesData)
-        try destinationHandle.write(contentsOf: rulesData)
-        hasher.update(data: newlineData)
-        try destinationHandle.write(contentsOf: newlineData)
-    }
 
     func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count

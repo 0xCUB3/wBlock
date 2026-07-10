@@ -1321,99 +1321,7 @@ public actor SharedAutoUpdateManager {
         return try? Data(contentsOf: legacyURL)
     }
 
-    @discardableResult
-    private nonisolated static func streamFilterDataForConversion(
-        _ filter: FilterList,
-        includeBaseRules: Bool,
-        hasAffinity: Bool,
-        target: ContentBlockerTargetInfo,
-        allTargets: [ContentBlockerTargetInfo],
-        containerURL: URL,
-        destinationHandle: FileHandle,
-        hasher: inout SHA256,
-        newlineData: Data
-    ) -> Bool {
-        guard includeBaseRules || hasAffinity else { return false }
 
-        if hasAffinity {
-            do {
-                return try SafariContentBlockerAffinityProcessor.appendAffinityFilteredContribution(
-                    for: filter,
-                    includeBaseRules: includeBaseRules,
-                    target: target,
-                    allTargets: allTargets,
-                    containerURL: containerURL,
-                    destinationHandle: destinationHandle,
-                    hasher: &hasher,
-                    newlineData: newlineData
-                )
-            } catch {
-                let workerLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "wBlock", category: "AutoUpdate")
-                os_log(
-                    "Failed to stream affinity-filtered data from %{public}@ – %{public}@",
-                    log: workerLog,
-                    type: .error,
-                    filter.name,
-                    error.localizedDescription
-                )
-                return false
-            }
-        }
-
-        guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
-            for: filter,
-            containerURL: containerURL
-        ) else {
-            return false
-        }
-
-        return appendFileContentsToCombinedStream(
-            sourceURL: sourceURL,
-            destinationHandle: destinationHandle,
-            hasher: &hasher,
-            newlineData: newlineData
-        )
-    }
-
-    @discardableResult
-    private nonisolated static func appendFileContentsToCombinedStream(
-        sourceURL: URL,
-        destinationHandle: FileHandle,
-        hasher: inout SHA256,
-        newlineData: Data,
-        chunkSize: Int = 64 * 1024
-    ) -> Bool {
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else { return false }
-
-        do {
-            let sourceHandle = try FileHandle(forReadingFrom: sourceURL)
-            defer { try? sourceHandle.close() }
-
-            while true {
-                let chunk = try sourceHandle.read(upToCount: chunkSize) ?? Data()
-                if chunk.isEmpty { break }
-                hasher.update(data: chunk)
-                try destinationHandle.write(contentsOf: chunk)
-            }
-
-            hasher.update(data: newlineData)
-            try destinationHandle.write(contentsOf: newlineData)
-            return true
-        } catch {
-            let workerLog = OSLog(
-                subsystem: Bundle.main.bundleIdentifier ?? "wBlock",
-                category: "AutoUpdate"
-            )
-            os_log(
-                "Failed to stream filter data from %{public}@ – %{public}@",
-                log: workerLog,
-                type: .error,
-                sourceURL.lastPathComponent,
-                error.localizedDescription
-            )
-            return false
-        }
-    }
 
 
     private func contentBlockerOutputsNeedRepair() -> Bool {
@@ -1663,14 +1571,38 @@ public actor SharedAutoUpdateManager {
                 let writeStart = Date()
                 for filter in work.orderedFilters {
                     try Task.checkCancellation()
-                    _ = Self.streamFilterDataForConversion(
-                        filter, includeBaseRules: assigned.contains(filter.id), hasAffinity: work.affinityFilterIDs.contains(filter.id),
-                        target: target, allTargets: work.allTargets, containerURL: work.containerURL,
-                        destinationHandle: handle, hasher: &hasher, newlineData: newline
-                    )
+                    let includeBaseRules = assigned.contains(filter.id)
+                    let hasAffinity = work.affinityFilterIDs.contains(filter.id)
+                    guard includeBaseRules || hasAffinity else { continue }
+                    if hasAffinity {
+                        do {
+                            _ = try SafariContentBlockerAffinityProcessor.appendAffinityFilteredContribution(
+                                for: filter, includeBaseRules: includeBaseRules, target: target,
+                                allTargets: work.allTargets, containerURL: work.containerURL,
+                                destinationHandle: handle, hasher: &hasher, newlineData: newline
+                            )
+                        } catch {
+                            let workerLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "wBlock", category: "AutoUpdate")
+                            os_log("Failed to stream affinity-filtered data from %{public}@ – %{public}@",
+                                   log: workerLog, type: .error, filter.name, error.localizedDescription)
+                        }
+                    } else if let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+                        for: filter, containerURL: work.containerURL
+                    ) {
+                        _ = try ContentBlockerInputWriter.appendFile(
+                            from: sourceURL, to: handle, hasher: &hasher, newlineData: newline,
+                            policy: .permissive { error in
+                                let workerLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "wBlock", category: "AutoUpdate")
+                                os_log("Failed to stream filter data from %{public}@ – %{public}@",
+                                       log: workerLog, type: .error, sourceURL.lastPathComponent, error.localizedDescription)
+                            }
+                        )
+                    }
                 }
                 if let extra = work.extraRulesText, !extra.isEmpty {
-                    try Self.appendInlineRulesToCombinedStream(extra, destinationHandle: handle, hasher: &hasher, newlineData: newline)
+                    try ContentBlockerInputWriter.appendInline(
+                        extra, to: handle, hasher: &hasher, newlineData: newline
+                    )
                 }
                 writeMs = Int(Date().timeIntervalSince(writeStart) * 1000)
                 bytes = Self.fileSizeBytes(at: tempURL)
@@ -1903,18 +1835,6 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private nonisolated static func appendInlineRulesToCombinedStream(
-        _ rulesText: String,
-        destinationHandle: FileHandle,
-        hasher: inout SHA256,
-        newlineData: Data
-    ) throws {
-        let rulesData = Data(rulesText.utf8)
-        hasher.update(data: rulesData)
-        try destinationHandle.write(contentsOf: rulesData)
-        hasher.update(data: newlineData)
-        try destinationHandle.write(contentsOf: newlineData)
-    }
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
         let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
