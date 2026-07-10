@@ -971,7 +971,7 @@ extension AppFilterManager {
         groupIdentifier: String
     ) throws -> TargetConversionOutcome {
         let rulesFilename = targetInfo.rulesFilename
-        let hasAffinityFilters = !affinityFilterIDs.isEmpty
+        let hasAffinityFilters = filters.contains { affinityFilterIDs.contains($0.id) }
         let currentSignature = hasAffinityFilters
             ? nil
             : ContentBlockerIncrementalCache.computeInputSignature(

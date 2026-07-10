@@ -1610,7 +1610,6 @@ public actor SharedAutoUpdateManager {
             orderedSelectedFilters,
             containerURL: containerURL
         )
-        let hasAffinityFilters = !affinityFilterIDs.isEmpty
         let mirroredZapperRulesText = await MainActor.run {
             ZapperContentBlockerRuleGenerator.generatedRulesText(
                 from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
@@ -1630,6 +1629,7 @@ public actor SharedAutoUpdateManager {
 
             let filtersForTarget = filtersByTarget[target] ?? []
             let assignedFilterIDs = Set(filtersForTarget.map(\.id))
+            let hasAffinityFilters = !assignedFilterIDs.isDisjoint(with: affinityFilterIDs)
             let rulesFilename = target.rulesFilename
             let extraRulesText = target.slot == 5 ? mirroredZapperRulesText : nil
             let conversionStart = Date()
