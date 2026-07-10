@@ -5,29 +5,49 @@
 
 import SwiftUI
 
-#if os(macOS)
-import AppKit
+private let syntaxHighlightingDelayNanoseconds: UInt64 = 150_000_000
+private let syntaxHighlightingCharacterLimit = 60_000
 
-struct SyntaxHighlightingTextView: NSViewRepresentable {
-    @Binding var text: String
+@MainActor
+fileprivate final class SyntaxHighlightingCoordinatorCore {
     private let highlighter = AdGuardSyntaxHighlighter()
-    private let highlightDelayNanoseconds: UInt64 = 150_000_000
-    private let highlightingCharacterLimit = 60_000
+    private var highlightTask: Task<Void, Never>?
+    let plainTextAttributes: [NSAttributedString.Key: Any]
 
-    private var plainTextAttributes: [NSAttributedString.Key: Any] {
-        [
-            .foregroundColor: NSColor.labelColor,
-            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
-        ]
+    init(plainTextAttributes: [NSAttributedString.Key: Any]) {
+        self.plainTextAttributes = plainTextAttributes
     }
 
-    private func attributedText(for text: String) -> NSAttributedString {
-        guard text.count <= highlightingCharacterLimit else {
+    func attributedText(for text: String) -> NSAttributedString {
+        guard text.count <= syntaxHighlightingCharacterLimit else {
             return NSAttributedString(string: text, attributes: plainTextAttributes)
         }
         return highlighter.highlight(text)
     }
 
+    func scheduleHighlight(
+        for text: String,
+        currentText: @escaping @MainActor () -> String?,
+        apply: @escaping @MainActor (NSAttributedString) -> Void
+    ) {
+        highlightTask?.cancel()
+        highlightTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: syntaxHighlightingDelayNanoseconds)
+            guard !Task.isCancelled, let self, currentText() == text else { return }
+            apply(self.attributedText(for: text))
+        }
+    }
+
+    deinit {
+        highlightTask?.cancel()
+    }
+}
+
+#if os(macOS)
+import AppKit
+
+struct SyntaxHighlightingTextView: NSViewRepresentable {
+    @Binding var text: String
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
@@ -64,11 +84,11 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
             textContainer.heightTracksTextView = false
         }
         textView.delegate = context.coordinator
-        textView.typingAttributes = plainTextAttributes
+        textView.typingAttributes = context.coordinator.core.plainTextAttributes
 
         context.coordinator.textView = textView
 
-        let attributed = attributedText(for: text)
+        let attributed = context.coordinator.core.attributedText(for: text)
         textView.textStorage?.setAttributedString(attributed)
         scrollView.documentView = textView
 
@@ -82,56 +102,48 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
         context.coordinator.applyAttributedText(for: text, to: textView)
     }
 
+    @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SyntaxHighlightingTextView
+        fileprivate let core: SyntaxHighlightingCoordinatorCore
         var isUpdating = false
         weak var textView: NSTextView?
-        var highlightTask: Task<Void, Never>?
 
         init(_ parent: SyntaxHighlightingTextView) {
             self.parent = parent
+            core = SyntaxHighlightingCoordinatorCore(plainTextAttributes: [
+                .foregroundColor: NSColor.labelColor,
+                .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+            ])
         }
 
-        func applyAttributedText(for text: String, to textView: NSTextView) {
+        private func apply(attributed: NSAttributedString, to textView: NSTextView) {
             isUpdating = true
             let selectedRanges = textView.selectedRanges
-            let attributed = parent.attributedText(for: text)
             textView.textStorage?.setAttributedString(attributed)
-            textView.typingAttributes = parent.plainTextAttributes
-
-            let newLength = textView.string.utf16.count
-            let validRanges = selectedRanges.compactMap { rangeValue -> NSValue? in
-                let range = rangeValue.rangeValue
-                guard range.location + range.length <= newLength else { return nil }
-                return rangeValue
-            }
-            if !validRanges.isEmpty {
-                textView.selectedRanges = validRanges as [NSValue]
-            }
+            textView.typingAttributes = core.plainTextAttributes
+            let length = textView.string.utf16.count
+            let validRanges = selectedRanges.filter { $0.rangeValue.location + $0.rangeValue.length <= length }
+            if !validRanges.isEmpty { textView.selectedRanges = validRanges }
             isUpdating = false
         }
 
-        func scheduleHighlight(for text: String) {
-            highlightTask?.cancel()
-            let delay = parent.highlightDelayNanoseconds
-            highlightTask = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: delay)
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    guard let self, let textView = self.textView, textView.string == text else { return }
-                    self.applyAttributedText(for: text, to: textView)
-                }
-            }
+        func applyAttributedText(for text: String, to textView: NSTextView) {
+            apply(attributed: core.attributedText(for: text), to: textView)
         }
 
         func textDidChange(_ notification: Notification) {
-            guard !isUpdating else { return }
-            guard let textView = notification.object as? NSTextView else { return }
-
+            guard !isUpdating, let textView = notification.object as? NSTextView else { return }
             let newText = textView.string
-
             parent.text = newText
-            scheduleHighlight(for: newText)
+            core.scheduleHighlight(
+                for: newText,
+                currentText: { [weak self] in self?.textView?.string },
+                apply: { [weak self] attributed in
+                    guard let self, let textView = self.textView else { return }
+                    self.apply(attributed: attributed, to: textView)
+                }
+            )
         }
     }
 }
@@ -141,24 +153,6 @@ import UIKit
 
 struct SyntaxHighlightingTextView: UIViewRepresentable {
     @Binding var text: String
-    private let highlighter = AdGuardSyntaxHighlighter()
-    private let highlightDelayNanoseconds: UInt64 = 150_000_000
-    private let highlightingCharacterLimit = 60_000
-
-    private var plainTextAttributes: [NSAttributedString.Key: Any] {
-        [
-            .foregroundColor: UIColor.label,
-            .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
-        ]
-    }
-
-    private func attributedText(for text: String) -> NSAttributedString {
-        guard text.count <= highlightingCharacterLimit else {
-            return NSAttributedString(string: text, attributes: plainTextAttributes)
-        }
-        return highlighter.highlight(text)
-    }
-
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
@@ -177,11 +171,11 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         textView.smartQuotesType = .no
         textView.backgroundColor = .clear
         textView.delegate = context.coordinator
-        textView.typingAttributes = plainTextAttributes
+        textView.typingAttributes = context.coordinator.core.plainTextAttributes
 
         context.coordinator.textView = textView
 
-        let attributed = attributedText(for: text)
+        let attributed = context.coordinator.core.attributedText(for: text)
         textView.attributedText = attributed
 
         return textView
@@ -192,50 +186,47 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         guard currentText != text else { return }
         context.coordinator.applyAttributedText(for: text, to: textView)
     }
-
+    @MainActor
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: SyntaxHighlightingTextView
+        fileprivate let core: SyntaxHighlightingCoordinatorCore
         var isUpdating = false
         weak var textView: UITextView?
-        var highlightTask: Task<Void, Never>?
 
         init(_ parent: SyntaxHighlightingTextView) {
             self.parent = parent
+            core = SyntaxHighlightingCoordinatorCore(plainTextAttributes: [
+                .foregroundColor: UIColor.label,
+                .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+            ])
         }
 
-        func applyAttributedText(for text: String, to textView: UITextView) {
+        private func apply(attributed: NSAttributedString, to textView: UITextView) {
             isUpdating = true
             let selectedRange = textView.selectedRange
-            textView.attributedText = parent.attributedText(for: text)
-            textView.typingAttributes = parent.plainTextAttributes
-
-            let utf16Length = (textView.text as NSString?)?.length ?? 0
-            if selectedRange.location + selectedRange.length <= utf16Length {
-                textView.selectedRange = selectedRange
-            }
+            textView.attributedText = attributed
+            textView.typingAttributes = core.plainTextAttributes
+            let length = (textView.text as NSString?)?.length ?? 0
+            if selectedRange.location + selectedRange.length <= length { textView.selectedRange = selectedRange }
             isUpdating = false
         }
 
-        func scheduleHighlight(for text: String) {
-            highlightTask?.cancel()
-            let delay = parent.highlightDelayNanoseconds
-            highlightTask = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: delay)
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    guard let self, let textView = self.textView, (textView.text ?? "") == text else { return }
-                    self.applyAttributedText(for: text, to: textView)
-                }
-            }
+        func applyAttributedText(for text: String, to textView: UITextView) {
+            apply(attributed: core.attributedText(for: text), to: textView)
         }
 
         func textViewDidChange(_ textView: UITextView) {
             guard !isUpdating else { return }
-
             let newText = textView.text ?? ""
-
             parent.text = newText
-            scheduleHighlight(for: newText)
+            core.scheduleHighlight(
+                for: newText,
+                currentText: { [weak self] in self?.textView?.text },
+                apply: { [weak self] attributed in
+                    guard let self, let textView = self.textView else { return }
+                    self.apply(attributed: attributed, to: textView)
+                }
+            )
         }
     }
 }
