@@ -199,6 +199,22 @@ public class UserScriptManager: ObservableObject {
     private var initialLoadTask: Task<Void, Never>?
     private var userScriptIndexByID: [UUID: Int] = [:]
     private var metadataPrefetchTask: Task<Void, Never>?
+    private static let maximumResourceBytes = 10 * 1024 * 1024
+    private static let maximumEncodedResourceBytes = ((maximumResourceBytes + 2) / 3) * 4 + 256
+    private static let maximumResourcesPerScript = 64
+    private static let maximumStoredResourceBytesPerScript = 25 * 1024 * 1024
+
+    nonisolated private static func resourceCacheFitsLimits(_ resources: [String: String]) -> Bool {
+        guard resources.count <= maximumResourcesPerScript else { return false }
+        var totalBytes = 0
+        for payload in resources.values {
+            let payloadBytes = payload.utf8.count
+            guard payloadBytes <= maximumEncodedResourceBytes else { return false }
+            totalBytes += payloadBytes
+            guard totalBytes <= maximumStoredResourceBytesPerScript else { return false }
+        }
+        return true
+    }
 
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
@@ -364,6 +380,22 @@ public class UserScriptManager: ObservableObject {
         return "data:\(mimeType);base64,\(data.base64EncodedString())"
     }
 
+    private func downloadData(from url: URL, maximumBytes: Int) async throws -> (Data, URLResponse) {
+        let (downloadURL, response) = try await urlSession.download(from: url)
+        defer { try? FileManager.default.removeItem(at: downloadURL) }
+
+        let expectedBytes = response.expectedContentLength
+        guard expectedBytes <= 0 || expectedBytes <= maximumBytes else {
+            throw URLError(.dataLengthExceedsMaximum)
+        }
+
+        let fileSize = try downloadURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard fileSize <= maximumBytes else {
+            throw URLError(.dataLengthExceedsMaximum)
+        }
+        return (try Data(contentsOf: downloadURL), response)
+    }
+
     public func ensureResourceContent(forScriptId scriptId: UUID, resourceName: String) async -> String? {
         guard let index = indexOfUserScript(withId: scriptId) else {
             return nil
@@ -375,11 +407,16 @@ public class UserScriptManager: ObservableObject {
         }
 
         // 2) Disk cache
-        if let diskResources = readUserScriptResources(self.userScripts[index]),
-            let diskValue = diskResources[resourceName], !diskValue.isEmpty
-        {
-            self.userScripts[index].resourceContents = diskResources
-            return diskValue
+        if let diskResources = readUserScriptResources(self.userScripts[index]) {
+            guard Self.resourceCacheFitsLimits(diskResources) else {
+                logger.error("Ignoring oversized @resource cache for script \(self.userScripts[index].name)")
+                removeUserScriptResourcesFile(self.userScripts[index])
+                return nil
+            }
+            if let diskValue = diskResources[resourceName], !diskValue.isEmpty {
+                self.userScripts[index].resourceContents = diskResources
+                return diskValue
+            }
         }
 
         // 3) Download on-demand by parsing metadata
@@ -394,12 +431,21 @@ public class UserScriptManager: ObservableObject {
             return nil
         }
 
+        let existingResources = self.userScripts[index].resourceContents
+        guard existingResources.count < Self.maximumResourcesPerScript else {
+            logger.error("Refusing @resource '\(resourceName)': per-script resource count limit reached")
+            return nil
+        }
+
         do {
             self.logger.info(
                 "📥 Downloading on-demand @resource '\(resourceName)' from \(resourceURLString)"
             )
 
-            let (responseData, response) = try await self.urlSession.data(from: url)
+            let (responseData, response) = try await self.downloadData(
+                from: url,
+                maximumBytes: Self.maximumResourceBytes
+            )
 
             if let resourceText = self.decodedTextResource(
                 from: responseData,
@@ -418,8 +464,20 @@ public class UserScriptManager: ObservableObject {
                 sourceURL: url
             )
 
-            self.userScripts[index].resourceContents[resourceName] = resourceContent
-            _ = self.writeUserScriptResources(self.userScripts[index])
+            guard let currentIndex = self.indexOfUserScript(withId: scriptId) else {
+                return nil
+            }
+            var updatedResources = self.userScripts[currentIndex].resourceContents
+            updatedResources[resourceName] = resourceContent
+            guard Self.resourceCacheFitsLimits(updatedResources) else {
+                self.logger.error(
+                    "Refusing @resource '\(resourceName)': per-script storage limit reached"
+                )
+                return nil
+            }
+
+            self.userScripts[currentIndex].resourceContents = updatedResources
+            _ = self.writeUserScriptResources(self.userScripts[currentIndex])
             return resourceContent
         } catch {
             self.logger.error(
@@ -1362,7 +1420,10 @@ public class UserScriptManager: ObservableObject {
             do {
                 logger.info("📥 Downloading resource: \(resourceName) from \(url.absoluteString)")
 
-                let (responseData, response) = try await urlSession.data(from: url)
+                let (responseData, response) = try await downloadData(
+                    from: url,
+                    maximumBytes: Self.maximumResourceBytes
+                )
 
                 if let resourceText = decodedTextResource(
                     from: responseData,
@@ -1379,7 +1440,15 @@ public class UserScriptManager: ObservableObject {
                     response: response,
                     sourceURL: url
                 )
-                resources[resourceName] = resourceContent
+                var updatedResources = resources
+                updatedResources[resourceName] = resourceContent
+                guard Self.resourceCacheFitsLimits(updatedResources) else {
+                    logger.error(
+                        "❌ Skipping @resource '\(resourceName)': per-script resource limit reached"
+                    )
+                    continue
+                }
+                resources = updatedResources
                 logger.info(
                     "✅ Downloaded resource '\(resourceName)' (\(responseData.count) bytes)")
             } catch {
