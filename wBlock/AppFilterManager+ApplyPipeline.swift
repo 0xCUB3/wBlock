@@ -364,46 +364,119 @@ extension AppFilterManager {
             )
         }.value
 
-        for targetInfo in platformTargets {
-            let filters = filtersByTargetInfo[targetInfo] ?? []
-            let extraRulesText = targetInfo.slot == 5 ? generatedZapperRulesText : nil
-            let blockerName = targetInfo.displayName
-            let conversionStart = Date()
+        let conversionWork = platformTargets.map { targetInfo in
+            TargetConversionWork(
+                targetInfo: targetInfo,
+                filters: filtersByTargetInfo[targetInfo] ?? [],
+                extraRulesText: targetInfo.slot == 5 ? generatedZapperRulesText : nil
+            )
+        }
+        let groupIdentifier = GroupIdentifier.shared.value
+        var conversionCompletions: [ContentBlockerTargetInfo: TargetConversionCompletion] = [:]
 
-            await MainActor.run {
-                self.applyProgressViewModel.updateStageDescription(
-                    LocalizedStrings.format(
-                        "Converting %@…",
-                        comment: "Apply pipeline converting stage",
-                        blockerName
-                    )
-                )
-            }
-
-            // Yield to prevent main thread starvation on iOS
-            await Task.yield()
-
-            let conversionResult: TargetConversionOutcome
-            do {
-                conversionResult = try await Task.detached {
-                    try Self.convertOrReuseTargetRules(
-                        filters: filters,
+        await boundedConcurrentForEach(
+            conversionWork,
+            operation: { work in
+                let conversionStart = Date()
+                do {
+                    let outcome = try Self.convertOrReuseTargetRules(
+                        filters: work.filters,
                         orderedSelectedFilters: orderedSelectedFilters,
                         affinityFilterIDs: affinityFilterIDs,
-                        targetInfo: targetInfo,
+                        targetInfo: work.targetInfo,
                         allTargets: platformTargets,
                         disabledSites: disabledSites,
-                        extraRulesText: extraRulesText,
-                        groupIdentifier: GroupIdentifier.shared.value
+                        extraRulesText: work.extraRulesText,
+                        groupIdentifier: groupIdentifier
                     )
-                }.value
-            } catch {
+                    return TargetConversionCompletion(
+                        work: work,
+                        outcome: outcome,
+                        failureDescription: nil,
+                        durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
+                    )
+                } catch {
+                    return TargetConversionCompletion(
+                        work: work,
+                        outcome: nil,
+                        failureDescription: error.localizedDescription,
+                        durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
+                    )
+                }
+            },
+            onResult: { completion in
+                conversionCompletions[completion.work.targetInfo] = completion
+                guard let conversionResult = completion.outcome else { return }
+                let targetInfo = completion.work.targetInfo
+                let blockerName = targetInfo.displayName
+                let ruleCountForThisTarget = conversionResult.safariRulesCount
+
+                await MainActor.run {
+                    self.applyProgressViewModel.updateStageDescription(
+                        LocalizedStrings.format(
+                            "Converting %@…",
+                            comment: "Apply pipeline converting stage",
+                            blockerName
+                        )
+                    )
+                    self.processedFiltersCount += 1
+                    self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
+                    self.applyProgressViewModel.updateProgress(self.progress)
+                    self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
+                    self.applyProgressViewModel.updateCurrentFilter(blockerName)
+                    self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
+
+                    if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
+                        self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
+                    } else {
+                        self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
+                    }
+
+                    if ruleCountForThisTarget > ruleLimit {
+                        self.hasError = true
+                        self.statusDescription =
+                            "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
+                    }
+                }
+
+                if ruleCountForThisTarget > ruleLimit {
+                    await ConcurrentLogManager.shared.error(
+                        .filterApply, "Rule limit exceeded for blocker",
+                        metadata: [
+                            "blocker": blockerName,
+                            "bundleId": targetInfo.bundleIdentifier,
+                            "ruleCount": "\(ruleCountForThisTarget)",
+                            "ruleLimit": "\(ruleLimit)",
+                        ]
+                    )
+                }
+            }
+        )
+
+        if let failedTarget = platformTargets.first(where: {
+            conversionCompletions[$0]?.failureDescription != nil
+        }), let failureDescription = conversionCompletions[failedTarget]?.failureDescription {
+            await failApplyRun(
+                logMessage: "Failed to convert rules for blocker",
+                metadata: [
+                    "blocker": failedTarget.displayName,
+                    "error": failureDescription,
+                ]
+            )
+            return
+        }
+
+        for targetInfo in platformTargets {
+            guard let completion = conversionCompletions[targetInfo],
+                  let conversionResult = completion.outcome else {
                 await failApplyRun(
-                    logMessage: "Failed to convert rules for blocker",
-                    metadata: ["blocker": blockerName, "error": error.localizedDescription]
+                    logMessage: "Missing conversion result for blocker",
+                    metadata: ["blocker": targetInfo.displayName]
                 )
                 return
             }
+            let filters = completion.work.filters
+            let blockerName = targetInfo.displayName
             let ruleCountForThisTarget = conversionResult.safariRulesCount
 
             if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
@@ -424,42 +497,10 @@ extension AppFilterManager {
                     safariRules: ruleCountForThisTarget,
                     advancedRules: advancedCount,
                     reusedCachedBase: conversionResult.reusedCachedBase,
-                    durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
+                    durationMs: completion.durationMs
                 )
             )
 
-            await MainActor.run {
-                self.processedFiltersCount += 1
-                self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
-                self.applyProgressViewModel.updateProgress(self.progress)
-                self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
-                self.applyProgressViewModel.updateCurrentFilter(blockerName)
-                self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
-
-                if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
-                    self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
-                } else {
-                    self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
-                }
-
-                if ruleCountForThisTarget > ruleLimit {
-                    self.hasError = true
-                    self.statusDescription =
-                        "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
-                }
-            }
-
-            if ruleCountForThisTarget > ruleLimit {
-                await ConcurrentLogManager.shared.error(
-                    .filterApply, "Rule limit exceeded for blocker",
-                    metadata: [
-                        "blocker": blockerName,
-                        "bundleId": targetInfo.bundleIdentifier,
-                        "ruleCount": "\(ruleCountForThisTarget)",
-                        "ruleLimit": "\(ruleLimit)",
-                    ]
-                )
-            }
 
             overallSafariRulesApplied += ruleCountForThisTarget
         }
@@ -564,8 +605,12 @@ extension AppFilterManager {
                     )
                 }
 
+                let orderedAdvancedRules = platformTargets.compactMap {
+                    advancedRulesByTarget[$0.bundleIdentifier]
+                }
+
                 try await Task.detached {
-                    let combinedAdvancedRules = advancedRulesByTarget.values.joined(separator: "\n")
+                    let combinedAdvancedRules = orderedAdvancedRules.joined(separator: "\n")
                     let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
                     await ConcurrentLogManager.shared.info(
                         .filterApply, "Building filter engine",
@@ -932,10 +977,23 @@ extension AppFilterManager {
         }
     }
 
-    private struct TargetConversionOutcome {
+    private struct TargetConversionOutcome: Sendable {
         let safariRulesCount: Int
         let advancedRulesText: String?
         let reusedCachedBase: Bool
+    }
+
+    private struct TargetConversionWork: Sendable {
+        let targetInfo: ContentBlockerTargetInfo
+        let filters: [FilterList]
+        let extraRulesText: String?
+    }
+
+    private struct TargetConversionCompletion: Sendable {
+        let work: TargetConversionWork
+        let outcome: TargetConversionOutcome?
+        let failureDescription: String?
+        let durationMs: Int
     }
 
     struct TargetConversionMetrics {

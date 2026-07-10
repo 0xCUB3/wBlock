@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct FilterList: Identifiable, Codable, Hashable {
+public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String
     public var url: URL

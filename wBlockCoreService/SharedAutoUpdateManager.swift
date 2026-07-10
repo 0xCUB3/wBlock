@@ -1322,7 +1322,7 @@ public actor SharedAutoUpdateManager {
     }
 
     @discardableResult
-    private func streamFilterDataForConversion(
+    private nonisolated static func streamFilterDataForConversion(
         _ filter: FilterList,
         includeBaseRules: Bool,
         hasAffinity: Bool,
@@ -1348,9 +1348,10 @@ public actor SharedAutoUpdateManager {
                     newlineData: newlineData
                 )
             } catch {
+                let workerLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "wBlock", category: "AutoUpdate")
                 os_log(
                     "Failed to stream affinity-filtered data from %{public}@ – %{public}@",
-                    log: log,
+                    log: workerLog,
                     type: .error,
                     filter.name,
                     error.localizedDescription
@@ -1375,7 +1376,7 @@ public actor SharedAutoUpdateManager {
     }
 
     @discardableResult
-    private func appendFileContentsToCombinedStream(
+    private nonisolated static func appendFileContentsToCombinedStream(
         sourceURL: URL,
         destinationHandle: FileHandle,
         hasher: inout SHA256,
@@ -1399,9 +1400,13 @@ public actor SharedAutoUpdateManager {
             try destinationHandle.write(contentsOf: newlineData)
             return true
         } catch {
+            let workerLog = OSLog(
+                subsystem: Bundle.main.bundleIdentifier ?? "wBlock",
+                category: "AutoUpdate"
+            )
             os_log(
                 "Failed to stream filter data from %{public}@ – %{public}@",
-                log: log,
+                log: workerLog,
                 type: .error,
                 sourceURL.lastPathComponent,
                 error.localizedDescription
@@ -1569,251 +1574,280 @@ public actor SharedAutoUpdateManager {
     }
 
     // MARK: - Conversion & Reload
+    private struct ConversionTargetWork: Sendable {
+        let target: ContentBlockerTargetInfo
+        let filters: [FilterList]
+        let allTargets: [ContentBlockerTargetInfo]
+        let containerURL: URL
+        let disabledSites: [String]
+        let affinityFilterIDs: Set<UUID>
+        let orderedFilters: [FilterList]
+        let extraRulesText: String?
+        let isBackground: Bool
+        let deadline: Date?
+        let minimumTimeForConversionTarget: TimeInterval
+    }
+
+    private enum ConversionTargetFailure: Sendable {
+        case cancelled
+        case budgetExpired(remainingSeconds: Int)
+        case failed(description: String)
+    }
+
+    private struct ConversionTargetResult: Sendable {
+        let target: ContentBlockerTargetInfo
+        let conversion: (safariRulesCount: Int, advancedRulesText: String?)?
+        let usedCache: Bool
+        let inputWriteMs: Int
+        let inputBytes: Int64
+        let conversionMs: Int
+        let failure: ConversionTargetFailure?
+    }
+
+    private nonisolated static func convertTarget(_ work: ConversionTargetWork) -> ConversionTargetResult {
+        let target = work.target
+        let filters = work.filters
+        let assigned = Set(filters.map(\.id))
+        let hasAffinity = !assigned.isDisjoint(with: work.affinityFilterIDs)
+        let rulesFilename = target.rulesFilename
+        let start = Date()
+        var writeMs = 0
+        if work.isBackground, let deadline = work.deadline,
+           deadline.timeIntervalSinceNow < work.minimumTimeForConversionTarget {
+            return ConversionTargetResult(
+                target: target,
+                conversion: nil,
+                usedCache: false,
+                inputWriteMs: 0,
+                inputBytes: 0,
+                conversionMs: 0,
+                failure: .budgetExpired(
+                    remainingSeconds: max(0, Int(deadline.timeIntervalSinceNow.rounded(.down)))
+                )
+            )
+        }
+        var bytes: Int64 = 0
+        do {
+            let currentSignature = hasAffinity ? nil : ContentBlockerIncrementalCache.computeInputSignature(
+                filters: filters, groupIdentifier: GroupIdentifier.shared.value, extraRulesText: work.extraRulesText
+            )
+            let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
+                targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
+            )
+            let canReuse = currentSignature != nil && currentSignature == storedSignature &&
+                ContentBlockerIncrementalCache.hasBaseRulesCache(
+                    targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
+                )
+            let conversion: (safariRulesCount: Int, advancedRulesText: String?)
+            let usedCache: Bool
+            if canReuse {
+                usedCache = true
+                conversion = ContentBlockerService.fastUpdateDisabledSites(
+                    groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: rulesFilename,
+                    disabledSites: work.disabledSites
+                )
+            } else {
+                if hasAffinity {
+                    ContentBlockerIncrementalCache.invalidateInputSignature(
+                        targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }
+                usedCache = false
+                let tempURL = work.containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
+                defer { try? FileManager.default.removeItem(at: tempURL) }
+                FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
+                let newline = Data("\n".utf8)
+                var hasher = SHA256()
+                let handle = try FileHandle(forWritingTo: tempURL)
+                defer { try? handle.close() }
+                let writeStart = Date()
+                for filter in work.orderedFilters {
+                    try Task.checkCancellation()
+                    _ = Self.streamFilterDataForConversion(
+                        filter, includeBaseRules: assigned.contains(filter.id), hasAffinity: work.affinityFilterIDs.contains(filter.id),
+                        target: target, allTargets: work.allTargets, containerURL: work.containerURL,
+                        destinationHandle: handle, hasher: &hasher, newlineData: newline
+                    )
+                }
+                if let extra = work.extraRulesText, !extra.isEmpty {
+                    try Self.appendInlineRulesToCombinedStream(extra, destinationHandle: handle, hasher: &hasher, newlineData: newline)
+                }
+                writeMs = Int(Date().timeIntervalSince(writeStart) * 1000)
+                bytes = Self.fileSizeBytes(at: tempURL)
+                let digest = hasher.finalize()
+                let hex = digest.map { String(format: "%02x", $0) }.joined()
+                conversion = ContentBlockerService.convertFilterFromFile(
+                    rulesFileURL: tempURL, rulesSHA256Hex: hex, groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: rulesFilename, disabledSites: work.disabledSites
+                )
+                if let currentSignature {
+                    ContentBlockerIncrementalCache.saveInputSignature(
+                        currentSignature, targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }
+            }
+            return ConversionTargetResult(
+                target: target,
+                conversion: conversion,
+                usedCache: usedCache,
+                inputWriteMs: writeMs,
+                inputBytes: bytes,
+                conversionMs: Int(Date().timeIntervalSince(start) * 1000),
+                failure: nil
+            )
+        } catch is CancellationError {
+            return ConversionTargetResult(
+                target: target,
+                conversion: nil,
+                usedCache: false,
+                inputWriteMs: writeMs,
+                inputBytes: bytes,
+                conversionMs: Int(Date().timeIntervalSince(start) * 1000),
+                failure: .cancelled
+            )
+        } catch {
+            return ConversionTargetResult(
+                target: target,
+                conversion: nil,
+                usedCache: false,
+                inputWriteMs: writeMs,
+                inputBytes: bytes,
+                conversionMs: Int(Date().timeIntervalSince(start) * 1000),
+                failure: .failed(description: error.localizedDescription)
+            )
+        }
+    }
+
     private func rebuildAndReload(
         selectedFilters: [FilterList],
         policy: AutoUpdateExecutionPolicy
     ) async throws -> RebuildAndReloadSummary {
         try Task.checkCancellation()
-
         #if os(iOS)
         let detectedPlatform: Platform = .iOS
         #else
         let detectedPlatform: Platform = .macOS
         #endif
-
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
-        var advancedRulesSnippets: [String] = []
-
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
         }
-
         let disabledSites = await getDisabledSites()
         do {
-            let dnrSummary = try RemoveParamDNRRuleGenerator.saveRules(
-                for: selectedFilters,
+            let summary = try RemoveParamDNRRuleGenerator.saveRules(for: selectedFilters, disabledSites: disabledSites, groupIdentifier: GroupIdentifier.shared.value)
+            appendSharedLog("Prepared removeparam DNR rules: generated=\(summary.generatedRules) source=\(summary.removeParamRules) exceptions=\(summary.exceptionRules) skipped=\(summary.skippedRules)")
+        } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
+        let ordered = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
+        let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
+        let affinity = SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(ordered, containerURL: containerURL)
+        let zapper = await MainActor.run { ZapperContentBlockerRuleGenerator.generatedRulesText(from: ProtobufDataManager.shared.getActiveZapperRulesByHost()) }
+        var results: [String: ConversionTargetResult] = [:]
+        let works = targets.map { target in
+            ConversionTargetWork(
+                target: target,
+                filters: byTarget[target] ?? [],
+                allTargets: targets,
+                containerURL: containerURL,
                 disabledSites: disabledSites,
-                groupIdentifier: GroupIdentifier.shared.value
-            )
-            appendSharedLog(
-                "Prepared removeparam DNR rules: generated=\(dnrSummary.generatedRules) source=\(dnrSummary.removeParamRules) exceptions=\(dnrSummary.exceptionRules) skipped=\(dnrSummary.skippedRules)"
-            )
-        } catch {
-            appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)")
-        }
-        let orderedSelectedFilters = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
-        let filtersByTarget = ContentBlockerMappingService.distribute(
-            selectedFilters: selectedFilters,
-            across: targets
-        )
-        let affinityFilterIDs = SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(
-            orderedSelectedFilters,
-            containerURL: containerURL
-        )
-        let mirroredZapperRulesText = await MainActor.run {
-            ZapperContentBlockerRuleGenerator.generatedRulesText(
-                from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
+                affinityFilterIDs: affinity,
+                orderedFilters: ordered,
+                extraRulesText: target.slot == 5 ? zapper : nil,
+                isBackground: policy.isBackground,
+                deadline: policy.deadline,
+                minimumTimeForConversionTarget: policy.minimumTimeForConversionTarget
             )
         }
-        var targetMetrics: [RebuildTargetMetrics] = []
-        var failedReloadIdentifiers: [String] = []
-        var failedReloadNames: [String] = []
+        await boundedConcurrentForEach(
+            works,
+            operation: { Self.convertTarget($0) },
+            onResult: { result in
+                results[result.target.bundleIdentifier] = result
+            }
+        )
 
         for target in targets {
+            guard let result = results[target.bundleIdentifier] else {
+                throw CancellationError()
+            }
+            switch result.failure {
+            case .cancelled:
+                throw CancellationError()
+            case let .budgetExpired(remainingSeconds):
+                throw AutoUpdateError.backgroundBudgetExpired(
+                    phase: AutoUpdateBudgetPhase.conversionTarget,
+                    remainingSeconds: remainingSeconds
+                )
+            case let .failed(description):
+                throw NSError(
+                    domain: "SharedAutoUpdateManager.Conversion",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: description]
+                )
+            case nil:
+                guard result.conversion != nil else { throw CancellationError() }
+            }
+        }
+
+        var metrics: [RebuildTargetMetrics] = []
+        var advanced: [String] = []
+        var failedIDs: [String] = []
+        var failedNames: [String] = []
+        for target in targets {
             try Task.checkCancellation()
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.conversionTarget,
-                requiredTime: policy.minimumTimeForConversionTarget
-            )
-
-            let filtersForTarget = filtersByTarget[target] ?? []
-            let assignedFilterIDs = Set(filtersForTarget.map(\.id))
-            let hasAffinityFilters = !assignedFilterIDs.isDisjoint(with: affinityFilterIDs)
-            let rulesFilename = target.rulesFilename
-            let extraRulesText = target.slot == 5 ? mirroredZapperRulesText : nil
-            let conversionStart = Date()
-            var inputWriteDurationMs = 0
-            var inputBytes: Int64 = 0
-            let currentSignature = hasAffinityFilters
-                ? nil
-                : ContentBlockerIncrementalCache.computeInputSignature(
-                    filters: filtersForTarget,
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    extraRulesText: extraRulesText
-                )
-            let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: GroupIdentifier.shared.value
-            )
-
-            let canReuseCachedConversion =
-                currentSignature != nil
-                && currentSignature == storedSignature
-                && ContentBlockerIncrementalCache.hasBaseRulesCache(
-                    targetRulesFilename: rulesFilename,
-                    groupIdentifier: GroupIdentifier.shared.value
-                )
-
-            let conversion: (safariRulesCount: Int, advancedRulesText: String?)
-            let usedCache: Bool
-            if canReuseCachedConversion {
-                usedCache = true
-                conversion = ContentBlockerService.fastUpdateDisabledSites(
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: rulesFilename,
-                    disabledSites: disabledSites
-                )
-            } else {
-                if hasAffinityFilters {
-                    ContentBlockerIncrementalCache.invalidateInputSignature(
-                        targetRulesFilename: rulesFilename,
-                        groupIdentifier: GroupIdentifier.shared.value
-                    )
-                }
-
-                usedCache = false
-                let tempURL = containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
-                defer { try? FileManager.default.removeItem(at: tempURL) }
-
-                FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
-                let newlineData = Data("\n".utf8)
-                var hasher = SHA256()
-                let fileHandle = try FileHandle(forWritingTo: tempURL)
-                defer { try? fileHandle.close() }
-                let inputWriteStart = Date()
-
-                for filter in orderedSelectedFilters {
-                    try Task.checkCancellation()
-                    _ = streamFilterDataForConversion(
-                        filter,
-                        includeBaseRules: assignedFilterIDs.contains(filter.id),
-                        hasAffinity: affinityFilterIDs.contains(filter.id),
-                        target: target,
-                        allTargets: targets,
-                        containerURL: containerURL,
-                        destinationHandle: fileHandle,
-                        hasher: &hasher,
-                        newlineData: newlineData
-                    )
-                }
-                if let extraRulesText, !extraRulesText.isEmpty {
-                    try appendInlineRulesToCombinedStream(
-                        extraRulesText,
-                        destinationHandle: fileHandle,
-                        hasher: &hasher,
-                        newlineData: newlineData
-                    )
-                }
-                inputWriteDurationMs = Int(Date().timeIntervalSince(inputWriteStart) * 1000)
-                inputBytes = fileSizeBytes(at: tempURL)
-
-                let digest = hasher.finalize()
-                let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
-
-                conversion = ContentBlockerService.convertFilterFromFile(
-                    rulesFileURL: tempURL,
-                    rulesSHA256Hex: rulesSHA256Hex,
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: rulesFilename,
-                    disabledSites: disabledSites
-                )
-
-                if let currentSignature {
-                    ContentBlockerIncrementalCache.saveInputSignature(
-                        currentSignature,
-                        targetRulesFilename: rulesFilename,
-                        groupIdentifier: GroupIdentifier.shared.value
-                    )
-                }
-            }
-            let conversionDurationMs = Int(Date().timeIntervalSince(conversionStart) * 1000)
-
-            let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: GroupIdentifier.shared.value
-            )?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let advancedRulesText = conversion.advancedRulesText?.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-            if let adv = (advancedRulesText?.isEmpty == false ? advancedRulesText : cachedAdvancedRules),
-               !adv.isEmpty {
-                advancedRulesSnippets.append(adv)
-            }
-
             try checkBudget(
                 policy,
                 phase: AutoUpdateBudgetPhase.reloadRetry,
                 requiredTime: policy.minimumTimeForReloadRetry
             )
-            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
-            let targetMetric = RebuildTargetMetrics(
-                targetName: target.displayName,
-                cacheHit: usedCache,
-                inputWriteMs: inputWriteDurationMs,
-                inputBytes: inputBytes,
-                conversionMs: conversionDurationMs,
-                reloadMs: reloadResult.durationMs,
-                reloadAttempts: reloadResult.attempts,
-                safariRules: conversion.safariRulesCount
-            )
-            targetMetrics.append(targetMetric)
+            guard let result = results[target.bundleIdentifier],
+                  let conversion = result.conversion else {
+                throw CancellationError()
+            }
+            let cached = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
+                targetRulesFilename: target.rulesFilename,
+                groupIdentifier: GroupIdentifier.shared.value
+            )?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let fresh = conversion.advancedRulesText?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let snippet = fresh?.isEmpty == false ? fresh : cached, !snippet.isEmpty {
+                advanced.append(snippet)
+            }
 
-            if !reloadResult.success {
-                failedReloadIdentifiers.append(target.bundleIdentifier)
-                failedReloadNames.append(target.displayName)
+            let reload = await ContentBlockerService.reloadWithRetry(
+                identifier: target.bundleIdentifier,
+                maxRetries: 6
+            )
+            metrics.append(
+                RebuildTargetMetrics(
+                    targetName: target.displayName,
+                    cacheHit: result.usedCache,
+                    inputWriteMs: result.inputWriteMs,
+                    inputBytes: result.inputBytes,
+                    conversionMs: result.conversionMs,
+                    reloadMs: reload.durationMs,
+                    reloadAttempts: reload.attempts,
+                    safariRules: conversion.safariRulesCount
+                )
+            )
+            if !reload.success {
+                failedIDs.append(target.bundleIdentifier)
+                failedNames.append(target.displayName)
             }
         }
-
-        try Task.checkCancellation()
-
-        if !failedReloadIdentifiers.isEmpty {
-            appendSharedLog(
-                "Rebuild reload failures: \(failedReloadNames.joined(separator: ", "))"
-            )
-            throw AutoUpdateError.contentBlockerReloadFailed(
-                identifiers: failedReloadIdentifiers,
-                names: failedReloadNames
-            )
+        if !failedIDs.isEmpty {
+            appendSharedLog("Rebuild reload failures: \(failedNames.joined(separator: ", "))")
+            throw AutoUpdateError.contentBlockerReloadFailed(identifiers: failedIDs, names: failedNames)
         }
-
-        try publishAdvancedEngine(
-            advancedRulesSnippets: advancedRulesSnippets,
-            policy: policy,
-            failureLogPrefix: "Advanced engine publish failed after rebuilding content blockers"
-        )
-
-        let cacheHits = targetMetrics.filter { $0.cacheHit }.count
-        let inputWriteDurationMs = targetMetrics.reduce(0) { $0 + $1.inputWriteMs }
-        let inputBytesTotal = targetMetrics.reduce(Int64(0)) { $0 + $1.inputBytes }
-        let conversionDurationMs = targetMetrics.reduce(0) { $0 + $1.conversionMs }
-        let reloadDurationMs = targetMetrics.reduce(0) { $0 + $1.reloadMs }
-        let totalReloadAttempts = targetMetrics.reduce(0) { $0 + $1.reloadAttempts }
-        let safariRulesTotal = targetMetrics.reduce(0) { $0 + $1.safariRules }
-        let slowestWriteTarget = targetMetrics
-            .filter { $0.inputWriteMs > 0 }
-            .max(by: { $0.inputWriteMs < $1.inputWriteMs })
-            .map { "\($0.targetName)@\(formatDurationMs($0.inputWriteMs))" } ?? "n/a"
-        let slowestTarget = targetMetrics.max(by: {
-            ($0.conversionMs + $0.reloadMs) < ($1.conversionMs + $1.reloadMs)
-        }).map {
-            let totalMs = $0.conversionMs + $0.reloadMs
-            return "\($0.targetName)@\(formatDurationMs(totalMs))"
-        } ?? "n/a"
-
-        return RebuildAndReloadSummary(
-            targetCount: targetMetrics.count,
-            cacheHits: cacheHits,
-            cacheMisses: max(0, targetMetrics.count - cacheHits),
-            safariRulesTotal: safariRulesTotal,
-            inputWriteDurationMs: inputWriteDurationMs,
-            inputBytesTotal: inputBytesTotal,
-            conversionDurationMs: conversionDurationMs,
-            reloadDurationMs: reloadDurationMs,
-            totalReloadAttempts: totalReloadAttempts,
-            slowestWriteTarget: slowestWriteTarget,
-            slowestTarget: slowestTarget
-        )
+        try publishAdvancedEngine(advancedRulesSnippets: advanced, policy: policy, failureLogPrefix: "Advanced engine publish failed after rebuilding content blockers")
+        let hits = metrics.filter(\.cacheHit).count
+        let writes = metrics.reduce(0) { $0 + $1.inputWriteMs }
+        let bytes = metrics.reduce(Int64(0)) { $0 + $1.inputBytes }
+        let conversions = metrics.reduce(0) { $0 + $1.conversionMs }
+        let reloads = metrics.reduce(0) { $0 + $1.reloadMs }
+        let attempts = metrics.reduce(0) { $0 + $1.reloadAttempts }
+        let safari = metrics.reduce(0) { $0 + $1.safariRules }
+        let slowWrite = metrics.filter { $0.inputWriteMs > 0 }.max(by: { $0.inputWriteMs < $1.inputWriteMs }).map { "\($0.targetName)@\(formatDurationMs($0.inputWriteMs))" } ?? "n/a"
+        let slow = metrics.max(by: { ($0.conversionMs + $0.reloadMs) < ($1.conversionMs + $1.reloadMs) }).map { "\($0.targetName)@\(formatDurationMs($0.conversionMs + $0.reloadMs))" } ?? "n/a"
+        return RebuildAndReloadSummary(targetCount: metrics.count, cacheHits: hits, cacheMisses: max(0, metrics.count - hits), safariRulesTotal: safari, inputWriteDurationMs: writes, inputBytesTotal: bytes, conversionDurationMs: conversions, reloadDurationMs: reloads, totalReloadAttempts: attempts, slowestWriteTarget: slowWrite, slowestTarget: slow)
     }
 
     // MARK: - Helpers
@@ -1869,7 +1903,7 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private func appendInlineRulesToCombinedStream(
+    private nonisolated static func appendInlineRulesToCombinedStream(
         _ rulesText: String,
         destinationHandle: FileHandle,
         hasher: inout SHA256,
@@ -1952,7 +1986,7 @@ public actor SharedAutoUpdateManager {
         return String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
     }
 
-    private func fileSizeBytes(at url: URL) -> Int64 {
+    private nonisolated static func fileSizeBytes(at url: URL) -> Int64 {
         guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
               let size = attrs[.size] as? NSNumber else {
             return 0
