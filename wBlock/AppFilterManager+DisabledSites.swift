@@ -8,10 +8,8 @@ extension AppFilterManager {
         lastKnownDisabledSites = effectiveFilterDisabledSites()
 
 
-        disabledSitesDirectoryMonitor?.cancel()
-        disabledSitesDirectoryMonitor = nil
-        pendingDisabledSitesCheckTask?.cancel()
-        pendingDisabledSitesCheckTask = nil
+        disabledSitesDirectoryMonitor.stop()
+        
 
         guard let directoryURL = dataManager.protobufDataDirectoryURL() else {
             Task {
@@ -24,8 +22,11 @@ extension AppFilterManager {
             return
         }
 
-        let descriptor = open(directoryURL.path, O_EVTONLY)
-        guard descriptor >= 0 else {
+        guard disabledSitesDirectoryMonitor.start(directoryURL: directoryURL, onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                await self?.checkForDisabledSitesChanges()
+            }
+        }) else {
             Task {
                 await ConcurrentLogManager.shared.warning(
                     .whitelist,
@@ -35,42 +36,6 @@ extension AppFilterManager {
             }
             return
         }
-
-        disabledSitesDirectoryFileDescriptor = descriptor
-
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: descriptor,
-            eventMask: [.write, .rename, .delete, .attrib, .extend],
-            queue: disabledSitesMonitorQueue
-        )
-
-        source.setEventHandler { [weak self] in
-            guard let self else { return }
-            self.pendingDisabledSitesCheckTask?.cancel()
-            var task: Task<Void, Never>?
-            task = Task { @MainActor [weak self] in
-                defer {
-                    if let self, let task, self.pendingDisabledSitesCheckTask == task {
-                        self.pendingDisabledSitesCheckTask = nil
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                guard let self else { return }
-                await self.checkForDisabledSitesChanges()
-            }
-            self.pendingDisabledSitesCheckTask = task
-        }
-
-        source.setCancelHandler { [weak self] in
-            guard let self else { return }
-            if self.disabledSitesDirectoryFileDescriptor >= 0 {
-                close(self.disabledSitesDirectoryFileDescriptor)
-                self.disabledSitesDirectoryFileDescriptor = -1
-            }
-        }
-
-        disabledSitesDirectoryMonitor = source
-        source.resume()
     }
 
     /// Returns the normalized union used only for content filtering.

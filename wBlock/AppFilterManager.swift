@@ -66,14 +66,7 @@ class AppFilterManager: ObservableObject {
 
     // Per-site disable tracking
     var lastKnownDisabledSites: [String] = []
-    var disabledSitesDirectoryMonitor: DispatchSourceFileSystemObject?
-    var disabledSitesDirectoryFileDescriptor: CInt = -1
-    var pendingDisabledSitesCheckTask: Task<Void, Never>?
-    let disabledSitesMonitorQueue = DispatchQueue(
-        label: "skula.wBlock.disabled-sites-monitor",
-        qos: .utility
-    )
-
+    let disabledSitesDirectoryMonitor = ProtobufDataDirectoryMonitor(queue: DispatchQueue(label: "skula.wBlock.disabled-sites-monitor", qos: .utility))
     var customFilterLists: [FilterList] {
         filterLists.filter(\.isCustom)
     }
@@ -344,16 +337,6 @@ class AppFilterManager: ObservableObject {
         Task { await updateVersionsAndCounts() }
     }
 
-    /// Clean up disabled-sites monitor resources when the object is deallocated.
-    deinit {
-        pendingDisabledSitesCheckTask?.cancel()
-        disabledSitesDirectoryMonitor?.cancel()
-        disabledSitesDirectoryMonitor = nil
-        if disabledSitesDirectoryFileDescriptor >= 0 {
-            close(disabledSitesDirectoryFileDescriptor)
-            disabledSitesDirectoryFileDescriptor = -1
-        }
-    }
 
     private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
         let defaultsByURL = Dictionary(

@@ -32,10 +32,9 @@ final class ZapperRuleManager: ObservableObject {
     }
 
     private let logger = Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager")
-    private let monitorQueue = DispatchQueue(label: "skula.wBlock.zapper-rules-monitor", qos: .utility)
-    private var dataDirectoryMonitor: DispatchSourceFileSystemObject?
-    private var dataDirectoryFileDescriptor: CInt = -1
-    private var pendingRefreshTask: Task<Void, Never>?
+    private let dataDirectoryMonitor = ProtobufDataDirectoryMonitor(
+        queue: DispatchQueue(label: "skula.wBlock.zapper-rules-monitor", qos: .utility)
+    )
 
     private init() {
         Task { @MainActor in
@@ -131,64 +130,18 @@ final class ZapperRuleManager: ObservableObject {
     }
 
     private func setupDataDirectoryMonitor() {
-        dataDirectoryMonitor?.cancel()
-        dataDirectoryMonitor = nil
-        pendingRefreshTask?.cancel()
-        pendingRefreshTask = nil
-
         guard let directoryURL = ProtobufDataManager.shared.protobufDataDirectoryURL() else {
             logger.error("ZapperRuleManager: Failed to locate protobuf data directory")
             return
         }
 
-        let descriptor = open(directoryURL.path, O_EVTONLY)
-        guard descriptor >= 0 else {
-            logger.error("ZapperRuleManager: Failed to open protobuf data directory")
-            return
-        }
-
-        dataDirectoryFileDescriptor = descriptor
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: descriptor,
-            eventMask: [.write, .rename, .delete, .attrib, .extend],
-            queue: monitorQueue
-        )
-
-        source.setEventHandler { [weak self] in
-            guard let self else { return }
-            self.pendingRefreshTask?.cancel()
-            var task: Task<Void, Never>?
-            task = Task { @MainActor [weak self] in
-                defer {
-                    if let self, let task, self.pendingRefreshTask == task {
-                        self.pendingRefreshTask = nil
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 250_000_000)
+        guard dataDirectoryMonitor.start(directoryURL: directoryURL, onChange: { [weak self] in
+            Task { @MainActor [weak self] in
                 await self?.refreshFromDisk()
             }
-            self.pendingRefreshTask = task
-        }
-
-        source.setCancelHandler { [weak self] in
-            guard let self else { return }
-            if self.dataDirectoryFileDescriptor >= 0 {
-                close(self.dataDirectoryFileDescriptor)
-                self.dataDirectoryFileDescriptor = -1
-            }
-        }
-
-        dataDirectoryMonitor = source
-        source.resume()
-    }
-
-    deinit {
-        pendingRefreshTask?.cancel()
-        dataDirectoryMonitor?.cancel()
-        dataDirectoryMonitor = nil
-        if dataDirectoryFileDescriptor >= 0 {
-            close(dataDirectoryFileDescriptor)
-            dataDirectoryFileDescriptor = -1
+        }) else {
+            logger.error("ZapperRuleManager: Failed to open protobuf data directory")
+            return
         }
     }
 }
