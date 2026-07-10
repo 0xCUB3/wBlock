@@ -39,6 +39,14 @@ public actor IncludeResolver {
 
     /// Maximum recursion depth for nested `!#include` directives (PREP-04).
     public static let maxDepth = 5
+    public static let maxIncludedFileBytes = 10 * 1024 * 1024
+    public static let maxExpandedLines = 500_000
+    public static let maxExpandedBytes = 50 * 1024 * 1024
+
+    private struct ExpansionResult {
+        let lines: [String]
+        let bytes: Int
+    }
 
     // MARK: - Initializer
 
@@ -82,22 +90,14 @@ public actor IncludeResolver {
         visited: Set<String>,
         depth: Int
     ) async -> [String] {
-        var result: [String] = []
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.hasPrefix("!#include") {
-                let expanded = await resolve(
-                    includeLine: trimmed,
-                    baseURL: baseURL,
-                    visited: visited,
-                    depth: depth
-                )
-                result.append(contentsOf: expanded)
-            } else {
-                result.append(line)
-            }
-        }
-        return result
+        await expandIncludes(
+            in: lines,
+            baseURL: baseURL,
+            visited: visited,
+            depth: depth,
+            maximumLines: Self.maxExpandedLines,
+            maximumBytes: Self.maxExpandedBytes
+        ).lines
     }
 
     /// Resolves a single `!#include` line into the expanded lines from the referenced sub-list.
@@ -117,71 +117,113 @@ public actor IncludeResolver {
         visited: Set<String>,
         depth: Int
     ) async -> [String] {
-        // PREP-04: depth limit — truncate chains beyond maxDepth
-        guard depth < Self.maxDepth else {
-            return []
+        await resolve(
+            includeLine: includeLine,
+            baseURL: baseURL,
+            visited: visited,
+            depth: depth,
+            maximumLines: Self.maxExpandedLines,
+            maximumBytes: Self.maxExpandedBytes
+        ).lines
+    }
+
+    private func expandIncludes(
+        in lines: [String],
+        baseURL: URL,
+        visited: Set<String>,
+        depth: Int,
+        maximumLines: Int,
+        maximumBytes: Int
+    ) async -> ExpansionResult {
+        var result: [String] = []
+        result.reserveCapacity(min(lines.count, maximumLines))
+        var resultBytes = 0
+
+        for line in lines {
+            guard result.count < maximumLines, resultBytes < maximumBytes else { break }
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.hasPrefix("!#include") {
+                let expanded = await resolve(
+                    includeLine: trimmed,
+                    baseURL: baseURL,
+                    visited: visited,
+                    depth: depth,
+                    maximumLines: maximumLines - result.count,
+                    maximumBytes: maximumBytes - resultBytes
+                )
+                result.append(contentsOf: expanded.lines)
+                resultBytes += expanded.bytes
+            } else {
+                let lineBytes = line.utf8.count + 1
+                guard resultBytes + lineBytes <= maximumBytes else { break }
+                result.append(line)
+                resultBytes += lineBytes
+            }
+        }
+        return ExpansionResult(lines: result, bytes: resultBytes)
+    }
+
+    private func resolve(
+        includeLine: String,
+        baseURL: URL,
+        visited: Set<String>,
+        depth: Int,
+        maximumLines: Int,
+        maximumBytes: Int
+    ) async -> ExpansionResult {
+        guard depth < Self.maxDepth, maximumLines > 0, maximumBytes > 0 else {
+            return ExpansionResult(lines: [], bytes: 0)
         }
 
-        // Extract path from the include directive.
-        // Use hasPrefix("!#include") (no trailing space) to handle both space and tab separators
-        // (Research Pitfall 3). Drop the prefix then trim all surrounding whitespace.
         let rawPath = String(includeLine.dropFirst("!#include".count))
             .trimmingCharacters(in: .whitespaces)
-        guard !rawPath.isEmpty else {
-            return []
+        guard !rawPath.isEmpty,
+              let subURL = URL(string: rawPath, relativeTo: baseURL)?.absoluteURL,
+              isSameOrigin(subURL, as: baseURL) else {
+            return ExpansionResult(lines: [], bytes: 0)
         }
 
-        // Resolve the sub-list URL relative to the base directory URL
-        guard let subURL = URL(string: rawPath, relativeTo: baseURL)?.absoluteURL else {
-            return []
-        }
-
-        // PREP-03: same-origin check — only scheme + host + port must match
-        guard isSameOrigin(subURL, as: baseURL) else {
-            return []
-        }
-
-        // PREP-04: cycle detection — normalize to lowercase absolute string for reliable equality
         let normalizedKey = subURL.absoluteString.lowercased()
         guard !visited.contains(normalizedKey) else {
-            return []
+            return ExpansionResult(lines: [], bytes: 0)
         }
-
-        // Add this URL to the visited set (value semantics — does not mutate caller's copy)
         var nextVisited = visited
         nextVisited.insert(normalizedKey)
 
-        // Fetch sub-list content
         do {
-            let (data, response) = try await urlSession.data(from: subURL)
-            guard let http = response as? HTTPURLResponse,
-                  http.statusCode == 200,
-                  let content = String(data: data, encoding: .utf8) else {
-                // HTTP error path: report status code (nil if response isn't HTTP)
-                let statusCode = (response as? HTTPURLResponse)?.statusCode
-                await onFetchError?(subURL, statusCode)
-                return []
+            let (downloadURL, response) = try await urlSession.download(from: subURL)
+            defer { try? FileManager.default.removeItem(at: downloadURL) }
+
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                await onFetchError?(subURL, (response as? HTTPURLResponse)?.statusCode)
+                return ExpansionResult(lines: [], bytes: 0)
             }
+            let expectedBytes = response.expectedContentLength
+            guard expectedBytes <= 0 || expectedBytes <= Self.maxIncludedFileBytes else {
+                await onFetchError?(subURL, http.statusCode)
+                return ExpansionResult(lines: [], bytes: 0)
+            }
+            let fileSize = try downloadURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            guard fileSize <= Self.maxIncludedFileBytes else {
+                await onFetchError?(subURL, http.statusCode)
+                return ExpansionResult(lines: [], bytes: 0)
+            }
+            let content = try String(contentsOf: downloadURL, encoding: .utf8)
 
-            let lines = content.components(separatedBy: .newlines)
-
-            // Evaluate !#if blocks in the sub-list before recursing (Research Pitfall 2).
-            // Sub-lists can contain conditional blocks that must be resolved for the current platform.
-            let evaluated = ConditionalEvaluator.evaluate(lines: lines)
-
-            // Recursively expand any nested !#include directives.
-            // Use subURL as the new base (not baseURL) so relative paths in sub-lists resolve correctly.
-            let subBase = subURL.deletingLastPathComponent()
+            let evaluated = ConditionalEvaluator.evaluate(
+                lines: content.components(separatedBy: .newlines)
+            )
             return await expandIncludes(
                 in: evaluated,
-                baseURL: subBase,
+                baseURL: subURL.deletingLastPathComponent(),
                 visited: nextVisited,
-                depth: depth + 1
+                depth: depth + 1,
+                maximumLines: maximumLines,
+                maximumBytes: maximumBytes
             )
         } catch {
-            // Network or system error (timeout, DNS, etc.) — nil status code, degraded-continue
             await onFetchError?(subURL, nil)
-            return []
+            return ExpansionResult(lines: [], bytes: 0)
         }
     }
 
