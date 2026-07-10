@@ -121,12 +121,28 @@ final class ZapperRuleManager: ObservableObject {
 
     private func publishStateFromDataManager() {
         let discovered = ProtobufDataManager.shared.getZapperDomains()
-        domains = discovered
-        disabledDomains = Set(ProtobufDataManager.shared.getDisabledZapperDomains())
-        if let selectedDomain {
-            rulesForSelectedDomain = rules(for: selectedDomain)
+        let discoveredDisabledDomains = Set(ProtobufDataManager.shared.getDisabledZapperDomains())
+        var didChange = false
+
+        if domains != discovered {
+            domains = discovered
+            didChange = true
         }
-        logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
+        if disabledDomains != discoveredDisabledDomains {
+            disabledDomains = discoveredDisabledDomains
+            didChange = true
+        }
+        if let selectedDomain {
+            let discoveredRules = rules(for: selectedDomain)
+            if rulesForSelectedDomain != discoveredRules {
+                rulesForSelectedDomain = discoveredRules
+                didChange = true
+            }
+        }
+
+        if didChange {
+            logger.info("ZapperRuleManager: Refreshed — found \(discovered.count) domain(s) with rules")
+        }
     }
 
     private func setupDataDirectoryMonitor() {

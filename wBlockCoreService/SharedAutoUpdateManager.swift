@@ -161,6 +161,7 @@ public actor SharedAutoUpdateManager {
     private var cachedStatus: AutoUpdateStatus?
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
+    private var runInProgress = false
 
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
@@ -613,6 +614,14 @@ public actor SharedAutoUpdateManager {
         force: Bool = false,
         policy: AutoUpdateExecutionPolicy
     ) async -> AutoUpdateRunOutcome {
+        guard !runInProgress else {
+            os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
+            appendSkipTelemetry(trigger: trigger, reason: "already_running")
+            return .skipped(reason: "already_running")
+        }
+        runInProgress = true
+        defer { runInProgress = false }
+
         await ProtobufDataManager.shared.waitUntilLoaded()
 
         if Self.isAppExtensionProcess {
@@ -1133,6 +1142,11 @@ public actor SharedAutoUpdateManager {
 
     private func checkAndFetchUpdates(filters: [FilterList]) async throws -> UpdateFetchResult {
         try Task.checkCancellation()
+        let remoteFilters = filters.filter {
+            guard let scheme = $0.url.scheme?.lowercased() else { return false }
+            return scheme == "http" || scheme == "https"
+        }
+
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
@@ -1144,7 +1158,7 @@ public actor SharedAutoUpdateManager {
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
 
         await withTaskGroup(of: FilterFetchOutcome.self) { group in
-            for filter in filters {
+            for filter in remoteFilters {
                 group.addTask { await self.fetchIfUpdated(filter, containerURL: containerURL) }
             }
 
@@ -1188,7 +1202,7 @@ public actor SharedAutoUpdateManager {
             updatedFilters: updatedFilters,
             hadErrors: hadErrors,
             errorCount: errorCount,
-            checkedCount: filters.count
+            checkedCount: remoteFilters.count
         )
     }
 

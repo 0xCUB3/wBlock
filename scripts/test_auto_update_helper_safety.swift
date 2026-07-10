@@ -108,4 +108,25 @@ assertNotContains(
     "Reload failure should throw instead of being logged as a completed run"
 )
 
+assertContains(
+    sharedAutoUpdate,
+    "private var runInProgress = false",
+    "Actor-local state must serialize reentrant auto-update triggers"
+)
+assertContains(
+    sharedAutoUpdate,
+    "defer { runInProgress = false }",
+    "Every auto-update exit must release the actor-local run claim"
+)
+assertContains(
+    sharedAutoUpdate,
+    "for filter in remoteFilters",
+    "Background fetches must exclude inline and other non-HTTP filter URLs"
+)
+assertContains(
+    sharedAutoUpdate,
+    "checkedCount: remoteFilters.count",
+    "Update telemetry must count only remotely fetchable filters"
+)
+
 print("PASS: auto-update helper safety checks")

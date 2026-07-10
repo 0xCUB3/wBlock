@@ -742,12 +742,19 @@ public class ProtobufDataManager: ObservableObject {
     public func setZapperRules(forHost host: String, rules: [String]) async {
         let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         await updateDataImmediately { data in
+            let existing = data.extensionData.zapperRulesByHost[host]
             if filtered.isEmpty {
+                guard existing != nil else { return }
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
+                if let existing,
+                   existing.selectors == filtered,
+                   existing.pendingDeletions.isEmpty {
+                    return
+                }
                 var ruleList = Wblock_Data_ZapperRuleList()
                 ruleList.selectors = filtered
-                ruleList.disabled = data.extensionData.zapperRulesByHost[host]?.disabled ?? false
+                ruleList.disabled = existing?.disabled ?? false
                 data.extensionData.zapperRulesByHost[host] = ruleList
             }
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
@@ -881,7 +888,8 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setZapperRulesDisabled(_ disabled: Bool, forHost host: String) async {
         await updateDataImmediately { data in
-            guard var ruleList = data.extensionData.zapperRulesByHost[host] else { return }
+            guard var ruleList = data.extensionData.zapperRulesByHost[host],
+                  ruleList.disabled != disabled else { return }
             ruleList.disabled = disabled
             data.extensionData.zapperRulesByHost[host] = ruleList
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
