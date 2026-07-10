@@ -337,8 +337,12 @@ extension AppDelegate: NSApplicationDelegate {
 
         // If an XPC service exists in future builds, prefer it; else fallback in-process
         #if os(macOS)
-        let usedXPC = await FilterUpdateClient.shared.updateFilters()
-        if usedXPC { return }
+        switch await FilterUpdateClient.shared.updateFilters() {
+        case .succeeded, .timedOut:
+            return
+        case .unavailable:
+            break
+        }
         #endif
 
         // Force update if overdue
