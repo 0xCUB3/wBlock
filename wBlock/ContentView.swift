@@ -300,6 +300,10 @@ struct ContentView: View {
             }
         }
         .unifiedTabListStyle()
+        .refreshable {
+            guard !filterManager.isLoading else { return }
+            await filterManager.checkForUpdates()
+        }
         #else
         ScrollView {
             VStack(spacing: 20) {
