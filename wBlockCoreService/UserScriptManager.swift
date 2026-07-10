@@ -203,6 +203,9 @@ public class UserScriptManager: ObservableObject {
     private static let maximumEncodedResourceBytes = ((maximumResourceBytes + 2) / 3) * 4 + 256
     private static let maximumResourcesPerScript = 64
     private static let maximumStoredResourceBytesPerScript = 25 * 1024 * 1024
+    private static let maximumRequireBytes = 5 * 1024 * 1024
+    private static let maximumRequireBytesPerScript = 20 * 1024 * 1024
+    private static let maximumRequiresPerScript = 32
 
     nonisolated private static func resourceCacheFitsLimits(_ resources: [String: String]) -> Bool {
         guard resources.count <= maximumResourcesPerScript else { return false }
@@ -1355,10 +1358,12 @@ public class UserScriptManager: ObservableObject {
         logger.info(
             "📦 Processing \(userScript.require.count) @require directive(s) for \(userScript.name)")
 
-        var combinedContent = ""
+        var requiredSections: [String] = []
+        requiredSections.reserveCapacity(min(userScript.require.count, Self.maximumRequiresPerScript))
+        var requiredBytes = 0
 
         // Download and prepend each required script
-        for requireURL in userScript.require {
+        for requireURL in userScript.require.prefix(Self.maximumRequiresPerScript) {
             guard let url = resolveMetadataURL(requireURL, relativeTo: userScript) else {
                 logger.error("❌ Invalid @require URL: \(requireURL)")
                 continue
@@ -1367,7 +1372,10 @@ public class UserScriptManager: ObservableObject {
             do {
                 logger.info("📥 Downloading required script: \(url.absoluteString)")
 
-                let (responseData, _) = try await urlSession.data(from: url)
+                let (responseData, _) = try await downloadData(
+                    from: url,
+                    maximumBytes: Self.maximumRequireBytes
+                )
 
                 if let requiredContent = String(data: responseData, encoding: .utf8) {
                     // Check for DDoS protection page
@@ -1375,9 +1383,14 @@ public class UserScriptManager: ObservableObject {
                         logger.error("❌ Received DDoS protection page for @require: \(requireURL)")
                         continue
                     }
-                    combinedContent += "// @require \(url.absoluteString)\n"
-                    combinedContent += requiredContent
-                    combinedContent += "\n\n"
+                    let section = "// @require \(url.absoluteString)\n\(requiredContent)\n\n"
+                    let sectionBytes = section.utf8.count
+                    guard requiredBytes + sectionBytes <= Self.maximumRequireBytesPerScript else {
+                        logger.error("❌ Skipping @require: per-script dependency limit reached")
+                        break
+                    }
+                    requiredSections.append(section)
+                    requiredBytes += sectionBytes
                     logger.info("✅ Downloaded required script from: \(url.absoluteString)")
                 } else {
                     logger.error("❌ Failed to decode required script from: \(requireURL)")
@@ -1387,9 +1400,8 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
-        // Append the main script content
-        combinedContent += userScript.content
-
+        requiredSections.append(userScript.content)
+        let combinedContent = requiredSections.joined()
         logger.info(
             "✅ Combined script size: \(combinedContent.count) characters (original: \(userScript.content.count))"
         )
