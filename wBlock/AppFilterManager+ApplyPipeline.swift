@@ -324,7 +324,7 @@ extension AppFilterManager {
         let ruleLimit = 150_000
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
-        let disabledSites = self.dataManager.disabledSites
+        let disabledSites = self.effectiveFilterDisabledSites()
         let removeParamDNRSummary = await Task.detached(priority: .utility) {
             try? RemoveParamDNRRuleGenerator.saveRules(
                 for: allSelectedFilters,

@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "Συνέχιση";
 "Resume Blocking" = "Συνέχιση αποκλεισμού";
 "Blocking is paused. Tap Resume to re-enable." = "Ο αποκλεισμός είναι σε παύση. Πατήστε Συνέχιση για επανενεργοποίηση όλων.";
+"Content filtering" = "Φιλτράρισμα περιεχομένου";
+"Filtering off" = "Το φιλτράρισμα είναι απενεργοποιημένο";
+"This removes all settings for %@." = "Αυτό καταργεί όλες τις ρυθμίσεις για το %@.";

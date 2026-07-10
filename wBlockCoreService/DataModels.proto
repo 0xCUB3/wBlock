@@ -106,6 +106,7 @@ message UserScriptData {
 message WhitelistData {
   repeated string disabled_sites = 1;
   int64 last_updated = 2;
+  repeated string filter_disabled_sites = 3;
 }
 
 // Rule count tracking data

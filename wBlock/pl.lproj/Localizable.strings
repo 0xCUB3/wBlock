@@ -728,3 +728,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Resume" = "Wznów";
 "Resume Blocking" = "Wznów blokowanie";
 "Blocking is paused. Tap Resume to re-enable." = "Blokowanie jest wstrzymane. Stuknij Wznów, aby włączyć całe blokowanie.";
+"Content filtering" = "Filtrowanie treści";
+"Filtering off" = "Filtrowanie wyłączone";
+"This removes all settings for %@." = "Spowoduje to usunięcie wszystkich ustawień dla %@.";

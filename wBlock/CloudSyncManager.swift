@@ -605,6 +605,7 @@ final class CloudSyncManager: ObservableObject {
 
         // Whitelist
         await dataManager.setWhitelistedDomains(payload.whitelistDomains)
+        await dataManager.setFilterDisabledDomains(payload.filterDisabledDomains ?? [])
 
         // Element zapper rules
         await applyRemoteZapperRules(payload.zapperRules ?? [:], disabledDomains: payload.zapperDisabledDomains)
@@ -1319,6 +1320,7 @@ final class CloudSyncManager: ObservableObject {
             filters: content.filters,
             userScripts: content.userScripts,
             whitelistDomains: content.whitelistDomains,
+            filterDisabledDomains: content.filterDisabledDomains,
             zapperRules: content.zapperRules,
             zapperDisabledDomains: content.zapperDisabledDomains
         )
@@ -1410,6 +1412,7 @@ final class CloudSyncManager: ObservableObject {
         )
 
         let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
+        let filterDisabledDomains = dataManager.filterDisabledSites.sorted()
         let zapperRules = Self.normalizedZapperRules(
             Dictionary(
                 uniqueKeysWithValues: dataManager.getZapperDomains().map { domain in
@@ -1424,6 +1427,7 @@ final class CloudSyncManager: ObservableObject {
             filters: filters,
             userScripts: userScripts,
             whitelistDomains: whitelistDomains,
+            filterDisabledDomains: filterDisabledDomains,
             zapperRules: zapperRules,
             zapperDisabledDomains: zapperDisabledDomains
         )
@@ -1939,6 +1943,7 @@ private struct SyncPayload: Codable {
         let filters: Filters
         let userScripts: UserScripts
         let whitelistDomains: [String]
+        let filterDisabledDomains: [String]?
         let zapperRules: [String: [String]]?
         let zapperDisabledDomains: [String]?
     }
@@ -1950,6 +1955,7 @@ private struct SyncPayload: Codable {
     let filters: Filters
     let userScripts: UserScripts
     let whitelistDomains: [String]
+    let filterDisabledDomains: [String]?
     let zapperRules: [String: [String]]?
     let zapperDisabledDomains: [String]?
 }

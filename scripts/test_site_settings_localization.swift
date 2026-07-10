@@ -33,13 +33,15 @@ struct SiteSettingsLocalizationTests {
             "No Site Settings",
             "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari.",
             "Reset Site Settings",
-            "This removes the whitelist entry, userscript exceptions, and zapper rules for %@.",
+            "This removes all settings for %@.",
             "Whitelist",  // log category; shared with the hub's terminology
             "Run on this site",
             "Apply rules on this site",
             "Changes take full effect after the next apply.",
             // Reused keys the Site Settings views depend on.
             "Disable on this site",
+            "Content filtering",
+            "Filtering off",
             "Userscripts",
             "Rule deleted",
             "Undo",
@@ -101,8 +103,7 @@ struct SiteSettingsLocalizationTests {
                         fail("value for \"\(key)\" in \(locale) lost its %d placeholder")
                     }
                 }
-                if let value = table["This removes the whitelist entry, userscript exceptions, and zapper rules for %@."],
-                   !value.contains("%@") {
+                if let value = table["This removes all settings for %@"], !value.contains("%@") {
                     fail("reset confirmation in \(locale) lost its %@ placeholder")
                 }
             }

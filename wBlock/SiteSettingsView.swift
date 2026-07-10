@@ -20,6 +20,7 @@ struct SiteSettingsView: View {
     private struct SiteSummary: Identifiable {
         let domain: String
         let isWhitelisted: Bool
+        let isFilterDisabled: Bool
         let scriptsOffCount: Int
         let zapperRuleCount: Int
         let isZapperDisabled: Bool
@@ -87,7 +88,7 @@ struct SiteSettingsView: View {
             Text(
                 String(
                     format: NSLocalizedString(
-                        "This removes the whitelist entry, userscript exceptions, and zapper rules for %@.",
+                        "This removes all settings for %@.",
                         comment: "Reset site settings confirmation message"
                     ),
                     domainPendingReset ?? ""
@@ -100,7 +101,8 @@ struct SiteSettingsView: View {
 
     private var addableDomain: String? {
         guard let normalized = DisabledSitesNormalizer.normalizedDomain(newDomain) else { return nil }
-        let existing = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+        let existing = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites))
+            .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
         return existing.contains(normalized) ? nil : normalized
     }
 
@@ -138,6 +140,7 @@ struct SiteSettingsView: View {
 
     private var allSites: [SiteSummary] {
         let whitelisted = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites))
+        let filterDisabled = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
         let exceptionsByScript = dataManager.getUserScriptDisabledHosts()
         var scriptsOffByHost: [String: Int] = [:]
         for hosts in exceptionsByScript.values {
@@ -147,6 +150,7 @@ struct SiteSettingsView: View {
         }
 
         var domains = whitelisted
+        domains.formUnion(filterDisabled)
         domains.formUnion(ruleManager.domains)
         domains.formUnion(scriptsOffByHost.keys)
 
@@ -154,11 +158,13 @@ struct SiteSettingsView: View {
             SiteSummary(
                 domain: domain,
                 isWhitelisted: whitelisted.contains(domain),
+                isFilterDisabled: filterDisabled.contains(domain),
                 scriptsOffCount: scriptsOffByHost[domain] ?? 0,
                 zapperRuleCount: ruleManager.ruleCount(forDomain: domain),
                 isZapperDisabled: ruleManager.isDisabled(domain)
             )
         }
+
     }
 
     private var filteredSites: [SiteSummary] {
@@ -211,6 +217,8 @@ struct SiteSettingsView: View {
                 HStack(spacing: 8) {
                     if site.isWhitelisted {
                         summaryBadge(Text("Whitelisted"), systemImage: "shield.slash")
+                    } else if site.isFilterDisabled {
+                        summaryBadge(Text("Filtering off"), systemImage: "line.3.horizontal.decrease.circle")
                     }
                     if site.scriptsOffCount > 0 {
                         summaryBadge(
@@ -265,6 +273,15 @@ struct SiteSettingsView: View {
             Text("Disable on this site")
                 .font(.body)
         }
+
+        toggleRow(isOn: Binding(
+            get: { !isFilterDisabled(site.domain) },
+            set: { setFilterDisabled(!$0, domain: site.domain) }
+        )) {
+            Text("Content filtering")
+                .font(.body)
+        }
+        .disabled(site.isWhitelisted)
 
         ForEach(siteUserScripts(for: site.domain)) { script in
             toggleRow(isOn: Binding(
@@ -449,6 +466,10 @@ struct SiteSettingsView: View {
         DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites).contains(domain)
     }
 
+    private func isFilterDisabled(_ domain: String) -> Bool {
+        DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites).contains(domain)
+    }
+
     private func siteUserScripts(for domain: String) -> [UserScript] {
         let syntheticURL = "https://\(domain)/"
         let exceptions = dataManager.getUserScriptDisabledHosts()
@@ -483,6 +504,16 @@ struct SiteSettingsView: View {
         }
     }
 
+    private func setFilterDisabled(_ disabled: Bool, domain: String) {
+        Task { @MainActor in
+            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+            let updatedDomains = disabled
+                ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain])
+                : currentDomains.filter { $0 != domain }
+            await dataManager.setFilterDisabledDomains(updatedDomains)
+        }
+    }
+
     private func setWhitelisted(_ whitelisted: Bool, domain: String) {
         Task { @MainActor in
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
@@ -509,6 +540,10 @@ struct SiteSettingsView: View {
             if currentDomains.contains(domain) {
                 await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain })
             }
+            let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+            if filterDomains.contains(domain) {
+                await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain })
+            }
 
             for (scriptID, hosts) in dataManager.getUserScriptDisabledHosts() where hosts.contains(domain) {
                 await dataManager.setUserScriptDisabledHosts(
@@ -519,6 +554,10 @@ struct SiteSettingsView: View {
 
             if ruleManager.ruleCount(forDomain: domain) > 0 {
                 ruleManager.deleteAllRules(forDomain: domain)
+                filterManager.markNonSelectionChangesPending()
+            }
+            if ruleManager.isDisabled(domain) {
+                ruleManager.setDisabled(false, forDomain: domain)
                 filterManager.markNonSelectionChangesPending()
             }
 

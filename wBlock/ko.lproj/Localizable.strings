@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "다시 시작";
 "Resume Blocking" = "차단 다시 시작";
 "Blocking is paused. Tap Resume to re-enable." = "차단이 일시정지되었습니다. 다시 시작을 눌러 모든 차단을 활성화하세요.";
+"Content filtering" = "콘텐츠 필터링";
+"Filtering off" = "필터링 끔";
+"This removes all settings for %@." = "%@의 모든 설정이 제거됩니다.";

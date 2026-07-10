@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "Возобновить";
 "Resume Blocking" = "Возобновить блокировку";
 "Blocking is paused. Tap Resume to re-enable." = "Блокировка приостановлена. Нажмите «Возобновить», чтобы включить всю блокировку.";
+"Content filtering" = "Фильтрация содержимого";
+"Filtering off" = "Фильтрация отключена";
+"This removes all settings for %@." = "Будут удалены все настройки для %@.";

@@ -728,3 +728,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Resume" = "Reanudar";
 "Resume Blocking" = "Reanudar bloqueo";
 "Blocking is paused. Tap Resume to re-enable." = "El bloqueo está pausado. Toca Reanudar para activar todo de nuevo.";
+"Content filtering" = "Filtrado de contenido";
+"Filtering off" = "Filtrado desactivado";
+"This removes all settings for %@." = "Esto elimina todos los ajustes de %@.";

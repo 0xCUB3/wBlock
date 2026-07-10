@@ -728,3 +728,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Resume" = "Sürdür";
 "Resume Blocking" = "Engellemeyi sürdür";
 "Blocking is paused. Tap Resume to re-enable." = "Engelleme duraklatıldı. Tüm engellemeyi yeniden etkinleştirmek için Sürdür öğesine dokunun.";
+"Content filtering" = "İçerik filtreleme";
+"Filtering off" = "Filtreleme kapalı";
+"This removes all settings for %@." = "Bu, %@ için tüm ayarları kaldırır.";

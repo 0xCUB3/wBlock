@@ -449,6 +449,8 @@ struct Wblock_Data_WhitelistData: Sendable {
 
   var lastUpdated: Int64 = 0
 
+  var filterDisabledSites: [String] = []
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1261,7 +1263,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".WhitelistData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1271,6 +1273,7 @@ extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._Messa
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedStringField(value: &self.disabledSites) }()
       case 2: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdated) }()
+      case 3: try { try decoder.decodeRepeatedStringField(value: &self.filterDisabledSites) }()
       default: break
       }
     }
@@ -1283,12 +1286,16 @@ extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if self.lastUpdated != 0 {
       try visitor.visitSingularInt64Field(value: self.lastUpdated, fieldNumber: 2)
     }
+    if !self.filterDisabledSites.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.filterDisabledSites, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Wblock_Data_WhitelistData, rhs: Wblock_Data_WhitelistData) -> Bool {
     if lhs.disabledSites != rhs.disabledSites {return false}
     if lhs.lastUpdated != rhs.lastUpdated {return false}
+    if lhs.filterDisabledSites != rhs.filterDisabledSites {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "再開";
 "Resume Blocking" = "ブロックを再開";
 "Blocking is paused. Tap Resume to re-enable." = "ブロックは一時停止中です。再開をタップしてすべてのブロックを有効化してください。";
+"Content filtering" = "コンテンツフィルタリング";
+"Filtering off" = "フィルタリングオフ";
+"This removes all settings for %@." = "%@ のすべての設定を削除します。";

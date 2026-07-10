@@ -40,6 +40,17 @@ public enum WebExtensionRequestHandler {
         return ProtobufDataManager.shared.disabledSites
     }
 
+    /// Normalized union used exclusively for content filtering and RemoveParam.
+    @MainActor
+    private static func currentFilterDisabledSites() async -> [String] {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
+        return DisabledSitesNormalizer.effectiveFilterDisabledDomains(
+            master: ProtobufDataManager.shared.disabledSites,
+            filterOnly: ProtobufDataManager.shared.filterDisabledSites
+        )
+    }
+
     /// Processes an extension request and provides content blocking configuration.
     ///
     /// This method extracts the URL from the request, looks up the appropriate blocking
@@ -357,11 +368,12 @@ public enum WebExtensionRequestHandler {
             // window is harmless and removing it from the toggle's critical path keeps
             // the popup under its timeout even on profiles with many selected filters.
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
+            let effectiveDisabledSites = await currentFilterDisabledSites()
             Task.detached(priority: .utility) {
                 do {
                     _ = try RemoveParamDNRRuleGenerator.saveRules(
                         for: selectedFilters,
-                        disabledSites: list,
+                        disabledSites: effectiveDisabledSites,
                         groupIdentifier: GroupIdentifier.shared.value
                     )
                 } catch {
@@ -379,7 +391,7 @@ public enum WebExtensionRequestHandler {
 
             let applyStart = Date()
             let summary = await Task.detached(priority: .userInitiated) {
-                await applyDisabledSitesFastPath(disabledSites: list, platform: platform)
+                await applyDisabledSitesFastPath(disabledSites: effectiveDisabledSites, platform: platform)
             }.value
             let applyDurationMs = Int(Date().timeIntervalSince(applyStart) * 1000)
 

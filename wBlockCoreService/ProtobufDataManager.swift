@@ -292,6 +292,11 @@ public class ProtobufDataManager: ObservableObject {
         appData.whitelist.disabledSites
     }
 
+    public var filterDisabledSites: [String] {
+        appData.whitelist.filterDisabledSites
+    }
+
+
     public var whitelistLastUpdated: Int64 {
         appData.whitelist.lastUpdated
     }

@@ -728,3 +728,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Resume" = "Reia";
 "Resume Blocking" = "Reia blocarea";
 "Blocking is paused. Tap Resume to re-enable." = "Blocarea este în pauză. Atinge Reia pentru a reactiva toată blocarea.";
+"Content filtering" = "Filtrarea conținutului";
+"Filtering off" = "Filtrarea dezactivată";
+"This removes all settings for %@." = "Aceasta elimină toate setările pentru %@.";

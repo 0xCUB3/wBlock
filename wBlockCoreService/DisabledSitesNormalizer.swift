@@ -32,4 +32,11 @@ public enum DisabledSitesNormalizer {
     public static func normalizedDomains(from rawDomains: [String]) -> [String] {
         Array(Set(rawDomains.compactMap(normalizedDomain))).sorted()
     }
+
+    public static func effectiveFilterDisabledDomains(
+        master: [String],
+        filterOnly: [String]
+    ) -> [String] {
+        normalizedDomains(from: master + filterOnly)
+    }
 }

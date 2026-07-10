@@ -392,7 +392,15 @@ extension ProtobufDataManager {
             return true
         }
     }
-    
+
+    public func setFilterDisabledDomains(_ domains: [String]) async {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: domains)
+        await updateDataImmediately { data in
+            data.whitelist.filterDisabledSites = normalized
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
     // MARK: - App Settings
     public func updateAppSettings(
         hasCompletedOnboarding: Bool? = nil,

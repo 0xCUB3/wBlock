@@ -12,6 +12,7 @@ struct WBlockBackup: Codable, Sendable {
     var filterSelections: [FilterSelection]
     var customFilterLists: [CustomFilterEntry]
     var whitelistedDomains: [String]
+    var filterDisabledDomains: [String]
     var zapperRules: [String: [String]]
     var disabledZapperDomains: [String]
 
@@ -118,6 +119,7 @@ struct WBlockBackup: Codable, Sendable {
         filterSelections: [FilterSelection],
         customFilterLists: [CustomFilterEntry],
         whitelistedDomains: [String],
+        filterDisabledDomains: [String] = [],
         zapperRules: [String: [String]],
         disabledZapperDomains: [String],
         userScripts: [UserScriptEntry]
@@ -128,6 +130,7 @@ struct WBlockBackup: Codable, Sendable {
         self.filterSelections = filterSelections
         self.customFilterLists = customFilterLists
         self.whitelistedDomains = whitelistedDomains
+        self.filterDisabledDomains = filterDisabledDomains
         self.zapperRules = zapperRules
         self.disabledZapperDomains = disabledZapperDomains
         self.userScripts = userScripts
@@ -140,6 +143,7 @@ struct WBlockBackup: Codable, Sendable {
         case filterSelections
         case customFilterLists
         case whitelistedDomains
+        case filterDisabledDomains
         case zapperRules
         case disabledZapperDomains
         case userScripts
@@ -153,6 +157,7 @@ struct WBlockBackup: Codable, Sendable {
         filterSelections = try container.decode([FilterSelection].self, forKey: .filterSelections)
         customFilterLists = try container.decode([CustomFilterEntry].self, forKey: .customFilterLists)
         whitelistedDomains = try container.decode([String].self, forKey: .whitelistedDomains)
+        filterDisabledDomains = try container.decodeIfPresent([String].self, forKey: .filterDisabledDomains) ?? []
         zapperRules = try container.decode([String: [String]].self, forKey: .zapperRules)
         disabledZapperDomains = try container.decodeIfPresent([String].self, forKey: .disabledZapperDomains) ?? []
         userScripts = try container.decodeIfPresent([UserScriptEntry].self, forKey: .userScripts) ?? []
@@ -229,7 +234,7 @@ enum BackupManager {
 
         // Whitelist (live source is the protobuf store, not the legacy UserDefaults migration key)
         let whitelistedDomains = filterManager.dataManager.disabledSites
-
+        let filterDisabledDomains = filterManager.dataManager.filterDisabledSites
         let (zapperRules, disabledZapperDomains) = await MainActor.run {
             var zapperRules: [String: [String]] = [:]
             let zapperDomains = ProtobufDataManager.shared.getZapperDomains()
@@ -249,6 +254,7 @@ enum BackupManager {
             filterSelections: filterSelections,
             customFilterLists: customEntries,
             whitelistedDomains: whitelistedDomains,
+            filterDisabledDomains: filterDisabledDomains,
             zapperRules: zapperRules,
             disabledZapperDomains: disabledZapperDomains,
             userScripts: userScriptEntries
@@ -311,6 +317,7 @@ enum BackupManager {
 
         // 3. Restore whitelist
         await filterManager.dataManager.setWhitelistedDomains(backup.whitelistedDomains)
+        await filterManager.dataManager.setFilterDisabledDomains(backup.filterDisabledDomains)
 
         // 4. Restore zapper rules (to protobuf)
         for (hostname, rules) in backup.zapperRules {

@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "Resume";
 "Resume Blocking" = "Resume Blocking";
 "Blocking is paused. Tap Resume to re-enable." = "Blocking is paused. Tap Resume to re-enable all blocking.";
+"Content filtering" = "Content filtering";
+"Filtering off" = "Filtering off";
+"This removes all settings for %@." = "This removes all settings for %@.";

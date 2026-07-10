@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "استئناف";
 "Resume Blocking" = "استئناف الحظر";
 "Blocking is paused. Tap Resume to re-enable." = "الحظر متوقف مؤقتًا. اضغط على استئناف لإعادة تشغيل جميع الحظر.";
+"Content filtering" = "تصفية المحتوى";
+"Filtering off" = "التصفية متوقفة";
+"This removes all settings for %@." = "سيؤدي هذا إلى إزالة جميع إعدادات %@.";

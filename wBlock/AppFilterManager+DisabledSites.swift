@@ -5,7 +5,8 @@ extension AppFilterManager {
     /// Sets up an observer to automatically rebuild content blockers when disabled sites change
     func setupDisabledSitesObserver() {
         // Store the last known disabled sites to detect changes.
-        lastKnownDisabledSites = dataManager.disabledSites
+        lastKnownDisabledSites = effectiveFilterDisabledSites()
+
 
         disabledSitesDirectoryMonitor?.cancel()
         disabledSitesDirectoryMonitor = nil
@@ -72,13 +73,21 @@ extension AppFilterManager {
         source.resume()
     }
 
+    /// Returns the normalized union used only for content filtering.
+    func effectiveFilterDisabledSites() -> [String] {
+        DisabledSitesNormalizer.effectiveFilterDisabledDomains(
+            master: dataManager.disabledSites,
+            filterOnly: dataManager.filterDisabledSites
+        )
+    }
+
     /// Checks for changes in disabled sites and triggers fast rebuild if needed
     @MainActor
     func checkForDisabledSitesChanges() async {
         // Only reload protobuf data when the shared file actually changed
         _ = await dataManager.refreshFromDiskIfModified()
 
-        let currentDisabledSites = dataManager.disabledSites
+        let currentDisabledSites = effectiveFilterDisabledSites()
 
         if currentDisabledSites != lastKnownDisabledSites {
             await ConcurrentLogManager.shared.info(
@@ -105,7 +114,7 @@ extension AppFilterManager {
                 comment: "Disabled sites update status"
             )
         }
-
+        let disabledSites = effectiveFilterDisabledSites()
         await ConcurrentLogManager.shared.info(
             .whitelist, "Fast applying disabled sites changes without full conversion",
             metadata: [:])
@@ -116,8 +125,6 @@ extension AppFilterManager {
             ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
 
-        // Capture disabled sites on MainActor
-        let disabledSites = dataManager.disabledSites
 
         let targetsToReload = await Task.detached { () -> [ContentBlockerTargetInfo] in
             var nonEmptyTargets: [ContentBlockerTargetInfo] = []

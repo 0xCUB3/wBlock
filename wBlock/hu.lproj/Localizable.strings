@@ -729,3 +729,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Resume" = "Folytatás";
 "Resume Blocking" = "Blokkolás folytatása";
 "Blocking is paused. Tap Resume to re-enable." = "A blokkolás szünetelve. Koppints a Folytatás gombra az összes blokkolás újraengedélyezéséhez.";
+"Content filtering" = "Tartalomszűrés";
+"Filtering off" = "Szűrés kikapcsolva";
+"This removes all settings for %@." = "Ez eltávolítja %@ összes beállítását.";

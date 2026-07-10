@@ -728,3 +728,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume" = "恢复";
 "Resume Blocking" = "恢复拦截";
 "Blocking is paused. Tap Resume to re-enable." = "拦截已暂停。点击“恢复”以重新启用所有拦截。";
+"Content filtering" = "内容过滤";
+"Filtering off" = "过滤已关闭";
+"This removes all settings for %@." = "这将移除 %@ 的所有设置。";
