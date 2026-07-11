@@ -325,6 +325,7 @@
 "Execution: %@" = "실행: %@";
 "Expired %@" = "만료됨 %@";
 "Export Settings" = "설정 내보내기";
+"Deferred" = "연기됨";
 "Export failed: %@" = "내보내기 실패: %@";
 "Failed" = "실패";
 "Failed to create backup." = "백업을 만들지 못했습니다.";

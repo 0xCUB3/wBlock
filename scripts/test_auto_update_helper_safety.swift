@@ -25,6 +25,7 @@ let runner = try read("wBlockCoreService/FilterAutoUpdateRunner.swift")
 let agentEntitlements = try read("FilterUpdateAgent/FilterUpdateAgent.entitlements")
 let groupIdentifier = try read("wBlockCoreService/GroupIdentifier.swift")
 let sharedAutoUpdate = try read("wBlockCoreService/SharedAutoUpdateManager.swift")
+let settingsView = try read("wBlock/SettingsView.swift")
 let buildDMG = try read("scripts/build-dmg.sh")
 
 assertContains(
@@ -127,6 +128,17 @@ assertContains(
     sharedAutoUpdate,
     "checkedCount: remoteFilters.count",
     "Update telemetry must count only remotely fetchable filters"
+)
+
+assertContains(
+    sharedAutoUpdate,
+    "await ProtobufDataManager.shared.setAutoUpdateForceNext(true)",
+    "Deferred background work must force the next foreground auto-update"
+)
+assertContains(
+    settingsView,
+    "case .deferred:\n            return String(localized: \"Deferred\")",
+    "Deferred background work must not be presented as a failure"
 )
 
 print("PASS: auto-update helper safety checks")

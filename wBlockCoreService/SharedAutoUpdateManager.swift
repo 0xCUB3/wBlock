@@ -1031,6 +1031,10 @@ public actor SharedAutoUpdateManager {
         } catch let autoUpdateError as AutoUpdateError {
             let isDeferred = autoUpdateError.isDeferred
             let phase = autoUpdateError.failurePhase ?? "unknown"
+            if isDeferred {
+                await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+                invalidateStatusCache()
+            }
             let result = isDeferred ? "deferred" : "failed"
 
             if isDeferred {

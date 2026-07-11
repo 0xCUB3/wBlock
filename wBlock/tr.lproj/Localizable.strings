@@ -325,6 +325,7 @@
 "Execution: %@" = "Çalıştırma: %@";
 "Expired %@" = "%@ süresi doldu";
 "Export Settings" = "Ayarları dışa aktar";
+"Deferred" = "Ertelendi";
 "Export failed: %@" = "Dışa aktarılamadı: %@";
 "Failed" = "Başarısız";
 "Failed to create backup." = "Yedek oluşturulamadı.";

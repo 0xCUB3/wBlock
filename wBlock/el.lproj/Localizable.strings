@@ -325,6 +325,7 @@
 "Execution: %@" = "Εκτέλεση: %@";
 "Expired %@" = "Έληξε %@";
 "Export Settings" = "Εξαγωγή ρυθμίσεων";
+"Deferred" = "Αναβλήθηκε";
 "Export failed: %@" = "Η εξαγωγή απέτυχε: %@";
 "Failed" = "Απέτυχε";
 "Failed to create backup." = "Αποτυχία δημιουργίας αντιγράφου ασφαλείας.";

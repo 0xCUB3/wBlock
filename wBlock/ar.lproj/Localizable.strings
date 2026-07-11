@@ -325,6 +325,7 @@
 "Execution: %@" = "التنفيذ: %@";
 "Expired %@" = "انتهت صلاحيته %@";
 "Export Settings" = "تصدير الإعدادات";
+"Deferred" = "مؤجَّلة";
 "Export failed: %@" = "فشل التصدير: %@";
 "Failed" = "فشل";
 "Failed to create backup." = "فشل إنشاء النسخة الاحتياطية.";

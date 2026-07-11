@@ -325,6 +325,7 @@
 "Execution: %@" = "Esecuzione: %@";
 "Expired %@" = "Scaduto %@";
 "Export Settings" = "Esporta impostazioni";
+"Deferred" = "Rinviata";
 "Export failed: %@" = "Esportazione non riuscita: %@";
 "Failed" = "Non riuscito";
 "Failed to create backup." = "Impossibile creare il backup.";

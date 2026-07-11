@@ -325,6 +325,7 @@
 "Execution: %@" = "执行：%@";
 "Expired %@" = "已过期 %@";
 "Export Settings" = "导出设置";
+"Deferred" = "已推迟";
 "Export failed: %@" = "导出失败：%@";
 "Failed" = "失败";
 "Failed to create backup." = "无法创建备份。";

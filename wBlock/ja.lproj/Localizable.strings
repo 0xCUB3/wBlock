@@ -325,6 +325,7 @@
 "Execution: %@" = "実行: %@";
 "Expired %@" = "期限切れ %@";
 "Export Settings" = "設定を書き出す";
+"Deferred" = "延期";
 "Export failed: %@" = "書き出しに失敗しました: %@";
 "Failed" = "失敗";
 "Failed to create backup." = "バックアップの作成に失敗しました。";

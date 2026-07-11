@@ -325,6 +325,7 @@
 "Execution: %@" = "Executare: %@";
 "Expired %@" = "Expirat %@";
 "Export Settings" = "Exportă setările";
+"Deferred" = "Amânată";
 "Export failed: %@" = "Exportul a eșuat: %@";
 "Failed" = "Eșuat";
 "Failed to create backup." = "Nu s-a putut crea copia de rezervă.";

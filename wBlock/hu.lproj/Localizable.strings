@@ -325,6 +325,7 @@
 "Execution: %@" = "Végrehajtás: %@";
 "Expired %@" = "Lejárt %@";
 "Export Settings" = "Beállítások exportálása";
+"Deferred" = "Elhalasztva";
 "Export failed: %@" = "Exportálás sikertelen: %@";
 "Failed" = "Sikertelen";
 "Failed to create backup." = "Nem sikerült létrehozni a biztonsági mentést.";
