@@ -1146,8 +1146,13 @@ public class UserScriptManager: ObservableObject {
     private func downloadMissingDefaultScripts() async {
         logger.info("📥 Checking and downloading enabled userscripts that are missing content...")
 
-        for i in 0..<userScripts.count {
-            let script = userScripts[i]
+        // Keep stable IDs across awaits. The array can be replaced while a download is
+        // suspended (for example by a sync or restore), so an index captured before an
+        // await must never be reused afterward.
+        let candidateIDs = userScripts.map(\.id)
+        for scriptID in candidateIDs {
+            guard let index = indexOfUserScript(withId: scriptID) else { continue }
+            let script = userScripts[index]
 
             // Check if this is a default script that needs downloading
             let isDefaultScript = script.url.map { BuiltInUserScripts.allProtectedURLs.contains($0.absoluteString) } ?? false
@@ -1158,15 +1163,15 @@ public class UserScriptManager: ObservableObject {
 
             // Prefer local disk content if available (avoid unnecessary network requests on launch).
             if script.content.isEmpty, let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
-                userScripts[i].content = diskContent
+                userScripts[index].content = diskContent
                 if let resources = readUserScriptResources(script) {
-                    userScripts[i].resourceContents = resources
+                    userScripts[index].resourceContents = resources
                 }
                 continue
             }
 
             if script.content.isEmpty, let url = script.url {
-                await downloadUserScriptInBackground(at: i, from: url)
+                await downloadUserScriptInBackground(for: scriptID, from: url)
             }
         }
 
@@ -1476,9 +1481,10 @@ public class UserScriptManager: ObservableObject {
         return resources
     }
 
-    private func downloadUserScriptInBackground(at index: Int, from url: URL) async {
-        guard userScripts.indices.contains(index) else { return }
-        let scriptID = userScripts[index].id
+    private func downloadUserScriptInBackground(for scriptID: UUID, from url: URL) async {
+        guard let index = indexOfUserScript(withId: scriptID),
+              userScripts.indices.contains(index)
+        else { return }
         let scriptName = userScripts[index].name
 
         logger.info("📥 Downloading userscript from: \(url)")
@@ -1942,54 +1948,60 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func toggleUserScript(_ userScript: UserScript) async {
-        if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-            let shouldEnable = !userScripts[index].isEnabled
+        guard let initialIndex = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
+        let shouldEnable = !userScripts[initialIndex].isEnabled
 
-            if shouldEnable {
-                let isReady = await ensureScriptReadyForEnabling(at: index)
-                guard isReady else {
-                    hasError = true
-                    errorMessage = "Failed to download \(userScript.name). Please try again."
-                    statusDescription = "Download failed"
-                    return
-                }
+        if shouldEnable {
+            let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id)
+            guard isReady else {
+                hasError = true
+                errorMessage = "Failed to download \(userScript.name). Please try again."
+                statusDescription = "Download failed"
+                return
             }
-
-            userScripts[index].isEnabled = shouldEnable
-            statusDescription =
-                userScripts[index].isEnabled
-                ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
-            // Persist the change synchronously
-            logger.info(
-                "💾 Persisting userscript toggle for \(userScript.name): \(self.userScripts[index].isEnabled)"
-            )
-            await dataManager.updateUserScripts(self.userScripts)
-            logger.info("💾 Userscripts saved after toggle")
         }
+
+        guard let index = indexOfUserScript(withId: userScript.id),
+              userScripts.indices.contains(index)
+        else { return }
+
+        userScripts[index].isEnabled = shouldEnable
+        statusDescription =
+            userScripts[index].isEnabled
+            ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
+        // Persist the change synchronously
+        logger.info(
+            "💾 Persisting userscript toggle for \(userScript.name): \(self.userScripts[index].isEnabled)"
+        )
+        await dataManager.updateUserScripts(self.userScripts)
+        logger.info("💾 Userscripts saved after toggle")
     }
 
     /// Sets the enabled state for a userscript explicitly (idempotent)
     public func setUserScript(_ userScript: UserScript, isEnabled: Bool) async {
-        if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-            guard userScripts[index].isEnabled != isEnabled else { return }
+        guard let initialIndex = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
+        guard userScripts[initialIndex].isEnabled != isEnabled else { return }
 
-            if isEnabled {
-                let isReady = await ensureScriptReadyForEnabling(at: index)
-                guard isReady else {
-                    hasError = true
-                    errorMessage = "Failed to download \(userScript.name). Please try again."
-                    statusDescription = "Download failed"
-                    return
-                }
+        if isEnabled {
+            let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id)
+            guard isReady else {
+                hasError = true
+                errorMessage = "Failed to download \(userScript.name). Please try again."
+                statusDescription = "Download failed"
+                return
             }
-
-            userScripts[index].isEnabled = isEnabled
-            statusDescription =
-                isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
-            logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
-            await dataManager.updateUserScripts(self.userScripts)
-            logger.info("💾 Userscripts saved after setEnabled")
         }
+
+        guard let index = indexOfUserScript(withId: userScript.id),
+              userScripts.indices.contains(index)
+        else { return }
+
+        userScripts[index].isEnabled = isEnabled
+        statusDescription =
+            isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
+        logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
+        await dataManager.updateUserScripts(self.userScripts)
+        logger.info("💾 Userscripts saved after setEnabled")
     }
 
     /// Sets whether bulk and scheduled updates should include this userscript.
@@ -2006,47 +2018,67 @@ public class UserScriptManager: ObservableObject {
         logger.info("💾 Userscripts saved after update preference change")
     }
 
-    private func ensureScriptReadyForEnabling(at index: Int) async -> Bool {
-        guard userScripts.indices.contains(index) else { return false }
-        guard !userScripts[index].isLocal else { return !userScripts[index].content.isEmpty }
-        guard userScripts[index].content.isEmpty else { return true }
+    private func ensureScriptReadyForEnabling(scriptID: UUID) async -> Bool {
+        guard let index = indexOfUserScript(withId: scriptID),
+              userScripts.indices.contains(index)
+        else { return false }
+        let script = userScripts[index]
+        guard !script.isLocal else { return !script.content.isEmpty }
+        guard script.content.isEmpty else { return true }
 
-        if let diskContent = readUserScriptContent(userScripts[index]), !diskContent.isEmpty {
+        if let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
             userScripts[index].content = diskContent
-            if let resources = readUserScriptResources(userScripts[index]) {
+            if let resources = readUserScriptResources(script) {
                 userScripts[index].resourceContents = resources
             }
             return true
         }
 
-        guard let url = userScripts[index].url else { return false }
-        await downloadUserScriptInBackground(at: index, from: url)
-        return userScripts[index].isDownloaded
+        guard let url = script.url else { return false }
+        await downloadUserScriptInBackground(for: scriptID, from: url)
+
+        guard let currentIndex = indexOfUserScript(withId: scriptID),
+              userScripts.indices.contains(currentIndex)
+        else { return false }
+        return userScripts[currentIndex].isDownloaded
     }
 
     /// Batch apply enabled state using a set of IDs (single persistence write)
     public func setEnabledScripts(withIDs enabledIDs: Set<UUID>) async {
         var failedRemoteEnables = Set<String>()
 
-        // Ensure any scripts being enabled have content available.
-        for i in userScripts.indices where enabledIDs.contains(userScripts[i].id) {
-            guard !userScripts[i].isLocal else { continue }
-            guard userScripts[i].content.isEmpty else { continue }
+        // Ensure any scripts being enabled have content available. Keep IDs rather than
+        // indices because downloads suspend and the array may be synchronized meanwhile.
+        let remoteScriptIDsToDownload = userScripts.compactMap { script -> (UUID, URL)? in
+            guard enabledIDs.contains(script.id),
+                  !script.isLocal,
+                  script.content.isEmpty,
+                  let url = script.url
+            else { return nil }
+            return (script.id, url)
+        }
 
-            if let diskContent = readUserScriptContent(userScripts[i]), !diskContent.isEmpty {
-                userScripts[i].content = diskContent
-                if let resources = readUserScriptResources(userScripts[i]) {
-                    userScripts[i].resourceContents = resources
+        for (scriptID, url) in remoteScriptIDsToDownload {
+            if let index = indexOfUserScript(withId: scriptID),
+               userScripts.indices.contains(index),
+               let diskContent = readUserScriptContent(userScripts[index]),
+               !diskContent.isEmpty
+            {
+                userScripts[index].content = diskContent
+                if let resources = readUserScriptResources(userScripts[index]) {
+                    userScripts[index].resourceContents = resources
                 }
                 continue
             }
 
-            if let url = userScripts[i].url {
-                await downloadUserScriptInBackground(at: i, from: url)
-            }
+            await downloadUserScriptInBackground(for: scriptID, from: url)
 
-            if !userScripts[i].isDownloaded {
-                failedRemoteEnables.insert(userScripts[i].name)
+            guard let currentIndex = indexOfUserScript(withId: scriptID),
+                  userScripts.indices.contains(currentIndex)
+            else { continue }
+
+            if !userScripts[currentIndex].isDownloaded {
+                failedRemoteEnables.insert(userScripts[currentIndex].name)
             }
         }
 
@@ -2132,13 +2164,22 @@ public class UserScriptManager: ObservableObject {
         guard userScripts[index].content.isEmpty else { return true }
         guard let url = userScripts[index].url else { return false }
 
+        let scriptID = userScript.id
+        let scriptName = userScripts[index].name
         isLoading = true
-        statusDescription = "Downloading \(userScripts[index].name)..."
-        await downloadUserScriptInBackground(at: index, from: url)
+        statusDescription = "Downloading \(scriptName)..."
+        await downloadUserScriptInBackground(for: scriptID, from: url)
         isLoading = false
 
-        if userScripts[index].isDownloaded {
-            statusDescription = "Downloaded \(userScripts[index].name)"
+        guard let currentIndex = indexOfUserScript(withId: scriptID),
+              userScripts.indices.contains(currentIndex)
+        else {
+            statusDescription = "Download failed"
+            return false
+        }
+
+        if userScripts[currentIndex].isDownloaded {
+            statusDescription = "Downloaded \(userScripts[currentIndex].name)"
             return true
         }
 
