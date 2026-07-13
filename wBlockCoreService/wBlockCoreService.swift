@@ -13,6 +13,8 @@ import SafariServices
 internal import ZIPFoundation
 import os.log
 
+private final class ContentBlockerServiceBundleMarker {}
+
 /// ContentBlockerService provides functionality to convert AdGuard rules to Safari content blocking format
 /// and manage content blocker extensions.
 public enum ContentBlockerService {
@@ -291,7 +293,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     /// - Returns: Data object containing a ZIP archive with Safari content blocker JSON and advanced rules,
     ///           or nil if the archive creation fails.
     public static func exportConversionResult(rules: String) -> Data? {
-        let result = convertRules(rules: rules)
+        guard let result = convertRules(rules: rules) else { return nil }
 
         // We'll use a variable so we can modify the JSON string
         var safariRulesJSON = result.safariRulesJSON
@@ -502,7 +504,9 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
 
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
-        let result = convertRules(rules: effectiveRules)
+        guard let result = convertRules(rules: effectiveRules) else {
+            return (safariRulesCount: 0, advancedRulesText: nil)
+        }
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -567,7 +571,9 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         // Cache miss: read rules file and run conversion.
         let combinedRules = (try? String(contentsOf: rulesFileURL, encoding: .utf8)) ?? ""
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
-        let result = convertRules(rules: effectiveRules)
+        guard let result = convertRules(rules: effectiveRules) else {
+            return (safariRulesCount: 0, advancedRulesText: nil)
+        }
 
         saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
         saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
@@ -926,8 +932,10 @@ extension ContentBlockerService {
     /// - Parameters:
     ///   - rules: AdGuard rules to convert.
     /// - Returns: A ConversionResult containing the converted Safari rules in JSON format
-    ///           and advanced rules in text format.
-    private static func convertRules(rules: String) -> ConversionResult {
+    ///           and advanced rules in text format, or nil when converter resources are unavailable.
+    private static func convertRules(rules: String) -> ConversionResult? {
+        guard publicSuffixListResourcesAreAvailable() else { return nil }
+
         var filterRules = rules
         if !filterRules.isContiguousUTF8 {
             measure(label: "Make contigious UTF-8") {
@@ -953,6 +961,49 @@ extension ContentBlockerService {
         }
 
         return result
+    }
+
+    private static func publicSuffixListResourcesAreAvailable() -> Bool {
+        let bundleName = "swift-psl_PublicSuffixList"
+        let candidateURLs = [
+            Bundle.main.resourceURL,
+            Bundle(for: ContentBlockerServiceBundleMarker.self).resourceURL,
+            Bundle.main.bundleURL
+        ].compactMap { $0 }
+
+        for candidateURL in candidateURLs {
+            guard let resourceBundle = Bundle(
+                url: candidateURL.appendingPathComponent("\(bundleName).bundle")
+            ) else { continue }
+
+            let requiredResources = ["common", "negated", "asterisk"]
+            let missingResources = requiredResources.filter { resourceName in
+                guard let resourceURL = resourceBundle.url(
+                    forResource: resourceName,
+                    withExtension: "bin"
+                ),
+                FileManager.default.isReadableFile(atPath: resourceURL.path),
+                let resourceValues = try? resourceURL.resourceValues(forKeys: [.fileSizeKey]),
+                let fileSize = resourceValues.fileSize,
+                fileSize > 0
+                else { return true }
+                return false
+            }
+
+            if missingResources.isEmpty {
+                return true
+            }
+
+            os_log(
+                .error,
+                "Public Suffix List bundle is missing or unreadable resource(s): %@ (%@)",
+                missingResources.joined(separator: ", "),
+                resourceBundle.bundleURL.path
+            )
+        }
+
+        os_log(.error, "Could not locate a usable swift-psl_PublicSuffixList resource bundle")
+        return false
     }
 
     /// Saves the blocker list file contents to the shared directory specified by the group identifier.
