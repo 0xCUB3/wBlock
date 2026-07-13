@@ -16,6 +16,7 @@ import os.log
 /// An actor is used so reads/writes are serialized.
 private actor ProtobufDiskStore {
     private let fileManager = FileManager.default
+    private let logger = Logger(subsystem: "com.skula.wBlock", category: "ProtobufDiskStore")
 
     func fileExists(at url: URL) -> Bool {
         fileManager.fileExists(atPath: url.path)
@@ -62,12 +63,24 @@ private actor ProtobufDiskStore {
             try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         }
 
+        // Coordinate the file rather than the whole shared directory once it exists.
+        // The directory is only needed for first-write creation; narrower coordination
+        // reduces the suspension window for unrelated app-group files.
+        let coordinationURL = fileExists(at: dataURL) ? dataURL : directoryURL
+        let startedAt = Date()
         let coordinator = NSFileCoordinator(filePresenter: nil)
         var coordinationError: NSError?
         var operationResult: Result<T, Error>?
 
-        coordinator.coordinate(writingItemAt: directoryURL, options: [], error: &coordinationError) { _ in
+        coordinator.coordinate(writingItemAt: coordinationURL, options: [], error: &coordinationError) { _ in
             operationResult = Result { try operation() }
+        }
+
+        let durationMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        if durationMs >= 100 {
+            logger.warning(
+                "File coordination held for \(durationMs) ms: \(dataURL.lastPathComponent)"
+            )
         }
 
         if let operationResult {
