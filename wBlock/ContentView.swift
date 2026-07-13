@@ -918,6 +918,19 @@ struct AddFilterListView: View {
     @State private var addMode: AddMode = .url
 
 
+    private var parsedURLInput: FilterListURLParseResult {
+        FilterListURLSupport.parseRemoteURLs(from: urlInput)
+    }
+
+    private var newURLs: [URL] {
+        let existingURLs = Set(filterManager.filterLists.map(\.url))
+        return parsedURLInput.urls.filter { !existingURLs.contains($0) }
+    }
+
+    private var existingURLCount: Int {
+        parsedURLInput.urls.count - newURLs.count
+    }
+
     private var validationState: ValidationState {
         validationState(for: urlInput)
     }
@@ -1081,32 +1094,28 @@ struct AddFilterListView: View {
 	        private var macosURLCard: some View {
 	            VStack(alignment: .leading, spacing: 12) {
 	                VStack(alignment: .leading, spacing: 6) {
-	                    Text("URL")
+	                    Text("URLs")
 	                        .font(.caption)
 	                        .foregroundStyle(.secondary)
 
-	                    TextField("https://example.com/filter.txt", text: $urlInput)
-	                        .textFieldStyle(.roundedBorder)
-	                        .autocorrectionDisabled()
-	                        .focused($urlFieldIsFocused)
-	                        .onSubmit {
-	                            if canSubmit {
-	                                submit()
-	                            } else {
-	                                urlFieldIsFocused = false
-	                            }
-	                        }
+	                    urlInputEditor
 	                }
 
-	                VStack(alignment: .leading, spacing: 6) {
-	                    Text("Title (optional)")
-	                        .font(.caption)
-	                        .foregroundStyle(.secondary)
+                    if newURLs.count <= 1 {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Title (optional)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
 
-	                    TextField("Title", text: $customName)
-	                        .textFieldStyle(.roundedBorder)
-	                        .autocorrectionDisabled()
-	                }
+                            TextField("Title", text: $customName)
+                                .textFieldStyle(.roundedBorder)
+                                .autocorrectionDisabled()
+                        }
+                    } else {
+                        Text("Titles will be created from each URL.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Category")
@@ -1196,32 +1205,23 @@ struct AddFilterListView: View {
 		    private var urlTab: some View {
 		        Form {
 		            Section {
-		                TextField(
-		                    text: $urlInput,
-		                    prompt: Text(verbatim: "https://example.com/filter.txt")
-		                        .foregroundColor(.secondary)
-		                ) {
-		                    Text("URL")
-		                }
-		                .accessibilityLabel("URL")
-		                    #if os(iOS)
-		                        .textInputAutocapitalization(.never)
-		                        .keyboardType(.URL)
-		                        .submitLabel(.done)
-		                    #endif
-	                    .focused($urlFieldIsFocused)
-	                    .onSubmit {
-	                        if canSubmit {
-	                            submit()
-	                        } else {
-	                            urlFieldIsFocused = false
-	                        }
-	                    }
+		                VStack(alignment: .leading, spacing: 6) {
+                        Text("URLs")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        urlInputEditor
+                    }
 
-	                TextField("Title (optional)", text: $customName)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.words)
-	                    #endif
+                    if newURLs.count <= 1 {
+                        TextField("Title (optional)", text: $customName)
+                            #if os(iOS)
+                                .textInputAutocapitalization(.words)
+                            #endif
+                    } else {
+                        Text("Titles will be created from each URL.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
 
                     userListCategoryPicker(selection: $selectedCategory)
 		            } footer: {
@@ -1271,7 +1271,36 @@ struct AddFilterListView: View {
 		    }
     }
 
-	    // MARK: - Footer
+	    private var urlInputEditor: some View {
+        ZStack(alignment: .topLeading) {
+            TextEditor(text: $urlInput)
+                .font(.body)
+                .autocorrectionDisabled()
+                .focused($urlFieldIsFocused)
+                #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                #endif
+
+            if urlInput.isEmpty {
+                Text("Paste one or more filter URLs, one per line.")
+                    .font(.body)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 8)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(minHeight: 64, maxHeight: 96)
+        .background(.background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(.quaternary, lineWidth: 1)
+        )
+        .accessibilityLabel("URLs")
+    }
+
+    // MARK: - Footer
 	    private var urlFooterMessage: some View {
 	        Group {
 	            if isCustomNameDuplicate {
@@ -1282,13 +1311,30 @@ struct AddFilterListView: View {
 	                case .idle:
 	                    EmptyView()
 	                case .invalid:
-	                    Text("Enter a valid http(s) URL to a .txt, .list, or .json filter.")
-	                        .foregroundStyle(.orange)
+                        if let lineNumber = parsedURLInput.invalidLineNumbers.first {
+                            Text(LocalizedStrings.format(
+                                "Line %d isn’t a valid http(s) filter URL.",
+                                comment: "Invalid bulk filter URL line",
+                                lineNumber
+                            ))
+                            .foregroundStyle(.orange)
+                        }
 	                case .duplicate:
-	                    Text("A filter list with this URL already exists in wBlock.")
+                        Text(parsedURLInput.urls.count == 1
+                            ? LocalizedStrings.text(
+                                "A filter list with this URL already exists in wBlock.",
+                                comment: "Single duplicate filter URL validation"
+                            )
+                            : LocalizedStrings.text(
+                                "All of these filter lists are already in wBlock.",
+                                comment: "Bulk duplicate filter URL validation"
+                            ))
 	                        .foregroundStyle(.orange)
 	                case .valid:
-	                    EmptyView()
+                        if existingURLCount > 0 {
+                            Text("Existing filter lists will be skipped.")
+                                .foregroundStyle(.secondary)
+                        }
 	                }
 	            }
 	        }
@@ -1312,17 +1358,20 @@ struct AddFilterListView: View {
     private func submit() {
         switch addMode {
         case .url:
-            guard case .valid(let url) = validationState else { return }
+            guard case .valid(let urls) = validationState else { return }
             isSaving = true
             Task { @MainActor in
-                let userProvidedName = !trimmedCustomName.isEmpty
-                let finalName = userProvidedName ? trimmedCustomName : defaultName(for: url)
-                filterManager.addFilterList(
-                    name: finalName,
-                    urlString: url.absoluteString,
-                    category: selectedCategory,
-                    hasUserProvidedName: userProvidedName
-                )
+                let allowsCustomName = urls.count == 1
+                let userProvidedName = allowsCustomName && !trimmedCustomName.isEmpty
+                for url in urls {
+                    let finalName = userProvidedName ? trimmedCustomName : defaultName(for: url)
+                    filterManager.addFilterList(
+                        name: finalName,
+                        urlString: url.absoluteString,
+                        category: selectedCategory,
+                        hasUserProvidedName: userProvidedName
+                    )
+                }
                 isSaving = false
                 dismiss()
             }
@@ -1353,7 +1402,14 @@ struct AddFilterListView: View {
 
     private var addButtonTitle: String {
         switch addMode {
-        case .url: return "Add URL"
+        case .url:
+            if newURLs.count > 1 {
+                return LocalizedStrings.text(
+                    "Add URLs",
+                    comment: "Bulk filter URL add button"
+                )
+            }
+            return "Add URL"
         case .paste: return "Add Rules"
         case .file: return "Choose File"
         }
@@ -1401,23 +1457,20 @@ struct AddFilterListView: View {
     // MARK: - Helpers
 
     private func validationState(for rawValue: String) -> ValidationState {
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !trimmed.isEmpty else {
+        guard !rawValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .idle
         }
 
-        guard let url = FilterListURLSupport.validatedRemoteURL(from: trimmed) else {
+        let parsed = FilterListURLSupport.parseRemoteURLs(from: rawValue)
+        guard parsed.invalidLineNumbers.isEmpty, !parsed.urls.isEmpty else {
             return .invalid
         }
 
-        if filterManager.filterLists.contains(where: {
-            $0.url.absoluteString.lowercased() == url.absoluteString.lowercased()
-        }) {
+        guard !newURLs.isEmpty else {
             return .duplicate
         }
 
-        return .valid(url)
+        return .valid(newURLs)
     }
 
     private func defaultName(for url: URL) -> String {
@@ -1437,7 +1490,7 @@ struct AddFilterListView: View {
 
     private var isCustomNameDuplicate: Bool {
         let candidate = trimmedCustomName
-        guard !candidate.isEmpty else { return false }
+        guard newURLs.count <= 1, !candidate.isEmpty else { return false }
         return filterManager.filterLists.contains(where: {
             $0.name.caseInsensitiveCompare(candidate) == .orderedSame
         })
@@ -1447,7 +1500,7 @@ struct AddFilterListView: View {
         case idle
         case invalid
         case duplicate
-        case valid(URL)
+        case valid([URL])
     }
 
 }

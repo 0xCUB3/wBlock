@@ -732,3 +732,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "Content filtering";
 "Filtering off" = "Filtering off";
 "This removes all settings for %@." = "This removes all settings for %@.";
+"URLs" = "URLs";
+"Paste one or more filter URLs, one per line." = "Paste one or more filter URLs, one per line.";
+"Titles will be created from each URL." = "Titles will be created from each URL.";
+"Line %d isn’t a valid http(s) filter URL." = "Line %d isn’t a valid http(s) filter URL.";
+"All of these filter lists are already in wBlock." = "All of these filter lists are already in wBlock.";
+"Existing filter lists will be skipped." = "Existing filter lists will be skipped.";
+"Add URLs" = "Add URLs";

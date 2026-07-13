@@ -5,6 +5,16 @@
 
 import Foundation
 
+public struct FilterListURLParseResult: Equatable {
+    public let urls: [URL]
+    public let invalidLineNumbers: [Int]
+
+    public init(urls: [URL], invalidLineNumbers: [Int]) {
+        self.urls = urls
+        self.invalidLineNumbers = invalidLineNumbers
+    }
+}
+
 public enum FilterListURLSupport {
     public static func validatedRemoteURL(from rawValue: String) -> URL? {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -20,6 +30,36 @@ public enum FilterListURLSupport {
         }
 
         return url
+    }
+
+    /// Parses filter list URLs pasted one per line.
+    /// Valid URLs are returned once, preserving their input order.
+    public static func parseRemoteURLs(from rawValue: String) -> FilterListURLParseResult {
+        var seenURLs = Set<URL>()
+        var urls: [URL] = []
+        var invalidLineNumbers: [Int] = []
+
+        for (index, line) in rawValue.components(separatedBy: "\n").enumerated() {
+            var candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !candidate.isEmpty else { continue }
+
+            if let first = candidate.first, let last = candidate.last,
+               (first == "<" && last == ">")
+                || (first == "\"" && last == "\"")
+                || (first == "'" && last == "'") {
+                candidate = String(candidate.dropFirst().dropLast())
+            }
+
+            guard let url = validatedRemoteURL(from: candidate) else {
+                invalidLineNumbers.append(index + 1)
+                continue
+            }
+
+            guard seenURLs.insert(url).inserted else { continue }
+            urls.append(url)
+        }
+
+        return FilterListURLParseResult(urls: urls, invalidLineNumbers: invalidLineNumbers)
     }
 
     private static func hasDisallowedScriptExtension(in path: String) -> Bool {

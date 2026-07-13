@@ -13,6 +13,28 @@ struct FilterListValidationTests {
         expectInvalidURL("https://example.com/script.js", "expected .js URLs to be rejected as filters")
         expectInvalidURL("ftp://example.com/filter.txt", "expected non-http(s) URLs to be rejected")
 
+        expectParsedURLs(
+            """
+            https://example.com/one.txt
+            https://example.com/two.list
+            """,
+            expected: ["https://example.com/one.txt", "https://example.com/two.list"],
+            invalidLineNumbers: [],
+            "expected newline-separated filter URLs to be parsed"
+        )
+        expectParsedURLs(
+            "\r\n<https://example.com/filter.txt?parts=one,two;three>\r\n\r\nhttps://example.com/filter.txt?parts=one,two;three",
+            expected: ["https://example.com/filter.txt?parts=one,two;three"],
+            invalidLineNumbers: [],
+            "expected CRLF, blank lines, URL punctuation, wrappers, and duplicates to be handled"
+        )
+        expectParsedURLs(
+            "https://example.com/Filter.txt\nhttps://example.com/filter.txt\nnot-a-url\nhttps://example.com/script.user.js",
+            expected: ["https://example.com/Filter.txt", "https://example.com/filter.txt"],
+            invalidLineNumbers: [3, 4],
+            "expected exact URL identity and invalid line numbers to be preserved"
+        )
+
         expectValidContent(
             """
             ! Title: Test List
@@ -51,6 +73,19 @@ struct FilterListValidationTests {
 
     private static func expectInvalidURL(_ rawURL: String, _ message: String) {
         guard FilterListURLSupport.validatedRemoteURL(from: rawURL) == nil else {
+            fail(message)
+        }
+    }
+
+    private static func expectParsedURLs(
+        _ input: String,
+        expected: [String],
+        invalidLineNumbers: [Int],
+        _ message: String
+    ) {
+        let result = FilterListURLSupport.parseRemoteURLs(from: input)
+        guard result.urls.map(\.absoluteString) == expected,
+              result.invalidLineNumbers == invalidLineNumbers else {
             fail(message)
         }
     }
