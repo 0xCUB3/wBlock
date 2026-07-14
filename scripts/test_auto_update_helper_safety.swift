@@ -121,8 +121,8 @@ assertContains(
 )
 assertContains(
     sharedAutoUpdate,
-    "for filter in remoteFilters",
-    "Background fetches must exclude inline and other non-HTTP filter URLs"
+    "boundedConcurrentForEach(remoteFilters",
+    "Background fetches must be limited to remotely fetchable filters with bounded concurrency"
 )
 assertContains(
     sharedAutoUpdate,

@@ -1161,40 +1161,31 @@ public actor SharedAutoUpdateManager {
         var errorCount = 0
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
 
-        await withTaskGroup(of: FilterFetchOutcome.self) { group in
-            for filter in remoteFilters {
-                group.addTask { await self.fetchIfUpdated(filter, containerURL: containerURL) }
-            }
-
-            for await outcome in group {
-                if Task.isCancelled {
-                    group.cancelAll()
-                    break
+        await boundedConcurrentForEach(remoteFilters, operation: { filter in
+            await self.fetchIfUpdated(filter, containerURL: containerURL)
+        }, onResult: { outcome in
+            switch outcome {
+            case .noChange:
+                break
+            case .noChangeWithValidators(let uuid, let etag, let lastModified):
+                validatorUpdates[uuid] = (etag: etag, lastModified: lastModified)
+            case .updated(let filter, let validators):
+                updatedFilters.append(filter)
+                if validators.etag != nil || validators.lastModified != nil {
+                    validatorUpdates[filter.id.uuidString] = validators
                 }
-
-                switch outcome {
-                case .noChange:
-                    break
-                case .noChangeWithValidators(let uuid, let etag, let lastModified):
-                    validatorUpdates[uuid] = (etag: etag, lastModified: lastModified)
-                case .updated(let filter, let validators):
-                    updatedFilters.append(filter)
-                    if validators.etag != nil || validators.lastModified != nil {
-                        validatorUpdates[filter.id.uuidString] = validators
-                    }
-                case .error(let filterName, let error):
-                    hadErrors = true
-                    errorCount += 1
-                    os_log(
-                        "Update fetch error for %{public}@ – %{public}@",
-                        log: log,
-                        type: .error,
-                        filterName,
-                        error.localizedDescription
-                    )
-                }
+            case .error(let filterName, let error):
+                hadErrors = true
+                errorCount += 1
+                os_log(
+                    "Update fetch error for %{public}@ – %{public}@",
+                    log: log,
+                    type: .error,
+                    filterName,
+                    error.localizedDescription
+                )
             }
-        }
+        })
 
         try Task.checkCancellation()
 
