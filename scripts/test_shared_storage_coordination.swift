@@ -29,4 +29,19 @@ for source in [protobuf, userscriptStorage] {
     )
 }
 
+expect(
+    protobuf.contains("mergePersistedChanges("),
+    "protobuf saves should merge fields changed by another process"
+)
+for field in ["filterLists", "userScripts", "userScriptDisabledHosts"] {
+    expect(
+        protobuf.contains("\\.\(field)"),
+        "cross-process merge should preserve \(field)"
+    )
+}
+expect(
+    protobuf.contains("snapshot.autoUpdate = autoUpdate"),
+    "cross-process merge should preserve individual auto-update fields"
+)
+
 print("PASS: shared storage coordination")

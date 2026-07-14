@@ -10,6 +10,69 @@ internal import SwiftProtobuf
 import Combine
 import os.log
 
+private func preservePersistedValue<Root, Value: Equatable>(
+    _ keyPath: WritableKeyPath<Root, Value>,
+    in snapshot: inout Root,
+    comparedTo previous: Root,
+    from persisted: Root
+) {
+    if snapshot[keyPath: keyPath] == previous[keyPath: keyPath] {
+        snapshot[keyPath: keyPath] = persisted[keyPath: keyPath]
+    }
+}
+
+private func mergePersistedChanges(
+    in snapshot: inout Wblock_Data_AppData,
+    comparedTo previous: Wblock_Data_AppData,
+    from persisted: Wblock_Data_AppData
+) {
+    preservePersistedValue(\.settings, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.filterLists, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.userScripts, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.whitelist, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.ruleCounts, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.performance, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.extensionData, in: &snapshot, comparedTo: previous, from: persisted)
+    preservePersistedValue(\.userScriptDisabledHosts, in: &snapshot, comparedTo: previous, from: persisted)
+
+    var autoUpdate = snapshot.autoUpdate
+    let previousAutoUpdate = previous.autoUpdate
+    let persistedAutoUpdate = persisted.autoUpdate
+    preservePersistedValue(\.enabled, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.intervalHours, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.lastCheckTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.lastSuccessfulTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.nextEligibleTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.forceNext, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.isRunning, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.runningSinceTimestamp, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.filterEtags, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.filterLastModified, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.userscriptsInitialSetupCompleted, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.bgAppRefresh, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.bgProcessing, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.silentPush, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.lastForegroundCatchUpTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    preservePersistedValue(\.lastForegroundCatchUpReason, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    snapshot.autoUpdate = autoUpdate
+
+    if snapshot.whitelist != previous.whitelist,
+       persisted.whitelist != previous.whitelist,
+       persisted.whitelist.lastUpdated > snapshot.whitelist.lastUpdated {
+        snapshot.whitelist = persisted.whitelist
+    }
+    if snapshot.extensionData != previous.extensionData,
+       persisted.extensionData != previous.extensionData,
+       persisted.extensionData.lastUpdated > snapshot.extensionData.lastUpdated {
+        snapshot.extensionData = persisted.extensionData
+    }
+    if snapshot.ruleCounts != previous.ruleCounts,
+       persisted.ruleCounts != previous.ruleCounts,
+       persisted.ruleCounts.lastUpdated > snapshot.ruleCounts.lastUpdated {
+        snapshot.ruleCounts = persisted.ruleCounts
+    }
+}
+
 // MARK: - Disk I/O (off MainActor)
 
 /// Performs protobuf file reads/writes off the MainActor to avoid UI stalls.
@@ -108,19 +171,6 @@ private actor ProtobufDiskStore {
     }
 
 
-    private func preserveNewerCrossProcessState(
-        in snapshot: inout Wblock_Data_AppData,
-        from persisted: Wblock_Data_AppData
-    ) {
-        if persisted.extensionData.lastUpdated >= snapshot.extensionData.lastUpdated {
-            snapshot.extensionData = persisted.extensionData
-        }
-
-        if persisted.whitelist.lastUpdated >= snapshot.whitelist.lastUpdated {
-            snapshot.whitelist = persisted.whitelist
-        }
-    }
-
     private func mutateAppDataOnce<Result: Sendable>(
         at dataURL: URL,
         versionURL: URL,
@@ -178,7 +228,12 @@ private actor ProtobufDiskStore {
         if let persistedRawData = current.rawData,
            let previousData,
            previousData != persistedRawData {
-            preserveNewerCrossProcessState(in: &mergedSnapshot, from: current.appData)
+            let previousSnapshot = try Wblock_Data_AppData(serializedBytes: previousData)
+            mergePersistedChanges(
+                in: &mergedSnapshot,
+                comparedTo: previousSnapshot,
+                from: current.appData
+            )
         }
 
         let rawData = try mergedSnapshot.serializedData()
@@ -1378,16 +1433,6 @@ public class ProtobufDataManager: ObservableObject {
         return await performSaveData()
     }
 
-    private func mergeNewerCrossProcessState(from savedData: Wblock_Data_AppData) {
-        if savedData.extensionData.lastUpdated >= appData.extensionData.lastUpdated {
-            appData.extensionData = savedData.extensionData
-        }
-
-        if savedData.whitelist.lastUpdated >= appData.whitelist.lastUpdated {
-            appData.whitelist = savedData.whitelist
-        }
-    }
-
     @discardableResult
     private func performSaveData() async -> Bool {
         let snapshot = appData
@@ -1404,7 +1449,11 @@ public class ProtobufDataManager: ObservableObject {
                 if (try? appData.serializedData()) == snapshotRawData {
                     appData = result.appData
                 } else {
-                    mergeNewerCrossProcessState(from: result.appData)
+                    mergePersistedChanges(
+                        in: &appData,
+                        comparedTo: snapshot,
+                        from: result.appData
+                    )
                 }
                 lastSavedData = result.rawData
                 lastLoadedDataFileModificationDate = result.modificationDate
