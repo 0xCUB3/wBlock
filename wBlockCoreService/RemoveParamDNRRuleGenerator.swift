@@ -155,26 +155,25 @@ public enum RemoveParamDNRRuleGenerator {
             throw CocoaError(.fileNoSuchFile)
         }
 
-        var combinedRules = ""
-        combinedRules.reserveCapacity(filters.count * 4096)
-
+        var removeParamRules = ""
         for filter in filters {
             guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
                 for: filter,
                 containerURL: containerURL
-            ) else {
+            ), let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else {
                 continue
             }
 
-            guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else {
-                continue
+            for rawLine in contents.split(whereSeparator: \.isNewline) {
+                guard rawLine.range(of: "removeparam", options: .caseInsensitive) != nil else {
+                    continue
+                }
+                removeParamRules.append(contentsOf: rawLine)
+                removeParamRules.append("\n")
             }
-
-            if !combinedRules.isEmpty { combinedRules.append("\n") }
-            combinedRules.append(contents)
         }
 
-        let generated = generateRules(from: combinedRules, disabledSites: disabledSites)
+        let generated = generateRules(from: removeParamRules, disabledSites: disabledSites)
         try saveRules(generated.rules, groupIdentifier: groupIdentifier)
         os_log(
             .info,
