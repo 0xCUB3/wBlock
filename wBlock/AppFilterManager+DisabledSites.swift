@@ -91,20 +91,27 @@ extension AppFilterManager {
         }.value
 
 
-        let targetsToReload = await Task.detached { () -> [ContentBlockerTargetInfo] in
+        let updateResult = await Task.detached { () -> ([ContentBlockerTargetInfo], Int) in
             var nonEmptyTargets: [ContentBlockerTargetInfo] = []
+            var failureCount = 0
             for targetInfo in platformTargets {
-                let result = ContentBlockerService.fastUpdateDisabledSites(
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: targetInfo.rulesFilename,
-                    disabledSites: disabledSites
-                )
-                if result.safariRulesCount > 0 {
-                    nonEmptyTargets.append(targetInfo)
+                do {
+                    let result = try ContentBlockerService.fastUpdateDisabledSites(
+                        groupIdentifier: GroupIdentifier.shared.value,
+                        targetRulesFilename: targetInfo.rulesFilename,
+                        disabledSites: disabledSites
+                    )
+                    if result.safariRulesCount > 0 {
+                        nonEmptyTargets.append(targetInfo)
+                    }
+                } catch {
+                    failureCount += 1
                 }
             }
-            return nonEmptyTargets
+            return (nonEmptyTargets, failureCount)
         }.value
+        let targetsToReload = updateResult.0
+        let updateFailureCount = updateResult.1
 
         let overallReloadStartTime = Date()
         let successCount = await Self.reloadDisabledSitesTargetsInParallel(targetsToReload)
@@ -118,7 +125,7 @@ extension AppFilterManager {
             self.fastUpdateCount += 1
             self.isLoading = false
 
-            if successCount == targetsToReload.count {
+            if updateFailureCount == 0, successCount == targetsToReload.count {
                 self.statusDescription = LocalizedStrings.format(
                     "Disabled sites updated successfully in %@ (fast update #%d)",
                     comment: "Disabled sites update success status",
@@ -130,7 +137,7 @@ extension AppFilterManager {
                     "Updated %d/%d extensions in %@",
                     comment: "Disabled sites partial update status",
                     successCount,
-                    targetsToReload.count,
+                    targetsToReload.count + updateFailureCount,
                     reloadTime
                 )
             }
@@ -141,6 +148,7 @@ extension AppFilterManager {
             metadata: [
                 "successCount": "\(successCount)",
                 "totalCount": "\(targetsToReload.count)",
+                "updateFailureCount": "\(updateFailureCount)",
                 "skippedCount": "\(skippedCount)",
                 "reloadTime": reloadTime,
             ])

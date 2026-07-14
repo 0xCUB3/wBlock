@@ -525,27 +525,32 @@ public enum WebExtensionRequestHandler {
 
         // Update JSON for all targets, then only reload targets that actually have rules.
         var targetsToReload: [ContentBlockerTargetInfo] = []
+        var updateFailures = 0
         for target in targets {
-            let updateResult = ContentBlockerService.fastUpdateDisabledSites(
-                groupIdentifier: groupID,
-                targetRulesFilename: target.rulesFilename,
-                disabledSites: disabledSites
-            )
-            if updateResult.safariRulesCount > 0 {
-                targetsToReload.append(target)
+            do {
+                let updateResult = try ContentBlockerService.fastUpdateDisabledSites(
+                    groupIdentifier: groupID,
+                    targetRulesFilename: target.rulesFilename,
+                    disabledSites: disabledSites
+                )
+                if updateResult.safariRulesCount > 0 {
+                    targetsToReload.append(target)
+                }
+            } catch {
+                updateFailures += 1
             }
         }
 
-        let skippedTargets = max(targets.count - targetsToReload.count, 0)
+        let skippedTargets = max(targets.count - targetsToReload.count - updateFailures, 0)
         guard !targetsToReload.isEmpty else {
-            return (reloadedTargets: 0, skippedTargets: skippedTargets, failedTargets: 0)
+            return (reloadedTargets: 0, skippedTargets: skippedTargets, failedTargets: updateFailures)
         }
 
         let results = await reloadTargetsWithRetry(targetsToReload)
         return (
             reloadedTargets: results.reloadedTargets,
             skippedTargets: skippedTargets,
-            failedTargets: results.failedTargets
+            failedTargets: results.failedTargets + updateFailures
         )
     }
 

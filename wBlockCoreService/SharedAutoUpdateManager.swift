@@ -1420,7 +1420,7 @@ public actor SharedAutoUpdateManager {
         }
 
         for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
-            let savedRuleCount = ContentBlockerService.saveContentBlocker(
+            let savedRuleCount = try? ContentBlockerService.saveContentBlocker(
                 jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: target.rulesFilename
@@ -1568,7 +1568,7 @@ public actor SharedAutoUpdateManager {
             let usedCache: Bool
             if canReuse {
                 usedCache = true
-                conversion = ContentBlockerService.fastUpdateDisabledSites(
+                conversion = try ContentBlockerService.fastUpdateDisabledSites(
                     groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: rulesFilename,
                     disabledSites: work.disabledSites
                 )
@@ -1626,7 +1626,7 @@ public actor SharedAutoUpdateManager {
                 bytes = Self.fileSizeBytes(at: tempURL)
                 let digest = hasher.finalize()
                 let hex = digest.map { String(format: "%02x", $0) }.joined()
-                conversion = ContentBlockerService.convertFilterFromFile(
+                conversion = try ContentBlockerService.convertFilterFromFile(
                     rulesFileURL: tempURL, rulesSHA256Hex: hex, groupIdentifier: GroupIdentifier.shared.value,
                     targetRulesFilename: rulesFilename, disabledSites: work.disabledSites
                 )

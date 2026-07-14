@@ -733,7 +733,7 @@ extension AppFilterManager {
                 var targetsToReload: [ContentBlockerTargetInfo] = []
 
                 for targetInfo in platformTargets {
-                    let savedRuleCount = ContentBlockerService.saveContentBlocker(
+                    let savedRuleCount = try ContentBlockerService.saveContentBlocker(
                         jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                         groupIdentifier: groupIdentifier,
                         targetRulesFilename: targetInfo.rulesFilename
@@ -963,7 +963,7 @@ extension AppFilterManager {
             let digest = hasher.finalize()
             let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-            return ContentBlockerService.convertFilterFromFile(
+            return try ContentBlockerService.convertFilterFromFile(
                 rulesFileURL: tempURL,
                 rulesSHA256Hex: rulesSHA256Hex,
                 groupIdentifier: groupIdentifier,
@@ -1049,7 +1049,7 @@ extension AppFilterManager {
                 targetRulesFilename: rulesFilename,
                 groupIdentifier: groupIdentifier
            ) {
-            let fastUpdate = ContentBlockerService.fastUpdateDisabledSites(
+            let fastUpdate = try ContentBlockerService.fastUpdateDisabledSites(
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: rulesFilename,
                 disabledSites: disabledSites
