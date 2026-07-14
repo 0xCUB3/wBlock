@@ -1538,8 +1538,7 @@ public class UserScriptManager: ObservableObject {
 
             userScripts[finalIndex].content = processedContent
             userScripts[finalIndex].resourceContents = resourceContents
-            _ = writeUserScriptContent(userScripts[finalIndex])
-            _ = writeUserScriptResources(userScripts[finalIndex])
+            _ = writeUserScriptFiles(userScripts[finalIndex])
             await persistUserScriptsNow()
             logger.info("✅ Downloaded and saved: \(self.userScripts[finalIndex].name)")
         } catch {
@@ -1588,6 +1587,30 @@ public class UserScriptManager: ObservableObject {
             }
         }
         return success
+    }
+
+    private func writeUserScriptFiles(_ userScript: UserScript) -> Bool {
+        let contentSaved = writeUserScriptContent(userScript)
+        let resourcesSaved = writeUserScriptResources(userScript)
+        return contentSaved && resourcesSaved
+    }
+
+    private func updatedUserScript(
+        _ existing: UserScript,
+        from parsed: UserScript,
+        content: String,
+        resources: [String: String]
+    ) -> UserScript {
+        var updated = parsed
+        updated.name = existing.name
+        updated.url = existing.url
+        updated.isEnabled = existing.isEnabled
+        updated.isLocal = existing.isLocal
+        updated.updatesAutomatically = existing.updatesAutomatically
+        updated.content = content
+        updated.resourceContents = resources
+        updated.lastUpdated = Date()
+        return updated
     }
 
     private func userScriptFileExists(_ userScript: UserScript) -> Bool {
@@ -1677,8 +1700,7 @@ public class UserScriptManager: ObservableObject {
                 mergedScripts.append(scriptToRestore)
             }
 
-            _ = writeUserScriptContent(scriptToRestore)
-            _ = writeUserScriptResources(scriptToRestore)
+            _ = writeUserScriptFiles(scriptToRestore)
             NotificationCenter.default.post(
                 name: .userScriptManagerDidUpsertUserScript,
                 object: self,
@@ -1746,8 +1768,7 @@ public class UserScriptManager: ObservableObject {
                 statusDescription = "Added \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
             }
 
-            _ = writeUserScriptContent(newUserScript)
-            _ = writeUserScriptResources(newUserScript)
+            _ = writeUserScriptFiles(newUserScript)
 
             NotificationCenter.default.post(
                 name: .userScriptManagerDidUpsertUserScript,
@@ -1917,8 +1938,7 @@ public class UserScriptManager: ObservableObject {
             statusDescription = "\(importedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
         }
 
-        _ = writeUserScriptContent(newUserScript)
-        _ = writeUserScriptResources(newUserScript)
+        _ = writeUserScriptFiles(newUserScript)
 
         NotificationCenter.default.post(
             name: .userScriptManagerDidImportLocalUserScript,
@@ -2187,37 +2207,32 @@ public class UserScriptManager: ObservableObject {
         do {
             let content = try await downloadUserScriptContent(from: url)
 
-            var tempUserScript = UserScript(name: userScript.name, url: url, content: content)
+            var tempUserScript = UserScript(
+                id: userScript.id, name: userScript.name, url: url, content: content)
             tempUserScript.parseMetadata()
 
             // Process @require directives and @resource directives
             let processedContent = await processRequireDirectives(tempUserScript)
             let resourceContents = await processResourceDirectives(tempUserScript)
 
-            if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                userScripts[index].content = processedContent
-                userScripts[index].resourceContents = resourceContents
-                userScripts[index].description = tempUserScript.description
-                userScripts[index].version = tempUserScript.version
-                userScripts[index].matches = tempUserScript.matches
-                userScripts[index].excludeMatches = tempUserScript.excludeMatches
-                userScripts[index].includes = tempUserScript.includes
-                userScripts[index].excludes = tempUserScript.excludes
-                userScripts[index].runAt = tempUserScript.runAt
-                userScripts[index].injectInto = tempUserScript.injectInto
-                userScripts[index].grant = tempUserScript.grant
-                userScripts[index].require = tempUserScript.require
-                userScripts[index].updateURL = tempUserScript.updateURL
-                userScripts[index].downloadURL = tempUserScript.downloadURL
-                userScripts[index].lastUpdated = Date()
-
-                _ = writeUserScriptContent(userScripts[index])
-                _ = writeUserScriptResources(userScripts[index])
-                await persistUserScriptsNow()
-                statusDescription = "Updated \(userScript.name)"
-                updateAlertMessage = "\(userScript.name) has been successfully updated."
-                showingUpdateSuccessAlert = true
+            guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
+                isLoading = false
+                return
             }
+            let updated = updatedUserScript(
+                userScripts[index],
+                from: tempUserScript,
+                content: processedContent,
+                resources: resourceContents
+            )
+            guard writeUserScriptFiles(updated) else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+            userScripts[index] = updated
+            await persistUserScriptsNow()
+            statusDescription = "Updated \(userScript.name)"
+            updateAlertMessage = "\(userScript.name) has been successfully updated."
+            showingUpdateSuccessAlert = true
             isLoading = false
         } catch {
             await MainActor.run {
@@ -2237,8 +2252,7 @@ public class UserScriptManager: ObservableObject {
         userScripts[index].content = newContent
         userScripts[index].parseMetadata()
         userScripts[index].lastUpdated = Date()
-        _ = writeUserScriptContent(userScripts[index])
-        _ = writeUserScriptResources(userScripts[index])
+        _ = writeUserScriptFiles(userScripts[index])
         await persistUserScriptsNow()
         logger.info("Saved edited content for \(self.userScripts[index].name)")
     }
@@ -2353,7 +2367,8 @@ public class UserScriptManager: ObservableObject {
 
         let rawContent = try await downloadUserScriptContent(from: downloadURL)
 
-        var tempUserScript = UserScript(name: candidate.name, url: downloadURL, content: rawContent)
+        var tempUserScript = UserScript(
+            id: candidate.id, name: candidate.name, url: downloadURL, content: rawContent)
         tempUserScript.parseMetadata()
 
         // Never swap a working userstyle for one we cannot compile natively.
@@ -2375,25 +2390,16 @@ public class UserScriptManager: ObservableObject {
             return false
         }
 
-        userScripts[index].content = processedContent
-        userScripts[index].resourceContents = resourceContents
-        userScripts[index].description = tempUserScript.description
-        userScripts[index].version = tempUserScript.version
-        userScripts[index].matches = tempUserScript.matches
-        userScripts[index].excludeMatches = tempUserScript.excludeMatches
-        userScripts[index].includes = tempUserScript.includes
-        userScripts[index].excludes = tempUserScript.excludes
-        userScripts[index].runAt = tempUserScript.runAt
-        userScripts[index].injectInto = tempUserScript.injectInto
-        userScripts[index].grant = tempUserScript.grant
-        userScripts[index].require = tempUserScript.require
-        userScripts[index].updateURL = tempUserScript.updateURL
-        userScripts[index].downloadURL = tempUserScript.downloadURL
-        userScripts[index].isUserStyle = tempUserScript.isUserStyle
-        userScripts[index].lastUpdated = Date()
-
-        _ = writeUserScriptContent(userScripts[index])
-        _ = writeUserScriptResources(userScripts[index])
+        let updated = updatedUserScript(
+            userScripts[index],
+            from: tempUserScript,
+            content: processedContent,
+            resources: resourceContents
+        )
+        guard writeUserScriptFiles(updated) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        userScripts[index] = updated
         return true
     }
 
@@ -2424,8 +2430,7 @@ public class UserScriptManager: ObservableObject {
                 userScripts[index].isLocal = false
                 userScripts[index].lastUpdated = Date()
 
-                _ = writeUserScriptContent(userScripts[index])
-                _ = writeUserScriptResources(userScripts[index])
+                _ = writeUserScriptFiles(userScripts[index])
                 await persistUserScriptsNow()
                 statusDescription = "Downloaded and enabled \(userScript.name)"
                 isLoading = false
