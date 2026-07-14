@@ -133,9 +133,10 @@ struct UserScriptManagerView: View {
     }
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
-        let styles = displayedScripts.filter(\.isUserStyle)
-        let standardScripts = displayedScripts.filter { !$0.isUserStyle && $0.builtInSection != .foreign }
-        let foreignScripts = displayedScripts.filter { !$0.isUserStyle && $0.builtInSection == .foreign }
+        let displayed = displayedScripts
+        let styles = displayed.filter(\.isUserStyle)
+        let standardScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection != .foreign }
+        let foreignScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection == .foreign }
         var sections: [UserScriptDisplaySection] = []
 
         if !standardScripts.isEmpty {
@@ -190,6 +191,7 @@ struct UserScriptManagerView: View {
 
     @ViewBuilder
     private var userScriptContent: some View {
+        let sections = displayedScriptSections
         #if os(iOS)
         List {
             Section {
@@ -202,13 +204,13 @@ struct UserScriptManagerView: View {
                     emptyStateView
                         .padding(.vertical, 40)
                 }
-            } else if displayedScripts.isEmpty {
+            } else if sections.isEmpty {
                 Section {
                     noSearchResultsView
                         .padding(.vertical, 40)
                 }
             } else {
-                ForEach(displayedScriptSections) { scriptSection in
+                ForEach(sections) { scriptSection in
                     if scriptSection.id == .foreign {
                         Section {
                             DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded) {
@@ -269,11 +271,11 @@ struct UserScriptManagerView: View {
                 if scripts.isEmpty {
                     emptyStateView
                         .padding(.top, 40)
-                } else if displayedScripts.isEmpty {
+                } else if sections.isEmpty {
                     noSearchResultsView
                         .padding(.top, 40)
                 } else {
-                    scriptsListView
+                    scriptsListView(sections: sections)
                 }
 
                 Spacer(minLength: 20)
@@ -447,9 +449,9 @@ struct UserScriptManagerView: View {
     }
 
     #if os(macOS)
-    private var scriptsListView: some View {
+    private func scriptsListView(sections: [UserScriptDisplaySection]) -> some View {
         LazyVStack(spacing: 16) {
-            ForEach(displayedScriptSections) { scriptSection in
+            ForEach(sections) { scriptSection in
                 if scriptSection.id == .foreign {
                     macOSForeignScriptsView(scripts: scriptSection.scripts)
                 } else {
