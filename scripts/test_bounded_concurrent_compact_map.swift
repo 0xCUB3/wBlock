@@ -19,6 +19,11 @@ struct BoundedConcurrentCompactMapTests {
         expectEqual(maxConcurrency, 2, "expected helper to respect the maxConcurrent limit")
         expectEqual(values.sorted(), [0, 2, 4, 6], "expected helper to keep non-nil results only")
 
+        let clampedValues = await boundedConcurrentCompactMap([1, 2], maxConcurrent: -1) {
+            $0
+        }
+        expectEqual(clampedValues.sorted(), [1, 2], "expected invalid concurrency limits to clamp to one")
+
         print("PASS")
     }
 
