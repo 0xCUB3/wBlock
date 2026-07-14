@@ -2187,7 +2187,7 @@ public class UserScriptManager: ObservableObject {
         do {
             let content = try await downloadUserScriptContent(from: url)
 
-            var tempUserScript = UserScript(name: userScript.name, content: content)
+            var tempUserScript = UserScript(name: userScript.name, url: url, content: content)
             tempUserScript.parseMetadata()
 
             // Process @require directives and @resource directives
@@ -2353,7 +2353,7 @@ public class UserScriptManager: ObservableObject {
 
         let rawContent = try await downloadUserScriptContent(from: downloadURL)
 
-        var tempUserScript = UserScript(name: candidate.name, content: rawContent)
+        var tempUserScript = UserScript(name: candidate.name, url: downloadURL, content: rawContent)
         tempUserScript.parseMetadata()
 
         // Never swap a working userstyle for one we cannot compile natively.
