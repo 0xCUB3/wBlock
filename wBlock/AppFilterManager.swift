@@ -153,7 +153,7 @@ class AppFilterManager: ObservableObject {
     init() {
         self.logManager = ConcurrentLogManager.shared
         self.loader = FilterListLoader()
-        self.filterUpdater = FilterListUpdater(loader: self.loader, logManager: self.logManager)
+        self.filterUpdater = FilterListUpdater(loader: self.loader)
 
         #if os(macOS)
             self.currentPlatform = .macOS

@@ -24,7 +24,6 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     private let loader: FilterListLoader
-    private let logManager: ConcurrentLogManager
 
     weak var filterListManager: AppFilterManager?
     weak var userScriptManager: UserScriptManager?
@@ -38,9 +37,8 @@ final class FilterListUpdater: @unchecked Sendable {
         return URLSession(configuration: config)
     }()
 
-    init(loader: FilterListLoader, logManager: ConcurrentLogManager) {
+    init(loader: FilterListLoader) {
         self.loader = loader
-        self.logManager = logManager
     }
     
     private func storedValidators(for filter: FilterList) async -> (etag: String?, lastModified: String?) {
@@ -98,35 +96,6 @@ final class FilterListUpdater: @unchecked Sendable {
             }
         }
         return updatedLists
-    }
-
-    /// Fetches version information from a filter list URL
-    func fetchVersionFromURL(for filter: FilterList) async -> String? {
-        do {
-            let (data, response) = try await urlSession.data(from: filter.url)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
-            else {
-                await ConcurrentLogManager.shared.error(
-                    .network, "Failed to fetch version from URL",
-                    metadata: ["filter": filter.name, "reason": "Invalid response"])
-                return nil
-            }
-            guard let content = String(data: data, encoding: .utf8) else {
-                await ConcurrentLogManager.shared.error(
-                    .network, "Unable to parse content from URL",
-                    metadata: ["url": filter.url.absoluteString])
-                return nil
-            }
-
-            // Parse metadata for version
-            let metadata = parseMetadata(from: content)
-            return metadata.version ?? "Unknown"
-        } catch {
-            await ConcurrentLogManager.shared.error(
-                .network, "Error fetching version from URL",
-                metadata: ["filter": filter.name, "error": error.localizedDescription])
-            return nil
-        }
     }
 
     // Pre-compiled regex patterns for efficiency (compiled once, reused many times)
