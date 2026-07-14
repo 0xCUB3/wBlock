@@ -69,30 +69,6 @@ extension AppFilterManager {
         }
     }
 
-    private func validatePreApplyUpdates(
-        requested: [FilterList],
-        applied: [FilterList]
-    ) async -> Bool {
-        let requestedIDs = Set(requested.map(\.id))
-        let appliedIDs = Set(applied.map(\.id))
-        let missingIDs = requestedIDs.subtracting(appliedIDs)
-        let unexpectedIDs = appliedIDs.subtracting(requestedIDs)
-        guard missingIDs.isEmpty, unexpectedIDs.isEmpty else {
-            await failApplyRun(
-                logMessage: "Failed to download one or more pre-apply filter updates",
-                metadata: [
-                    "requested": "\(requested.count)",
-                    "updated": "\(applied.count)",
-                    "missingIDs": missingIDs.map(\.uuidString).joined(separator: ","),
-                    "unexpectedIDs": unexpectedIDs.map(\.uuidString).joined(separator: ","),
-                ]
-            )
-            return false
-        }
-
-        return true
-    }
-
     // MARK: - Delegated methods
 
     func applyChanges(allowUserInteraction: Bool = false) async {
@@ -161,48 +137,29 @@ extension AppFilterManager {
 
         let enabledFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
         if !enabledFilters.isEmpty {
-            let updatedFilters = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
+            guard let updatedFilters = await filterUpdater.refreshFiltersIfNeeded(
+                enabledFilters, progressCallback: { prog in
+                    Task { @MainActor in
+                        self.progress = prog * 0.1
+                        self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
+                    }
+                }
+            ) else {
+                await failApplyRun(
+                    logMessage: "Failed to process one or more pre-apply filter updates"
+                )
+                return
+            }
 
             await MainActor.run {
                 self.applyProgressViewModel.updateUpdatesFound(updatedFilters.count)
             }
 
             if !updatedFilters.isEmpty {
-                await MainActor.run {
-                    self.statusDescription = LocalizedStrings.format(
-                        "Downloading %d update(s)...",
-                        comment: "Apply pipeline update download status",
-                        updatedFilters.count
-                    )
-                    self.applyProgressViewModel.updateStageDescription(
-                        LocalizedStrings.format(
-                            "Downloading %d update(s)...",
-                            comment: "Apply pipeline update download stage",
-                            updatedFilters.count
-                        )
-                    )
-                }
-
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, "Found and downloading updates before applying",
-                    metadata: ["count": "\(updatedFilters.count)"])
-
-                let appliedUpdates = await filterUpdater.updateSelectedFilters(
-                    updatedFilters,
-                    progressCallback: { prog in
-                        Task { @MainActor in
-                            self.progress = prog * 0.1  // Use first 10% of progress for updates
-                            self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
-                        }
-                    })
-                guard await validatePreApplyUpdates(
-                    requested: updatedFilters,
-                    applied: appliedUpdates
-                ) else {
-                    return
-                }
-
                 await saveFilterLists()
+                await ConcurrentLogManager.shared.info(
+                    .filterApply, "Downloaded updates before applying",
+                    metadata: ["count": "\(updatedFilters.count)"])
             } else {
                 await ConcurrentLogManager.shared.info(
                     .filterApply, "No updates available", metadata: [:])

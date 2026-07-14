@@ -9,6 +9,20 @@ import Foundation
 import wBlockCoreService
 
 final class FilterListUpdater: @unchecked Sendable {
+    private enum FilterFetchResult {
+        case unchanged
+        case updated
+        case unavailable
+        case failed
+
+        var succeeded: Bool {
+            switch self {
+            case .unchanged, .updated: true
+            case .unavailable, .failed: false
+            }
+        }
+    }
+
     private let loader: FilterListLoader
     private let logManager: ConcurrentLogManager
 
@@ -393,11 +407,11 @@ final class FilterListUpdater: @unchecked Sendable {
         return result.joined(separator: "\n")
     }
 
-    /// Fetches, processes, and saves a filter list
-    func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
+    /// Fetches, processes, and saves a filter list.
+    private func fetchAndProcessFilterResult(_ filter: FilterList) async -> FilterFetchResult {
         if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
             // Local / inline user lists are already stored on disk.
-            return loader.filterFileExists(filter)
+            return loader.filterFileExists(filter) ? .unchanged : .failed
         }
         do {
             let validators = await storedValidators(for: filter)
@@ -417,12 +431,12 @@ final class FilterListUpdater: @unchecked Sendable {
                         "filter": filter.name,
                         "statusCode": "0",
                     ])
-                return false
+                return .unavailable
             }
-            
+
             if httpResponse.statusCode == 304 {
                 // No changes on the server.
-                return true
+                return .unchanged
             }
 
             guard httpResponse.statusCode == 200 else {
@@ -432,13 +446,36 @@ final class FilterListUpdater: @unchecked Sendable {
                         "filter": filter.name,
                         "statusCode": "\(httpResponse.statusCode)",
                     ])
-                return false
+                return .unavailable
+            }
+
+            guard FilterUpdateResponseClassifier.looksLikeFilterListData(data) else {
+                await ConcurrentLogManager.shared.error(
+                    .network, "Ignoring invalid filter response", metadata: ["filter": filter.name])
+                return .unavailable
+            }
+
+            let uuid = filter.id.uuidString
+            let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
+            let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+            if !FilterUpdateResponseClassifier.contentDiffers(
+                remoteData: data,
+                localData: localDataForComparison(filter: filter)
+            ) {
+                if responseEtag != nil || responseLastModified != nil {
+                    await ProtobufDataManager.shared.setFilterValidators(
+                        uuid,
+                        etag: responseEtag,
+                        lastModified: responseLastModified
+                    )
+                }
+                return .unchanged
             }
 
             guard let content = String(data: data, encoding: .utf8) else {
                 await ConcurrentLogManager.shared.error(
                     .network, "Failed to decode filter content", metadata: ["filter": filter.name])
-                return false
+                return .failed
             }
 
             // Strip unknown !# directives before validation and saving while preserving preprocessing and affinity directives.
@@ -478,7 +515,7 @@ final class FilterListUpdater: @unchecked Sendable {
                 await ConcurrentLogManager.shared.error(
                     .network, "Downloaded content does not appear to be a valid filter list",
                     metadata: ["filter": filter.name, "contentLength": "\(preprocessed.count)"])
-                return false
+                return .failed
             }
 
             let metadata = parseMetadata(from: preprocessed)
@@ -494,16 +531,13 @@ final class FilterListUpdater: @unchecked Sendable {
             updatedFilter.rawSourceRuleCount = rawCount
             updatedFilter.lastUpdated = Date()
             
-            let uuid = filter.id.uuidString
-            let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
-            let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
             updatedFilter.etag = responseEtag
             updatedFilter.serverLastModified = responseLastModified
             
             guard let containerURL = loader.getSharedContainerURL() else {
                 await ConcurrentLogManager.shared.error(
                     .system, "Unable to access shared container", metadata: [:])
-                return false
+                return .failed
             }
 
             let fileURL = containerURL.appendingPathComponent(
@@ -517,7 +551,7 @@ final class FilterListUpdater: @unchecked Sendable {
                     "Failed to save downloaded filter",
                     metadata: ["filter": filter.name, "error": error.localizedDescription]
                 )
-                return false
+                return .failed
             }
 
             if responseEtag != nil || responseLastModified != nil {
@@ -538,51 +572,67 @@ final class FilterListUpdater: @unchecked Sendable {
                 }
             }
 
-            return true
+            return .updated
         } catch {
             await ConcurrentLogManager.shared.error(
                 .network, "Error fetching filter",
                 metadata: ["filter": filter.name, "error": "\(error)"])
-            return false
+            return .unavailable
         }
+    }
+
+    func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
+        await fetchAndProcessFilterResult(filter).succeeded
+    }
+
+    private func refreshFilters(
+        _ filters: [FilterList],
+        progressCallback: @escaping (Float) -> Void
+    ) async -> [(FilterList, FilterFetchResult)] {
+        guard !filters.isEmpty else {
+            progressCallback(1)
+            return []
+        }
+
+        let totalSteps = Float(filters.count)
+        var results: [(FilterList, FilterFetchResult)] = []
+
+        await boundedConcurrentForEach(filters, operation: { filter in
+            (filter, await self.fetchAndProcessFilterResult(filter))
+        }, onResult: { result in
+            results.append(result)
+            progressCallback(Float(results.count) / totalSteps)
+        })
+
+        return results
+    }
+
+    func refreshFiltersIfNeeded(
+        _ filters: [FilterList],
+        progressCallback: @escaping (Float) -> Void
+    ) async -> [FilterList]? {
+        var updated: [FilterList] = []
+        var failed = false
+        for (filter, result) in await refreshFilters(filters, progressCallback: progressCallback) {
+            switch result {
+            case .updated:
+                updated.append(filter)
+            case .failed:
+                failed = true
+            case .unchanged, .unavailable:
+                break
+            }
+        }
+        return failed ? nil : updated
     }
 
     /// Updates selected filters and returns the list of successfully updated filters
     func updateSelectedFilters(
         _ selectedFilters: [FilterList], progressCallback: @escaping (Float) -> Void
     ) async -> [FilterList] {
-        guard !selectedFilters.isEmpty else {
-            progressCallback(1.0)
-            return []
+        await refreshFilters(selectedFilters, progressCallback: progressCallback).compactMap {
+            $0.1.succeeded ? $0.0 : nil
         }
-
-        let totalSteps = Float(selectedFilters.count)
-        #if os(macOS)
-        let maxConcurrent = 4
-        #else
-        let maxConcurrent = 3
-        #endif
-
-        var updatedFilters: [FilterList] = []
-        var completedSteps: Float = 0
-
-        await boundedConcurrentForEach(selectedFilters, maxConcurrent: maxConcurrent, operation: { filter in
-            let success = await self.fetchAndProcessFilter(filter)
-            return (filter, success)
-        }, onResult: { (filter, success) in
-            if success {
-                updatedFilters.append(filter)
-                await ConcurrentLogManager.shared.info(
-                    .filterUpdate, "Successfully updated filter", metadata: ["filter": filter.name])
-            } else {
-                await ConcurrentLogManager.shared.error(
-                    .filterUpdate, "Failed to update filter", metadata: ["filter": filter.name])
-            }
-            completedSteps += 1
-            progressCallback(completedSteps / totalSteps)
-        })
-
-        return updatedFilters
     }
 
     /// Checks for updates to userscripts and returns those with available updates
