@@ -206,6 +206,7 @@ public class UserScriptManager: ObservableObject {
     private static let maximumRequireBytes = 5 * 1024 * 1024
     private static let maximumRequireBytesPerScript = 20 * 1024 * 1024
     private static let maximumRequiresPerScript = 32
+    private static let maximumUserScriptBytes = 10 * 1024 * 1024
 
     nonisolated private static func resourceCacheFitsLimits(_ resources: [String: String]) -> Bool {
         guard resources.count <= maximumResourcesPerScript else { return false }
@@ -387,6 +388,11 @@ public class UserScriptManager: ObservableObject {
         let (downloadURL, response) = try await urlSession.download(from: url)
         defer { try? FileManager.default.removeItem(at: downloadURL) }
 
+        if let httpResponse = response as? HTTPURLResponse,
+           !(200..<300).contains(httpResponse.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+
         let expectedBytes = response.expectedContentLength
         guard expectedBytes <= 0 || expectedBytes <= maximumBytes else {
             throw URLError(.dataLengthExceedsMaximum)
@@ -542,6 +548,17 @@ public class UserScriptManager: ObservableObject {
         return lowerContent.contains("ddos-guard") || lowerContent.contains("ddos protection")
             || lowerContent.contains("checking your browser")
             || (lowerContent.hasPrefix("<!doctype html") && lowerContent.contains("challenge"))
+    }
+
+    private func downloadUserScriptContent(from url: URL) async throws -> String {
+        let (data, _) = try await downloadData(from: url, maximumBytes: Self.maximumUserScriptBytes)
+        guard let content = String(data: data, encoding: .utf8),
+              !content.isEmpty,
+              !isDDoSProtectionPage(content)
+        else {
+            throw URLError(.cannotParseResponse)
+        }
+        return content
     }
 
     // MARK: - Singleton
@@ -1312,12 +1329,7 @@ public class UserScriptManager: ObservableObject {
                 guard let scriptURL = currentScript.url else { continue }
 
                 do {
-                    let (responseData, _) = try await self.urlSession.data(from: scriptURL)
-
-                    guard let content = String(data: responseData, encoding: .utf8), !content.isEmpty else {
-                        continue
-                    }
-                    guard !self.isDDoSProtectionPage(content) else { continue }
+                    let content = try await self.downloadUserScriptContent(from: scriptURL)
 
                     var parsed = UserScript(name: currentScript.name, url: scriptURL, content: content)
                     parsed.parseMetadata()
@@ -1490,22 +1502,11 @@ public class UserScriptManager: ObservableObject {
         logger.info("📥 Downloading userscript from: \(url)")
 
         do {
-            let (data, _) = try await urlSession.data(from: url)
-
-            let content = String(data: data, encoding: .utf8) ?? ""
+            let content = try await downloadUserScriptContent(from: url)
 
             guard let currentIndex = indexOfUserScript(withId: scriptID),
                   userScripts.indices.contains(currentIndex)
             else { return }
-
-            // Check if we got a DDoS protection page instead of actual content
-            if isDDoSProtectionPage(content) {
-                logger.error("❌ Received DDoS protection page instead of userscript from: \(url)")
-                userScripts[currentIndex].description = "DDoS protection - try again later"
-                userScripts[currentIndex].version = "Error"
-                await persistUserScriptsNow()
-                return
-            }
 
             userScripts[currentIndex].content = content
             userScripts[currentIndex].parseMetadata()
@@ -1698,19 +1699,7 @@ public class UserScriptManager: ObservableObject {
         hasError = false
 
         do {
-            let (data, _) = try await urlSession.data(from: url)
-
-            let content = String(data: data, encoding: .utf8) ?? ""
-
-            // Check if we got a DDoS protection page instead of actual content
-            if isDDoSProtectionPage(content) {
-                hasError = true
-                errorMessage = "The server returned a DDoS protection page. Please try again later."
-                statusDescription = "Download blocked by DDoS protection"
-                isLoading = false
-                logger.error("❌ DDoS protection page received for: \(url)")
-                return
-            }
+            let content = try await downloadUserScriptContent(from: url)
 
             var newUserScript = UserScript(
                 name: UserScriptURLSupport.displayName(forRemoteURL: url),
@@ -2196,8 +2185,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         do {
-            let (data, _) = try await urlSession.data(from: url)
-            let content = String(data: data, encoding: .utf8) ?? ""
+            let content = try await downloadUserScriptContent(from: url)
 
             var tempUserScript = UserScript(name: userScript.name, content: content)
             tempUserScript.parseMetadata()
@@ -2291,8 +2279,7 @@ public class UserScriptManager: ObservableObject {
     /// Returns nil if fetch fails, content is empty, or no version found.
     private func fetchRemoteVersion(from url: URL) async -> String? {
         do {
-            let (data, _) = try await urlSession.data(from: url)
-            guard let content = String(data: data, encoding: .utf8), !content.isEmpty else { return nil }
+            let content = try await downloadUserScriptContent(from: url)
             var temp = UserScript(name: "", content: content)
             temp.parseMetadata()
             return temp.version.isEmpty ? nil : temp.version
@@ -2364,9 +2351,7 @@ public class UserScriptManager: ObservableObject {
         // Phase 2: Full download + content comparison
         guard let downloadURL = resolveDownloadURL(for: candidate) else { return false }
 
-        let (data, _) = try await urlSession.data(from: downloadURL)
-        let rawContent = String(data: data, encoding: .utf8) ?? ""
-        if rawContent.isEmpty { return false }
+        let rawContent = try await downloadUserScriptContent(from: downloadURL)
 
         var tempUserScript = UserScript(name: candidate.name, content: rawContent)
         tempUserScript.parseMetadata()
@@ -2421,8 +2406,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         do {
-            let (data, _) = try await urlSession.data(from: url)
-            let content = String(data: data, encoding: .utf8) ?? ""
+            let content = try await downloadUserScriptContent(from: url)
 
             if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
                 userScripts[index].content = content
