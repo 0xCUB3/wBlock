@@ -500,7 +500,26 @@ final class FilterListUpdater: @unchecked Sendable {
             updatedFilter.etag = responseEtag
             updatedFilter.serverLastModified = responseLastModified
             
-            // Persist validators so update checks can be lightweight across app launches.
+            guard let containerURL = loader.getSharedContainerURL() else {
+                await ConcurrentLogManager.shared.error(
+                    .system, "Unable to access shared container", metadata: [:])
+                return false
+            }
+
+            let fileURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.localFilename(for: filter)
+            )
+            do {
+                try preprocessed.write(to: fileURL, atomically: true, encoding: .utf8)
+            } catch {
+                await ConcurrentLogManager.shared.error(
+                    .system,
+                    "Failed to save downloaded filter",
+                    metadata: ["filter": filter.name, "error": error.localizedDescription]
+                )
+                return false
+            }
+
             if responseEtag != nil || responseLastModified != nil {
                 await ProtobufDataManager.shared.setFilterValidators(
                     uuid,
@@ -518,17 +537,6 @@ final class FilterListUpdater: @unchecked Sendable {
                     filterListManager?.objectWillChange.send()
                 }
             }
-
-            guard let containerURL = loader.getSharedContainerURL() else {
-                await ConcurrentLogManager.shared.error(
-                    .system, "Unable to access shared container", metadata: [:])
-                return false
-            }
-
-            let fileURL = containerURL.appendingPathComponent(
-                ContentBlockerIncrementalCache.localFilename(for: filter)
-            )
-            try? preprocessed.write(to: fileURL, atomically: true, encoding: .utf8)
 
             return true
         } catch {
