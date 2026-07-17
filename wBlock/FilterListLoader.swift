@@ -124,7 +124,7 @@ class FilterListLoader {
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt"
-                )!, category: FilterListCategory.privacy,
+                )!, category: FilterListCategory.allowlists,
                 description:
                     "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.",
                 trustLevel: "high"),

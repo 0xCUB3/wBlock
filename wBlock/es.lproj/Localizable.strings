@@ -732,3 +732,4 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Content filtering" = "Filtrado de contenido";
 "Filtering off" = "Filtrado desactivado";
 "This removes all settings for %@." = "Esto elimina todos los ajustes de %@.";
+"Allowlists" = "Listas de permitidos";

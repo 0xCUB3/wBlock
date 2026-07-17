@@ -732,3 +732,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Content filtering" = "Filtrage du contenu";
 "Filtering off" = "Filtrage désactivé";
 "This removes all settings for %@." = "Tous les réglages de %@ seront supprimés.";
+"Allowlists" = "Listes d'autorisation";

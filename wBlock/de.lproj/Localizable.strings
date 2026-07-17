@@ -732,3 +732,4 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Content filtering" = "Inhaltsfilterung";
 "Filtering off" = "Filterung aus";
 "This removes all settings for %@." = "Dadurch werden alle Einstellungen für %@ entfernt.";
+"Allowlists" = "Allowlisten";

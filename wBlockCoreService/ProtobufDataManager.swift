@@ -1823,6 +1823,7 @@ public class ProtobufDataManager: ObservableObject {
         case .custom: return .custom
         case .foreign: return .foreign
         case .scripts: return .scripts
+        case .allowlists: return .allowlists
         }
     }
 }
@@ -1851,6 +1852,7 @@ private enum LegacyFilterListCategory: String, Codable, CaseIterable {
     case custom = "Custom"
     case foreign = "Foreign"
     case scripts = "Scripts"
+    case allowlists = "Allowlists"
 }
 
 private struct LegacyUserScript: Codable {

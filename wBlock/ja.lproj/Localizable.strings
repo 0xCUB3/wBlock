@@ -732,3 +732,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "コンテンツフィルタリング";
 "Filtering off" = "フィルタリングオフ";
 "This removes all settings for %@." = "%@ のすべての設定を削除します。";
+"Allowlists" = "許可リスト";

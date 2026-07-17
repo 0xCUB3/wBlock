@@ -732,3 +732,4 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Content filtering" = "Filtraggio dei contenuti";
 "Filtering off" = "Filtraggio disattivato";
 "This removes all settings for %@." = "Questo rimuove tutte le impostazioni per %@.";
+"Allowlists" = "Elenchi consentiti";

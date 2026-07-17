@@ -739,3 +739,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "All of these filter lists are already in wBlock." = "All of these filter lists are already in wBlock.";
 "Existing filter lists will be skipped." = "Existing filter lists will be skipped.";
 "Add URLs" = "Add URLs";
+"Allowlists" = "Allowlists";

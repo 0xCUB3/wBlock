@@ -732,3 +732,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "콘텐츠 필터링";
 "Filtering off" = "필터링 끔";
 "This removes all settings for %@." = "%@의 모든 설정이 제거됩니다.";
+"Allowlists" = "허용 목록";

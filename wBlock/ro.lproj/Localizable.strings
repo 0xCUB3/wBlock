@@ -732,3 +732,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Content filtering" = "Filtrarea conținutului";
 "Filtering off" = "Filtrarea dezactivată";
 "This removes all settings for %@." = "Aceasta elimină toate setările pentru %@.";
+"Allowlists" = "Liste de permisiuni";

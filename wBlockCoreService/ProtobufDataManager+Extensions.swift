@@ -14,6 +14,18 @@ extension ProtobufDataManager {
     private static let adGuardMobileLegacyURLFragment = "filter_11_Mobile"
     private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11.txt"
 
+    // Filter lists that unblock/whitelist content rather than block it. These belong in the
+    // dedicated "Allowlists" category so they are not mistaken for blocklists.
+    private static let allowlistFilterURLFragments = [
+        "whitelist-referral.txt",  // HaGeZi Referral Allowlist
+    ]
+
+    private func isAllowlistFilter(_ filter: Wblock_Data_FilterListData) -> Bool {
+        Self.allowlistFilterURLFragments.contains { fragment in
+            filter.url.contains(fragment)
+        }
+    }
+
     private func isAdGuardMobileFilter(_ filter: Wblock_Data_FilterListData) -> Bool {
         filter.name == Self.adGuardMobileFilterName
             || filter.url.contains(Self.adGuardMobileLegacyURLFragment)
@@ -97,6 +109,27 @@ extension ProtobufDataManager {
         for i in 0..<updatedData.filterLists.count {
             if isAdGuardMobileFilter(updatedData.filterLists[i]) && updatedData.filterLists[i].category != .ads {
                 updatedData.filterLists[i].category = .ads
+                needsSave = true
+            }
+        }
+
+        if needsSave {
+            await MainActor.run {
+                appData = updatedData
+            }
+            await saveData()
+        }
+    }
+
+    /// Moves allowlist (exception/unblocking) filter lists out of blocklist categories such as
+    /// "Privacy" and into the dedicated "Allowlists" category so their inverse purpose is clear.
+    public func migrateAllowlistsToDedicatedCategory() async {
+        var updatedData = appData
+        var needsSave = false
+
+        for i in 0..<updatedData.filterLists.count {
+            if isAllowlistFilter(updatedData.filterLists[i]) && updatedData.filterLists[i].category != .allowlists {
+                updatedData.filterLists[i].category = .allowlists
                 needsSave = true
             }
         }
@@ -573,6 +606,7 @@ extension ProtobufDataManager {
         case .custom: return .custom
         case .foreign: return .foreign
         case .scripts: return .scripts
+        case .allowlists: return .allowlists
         case .UNRECOGNIZED(_), .unspecified: return .all
         }
     }
@@ -589,6 +623,7 @@ extension ProtobufDataManager {
         case .custom: return .custom
         case .foreign: return .foreign
         case .scripts: return .scripts
+        case .allowlists: return .allowlists
         }
     }
     

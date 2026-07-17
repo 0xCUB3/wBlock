@@ -732,3 +732,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "Фильтрация содержимого";
 "Filtering off" = "Фильтрация отключена";
 "This removes all settings for %@." = "Будут удалены все настройки для %@.";
+"Allowlists" = "Списки разрешений";

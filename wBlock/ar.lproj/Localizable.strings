@@ -732,3 +732,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "تصفية المحتوى";
 "Filtering off" = "التصفية متوقفة";
 "This removes all settings for %@." = "سيؤدي هذا إلى إزالة جميع إعدادات %@.";
+"Allowlists" = "قوائم السماح";

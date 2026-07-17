@@ -733,3 +733,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Content filtering" = "Tartalomszűrés";
 "Filtering off" = "Szűrés kikapcsolva";
 "This removes all settings for %@." = "Ez eltávolítja %@ összes beállítását.";
+"Allowlists" = "Engedélyező listák";

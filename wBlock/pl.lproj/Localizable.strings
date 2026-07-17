@@ -732,3 +732,4 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Content filtering" = "Filtrowanie treści";
 "Filtering off" = "Filtrowanie wyłączone";
 "This removes all settings for %@." = "Spowoduje to usunięcie wszystkich ustawień dla %@.";
+"Allowlists" = "Listy dozwolonych";

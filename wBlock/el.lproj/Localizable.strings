@@ -732,3 +732,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
 "Filtering off" = "Το φιλτράρισμα είναι απενεργοποιημένο";
 "This removes all settings for %@." = "Αυτό καταργεί όλες τις ρυθμίσεις για το %@.";
+"Allowlists" = "Λίστες επιτρεπόμενων";

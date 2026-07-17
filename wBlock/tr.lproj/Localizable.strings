@@ -739,3 +739,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "All of these filter lists are already in wBlock." = "Bu filtre listelerinin tümü zaten wBlock'ta mevcut.";
 "Existing filter lists will be skipped." = "Mevcut filtre listeleri atlanacaktır.";
 "Add URLs" = "URL'leri ekle";
+"Allowlists" = "İzin listeleri";

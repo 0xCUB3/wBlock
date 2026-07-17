@@ -732,3 +732,4 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Content filtering" = "Filtragem de conteúdo";
 "Filtering off" = "Filtragem desativada";
 "This removes all settings for %@." = "Isso remove todas as configurações de %@.";
+"Allowlists" = "Listas de permissões";

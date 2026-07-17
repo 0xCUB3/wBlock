@@ -732,3 +732,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Content filtering" = "内容过滤";
 "Filtering off" = "过滤已关闭";
 "This removes all settings for %@." = "这将移除 %@ 的所有设置。";
+"Allowlists" = "允许列表";

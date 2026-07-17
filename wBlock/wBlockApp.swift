@@ -41,6 +41,7 @@ struct wBlockApp: App {
             await dataManager.migrateMultipurposeToAnnoyances()
             await dataManager.migrateAnnoyancesFilterToSplitFilters()
             await dataManager.migrateMobileFilterToAdsCategory()
+            await dataManager.migrateAllowlistsToDedicatedCategory()
             await UserScriptManager.shared.waitUntilReady()
             await MainActor.run {
                 hasCompletedLaunchSetup = true
