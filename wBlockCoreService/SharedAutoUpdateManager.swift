@@ -1205,6 +1205,20 @@ public actor SharedAutoUpdateManager {
         let uuid = filter.id.uuidString
         let etag = await getFilterEtag(uuid)
         let lastModified = await getFilterLastModified(uuid)
+        let localURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: filter)
+        )
+
+        // Attempt a uBlock-Origin-style delta/differential update first. A nil
+        // return means "not applicable or failed safely" — fall back to a full
+        // conditional GET below.
+        if let deltaOutcome = await attemptDeltaUpdate(
+            filter: filter,
+            containerURL: containerURL,
+            localURL: localURL
+        ) {
+            return deltaOutcome
+        }
 
         let request = makeConditionalRequest(for: filter, etag: etag, lastModified: lastModified)
 
@@ -1218,9 +1232,6 @@ public actor SharedAutoUpdateManager {
             let responseLastModified = http.value(forHTTPHeaderField: "Last-Modified")
             let hasValidatorUpdates = responseEtag != nil || responseLastModified != nil
 
-            let localURL = containerURL.appendingPathComponent(
-                ContentBlockerIncrementalCache.localFilename(for: filter)
-            )
             let localData = localDataForComparison(filter: filter, containerURL: containerURL)
             let responseStatus = FilterUpdateResponseClassifier.classify(
                 statusCode: http.statusCode,
@@ -1248,64 +1259,225 @@ public actor SharedAutoUpdateManager {
                 break
             }
 
-            // Decode raw data for preprocessing
             guard let rawContent = String(data: data, encoding: .utf8) else {
                 return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
             }
 
-            // PREP-07: Strip unknown !# directives before preprocessing.
-            let processedContent = stripUnknownDirectives(from: rawContent)
-
-            // OBSV-02: Measure pre-expansion rule count.
-            let rawCount = countRulesInData(data: Data(processedContent.utf8))
-
-            // Preprocess: expand !#include directives and evaluate !#if conditionals.
-            // Skip for built-in optimized lists — already pre-expanded.
-            let finalContent: String
-            if filter.isOptimizedBuiltin {
-                finalContent = processedContent
-            } else {
-                let filterName = filter.name
-                let preprocessor = FilterPreprocessor(
-                    onFetchError: { subURL, statusCode in
-                        let statusStr = statusCode.map { "\($0)" } ?? "network error"
-                        await self.appendSharedLog(
-                            "!#include fetch failed: filter=\(filterName), subURL=\(subURL.absoluteString), status=\(statusStr)"
-                        )
-                    }
-                )
-                finalContent = await preprocessor.preprocess(
-                    content: processedContent,
-                    listURL: filter.url
-                )
-            }
-
-            guard let finalData = finalContent.data(using: .utf8) else {
-                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
-            }
-
-            do {
-                try finalData.write(to: localURL, options: .atomic)
-            } catch {
-                return .error(filterName: filter.name, error: error)
-            }
-
-            let meta = parseMetadata(from: String(finalContent.prefix(8192)))
-
-            let ruleCount = countRulesInData(data: finalData)
-
-            var updated = filter
-            if let version = meta.version, !version.isEmpty { updated.version = version }
-            if let desc = meta.description, !desc.isEmpty { updated.description = desc }
-            updated.sourceRuleCount = ruleCount
-            updated.rawSourceRuleCount = rawCount
-            return .updated(
-                filter: updated,
-                validators: (etag: responseEtag, lastModified: responseLastModified)
+            return await processAndStoreRawContent(
+                rawContent: rawContent,
+                filter: filter,
+                containerURL: containerURL,
+                localURL: localURL,
+                etag: responseEtag,
+                lastModified: responseLastModified
             )
         } catch {
             return .error(filterName: filter.name, error: error)
         }
+    }
+
+    // MARK: - Differential/Delta Updates (uBO-style Diff-Path / Diff-Expires)
+
+    /// Attempts a delta update for `filter`. Returns `nil` to signal "fall back
+    /// to a full conditional GET"; a non-nil outcome fully resolves this cycle.
+    ///
+    /// Delta updates are bandwidth optimizations layered on top of the existing
+    /// fetch pipeline: any failure (no patch, malformed patch, bad checksum) is
+    /// silently recovered by the full-fetch fallback, so correctness never
+    /// depends on the patch infrastructure. The first successful full fetch for
+    /// a Diff-Path list also persists a raw baseline, enabling deltas thereafter.
+    private func attemptDeltaUpdate(
+        filter: FilterList,
+        containerURL: URL,
+        localURL: URL
+    ) async -> FilterFetchOutcome? {
+        guard let baselineURL = deltaBaselineURL(filter: filter, containerURL: containerURL),
+              let baselineText = try? String(contentsOf: baselineURL, encoding: .utf8),
+              !baselineText.isEmpty,
+              let metadata = FilterDiffUpdater.parseMetadata(from: baselineText)
+        else {
+            return nil
+        }
+
+        let now = Date()
+
+        // uBO's "nopatch-yet" gate: avoid fetching patches the CDN hasn't
+        // published yet (the new list and its patch ship atomically).
+        if let availability = FilterDiffUpdater.patchAvailabilityTime(metadata: metadata, now: now),
+           now < availability {
+            appendSharedLog(
+                "Diff update: \(filter.name) deferring patch fetch (expected at \(ISO8601DateFormatter().string(from: availability)))"
+            )
+            return .noChange
+        }
+
+        guard let patchURL = FilterDiffUpdater.resolvePatchURL(metadata: metadata, listURL: filter.url) else {
+            return nil
+        }
+
+        var patchRequest = URLRequest(
+            url: patchURL,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: 20
+        )
+        patchRequest.setValue("wBlock", forHTTPHeaderField: "User-Agent")
+
+        let patchSize: Int64
+        let patchText: String
+        do {
+            let (data, response) = try await urlSession.data(for: patchRequest)
+            guard let http = response as? HTTPURLResponse else { return nil }
+            guard (200..<300).contains(http.statusCode) else {
+                // 404 / 5xx: within the validity window this is "nopatch-yet"
+                // (deferrable); beyond it, fall back to a full fetch.
+                if let availability = FilterDiffUpdater.patchAvailabilityTime(metadata: metadata, now: now),
+                   metadata.diffExpiresSeconds > 0,
+                   now.timeIntervalSince(availability) < 4 * metadata.diffExpiresSeconds {
+                    appendSharedLog(
+                        "Diff update: \(filter.name) no patch yet (status \(http.statusCode)); deferring"
+                    )
+                    return .noChange
+                }
+                appendSharedLog(
+                    "Diff update: \(filter.name) patch fetch returned status \(http.statusCode); falling back to full fetch"
+                )
+                return nil
+            }
+            guard let text = String(data: data, encoding: .utf8) else { return nil }
+            patchText = text
+            patchSize = Int64(data.count)
+        } catch {
+            appendSharedLog(
+                "Diff update: \(filter.name) patch fetch failed (\(error.localizedDescription)); falling back to full fetch"
+            )
+            return nil
+        }
+
+        guard let blocks = FilterDiffUpdater.parsePatchFile(patchText) else {
+            appendSharedLog(
+                "Diff update: \(filter.name) patch at \(patchURL.absoluteString) failed to parse; falling back to full fetch"
+            )
+            return nil
+        }
+        guard let block = blocks[metadata.diffName] else {
+            appendSharedLog(
+                "Diff update: \(filter.name) patch has no block named '\(metadata.diffName)'; falling back to full fetch"
+            )
+            return nil
+        }
+
+        switch FilterDiffUpdater.applyBlock(block, to: baselineText) {
+        case .success(let patchedText):
+            // Persist the new raw baseline for the next cycle.
+            try? patchedText.data(using: .utf8)?.write(to: baselineURL, options: .atomic)
+            appendSharedLog(
+                "Diff update: \(filter.name) applied \(formatBytes(patchSize)) patch from \(patchURL.absoluteString)"
+            )
+            // No fresh validators are available from a patch fetch (and we no
+            // longer hold a full-list ETag that matches the patched content),
+            // so report updated content with cleared validators. The next full
+            // fetch will re-establish them.
+            return await processAndStoreRawContent(
+                rawContent: patchedText,
+                filter: filter,
+                containerURL: containerURL,
+                localURL: localURL,
+                etag: nil,
+                lastModified: nil
+            )
+        case .badPatch:
+            appendSharedLog(
+                "Diff update: \(filter.name) patch failed to apply (malformed); falling back to full fetch"
+            )
+            return nil
+        case .checksumMismatch(let expected, let computed):
+            appendSharedLog(
+                "Diff update: \(filter.name) checksum mismatch (expected \(expected), computed \(computed)); falling back to full fetch"
+            )
+            return nil
+        }
+    }
+
+    /// Raw-baseline file used as the diff application target. Holds the exact
+    /// downloaded bytes (pre-preprocessing) of the last successfully fetched
+    /// list that advertised a `! Diff-Path:`.
+    private func deltaBaselineURL(filter: FilterList, containerURL: URL) -> URL? {
+        let filename = "diff-baseline-\(ContentBlockerIncrementalCache.localFilename(for: filter))"
+        return containerURL.appendingPathComponent(filename)
+    }
+
+    /// Shared preprocessing + storage pipeline used by both the full-fetch and
+    /// delta paths. Strips unknown directives, expands includes, writes the
+    /// preprocessed list to `localURL`, and maintains the delta baseline.
+    private func processAndStoreRawContent(
+        rawContent: String,
+        filter: FilterList,
+        containerURL: URL,
+        localURL: URL,
+        etag: String?,
+        lastModified: String?
+    ) async -> FilterFetchOutcome {
+        // PREP-07: Strip unknown !# directives before preprocessing.
+        let processedContent = stripUnknownDirectives(from: rawContent)
+
+        // OBSV-02: Measure pre-expansion rule count.
+        let rawCount = countRulesInData(data: Data(processedContent.utf8))
+
+        // Preprocess: expand !#include directives and evaluate !#if conditionals.
+        // Skip for built-in optimized lists — already pre-expanded.
+        let finalContent: String
+        if filter.isOptimizedBuiltin {
+            finalContent = processedContent
+        } else {
+            let filterName = filter.name
+            let preprocessor = FilterPreprocessor(
+                onFetchError: { subURL, statusCode in
+                    let statusStr = statusCode.map { "\($0)" } ?? "network error"
+                    await self.appendSharedLog(
+                        "!#include fetch failed: filter=\(filterName), subURL=\(subURL.absoluteString), status=\(statusStr)"
+                    )
+                }
+            )
+            finalContent = await preprocessor.preprocess(
+                content: processedContent,
+                listURL: filter.url
+            )
+        }
+
+        guard let finalData = finalContent.data(using: .utf8) else {
+            return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
+        }
+
+        do {
+            try finalData.write(to: localURL, options: .atomic)
+        } catch {
+            return .error(filterName: filter.name, error: error)
+        }
+
+        // Maintain the raw baseline used for future delta updates: refresh it
+        // when the fresh content advertises a Diff-Path, otherwise drop any
+        // stale baseline so we don't keep diff state for non-delta lists.
+        let diffMetadata = FilterDiffUpdater.parseMetadata(from: rawContent)
+        if let baselineURL = deltaBaselineURL(filter: filter, containerURL: containerURL) {
+            if diffMetadata != nil {
+                try? rawContent.data(using: .utf8)?.write(to: baselineURL, options: .atomic)
+            } else {
+                try? FileManager.default.removeItem(at: baselineURL)
+            }
+        }
+
+        let meta = parseMetadata(from: String(finalContent.prefix(8192)))
+        let ruleCount = countRulesInData(data: finalData)
+
+        var updated = filter
+        if let version = meta.version, !version.isEmpty { updated.version = version }
+        if let desc = meta.description, !desc.isEmpty { updated.description = desc }
+        updated.sourceRuleCount = ruleCount
+        updated.rawSourceRuleCount = rawCount
+        return .updated(
+            filter: updated,
+            validators: (etag: etag, lastModified: lastModified)
+        )
     }
 
     private func makeConditionalRequest(for filter: FilterList, etag: String?, lastModified: String?) -> URLRequest {
