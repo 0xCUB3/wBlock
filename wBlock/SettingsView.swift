@@ -9,6 +9,7 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     private static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
+    @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
     @State private var isOverdue = false
     @State private var timer: Timer?
@@ -445,6 +446,50 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
+    private var logsSection: some View {
+        Section {
+            Toggle("Sync with device timezone", isOn: usesDeviceTimeZoneBinding)
+            if !logTimeZoneIdentifier.isEmpty {
+                Picker("Time zone", selection: $logTimeZoneIdentifier) {
+                    ForEach(sortedTimeZoneIdentifiers, id: \.self) { identifier in
+                        Text(timeZoneDisplayName(for: identifier)).tag(identifier)
+                    }
+                }
+            }
+        } header: {
+            Text("Log Timestamps")
+        } footer: {
+            Text("Controls the time zone used when displaying and exporting log timestamps.")
+        }
+        .onChange(of: logTimeZoneIdentifier) { _ in
+            LogDateFormatters.configureIfNeeded()
+        }
+    }
+
+    private var usesDeviceTimeZoneBinding: Binding<Bool> {
+        Binding(
+            get: { logTimeZoneIdentifier.isEmpty },
+            set: { newValue in
+                if newValue {
+                    logTimeZoneIdentifier = LogTimeZonePreference.deviceIdentifier
+                } else if logTimeZoneIdentifier.isEmpty {
+                    logTimeZoneIdentifier = TimeZone.current.identifier
+                }
+                LogDateFormatters.configureIfNeeded()
+            }
+        )
+    }
+
+    private var sortedTimeZoneIdentifiers: [String] {
+        TimeZone.knownTimeZoneIdentifiers.sorted()
+    }
+
+    private func timeZoneDisplayName(for identifier: String) -> String {
+        let name = TimeZone.localizedName(for: identifier) ?? identifier
+        return "\(name) (\(identifier))"
+    }
+
+    @ViewBuilder
     private var dangerZoneSection: some View {
         Section("Danger Zone") {
             Button(role: .destructive) {
@@ -481,6 +526,7 @@ struct SettingsView: View {
 
                 autoUpdateSection
                 syncSection
+                logsSection
                 aboutSection
                 dangerZoneSection
             }
@@ -503,6 +549,7 @@ struct SettingsView: View {
 
                 autoUpdateSection
                 syncSection
+                logsSection
                 aboutSection
                 dangerZoneSection
             }

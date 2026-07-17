@@ -121,7 +121,7 @@ extension AppFilterManager {
         }
 
         await ConcurrentLogManager.shared.info(
-            .filterApply, "Starting filter application process",
+            .filterApply, LocalizedStrings.text("Starting filter application process"),
             metadata: ["platform": currentPlatform == .macOS ? "macOS" : "iOS"])
 
         // First, check for and download updates for enabled filters
@@ -146,7 +146,7 @@ extension AppFilterManager {
                 }
             ) else {
                 await failApplyRun(
-                    logMessage: "Failed to process one or more pre-apply filter updates"
+                    logMessage: LocalizedStrings.text("Failed to process one or more pre-apply filter updates")
                 )
                 return
             }
@@ -158,11 +158,11 @@ extension AppFilterManager {
             if !updatedFilters.isEmpty {
                 await saveFilterLists()
                 await ConcurrentLogManager.shared.info(
-                    .filterApply, "Downloaded updates before applying",
+                    .filterApply, LocalizedStrings.text("Downloaded updates before applying"),
                     metadata: ["count": "\(updatedFilters.count)"])
             } else {
                 await ConcurrentLogManager.shared.info(
-                    .filterApply, "No updates available", metadata: [:])
+                    .filterApply, LocalizedStrings.text("No updates available"), metadata: [:])
             }
         }
 
@@ -211,7 +211,7 @@ extension AppFilterManager {
                 )
             }
             await ConcurrentLogManager.shared.info(
-                .filterApply, "No filters selected - clearing all extensions", metadata: [:])
+                .filterApply, LocalizedStrings.text("No filters selected - clearing all extensions"), metadata: [:])
 
             let cleared = await clearAllExtensionsAndEngine()
             if cleared {
@@ -292,7 +292,7 @@ extension AppFilterManager {
         if let removeParamDNRSummary {
             await ConcurrentLogManager.shared.info(
                 .filterApply,
-                "Prepared removeparam DNR rules",
+                LocalizedStrings.text("Prepared removeparam DNR rules"),
                 metadata: [
                     "generated": "\(removeParamDNRSummary.generatedRules)",
                     "sourceRemoveparam": "\(removeParamDNRSummary.removeParamRules)",
@@ -304,7 +304,7 @@ extension AppFilterManager {
         } else {
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
-                "Failed to prepare removeparam DNR rules",
+                LocalizedStrings.text("Failed to prepare removeparam DNR rules"),
                 metadata: [:]
             )
         }
@@ -398,7 +398,7 @@ extension AppFilterManager {
 
                 if ruleCountForThisTarget > ruleLimit {
                     await ConcurrentLogManager.shared.error(
-                        .filterApply, "Rule limit exceeded for blocker",
+                        .filterApply, LocalizedStrings.text("Rule limit exceeded for blocker"),
                         metadata: [
                             "blocker": blockerName,
                             "bundleId": targetInfo.bundleIdentifier,
@@ -414,7 +414,7 @@ extension AppFilterManager {
             conversionCompletions[$0]?.failureDescription != nil
         }), let failureDescription = conversionCompletions[failedTarget]?.failureDescription {
             await failApplyRun(
-                logMessage: "Failed to convert rules for blocker",
+                logMessage: LocalizedStrings.text("Failed to convert rules for blocker"),
                 metadata: [
                     "blocker": failedTarget.displayName,
                     "error": failureDescription,
@@ -427,7 +427,7 @@ extension AppFilterManager {
             guard let completion = conversionCompletions[targetInfo],
                   let conversionResult = completion.outcome else {
                 await failApplyRun(
-                    logMessage: "Missing conversion result for blocker",
+                    logMessage: LocalizedStrings.text("Missing conversion result for blocker"),
                     metadata: ["blocker": targetInfo.displayName]
                 )
                 return
@@ -472,7 +472,7 @@ extension AppFilterManager {
             self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
         }
         await ConcurrentLogManager.shared.info(
-            .filterApply, "Conversion phase summary",
+            .filterApply, LocalizedStrings.text("Conversion phase summary"),
             metadata: [
                 "targets": "\(conversionMetrics.count)",
                 "assignedFilters": "\(conversionMetrics.reduce(0) { $0 + $1.filterCount })",
@@ -532,12 +532,12 @@ extension AppFilterManager {
 
         if allReloadsSuccessful {
             await ConcurrentLogManager.shared.info(
-                .filterApply, "Reload phase summary",
+                .filterApply, LocalizedStrings.text("Reload phase summary"),
                 metadata: reloadMetadata)
         } else {
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
-                "Reload phase had failures; continuing with advanced rules processing",
+                LocalizedStrings.text("Reload phase had failures; continuing with advanced rules processing"),
                 metadata: reloadMetadata)
         }
 
@@ -570,7 +570,7 @@ extension AppFilterManager {
                     let combinedAdvancedRules = orderedAdvancedRules.joined(separator: "\n")
                     let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
                     await ConcurrentLogManager.shared.info(
-                        .filterApply, "Building filter engine",
+                        .filterApply, LocalizedStrings.text("Building filter engine"),
                         metadata: [
                             "targetCount": "\(advancedRulesByTarget.count)",
                             "totalLines": "\(totalLines)",
@@ -583,7 +583,7 @@ extension AppFilterManager {
                 }.value
             } else {
                 await ConcurrentLogManager.shared.debug(
-                    .filterApply, "No advanced rules found, clearing filter engine", metadata: [:])
+                    .filterApply, LocalizedStrings.text("No advanced rules found, clearing filter engine"), metadata: [:])
                 try await Task.detached {
                     try ContentBlockerService.clearFilterEngine(
                         groupIdentifier: GroupIdentifier.shared.value
@@ -594,7 +594,7 @@ extension AppFilterManager {
         } catch {
             advancedEngineSucceeded = false
             await failApplyRun(
-                logMessage: "Advanced engine publish failed",
+                logMessage: LocalizedStrings.text("Advanced engine publish failed"),
                 metadata: ["error": error.localizedDescription],
                 dismissProgressSheet: false
             )
@@ -655,14 +655,14 @@ extension AppFilterManager {
 
         if allReloadsSuccessful && !hasErrorValueForLog {
             await ConcurrentLogManager.shared.info(
-                .filterApply, "Process completed successfully", metadata: ["status": statusDesc])
+                .filterApply, LocalizedStrings.text("Process completed successfully"), metadata: ["status": statusDesc])
         } else if !hasErrorValueForLog {
             await ConcurrentLogManager.shared.warning(
-                .filterApply, "Process completed with reload issues",
+                .filterApply, LocalizedStrings.text("Process completed with reload issues"),
                 metadata: ["status": statusDesc])
         } else {
             await ConcurrentLogManager.shared.error(
-                .filterApply, "Process completed with errors", metadata: ["status": statusDesc])
+                .filterApply, LocalizedStrings.text("Process completed with errors"), metadata: ["status": statusDesc])
         }
     }
 
@@ -734,7 +734,7 @@ extension AppFilterManager {
             return true
         } catch {
             await failApplyRun(
-                logMessage: "Failed to clear extensions and advanced engine",
+                logMessage: LocalizedStrings.text("Failed to clear extensions and advanced engine"),
                 metadata: ["error": error.localizedDescription]
             )
             return false

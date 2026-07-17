@@ -15,7 +15,7 @@ extension AppFilterManager {
             Task {
                 await ConcurrentLogManager.shared.warning(
                     .whitelist,
-                    "Disabled sites monitor unavailable (no protobuf data directory)",
+                    LocalizedStrings.text("Disabled sites monitor unavailable (no protobuf data directory)"),
                     metadata: [:]
                 )
             }
@@ -30,7 +30,7 @@ extension AppFilterManager {
             Task {
                 await ConcurrentLogManager.shared.warning(
                     .whitelist,
-                    "Failed to start disabled sites monitor",
+                    LocalizedStrings.text("Failed to start disabled sites monitor"),
                     metadata: ["directory": directoryURL.path]
                 )
             }
@@ -56,7 +56,7 @@ extension AppFilterManager {
 
         if currentDisabledSites != lastKnownDisabledSites {
             await ConcurrentLogManager.shared.info(
-                .whitelist, "Disabled sites changed, fast rebuilding content blockers",
+                .whitelist, LocalizedStrings.text("Disabled sites changed, fast rebuilding content blockers"),
                 metadata: [
                     "previousCount": "\(lastKnownDisabledSites.count)",
                     "newCount": "\(currentDisabledSites.count)",
@@ -81,7 +81,7 @@ extension AppFilterManager {
         }
         let disabledSites = effectiveFilterDisabledSites()
         await ConcurrentLogManager.shared.info(
-            .whitelist, "Fast applying disabled sites changes without full conversion",
+            .whitelist, LocalizedStrings.text("Fast applying disabled sites changes without full conversion"),
             metadata: [:])
 
         // Get all platform targets that need updating
@@ -144,7 +144,7 @@ extension AppFilterManager {
         }
 
         await ConcurrentLogManager.shared.info(
-            .whitelist, "Fast disabled sites update completed",
+            .whitelist, LocalizedStrings.text("Fast disabled sites update completed"),
             metadata: [
                 "successCount": "\(successCount)",
                 "totalCount": "\(targetsToReload.count)",

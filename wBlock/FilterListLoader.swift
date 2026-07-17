@@ -68,14 +68,14 @@ class FilterListLoader {
             try FileManager.default.moveItem(at: oldURL, to: newURL)
             Task {
                 await ConcurrentLogManager.shared.info(
-                    .system, "Migrated custom filter filename",
+                    .system, LocalizedStrings.text("Migrated custom filter filename"),
                     metadata: ["filter": filter.name, "to": newURL.lastPathComponent]
                 )
             }
         } catch {
             Task {
                 await ConcurrentLogManager.shared.error(
-                    .system, "Failed migrating custom filter filename",
+                    .system, LocalizedStrings.text("Failed migrating custom filter filename"),
                     metadata: ["filter": filter.name, "error": "\(error)"]
                 )
             }
@@ -745,7 +745,7 @@ class FilterListLoader {
         } catch {
             Task {
                 await ConcurrentLogManager.shared.error(
-                    .filterUpdate, "Failed to read filter content",
+                    .filterUpdate, LocalizedStrings.text("Failed to read filter content"),
                     metadata: ["filter": filter.name, "error": "\(error)"])
             }
             return nil

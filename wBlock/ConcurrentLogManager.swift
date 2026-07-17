@@ -86,7 +86,7 @@ public struct LogEntry: Identifiable, Codable, Equatable {
 
     /// Compact single-line format
     var compactFormat: String {
-        let time = Self.timeFormatter.string(from: timestamp)
+        let time = LogDateFormatters.timeFormatter.string(from: timestamp)
         let metaStr = metadata?.map { "\($0.key)=\($0.value)" }.joined(separator: ", ") ?? ""
         let meta = metaStr.isEmpty ? "" : " (\(metaStr))"
         let countStr = count > 1 ? " ×\(count)" : ""
@@ -95,7 +95,7 @@ public struct LogEntry: Identifiable, Codable, Equatable {
 
     /// Export format for txt file
     var exportFormat: String {
-        let time = Self.exportTimeFormatter.string(from: timestamp)
+        let time = LogDateFormatters.exportTimeFormatter.string(from: timestamp)
         var lines = ["\(time) [\(level.rawValue.uppercased())] \(category.rawValue): \(message)"]
         if let metadata = metadata, !metadata.isEmpty {
             lines.append("  Metadata: \(metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))")
@@ -106,17 +106,6 @@ public struct LogEntry: Identifiable, Codable, Equatable {
         return lines.joined(separator: "\n")
     }
 
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        return formatter
-    }()
-
-    private static let exportTimeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter
-    }()
 }
 
 /// Concurrency-safe logger with structured logging and deduplication
@@ -210,9 +199,14 @@ public actor ConcurrentLogManager {
 
     /// Export logs as formatted text
     public func exportAsText() -> String {
+        let generated = LogDateFormatters.exportTimeFormatter.string(from: Date())
+        let timeZoneLabel = LogTimeZonePreference.usesCustomTimeZone
+            ? LogTimeZonePreference.storedIdentifier
+            : NSLocalizedString("Device timezone", comment: "Log export time zone label")
         let header = """
         wBlock Logs Export
-        Generated: \(Date())
+        Generated: \(generated)
+        Time Zone: \(timeZoneLabel)
         Total Entries: \(logEntries.count)
         ════════════════════════════════════════
 
@@ -225,7 +219,7 @@ public actor ConcurrentLogManager {
     /// Clear all log entries
     public func clearLogs() {
         logEntries.removeAll()
-        log(.info, .system, "Logs cleared")
+        log(.info, .system, LocalizedStrings.text("Logs cleared"))
     }
 
     // MARK: - Shared Auto-Update Log Ingestion
@@ -253,7 +247,7 @@ public actor ConcurrentLogManager {
         for line in lines {
             if let telemetry = parseTelemetryLine(line) {
                 let event = telemetry["event"] ?? "unknown"
-                log(.info, .autoUpdate, "Telemetry: \(event)", metadata: telemetry)
+                log(.info, .autoUpdate, LocalizedStrings.format("Telemetry: %@", event), metadata: telemetry)
             } else {
                 log(.debug, .autoUpdate, line)
             }
@@ -288,7 +282,7 @@ public actor ConcurrentLogManager {
             if let fields = parseSharedFieldsLine(line, prefix: "diagnostic ") {
                 guard !shouldIgnoreSharedWebExtensionDiagnostic(fields) else { continue }
                 let event = fields["event"]?.replacingOccurrences(of: "_", with: " ") ?? "diagnostic"
-                log(.debug, .system, "Web extension \(event)", metadata: fields)
+                log(.debug, .system, LocalizedStrings.format("Web extension %@", event), metadata: fields)
             } else {
                 log(.debug, .system, line, metadata: ["source": "web-extension"])
             }

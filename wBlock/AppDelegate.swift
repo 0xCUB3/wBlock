@@ -136,33 +136,27 @@ private actor BGTaskCompletionState {
 
 // MARK: - Shared helper for schedule log formatting (platform-agnostic)
 fileprivate func scheduleMessage(from status: SharedAutoUpdateManager.AutoUpdateStatus) -> String {
-    let formatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return f
-    }()
-
     var message = ""
     if let scheduledAt = status.scheduledAt, let remaining = status.remaining {
         if status.isRunning {
-            message = "🔄 Auto-update: currently running"
+            message = LocalizedStrings.text("🔄 Auto-update: currently running")
         } else if status.isOverdue {
-            message = "⚠️ Auto-update: overdue (will run on next trigger)"
+            message = LocalizedStrings.text("⚠️ Auto-update: overdue (will run on next trigger)")
         } else if remaining == 0 {
-            message = "🕒 Auto-update: due now (will run on next trigger)"
+            message = LocalizedStrings.text("🕒 Auto-update: due now (will run on next trigger)")
         } else {
             let hrs = Int(remaining) / 3600
             let mins = (Int(remaining) % 3600) / 60
             let secs = Int(remaining) % 60
-            message = "🕒 Auto-update: next in \(hrs)h \(mins)m \(secs)s"
+            message = LocalizedStrings.format("🕒 Auto-update: next in %dh %dm %ds", hrs, mins, secs)
         }
-        message += " · Scheduled: \(formatter.string(from: scheduledAt))"
+        message += LocalizedStrings.format(" · Scheduled: %@", LogDateFormatters.exportTimeFormatter.string(from: scheduledAt))
     } else {
-        message = "🕒 Auto-update: no prior run yet (interval=\(status.intervalHours)h)"
+        message = LocalizedStrings.format("🕒 Auto-update: no prior run yet (interval=%dh)", status.intervalHours)
     }
 
     if let lastSuccessful = status.lastSuccessful {
-        message += " · Last success: \(formatter.string(from: lastSuccessful))"
+        message += LocalizedStrings.format(" · Last success: %@", LogDateFormatters.exportTimeFormatter.string(from: lastSuccessful))
     }
 
     return message

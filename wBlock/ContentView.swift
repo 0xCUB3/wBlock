@@ -782,7 +782,7 @@ struct ContentModifiers: ViewModifier {
             .onAppear {
                 Task {
                     await ConcurrentLogManager.shared.info(
-                        .startup, "wBlock application appeared", metadata: [:])
+                        .startup, LocalizedStrings.text("wBlock application appeared"), metadata: [:])
                 }
                 filterManager.setUserScriptManager(userScriptManager)
                 #if canImport(AppIntents) && !os(visionOS)

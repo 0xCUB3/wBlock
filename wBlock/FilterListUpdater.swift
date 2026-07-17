@@ -72,7 +72,7 @@ final class FilterListUpdater: @unchecked Sendable {
                     modifiedFilter.version = newVersion
                     filterWasModifiedThisIteration = true
                     await ConcurrentLogManager.shared.info(
-                        .filterUpdate, "Loaded local version for filter",
+                        .filterUpdate, LocalizedStrings.text("Loaded local version for filter"),
                         metadata: ["filter": modifiedFilter.name, "version": newVersion])
                 }
             }
@@ -82,11 +82,11 @@ final class FilterListUpdater: @unchecked Sendable {
                 modifiedFilter.sourceRuleCount = ruleCount
                 filterWasModifiedThisIteration = true
                 await ConcurrentLogManager.shared.info(
-                    .filterUpdate, "Calculated source rule count for filter",
+                    .filterUpdate, LocalizedStrings.text("Calculated source rule count for filter"),
                     metadata: ["filter": modifiedFilter.name, "ruleCount": "\(ruleCount)"])
             } else if modifiedFilter.sourceRuleCount == nil && shouldRead {
                 await ConcurrentLogManager.shared.error(
-                    .filterUpdate, "Failed to read local content for rule counting",
+                    .filterUpdate, LocalizedStrings.text("Failed to read local content for rule counting"),
                     metadata: ["filter": modifiedFilter.name])
             }
 
@@ -264,7 +264,7 @@ final class FilterListUpdater: @unchecked Sendable {
                 return false
             case .invalidContent:
                 await ConcurrentLogManager.shared.debug(
-                    .filterUpdate, "Skipping update signal due to non-filter response body",
+                    .filterUpdate, LocalizedStrings.text("Skipping update signal due to non-filter response body"),
                     metadata: ["filter": filter.name]
                 )
                 return false
@@ -273,7 +273,7 @@ final class FilterListUpdater: @unchecked Sendable {
             }
         } catch {
             await ConcurrentLogManager.shared.debug(
-                .filterUpdate, "Conditional check failed, falling back to full comparison",
+                .filterUpdate, LocalizedStrings.text("Conditional check failed, falling back to full comparison"),
                 metadata: ["filter": filter.name, "error": error.localizedDescription])
         }
 
@@ -281,7 +281,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return try await compareRemoteToLocal(filter: filter)
         } catch {
             await ConcurrentLogManager.shared.error(
-                .filterUpdate, "Error checking update for filter",
+                .filterUpdate, LocalizedStrings.text("Error checking update for filter"),
                 metadata: ["filter": filter.name, "error": error.localizedDescription])
             return false
         }
@@ -364,7 +364,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
             await ConcurrentLogManager.shared.debug(
                 .filterUpdate,
-                "Stripped unknown directive",
+                LocalizedStrings.text("Stripped unknown directive"),
                 metadata: ["directive": String(trimmed.prefix(60))]
             )
             // Do NOT append — line is stripped from output
@@ -392,7 +392,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 await ConcurrentLogManager.shared.error(
-                    .network, "Failed to fetch filter - HTTP error",
+                    .network, LocalizedStrings.text("Failed to fetch filter - HTTP error"),
                     metadata: [
                         "filter": filter.name,
                         "statusCode": "0",
@@ -407,7 +407,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
             guard httpResponse.statusCode == 200 else {
                 await ConcurrentLogManager.shared.error(
-                    .network, "Failed to fetch filter - HTTP error",
+                    .network, LocalizedStrings.text("Failed to fetch filter - HTTP error"),
                     metadata: [
                         "filter": filter.name,
                         "statusCode": "\(httpResponse.statusCode)",
@@ -417,7 +417,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
             guard FilterUpdateResponseClassifier.looksLikeFilterListData(data) else {
                 await ConcurrentLogManager.shared.error(
-                    .network, "Ignoring invalid filter response", metadata: ["filter": filter.name])
+                    .network, LocalizedStrings.text("Ignoring invalid filter response"), metadata: ["filter": filter.name])
                 return .unavailable
             }
 
@@ -440,7 +440,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
             guard let content = String(data: data, encoding: .utf8) else {
                 await ConcurrentLogManager.shared.error(
-                    .network, "Failed to decode filter content", metadata: ["filter": filter.name])
+                    .network, LocalizedStrings.text("Failed to decode filter content"), metadata: ["filter": filter.name])
                 return .failed
             }
 
@@ -462,7 +462,7 @@ final class FilterListUpdater: @unchecked Sendable {
                         let statusStr = statusCode.map { "\($0)" } ?? "network error"
                         await ConcurrentLogManager.shared.warning(
                             .filterUpdate,
-                            "!#include fetch failed",
+                            LocalizedStrings.text("!#include fetch failed"),
                             metadata: [
                                 "filter": filterName,
                                 "subURL": subURL.absoluteString,
@@ -479,7 +479,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
             guard isValidFilterContent(preprocessed) else {
                 await ConcurrentLogManager.shared.error(
-                    .network, "Downloaded content does not appear to be a valid filter list",
+                    .network, LocalizedStrings.text("Downloaded content does not appear to be a valid filter list"),
                     metadata: ["filter": filter.name, "contentLength": "\(preprocessed.count)"])
                 return .failed
             }
@@ -502,7 +502,7 @@ final class FilterListUpdater: @unchecked Sendable {
             
             guard let containerURL = loader.getSharedContainerURL() else {
                 await ConcurrentLogManager.shared.error(
-                    .system, "Unable to access shared container", metadata: [:])
+                    .system, LocalizedStrings.text("Unable to access shared container"), metadata: [:])
                 return .failed
             }
 
@@ -514,7 +514,7 @@ final class FilterListUpdater: @unchecked Sendable {
             } catch {
                 await ConcurrentLogManager.shared.error(
                     .system,
-                    "Failed to save downloaded filter",
+                    LocalizedStrings.text("Failed to save downloaded filter"),
                     metadata: ["filter": filter.name, "error": error.localizedDescription]
                 )
                 return .failed
@@ -541,7 +541,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return .updated
         } catch {
             await ConcurrentLogManager.shared.error(
-                .network, "Error fetching filter",
+                .network, LocalizedStrings.text("Error fetching filter"),
                 metadata: ["filter": filter.name, "error": "\(error)"])
             return .unavailable
         }
@@ -644,7 +644,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return onlineContent != script.content
         } catch {
             await ConcurrentLogManager.shared.error(
-                .userScript, "Error checking update for script",
+                .userScript, LocalizedStrings.text("Error checking update for script"),
                 metadata: ["script": script.name, "error": error.localizedDescription])
             return false
         }
@@ -656,7 +656,7 @@ final class FilterListUpdater: @unchecked Sendable {
             let downloadURL = URL(string: downloadURLString)
         else {
             await ConcurrentLogManager.shared.error(
-                .userScript, "No download URL for script", metadata: ["script": script.name])
+                .userScript, LocalizedStrings.text("No download URL for script"), metadata: ["script": script.name])
             return (nil, false)
         }
 
@@ -668,7 +668,7 @@ final class FilterListUpdater: @unchecked Sendable {
                 let content = String(data: data, encoding: .utf8)
             else {
                 await ConcurrentLogManager.shared.error(
-                    .network, "Failed to fetch script", metadata: ["script": script.name])
+                    .network, LocalizedStrings.text("Failed to fetch script"), metadata: ["script": script.name])
                 return (nil, false)
             }
 
@@ -679,7 +679,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return (updatedScript, true)
         } catch {
             await ConcurrentLogManager.shared.error(
-                .network, "Error fetching script",
+                .network, LocalizedStrings.text("Error fetching script"),
                 metadata: ["script": script.name, "error": "\(error)"])
             return (nil, false)
         }
@@ -716,14 +716,14 @@ final class FilterListUpdater: @unchecked Sendable {
             if success, let updated = updatedScript {
                 updatedScripts.append(updated)
                 await ConcurrentLogManager.shared.info(
-                    .userScript, "Successfully updated script", metadata: ["script": script.name])
+                    .userScript, LocalizedStrings.text("Successfully updated script"), metadata: ["script": script.name])
 
                 if let manager = userScriptManager {
                     await manager.updateUserScript(updated)
                 }
             } else {
                 await ConcurrentLogManager.shared.error(
-                    .userScript, "Failed to update script", metadata: ["script": script.name])
+                    .userScript, LocalizedStrings.text("Failed to update script"), metadata: ["script": script.name])
             }
 
             completedSteps += 1

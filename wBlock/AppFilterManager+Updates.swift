@@ -76,7 +76,7 @@ extension AppFilterManager {
             statusDescription = LocalizedStrings.text("No updates available.", comment: "No updates status")
             Task {
                 await ConcurrentLogManager.shared.info(
-                    .autoUpdate, "No updates available", metadata: [:])
+                    .autoUpdate, LocalizedStrings.text("No updates available"), metadata: [:])
             }
         }
 

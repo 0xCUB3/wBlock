@@ -366,7 +366,7 @@ struct UserScriptManagerView: View {
         provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
             if let error {
                 Task {
-                    await ConcurrentLogManager.shared.error(.userScript, "Failed to load dropped item", metadata: ["error": error.localizedDescription])
+                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to load dropped item"), metadata: ["error": error.localizedDescription])
                 }
                 return
             }
@@ -380,7 +380,7 @@ struct UserScriptManagerView: View {
 
             guard let resolvedURL = url else {
                 Task {
-                    await ConcurrentLogManager.shared.error(.userScript, "Could not resolve URL from dropped item.")
+                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Could not resolve URL from dropped item."))
                 }
                 return
             }
@@ -390,7 +390,7 @@ struct UserScriptManagerView: View {
 
                 let error = await userScriptManager.addUserScript(fromLocalFile: resolvedURL)
                 if let error {
-                    await ConcurrentLogManager.shared.error(.userScript, "Failed to import dropped userscript", metadata: ["error": error.localizedDescription])
+                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to import dropped userscript"), metadata: ["error": error.localizedDescription])
                     await MainActor.run {
                         dropErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     }
@@ -610,7 +610,7 @@ struct UserScriptManagerView: View {
                             }
                             await ConcurrentLogManager.shared.debug(
                                 .userScript,
-                                "Setting userscript enabled state",
+                                LocalizedStrings.text("Setting userscript enabled state"),
                                 metadata: ["script": script.name, "enabled": "\(newValue)"]
                             )
                             await userScriptManager.setUserScript(managedScript, isEnabled: newValue)
@@ -660,7 +660,7 @@ struct UserScriptManagerView: View {
                 Button(role: .destructive) {
                     Task {
                         guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
-                        await ConcurrentLogManager.shared.info(.userScript, "Removing userscript", metadata: ["script": script.name])
+                        await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
                         userScriptManager.removeUserScript(managedScript)
                         refreshScripts()
                     }
@@ -1924,9 +1924,9 @@ struct AddUserScriptView: View {
             isAdding = true
 
             Task(priority: .userInitiated) {
-                await ConcurrentLogManager.shared.info(.userScript, "Adding new userscript from URL", metadata: ["url": url.absoluteString])
+                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
                 await userScriptManager.addUserScript(from: url)
-                await ConcurrentLogManager.shared.info(.userScript, "Successfully added userscript from URL", metadata: ["url": url.absoluteString])
+                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Successfully added userscript from URL"), metadata: ["url": url.absoluteString])
 
                 await MainActor.run {
                     isAdding = false
@@ -1986,7 +1986,7 @@ struct AddUserScriptView: View {
                     isAdding = false
                 }
             } else {
-                await ConcurrentLogManager.shared.info(.userScript, "Added userscript from editor")
+                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Added userscript from editor"))
 
                 await MainActor.run {
                     isAdding = false
@@ -2010,7 +2010,7 @@ struct AddUserScriptView: View {
                     isAdding = false
                 }
             } else {
-                await ConcurrentLogManager.shared.info(.userScript, "Imported userscript from file", metadata: ["file": url.lastPathComponent])
+                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Imported userscript from file"), metadata: ["file": url.lastPathComponent])
 
                 await MainActor.run {
                     isAdding = false

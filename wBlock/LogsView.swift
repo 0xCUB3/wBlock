@@ -270,7 +270,7 @@ struct LogsView: View {
                         try logsText.write(to: accessibleURL, atomically: true, encoding: .utf8)
                     }
                 } catch {
-                    await ConcurrentLogManager.shared.error(.system, "Failed to export logs", metadata: ["error": "\(error)"])
+                    await ConcurrentLogManager.shared.error(.system, LocalizedStrings.text("Failed to export logs"), metadata: ["error": "\(error)"])
                 }
             }
         }
@@ -280,12 +280,6 @@ struct LogsView: View {
 
 struct LogEntryRow: View {
     let entry: LogEntry
-
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        return formatter
-    }()
 
     private var levelColor: Color {
         switch entry.level {
@@ -332,7 +326,7 @@ struct LogEntryRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text(Self.timeFormatter.string(from: entry.timestamp))
+                    Text(LogDateFormatters.timeFormatter.string(from: entry.timestamp))
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
 

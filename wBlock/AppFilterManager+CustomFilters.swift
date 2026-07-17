@@ -14,7 +14,7 @@ extension AppFilterManager {
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
-                    .system, "Invalid URL provided for new filter list",
+                    .system, LocalizedStrings.text("Invalid URL provided for new filter list"),
                     metadata: ["url": urlString])
             }
             return
@@ -29,7 +29,7 @@ extension AppFilterManager {
             hasError = true
             Task {
                 await ConcurrentLogManager.shared.error(
-                    .system, "Filter list with URL already exists",
+                    .system, LocalizedStrings.text("Filter list with URL already exists"),
                     metadata: ["url": url.absoluteString])
             }
             return
@@ -111,7 +111,7 @@ extension AppFilterManager {
             Task {
                 await ConcurrentLogManager.shared.error(
                     .system,
-                    "Failed saving user list",
+                    LocalizedStrings.text("Failed saving user list"),
                     metadata: ["error": error.localizedDescription]
                 )
             }
@@ -150,7 +150,7 @@ extension AppFilterManager {
             Task {
                 await ConcurrentLogManager.shared.error(
                     .system,
-                    "Failed reading user list file",
+                    LocalizedStrings.text("Failed reading user list file"),
                     metadata: ["error": error.localizedDescription]
                 )
             }
@@ -175,7 +175,7 @@ extension AppFilterManager {
 
             Task {
                 await ConcurrentLogManager.shared.info(
-                    .system, "Added custom filter", metadata: ["filter": newFilterToAdd.name])
+                    .system, LocalizedStrings.text("Added custom filter"), metadata: ["filter": newFilterToAdd.name])
             }
 
             Task {
@@ -185,7 +185,7 @@ extension AppFilterManager {
                         self.filterLists.first(where: { $0.id == newFilterToAdd.id })?.name ?? newFilterToAdd.name
                     }
                     await ConcurrentLogManager.shared.info(
-                        .filterUpdate, "Successfully downloaded custom filter",
+                        .filterUpdate, LocalizedStrings.text("Successfully downloaded custom filter"),
                         metadata: ["filter": currentName])
                         await MainActor.run {
                             self.refreshPendingChanges()
@@ -199,7 +199,7 @@ extension AppFilterManager {
                     saveFilterListsCoalesced()
                 } else {
                     await ConcurrentLogManager.shared.error(
-                        .filterUpdate, "Failed to download custom filter",
+                        .filterUpdate, LocalizedStrings.text("Failed to download custom filter"),
                         metadata: ["filter": newFilterToAdd.name])
                     await MainActor.run {
                         removeCustomFilterList(newFilterToAdd)
@@ -214,7 +214,7 @@ extension AppFilterManager {
         } else {
             Task {
                 await ConcurrentLogManager.shared.warning(
-                    .system, "Custom filter with URL already exists",
+                    .system, LocalizedStrings.text("Custom filter with URL already exists"),
                     metadata: ["url": filter.url.absoluteString])
             }
         }
@@ -229,7 +229,7 @@ extension AppFilterManager {
 
         Task {
             await ConcurrentLogManager.shared.info(
-                .system, "Added user list",
+                .system, LocalizedStrings.text("Added user list"),
                 metadata: ["filter": filter.name, "url": filter.url.absoluteString]
             )
         }
@@ -255,7 +255,7 @@ extension AppFilterManager {
         }
         Task {
             await ConcurrentLogManager.shared.info(
-                .system, "Removed custom filter", metadata: ["filter": filter.name])
+                .system, LocalizedStrings.text("Removed custom filter"), metadata: ["filter": filter.name])
         }
     }
 
@@ -306,7 +306,7 @@ extension AppFilterManager {
 
         Task {
             await ConcurrentLogManager.shared.info(
-                .system, "Updated custom filter list",
+                .system, LocalizedStrings.text("Updated custom filter list"),
                 metadata: [
                     "filterId": id.uuidString,
                     "name": trimmed,
@@ -379,7 +379,7 @@ extension AppFilterManager {
             Task {
                 await ConcurrentLogManager.shared.error(
                     .system,
-                    "Failed saving user list edits",
+                    LocalizedStrings.text("Failed saving user list edits"),
                     metadata: ["error": error.localizedDescription]
                 )
             }

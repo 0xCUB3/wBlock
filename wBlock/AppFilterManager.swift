@@ -211,7 +211,7 @@ class AppFilterManager: ObservableObject {
         } catch {
             await ConcurrentLogManager.shared.error(
                 .filterApply,
-                "Failed to clear filter engine during onboarding reset",
+                LocalizedStrings.text("Failed to clear filter engine during onboarding reset"),
                 metadata: ["error": error.localizedDescription]
             )
             hasError = true
@@ -259,7 +259,7 @@ class AppFilterManager: ObservableObject {
                     await self.dataManager.removeFilterList(withId: id)
                 }
                 await ConcurrentLogManager.shared.info(
-                    .system, "Removed deprecated filter list(s)",
+                    .system, LocalizedStrings.text("Removed deprecated filter list(s)"),
                     metadata: ["filters": deprecatedFilterLists.map(\.name).joined(separator: ", ")]
                 )
             }
