@@ -239,13 +239,14 @@ final class CloudSyncManager: ObservableObject {
             guard let record = try await fetchRecord() else {
                 return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
             }
-            guard let payload = try decodePayload(from: record) else {
-                return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
-            }
+            // updatedAt and schemaVersion are stored as top-level record fields, so the
+            // probe can answer without downloading the payload asset.
+            let updatedAt = (record["updatedAt"] as? Date)?.timeIntervalSince1970
+            let schemaVersion = record["schemaVersion"] as? Int
             return RemoteConfigProbe(
                 exists: true,
-                updatedAt: payload.updatedAt > 0 ? payload.updatedAt : nil,
-                schemaVersion: payload.schemaVersion
+                updatedAt: (updatedAt ?? 0) > 0 ? updatedAt : nil,
+                schemaVersion: schemaVersion
             )
         } catch {
             return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
@@ -549,22 +550,50 @@ final class CloudSyncManager: ObservableObject {
                 return
             }
 
-            guard let remotePayload = try decodePayload(from: remoteRecord) else {
-                setStatus(.uploading)
-                await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+            // contentHash and updatedAt are stored as top-level record fields, so compare
+            // them before downloading the payload asset. Decoding the asset is deferred until
+            // we actually have to apply the remote payload, which makes the common
+            // "nothing changed" / "local is newer" paths metadata-only fetches.
+            let remoteContentHash = remoteRecord["contentHash"] as? String
+            let remoteRecordUpdatedAt = (remoteRecord["updatedAt"] as? Date)?.timeIntervalSince1970
+
+            if let remoteContentHash, remoteContentHash == localPayload.contentHash {
+                markUpToDate(from: localPayload)
                 return
             }
 
-            if remotePayload.contentHash == localPayload.contentHash {
-                // Local and remote already match, so every local script name is known-synced.
-                setLastSyncedLocalUserScriptNames(localUserScriptNames(in: localPayload))
-                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
-                refreshStatusFromDefaults()
-                setStatus(.upToDate)
-                return
+            // Decide direction. With record fields the stored updatedAt tells us; legacy
+            // records without fields fall back to decoding the asset to compare reliably.
+            let remoteIsNewer: Bool
+            var legacyPayload: SyncPayload?
+            if let remoteRecordUpdatedAt {
+                remoteIsNewer = remoteRecordUpdatedAt > localUpdatedAt
+            } else {
+                guard let decoded = try decodePayload(from: remoteRecord) else {
+                    setStatus(.uploading)
+                    await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+                    return
+                }
+                legacyPayload = decoded
+                remoteIsNewer = decoded.updatedAt > localUpdatedAt
+                if decoded.contentHash == localPayload.contentHash {
+                    markUpToDate(from: localPayload)
+                    return
+                }
             }
 
-            if remotePayload.updatedAt > localUpdatedAt {
+            if remoteIsNewer {
+                let remotePayload: SyncPayload
+                if let legacyPayload {
+                    remotePayload = legacyPayload
+                } else {
+                    guard let decoded = try decodePayload(from: remoteRecord) else {
+                        setStatus(.uploading)
+                        await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+                        return
+                    }
+                    remotePayload = decoded
+                }
                 setStatus(.downloading)
                 await applyRemotePayload(remotePayload, trigger: trigger)
             } else {
@@ -1631,6 +1660,15 @@ final class CloudSyncManager: ObservableObject {
     private func setStatus(_ status: SyncStatus) {
         self.status = status
         statusLine = status.localizedTitle
+    }
+
+    /// Records that local and remote match: stamps lastSyncAt, marks every current local
+    /// userscript name as known-synced, and surfaces the up-to-date status.
+    private func markUpToDate(from localPayload: SyncPayload) {
+        setLastSyncedLocalUserScriptNames(localUserScriptNames(in: localPayload))
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+        refreshStatusFromDefaults()
+        setStatus(.upToDate)
     }
 
     // MARK: - Helpers
