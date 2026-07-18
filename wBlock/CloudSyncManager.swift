@@ -92,6 +92,7 @@ final class CloudSyncManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var hasActivatedObservers = false
     private var hasCompletedLaunchSetup = false
+    private var launchSetupWaiters: [CheckedContinuation<Void, Never>] = []
     private var deferredSyncTrigger: String?
     private var hasPendingExplicitRemoteDownload = false
     private var pendingUploadTask: Task<Void, Never>?
@@ -109,6 +110,9 @@ final class CloudSyncManager: ObservableObject {
         guard !hasActivatedObservers else { return }
         hasActivatedObservers = true
         hasCompletedLaunchSetup = true
+        let waiters = launchSetupWaiters
+        launchSetupWaiters.removeAll()
+        waiters.forEach { $0.resume() }
         observeLocalSaves()
         observeLocalUserScriptChanges()
 
@@ -122,8 +126,13 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func waitUntilLaunchSetupComplete() async {
-        while !hasCompletedLaunchSetup {
-            await Task.yield()
+        if hasCompletedLaunchSetup { return }
+        await withCheckedContinuation { continuation in
+            if hasCompletedLaunchSetup {
+                continuation.resume()
+            } else {
+                launchSetupWaiters.append(continuation)
+            }
         }
     }
 
