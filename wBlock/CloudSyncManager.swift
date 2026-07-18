@@ -218,20 +218,6 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    func startIfEnabled() {
-        guard isEnabled else { return }
-        guard hasCompletedLaunchSetup else {
-            deferredSyncTrigger = "Launch"
-            return
-        }
-
-        Task {
-            await dataManager.waitUntilLoaded()
-            await userScriptManager.waitUntilReady()
-            await syncNow(trigger: "Launch")
-        }
-    }
-
     func syncNow(trigger: String) async {
         guard isEnabled else { return }
         guard hasCompletedLaunchSetup else {
@@ -1251,7 +1237,6 @@ final class CloudSyncManager: ObservableObject {
 
         let localRemoteScriptURLs = currentLocalRemoteUserScriptURLs()
         let remoteRemoteScripts = remotePayload.userScripts.remote
-        let remoteRemoteScriptURLs = Set(remoteRemoteScripts.map(\.url))
         let remoteDeletedRemoteURLs = Set(remotePayload.userScripts.deletedRemoteURLs ?? [])
 
         let deletedRemoteURLsToClear =
@@ -1991,10 +1976,6 @@ final class CloudSyncManager: ObservableObject {
         return pruned
     }
 
-    private func saveDeletedLocalUserScriptMarkers(_ markers: [String: TimeInterval]) {
-        saveDeletedMarkers(markers, forKey: Keys.deletedLocalUserScriptNames)
-    }
-
     private func mergeDeletedLocalUserScriptNames(_ names: Set<String>) {
         let normalized = Set(names.map(CloudSyncLocalUserScriptReconciler.normalizedName).filter { !$0.isEmpty })
         let markers = loadDeletedLocalUserScriptMarkers()
@@ -2026,14 +2007,6 @@ final class CloudSyncManager: ObservableObject {
             saveDeletedMarkers(pruned, forKey: Keys.deletedRemoteUserScriptURLs)
         }
         return pruned
-    }
-
-    private func pruneDeletedRemoteUserScriptURLMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
-        pruneDeletedMarkers(markers)
-    }
-
-    private func saveDeletedRemoteUserScriptURLMarkers(_ markers: [String: TimeInterval]) {
-        saveDeletedMarkers(markers, forKey: Keys.deletedRemoteUserScriptURLs)
     }
 
     private func clearDeletedRemoteUserScriptURLs(_ urls: Set<String>) {
