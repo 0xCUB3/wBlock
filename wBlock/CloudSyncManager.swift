@@ -101,6 +101,11 @@ final class CloudSyncManager: ObservableObject {
     private var isApplyingRemoteChanges: Bool = false
     private var uploadCoordinator = CloudSyncUploadCoordinator()
     private let deletedMarkerTTLDays: Double = 90
+    private let sortedJSONEncoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }()
 
     private init() {
         isEnabled = defaults.bool(forKey: Keys.enabled)
@@ -499,13 +504,12 @@ final class CloudSyncManager: ObservableObject {
 
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
-        refreshLocalSnapshotStateIfNeeded()
 
         // If local state hasn't changed since the last successful upload, there is nothing
         // to push. Checking before the fetch avoids a CloudKit round trip for the routine
         // save notifications fired by non-sync-visible state (e.g. filter version/count
         // refreshes). Remote-newer changes are still converged by two-way sync.
-        let preCheckPayload = buildPayload()
+        let preCheckPayload = buildPayloadRefreshingSnapshot()
         if preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
             markUpToDate(from: preCheckPayload)
             return
@@ -516,10 +520,6 @@ final class CloudSyncManager: ObservableObject {
 
             if let remotePayload = try? decodePayload(from: record) {
                 await reconcileMissingDefinitionsIfNeeded(from: remotePayload)
-            }
-
-            if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
-                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
             }
 
             let payload = buildPayload()
@@ -551,7 +551,6 @@ final class CloudSyncManager: ObservableObject {
         guard isEnabled else { return }
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
-        refreshLocalSnapshotStateIfNeeded()
 
         if isSyncing { return }
         isSyncing = true
@@ -560,7 +559,7 @@ final class CloudSyncManager: ObservableObject {
         defer { finishSyncCycle() }
 
         do {
-            let localPayload = buildPayload()
+            let localPayload = buildPayloadRefreshingSnapshot()
             let localUpdatedAt = localPayload.updatedAt
 
             guard let remoteRecord = try await fetchRecord() else {
@@ -1349,7 +1348,7 @@ final class CloudSyncManager: ObservableObject {
         // Mark local state as changed so the upcoming upload includes the reconciled definitions.
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
         let localContent = buildPayloadContent()
-        if let localContentData = try? JSONEncoder.sorted.encode(localContent) {
+        if let localContentData = try? sortedJSONEncoder.encode(localContent) {
             defaults.set(Self.sha256Hex(localContentData), forKey: Keys.lastLocalHash)
         }
     }
@@ -1359,7 +1358,38 @@ final class CloudSyncManager: ObservableObject {
     private func buildPayload() -> SyncPayload {
         let content = buildPayloadContent()
         let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
-        let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
+        let contentHash = (try? sortedJSONEncoder.encode(content)).map(Self.sha256Hex) ?? ""
+        return SyncPayload(
+            schemaVersion: 7,
+            updatedAt: max(0, updatedAt),
+            contentHash: contentHash,
+            settings: content.settings,
+            filters: content.filters,
+            userScripts: content.userScripts,
+            whitelistDomains: content.whitelistDomains,
+            filterDisabledDomains: content.filterDisabledDomains,
+            zapperRules: content.zapperRules,
+            zapperDisabledDomains: content.zapperDisabledDomains
+        )
+    }
+
+    /// Builds the payload while refreshing the persisted local content-hash/timestamp
+    /// snapshot in one pass. This replaces the old "refresh snapshot, then build payload"
+    /// pair so the content JSON is encoded once per cycle instead of twice.
+    private func buildPayloadRefreshingSnapshot() -> SyncPayload {
+        let content = buildPayloadContent()
+        let contentData = try? sortedJSONEncoder.encode(content)
+        let contentHash = contentData.map(Self.sha256Hex) ?? ""
+
+        if !contentHash.isEmpty, contentHash != defaults.string(forKey: Keys.lastLocalHash) {
+            defaults.set(contentHash, forKey: Keys.lastLocalHash)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        }
+        if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        }
+
+        let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
         return SyncPayload(
             schemaVersion: 7,
             updatedAt: max(0, updatedAt),
@@ -1505,7 +1535,7 @@ final class CloudSyncManager: ObservableObject {
 
     private func refreshLocalSnapshotStateIfNeeded() {
         let localContent = buildPayloadContent()
-        guard let localContentData = try? JSONEncoder.sorted.encode(localContent) else { return }
+        guard let localContentData = try? sortedJSONEncoder.encode(localContent) else { return }
         let localHash = Self.sha256Hex(localContentData)
 
         if localHash != defaults.string(forKey: Keys.lastLocalHash) {
@@ -1637,7 +1667,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func applyPayloadFields(_ payload: SyncPayload, to record: inout CKRecord) async throws -> URL {
-        let data = try JSONEncoder.sorted.encode(payload)
+        let data = try sortedJSONEncoder.encode(payload)
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("wblock-sync-\(UUID().uuidString).json")
         try data.write(to: tempURL, options: .atomic)
@@ -1964,14 +1994,6 @@ final class CloudSyncManager: ObservableObject {
         let normalizedURLs = Set(urls.map(CloudSyncRemoteUserScriptReconciler.normalizedURL).filter { !$0.isEmpty })
         let markers = loadDeletedRemoteUserScriptURLMarkers()
         mergeDeletedMarkers(normalizedURLs, markers: markers, saveKey: Keys.deletedRemoteUserScriptURLs)
-    }
-}
-
-private extension JSONEncoder {
-    static var sorted: JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        return encoder
     }
 }
 
