@@ -138,10 +138,16 @@ final class CloudSyncManager: ObservableObject {
     private func waitUntilLaunchSetupComplete() async {
         if hasCompletedLaunchSetup { return }
         await withCheckedContinuation { continuation in
-            if hasCompletedLaunchSetup {
-                continuation.resume()
-            } else {
-                launchSetupWaiters.append(continuation)
+            Task { @MainActor [weak self] in
+                guard let self else {
+                    continuation.resume()
+                    return
+                }
+                if self.hasCompletedLaunchSetup {
+                    continuation.resume()
+                } else {
+                    self.launchSetupWaiters.append(continuation)
+                }
             }
         }
     }
@@ -239,7 +245,9 @@ final class CloudSyncManager: ObservableObject {
         // Automatic AppActive syncs are also throttled so rapid foreground transitions
         // (e.g. switching between apps) don't each trigger a full CloudKit fetch.
         if trigger == "AppActive" {
-            let now = Date().timeIntervalSince1970
+            // systemUptime is monotonic and unaffected by system-clock/NTP changes,
+            // unlike Date().timeIntervalSince1970.
+            let now = ProcessInfo.processInfo.systemUptime
             guard now - lastAutomaticSyncAt >= minimumAutomaticSyncInterval else { return }
             lastAutomaticSyncAt = now
         }
@@ -1027,9 +1035,10 @@ final class CloudSyncManager: ObservableObject {
         }
 
         if !missingRemoteScripts.isEmpty {
-            await boundedConcurrentForEach(missingRemoteScripts, operation: { [self] remote in
+            let manager = userScriptManager
+            await boundedConcurrentForEach(missingRemoteScripts, operation: { remote in
                 guard let url = URL(string: remote.url) else { return }
-                await self.userScriptManager.addUserScript(from: url)
+                await manager.addUserScript(from: url)
             }, onResult: { _ in })
 
             for remote in missingRemoteScripts {
@@ -1362,9 +1371,10 @@ final class CloudSyncManager: ObservableObject {
         }
 
         if !missingRemoteScripts.isEmpty {
-            await boundedConcurrentForEach(missingRemoteScripts, operation: { [self] remote in
+            let manager = userScriptManager
+            await boundedConcurrentForEach(missingRemoteScripts, operation: { remote in
                 guard let url = URL(string: remote.url) else { return }
-                await self.userScriptManager.addUserScript(from: url)
+                await manager.addUserScript(from: url)
             }, onResult: { _ in })
 
             for remote in missingRemoteScripts {
