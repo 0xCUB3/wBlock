@@ -482,6 +482,16 @@ final class CloudSyncManager: ObservableObject {
         await userScriptManager.waitUntilReady()
         refreshLocalSnapshotStateIfNeeded()
 
+        // If local state hasn't changed since the last successful upload, there is nothing
+        // to push. Checking before the fetch avoids a CloudKit round trip for the routine
+        // save notifications fired by non-sync-visible state (e.g. filter version/count
+        // refreshes). Remote-newer changes are still converged by two-way sync.
+        let preCheckPayload = buildPayload()
+        if preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
+            markUpToDate(from: preCheckPayload)
+            return
+        }
+
         do {
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
 
@@ -494,16 +504,6 @@ final class CloudSyncManager: ObservableObject {
             }
 
             let payload = buildPayload()
-            let payloadHash = payload.contentHash
-
-            if payloadHash == defaults.string(forKey: Keys.lastUploadedHash) {
-                // Already uploaded, so every current local script name is known-synced.
-                setLastSyncedLocalUserScriptNames(localUserScriptNames(in: payload))
-                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
-                refreshStatusFromDefaults()
-                setStatus(.upToDate)
-                return
-            }
 
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
