@@ -227,8 +227,13 @@ final class CloudSyncManager: ObservableObject {
         // A sync is already in flight: CloudKit calls don't honour task cancellation, so
         // cancelling the running task wouldn't stop it. Remember the latest trigger and run
         // it once the current cycle finishes instead of letting performTwoWaySync's isSyncing
-        // guard silently drop it.
-        // Automatic AppActive syncs are also throttled so rapid foreground transitions
+        // guard silently drop it. The AppActive throttle is applied *after* this so a
+        // deferred AppActive replay (see finishSyncCycle) isn't prematurely stamped/dropped.
+        if isSyncing {
+            deferredInFlightSyncTrigger = trigger
+            return
+        }
+        // Automatic AppActive syncs are throttled so rapid foreground transitions
         // (e.g. switching between apps) don't each trigger a full CloudKit fetch.
         if trigger == "AppActive" {
             // systemUptime is monotonic and unaffected by system-clock/NTP changes,
@@ -236,10 +241,6 @@ final class CloudSyncManager: ObservableObject {
             let now = ProcessInfo.processInfo.systemUptime
             guard now - lastAutomaticSyncAt >= minimumAutomaticSyncInterval else { return }
             lastAutomaticSyncAt = now
-        }
-        if isSyncing {
-            deferredInFlightSyncTrigger = trigger
-            return
         }
 
         pendingSyncTask?.cancel()
@@ -1753,6 +1754,12 @@ final class CloudSyncManager: ObservableObject {
             Task { [weak self] in
                 guard let self else { return }
                 await self.syncNow(trigger: syncTrigger)
+                // If the replayed sync was throttled away (or otherwise didn't run a full
+                // cycle), it never reached its own finishSyncCycle, so drain any upload that
+                // was deferred during the previous cycle here. No-op if already drained.
+                if let deferred = self.uploadCoordinator.takeDeferredTrigger() {
+                    self.scheduleUpload(trigger: deferred)
+                }
             }
             return
         }
