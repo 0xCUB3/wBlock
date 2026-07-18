@@ -93,6 +93,7 @@ final class CloudSyncManager: ObservableObject {
     private var hasActivatedObservers = false
     private var hasCompletedLaunchSetup = false
     private var launchSetupWaiters: [CheckedContinuation<Void, Never>] = []
+    private var deferredInFlightSyncTrigger: String?
     private var deferredSyncTrigger: String?
     private var hasPendingExplicitRemoteDownload = false
     private var pendingUploadTask: Task<Void, Never>?
@@ -223,6 +224,15 @@ final class CloudSyncManager: ObservableObject {
             return
         }
 
+        // A sync is already in flight: CloudKit calls don't honour task cancellation, so
+        // cancelling the running task wouldn't stop it. Remember the latest trigger and run
+        // it once the current cycle finishes instead of letting performTwoWaySync's isSyncing
+        // guard silently drop it.
+        if isSyncing {
+            deferredInFlightSyncTrigger = trigger
+            return
+        }
+
         pendingSyncTask?.cancel()
         var task: Task<Void, Never>?
         task = Task { @MainActor [weak self] in
@@ -280,7 +290,7 @@ final class CloudSyncManager: ObservableObject {
             isSyncing = true
             setStatus(.downloading)
             lastErrorMessage = nil
-            defer { isSyncing = false }
+            defer { finishSyncCycle() }
 
             await applyRemotePayload(payload, trigger: trigger)
             logger.info("✅ Applied remote sync payload (\(trigger, privacy: .public))")
@@ -1684,6 +1694,16 @@ final class CloudSyncManager: ObservableObject {
 
     private func finishSyncCycle() {
         isSyncing = false
+
+        if let syncTrigger = deferredInFlightSyncTrigger {
+            deferredInFlightSyncTrigger = nil
+            logger.info("Scheduling deferred sync (\(syncTrigger, privacy: .public))")
+            Task { [weak self] in
+                guard let self else { return }
+                await self.syncNow(trigger: syncTrigger)
+            }
+            return
+        }
 
         guard let deferredTrigger = uploadCoordinator.takeDeferredTrigger() else { return }
         logger.info("Scheduling deferred upload (\(deferredTrigger, privacy: .public))")
