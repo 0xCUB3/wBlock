@@ -974,20 +974,39 @@ final class CloudSyncManager: ObservableObject {
             mergeDeletedLocalUserScriptNames(remoteDeletedLocalNamesToMerge)
         }
 
-        // Remote scripts (URL-based)
-        // Ensure each desired remote script exists and has the correct enabled state.
-        for remote in scripts.remote {
+        // Remote scripts (URL-based): ensure each desired script exists, then set its
+        // enabled / auto-update state. Downloads for missing scripts run concurrently so a
+        // multi-script restore isn't serialized behind each network fetch; the cheap local
+        // state writes are applied afterwards to keep them sequential.
+        let desiredRemoteScripts = scripts.remote.filter { remote in
             let normalizedURL = CloudSyncRemoteUserScriptReconciler.normalizedURL(remote.url)
             guard !normalizedURL.isEmpty, !deletedRemoteURLs.contains(normalizedURL) else {
-                continue
+                return false
             }
-            guard let url = URL(string: remote.url) else { continue }
+            return URL(string: remote.url) != nil
+        }
 
+        for remote in desiredRemoteScripts {
+            guard let url = URL(string: remote.url) else { continue }
             if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
                 await userScriptManager.setUserScript(existing, isEnabled: remote.isEnabled)
                 await userScriptManager.setUserScript(existing, updatesAutomatically: remote.resolvedUpdatesAutomatically)
-            } else {
-                await userScriptManager.addUserScript(from: url)
+            }
+        }
+
+        let missingRemoteScripts = desiredRemoteScripts.filter { remote in
+            guard let url = URL(string: remote.url) else { return false }
+            return userScriptManager.userScripts.first(where: { $0.url == url }) == nil
+        }
+
+        if !missingRemoteScripts.isEmpty {
+            await boundedConcurrentForEach(missingRemoteScripts, operation: { [self] remote in
+                guard let url = URL(string: remote.url) else { return }
+                await self.userScriptManager.addUserScript(from: url)
+            }, onResult: { _ in })
+
+            for remote in missingRemoteScripts {
+                guard let url = URL(string: remote.url) else { continue }
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
@@ -1315,12 +1334,18 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        for remote in missingRemoteScripts {
-            guard let url = URL(string: remote.url) else { continue }
-            await userScriptManager.addUserScript(from: url)
-            if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
-                await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
-                await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+        if !missingRemoteScripts.isEmpty {
+            await boundedConcurrentForEach(missingRemoteScripts, operation: { [self] remote in
+                guard let url = URL(string: remote.url) else { return }
+                await self.userScriptManager.addUserScript(from: url)
+            }, onResult: { _ in })
+
+            for remote in missingRemoteScripts {
+                guard let url = URL(string: remote.url) else { continue }
+                if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
+                    await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                    await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+                }
             }
         }
 
@@ -2027,7 +2052,7 @@ private struct SyncPayload: Codable {
         let deletedCustomURLs: [String]?
     }
 
-    struct RemoteUserScript: Codable {
+    struct RemoteUserScript: Codable, Sendable {
         let url: String
         let isEnabled: Bool
         let updatesAutomatically: Bool?
