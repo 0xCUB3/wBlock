@@ -507,13 +507,13 @@ final class CloudSyncManager: ObservableObject {
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
 
-            _ = try await saveRecord(record, retryPayload: payload)
+            let savedPayload = try await saveRecordWithConflictResolution(record, payload: payload)
 
-            defaults.set(payloadHash, forKey: Keys.lastUploadedHash)
+            defaults.set(savedPayload.contentHash, forKey: Keys.lastUploadedHash)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
             // The uploaded payload's local script names are now known-synced.
-            setLastSyncedLocalUserScriptNames(localUserScriptNames(in: payload))
+            setLastSyncedLocalUserScriptNames(localUserScriptNames(in: savedPayload))
             lastErrorMessage = nil
             refreshStatusFromDefaults()
 
@@ -1517,11 +1517,10 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func saveRecord(
-        _ record: CKRecord,
-        retryPayload: SyncPayload? = nil,
-        retryCount: Int = 0
-    ) async throws -> CKRecord {
+    /// Low-level save with bounded retry for transient errors only (network, quota, etc.).
+    /// `.serverRecordChanged` is intentionally re-thrown so the caller can reconcile the
+    /// server record's definitions before retrying, rather than silently overwriting it.
+    private func saveRecord(_ record: CKRecord, retryCount: Int = 0) async throws -> CKRecord {
         guard let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
             return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
@@ -1533,28 +1532,59 @@ final class CloudSyncManager: ObservableObject {
                     continuation.resume(returning: saved ?? record)
                 }
             }
-        } catch let ckError as CKError where ckError.code == .serverRecordChanged {
-            guard let retryPayload, let serverRecord = ckError.serverRecord else { throw ckError }
-            logger.info("Server record changed, retrying save with server version")
-            var mutableRecord = serverRecord
-            let payloadURL = try await applyPayloadFields(retryPayload, to: &mutableRecord)
-            defer { try? FileManager.default.removeItem(at: payloadURL) }
-            return try await saveRecord(
-                mutableRecord,
-                retryPayload: retryPayload,
-                retryCount: retryCount
-            )
         } catch let ckError as CKError {
-            guard retryCount < 2, let delay = retryDelay(for: ckError) else { throw ckError }
+            guard ckError.code != .serverRecordChanged,
+                  retryCount < 2,
+                  let delay = retryDelay(for: ckError) else {
+                throw ckError
+            }
             logger.info(
                 "CloudKit save failed with retryable error \(ckError.code.rawValue, privacy: .public), retrying in \(String(describing: delay), privacy: .public)"
             )
             try await TaskSleep.sleep(for: delay)
-            return try await saveRecord(
-                record,
-                retryPayload: retryPayload,
-                retryCount: retryCount + 1
-            )
+            return try await saveRecord(record, retryCount: retryCount + 1)
+        }
+    }
+
+    /// Saves the record, resolving `.serverRecordChanged` conflicts by reconciling the
+    /// server's definitions into local state and rebuilding the payload before retrying.
+    /// Returns the payload that was actually saved, which may differ from the input when a
+    /// conflict was merged. Bounding the retries prevents the unbounded recursion that the
+    /// old retry-without-increment path could enter. Reconciling before the retry keeps a
+    /// concurrently-updated remote record's definitions from being dropped by the
+    /// single-payload overwrite.
+    private func saveRecordWithConflictResolution(
+        _ record: CKRecord,
+        payload: SyncPayload,
+        maxConflictRetries: Int = 2
+    ) async throws -> SyncPayload {
+        var tempURLs: [URL] = []
+        defer { tempURLs.forEach { try? FileManager.default.removeItem(at: $0) } }
+
+        var currentRecord = record
+        var currentPayload = payload
+        var conflictRetries = 0
+
+        while true {
+            do {
+                _ = try await saveRecord(currentRecord)
+                return currentPayload
+            } catch let ckError as CKError where ckError.code == .serverRecordChanged {
+                guard conflictRetries < maxConflictRetries,
+                      let serverRecord = ckError.serverRecord else {
+                    throw ckError
+                }
+                conflictRetries += 1
+                logger.info("Server record changed; reconciling definitions and retrying save (attempt \(conflictRetries, privacy: .public) of \(maxConflictRetries, privacy: .public))")
+                if let serverPayload = try? decodePayload(from: serverRecord) {
+                    await reconcileMissingDefinitionsIfNeeded(from: serverPayload)
+                }
+                currentPayload = buildPayload()
+                var mutableRecord = serverRecord
+                let payloadURL = try await applyPayloadFields(currentPayload, to: &mutableRecord)
+                tempURLs.append(payloadURL)
+                currentRecord = mutableRecord
+            }
         }
     }
 
