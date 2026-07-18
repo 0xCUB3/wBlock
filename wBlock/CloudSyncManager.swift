@@ -101,6 +101,9 @@ final class CloudSyncManager: ObservableObject {
     private var isApplyingRemoteChanges: Bool = false
     private var uploadCoordinator = CloudSyncUploadCoordinator()
     private let deletedMarkerTTLDays: Double = 90
+    /// Minimum interval between automatic (AppActive) syncs. Manual/Launch triggers bypass it.
+    private let minimumAutomaticSyncInterval: TimeInterval = 120
+    private var lastAutomaticSyncAt: TimeInterval = 0
     private let sortedJSONEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -233,6 +236,13 @@ final class CloudSyncManager: ObservableObject {
         // cancelling the running task wouldn't stop it. Remember the latest trigger and run
         // it once the current cycle finishes instead of letting performTwoWaySync's isSyncing
         // guard silently drop it.
+        // Automatic AppActive syncs are also throttled so rapid foreground transitions
+        // (e.g. switching between apps) don't each trigger a full CloudKit fetch.
+        if trigger == "AppActive" {
+            let now = Date().timeIntervalSince1970
+            guard now - lastAutomaticSyncAt >= minimumAutomaticSyncInterval else { return }
+            lastAutomaticSyncAt = now
+        }
         if isSyncing {
             deferredInFlightSyncTrigger = trigger
             return
