@@ -124,6 +124,7 @@ final class CloudSyncManager: ObservableObject {
         waiters.forEach { $0.resume() }
         observeLocalSaves()
         observeLocalUserScriptChanges()
+        observeiCloudAccountChanges()
 
         let trigger = deferredSyncTrigger ?? ((isEnabled && !hasPendingExplicitRemoteDownload) ? "Launch" : nil)
         deferredSyncTrigger = nil
@@ -231,7 +232,6 @@ final class CloudSyncManager: ObservableObject {
             deferredSyncTrigger = trigger
             return
         }
-
         // A sync is already in flight: CloudKit calls don't honour task cancellation, so
         // cancelling the running task wouldn't stop it. Remember the latest trigger and run
         // it once the current cycle finishes instead of letting performTwoWaySync's isSyncing
@@ -379,6 +379,23 @@ final class CloudSyncManager: ObservableObject {
                         as? String
                 else { return }
                 self.recordDeletedRemoteUserScriptURL(urlString)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func observeiCloudAccountChanges() {
+        guard Self.hasCloudKitEntitlement else { return }
+        NotificationCenter.default.publisher(for: .CKAccountChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isEnabled else { return }
+                // An account change (sign-in/sign-out/switch) can flip which records are
+                // reachable, so bypass the AppActive throttle and reconcile promptly.
+                self.lastAutomaticSyncAt = 0
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    await self.syncNow(trigger: "AccountChanged")
+                }
             }
             .store(in: &cancellables)
     }
