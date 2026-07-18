@@ -416,7 +416,6 @@ final class CloudSyncManager: ObservableObject {
             guard let self else { return }
             await self.dataManager.waitUntilLoaded()
             await self.userScriptManager.waitUntilReady()
-            self.refreshLocalSnapshotStateIfNeeded()
             self.scheduleUpload(trigger: "LocalSave")
         }
     }
@@ -544,7 +543,7 @@ final class CloudSyncManager: ObservableObject {
         // to push. Checking before the fetch avoids a CloudKit round trip for the routine
         // save notifications fired by non-sync-visible state (e.g. filter version/count
         // refreshes). Remote-newer changes are still converged by two-way sync.
-        let preCheckPayload = buildPayloadRefreshingSnapshot()
+        let preCheckPayload = await buildPayloadRefreshingSnapshot()
         if preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
             markUpToDate(from: preCheckPayload)
             return
@@ -557,7 +556,7 @@ final class CloudSyncManager: ObservableObject {
                 await reconcileMissingDefinitionsIfNeeded(from: remotePayload)
             }
 
-            let payload = buildPayload()
+            let payload = await buildPayloadRefreshingSnapshot()
 
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
@@ -594,7 +593,7 @@ final class CloudSyncManager: ObservableObject {
         defer { finishSyncCycle() }
 
         do {
-            let localPayload = buildPayloadRefreshingSnapshot()
+            let localPayload = await buildPayloadRefreshingSnapshot()
             let localUpdatedAt = localPayload.updatedAt
 
             guard let remoteRecord = try await fetchRecord() else {
@@ -1407,39 +1406,17 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        // Mark local state as changed so the upcoming upload includes the reconciled definitions.
-        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-        let localContent = buildPayloadContent()
-        if let localContentData = try? sortedJSONEncoder.encode(localContent) {
-            defaults.set(Self.sha256Hex(localContentData), forKey: Keys.lastLocalHash)
-        }
+        // The local snapshot (lastLocalHash/lastLocalUpdatedAt) is refreshed by the caller
+        // when it rebuilds the payload via buildPayloadRefreshingSnapshot after reconcile.
     }
 
     // MARK: - Payload construction
 
-    private func buildPayload() -> SyncPayload {
-        let content = buildPayloadContent()
-        let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
-        let contentHash = (try? sortedJSONEncoder.encode(content)).map(Self.sha256Hex) ?? ""
-        return SyncPayload(
-            schemaVersion: 7,
-            updatedAt: max(0, updatedAt),
-            contentHash: contentHash,
-            settings: content.settings,
-            filters: content.filters,
-            userScripts: content.userScripts,
-            whitelistDomains: content.whitelistDomains,
-            filterDisabledDomains: content.filterDisabledDomains,
-            zapperRules: content.zapperRules,
-            zapperDisabledDomains: content.zapperDisabledDomains
-        )
-    }
-
     /// Builds the payload while refreshing the persisted local content-hash/timestamp
     /// snapshot in one pass. This replaces the old "refresh snapshot, then build payload"
     /// pair so the content JSON is encoded once per cycle instead of twice.
-    private func buildPayloadRefreshingSnapshot() -> SyncPayload {
-        let content = buildPayloadContent()
+    private func buildPayloadRefreshingSnapshot() async -> SyncPayload {
+        let content = await buildPayloadContent()
         let contentData = try? sortedJSONEncoder.encode(content)
         let contentHash = contentData.map(Self.sha256Hex) ?? ""
 
@@ -1466,7 +1443,7 @@ final class CloudSyncManager: ObservableObject {
         )
     }
 
-    private func buildPayloadContent() -> SyncPayload.Content {
+    private func buildPayloadContent() async -> SyncPayload.Content {
         let settings = SyncPayload.Settings(
             selectedBlockingLevel: dataManager.selectedBlockingLevel,
             isBadgeCounterEnabled: dataManager.isBadgeCounterEnabled,
@@ -1487,6 +1464,15 @@ final class CloudSyncManager: ObservableObject {
             .map { $0.url.absoluteString }
             .sorted()
 
+        let customListURLs = filterLists
+            .filter(\.isCustom)
+            .filter { !deletedCustomURLSet().contains($0.url.absoluteString) }
+            .map { $0.url.absoluteString }
+
+        // Inline list contents are read from disk; fetch them off the main actor so
+        // large lists don't block the UI while the payload is assembled.
+        let inlineContents = await Self.readInlineUserListContents(for: customListURLs)
+
         let customLists = filterLists
             .filter(\.isCustom)
             .filter { !deletedCustomURLSet().contains($0.url.absoluteString) }
@@ -1497,7 +1483,7 @@ final class CloudSyncManager: ObservableObject {
                     description: list.description.isEmpty ? nil : list.description,
                     category: list.category.rawValue,
                     isSelected: list.isSelected,
-                    content: Self.readInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
+                    content: inlineContents[list.url.absoluteString]
                 )
             }
             .sorted { $0.url < $1.url }
@@ -1593,17 +1579,6 @@ final class CloudSyncManager: ObservableObject {
                 return normalized.isEmpty ? nil : normalized
             }
         )
-    }
-
-    private func refreshLocalSnapshotStateIfNeeded() {
-        let localContent = buildPayloadContent()
-        guard let localContentData = try? sortedJSONEncoder.encode(localContent) else { return }
-        let localHash = Self.sha256Hex(localContentData)
-
-        if localHash != defaults.string(forKey: Keys.lastLocalHash) {
-            defaults.set(localHash, forKey: Keys.lastLocalHash)
-            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-        }
     }
 
     private static func normalizedZapperRules(_ rulesByDomain: [String: [String]]) -> [String: [String]] {
@@ -1719,7 +1694,7 @@ final class CloudSyncManager: ObservableObject {
                 if let serverPayload = try? decodePayload(from: serverRecord) {
                     await reconcileMissingDefinitionsIfNeeded(from: serverPayload)
                 }
-                currentPayload = buildPayload()
+                currentPayload = await buildPayloadRefreshingSnapshot()
                 var mutableRecord = serverRecord
                 let payloadURL = try await applyPayloadFields(currentPayload, to: &mutableRecord)
                 tempURLs.append(payloadURL)
@@ -1839,13 +1814,30 @@ final class CloudSyncManager: ObservableObject {
         return id
     }
 
-    private static func readInlineUserListContentIfNeeded(urlString: String) -> String? {
-        guard let id = inlineUserListID(from: urlString) else { return nil }
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
-            return nil
+    /// Reads all inline user-list files in one off-actor pass so the main actor
+    /// isn't blocked by synchronous disk I/O during payload assembly.
+    private static func readInlineUserListContents(for urlStringList: [String]) async -> [String: String] {
+        guard !urlStringList.isEmpty else { return [:] }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            return [:]
         }
-        let fileURL = containerURL.appendingPathComponent("custom-\(id.uuidString).txt")
-        return try? String(contentsOf: fileURL, encoding: .utf8)
+        // Resolve which files to read on the main actor (inlineUserListID is main-actor-isolated);
+        // only the actual disk reads run off-actor.
+        let fileURLs: [(String, URL)] = urlStringList.compactMap { urlString in
+            guard let id = inlineUserListID(from: urlString) else { return nil }
+            return (urlString, containerURL.appendingPathComponent("custom-\(id.uuidString).txt"))
+        }
+        guard !fileURLs.isEmpty else { return [:] }
+        return await Task.detached(priority: .utility) { () -> [String: String] in
+            var results: [String: String] = [:]
+            for (urlString, fileURL) in fileURLs {
+                if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                    results[urlString] = content
+                }
+            }
+            return results
+        }.value
     }
 
     private static func writeInlineUserListContent(id: UUID, content: String) {
