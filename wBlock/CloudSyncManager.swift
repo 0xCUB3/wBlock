@@ -92,6 +92,8 @@ final class CloudSyncManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var hasActivatedObservers = false
     private var hasCompletedLaunchSetup = false
+    private var launchSetupWaiters: [CheckedContinuation<Void, Never>] = []
+    private var deferredInFlightSyncTrigger: String?
     private var deferredSyncTrigger: String?
     private var hasPendingExplicitRemoteDownload = false
     private var pendingUploadTask: Task<Void, Never>?
@@ -99,6 +101,14 @@ final class CloudSyncManager: ObservableObject {
     private var isApplyingRemoteChanges: Bool = false
     private var uploadCoordinator = CloudSyncUploadCoordinator()
     private let deletedMarkerTTLDays: Double = 90
+    /// Minimum interval between automatic (AppActive) syncs. Manual/Launch triggers bypass it.
+    private let minimumAutomaticSyncInterval: TimeInterval = 120
+    private var lastAutomaticSyncAt: TimeInterval = 0
+    private let sortedJSONEncoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }()
 
     private init() {
         isEnabled = defaults.bool(forKey: Keys.enabled)
@@ -109,8 +119,12 @@ final class CloudSyncManager: ObservableObject {
         guard !hasActivatedObservers else { return }
         hasActivatedObservers = true
         hasCompletedLaunchSetup = true
+        let waiters = launchSetupWaiters
+        launchSetupWaiters.removeAll()
+        waiters.forEach { $0.resume() }
         observeLocalSaves()
         observeLocalUserScriptChanges()
+        observeiCloudAccountChanges()
 
         let trigger = deferredSyncTrigger ?? ((isEnabled && !hasPendingExplicitRemoteDownload) ? "Launch" : nil)
         deferredSyncTrigger = nil
@@ -122,8 +136,19 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func waitUntilLaunchSetupComplete() async {
-        while !hasCompletedLaunchSetup {
-            await Task.yield()
+        if hasCompletedLaunchSetup { return }
+        await withCheckedContinuation { continuation in
+            Task { @MainActor [weak self] in
+                guard let self else {
+                    continuation.resume()
+                    return
+                }
+                if self.hasCompletedLaunchSetup {
+                    continuation.resume()
+                } else {
+                    self.launchSetupWaiters.append(continuation)
+                }
+            }
         }
     }
 
@@ -193,25 +218,29 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    func startIfEnabled() {
-        guard isEnabled else { return }
-        guard hasCompletedLaunchSetup else {
-            deferredSyncTrigger = "Launch"
-            return
-        }
-
-        Task {
-            await dataManager.waitUntilLoaded()
-            await userScriptManager.waitUntilReady()
-            await syncNow(trigger: "Launch")
-        }
-    }
-
     func syncNow(trigger: String) async {
         guard isEnabled else { return }
         guard hasCompletedLaunchSetup else {
             deferredSyncTrigger = trigger
             return
+        }
+        // A sync is already in flight: CloudKit calls don't honour task cancellation, so
+        // cancelling the running task wouldn't stop it. Remember the latest trigger and run
+        // it once the current cycle finishes instead of letting performTwoWaySync's isSyncing
+        // guard silently drop it. The AppActive throttle is applied *after* this so a
+        // deferred AppActive replay (see finishSyncCycle) isn't prematurely stamped/dropped.
+        if isSyncing {
+            deferredInFlightSyncTrigger = trigger
+            return
+        }
+        // Automatic AppActive syncs are throttled so rapid foreground transitions
+        // (e.g. switching between apps) don't each trigger a full CloudKit fetch.
+        if trigger == "AppActive" {
+            // systemUptime is monotonic and unaffected by system-clock/NTP changes,
+            // unlike Date().timeIntervalSince1970.
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - lastAutomaticSyncAt >= minimumAutomaticSyncInterval else { return }
+            lastAutomaticSyncAt = now
         }
 
         pendingSyncTask?.cancel()
@@ -239,13 +268,14 @@ final class CloudSyncManager: ObservableObject {
             guard let record = try await fetchRecord() else {
                 return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
             }
-            guard let payload = try decodePayload(from: record) else {
-                return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
-            }
+            // updatedAt and schemaVersion are stored as top-level record fields, so the
+            // probe can answer without downloading the payload asset.
+            let updatedAt = (record["updatedAt"] as? Date)?.timeIntervalSince1970
+            let schemaVersion = record["schemaVersion"] as? Int
             return RemoteConfigProbe(
                 exists: true,
-                updatedAt: payload.updatedAt > 0 ? payload.updatedAt : nil,
-                schemaVersion: payload.schemaVersion
+                updatedAt: (updatedAt ?? 0) > 0 ? updatedAt : nil,
+                schemaVersion: schemaVersion
             )
         } catch {
             return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
@@ -270,7 +300,7 @@ final class CloudSyncManager: ObservableObject {
             isSyncing = true
             setStatus(.downloading)
             lastErrorMessage = nil
-            defer { isSyncing = false }
+            defer { finishSyncCycle() }
 
             await applyRemotePayload(payload, trigger: trigger)
             logger.info("✅ Applied remote sync payload (\(trigger, privacy: .public))")
@@ -348,6 +378,23 @@ final class CloudSyncManager: ObservableObject {
             .store(in: &cancellables)
     }
 
+    private func observeiCloudAccountChanges() {
+        guard Self.hasCloudKitEntitlement else { return }
+        NotificationCenter.default.publisher(for: .CKAccountChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isEnabled else { return }
+                // An account change (sign-in/sign-out/switch) can flip which records are
+                // reachable, so bypass the AppActive throttle and reconcile promptly.
+                self.lastAutomaticSyncAt = 0
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    await self.syncNow(trigger: "AccountChanged")
+                }
+            }
+            .store(in: &cancellables)
+    }
+
     private func handleLocalSave() {
         guard isEnabled else { return }
         guard !isApplyingRemoteChanges else { return }
@@ -356,7 +403,6 @@ final class CloudSyncManager: ObservableObject {
             guard let self else { return }
             await self.dataManager.waitUntilLoaded()
             await self.userScriptManager.waitUntilReady()
-            self.refreshLocalSnapshotStateIfNeeded()
             self.scheduleUpload(trigger: "LocalSave")
         }
     }
@@ -479,7 +525,16 @@ final class CloudSyncManager: ObservableObject {
 
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
-        refreshLocalSnapshotStateIfNeeded()
+
+        // If local state hasn't changed since the last successful upload, there is nothing
+        // to push. Checking before the fetch avoids a CloudKit round trip for the routine
+        // save notifications fired by non-sync-visible state (e.g. filter version/count
+        // refreshes). Remote-newer changes are still converged by two-way sync.
+        let preCheckPayload = await buildPayloadRefreshingSnapshot()
+        if preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
+            markUpToDate(from: preCheckPayload)
+            return
+        }
 
         do {
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
@@ -488,32 +543,18 @@ final class CloudSyncManager: ObservableObject {
                 await reconcileMissingDefinitionsIfNeeded(from: remotePayload)
             }
 
-            if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
-                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-            }
-
-            let payload = buildPayload()
-            let payloadHash = payload.contentHash
-
-            if payloadHash == defaults.string(forKey: Keys.lastUploadedHash) {
-                // Already uploaded, so every current local script name is known-synced.
-                setLastSyncedLocalUserScriptNames(localUserScriptNames(in: payload))
-                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
-                refreshStatusFromDefaults()
-                setStatus(.upToDate)
-                return
-            }
+            let payload = await buildPayloadRefreshingSnapshot()
 
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
 
-            _ = try await saveRecord(record, retryPayload: payload)
+            let savedPayload = try await saveRecordWithConflictResolution(record, payload: payload)
 
-            defaults.set(payloadHash, forKey: Keys.lastUploadedHash)
+            defaults.set(savedPayload.contentHash, forKey: Keys.lastUploadedHash)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
             // The uploaded payload's local script names are now known-synced.
-            setLastSyncedLocalUserScriptNames(localUserScriptNames(in: payload))
+            setLastSyncedLocalUserScriptNames(localUserScriptNames(in: savedPayload))
             lastErrorMessage = nil
             refreshStatusFromDefaults()
 
@@ -531,7 +572,6 @@ final class CloudSyncManager: ObservableObject {
         guard isEnabled else { return }
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
-        refreshLocalSnapshotStateIfNeeded()
 
         if isSyncing { return }
         isSyncing = true
@@ -540,7 +580,7 @@ final class CloudSyncManager: ObservableObject {
         defer { finishSyncCycle() }
 
         do {
-            let localPayload = buildPayload()
+            let localPayload = await buildPayloadRefreshingSnapshot()
             let localUpdatedAt = localPayload.updatedAt
 
             guard let remoteRecord = try await fetchRecord() else {
@@ -549,22 +589,50 @@ final class CloudSyncManager: ObservableObject {
                 return
             }
 
-            guard let remotePayload = try decodePayload(from: remoteRecord) else {
-                setStatus(.uploading)
-                await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+            // contentHash and updatedAt are stored as top-level record fields, so compare
+            // them before downloading the payload asset. Decoding the asset is deferred until
+            // we actually have to apply the remote payload, which makes the common
+            // "nothing changed" / "local is newer" paths metadata-only fetches.
+            let remoteContentHash = remoteRecord["contentHash"] as? String
+            let remoteRecordUpdatedAt = (remoteRecord["updatedAt"] as? Date)?.timeIntervalSince1970
+
+            if let remoteContentHash, remoteContentHash == localPayload.contentHash {
+                markUpToDate(from: localPayload)
                 return
             }
 
-            if remotePayload.contentHash == localPayload.contentHash {
-                // Local and remote already match, so every local script name is known-synced.
-                setLastSyncedLocalUserScriptNames(localUserScriptNames(in: localPayload))
-                defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
-                refreshStatusFromDefaults()
-                setStatus(.upToDate)
-                return
+            // Decide direction. With record fields the stored updatedAt tells us; legacy
+            // records without fields fall back to decoding the asset to compare reliably.
+            let remoteIsNewer: Bool
+            var legacyPayload: SyncPayload?
+            if let remoteRecordUpdatedAt {
+                remoteIsNewer = remoteRecordUpdatedAt > localUpdatedAt
+            } else {
+                guard let decoded = try decodePayload(from: remoteRecord) else {
+                    setStatus(.uploading)
+                    await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+                    return
+                }
+                legacyPayload = decoded
+                remoteIsNewer = decoded.updatedAt > localUpdatedAt
+                if decoded.contentHash == localPayload.contentHash {
+                    markUpToDate(from: localPayload)
+                    return
+                }
             }
 
-            if remotePayload.updatedAt > localUpdatedAt {
+            if remoteIsNewer {
+                let remotePayload: SyncPayload
+                if let legacyPayload {
+                    remotePayload = legacyPayload
+                } else {
+                    guard let decoded = try decodePayload(from: remoteRecord) else {
+                        setStatus(.uploading)
+                        await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+                        return
+                    }
+                    remotePayload = decoded
+                }
                 setStatus(.downloading)
                 await applyRemotePayload(remotePayload, trigger: trigger)
             } else {
@@ -927,20 +995,40 @@ final class CloudSyncManager: ObservableObject {
             mergeDeletedLocalUserScriptNames(remoteDeletedLocalNamesToMerge)
         }
 
-        // Remote scripts (URL-based)
-        // Ensure each desired remote script exists and has the correct enabled state.
-        for remote in scripts.remote {
+        // Remote scripts (URL-based): ensure each desired script exists, then set its
+        // enabled / auto-update state. Downloads for missing scripts run concurrently so a
+        // multi-script restore isn't serialized behind each network fetch; the cheap local
+        // state writes are applied afterwards to keep them sequential.
+        let desiredRemoteScripts = scripts.remote.filter { remote in
             let normalizedURL = CloudSyncRemoteUserScriptReconciler.normalizedURL(remote.url)
             guard !normalizedURL.isEmpty, !deletedRemoteURLs.contains(normalizedURL) else {
-                continue
+                return false
             }
-            guard let url = URL(string: remote.url) else { continue }
+            return URL(string: remote.url) != nil
+        }
 
+        for remote in desiredRemoteScripts {
+            guard let url = URL(string: remote.url) else { continue }
             if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
                 await userScriptManager.setUserScript(existing, isEnabled: remote.isEnabled)
                 await userScriptManager.setUserScript(existing, updatesAutomatically: remote.resolvedUpdatesAutomatically)
-            } else {
-                await userScriptManager.addUserScript(from: url)
+            }
+        }
+
+        let missingRemoteScripts = desiredRemoteScripts.filter { remote in
+            guard let url = URL(string: remote.url) else { return false }
+            return userScriptManager.userScripts.first(where: { $0.url == url }) == nil
+        }
+
+        if !missingRemoteScripts.isEmpty {
+            let manager = userScriptManager
+            await boundedConcurrentForEach(missingRemoteScripts, operation: { remote in
+                guard let url = URL(string: remote.url) else { return }
+                await manager.addUserScript(from: url)
+            }, onResult: { _ in })
+
+            for remote in missingRemoteScripts {
+                guard let url = URL(string: remote.url) else { continue }
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
@@ -1150,7 +1238,6 @@ final class CloudSyncManager: ObservableObject {
 
         let localRemoteScriptURLs = currentLocalRemoteUserScriptURLs()
         let remoteRemoteScripts = remotePayload.userScripts.remote
-        let remoteRemoteScriptURLs = Set(remoteRemoteScripts.map(\.url))
         let remoteDeletedRemoteURLs = Set(remotePayload.userScripts.deletedRemoteURLs ?? [])
 
         let deletedRemoteURLsToClear =
@@ -1268,12 +1355,19 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        for remote in missingRemoteScripts {
-            guard let url = URL(string: remote.url) else { continue }
-            await userScriptManager.addUserScript(from: url)
-            if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
-                await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
-                await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+        if !missingRemoteScripts.isEmpty {
+            let manager = userScriptManager
+            await boundedConcurrentForEach(missingRemoteScripts, operation: { remote in
+                guard let url = URL(string: remote.url) else { return }
+                await manager.addUserScript(from: url)
+            }, onResult: { _ in })
+
+            for remote in missingRemoteScripts {
+                guard let url = URL(string: remote.url) else { continue }
+                if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
+                    await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                    await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+                }
             }
         }
 
@@ -1298,20 +1392,29 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        // Mark local state as changed so the upcoming upload includes the reconciled definitions.
-        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-        let localContent = buildPayloadContent()
-        if let localContentData = try? JSONEncoder.sorted.encode(localContent) {
-            defaults.set(Self.sha256Hex(localContentData), forKey: Keys.lastLocalHash)
-        }
+        // The local snapshot (lastLocalHash/lastLocalUpdatedAt) is refreshed by the caller
+        // when it rebuilds the payload via buildPayloadRefreshingSnapshot after reconcile.
     }
 
     // MARK: - Payload construction
 
-    private func buildPayload() -> SyncPayload {
-        let content = buildPayloadContent()
+    /// Builds the payload while refreshing the persisted local content-hash/timestamp
+    /// snapshot in one pass. This replaces the old "refresh snapshot, then build payload"
+    /// pair so the content JSON is encoded once per cycle instead of twice.
+    private func buildPayloadRefreshingSnapshot() async -> SyncPayload {
+        let content = await buildPayloadContent()
+        let contentData = try? sortedJSONEncoder.encode(content)
+        let contentHash = contentData.map(Self.sha256Hex) ?? ""
+
+        if !contentHash.isEmpty, contentHash != defaults.string(forKey: Keys.lastLocalHash) {
+            defaults.set(contentHash, forKey: Keys.lastLocalHash)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        }
+        if defaults.double(forKey: Keys.lastLocalUpdatedAt) <= 0 {
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
+        }
+
         let updatedAt = defaults.double(forKey: Keys.lastLocalUpdatedAt)
-        let contentHash = (try? JSONEncoder.sorted.encode(content)).map(Self.sha256Hex) ?? ""
         return SyncPayload(
             schemaVersion: 7,
             updatedAt: max(0, updatedAt),
@@ -1326,7 +1429,7 @@ final class CloudSyncManager: ObservableObject {
         )
     }
 
-    private func buildPayloadContent() -> SyncPayload.Content {
+    private func buildPayloadContent() async -> SyncPayload.Content {
         let settings = SyncPayload.Settings(
             selectedBlockingLevel: dataManager.selectedBlockingLevel,
             isBadgeCounterEnabled: dataManager.isBadgeCounterEnabled,
@@ -1347,6 +1450,15 @@ final class CloudSyncManager: ObservableObject {
             .map { $0.url.absoluteString }
             .sorted()
 
+        let customListURLs = filterLists
+            .filter(\.isCustom)
+            .filter { !deletedCustomURLSet().contains($0.url.absoluteString) }
+            .map { $0.url.absoluteString }
+
+        // Inline list contents are read from disk; fetch them off the main actor so
+        // large lists don't block the UI while the payload is assembled.
+        let inlineContents = await Self.readInlineUserListContents(for: customListURLs)
+
         let customLists = filterLists
             .filter(\.isCustom)
             .filter { !deletedCustomURLSet().contains($0.url.absoluteString) }
@@ -1357,7 +1469,7 @@ final class CloudSyncManager: ObservableObject {
                     description: list.description.isEmpty ? nil : list.description,
                     category: list.category.rawValue,
                     isSelected: list.isSelected,
-                    content: Self.readInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
+                    content: inlineContents[list.url.absoluteString]
                 )
             }
             .sorted { $0.url < $1.url }
@@ -1455,17 +1567,6 @@ final class CloudSyncManager: ObservableObject {
         )
     }
 
-    private func refreshLocalSnapshotStateIfNeeded() {
-        let localContent = buildPayloadContent()
-        guard let localContentData = try? JSONEncoder.sorted.encode(localContent) else { return }
-        let localHash = Self.sha256Hex(localContentData)
-
-        if localHash != defaults.string(forKey: Keys.lastLocalHash) {
-            defaults.set(localHash, forKey: Keys.lastLocalHash)
-            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastLocalUpdatedAt)
-        }
-    }
-
     private static func normalizedZapperRules(_ rulesByDomain: [String: [String]]) -> [String: [String]] {
         var normalized: [String: [String]] = [:]
 
@@ -1517,11 +1618,10 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func saveRecord(
-        _ record: CKRecord,
-        retryPayload: SyncPayload? = nil,
-        retryCount: Int = 0
-    ) async throws -> CKRecord {
+    /// Low-level save with bounded retry for transient errors only (network, quota, etc.).
+    /// `.serverRecordChanged` is intentionally re-thrown so the caller can reconcile the
+    /// server record's definitions before retrying, rather than silently overwriting it.
+    private func saveRecord(_ record: CKRecord, retryCount: Int = 0) async throws -> CKRecord {
         guard let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
             return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
@@ -1533,33 +1633,64 @@ final class CloudSyncManager: ObservableObject {
                     continuation.resume(returning: saved ?? record)
                 }
             }
-        } catch let ckError as CKError where ckError.code == .serverRecordChanged {
-            guard let retryPayload, let serverRecord = ckError.serverRecord else { throw ckError }
-            logger.info("Server record changed, retrying save with server version")
-            var mutableRecord = serverRecord
-            let payloadURL = try await applyPayloadFields(retryPayload, to: &mutableRecord)
-            defer { try? FileManager.default.removeItem(at: payloadURL) }
-            return try await saveRecord(
-                mutableRecord,
-                retryPayload: retryPayload,
-                retryCount: retryCount
-            )
         } catch let ckError as CKError {
-            guard retryCount < 2, let delay = retryDelay(for: ckError) else { throw ckError }
+            guard ckError.code != .serverRecordChanged,
+                  retryCount < 2,
+                  let delay = retryDelay(for: ckError) else {
+                throw ckError
+            }
             logger.info(
                 "CloudKit save failed with retryable error \(ckError.code.rawValue, privacy: .public), retrying in \(String(describing: delay), privacy: .public)"
             )
             try await TaskSleep.sleep(for: delay)
-            return try await saveRecord(
-                record,
-                retryPayload: retryPayload,
-                retryCount: retryCount + 1
-            )
+            return try await saveRecord(record, retryCount: retryCount + 1)
+        }
+    }
+
+    /// Saves the record, resolving `.serverRecordChanged` conflicts by reconciling the
+    /// server's definitions into local state and rebuilding the payload before retrying.
+    /// Returns the payload that was actually saved, which may differ from the input when a
+    /// conflict was merged. Bounding the retries prevents the unbounded recursion that the
+    /// old retry-without-increment path could enter. Reconciling before the retry keeps a
+    /// concurrently-updated remote record's definitions from being dropped by the
+    /// single-payload overwrite.
+    private func saveRecordWithConflictResolution(
+        _ record: CKRecord,
+        payload: SyncPayload,
+        maxConflictRetries: Int = 2
+    ) async throws -> SyncPayload {
+        var tempURLs: [URL] = []
+        defer { tempURLs.forEach { try? FileManager.default.removeItem(at: $0) } }
+
+        var currentRecord = record
+        var currentPayload = payload
+        var conflictRetries = 0
+
+        while true {
+            do {
+                _ = try await saveRecord(currentRecord)
+                return currentPayload
+            } catch let ckError as CKError where ckError.code == .serverRecordChanged {
+                guard conflictRetries < maxConflictRetries,
+                      let serverRecord = ckError.serverRecord else {
+                    throw ckError
+                }
+                conflictRetries += 1
+                logger.info("Server record changed; reconciling definitions and retrying save (attempt \(conflictRetries, privacy: .public) of \(maxConflictRetries, privacy: .public))")
+                if let serverPayload = try? decodePayload(from: serverRecord) {
+                    await reconcileMissingDefinitionsIfNeeded(from: serverPayload)
+                }
+                currentPayload = await buildPayloadRefreshingSnapshot()
+                var mutableRecord = serverRecord
+                let payloadURL = try await applyPayloadFields(currentPayload, to: &mutableRecord)
+                tempURLs.append(payloadURL)
+                currentRecord = mutableRecord
+            }
         }
     }
 
     private func applyPayloadFields(_ payload: SyncPayload, to record: inout CKRecord) async throws -> URL {
-        let data = try JSONEncoder.sorted.encode(payload)
+        let data = try sortedJSONEncoder.encode(payload)
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("wblock-sync-\(UUID().uuidString).json")
         try data.write(to: tempURL, options: .atomic)
@@ -1603,10 +1734,35 @@ final class CloudSyncManager: ObservableObject {
         statusLine = status.localizedTitle
     }
 
+    /// Records that local and remote match: stamps lastSyncAt, marks every current local
+    /// userscript name as known-synced, and surfaces the up-to-date status.
+    private func markUpToDate(from localPayload: SyncPayload) {
+        setLastSyncedLocalUserScriptNames(localUserScriptNames(in: localPayload))
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+        refreshStatusFromDefaults()
+        setStatus(.upToDate)
+    }
+
     // MARK: - Helpers
 
     private func finishSyncCycle() {
         isSyncing = false
+
+        if let syncTrigger = deferredInFlightSyncTrigger {
+            deferredInFlightSyncTrigger = nil
+            logger.info("Scheduling deferred sync (\(syncTrigger, privacy: .public))")
+            Task { [weak self] in
+                guard let self else { return }
+                await self.syncNow(trigger: syncTrigger)
+                // If the replayed sync was throttled away (or otherwise didn't run a full
+                // cycle), it never reached its own finishSyncCycle, so drain any upload that
+                // was deferred during the previous cycle here. No-op if already drained.
+                if let deferred = self.uploadCoordinator.takeDeferredTrigger() {
+                    self.scheduleUpload(trigger: deferred)
+                }
+            }
+            return
+        }
 
         guard let deferredTrigger = uploadCoordinator.takeDeferredTrigger() else { return }
         logger.info("Scheduling deferred upload (\(deferredTrigger, privacy: .public))")
@@ -1650,13 +1806,30 @@ final class CloudSyncManager: ObservableObject {
         return id
     }
 
-    private static func readInlineUserListContentIfNeeded(urlString: String) -> String? {
-        guard let id = inlineUserListID(from: urlString) else { return nil }
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
-            return nil
+    /// Reads all inline user-list files in one off-actor pass so the main actor
+    /// isn't blocked by synchronous disk I/O during payload assembly.
+    private static func readInlineUserListContents(for urlStringList: [String]) async -> [String: String] {
+        guard !urlStringList.isEmpty else { return [:] }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            return [:]
         }
-        let fileURL = containerURL.appendingPathComponent("custom-\(id.uuidString).txt")
-        return try? String(contentsOf: fileURL, encoding: .utf8)
+        // Resolve which files to read on the main actor (inlineUserListID is main-actor-isolated);
+        // only the actual disk reads run off-actor.
+        let fileURLs: [(String, URL)] = urlStringList.compactMap { urlString in
+            guard let id = inlineUserListID(from: urlString) else { return nil }
+            return (urlString, containerURL.appendingPathComponent("custom-\(id.uuidString).txt"))
+        }
+        guard !fileURLs.isEmpty else { return [:] }
+        return await Task.detached(priority: .utility) { () -> [String: String] in
+            var results: [String: String] = [:]
+            for (urlString, fileURL) in fileURLs {
+                if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
+                    results[urlString] = content
+                }
+            }
+            return results
+        }.value
     }
 
     private static func writeInlineUserListContent(id: UUID, content: String) {
@@ -1810,10 +1983,6 @@ final class CloudSyncManager: ObservableObject {
         return pruned
     }
 
-    private func saveDeletedLocalUserScriptMarkers(_ markers: [String: TimeInterval]) {
-        saveDeletedMarkers(markers, forKey: Keys.deletedLocalUserScriptNames)
-    }
-
     private func mergeDeletedLocalUserScriptNames(_ names: Set<String>) {
         let normalized = Set(names.map(CloudSyncLocalUserScriptReconciler.normalizedName).filter { !$0.isEmpty })
         let markers = loadDeletedLocalUserScriptMarkers()
@@ -1847,14 +2016,6 @@ final class CloudSyncManager: ObservableObject {
         return pruned
     }
 
-    private func pruneDeletedRemoteUserScriptURLMarkers(_ markers: [String: TimeInterval]) -> [String: TimeInterval] {
-        pruneDeletedMarkers(markers)
-    }
-
-    private func saveDeletedRemoteUserScriptURLMarkers(_ markers: [String: TimeInterval]) {
-        saveDeletedMarkers(markers, forKey: Keys.deletedRemoteUserScriptURLs)
-    }
-
     private func clearDeletedRemoteUserScriptURLs(_ urls: Set<String>) {
         guard !urls.isEmpty else { return }
         let normalizedURLs = Set(urls.map(CloudSyncRemoteUserScriptReconciler.normalizedURL).filter { !$0.isEmpty })
@@ -1867,14 +2028,6 @@ final class CloudSyncManager: ObservableObject {
         let normalizedURLs = Set(urls.map(CloudSyncRemoteUserScriptReconciler.normalizedURL).filter { !$0.isEmpty })
         let markers = loadDeletedRemoteUserScriptURLMarkers()
         mergeDeletedMarkers(normalizedURLs, markers: markers, saveKey: Keys.deletedRemoteUserScriptURLs)
-    }
-}
-
-private extension JSONEncoder {
-    static var sorted: JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        return encoder
     }
 }
 
@@ -1908,7 +2061,7 @@ private struct SyncPayload: Codable {
         let deletedCustomURLs: [String]?
     }
 
-    struct RemoteUserScript: Codable {
+    struct RemoteUserScript: Codable, Sendable {
         let url: String
         let isEnabled: Bool
         let updatesAutomatically: Bool?
