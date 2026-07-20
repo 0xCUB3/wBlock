@@ -252,6 +252,32 @@ The App Store version is usually preferred because it handles app updates automa
 </details>
 
 <details>
+<summary><b>Should I use wBlock alongside another ad blocker?</b></summary>
+<br>
+
+<b>No. Use one general-purpose content blocker at a time.</b>
+
+There is no controlled study proving that every possible combination of ad blockers harms every page. However, browser architecture and extension documentation support avoiding overlapping blockers:
+
+- <b>Extensions can make conflicting changes.</b> Mozilla documents that when two extensions attempt conflicting modifications to the same response header, only one change may succeed. Multiple blockers can therefore produce order-dependent behavior rather than a predictable combination of their protections. See <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived">Mozilla’s webRequest documentation</a>.
+
+- <b>Request interception has measurable computational costs.</b> Chromium describes serialization, inter-process communication, persistent-process, and extension-response processing costs associated with blocking request handlers. Running redundant filtering systems duplicates at least some rule evaluation and page-processing work. See <a href="https://blog.chromium.org/2019/06/web-request-and-declarative-net-request.html">Chromium’s explanation of Web Request and Declarative Net Request</a> and <a href="https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3">Chrome’s Manifest V3 overview</a>.
+
+- <b>Major blocker maintainers explicitly advise against stacking.</b> The official uBlock Origin README states: “Do NOT use uBO with any other content blocker.” It explains that another blocker can prevent uBO’s privacy or anti-blocker-defusing features from working correctly. See <a href="https://github.com/gorhill/ublock#all-programs">uBlock Origin’s official documentation</a>.
+
+- <b>Documented failure modes include slower loading and broken functionality.</b> AdGuard warns that two blockers may compete over the same requests, causing slower page loading, broken websites, or video-playback problems. See <a href="https://adguard.com/en/adguard-browser-extension/opera/overview.html">AdGuard’s guidance</a>.
+
+For wBlock specifically, another blocker also makes troubleshooting impossible as well. When an advertisement survives or a site breaks, either blocker’s network rules, cosmetic rules, scriptlets, exceptions, or execution order may be responsible. The second blocker is therefore a confounding variable. Disable all other content blockers before reporting a wBlock issue.
+
+<br>
+
+<img width="1560" height="176" alt="Skill Issue" src="https://github.com/user-attachments/assets/b9c519bf-bbc7-40c0-bc4c-6a6d1fccb488" />
+
+Installing redundant blockers is not defense in depth when both tools compete at the same interception layer. It is an uncontrolled experiment with no control group.
+
+</details>
+
+<details>
 <summary><b>Can I use my own filter lists?</b></summary>
 <br>
 Yes. You can add any AdGuard-compatible filter list by URL, paste rules directly, or import from a file.
