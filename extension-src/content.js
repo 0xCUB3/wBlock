@@ -31008,6 +31008,83 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // and load events. The delay of 3000ms is used as a buffer to capture critical
   // initial events while waiting for the rules response.
   const dispatcherRef = setupDelayedEventDispatcher(3000);
+  // Cloudflare's "Verify you are human" managed-challenge interstitial and its
+  // Turnstile widget frame are sensitive to synthetic DOMContentLoaded/load
+  // events and to same-page URL rewrites. The Scripts extension runs at
+  // document_start in every frame, including the Turnstile iframe served from
+  // challenges.cloudflare.com. When the delayed dispatcher holds or re-emits
+  // those events there (or the removeparam fallback rewrites the URL),
+  // Cloudflare treats the verification as tampered and reloads the challenge
+  // page in a loop (issue #476). Detect these contexts early and bail out so
+  // the extension is effectively absent on challenge pages.
+  let cloudflareChallengeContext = false;
+  const cloudflareChallengeTitleRegex = /just a moment|verifying you are human|attention required|enable cookies/i;
+  const cloudflareChallengeTitle = title => cloudflareChallengeTitleRegex.test(title || "");
+  const markCloudflareChallenge = () => {
+    if (cloudflareChallengeContext) return;
+    cloudflareChallengeContext = true;
+    if (dispatcherRef) {
+      dispatcherRef.disarm();
+    }
+    console.info("[wBlock] Cloudflare challenge context detected — skipping content script.");
+  };
+  const isCloudflareChallengeFrameNow = () => {
+    try {
+      const host = window.location && typeof window.location.hostname === "string" ? window.location.hostname : "";
+      const path = window.location && typeof window.location.pathname === "string" ? window.location.pathname : "";
+      if (host === "challenges.cloudflare.com") return true;
+      if (path.startsWith("/cdn-cgi/challenge-platform")) return true;
+      if (path.startsWith("/cdn-cgi/challenge")) return true;
+    } catch (_) {}
+    return false;
+  };
+  // The main interstitial is served from the visited host, so its URL does not
+  // identify it. Its orchestration <script src="/cdn-cgi/challenge-platform/...">
+  // and challenge markers appear during parsing, before DOMContentLoaded —
+  // watch for them so the dispatcher is disarmed before it can interfere.
+  const startCloudflareChallengeWatch = () => {
+    if (cloudflareChallengeContext) return;
+    if (cloudflareChallengeTitle(document.title)) {
+      markCloudflareChallenge();
+      return;
+    }
+    const root = typeof document !== "undefined" ? document.documentElement : null;
+    if (!root || typeof MutationObserver === "undefined") {
+      return;
+    }
+    try {
+      const observer = new MutationObserver(() => {
+        if (cloudflareChallengeContext) {
+          observer.disconnect();
+          return;
+        }
+        if (
+          document.querySelector('script[src^="/cdn-cgi/challenge-platform"]')
+          || document.querySelector('script[src*="challenges.cloudflare.com"]')
+          || document.querySelector("#challenge-form")
+          || document.querySelector("#challenge-stage")
+          || document.querySelector("#challenge-runner")
+          || cloudflareChallengeTitle(document.title)
+        ) {
+          observer.disconnect();
+          markCloudflareChallenge();
+        }
+      });
+      observer.observe(root, { childList: true, subtree: true });
+      // The interstitial markup lands within the first second; stop watching
+      // before it can outlast a normal page load.
+      setTimeout(() => {
+        try {
+          observer.disconnect();
+        } catch (_) {}
+      }, 5000);
+    } catch (_) {}
+  };
+  if (isCloudflareChallengeFrameNow()) {
+    markCloudflareChallenge();
+  } else {
+    startCloudflareChallengeWatch();
+  }
   // Shared per-site disable check. Resolved lazily so the rules lookup can be
   // sent first; the native InitContentScript path already returns an empty
   // payload for paused/disabled sites. The removeparam fallback still waits for
@@ -31055,6 +31132,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     window.adguard = {
       contentScript: new ContentScript()
     };
+    // On Cloudflare challenge pages the dispatcher is already disarmed; do not
+    // apply cosmetics/scriptlets or hold page events there (issue #476).
+    if (cloudflareChallengeContext) {
+      dispatcherRef.disarm();
+      return;
+    }
     const message = {
       type: MessageType.InitContentScript
     };
@@ -31082,6 +31165,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return;
     }
     const response = firstResult.kind === "config" ? firstResult.response : await configPromise;
+    // A Cloudflare challenge can be detected while waiting for the native
+    // response (its markup arrives during parsing). Bail out before applying
+    // any configuration or re-emitting held events (issue #476).
+    if (cloudflareChallengeContext) {
+      dispatcherRef.disarm();
+      return;
+    }
     // If the background page returned payload with configuration, it means
     // that it cannot apply it on its own and commands the content script
     // to do that.
@@ -31107,6 +31197,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // walls even when content blockers are off (issue #445).
   (async () => {
     try {
+      // Never rewrite Cloudflare challenge pages: stripping the challenge token
+      // or redirecting mid-verification makes the interstitial reload in a loop
+      // (issue #476).
+      if (cloudflareChallengeContext) return;
       if (await getSiteDisabledPromise()) return;
       if (window.top !== window) return;
       if (!/^https?:/i.test(window.location.href)) return;
@@ -31130,6 +31224,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
       }
       if (cleanUrl && cleanUrl !== window.location.href) {
+        if (cloudflareChallengeContext) return;
         console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
         window.location.replace(cleanUrl);
       }
@@ -31144,6 +31239,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
         }
         if (changed && fallbackUrl.href !== window.location.href) {
+          if (cloudflareChallengeContext) return;
           console.info("[wBlock] Removing common tracking parameters:", window.location.href, "→", fallbackUrl.href);
           window.location.replace(fallbackUrl.href);
         }
