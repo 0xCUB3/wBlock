@@ -74,6 +74,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 
 ### Content modification
 - **Element Zapper** (macOS, iOS, iPadOS, visionOS) — visually select and hide page elements in Safari
+- **Tube Cleaner & Player Cleaner** — optional built-in userscripts that replace YouTube's player (and other sites' custom players) with a clean HTML5 `<video>`, removing in-video ads, restoring Picture-in-Picture, and keeping videos playing in background tabs
 - **Userscript engine** with Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
 - **Userstyle support** — install UserCSS themes (.user.css) applied natively as CSS, no JS wrapper needed
 - **Custom filter lists** via URL, paste, or file import — supports any AdGuard-syntax blocklist
@@ -311,6 +312,18 @@ wBlock bundles the <b>AdGuard Extra</b> userscript, which can help with Twitch a
 3. Reload any open Twitch tabs.
 <br><br>
 This is best-effort, community-style ad blocking: Twitch frequently changes how ads are served, so it may occasionally break until the userscript is updated. There is no guarantee every ad is removed.
+</details>
+
+<details>
+<summary><b>What are Tube Cleaner and Player Cleaner?</b></summary>
+<br>
+They are optional built-in userscripts, inspired by Vinegar and Baking Soda, that replace a site's video player with a clean HTML5 <code>&lt;video&gt;</code> element. They ship disabled by default; enable them in the <i>Userscripts</i> section.
+<br><br>
+<b>Tube Cleaner</b> targets YouTube (including embeds). Because it plays the raw media stream instead of YouTube's player, it removes in-video ads, stops play/pause/seek tracking, restores Picture-in-Picture, keeps videos playing when you switch tabs, and offers an audio-only mode. A toolbar lets you pick the quality or switch to audio only, and a <i>Restore</i> button brings back the original player.
+<br><br>
+<b>Player Cleaner</b> targets custom players on every other website (video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, and more), restoring native controls and Picture-in-Picture. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
+<br><br>
+Tube Cleaner relies on reading YouTube's streaming data, which YouTube changes frequently. It prefers directly-playable streams and falls back to the original player when a video can't be resolved, so pages are never left broken, but some videos or qualities may occasionally be unavailable until the script is updated.
 </details>
 
 <details>
