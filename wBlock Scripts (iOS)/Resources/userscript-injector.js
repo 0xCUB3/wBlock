@@ -869,6 +869,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     fullScript.xhrBridgeId = this.generateSecret('gmxhr');
                     this.xhrBridgeTokens.add(fullScript.xhrBridgeId);
                 }
+                // Token used to namespace this script's GM runtime ports so other
+                // page scripts cannot guess the channel name and spoof port
+                // messages (see channelNameForPort in the wrapper).
+                if (!fullScript.portBridgeId) {
+                    fullScript.portBridgeId = this.generateSecret('gmport');
+                }
 
                 const injectInto = fullScript.injectInto || 'page';
                 wBlockLog(`[wBlock] Injecting userscript: ${fullScript.name} (mode: ${injectInto})`);
@@ -1080,6 +1086,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const storageBridgeId = '${escapeForJS(script.storageBridgeId || '')}';
     const menuBridgeId = '${escapeForJS(script.menuBridgeId || '')}';
     const xhrBridgeId = '${escapeForJS(script.xhrBridgeId || '')}';
+    const portBridgeId = '${escapeForJS(script.portBridgeId || '')}';
     const pageMenuBridgeElement = ${isContentContext ? 'null' : 'document.currentScript'};
     const contentMenuBridge = ${isContentContext ? 'window.__wBlockMenuCommandBridge' : 'null'};
     const scriptStorageState = Object.assign({}, ${storageSnapshotJSON});
@@ -1106,30 +1113,39 @@ if (window.wBlockUserscriptInjectorHasRun) {
         };
     };
 
+    // Map a userscript-facing port name to the per-script wire channel name.
+    // The background treats this string opaquely and echoes it back when
+    // delivering port messages, so a page script that does not know
+    // portBridgeId cannot address (or spoof messages to) this script's ports.
+    const channelNameForPort = (userPortName) => {
+        return portBridgeId && userPortName ? portBridgeId + '::' + userPortName : userPortName;
+    };
+
     const createRuntimePort = (connectInfo) => {
-        const portName = typeof connectInfo === 'string'
+        const userPortName = typeof connectInfo === 'string'
             ? connectInfo
             : (connectInfo && typeof connectInfo.name === 'string' ? connectInfo.name : '');
+        const channelName = channelNameForPort(userPortName);
         const onMessage = makeRuntimeEvent();
         const onDisconnect = makeRuntimeEvent();
         const port = {
-            name: portName,
+            name: userPortName,
             onMessage: onMessage,
             onDisconnect: onDisconnect,
             postMessage: function(message) {
-                window.postMessage({ type: 'wblock:gm-port-post-message', portName, message }, '*');
+                window.postMessage({ type: 'wblock:gm-port-post-message', portName: channelName, message }, '*');
             },
             disconnect: function() {
-                const ports = runtimePorts.get(portName);
+                const ports = runtimePorts.get(channelName);
                 if (ports) {
                     ports.delete(port);
-                    if (ports.size === 0) runtimePorts.delete(portName);
+                    if (ports.size === 0) runtimePorts.delete(channelName);
                 }
                 onDisconnect.dispatch(port);
             }
         };
-        if (!runtimePorts.has(portName)) runtimePorts.set(portName, new Set());
-        runtimePorts.get(portName).add(port);
+        if (!runtimePorts.has(channelName)) runtimePorts.set(channelName, new Set());
+        runtimePorts.get(channelName).add(port);
         return port;
     };
 
@@ -1990,7 +2006,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 redirect: details.redirect || 'follow',
                 timeout: details.timeout || 0,
                 overrideMimeType: details.overrideMimeType || '',
-                portName: details.portName || (details.extra && details.extra.portName) || ''
+                portName: channelNameForPort(details.portName || (details.extra && details.extra.portName) || '')
             };
 
             const timeoutMs = Number(details.timeout || 0);
