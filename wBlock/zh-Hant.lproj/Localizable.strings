@@ -811,6 +811,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "正在移除使用者腳本";
 "Adding new userscript from URL" = "正在從 URL 新增新的使用者腳本";
 "Successfully added userscript from URL" = "已成功從 URL 新增使用者腳本";
+"Failed to add userscript from URL" = "從 URL 新增使用者腳本失敗";
 "Added userscript from editor" = "已從編輯器新增使用者腳本";
 "Imported userscript from file" = "已從檔案匯入使用者腳本";
 "🔄 Auto-update: currently running" = "🔄 自動更新：執行中";

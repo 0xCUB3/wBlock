@@ -812,6 +812,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Removing userscript" = "Felhasználói szkript eltávolítása";
 "Adding new userscript from URL" = "Új felhasználói szkript hozzáadása URL-ből";
 "Successfully added userscript from URL" = "A felhasználói szkript hozzáadása URL-ből sikeres";
+"Failed to add userscript from URL" = "A felhasználói szkript URL-ből való hozzáadása sikertelen";
 "Added userscript from editor" = "Felhasználói szkript hozzáadva a szerkesztőből";
 "Imported userscript from file" = "Felhasználói szkript importálva fájlból";
 "🔄 Auto-update: currently running" = "🔄 Automatikus frissítés: folyamatban";

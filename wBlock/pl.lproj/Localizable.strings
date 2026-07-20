@@ -811,6 +811,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Removing userscript" = "Usuwanie skryptu użytkownika";
 "Adding new userscript from URL" = "Dodawanie nowego skryptu użytkownika z adresu URL";
 "Successfully added userscript from URL" = "Dodano skrypt użytkownika z adresu URL";
+"Failed to add userscript from URL" = "Nie udało się dodać skryptu użytkownika z adresu URL";
 "Added userscript from editor" = "Dodano skrypt użytkownika z edytora";
 "Imported userscript from file" = "Zaimportowano skrypt użytkownika z pliku";
 "🔄 Auto-update: currently running" = "🔄 Automatyczna aktualizacja: w toku";

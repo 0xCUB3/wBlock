@@ -811,6 +811,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Removing userscript" = "Eliminare script utilizator";
 "Adding new userscript from URL" = "Adăugare script utilizator nou din URL";
 "Successfully added userscript from URL" = "Scriptul utilizator a fost adăugat din URL";
+"Failed to add userscript from URL" = "Adăugarea scriptului utilizator din URL a eșuat";
 "Added userscript from editor" = "Script utilizator adăugat din editor";
 "Imported userscript from file" = "Script utilizator importat din fișier";
 "🔄 Auto-update: currently running" = "🔄 Actualizare automată: în curs";

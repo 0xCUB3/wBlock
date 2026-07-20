@@ -820,6 +820,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "Removing userscript";
 "Adding new userscript from URL" = "Adding new userscript from URL";
 "Successfully added userscript from URL" = "Successfully added userscript from URL";
+"Failed to add userscript from URL" = "Failed to add userscript from URL";
 "Added userscript from editor" = "Added userscript from editor";
 "Imported userscript from file" = "Imported userscript from file";
 "🔄 Auto-update: currently running" = "🔄 Auto-update: currently running";

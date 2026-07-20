@@ -811,6 +811,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Removing userscript" = "Userskript wird entfernt";
 "Adding new userscript from URL" = "Neues Userskript aus URL wird hinzugefügt";
 "Successfully added userscript from URL" = "Userskript aus URL erfolgreich hinzugefügt";
+"Failed to add userscript from URL" = "Hinzufügen des Userskripts aus URL fehlgeschlagen";
 "Added userscript from editor" = "Userskript aus Editor hinzugefügt";
 "Imported userscript from file" = "Userskript aus Datei importiert";
 "🔄 Auto-update: currently running" = "🔄 Automatische Aktualisierung: läuft aktuell";

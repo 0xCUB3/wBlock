@@ -811,6 +811,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "Удаление пользовательского скрипта";
 "Adding new userscript from URL" = "Добавление пользовательского скрипта из URL";
 "Successfully added userscript from URL" = "Пользовательский скрипт добавлен из URL";
+"Failed to add userscript from URL" = "Не удалось добавить пользовательский скрипт из URL";
 "Added userscript from editor" = "Пользовательский скрипт добавлен из редактора";
 "Imported userscript from file" = "Пользовательский скрипт импортирован из файла";
 "🔄 Auto-update: currently running" = "🔄 Автообновление: выполняется";

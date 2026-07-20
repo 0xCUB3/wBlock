@@ -811,6 +811,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "유저스크립트를 제거합니다";
 "Adding new userscript from URL" = "URL에서 새 유저스크립트를 추가합니다";
 "Successfully added userscript from URL" = "URL에서 유저스크립트를 추가했습니다";
+"Failed to add userscript from URL" = "URL에서 유저스크립트를 추가하지 못했습니다";
 "Added userscript from editor" = "편집기에서 유저스크립트를 추가했습니다";
 "Imported userscript from file" = "파일에서 유저스크립트를 가져왔습니다";
 "🔄 Auto-update: currently running" = "🔄 자동 업데이트: 실행 중";

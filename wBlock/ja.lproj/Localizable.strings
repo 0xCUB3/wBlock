@@ -813,6 +813,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "ユーザースクリプトを削除しています";
 "Adding new userscript from URL" = "URL から新しいユーザースクリプトを追加しています";
 "Successfully added userscript from URL" = "URL からユーザースクリプトを追加しました";
+"Failed to add userscript from URL" = "URL からのユーザースクリプトの追加に失敗しました";
 "Added userscript from editor" = "エディターからユーザースクリプトを追加しました";
 "Imported userscript from file" = "ファイルからユーザースクリプトをインポートしました";
 "🔄 Auto-update: currently running" = "🔄 自動更新: 実行中です";

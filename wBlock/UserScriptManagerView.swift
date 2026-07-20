@@ -1351,6 +1351,7 @@ struct AddUserScriptView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var urlInput: String = ""
     @State private var validationState: ValidationState = .idle
+    @State private var urlImportError: String?
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var editorImportError: String?
@@ -1858,20 +1859,28 @@ struct AddUserScriptView: View {
     }
 
     private var validationMessage: some View {
-        Group {
-            switch validationState {
-            case .idle:
-                Text("wBlock will fetch and enable the script automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            case .invalid(let message):
-                Text(message)
+        VStack(alignment: .leading, spacing: 4) {
+            Group {
+                switch validationState {
+                case .idle:
+                    Text("wBlock will fetch and enable the script automatically.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                case .invalid(let message):
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                case .valid:
+                    Text("Looks good! Tap Add to continue.")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
+            }
+
+            if let urlImportError {
+                Text(urlImportError)
                     .font(.caption)
                     .foregroundStyle(.orange)
-            case .valid:
-                Text("Looks good! Tap Add to continue.")
-                    .font(.caption)
-                    .foregroundStyle(.green)
             }
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)
@@ -1922,16 +1931,28 @@ struct AddUserScriptView: View {
             guard case .valid(let url) = validationState else { return }
 
             isAdding = true
+            urlImportError = nil
 
             Task(priority: .userInitiated) {
                 await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
-                await userScriptManager.addUserScript(from: url)
-                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Successfully added userscript from URL"), metadata: ["url": url.absoluteString])
+                let error = await userScriptManager.addUserScript(from: url)
 
-                await MainActor.run {
-                    isAdding = false
-                    onScriptAdded()
-                    dismiss()
+                if let error {
+                    let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to add userscript from URL"), metadata: ["url": url.absoluteString, "error": message])
+
+                    await MainActor.run {
+                        urlImportError = message
+                        isAdding = false
+                    }
+                } else {
+                    await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Successfully added userscript from URL"), metadata: ["url": url.absoluteString])
+
+                    await MainActor.run {
+                        isAdding = false
+                        onScriptAdded()
+                        dismiss()
+                    }
                 }
             }
         case .editor:
@@ -2022,6 +2043,7 @@ struct AddUserScriptView: View {
     }
 
     private func validateInput(_ newValue: String) {
+        urlImportError = nil
         let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !trimmed.isEmpty else {

@@ -1714,7 +1714,8 @@ public class UserScriptManager: ObservableObject {
 
     // MARK: - Public Methods
 
-    public func addUserScript(from url: URL) async {
+    @discardableResult
+    public func addUserScript(from url: URL) async -> Error? {
         isLoading = true
         statusDescription = UserStyleSupport.isUserStylePath(url.path)
             ? "Downloading userstyle..." : "Downloading userscript..."
@@ -1735,7 +1736,7 @@ public class UserScriptManager: ObservableObject {
                 errorMessage = UserScriptImportError.missingMetadata.errorDescription ?? ""
                 statusDescription = "Download failed"
                 isLoading = false
-                return
+                return UserScriptImportError.missingMetadata
             }
             if newUserScript.isUserStyle,
                let style = UserStyleSupport.parsed(from: newUserScript.content),
@@ -1746,7 +1747,7 @@ public class UserScriptManager: ObservableObject {
                     .unsupportedStylePreprocessor(style.preprocessor).errorDescription ?? ""
                 statusDescription = "Download failed"
                 isLoading = false
-                return
+                return UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
             }
             newUserScript.isEnabled = true
             newUserScript.isLocal = false
@@ -1781,11 +1782,13 @@ public class UserScriptManager: ObservableObject {
 
             await persistUserScriptsNow()
             isLoading = false
+            return nil
         } catch {
             hasError = true
             errorMessage = "Failed to download userscript: \(error.localizedDescription)"
             statusDescription = "Download failed"
             isLoading = false
+            return error
         }
     }
 

@@ -811,6 +811,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "إزالة البرنامج النصي للمستخدم";
 "Adding new userscript from URL" = "إضافة برنامج نصي جديد للمستخدم من رابط";
 "Successfully added userscript from URL" = "تمت إضافة البرنامج النصي للمستخدم من الرابط بنجاح";
+"Failed to add userscript from URL" = "تعذّرت إضافة البرنامج النصي للمستخدم من الرابط";
 "Added userscript from editor" = "تمت إضافة البرنامج النصي للمستخدم من المحرّر";
 "Imported userscript from file" = "تم استيراد البرنامج النصي للمستخدم من ملف";
 "🔄 Auto-update: currently running" = "🔄 التحديث التلقائي: قيد التشغيل حاليًا";

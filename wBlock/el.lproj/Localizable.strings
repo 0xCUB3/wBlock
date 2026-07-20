@@ -811,6 +811,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removing userscript" = "Αφαίρεση σεναρίου χρήστη";
 "Adding new userscript from URL" = "Προσθήκη νέου σεναρίου χρήστη από URL";
 "Successfully added userscript from URL" = "Το σενάριο χρήστη προστέθηκε επιτυχώς από URL";
+"Failed to add userscript from URL" = "Αποτυχία προσθήκης σεναρίου χρήστη από URL";
 "Added userscript from editor" = "Προστέθηκε σενάριο χρήστη από τον επεξεργαστή";
 "Imported userscript from file" = "Εισαγωγή σεναρίου χρήστη από αρχείο";
 "🔄 Auto-update: currently running" = "🔄 Αυτόματη ενημέρωση: εκτελείται";

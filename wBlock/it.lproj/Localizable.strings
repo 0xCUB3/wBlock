@@ -811,6 +811,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Removing userscript" = "Rimozione dello script utente";
 "Adding new userscript from URL" = "Aggiunta di un nuovo script utente da URL";
 "Successfully added userscript from URL" = "Script utente aggiunto correttamente da URL";
+"Failed to add userscript from URL" = "Aggiunta dello script utente da URL non riuscita";
 "Added userscript from editor" = "Script utente aggiunto dall'editor";
 "Imported userscript from file" = "Script utente importato da file";
 "🔄 Auto-update: currently running" = "🔄 Aggiornamento automatico: in esecuzione";
