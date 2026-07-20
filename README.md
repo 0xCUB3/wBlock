@@ -327,6 +327,28 @@ Tube Cleaner relies on reading YouTube's streaming data, which YouTube changes f
 </details>
 
 <details>
+<summary><b>Where do I find them, and what can I test them on?</b></summary>
+<br>
+Both ship disabled. Open the <i>Userscripts</i> tab: <i>Tube Cleaner</i> and <i>Player Cleaner</i> sit at the top of the <i>General</i> section. Switch one on, then reload the page you want to test. If they are not in the list, you are running a wBlock build from before this change — quit wBlock and run this branch from Xcode (a Homebrew or release install cannot contain branch code).
+<br><br>
+Tube Cleaner (YouTube and embeds):
+<br>• <a href="https://www.youtube.com/watch?v=aqz-KE-bpKQ">Big Buck Bunny</a> — long, many qualities, good for the quality menu
+<br>• <a href="https://www.youtube.com/watch?v=eRsGyueVLvQ">Sintel</a>
+<br>• <a href="https://www.youtube.com/watch?v=R6MlUcmOul8">Tears of Steel</a>
+<br>• Embeds: <a href="https://www.youtube.com/embed/aqz-KE-bpKQ">youtube.com/embed</a> and <a href="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ">youtube-nocookie.com/embed</a>
+<br>Check that the player becomes a plain video with a small toolbar, that there are no in-video ads, that the quality (▾) and audio-only (♪) buttons work, that Picture-in-Picture works and audio keeps playing in another tab, that Restore (⟲) brings the original player back, and that a Shorts or live link falls back gracefully instead of breaking the page.
+<br><br>
+Player Cleaner (other sites' custom players), one demo per supported library:
+<br>• video.js — <a href="https://videojs.com/">videojs.com</a>
+<br>• Plyr — <a href="https://plyr.io/">plyr.io</a>
+<br>• JW Player — <a href="https://developer-tools.jwplayer.com/stream-tester">stream tester</a> and <a href="https://jwplayer.github.io/jwplayer/">demo</a>
+<br>• Clappr — <a href="http://clappr.io/">clappr.io</a> and <a href="http://cdn.clappr.io/">cdn.clappr.io</a>
+<br>• MediaElement — <a href="https://www.mediaelementjs.com/">mediaelementjs.com</a>
+<br>• hls.js — <a href="https://hls-js.netlify.com/demo/">hls.js demo</a>
+<br>Check that the custom chrome is replaced by native controls with a small badge, that native Picture-in-Picture and fullscreen work, and that the badge or Restore returns the original player. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
+</details>
+
+<details>
 <summary><b>How often do filters update?</b></summary>
 <br>
 Auto-update intervals are configurable from 1 hour to 7 days, or manually triggered. On macOS, enabling auto-update registers a bundled launch agent that can keep checking while the app is closed through a background update service. On iOS and iPadOS, background checks are best-effort and may wait until the system wakes wBlock or you reopen it. Opening Safari does not trigger updates. Updates use HTTP conditional requests (If-Modified-Since/ETag headers) when servers support them, which reduces unnecessary downloads.
