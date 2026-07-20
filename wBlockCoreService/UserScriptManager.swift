@@ -584,15 +584,6 @@ public class UserScriptManager: ObservableObject {
     private init() {
         logger.info("🔧 UserScriptManager initializing...")
 
-        // Test UserDefaults access
-        logger.info("🔧 Testing UserDefaults access...")
-
-        // Standard UserDefaults
-        let standardDefaults = UserDefaults.standard
-        standardDefaults.set("test", forKey: "wblock-test")
-        let standardTest = standardDefaults.string(forKey: "wblock-test")
-        logger.info("🔧 Standard UserDefaults test: \(standardTest ?? "nil")")
-
         // Using ProtobufDataManager for data persistence
         logger.info("✅ Using ProtobufDataManager for userscript persistence")
 
