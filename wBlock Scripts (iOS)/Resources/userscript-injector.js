@@ -78,6 +78,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.messageListenerAttached = false; // Ensure listener is attached only once
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
+            this.xhrBridgeTokens = new Set(); // valid GM_xmlhttpRequest bridge tokens
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
@@ -117,6 +118,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (event.source !== window) return;
                 const data = event.data;
                 if (!data || data.type !== 'wblock-gm-xhr-request') return;
+                // Reject requests that don't present a token we issued to an
+                // injected userscript; this stops arbitrary page scripts from
+                // using the extension as a CORS-free proxy.
+                if (typeof data.bridgeId !== 'string' || !this.xhrBridgeTokens.has(data.bridgeId)) {
+                    wBlockWarn('[wBlock] Ignoring GM_xmlhttpRequest without a valid bridge token');
+                    return;
+                }
 
                 const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName } = data;
 
@@ -853,6 +861,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (fullScript.id && !fullScript.menuBridgeId) {
                     fullScript.menuBridgeId = this.generateSecret('gmmenu');
                 }
+                // Every script gets an unguessable token that authorizes its
+                // GM_xmlhttpRequest calls. The page-context bridge below only
+                // honors requests carrying a known token, so arbitrary page
+                // scripts cannot borrow the extension's CORS-free network access.
+                if (!fullScript.xhrBridgeId) {
+                    fullScript.xhrBridgeId = this.generateSecret('gmxhr');
+                    this.xhrBridgeTokens.add(fullScript.xhrBridgeId);
+                }
 
                 const injectInto = fullScript.injectInto || 'page';
                 wBlockLog(`[wBlock] Injecting userscript: ${fullScript.name} (mode: ${injectInto})`);
@@ -1063,6 +1079,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     let listenerIdCounter = 0;
     const storageBridgeId = '${escapeForJS(script.storageBridgeId || '')}';
     const menuBridgeId = '${escapeForJS(script.menuBridgeId || '')}';
+    const xhrBridgeId = '${escapeForJS(script.xhrBridgeId || '')}';
     const pageMenuBridgeElement = ${isContentContext ? 'null' : 'document.currentScript'};
     const contentMenuBridge = ${isContentContext ? 'window.__wBlockMenuCommandBridge' : 'null'};
     const scriptStorageState = Object.assign({}, ${storageSnapshotJSON});
@@ -2019,6 +2036,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             window.postMessage({
                 type: 'wblock-gm-xhr-request',
                 id: requestId,
+                bridgeId: xhrBridgeId,
                 ...requestPayload
             }, '*');
 
