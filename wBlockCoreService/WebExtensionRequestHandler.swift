@@ -33,6 +33,28 @@ public enum WebExtensionRequestHandler {
         return sharedLogDateFormatter.string(from: Date())
     }
 
+    // Long-lived sessions for GM_xmlhttpRequest. Creating a URLSession per
+    // request spins up a thread pool each time; these are reused instead.
+    // The anonymous session never stores or sends cookies, matching GM
+    // `anonymous` semantics. Per-request idle timeouts are still applied via
+    // URLRequest.timeoutInterval; the resource timeout is a fixed backstop.
+    private static let gmDefaultSession: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.urlCache = nil
+        configuration.timeoutIntervalForResource = 300
+        return URLSession(configuration: configuration)
+    }()
+    private static let gmAnonymousSession: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.urlCache = nil
+        configuration.timeoutIntervalForResource = 300
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        return URLSession(configuration: configuration)
+    }()
+
     private static func emptyRulesPayload() -> [String: Any] {
         [
             "css": [],
@@ -909,18 +931,7 @@ public enum WebExtensionRequestHandler {
         timeoutMilliseconds: Double
     ) async -> [String: Any?] {
         let timeoutSeconds = timeoutMilliseconds > 0 ? max(timeoutMilliseconds / 1000, 0.1) : 30
-        let configuration = anonymous ? URLSessionConfiguration.ephemeral : URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = timeoutSeconds
-        configuration.timeoutIntervalForResource = max(timeoutSeconds, 60)
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.urlCache = nil
-        if anonymous {
-            configuration.httpCookieStorage = nil
-            configuration.httpShouldSetCookies = false
-        }
-
-        let session = URLSession(configuration: configuration)
-        defer { session.finishTasksAndInvalidate() }
+        let session = anonymous ? gmAnonymousSession : gmDefaultSession
 
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeoutSeconds)
         request.httpMethod = method
