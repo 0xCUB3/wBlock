@@ -48,7 +48,6 @@ private func mergePersistedChanges(
     preservePersistedValue(\.runningSinceTimestamp, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
     preservePersistedValue(\.filterEtags, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
     preservePersistedValue(\.filterLastModified, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.userscriptsInitialSetupCompleted, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
     preservePersistedValue(\.bgAppRefresh, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
     preservePersistedValue(\.bgProcessing, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
     preservePersistedValue(\.silentPush, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
@@ -618,16 +617,6 @@ public class ProtobufDataManager: ObservableObject {
                 }
             }
         }
-    }
-
-    /// Indicates if userscripts initial setup has been completed
-    public var userscriptsInitialSetupCompleted: Bool {
-        appData.autoUpdate.userscriptsInitialSetupCompleted
-    }
-
-    @MainActor
-    public func setUserscriptsInitialSetupCompleted(_ value: Bool) async {
-        await updateData { $0.autoUpdate.userscriptsInitialSetupCompleted = value }
     }
 
     public var autoUpdateDiagnostics: AutoUpdateDiagnosticsSnapshot {
@@ -1380,7 +1369,6 @@ public class ProtobufDataManager: ObservableObject {
         defaultData.autoUpdate.forceNext = false
         defaultData.autoUpdate.isRunning = false
         defaultData.autoUpdate.runningSinceTimestamp = 0
-        defaultData.autoUpdate.userscriptsInitialSetupCompleted = false
 
         // Initialize default performance data
         #if os(macOS)
@@ -1611,9 +1599,6 @@ public class ProtobufDataManager: ObservableObject {
         migratedData.autoUpdate.runningSinceTimestamp = Self.sanitizeEpochSecondsToInt64(
             groupDefaults.double(forKey: "autoUpdateIsRunningTimestamp")
         )
-
-        // Migrate userscripts initial setup flag (from standard UserDefaults)
-        migratedData.autoUpdate.userscriptsInitialSetupCompleted = UserDefaults.standard.bool(forKey: "userScriptsInitialSetupCompleted")
 
         // Migrate filter ETags and Last-Modified headers
         // Scan through all keys looking for filterEtag_ and filterLastModified_ prefixes

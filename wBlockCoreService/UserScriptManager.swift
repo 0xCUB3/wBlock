@@ -185,11 +185,9 @@ public class UserScriptManager: ObservableObject {
     @Published public var showingDuplicatesAlert = false
     @Published public var duplicatesMessage = ""
     @Published public var pendingDuplicatesToRemove: [UserScript] = []
-    @Published public var hasCompletedInitialSetup = false
     @Published public private(set) var isReady = false
     @Published public private(set) var isPrefetchingDefaultMetadata = false
 
-    private let initialSetupCompletedKey = "userScriptsInitialSetupCompleted"
     private let userScriptSiteDisabledDefaultsKey = "userScriptDisabledHostsByID"
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
     private let dataManager = ProtobufDataManager.shared
@@ -996,10 +994,6 @@ public class UserScriptManager: ObservableObject {
         }
 
         await migrateLegacyPopupBlockerIfNeeded()
-
-        // Check if this is the first time setup
-        hasCompletedInitialSetup = UserDefaults.standard.bool(forKey: initialSetupCompletedKey)
-        logger.info("🔧 Initial setup completed: \(self.hasCompletedInitialSetup)")
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
@@ -2566,21 +2560,11 @@ public class UserScriptManager: ObservableObject {
         statusDescription = "Duplicate removal cancelled"
     }
 
-    /// Marks the initial setup as complete and enables duplicate detection
+    /// Called when userscript initial setup finishes (onboarding completed or a backup
+    /// restored). The script set is now settled, so run the duplicate check.
     public func markInitialSetupComplete() {
-        logger.info("✅ Marking initial setup as complete")
-        hasCompletedInitialSetup = true
-        UserDefaults.standard.set(true, forKey: initialSetupCompletedKey)
-
-        // Now that setup is complete, check for duplicates
+        logger.info("✅ Initial setup complete; checking for duplicate userscripts")
         checkForDuplicatesAndAskForConfirmation()
-    }
-
-    /// Resets initial setup state (for testing or fresh starts)
-    public func resetInitialSetupState() {
-        logger.info("🔄 Resetting initial setup state")
-        hasCompletedInitialSetup = false
-        UserDefaults.standard.removeObject(forKey: initialSetupCompletedKey)
     }
 
     public func simulateFreshInstall() async {
@@ -2589,7 +2573,6 @@ public class UserScriptManager: ObservableObject {
         isReady = false
         metadataPrefetchTask?.cancel()
         metadataPrefetchTask = nil
-        resetInitialSetupState()
 
         // Clear all existing userscripts to simulate fresh install
         userScripts.removeAll()

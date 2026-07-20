@@ -193,7 +193,9 @@ message AutoUpdateMetadata {
   int64 running_since_timestamp = 8;
   map<string, string> filter_etags = 9;  // UUID -> ETag header value
   map<string, string> filter_last_modified = 10;  // UUID -> Last-Modified header value
-  bool userscripts_initial_setup_completed = 11;
+  // Field 11 (userscripts_initial_setup_completed) was removed: it was write-only
+  // dead state that nothing ever read. Reserved to prevent reuse.
+  reserved 11;
   BackgroundTaskDiagnostics bg_app_refresh = 12;
   BackgroundTaskDiagnostics bg_processing = 13;
   SilentPushDiagnostics silent_push = 14;

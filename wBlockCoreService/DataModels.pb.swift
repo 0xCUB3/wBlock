@@ -671,11 +671,6 @@ struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
     set {_uniqueStorage()._filterLastModified = newValue}
   }
 
-  var userscriptsInitialSetupCompleted: Bool {
-    get {_storage._userscriptsInitialSetupCompleted}
-    set {_uniqueStorage()._userscriptsInitialSetupCompleted = newValue}
-  }
-
   var bgAppRefresh: Wblock_Data_BackgroundTaskDiagnostics {
     get {_storage._bgAppRefresh ?? Wblock_Data_BackgroundTaskDiagnostics()}
     set {_uniqueStorage()._bgAppRefresh = newValue}
@@ -1672,7 +1667,7 @@ extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, SwiftProtobu
 
 extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{3}userscripts_initial_setup_completed\0\u{3}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{4}\u{2}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0\u{c}\u{b}\u{1}")
 
   fileprivate class _StorageClass {
     var _enabled: Bool = false
@@ -1685,7 +1680,6 @@ extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._
     var _runningSinceTimestamp: Int64 = 0
     var _filterEtags: Dictionary<String,String> = [:]
     var _filterLastModified: Dictionary<String,String> = [:]
-    var _userscriptsInitialSetupCompleted: Bool = false
     var _bgAppRefresh: Wblock_Data_BackgroundTaskDiagnostics? = nil
     var _bgProcessing: Wblock_Data_BackgroundTaskDiagnostics? = nil
     var _silentPush: Wblock_Data_SilentPushDiagnostics? = nil
@@ -1711,7 +1705,6 @@ extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._
       _runningSinceTimestamp = source._runningSinceTimestamp
       _filterEtags = source._filterEtags
       _filterLastModified = source._filterLastModified
-      _userscriptsInitialSetupCompleted = source._userscriptsInitialSetupCompleted
       _bgAppRefresh = source._bgAppRefresh
       _bgProcessing = source._bgProcessing
       _silentPush = source._silentPush
@@ -1745,7 +1738,6 @@ extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._
         case 8: try { try decoder.decodeSingularInt64Field(value: &_storage._runningSinceTimestamp) }()
         case 9: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &_storage._filterEtags) }()
         case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: &_storage._filterLastModified) }()
-        case 11: try { try decoder.decodeSingularBoolField(value: &_storage._userscriptsInitialSetupCompleted) }()
         case 12: try { try decoder.decodeSingularMessageField(value: &_storage._bgAppRefresh) }()
         case 13: try { try decoder.decodeSingularMessageField(value: &_storage._bgProcessing) }()
         case 14: try { try decoder.decodeSingularMessageField(value: &_storage._silentPush) }()
@@ -1793,9 +1785,6 @@ extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._
       if !_storage._filterLastModified.isEmpty {
         try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufString>.self, value: _storage._filterLastModified, fieldNumber: 10)
       }
-      if _storage._userscriptsInitialSetupCompleted != false {
-        try visitor.visitSingularBoolField(value: _storage._userscriptsInitialSetupCompleted, fieldNumber: 11)
-      }
       try { if let v = _storage._bgAppRefresh {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
       } }()
@@ -1830,7 +1819,6 @@ extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._
         if _storage._runningSinceTimestamp != rhs_storage._runningSinceTimestamp {return false}
         if _storage._filterEtags != rhs_storage._filterEtags {return false}
         if _storage._filterLastModified != rhs_storage._filterLastModified {return false}
-        if _storage._userscriptsInitialSetupCompleted != rhs_storage._userscriptsInitialSetupCompleted {return false}
         if _storage._bgAppRefresh != rhs_storage._bgAppRefresh {return false}
         if _storage._bgProcessing != rhs_storage._bgProcessing {return false}
         if _storage._silentPush != rhs_storage._silentPush {return false}
