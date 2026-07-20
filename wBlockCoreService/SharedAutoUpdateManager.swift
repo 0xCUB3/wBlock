@@ -1371,8 +1371,6 @@ public actor SharedAutoUpdateManager {
 
         switch FilterDiffUpdater.applyBlock(block, to: baselineText) {
         case .success(let patchedText):
-            // Persist the new raw baseline for the next cycle.
-            try? patchedText.data(using: .utf8)?.write(to: baselineURL, options: .atomic)
             appendSharedLog(
                 "Diff update: \(filter.name) applied \(formatBytes(patchSize)) patch from \(patchURL.absoluteString)"
             )
