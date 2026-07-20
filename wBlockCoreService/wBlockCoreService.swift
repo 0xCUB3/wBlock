@@ -1034,9 +1034,10 @@ extension ContentBlockerService {
                 with: "content-blocker.json",
                 type: .file,
                 uncompressedSize: Int64(contentBlockerData.count),
-                bufferSize: 4
+                bufferSize: 65536
             ) { position, size -> Data in
-                // This will be called until `data` is exhausted (3x in this case).
+                // Called repeatedly with chunks of at most `bufferSize` bytes
+                // until the whole entry has been provided.
                 return contentBlockerData.subdata(
                     in: Data.Index(position)..<Int(position) + size
                 )
@@ -1048,9 +1049,10 @@ extension ContentBlockerService {
                     with: "advanced-rules.txt",
                     type: .file,
                     uncompressedSize: Int64(advancedData.count),
-                    bufferSize: 4
+                    bufferSize: 65536
                 ) { position, size -> Data in
-                    // This will be called until `data` is exhausted (3x in this case).
+                    // Called repeatedly with chunks of at most `bufferSize` bytes
+                    // until the whole entry has been provided.
                     return advancedData.subdata(in: Data.Index(position)..<Int(position) + size)
                 }
             }
