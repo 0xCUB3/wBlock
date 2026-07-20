@@ -647,7 +647,7 @@ extension AppFilterManager {
 
         await saveFilterLists()
 
-        // Save rule counts to UserDefaults for next app launch
+        // Persist rule counts (protobuf store) for next app launch
         saveRuleCounts()
 
         // Final summary log
