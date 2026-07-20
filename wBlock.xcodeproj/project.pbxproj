@@ -390,7 +390,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Protos/wblock_data.proto,
 			);
 			target = C1A41C2C2DE0897C0056F63D /* wBlock */;
 		};
