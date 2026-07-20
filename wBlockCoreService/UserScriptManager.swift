@@ -868,7 +868,8 @@ public class UserScriptManager: ObservableObject {
                 "Found \(duplicatePairs.count) duplicate userscript(s):\n\n\(duplicateNames)\n\nWould you like to remove the older versions?"
 
             // Use a small delay to ensure UI is ready to show the alert
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                guard let self else { return }
                 self.showingDuplicatesAlert = true
                 self.logger.info("📋 Showing duplicate removal confirmation dialog")
             }
