@@ -596,25 +596,38 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return regex.firstMatch(in: url, options: [], range: urlRange) != nil
     }
     
+    // Shared formatters to avoid allocating new ones per row
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .none
+        f.timeStyle = .short
+        return f
+    }()
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE 'at' h:mm a"
+        return f
+    }()
+    private static let dateOnlyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f
+    }()
+
     /// Returns a formatted string for the last updated date
     public var lastUpdatedFormatted: String? {
         guard let lastUpdated = lastUpdated else { return nil }
-        
-        let formatter = DateFormatter()
+
         let now = Date()
         let calendar = Calendar.current
-        
+
         if calendar.isDate(lastUpdated, inSameDayAs: now) {
-            formatter.dateStyle = .none
-            formatter.timeStyle = .short
-            return "Today at \(formatter.string(from: lastUpdated))"
+            return "Today at \(Self.timeFormatter.string(from: lastUpdated))"
         } else if let daysDifference = calendar.dateComponents([.day], from: lastUpdated, to: now).day, daysDifference < 7 {
-            formatter.dateFormat = "EEEE 'at' h:mm a"
-            return formatter.string(from: lastUpdated)
+            return Self.weekdayFormatter.string(from: lastUpdated)
         } else {
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .none
-            return formatter.string(from: lastUpdated)
+            return Self.dateOnlyFormatter.string(from: lastUpdated)
         }
     }
 }
