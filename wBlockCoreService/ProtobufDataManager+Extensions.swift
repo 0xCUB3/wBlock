@@ -714,23 +714,18 @@ extension ProtobufDataManager {
     }
 
     public func addExcludedDefaultUserScriptURL(_ url: String) {
-        Task { @MainActor in
-            var updatedData = appData
-            if !updatedData.settings.excludedDefaultUserscriptUrls.contains(url) {
-                updatedData.settings.excludedDefaultUserscriptUrls.append(url)
-                appData = updatedData
-                await saveData()
-            }
-        }
+        var updatedData = appData
+        guard !updatedData.settings.excludedDefaultUserscriptUrls.contains(url) else { return }
+        updatedData.settings.excludedDefaultUserscriptUrls.append(url)
+        appData = updatedData
+        Task { await saveData() }
     }
 
     public func removeExcludedDefaultUserScriptURL(_ url: String) {
-        Task { @MainActor in
-            var updatedData = appData
-            updatedData.settings.excludedDefaultUserscriptUrls.removeAll { $0 == url }
-            appData = updatedData
-            await saveData()
-        }
+        var updatedData = appData
+        updatedData.settings.excludedDefaultUserscriptUrls.removeAll { $0 == url }
+        appData = updatedData
+        Task { await saveData() }
     }
 
     // MARK: - UserScript UI State
@@ -740,12 +735,10 @@ extension ProtobufDataManager {
     }
 
     public func setUserScriptShowEnabledOnly(_ value: Bool) {
-        Task { @MainActor in
-            var updatedData = appData
-            updatedData.settings.userscriptShowEnabledOnly = value
-            appData = updatedData
-            await saveData()
-        }
+        var updatedData = appData
+        updatedData.settings.userscriptShowEnabledOnly = value
+        appData = updatedData
+        Task { await saveData() }
     }
 }
 
