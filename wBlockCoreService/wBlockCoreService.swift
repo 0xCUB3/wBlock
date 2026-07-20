@@ -436,74 +436,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         return rules.count
     }
 
-    /// Converts AdGuard rules to Safari content blocker format and saves them to the shared container.
-    /// This version includes per-site disable functionality by injecting ignore-previous-rules for disabled sites.
-    ///
-    /// - Parameters:
-    ///   - rules: AdGuard rules to be converted.
-    ///   - groupIdentifier: Group ID to use for the shared container where
-    ///                      the file will be saved.
-    ///   - targetRulesFilename: Target filename for the rules file.
-    ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
-    /// - Returns: A tuple containing the number of Safari content blocker rules generated 
-    ///           and the advanced rules text (if any).
-    public static func convertFilter(rules: String, groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
-
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
-            throw CocoaError(.fileNoSuchFile)
-        }
-
-        let digest = SHA256.hash(data: Data(rules.utf8))
-        let baseRulesHashHex = digest.map { String(format: "%02x", $0) }.joined()
-        let rulesSHA256Hex = effectiveRulesHashHex(baseRulesHashHex: baseRulesHashHex)
-
-        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
-        let baseCountFilename = "\(baseFilename).count"
-        let baseHashFilename = "\(baseFilename).sha256"
-        let advancedFilename = ContentBlockerIncrementalCache.baseAdvancedRulesFilename(
-            for: targetRulesFilename
-        )
-
-        let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
-        let baseHashURL = containerURL.appendingPathComponent(baseHashFilename)
-        let advancedURL = containerURL.appendingPathComponent(advancedFilename)
-
-        if let cachedHash = try? String(contentsOf: baseHashURL, encoding: .utf8)
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-            cachedHash == rulesSHA256Hex,
-            FileManager.default.fileExists(atPath: baseURL.path),
-            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
-        {
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
-
-            let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
-            try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
-
-            let advancedText =
-                (try? String(contentsOf: advancedURL, encoding: .utf8))
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .flatMap { $0.isEmpty ? nil : $0 }
-
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
-        }
-
-        let effectiveRules = combinedRulesWithEmbeddedCompatibility(rules)
-        let result = try convertRules(rules: effectiveRules)
-
-        try saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
-        try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
-        try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
-
-        let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
-        try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
-        try saveBlockerListFile(contents: rulesSHA256Hex, groupIdentifier: groupIdentifier, filename: baseHashFilename)
-
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
-    }
-
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
     /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
     public static func convertFilterFromFile(
@@ -511,9 +443,9 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         rulesSHA256Hex: String,
         groupIdentifier: String,
         targetRulesFilename: String,
-        disabledSites: [String]? = nil
+        disabledSites: [String]
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
+        let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -574,11 +506,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     /// - Parameters:
     ///   - groupIdentifier: Group ID to use for the shared container
     ///   - targetRulesFilename: Target filename for the rules file
-    ///   - disabledSites: Optional list of disabled sites. If nil, attempts to read from legacy UserDefaults.
+    ///   - disabledSites: Sites where wBlock is disabled (ignore rules are injected for these).
     /// - Returns: A tuple containing the number of Safari content blocker rules and advanced rules text
-    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]? = nil) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let sitesToUse = disabledSites ?? getDisabledSites(groupIdentifier: groupIdentifier)
-        
+    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let sitesToUse = disabledSites
+
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             throw CocoaError(.fileNoSuchFile)
         }
@@ -617,15 +549,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let finalRuleCount = derived.baseRuleCount + sitesToUse.count
         os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
         return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
-    }
-    
-    /// Retrieves the list of sites where wBlock is disabled.
-    ///
-    /// - Parameter groupIdentifier: The app group identifier for shared storage.
-    /// - Returns: Array of disabled site hostnames.
-    private static func getDisabledSites(groupIdentifier: String) -> [String] {
-        let defaults = UserDefaults(suiteName: groupIdentifier)
-        return defaults?.stringArray(forKey: "disabledSites") ?? []
     }
 
     private struct DerivedBaseRules {
