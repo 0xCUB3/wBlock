@@ -50,9 +50,7 @@ extension ProtobufDataManager {
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             return protoFilterList
         }
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
 
@@ -69,9 +67,7 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
+            appData = updatedData
             await saveData()
         }
     }
@@ -94,9 +90,7 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
+            appData = updatedData
             await saveData()
         }
     }
@@ -114,9 +108,7 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
+            appData = updatedData
             await saveData()
         }
     }
@@ -135,9 +127,7 @@ extension ProtobufDataManager {
         }
 
         if needsSave {
-            await MainActor.run {
-                appData = updatedData
-            }
+            appData = updatedData
             await saveData()
         }
     }
@@ -182,9 +172,7 @@ extension ProtobufDataManager {
             }
         }
 
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
 
@@ -245,9 +233,7 @@ extension ProtobufDataManager {
             updatedData.filterLists.append(protoFilterList)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -255,9 +241,7 @@ extension ProtobufDataManager {
         var updatedData = await latestAppDataSnapshot()
         updatedData.filterLists.removeAll { $0.id == id.uuidString }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -271,9 +255,7 @@ extension ProtobufDataManager {
             }
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -367,9 +349,7 @@ extension ProtobufDataManager {
             updatedData.userScripts.append(protoUserScript)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -386,9 +366,7 @@ extension ProtobufDataManager {
         updatedData.userScripts.removeAll { $0.id == id.uuidString }
         updatedData.userScriptDisabledHosts.removeValue(forKey: id.uuidString)
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -454,9 +432,7 @@ extension ProtobufDataManager {
             updatedData.settings.showAdvancedFeatures = showAdvancedFeatures
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -485,9 +461,7 @@ extension ProtobufDataManager {
         
         updatedData.ruleCounts.lastUpdated = Int64(Date().timeIntervalSince1970)
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -541,9 +515,7 @@ extension ProtobufDataManager {
             updatedData.performance.totalFiltersCount = Int32(totalFiltersCount)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -674,9 +646,7 @@ extension ProtobufDataManager {
             updatedData.filterLists.append(protoFilterList)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
     
@@ -712,9 +682,7 @@ extension ProtobufDataManager {
             updatedData.userScripts.append(protoUserScript)
         }
         
-        await MainActor.run {
-            appData = updatedData
-        }
+        appData = updatedData
         await saveData()
     }
 
