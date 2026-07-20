@@ -165,6 +165,9 @@ public actor SharedAutoUpdateManager {
 
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
+    // Reused for shared-log timestamps; safe because all access is actor-isolated.
+    private let sharedLogDateFormatter = ISO8601DateFormatter()
+
     // Staleness threshold: if running flag is set for longer than this, it's considered stuck
     private let runningFlagStalenessThreshold: TimeInterval = 180 // 3 minutes (reduced from 10)
 
@@ -1306,7 +1309,7 @@ public actor SharedAutoUpdateManager {
         if let availability = FilterDiffUpdater.patchAvailabilityTime(metadata: metadata, now: now),
            now < availability {
             appendSharedLog(
-                "Diff update: \(filter.name) deferring patch fetch (expected at \(ISO8601DateFormatter().string(from: availability)))"
+                "Diff update: \(filter.name) deferring patch fetch (expected at \(sharedLogDateFormatter.string(from: availability)))"
             )
             return .noChange
         }
@@ -2100,7 +2103,7 @@ public actor SharedAutoUpdateManager {
     private func appendSharedLog(_ line: String) {
         guard let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else { return }
         let logURL = base.appendingPathComponent(sharedAutoUpdateLogFilename)
-        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let timestamp = sharedLogDateFormatter.string(from: Date())
         let full = "[\(timestamp)] \(line)\n"
         if let data = full.data(using: .utf8) {
             if FileManager.default.fileExists(atPath: logURL.path) {

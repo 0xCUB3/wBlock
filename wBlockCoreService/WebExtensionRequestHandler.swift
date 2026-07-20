@@ -22,6 +22,17 @@ import os.log
 public enum WebExtensionRequestHandler {
     private static let sharedWebExtensionLogFilename = "web_extension.log"
 
+    // Reused for shared-log timestamps. Requests can be handled on concurrent
+    // threads, so formatting is serialized behind a lock.
+    private static let sharedLogDateFormatter = ISO8601DateFormatter()
+    private static let sharedLogDateFormatterLock = NSLock()
+
+    private static func sharedLogTimestamp() -> String {
+        sharedLogDateFormatterLock.lock()
+        defer { sharedLogDateFormatterLock.unlock() }
+        return sharedLogDateFormatter.string(from: Date())
+    }
+
     private static func emptyRulesPayload() -> [String: Any] {
         [
             "css": [],
@@ -493,7 +504,7 @@ public enum WebExtensionRequestHandler {
         }
 
         let logURL = base.appendingPathComponent(sharedWebExtensionLogFilename)
-        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let timestamp = sharedLogTimestamp()
         let fullLine = "[\(timestamp)] \(line)\n"
 
         guard let data = fullLine.data(using: .utf8) else {
