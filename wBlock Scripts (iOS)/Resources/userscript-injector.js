@@ -425,6 +425,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         }
 
+        // Cryptographically strong, unguessable token for security-sensitive
+        // bridge IDs. Unlike generateRequestId (which only correlates a
+        // request/response pair), these secrets gate privileged bridges, so
+        // they must not be predictable by page scripts.
+        generateSecret(prefix) {
+            const bytes = new Uint8Array(16);
+            if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+                crypto.getRandomValues(bytes);
+            } else {
+                for (let i = 0; i < bytes.length; i += 1) {
+                    bytes[i] = Math.floor(Math.random() * 256);
+                }
+            }
+            let hex = '';
+            for (let i = 0; i < bytes.length; i += 1) {
+                hex += bytes[i].toString(16).padStart(2, '0');
+            }
+            return `${prefix}-${hex}`;
+        }
+
         async sendNativeRequest(action, payload = {}) {
             const requestId = payload.requestId || this.generateRequestId(action);
             const messagePayload = { ...payload, requestId };
@@ -827,11 +847,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 const fullScript = await this.ensureScriptPayload(script);
                 if (fullScript.id && !fullScript.storageBridgeId) {
-                    fullScript.storageBridgeId = this.generateRequestId('gmstorage');
+                    fullScript.storageBridgeId = this.generateSecret('gmstorage');
                     this.storageBridgeScriptIDs.set(fullScript.storageBridgeId, fullScript.id);
                 }
                 if (fullScript.id && !fullScript.menuBridgeId) {
-                    fullScript.menuBridgeId = this.generateRequestId('gmmenu');
+                    fullScript.menuBridgeId = this.generateSecret('gmmenu');
                 }
 
                 const injectInto = fullScript.injectInto || 'page';
