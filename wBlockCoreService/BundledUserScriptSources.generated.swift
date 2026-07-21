@@ -675,9 +675,9 @@ enum BundledUserScriptSources {
             player.querySelector('[aria-label="Settings"]') ||
             player.querySelector('.ytp-button[aria-label*="Settings"]');
         if (!settingsBtn) { warn('openSettings: no settings button'); return false; }
-        // Click it twice to ensure it opens (first click closes, second opens)
-        settingsBtn.click();
-        settingsBtn.click();
+        var expanded = settingsBtn.getAttribute('aria-expanded') === 'true' ||
+            player.classList.contains('ytp-settings-menu-open');
+        if (!expanded) { settingsBtn.click(); }
         return true;
     }
 
@@ -709,15 +709,12 @@ enum BundledUserScriptSources {
         var targetLabel = QUALITY_LABELS[target] || target;
         // Try to find by quality label text (e.g. "1080p", "720p")
         var allOptions = player.querySelectorAll('.ytp-quality-menu .ytp-menuitem, ' +
-            '.ytp-drop-down-menu-button, ' +
-            '[role="menuitemradio"]');
-
-        // Also try the panel menu items
-        var panelItems = player.querySelectorAll('.ytp-panel-menu .ytp-menuitem');
+            '.ytp-drop-down-menu-button, [role="menuitemradio"], ' +
+            '.ytp-panel-menu .ytp-menuitem');
 
         // Look for the label that matches our target
         var items = [];
-        for (var i = 0; i < panelItems.length; i++) items.push(panelItems[i]);
+        for (var i = 0; i < allOptions.length; i++) items.push(allOptions[i]);
 
         // Sort: prefer exact match, then partial match
         var bestMatch = null;
@@ -1291,7 +1288,8 @@ enum BundledUserScriptSources {
                 if (!p) return 'no player';
                 var methods = [];
                 for (var k in p) {
-                    if (typeof p[k] === 'function' && k.indexOf('playback') !== -1 || k.indexOf('Quality') !== -1) {
+                    if (typeof p[k] === 'function' &&
+                        (k.indexOf('playback') !== -1 || k.indexOf('Quality') !== -1)) {
                         methods.push(k);
                     }
                 }
@@ -1367,9 +1365,6 @@ enum BundledUserScriptSources {
 
     var LOG_PREFIX = '[Player Cleaner]';
     var ATTR_DONE = 'data-wblock-player-cleaner';
-
-    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     // ------------------------------------------------------------------
     // Background playback — keep videos playing in background tabs
@@ -1506,9 +1501,12 @@ enum BundledUserScriptSources {
             }
         }
 
+        var blurTimer = null;
         function onBlur() {
             if (!autoPiPEnabled || _realHidden) return;
-            setTimeout(function () {
+            clearTimeout(blurTimer);
+            blurTimer = setTimeout(function () {
+                blurTimer = null;
                 if (!document.hasFocus() && !video.paused && !video.ended) {
                     enterPiP(video);
                 }
@@ -1527,6 +1525,7 @@ enum BundledUserScriptSources {
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('blur', onBlur);
             window.removeEventListener('focus', onFocus);
+            clearTimeout(blurTimer);
         });
 
         if (typeof IntersectionObserver !== 'undefined') {
@@ -1585,9 +1584,29 @@ enum BundledUserScriptSources {
 
     function isPlayableUrl(value) {
         if (!isHttpUrl(value)) { return false; }
-        // Prefer obviously-playable media; allow plain http(s) too since many
-        // sites serve mp4/m3u8 from extensionless CDN URLs.
+        // Safari does not natively play MPEG-DASH manifests. Replacing a working
+        // MSE/blob pipeline with its .mpd URL breaks playback; leave it enhanced
+        // in place instead. Other extensionless player-API URLs remain allowed.
+        try {
+            var pathname = new URL(value).pathname.toLowerCase();
+            if (/\.mpd$/.test(pathname)) { return false; }
+        } catch (e) { /* keep the already-validated http(s) URL */ }
         return true;
+    }
+
+    function isLikelyMediaUrl(value) {
+        if (!isPlayableUrl(value)) { return false; }
+        try {
+            return /\.(?:mp4|m4v|mov|webm|ogv|ogg|m3u8|mp3|m4a|aac|wav|flac|opus|ts)$/i
+                .test(new URL(value).pathname);
+        } catch (e) { return false; }
+    }
+
+    function looksLikeUrlValue(value) {
+        if (typeof value !== 'string') { return false; }
+        var raw = value.trim();
+        return /^(?:https?:)?\/\//i.test(raw) || /^(?:\/|\.\/|\.\.\/)/.test(raw) ||
+            /[.?&=]/.test(raw);
     }
 
     // Resolve a candidate media URL to an absolute http(s) URL. Many players
@@ -1613,12 +1632,14 @@ enum BundledUserScriptSources {
 
     function sourceFromVideoElement(video) {
         try {
-            if (isHttpUrl(video.currentSrc)) { return video.currentSrc; }
-            if (isHttpUrl(video.src) && video.src.indexOf('blob:') !== 0) { return video.src; }
+            if (isPlayableUrl(video.currentSrc)) { return video.currentSrc; }
+            if (isPlayableUrl(video.src) && video.src.indexOf('blob:') !== 0) { return video.src; }
             var sources = video.getElementsByTagName('source');
             for (var i = 0; i < sources.length; i++) {
+                var type = (sources[i].getAttribute('type') || '').toLowerCase();
+                if (type.indexOf('dash') !== -1) { continue; }
                 var src = toAbsoluteUrl(sources[i].getAttribute('src'));
-                if (isHttpUrl(src)) { return src; }
+                if (isPlayableUrl(src)) { return src; }
             }
         } catch (e) { /* ignore */ }
         return null;
@@ -1631,13 +1652,29 @@ enum BundledUserScriptSources {
             var attrs = ['data-src', 'data-video-src', 'data-file', 'data-video', 'data-source', 'data-url'];
             for (var i = 0; i < candidates.length; i++) {
                 for (var a = 0; a < attrs.length; a++) {
-                    var value = toAbsoluteUrl(candidates[i].getAttribute(attrs[a]));
-                    if (isPlayableUrl(value)) { return value; }
+                    var raw = candidates[i].getAttribute(attrs[a]);
+                    var value = toAbsoluteUrl(raw);
+                    if (!isPlayableUrl(value)) { continue; }
+                    // Generic data-src/data-url commonly point to poster images.
+                    // Require a media-looking extension there; media-specific
+                    // attributes may use extensionless CDN endpoints but must at
+                    // least look URL-like rather than being a player/video ID.
+                    var generic = attrs[a] === 'data-src' || attrs[a] === 'data-url';
+                    if (generic ? isLikelyMediaUrl(value) : looksLikeUrlValue(raw)) {
+                        return value;
+                    }
                 }
             }
-            var direct = toAbsoluteUrl(container.getAttribute('data-src') || container.getAttribute('data-file') ||
-                container.getAttribute('data-video-src'));
-            if (isPlayableUrl(direct)) { return direct; }
+            var directAttrs = ['data-src', 'data-file', 'data-video-src'];
+            for (var d = 0; d < directAttrs.length; d++) {
+                var directRaw = container.getAttribute(directAttrs[d]);
+                var direct = toAbsoluteUrl(directRaw);
+                var directGeneric = directAttrs[d] === 'data-src';
+                if (isPlayableUrl(direct) &&
+                    (directGeneric ? isLikelyMediaUrl(direct) : looksLikeUrlValue(directRaw))) {
+                    return direct;
+                }
+            }
         } catch (e) { /* ignore */ }
         return null;
     }

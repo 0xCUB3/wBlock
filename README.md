@@ -74,7 +74,7 @@ A Safari content blocker for macOS, iOS, and iPadOS.<br>
 
 ### Content modification
 - **Element Zapper** (macOS, iOS, iPadOS, visionOS) — visually select and hide page elements in Safari
-- **Tube Cleaner & Player Cleaner** — optional built-in userscripts that replace YouTube's player (and other sites' custom players) with a clean HTML5 `<video>`, removing in-video ads, restoring Picture-in-Picture, and keeping videos playing in background tabs
+- **Tube Cleaner & Player Cleaner** — optional built-in userscripts that turn existing media elements into native Safari players before first paint, restoring Picture-in-Picture and background playback; wBlock's content-blocking rules handle ads separately
 - **Userscript engine** with Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
 - **Userstyle support** — install UserCSS themes (.user.css) applied natively as CSS, no JS wrapper needed
 - **Custom filter lists** via URL, paste, or file import — supports any AdGuard-syntax blocklist
@@ -317,13 +317,11 @@ This is best-effort, community-style ad blocking: Twitch frequently changes how 
 <details>
 <summary><b>What are Tube Cleaner and Player Cleaner?</b></summary>
 <br>
-They are optional built-in userscripts, inspired by Vinegar and Baking Soda, that replace a site's video player with a clean HTML5 <code>&lt;video&gt;</code> element. They ship disabled by default; enable them in the <i>Userscripts</i> section.
+They are optional built-in userscripts, inspired by Vinegar and Baking Soda, that expose Safari's native controls on a site's existing media element. They ship disabled by default; enable them in the <i>Userscripts</i> section.
 <br><br>
-<b>Tube Cleaner</b> targets YouTube (including embeds). Because it plays the raw media stream instead of YouTube's player, it removes in-video ads, stops play/pause/seek tracking, restores Picture-in-Picture, keeps videos playing when you switch tabs, and offers an audio-only mode. A toolbar lets you pick the quality or switch to audio only, and a <i>Restore</i> button brings back the original player.
+<b>Tube Cleaner</b> targets YouTube (including embeds). It lets YouTube create and initialize its own <code>&lt;video&gt;</code> and SABR/MSE stream, then applies native controls and hides YouTube's custom chrome before it can paint. Reusing the same media element preserves buffering and adaptive playback while restoring Picture-in-Picture and background playback. Its small toolbar provides quality and audio-only controls. Ads remain the responsibility of wBlock's content-blocking rules.
 <br><br>
-<b>Player Cleaner</b> targets custom players on every other website (video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, and more), restoring native controls and Picture-in-Picture. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
-<br><br>
-Tube Cleaner relies on reading YouTube's streaming data, which YouTube changes frequently. It prefers directly-playable streams and falls back to the original player when a video can't be resolved, so pages are never left broken, but some videos or qualities may occasionally be unavailable until the script is updated.
+<b>Player Cleaner</b> targets custom players on other websites (video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome/Mux, and more). It enables native controls immediately. When a safe direct source is available, it removes the custom chrome while retaining the original media element; opaque HLS/DASH/MSE pipelines remain in place and continue using the site's stream machinery. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
 </details>
 
 <details>
@@ -336,16 +334,17 @@ Tube Cleaner (YouTube and embeds):
 <br>• <a href="https://www.youtube.com/watch?v=eRsGyueVLvQ">Sintel</a>
 <br>• <a href="https://www.youtube.com/watch?v=R6MlUcmOul8">Tears of Steel</a>
 <br>• Embeds: <a href="https://www.youtube.com/embed/aqz-KE-bpKQ">youtube.com/embed</a> and <a href="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ">youtube-nocookie.com/embed</a>
-<br>Check that the player becomes a plain video with a small toolbar, that there are no in-video ads, that the quality (▾) and audio-only (♪) buttons work, that Picture-in-Picture works and audio keeps playing in another tab, that Restore (⟲) brings the original player back, and that a Shorts or live link falls back gracefully instead of breaking the page.
+<br>Check that native controls appear without a flash of YouTube chrome, that the quality and audio-only controls work, that Picture-in-Picture works, and that audio keeps playing in another tab. Ad behavior depends on the enabled wBlock filter lists.
 <br><br>
 Player Cleaner (other sites' custom players), one demo per supported library:
-<br>• video.js — <a href="https://videojs.com/">videojs.com</a>
+<br>• video.js / Media Chrome — <a href="https://videojs.org/">videojs.org</a>
 <br>• Plyr — <a href="https://plyr.io/">plyr.io</a>
 <br>• JW Player — <a href="https://developer-tools.jwplayer.com/stream-tester">stream tester</a> and <a href="https://jwplayer.github.io/jwplayer/">demo</a>
 <br>• Clappr — <a href="http://clappr.io/">clappr.io</a> and <a href="http://cdn.clappr.io/">cdn.clappr.io</a>
 <br>• MediaElement — <a href="https://www.mediaelementjs.com/">mediaelementjs.com</a>
-<br>• hls.js — <a href="https://hls-js.netlify.com/demo/">hls.js demo</a>
-<br>Check that the custom chrome is replaced by native controls with a small badge, that native Picture-in-Picture and fullscreen work, and that the badge or Restore returns the original player. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
+<br>• hls.js — <a href="https://hlsjs.video-dev.org/demo/">hls.js demo</a>
+<br>• dash.js — <a href="https://reference.dashif.org/dash.js/latest/samples/dash-if-reference-player/index.html">DASH reference player</a>
+<br>Check that native controls appear promptly, Picture-in-Picture and fullscreen work, and playback does not restart when the custom chrome disappears. HLS/DASH/blob players may retain their stream pipeline while using native controls. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
 </details>
 
 <details>

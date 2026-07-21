@@ -37,11 +37,22 @@
     <video></video>
   </div>
 
+  <!-- Negative F: generic data-src is a poster, not media. Keep blob/MSE. -->
+  <div class="jwplayer player" id="p-poster">
+    <video></video>
+    <img data-src="https://example.com/poster.jpg" alt="">
+  </div>
+
+  <!-- Negative G: Safari cannot natively play DASH .mpd. Keep blob/MSE. -->
+  <div class="flowplayer player" id="p-dash">
+    <video></video>
+  </div>
+
   <script>
     (function () {
       // Give the opaque-source players a blob src so sourceFromVideoElement
       // returns null and the intended discovery path is exercised.
-      ['p-dom', 'p-videojs', 'p-jwplayer'].forEach(function (id) {
+      ['p-dom', 'p-videojs', 'p-jwplayer', 'p-poster', 'p-dash'].forEach(function (id) {
         var v = document.getElementById(id).querySelector('video');
         try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
       });
@@ -54,6 +65,10 @@
             mock: {
               el: function () { return document.querySelector('#p-videojs video'); },
               currentSource: function () { return { src: 'https://example.com/d.mp4', type: 'video/mp4' }; }
+            },
+            dash: {
+              el: function () { return document.querySelector('#p-dash video'); },
+              currentSource: function () { return { src: 'https://example.com/live/manifest.mpd', type: 'application/dash+xml' }; }
             }
           };
         }

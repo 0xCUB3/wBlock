@@ -37,7 +37,8 @@ Player Cleaner scenarios:
 - `fixture-player-cleaner-discovery.html` — five players exposing the media URL
   through different mechanisms (video.src, `<source>` child, descendant
   `data-src`, a mocked video.js `currentSource()`, a mocked JW Player playlist
-  item); each must resolve to the right clean source.
+  item); each must resolve to the right clean source. Negative cases ensure a
+  poster `data-src` and a DASH `.mpd` never replace a working blob/MSE stream.
 - `fixture-player-cleaner-bare.html` — modern/custom players whose wrapper is
   not a recognized library class (Mux-style or bespoke). Verifies the bare-video
   fallback: a controls-less `<video>` in an unknown wrapper is enhanced in place
@@ -57,9 +58,13 @@ Player Cleaner scenarios:
   `<head>` script and records insertion, nativeization, and DOMContentLoaded
   timestamps. Enforces pre-paint transformation within one frame, without a
   debounce or DOMContentLoaded gate.
-- The resource-lifecycle scenario replaces an opaque player's `<video>` six
-  times and instruments document/window listeners, intervals, MutationObservers,
-  and IntersectionObservers. Every active count must remain flat.
+- The resource-lifecycle scenarios replace each cleaner's `<video>` six times
+  and instrument document/window listeners, intervals, MutationObservers, and
+  IntersectionObservers. Every active count must remain flat.
+- Visibility scenarios shadow the page-facing document state while simulating a
+  native hidden tab, proving both cleaners still enter PiP from the captured
+  browser getter. The Tube Cleaner fixture also verifies its quality UI opens
+  once, selects the requested option, and closes once.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
@@ -130,7 +135,8 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   controls surviving YouTube's attempts to
   remove them. Player Cleaner: custom-player detection, source discovery across
   video.js/JW/Plyr/data-attributes (including root-relative URLs resolved
-  against the document base), the clean-source cleanup path (original media
+  against the document base and rejection of poster/DASH false positives), the
+  clean-source cleanup path (original media
   element/state retention and chrome removal), the opaque-source enhance-in-place
   path, event-driven upgrade once a clean source appears, pre-paint timing for
   known wrappers, bounded per-video resources across SPA swaps, the bare-video

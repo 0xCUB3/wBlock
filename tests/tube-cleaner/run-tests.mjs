@@ -40,6 +40,19 @@ const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
 const injectorSource = readFileSync(INJECTOR_PATH, 'utf8');
 const filter = (process.argv.find(a => a.startsWith('--filter=')) || '').split('=')[1] || '';
 
+const visibilityPrelude = `
+window.__wblockNativeHidden = false;
+window.__wblockNativeVisibility = 'visible';
+Object.defineProperty(Document.prototype, 'hidden', {
+  configurable: true,
+  get: function () { return window.__wblockNativeHidden; }
+});
+Object.defineProperty(Document.prototype, 'visibilityState', {
+  configurable: true,
+  get: function () { return window.__wblockNativeVisibility; }
+});
+`;
+
 const resourceCounterPatch = `
 (function () {
   var counters = window.__wblockResourceCounters = {
@@ -214,6 +227,15 @@ async function audioToggleCheck(page, scenario) {
   });
 }
 
+async function qualityUISelectionCheck(page, scenario) {
+  await page.evaluate(() => window.__wblockTubeDebug.setQuality('hd1080'));
+  await page.waitForTimeout(800);
+  await check(page, scenario, 'selects quality through YouTube UI without double-toggle', () => ({
+    pass: window.__uiSelectedQuality === 'hd1080' && window.__settingsClicks === 2,
+    detail: `selected=${window.__uiSelectedQuality} settingsClicks=${window.__settingsClicks}`,
+  }));
+}
+
 // ---- Scenario 1: desktop -------------------------------------------------
 {
   const { browser, page, pageErrors } = await runScenario('desktop (macOS Safari-like)', {
@@ -223,6 +245,7 @@ async function audioToggleCheck(page, scenario) {
   await commonChecks(page, 'desktop');
   await controlsSurvivalCheck(page, 'desktop');
   await audioToggleCheck(page, 'desktop');
+  await qualityUISelectionCheck(page, 'desktop');
   record('desktop', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
@@ -524,7 +547,19 @@ async function audioToggleCheck(page, scenario) {
     return { pass: missing.length === 0, detail: missing.length ? `missing: ${missing.join(',')}` : '5/5 controls' };
   }, { arg: cases });
 
-  // Idempotency across the boot rescans + observer.
+  await check(page, S, 'does not mistake poster data-src for media', () => {
+    const v = document.querySelector('#p-poster video');
+    return { pass: !!(v && v.src.startsWith('blob:') && v.controls),
+      detail: v ? `src=${v.src}` : 'no video' };
+  });
+
+  await check(page, S, 'keeps DASH manifest on its working MSE/blob pipeline', () => {
+    const v = document.querySelector('#p-dash video');
+    return { pass: !!(v && v.src.startsWith('blob:') && v.controls),
+      detail: v ? `src=${v.src}` : 'no video' };
+  });
+
+  // Idempotency across recovery scans + observer.
   await page.waitForTimeout(2600);
   await check(page, S, 'no duplicate videos after rescans (idempotent)', (cases) => {
     const bad = cases.filter(([id]) => {
@@ -801,7 +836,46 @@ async function audioToggleCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 11: production injector starts before <html> exists -------
+// ---- Scenario 11: native visibility survives document shadowing ---------
+// Both cleaners override document.hidden/visibilityState so page players keep
+// running. Auto-PiP must still read the original prototype getters when the tab
+// really hides, not its own forced-visible document properties.
+for (const config of [
+  { name: 'Tube Cleaner', key: 'tube-cleaner-visibility', fixture: FIXTURE_URL,
+    source: visibilityPrelude + '\n' + userscript, selector: '#movie_player video', ready: '.wblock-tc-toolbar' },
+  { name: 'Player Cleaner', key: 'player-cleaner-visibility', fixture: FIXTURE_PLAYER_URL,
+    source: visibilityPrelude + '\n' + playerUserscript, selector: '.video-js video', ready: '[data-wblock-player-cleaner]' },
+]) {
+  const { browser, page, pageErrors } = await runScenario(`${config.name} (native visibility)`, {
+    fixture: config.fixture,
+    scriptSource: config.source,
+    readySignal: config.ready,
+    viewport: { width: 1280, height: 800 },
+  });
+  await page.evaluate((selector) => {
+    const video = document.querySelector(selector);
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+    Object.defineProperty(video, 'ended', { configurable: true, get: () => false });
+    video.webkitSupportsPresentationMode = true;
+    video.webkitPresentationMode = 'inline';
+    video.webkitSetPresentationMode = function (mode) {
+      this.webkitPresentationMode = mode;
+      window.__wblockPiPMode = mode;
+    };
+    window.__wblockNativeHidden = true;
+    window.__wblockNativeVisibility = 'hidden';
+    document.dispatchEvent(new Event('visibilitychange'));
+  }, config.selector);
+  await check(page, config.key, 'enters PiP from native hidden state while page sees visible', () => ({
+    pass: document.hidden === false && document.visibilityState === 'visible' &&
+      window.__wblockPiPMode === 'picture-in-picture',
+    detail: `pageHidden=${document.hidden} pageState=${document.visibilityState} pip=${window.__wblockPiPMode}`,
+  }));
+  record(config.key, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 12: production injector starts before <html> exists -------
 // Playwright init scripts run at Safari's true document_start: readyState is
 // "loading" and document.documentElement is null. The production injector must
 // start native lookup immediately, wait only for the parser to create <html>,

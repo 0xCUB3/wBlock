@@ -664,9 +664,9 @@
             player.querySelector('[aria-label="Settings"]') ||
             player.querySelector('.ytp-button[aria-label*="Settings"]');
         if (!settingsBtn) { warn('openSettings: no settings button'); return false; }
-        // Click it twice to ensure it opens (first click closes, second opens)
-        settingsBtn.click();
-        settingsBtn.click();
+        var expanded = settingsBtn.getAttribute('aria-expanded') === 'true' ||
+            player.classList.contains('ytp-settings-menu-open');
+        if (!expanded) { settingsBtn.click(); }
         return true;
     }
 
@@ -698,15 +698,12 @@
         var targetLabel = QUALITY_LABELS[target] || target;
         // Try to find by quality label text (e.g. "1080p", "720p")
         var allOptions = player.querySelectorAll('.ytp-quality-menu .ytp-menuitem, ' +
-            '.ytp-drop-down-menu-button, ' +
-            '[role="menuitemradio"]');
-
-        // Also try the panel menu items
-        var panelItems = player.querySelectorAll('.ytp-panel-menu .ytp-menuitem');
+            '.ytp-drop-down-menu-button, [role="menuitemradio"], ' +
+            '.ytp-panel-menu .ytp-menuitem');
 
         // Look for the label that matches our target
         var items = [];
-        for (var i = 0; i < panelItems.length; i++) items.push(panelItems[i]);
+        for (var i = 0; i < allOptions.length; i++) items.push(allOptions[i]);
 
         // Sort: prefer exact match, then partial match
         var bestMatch = null;
@@ -1280,7 +1277,8 @@
                 if (!p) return 'no player';
                 var methods = [];
                 for (var k in p) {
-                    if (typeof p[k] === 'function' && k.indexOf('playback') !== -1 || k.indexOf('Quality') !== -1) {
+                    if (typeof p[k] === 'function' &&
+                        (k.indexOf('playback') !== -1 || k.indexOf('Quality') !== -1)) {
                         methods.push(k);
                     }
                 }
