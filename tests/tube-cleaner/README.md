@@ -44,6 +44,28 @@ node live-smoke.mjs            # default video
 node live-smoke.mjs <videoId>  # specific video
 ```
 
+## Leak test — `leak-test.mjs`
+
+Instruments `document.addEventListener`/`removeEventListener` and
+`window.setInterval`/`clearInterval`, transforms the player, then swaps the
+`<video>` element several times (as YouTube does during SPA navigation) and
+asserts active listener/interval counts stay flat. Fails on the pre-fix code
+(leaked ~2 intervals per swap) and passes now. Exit code 1 on failure.
+
+```sh
+node leak-test.mjs
+```
+
+## Diagnostic — `probe-yt-events.mjs`
+
+Best-effort probe that reports which document-level `yt-*` events live YouTube
+actually dispatches. Used to confirm the removed `yt-player-state-change` hook
+was dead code. Not a gate.
+
+```sh
+node probe-yt-events.mjs
+```
+
 ## What these tests do and don't prove
 
 - Prove: the userscript's DOM transformation logic (native controls, chrome
