@@ -79,8 +79,9 @@ enum BundledUserScriptSources {
     // iOS / iPadOS detection
     // ------------------------------------------------------------------
 
+    // iPadOS requesting the desktop site reports "MacIntel" with touch support;
+    // the ontouchstart check keeps real Macs (trackpads) from matching.
     var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (/iPad/.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 &&
          typeof document.documentElement.ontouchstart !== 'undefined');
     var IS_MOBILE_SITE = location.hostname === 'm.youtube.com' ||
@@ -629,9 +630,6 @@ enum BundledUserScriptSources {
         });
         playerObserver.observe(player, { childList: true, subtree: true });
 
-        // 8. Hook player state changes to re-apply quality
-        hookPlayerStateChanges();
-
         log('player transformed');
     }
 
@@ -858,21 +856,6 @@ enum BundledUserScriptSources {
             }
             setQuality(preferred);
         }, 500);
-    }
-
-    var _qualityHooked = false;
-    function hookPlayerStateChanges() {
-        if (_qualityHooked) return;
-        _qualityHooked = true;
-
-        // Re-apply preferred quality when the player changes state
-        // (e.g. new video loads, ad finishes, etc.)
-        document.addEventListener('yt-player-state-change', function () {
-            var preferred = getPreferredQuality();
-            if (preferred !== 'auto') {
-                setTimeout(function () { setQuality(preferred); }, 300);
-            }
-        });
     }
 
     // ------------------------------------------------------------------
