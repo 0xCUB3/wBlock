@@ -1254,7 +1254,7 @@ enum BundledUserScriptSources {
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.1.0
+// @version      1.2.0
 // @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
 // @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
 // @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
@@ -1723,9 +1723,33 @@ enum BundledUserScriptSources {
     // Scanning
     // ------------------------------------------------------------------
 
+    // A <video> that is not inside a recognized player-library container but
+    // still looks like a content player whose native controls are suppressed by
+    // custom chrome (modern players such as Mux or bespoke wrappers). These get
+    // enhanced in place rather than rebuilt, so an unknown wrapper's layout is
+    // left intact.
+    function needsBareEnhancement(video) {
+        if (video.getAttribute && video.getAttribute(ATTR_DONE)) { return false; }
+        if (video.controls) { return false; } // native controls already present
+        // Must have (or be about to have) a source to be a real player.
+        var src = video.currentSrc || video.src ||
+            (video.getAttribute && video.getAttribute('src'));
+        if (!src && !(video.querySelector && video.querySelector('source'))) { return false; }
+        // Skip ambient/background/hero video: autoplay + muted is the dominant
+        // decorative pattern that should keep no native controls.
+        if (video.autoplay && video.muted) { return false; }
+        // Skip tiny rendered videos (hover previews / thumbnails) when the size
+        // is known; offsetWidth/Height are 0 before layout, so only filter on a
+        // reliably-small box.
+        var w = video.offsetWidth, h = video.offsetHeight;
+        if (w > 0 && h > 0 && w < 160 && h < 120) { return false; }
+        return true;
+    }
+
     function scan(root) {
         var scope = root || document;
         var seen = [];
+        // Pass 1: known player-library containers (video.js, JW Player, Plyr...).
         for (var i = 0; i < PLAYER_SELECTORS.length; i++) {
             var nodes;
             try { nodes = scope.querySelectorAll(PLAYER_SELECTORS[i]); }
@@ -1737,6 +1761,25 @@ enum BundledUserScriptSources {
                 try { replacePlayer(container); }
                 catch (e) { log('replace failed', e); }
             }
+        }
+        // Pass 2: any other <video> whose native controls are suppressed by an
+        // unrecognized custom player. Enhance in place only (never rebuild), so
+        // an unknown wrapper's layout is left intact.
+        var bareVideos;
+        try { bareVideos = scope.querySelectorAll('video'); }
+        catch (e) { bareVideos = []; }
+        for (var k = 0; k < bareVideos.length; k++) {
+            var video = bareVideos[k];
+            if (!needsBareEnhancement(video)) { continue; }
+            var bareContainer = video.parentElement || video;
+            if (bareContainer.getAttribute && bareContainer.getAttribute(ATTR_DONE)) { continue; }
+            log('bare player detected', bareContainer.className || '(no class)', 'enhancing in place');
+            try {
+                video.setAttribute(ATTR_DONE, '1');
+                if (bareContainer.setAttribute) { bareContainer.setAttribute(ATTR_DONE, '1'); }
+                enableBackgroundPlayback();
+                enhanceInPlace(bareContainer, video);
+            } catch (e) { log('bare enhance failed', e); }
         }
     }
 

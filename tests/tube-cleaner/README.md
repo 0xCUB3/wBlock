@@ -36,6 +36,11 @@ Player Cleaner scenarios:
   through different mechanisms (video.src, `<source>` child, descendant
   `data-src`, a mocked video.js `currentSource()`, a mocked JW Player playlist
   item); each must resolve to the right clean source.
+- `fixture-player-cleaner-bare.html` — modern/custom players whose wrapper is
+  not a recognized library class (Mux-style or bespoke). Verifies the bare-video
+  fallback: a controls-less `<video>` in an unknown wrapper is enhanced in place
+  (native controls forced on, source kept), while an ambient `autoplay muted
+  loop` video and an already-native video are left untouched.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
@@ -81,6 +86,21 @@ was dead code. Not a gate.
 node probe-yt-events.mjs
 ```
 
+## Diagnostic — `probe-live.mjs`
+
+Loads real pages in WebKit with the actual Player Cleaner injected and
+`__wblockPlayerCleanerDebug` enabled, captures the script's `[Player Cleaner]`
+console output, and dumps each `<video>`'s state (source/protocol, controls,
+autoplay/muted/loop, size, wrapper ancestry). Use it to see whether a live site
+is replaced, enhanced in place, or skipped — and why. Note that Player Cleaner
+logs nothing unless `window.__wblockPlayerCleanerDebug` is set, so silence in a
+plain console does not mean the script is inactive. Not a gate.
+
+```sh
+node probe-live.mjs                       # a few default sites
+node probe-live.mjs https://videojs.org/  # specific URL(s)
+```
+
 ## What these tests do and don't prove
 
 - Prove: the userscripts' DOM transformation logic. Tube Cleaner: native
@@ -89,7 +109,9 @@ node probe-yt-events.mjs
   remove them. Player Cleaner: custom-player detection, source discovery across
   video.js/JW/Plyr/data-attributes, the clean-source replacement path (poster
   and track copying, chrome removal), the opaque-source enhance-in-place path,
-  the background-playback override, and controls surviving a fighting player.
+  the bare-video fallback for unrecognized/custom players (and its ambient and
+  already-native skip guards), the background-playback override, and controls
+  surviving a fighting player.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate
   AdGuard scriptlets (`trusted-replace-*-response`, `set-constant` on
   `adPlacements`/`adSlots`/`playerAds`), not by Tube Cleaner. Verify those via

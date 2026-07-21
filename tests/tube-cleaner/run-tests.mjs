@@ -28,6 +28,7 @@ const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.ht
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
+const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -401,6 +402,80 @@ async function audioToggleCheck(page, scenario) {
     }).map(([id]) => id);
     return { pass: bad.length === 0, detail: bad.length ? `duplicated: ${bad.join(',')}` : '5/5 still single' };
   }, { arg: cases });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (bare/custom players)', {
+    fixture: FIXTURE_PLAYER_BARE_URL,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-bare';
+  const ATTR = 'data-wblock-player-cleaner';
+
+  // Case 1: modern wrapper not in the recognized library list, opaque source.
+  await check(page, S, 'enhances bare video in unrecognized wrapper (controls on)', () => {
+    const v = document.querySelector('#bare-enhance video');
+    const ok = !!(v && v.controls === true && v.getAttribute('data-wblock-player-cleaner') === '1');
+    return { pass: ok, detail: v ? `controls=${v.controls} attr=${v.getAttribute('data-wblock-player-cleaner')}` : 'no video' };
+  });
+
+  await check(page, S, 'marks the bare container done', () => {
+    const c = document.getElementById('bare-enhance');
+    const ok = !!(c && c.getAttribute('data-wblock-player-cleaner') === '1');
+    return { pass: ok, detail: c ? `attr=${c.getAttribute('data-wblock-player-cleaner')}` : 'no container' };
+  });
+
+  await check(page, S, 'bare enhanced video keeps its (opaque) source', () => {
+    const v = document.querySelector('#bare-enhance video');
+    const ok = !!(v && (v.src || '').indexOf('blob:') === 0);
+    return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
+  });
+
+  await check(page, S, 'bare enhanced controls SURVIVE player turning them off', () => {
+    const v = document.querySelector('#bare-enhance video');
+    const ok = !!(v && v.controls === true);
+    return { pass: ok, detail: v ? `controls=${v.controls}` : 'no video' };
+  });
+
+  // Case 2: bare video with a clean source -> enhanced in place, source kept.
+  await check(page, S, 'enhances bare clean-source video (controls on, src kept)', () => {
+    const v = document.querySelector('#bare-clean video');
+    const ok = !!(v && v.controls === true && v.getAttribute('data-wblock-player-cleaner') === '1' && v.src === 'https://example.com/media/movie.mp4');
+    return { pass: ok, detail: v ? `controls=${v.controls} src=${v.src}` : 'no video' };
+  });
+
+  // Case 3: ambient (autoplay+muted+loop) must be untouched. Gated on the
+  // positive case being processed so "untouched" proves the script ran & skipped.
+  await check(page, S, 'leaves ambient autoplay-muted video untouched', () => {
+    const ev = document.querySelector('#bare-enhance video');
+    const ran = !!(ev && ev.getAttribute('data-wblock-player-cleaner') === '1');
+    const v = document.querySelector('#bare-ambient video');
+    const ok = !!(ran && v && v.controls === false && !v.hasAttribute('data-wblock-player-cleaner'));
+    return { pass: ok, detail: `scriptRan=${ran} controls=${v && v.controls} attr=${v && v.getAttribute('data-wblock-player-cleaner')}` };
+  });
+
+  // Case 4: already-native video untouched (gated the same way).
+  await check(page, S, 'leaves already-native video untouched', () => {
+    const ev = document.querySelector('#bare-enhance video');
+    const ran = !!(ev && ev.getAttribute('data-wblock-player-cleaner') === '1');
+    const v = document.getElementById('bare-native');
+    const ok = !!(ran && v && v.controls === true && !v.hasAttribute('data-wblock-player-cleaner'));
+    return { pass: ok, detail: `scriptRan=${ran} controls=${v && v.controls} attr=${v && v.getAttribute('data-wblock-player-cleaner')}` };
+  });
+
+  // Idempotency across the boot rescans + observer.
+  await page.waitForTimeout(2600);
+  await check(page, S, 'no duplicate videos after rescans (idempotent)', () => {
+    const counts = ['#bare-enhance', '#bare-clean', '#bare-ambient'].map(id => document.querySelectorAll(id + ' video').length);
+    const nativeCount = document.querySelectorAll('#bare-native').length;
+    const ok = counts.every(n => n === 1) && nativeCount === 1;
+    return { pass: ok, detail: `counts=${counts.join(',')} native=${nativeCount}` };
+  });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
