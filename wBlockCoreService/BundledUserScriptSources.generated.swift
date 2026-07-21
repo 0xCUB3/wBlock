@@ -1910,20 +1910,21 @@ enum BundledUserScriptSources {
         container.setAttribute(ATTR_DONE, '1');
         enhanceInPlace(container, video, true);
 
-        // A source already attached to <video>/<source> is safe to clean now.
-        // Player APIs and data attributes are not: during parser construction,
-        // cleaning from provisional config can run before the site's setup script
-        // and get overwritten. Wait for a media event or DOMContentLoaded before
-        // consulting those external sources; native controls are already visible.
+        // During parser construction, never delete the wrapper DOM before the
+        // site's own setup script has run. Native controls and hidden overlays
+        // are already visible pre-paint; structural cleanup can safely wait for
+        // DOMContentLoaded or a genuine media-ready event.
+        var mayClean = !!allowExternalDiscovery;
+        if (!mayClean) { return; }
         var src = sourceFromVideoElement(video);
-        if (!src && (allowExternalDiscovery || document.readyState !== 'loading')) {
+        if (!src && mayClean) {
             src = sourceFromVideojs(container) ||
                 sourceFromJwPlayer(container) ||
                 sourceFromDom(container) ||
                 null;
         }
         log('player detected', container.className, 'source:', src ? 'resolved' : 'opaque');
-        if (src) { cleanPlayer(container, video, src); }
+        if (src && mayClean) { cleanPlayer(container, video, src); }
     }
 
     // A clean source is often not discoverable at first scan because the player
@@ -1967,7 +1968,7 @@ enum BundledUserScriptSources {
         return true;
     }
 
-    function scan(root) {
+    function scan(root, allowExternalDiscovery) {
         var scope = root || document;
         if (!scope || !scope.querySelectorAll) { return; }
         var seen = [];
@@ -1994,7 +1995,7 @@ enum BundledUserScriptSources {
         catch (e) { known = []; }
         for (var i = 0; i < known.length; i++) { addContainer(known[i]); }
         for (var j = 0; j < seen.length; j++) {
-            try { replacePlayer(seen[j]); }
+            try { replacePlayer(seen[j], allowExternalDiscovery); }
             catch (e) { log('replace failed', e); }
         }
 
@@ -2029,6 +2030,7 @@ enum BundledUserScriptSources {
         var observer = new MutationObserver(function (records) {
             var roots = [];
             var detachedVideos = [];
+            var sourceRelevant = false;
             function addRoot(node) {
                 if (!node || (node.nodeType !== 1 && node.nodeType !== 9)) { return; }
                 if (roots.indexOf(node) === -1) { roots.push(node); }
@@ -2039,11 +2041,25 @@ enum BundledUserScriptSources {
                 var videos = node.querySelectorAll ? node.querySelectorAll('video') : [];
                 for (var v = 0; v < videos.length; v++) { detachedVideos.push(videos[v]); }
             }
+            function hasSourceSignal(node) {
+                if (!node || node.nodeType !== 1) { return false; }
+                try {
+                    if (node.tagName === 'VIDEO' || node.tagName === 'SOURCE' ||
+                        node.matches('[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]')) {
+                        return true;
+                    }
+                    return !!node.querySelector('video,source,[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]');
+                } catch (e) { return false; }
+            }
             for (var i = 0; i < records.length; i++) {
                 var record = records[i];
                 addRoot(record.target);
+                if (record.type === 'attributes' && record.attributeName !== 'class') {
+                    sourceRelevant = true;
+                }
                 for (var j = 0; j < record.addedNodes.length; j++) {
                     addRoot(record.addedNodes[j]);
+                    if (hasSourceSignal(record.addedNodes[j])) { sourceRelevant = true; }
                 }
                 for (var k = 0; k < record.removedNodes.length; k++) {
                     collectVideos(record.removedNodes[k]);
@@ -2051,8 +2067,11 @@ enum BundledUserScriptSources {
             }
             // MutationObserver callbacks run at the microtask checkpoint before
             // rendering. Process affected roots now—never add a timer/debounce—so
-            // custom chrome cannot survive into the next paint.
-            for (var r = 0; r < roots.length; r++) { scan(roots[r]); }
+            // custom chrome cannot survive into the next paint. Only source/video
+            // changes after parsing may trigger structural source discovery;
+            // ordinary player UI churn is nativeization-only.
+            var mayDiscover = sourceRelevant && document.readyState !== 'loading';
+            for (var r = 0; r < roots.length; r++) { scan(roots[r], mayDiscover); }
             // DOM moves report a removal and addition in the same batch. Release
             // resources only for videos that remain detached after processing.
             for (var d = 0; d < detachedVideos.length; d++) {
@@ -2078,13 +2097,13 @@ enum BundledUserScriptSources {
         // Observe first so a player mounted while the initial scan runs cannot
         // slip through. Observing Document works even before <html> exists.
         observe();
-        scan(document);
+        scan(document, document.readyState !== 'loading');
     }
 
-    // Media readiness events do not bubble, so use capture. loadstart also
-    // catches a player assigning its final source before metadata is available.
+    // Media readiness events do not bubble, so use capture. loadedmetadata and
+    // durationchange indicate the media pipeline is initialized; loadstart is
+    // intentionally excluded because it can fire before the site's setup script.
     try {
-        document.addEventListener('loadstart', onMediaSourceReady, true);
         document.addEventListener('loadedmetadata', onMediaSourceReady, true);
         document.addEventListener('durationchange', onMediaSourceReady, true);
     } catch (e) { /* ignore */ }
@@ -2093,8 +2112,8 @@ enum BundledUserScriptSources {
     // only; normal players are handled by the pre-paint MutationObserver.
     boot();
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { scan(document); }, { once: true });
-        window.addEventListener('load', function () { scan(document); }, { once: true });
+        document.addEventListener('DOMContentLoaded', function () { scan(document, true); }, { once: true });
+        window.addEventListener('load', function () { scan(document, true); }, { once: true });
     }
 })();
 """###
