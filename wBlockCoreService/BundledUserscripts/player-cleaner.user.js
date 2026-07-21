@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.2.0
+// @version      1.3.0
 // @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
 // @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
 // @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
@@ -225,6 +225,23 @@
         return true;
     }
 
+    // Resolve a candidate media URL to an absolute http(s) URL. Many players
+    // (e.g. archive.org's JW Player) expose root-relative or protocol-relative
+    // URLs like "/download/item/movie.mp4". The browser only auto-resolves URLs
+    // it loads itself, not JS strings or data-attributes, so resolve them
+    // against the document base here. Returns null for empty/non-http(s) values
+    // (blob:, data:, javascript:, ...).
+    function toAbsoluteUrl(value) {
+        if (typeof value !== 'string') { return null; }
+        var v = value.trim();
+        if (!v) { return null; }
+        if (isHttpUrl(v)) { return v; }
+        try {
+            var resolved = new URL(v, document.baseURI).href;
+            return isHttpUrl(resolved) ? resolved : null;
+        } catch (e) { return null; }
+    }
+
     // ------------------------------------------------------------------
     // Source discovery
     // ------------------------------------------------------------------
@@ -235,7 +252,7 @@
             if (isHttpUrl(video.src) && video.src.indexOf('blob:') !== 0) { return video.src; }
             var sources = video.getElementsByTagName('source');
             for (var i = 0; i < sources.length; i++) {
-                var src = sources[i].getAttribute('src');
+                var src = toAbsoluteUrl(sources[i].getAttribute('src'));
                 if (isHttpUrl(src)) { return src; }
             }
         } catch (e) { /* ignore */ }
@@ -249,12 +266,12 @@
             var attrs = ['data-src', 'data-video-src', 'data-file', 'data-video', 'data-source', 'data-url'];
             for (var i = 0; i < candidates.length; i++) {
                 for (var a = 0; a < attrs.length; a++) {
-                    var value = candidates[i].getAttribute(attrs[a]);
+                    var value = toAbsoluteUrl(candidates[i].getAttribute(attrs[a]));
                     if (isPlayableUrl(value)) { return value; }
                 }
             }
-            var direct = container.getAttribute('data-src') || container.getAttribute('data-file') ||
-                container.getAttribute('data-video-src');
+            var direct = toAbsoluteUrl(container.getAttribute('data-src') || container.getAttribute('data-file') ||
+                container.getAttribute('data-video-src'));
             if (isPlayableUrl(direct)) { return direct; }
         } catch (e) { /* ignore */ }
         return null;
@@ -271,10 +288,12 @@
                     var el = player.el ? player.el() : null;
                     if (el && (container.contains(el) || el.contains(container))) {
                         var current = player.currentSource ? player.currentSource() : null;
-                        if (current && isPlayableUrl(current.src)) { return current.src; }
+                        var currentSrc = current ? toAbsoluteUrl(current.src) : null;
+                        if (currentSrc && isPlayableUrl(currentSrc)) { return currentSrc; }
                         var list = player.currentSources ? player.currentSources() : [];
                         for (var i = 0; i < list.length; i++) {
-                            if (isPlayableUrl(list[i].src)) { return list[i].src; }
+                            var listSrc = toAbsoluteUrl(list[i].src);
+                            if (isPlayableUrl(listSrc)) { return listSrc; }
                         }
                     }
                 } catch (e) { /* keep looking */ }
@@ -290,10 +309,12 @@
             if (!instance) { return null; }
             var item = instance.getPlaylistItem ? instance.getPlaylistItem() : null;
             if (item) {
-                if (isPlayableUrl(item.file)) { return item.file; }
+                var file = toAbsoluteUrl(item.file);
+                if (isPlayableUrl(file)) { return file; }
                 var sources = item.sources || [];
                 for (var i = 0; i < sources.length; i++) {
-                    if (isPlayableUrl(sources[i].file)) { return sources[i].file; }
+                    var sfile = toAbsoluteUrl(sources[i].file);
+                    if (isPlayableUrl(sfile)) { return sfile; }
                 }
             }
         } catch (e) { /* ignore */ }

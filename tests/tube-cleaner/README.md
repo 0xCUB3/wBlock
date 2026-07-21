@@ -41,6 +41,11 @@ Player Cleaner scenarios:
   fallback: a controls-less `<video>` in an unknown wrapper is enhanced in place
   (native controls forced on, source kept), while an ambient `autoplay muted
   loop` video and an already-native video are left untouched.
+- `fixture-player-cleaner-relative.html` — players whose media URL is
+  root-relative (a `<base>` makes it resolve to http(s)), as archive.org's JW
+  Player exposes (`/download/<item>/movie.mp4`). Verifies discovery resolves
+  relative URLs from a JW playlist and from `data-src` to absolute before
+  swapping in a clean `<video>`.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
@@ -107,7 +112,8 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   controls, chrome hiding, toolbar, background-playback override, auto-PiP
   hooks, iOS code paths, `playsinline`, controls surviving YouTube's attempts to
   remove them. Player Cleaner: custom-player detection, source discovery across
-  video.js/JW/Plyr/data-attributes, the clean-source replacement path (poster
+  video.js/JW/Plyr/data-attributes (including root-relative URLs resolved
+  against the document base), the clean-source replacement path (poster
   and track copying, chrome removal), the opaque-source enhance-in-place path,
   the bare-video fallback for unrecognized/custom players (and its ambient and
   already-native skip guards), the background-playback override, and controls

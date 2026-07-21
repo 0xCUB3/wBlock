@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- A document base so root-relative media URLs resolve to http(s), the way
+     they do on a real https page. This mirrors archive.org, whose JW Player
+     playlist exposes root-relative files like "/download/<item>/movie.mp4". -->
+<base href="https://example.com/embed/">
+<title>Relative URL source discovery (Player Cleaner test)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .player { position: relative; width: 320px; aspect-ratio: 16 / 9; margin: 12px auto; background: #000; }
+  .player video { width: 100%; height: 100%; background: #222; }
+</style>
+</head>
+<body>
+  <!-- JW Player playlist with a root-relative file (sourceFromJwPlayer). The
+       browser does not auto-resolve a JS string, so Player Cleaner must resolve
+       it against the document base. -->
+  <div class="jwplayer player" id="rel-jw"><video></video></div>
+
+  <!-- data-src with a root-relative URL (sourceFromDom). -->
+  <div class="flowplayer player" id="rel-dom"><video></video><div data-src="/media/dom.mp4"></div></div>
+
+  <script>
+    (function () {
+      // Opaque blob source so sourceFromVideoElement returns null and the
+      // intended (relative) discovery path is exercised.
+      ['rel-jw', 'rel-dom'].forEach(function (id) {
+        var v = document.getElementById(id).querySelector('video');
+        try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
+      });
+
+      // Mock JW Player: only #rel-jw gets a playlist item, with a root-relative
+      // file like archive.org uses.
+      window.jwplayer = function (idOrEl) {
+        var id = typeof idOrEl === 'string' ? idOrEl : (idOrEl && idOrEl.id);
+        if (id !== 'rel-jw') return null;
+        return { getPlaylistItem: function () { return { file: '/download/item/movie.mp4' }; } };
+      };
+    })();
+  </script>
+</body>
+</html>

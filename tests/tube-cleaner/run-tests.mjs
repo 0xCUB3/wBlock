@@ -29,6 +29,7 @@ const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
 const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
+const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-relative.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -476,6 +477,40 @@ async function audioToggleCheck(page, scenario) {
     const ok = counts.every(n => n === 1) && nativeCount === 1;
     return { pass: ok, detail: `counts=${counts.join(',')} native=${nativeCount}` };
   });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (relative URL sources)', {
+    fixture: FIXTURE_PLAYER_RELATIVE_URL,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-relative';
+
+  const cases = [
+    ['rel-jw', 'https://example.com/download/item/movie.mp4', 'JW Player root-relative file'],
+    ['rel-dom', 'https://example.com/media/dom.mp4', 'data-src root-relative URL'],
+  ];
+  for (const [id, expected, how] of cases) {
+    await check(page, S, `resolves ${how} to absolute`, ({ id, expected }) => {
+      const c = document.getElementById(id);
+      const v = c ? c.querySelector('video') : null;
+      const ok = !!(v && v.src === expected);
+      return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
+    }, { arg: { id, expected } });
+  }
+
+  await check(page, S, 'relative-source players replaced with a clean video', (cases) => {
+    const bad = cases.filter(([id]) => {
+      const c = document.getElementById(id);
+      return !c || c.querySelectorAll('video').length !== 1 || !c.hasAttribute('data-wblock-player-cleaner');
+    }).map(([id]) => id);
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '2/2 replaced' };
+  }, { arg: cases });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
