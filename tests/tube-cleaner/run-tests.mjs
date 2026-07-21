@@ -309,7 +309,40 @@ async function audioToggleCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 5: Player Cleaner on a custom (video.js) player ------------
+// ---- Scenario 5: Tube Cleaner resource lifecycle ------------------------
+{
+  const { browser, page, pageErrors } = await runScenario('Tube Cleaner (resource lifecycle)', {
+    fixture: FIXTURE_URL,
+    scriptSource: resourceCounterPatch + '\n' + userscript,
+    readySignal: '.wblock-tc-toolbar',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'tube-cleaner-resources';
+  await page.waitForTimeout(300);
+  const baseline = await page.evaluate(() => ({ ...window.__wblockResourceCounters }));
+
+  for (let i = 0; i < 6; i++) {
+    await page.evaluate(() => {
+      const container = document.querySelector('#movie_player .html5-video-container');
+      const oldVideo = container.querySelector('video');
+      oldVideo.replaceWith(document.createElement('video'));
+    });
+    await page.waitForTimeout(80);
+  }
+  const after = await page.evaluate(() => ({ ...window.__wblockResourceCounters }));
+  for (const key of ['listeners', 'intervals', 'mutationObservers', 'intersectionObservers']) {
+    record(S, `${key} stay flat across video swaps`, after[key] === baseline[key],
+      `baseline=${baseline[key]} after=${after[key]}`);
+  }
+  await check(page, S, 'replacement video remains native', () => {
+    const v = document.querySelector('#movie_player video');
+    return { pass: !!(v && v.controls && v.hasAttribute('controls')) };
+  });
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 6: Player Cleaner on a custom (video.js) player ------------
 // Verifies the ported controls guard: Player Cleaner enhances the existing
 // <video> in place (opaque blob source) and must keep native controls on even
 // though the custom player keeps stripping them.

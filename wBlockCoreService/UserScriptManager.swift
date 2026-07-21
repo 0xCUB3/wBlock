@@ -106,7 +106,7 @@ enum BuiltInUserScripts {
     static let tubeCleanerURL = "https://bundled.wblock.invalid/tube-cleaner.user.js"
     static let playerCleanerURL = "https://bundled.wblock.invalid/player-cleaner.user.js"
     static let tubeCleanerDescription =
-        "Replaces the YouTube player with a minimal HTML5 video element: removes in-video ads, stops play/pause/seek tracking, restores Picture-in-Picture, keeps videos playing in background tabs, and adds an audio-only mode."
+        "Turns YouTube's own video element into a native Safari player: hides custom chrome, restores Picture-in-Picture, keeps videos playing in background tabs, and adds an audio-only mode. wBlock's content blocker handles ads separately."
     static let playerCleanerDescription =
         "Replaces custom video players on other websites with a clean HTML5 video element, restoring native controls and Picture-in-Picture. Disable it per site from the toolbar if a player misbehaves."
 

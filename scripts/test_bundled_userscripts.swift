@@ -107,7 +107,7 @@ for needle in [
     "ytp-ad-module",             // ad overlay hiding (CSS)
     "yt-navigate-finish",        // SPA navigation handling
     "visibilityState",           // background playback
-    "_wblockPatched",            // video element listener interception
+    "documentPlayerObserver",    // pre-paint player detection
     "controls",                  // native controls
     "setPlaybackQualityRange",   // quality control via internal API
     "QUALITY_LABELS",            // quality picker labels

@@ -6,8 +6,9 @@
 // window.setInterval/clearInterval BEFORE the userscript loads, transforms the
 // player, snapshots the active-listener/interval counts, then swaps the <video>
 // element several times (triggering the script's re-patch path) and asserts the
-// counts stay flat. On the pre-fix code each swap leaked a visibilitychange
-// listener + guard/toolbar intervals, so this fails there and passes now.
+// counts stay flat. On the original pre-fix code each swap leaked a
+// visibilitychange listener and toolbar/guard intervals, so this fails there
+// and passes now (the guard is now observer-only).
 //
 // Usage: node leak-test.mjs
 
@@ -78,8 +79,8 @@ record('document visibilitychange listeners do not accumulate',
   activeVisAfter === activeVisBaseline,
   `baseline=${activeVisBaseline} after=${activeVisAfter} (delta ${activeVisAfter - activeVisBaseline})`);
 
-// Each swap should net ~0 intervals: the old guard + toolbar timers are cleared
-// before new ones are created. Allow a small slack for timing.
+// Each swap should net ~0 intervals: toolbar/quality timers are cleared before
+// replacements create their own. Allow a small slack for timing.
 const intervalDelta = after.intervalActive - baseline.intervalActive;
 record('setInterval count stays bounded across swaps',
   intervalDelta <= 1,

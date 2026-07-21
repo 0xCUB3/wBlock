@@ -88,8 +88,10 @@ node live-smoke.mjs <videoId>  # specific video
 Instruments `document.addEventListener`/`removeEventListener` and
 `window.setInterval`/`clearInterval`, transforms the player, then swaps the
 `<video>` element several times (as YouTube does during SPA navigation) and
-asserts active listener/interval counts stay flat. Fails on the pre-fix code
-(leaked ~2 intervals per swap) and passes now. Exit code 1 on failure.
+asserts active listener/interval counts stay flat. The main deterministic gate
+also covers both cleaners and tracks all document/window listeners, intervals,
+MutationObservers, and IntersectionObservers across six swaps. Fails on the
+pre-fix code and passes now. Exit code 1 on failure.
 
 ```sh
 node leak-test.mjs

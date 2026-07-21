@@ -62,7 +62,7 @@ enum BundledUserScriptSources {
     var STORAGE_QUALITY = 'wblock.tubeCleaner.quality';
     var ATTR_CLEANED = 'data-wblock-tc-cleaned';
 
-    var debug = true;
+    var debug = !!window.__wblockTubeCleanerDebug;
 
     function log() {
         if (!debug) return;
@@ -165,10 +165,13 @@ enum BundledUserScriptSources {
         }
 
         // Window blur: enter PiP when switching to another app
+        var blurTimer = null;
         function onBlur() {
             if (!autoPiPEnabled) return;
             if (_realHidden) return; // already handled by visibilitychange
-            setTimeout(function () {
+            clearTimeout(blurTimer);
+            blurTimer = setTimeout(function () {
+                blurTimer = null;
                 if (document.hasFocus()) return; // focus moved within document
                 if (!video.paused && !video.ended) {
                     enterPiP(video);
@@ -213,6 +216,7 @@ enum BundledUserScriptSources {
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('blur', onBlur);
             window.removeEventListener('focus', onFocus);
+            clearTimeout(blurTimer);
             try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
         });
@@ -399,23 +403,39 @@ enum BundledUserScriptSources {
     // Background playback
     // ------------------------------------------------------------------
 
-    // Track real visibility state separately since we override document.hidden
+    // Track real visibility state separately since we override document.hidden.
     var _realHidden = false;
     var _realVisibility = 'visible';
 
-    document.addEventListener('visibilitychange', function () {
-        // Store the real state before it gets overridden
+    function findDocumentGetter(name) {
         try {
-            _realHidden = document.hidden;
-            _realVisibility = document.visibilityState;
+            var proto = document;
+            while (proto) {
+                var descriptor = Object.getOwnPropertyDescriptor(proto, name);
+                if (descriptor && typeof descriptor.get === 'function') {
+                    return descriptor.get;
+                }
+                proto = Object.getPrototypeOf(proto);
+            }
         } catch (e) { /* ignore */ }
-    });
+        return null;
+    }
 
-    // Also capture the initial state
-    try {
-        _realHidden = document.hidden;
-        _realVisibility = document.visibilityState;
-    } catch (e) { /* ignore */ }
+    var nativeHiddenGetter = findDocumentGetter('hidden');
+    var nativeVisibilityGetter = findDocumentGetter('visibilityState');
+
+    function updateRealVisibility() {
+        try {
+            _realHidden = nativeHiddenGetter ? nativeHiddenGetter.call(document) : document.hidden;
+            _realVisibility = nativeVisibilityGetter ?
+                nativeVisibilityGetter.call(document) : document.visibilityState;
+        } catch (e) { /* ignore */ }
+    }
+
+    // Capture initially and keep using the native prototype getters after the
+    // document instance properties are shadowed for background playback.
+    updateRealVisibility();
+    document.addEventListener('visibilitychange', updateRealVisibility);
 
     function enableBackgroundPlayback() {
         try {
@@ -458,32 +478,21 @@ enum BundledUserScriptSources {
     }
 
     function releaseActiveVideo() {
+        var previousVideo = activeVideo;
         var cleanups = activeCleanups;
         activeCleanups = [];
         for (var i = 0; i < cleanups.length; i++) {
             try { cleanups[i](); } catch (e) { /* ignore */ }
         }
+        // The same media element can survive a YouTube SPA navigation. Reset
+        // hook flags after teardown so activateVideo() reattaches resources when
+        // that element is immediately activated again.
+        if (previousVideo) {
+            previousVideo._wblockAutoPiPHooked = false;
+            previousVideo._wblockControlsGuarded = false;
+            previousVideo._wblockControlsPatched = false;
+        }
         activeVideo = null;
-    }
-
-    // Intercept addEventListener on the video to drop only YouTube's
-    // tracking/hijacking listeners, not the essential playback events the player
-    // needs to manage the stream. We keep YouTube's own <video> element (cloning
-    // would lose the SABR/MSE source buffers and cause 403s).
-    function patchVideoListeners(video) {
-        if (video._wblockPatched) return;
-        video._wblockPatched = true;
-        var origAdd = video.addEventListener.bind(video);
-        video.addEventListener = function (type, listener, options) {
-            var blocked = [
-                'timeupdate', 'progress', 'waiting', 'stalled',
-                'suspend', 'abort', 'emptied'
-            ];
-            if (blocked.indexOf(type) !== -1) {
-                return; // silently drop tracking
-            }
-            return origAdd(type, listener, options);
-        };
     }
 
     // Activate a video element: tear down the previous video's resources first,
@@ -497,43 +506,23 @@ enum BundledUserScriptSources {
         video.removeAttribute('disablepictureinpicture');
         video.disablePictureInPicture = false;
         ensurePlaysInline(video);
-        patchVideoListeners(video);
+        // Keep YouTube's media listeners intact. SABR/MSE uses waiting,
+        // stalled, progress, and related events to maintain the stream.
         buildToolbar(player, video);
         setupAutoPiP(video);
     }
 
     function forceNativeControls(video) {
-        // YouTube's player actively sets controls=false.  We intercept
-        // the property setter to prevent that.  Safari's native controls
-        // bar will then stay visible.
         if (video._wblockControlsPatched) return;
         video._wblockControlsPatched = true;
-
         video.controls = true;
-
-        // Intercept the 'controls' property so YouTube can't turn it off
-        try {
-            Object.defineProperty(video, 'controls', {
-                get: function () { return true; },
-                set: function (v) { /* ignore YouTube's attempts to disable */ },
-                configurable: false
-            });
-        } catch (e) {
-            // If it fails (e.g. already defined), just try again periodically
-        }
-
-        // Also set the attribute directly in case YouTube uses setAttribute
         video.setAttribute('controls', '');
     }
 
-    // WebKit renders Safari's native controls from the video's `controls`
-    // CONTENT ATTRIBUTE, not from the JavaScript property. forceNativeControls()
-    // shadows the `controls` property so YouTube's `video.controls = false`
-    // assignments are ignored, but YouTube can still strip the attribute via
-    // removeAttribute(), which hides the native controls. A naive
-    // `!video.controls` guard never fires there because the shadowed getter
-    // always returns true. So we defend the attribute itself: a MutationObserver
-    // restores it whenever it is removed, with a polling fallback.
+    // WebKit renders Safari's native controls from the controls content
+    // attribute. Do not replace the native property descriptor: early instance
+    // shadowing can break WebKit's own media-controls initialization. Restore the
+    // attribute at each mutation microtask instead.
     function guardNativeControls(video) {
         if (!video || video._wblockControlsGuarded) return;
         video._wblockControlsGuarded = true;
@@ -551,11 +540,9 @@ enum BundledUserScriptSources {
         } catch (e) { /* ignore */ }
 
         restore();
-        var timer = setInterval(restore, 1000);
 
         registerCleanup(function () {
             if (observer) { try { observer.disconnect(); } catch (e) { /* ignore */ } }
-            clearInterval(timer);
         });
     }
 
@@ -602,7 +589,7 @@ enum BundledUserScriptSources {
         player.classList.add('wblock-tc-native');
 
         // 2-5. Apply all per-video enhancements (native controls, PiP/inline
-        // attrs, listener patching, controls guard, toolbar, auto-PiP).
+        // attributes, controls guard, toolbar, auto-PiP).
         // activateVideo first tears down the previous video's resources so
         // nothing leaks across SPA navigations.
         activateVideo(player, video);
@@ -614,9 +601,16 @@ enum BundledUserScriptSources {
         enableBackgroundPlayback();
 
         // 6. Apply preferred quality (deferred — let the player finish init)
-        setTimeout(function () {
+        var qualityDelay = setTimeout(function () {
+            qualityDelay = null;
             applyPreferredQuality();
         }, 3000);
+        registerCleanup(function () {
+            if (qualityDelay !== null) {
+                clearTimeout(qualityDelay);
+                qualityDelay = null;
+            }
+        });
 
         // 7. Observe for video element recreation. The player element persists
         // across SPA navigations, so disconnect any previous observer before
@@ -848,17 +842,25 @@ enum BundledUserScriptSources {
     function applyPreferredQuality() {
         var preferred = getPreferredQuality();
         if (preferred === 'auto') return;
-        // Retry a few times — the player may not be fully ready
+        // Retry a few times — the player may not be fully ready.
         var attempts = 0;
-        var timer = setInterval(function () {
+        var timer = null;
+        function stop() {
+            if (timer !== null) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+        timer = setInterval(function () {
             attempts++;
             var current = getCurrentQuality();
             if (current === preferred || attempts > 10) {
-                clearInterval(timer);
+                stop();
                 return;
             }
             setQuality(preferred);
         }, 500);
+        registerCleanup(stop);
     }
 
     // ------------------------------------------------------------------
@@ -969,8 +971,12 @@ enum BundledUserScriptSources {
         });
 
         // Close menu on outside click
-        document.addEventListener('click', function () {
+        function onDocumentClick() {
             qualityMenu.style.display = 'none';
+        }
+        document.addEventListener('click', onDocumentClick);
+        registerCleanup(function () {
+            document.removeEventListener('click', onDocumentClick);
         });
 
         var qualityWrap = document.createElement('div');
@@ -983,6 +989,12 @@ enum BundledUserScriptSources {
         // it can be cleared when the toolbar is rebuilt (avoids a leak across
         // video-element re-creation).
         toolbar._wblockQualityTimer = setInterval(updateQualityBtn, 2000);
+        registerCleanup(function () {
+            if (toolbar._wblockQualityTimer) {
+                clearInterval(toolbar._wblockQualityTimer);
+                toolbar._wblockQualityTimer = null;
+            }
+        });
 
         // Audio-only toggle
         var audioBtn = document.createElement('button');
@@ -1044,6 +1056,13 @@ enum BundledUserScriptSources {
                     toolbar.style.pointerEvents = 'none';
                 }, 4000);
             });
+
+            registerCleanup(function () {
+                clearTimeout(iosToolbarTimer);
+                player.removeEventListener('touchstart', showToolbarIOS, { passive: true });
+                video.removeEventListener('play', showToolbarIOS);
+                video.removeEventListener('pause', showToolbarIOS);
+            });
         } else {
             // Start hidden on desktop — it appears with native controls
             toolbar.style.opacity = '0';
@@ -1077,7 +1096,7 @@ enum BundledUserScriptSources {
             // overlay divs (html5-video-container, etc.) sit on top and
             // can intercept mouse events.
             var _isOverPlayer = false;
-            document.addEventListener('mousemove', function (e) {
+            function onDocumentMouseMove(e) {
                 var rect = player.getBoundingClientRect();
                 var over = e.clientX >= rect.left && e.clientX <= rect.right &&
                     e.clientY >= rect.top && e.clientY <= rect.bottom;
@@ -1092,12 +1111,12 @@ enum BundledUserScriptSources {
                     _isOverPlayer = false;
                     scheduleHideToolbar();
                 }
-            });
+            }
+            document.addEventListener('mousemove', onDocumentMouseMove);
 
             // Also show on mouse entering the player from outside
-            player.addEventListener('mouseenter', function () {
-                showToolbar();
-            });
+            function onPlayerMouseEnter() { showToolbar(); }
+            player.addEventListener('mouseenter', onPlayerMouseEnter);
 
             // Keep visible while hovering directly over toolbar
             toolbar.addEventListener('mouseenter', function () {
@@ -1115,21 +1134,32 @@ enum BundledUserScriptSources {
             });
 
             // Hide when video starts playing (controls auto-hide)
-            video.addEventListener('play', function () {
-                scheduleHideToolbar();
-            });
+            function onVideoPlay() { scheduleHideToolbar(); }
+            video.addEventListener('play', onVideoPlay);
 
             // Show when video is paused
-            video.addEventListener('pause', function () {
-                showToolbar();
-            });
+            function onVideoPause() { showToolbar(); }
+            video.addEventListener('pause', onVideoPause);
 
             // Show toolbar briefly when entering PiP (user can interact)
-            video.addEventListener('webkitpresentationmodechanged', function () {
+            var presentationTimer = null;
+            function onPresentationModeChange() {
                 if (video.webkitPresentationMode === 'picture-in-picture') {
                     showToolbar();
-                    setTimeout(hideToolbar, 3000);
+                    clearTimeout(presentationTimer);
+                    presentationTimer = setTimeout(hideToolbar, 3000);
                 }
+            }
+            video.addEventListener('webkitpresentationmodechanged', onPresentationModeChange);
+
+            registerCleanup(function () {
+                clearTimeout(toolbarTimer);
+                clearTimeout(presentationTimer);
+                document.removeEventListener('mousemove', onDocumentMouseMove);
+                player.removeEventListener('mouseenter', onPlayerMouseEnter);
+                video.removeEventListener('play', onVideoPlay);
+                video.removeEventListener('pause', onVideoPause);
+                video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
             });
         }
 
@@ -1137,6 +1167,9 @@ enum BundledUserScriptSources {
         toolbar.classList.add('wblock-tc-toolbar-built');
 
         player.appendChild(toolbar);
+        registerCleanup(function () {
+            if (toolbar.parentNode) { toolbar.parentNode.removeChild(toolbar); }
+        });
     }
 
     // ------------------------------------------------------------------
