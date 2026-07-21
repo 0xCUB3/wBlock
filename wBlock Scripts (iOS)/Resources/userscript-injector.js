@@ -84,6 +84,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
+            this.documentRootPromise = null; // earliest safe page-world injection point
             this.menuCommandSequence = 0;
             this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
@@ -111,6 +112,40 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             // Request userscripts from native app
             this.requestUserScripts();
+        }
+
+        waitForDocumentRoot() {
+            if (document.documentElement) {
+                return Promise.resolve(document.documentElement);
+            }
+            if (this.documentRootPromise) {
+                return this.documentRootPromise;
+            }
+
+            // Safari can run a document_start content script before the parser has
+            // created <html>. The engine and native request should still start now;
+            // only the final <script>/<style> insertion needs to wait. Observing the
+            // Document resolves at the first parser mutation, well before
+            // DOMContentLoaded and before page scripts in <head> execute.
+            this.documentRootPromise = new Promise((resolve) => {
+                let observer = null;
+                const finishIfReady = () => {
+                    if (!document.documentElement) return false;
+                    if (observer) observer.disconnect();
+                    resolve(document.documentElement);
+                    return true;
+                };
+
+                if (finishIfReady()) return;
+                if (typeof MutationObserver !== 'undefined') {
+                    observer = new MutationObserver(finishIfReady);
+                    observer.observe(document, { childList: true });
+                    finishIfReady(); // close the check/observe race
+                } else {
+                    document.addEventListener('DOMContentLoaded', finishIfReady, { once: true });
+                }
+            });
+            return this.documentRootPromise;
         }
 
         setupXhrBridge() {
@@ -833,6 +868,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     const fullStyle = await this.ensureScriptPayload(script);
                     const css = typeof fullStyle.content === 'string' ? fullStyle.content : '';
                     if (css.length > 0) {
+                        await this.waitForDocumentRoot();
                         this.injectStyleElement(fullStyle, css);
                         this.injectedScripts.add(script.name);
                     }
@@ -878,6 +914,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                 const injectInto = fullScript.injectInto || 'page';
                 wBlockLog(`[wBlock] Injecting userscript: ${fullScript.name} (mode: ${injectInto})`);
+
+                // Page-world injection requires an element parent. Start fetching
+                // document-start scripts immediately, but wait only until <html>
+                // exists—not until DOMContentLoaded—before appending the wrapper.
+                if (injectInto !== 'content') {
+                    await this.waitForDocumentRoot();
+                }
 
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
@@ -2231,16 +2274,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
     }
 
-    if (document.documentElement) {
-        wBlockLog('[wBlock] document.documentElement exists, creating UserScriptEngine instance.');
-        new UserScriptEngine();
-    } else {
-        wBlockLog('[wBlock] document.documentElement does not exist, deferring UserScriptEngine instance creation to DOMContentLoaded.');
-        document.addEventListener('DOMContentLoaded', () => {
-            wBlockLog('[wBlock] DOMContentLoaded fired, creating UserScriptEngine instance.');
-            new UserScriptEngine();
-        });
-    }
+    // Start native lookup immediately even when Safari runs us before the parser
+    // has created <html>. waitForDocumentRoot() gates only the final DOM insertion.
+    new UserScriptEngine();
 }
 
 // Ensure that if this script is injected multiple times (e.g. in iframes),

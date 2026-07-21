@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = join(__dirname, '..', '..', 'wBlockCoreService', 'BundledUserscripts', 'tube-cleaner.user.js');
 const PLAYER_SCRIPT_PATH = join(__dirname, '..', '..', 'wBlockCoreService', 'BundledUserscripts', 'player-cleaner.user.js');
+const INJECTOR_PATH = join(__dirname, '..', '..', 'wBlock Scripts (iOS)', 'Resources', 'userscript-injector.js');
 const FIXTURE_URL = pathToFileURL(join(__dirname, 'fixture.html')).href;
 const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.html')).href;
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
@@ -34,6 +35,7 @@ const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
+const injectorSource = readFileSync(INJECTOR_PATH, 'utf8');
 const filter = (process.argv.find(a => a.startsWith('--filter=')) || '').split('=')[1] || '';
 
 const results = [];
@@ -591,6 +593,81 @@ async function audioToggleCheck(page, scenario) {
     return { pass: n === 1, detail: `${n} video(s)` };
   });
 
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 9: production injector starts before <html> exists --------
+// Playwright init scripts run at Safari's true document_start: readyState is
+// "loading" and document.documentElement is null. The production injector must
+// start native lookup immediately, wait only for the parser to create <html>,
+// then execute a page-world document-start payload before the page's first
+// <head> script—not defer the whole engine until DOMContentLoaded.
+{
+  console.log('\n=== Scenario: Userscript injector (true document-start) ===');
+  const S = 'injector-document-start';
+  const browser = await webkit.launch();
+  const page = await browser.newPage();
+  const pageErrors = [];
+  page.on('pageerror', e => pageErrors.push(e.message));
+
+  const earlyPayload = `window.__wblockEarlyPayload = {
+    readyState: document.readyState,
+    hasDocumentElement: !!document.documentElement,
+    hasBody: !!document.body,
+    time: performance.now()
+  };`;
+  const descriptor = {
+    id: '00000000-0000-0000-0000-000000000001',
+    name: 'Document Start Probe',
+    namespace: 'com.skula.wblock.tests',
+    version: '1.0.0',
+    description: '',
+    runAt: 'document-start',
+    noframes: false,
+    injectInto: 'page',
+    content: earlyPayload,
+    resourceNames: [],
+    storageSnapshot: {},
+  };
+  const mockBridge = `
+    globalThis.browser = {
+      runtime: {
+        onMessage: { addListener: function () {} },
+        sendMessage: function (message) {
+          if (message && message.action === 'getUserScripts') {
+            return Promise.resolve({ userScripts: [${JSON.stringify(descriptor)}] });
+          }
+          return Promise.resolve({});
+        }
+      }
+    };
+  `;
+  await page.addInitScript(mockBridge + '\n' + injectorSource);
+
+  const fixture = `<!doctype html><html><head><script>
+    window.__firstHeadScript = {
+      readyState: document.readyState,
+      sawPayload: !!window.__wblockEarlyPayload,
+      time: performance.now()
+    };
+  <\/script></head><body>document-start probe</body></html>`;
+  await page.goto('data:text/html;charset=utf-8,' + encodeURIComponent(fixture), { waitUntil: 'load' });
+
+  const state = await page.evaluate(() => ({
+    payload: window.__wblockEarlyPayload || null,
+    head: window.__firstHeadScript || null,
+  }));
+  const early = !!(state.payload && state.head &&
+    state.payload.readyState === 'loading' &&
+    state.payload.hasDocumentElement === true &&
+    state.payload.hasBody === false &&
+    state.head.sawPayload === true &&
+    state.payload.time <= state.head.time);
+  record(S, 'executes document-start payload before first page script', early,
+    state.payload && state.head
+      ? `payload=${state.payload.time.toFixed(1)}ms head=${state.head.time.toFixed(1)}ms state=${state.payload.readyState}`
+      : `payload=${!!state.payload} head=${!!state.head}`);
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
