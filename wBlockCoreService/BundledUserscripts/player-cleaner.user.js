@@ -61,18 +61,36 @@
     var _realHidden = false;
     var _realVisibility = 'visible';
 
-    // Capture real visibility state before we override document.hidden
-    try {
-        _realHidden = document.hidden;
-        _realVisibility = document.visibilityState;
-    } catch (e) { /* ignore */ }
-
-    document.addEventListener('visibilitychange', function () {
+    function findDocumentGetter(name) {
         try {
-            _realHidden = document.hidden;
-            _realVisibility = document.visibilityState;
+            var proto = document;
+            while (proto) {
+                var descriptor = Object.getOwnPropertyDescriptor(proto, name);
+                if (descriptor && typeof descriptor.get === 'function') {
+                    return descriptor.get;
+                }
+                proto = Object.getPrototypeOf(proto);
+            }
         } catch (e) { /* ignore */ }
-    });
+        return null;
+    }
+
+    // Capture the native getters before enableBackgroundPlayback() shadows the
+    // properties on document. Reading document.hidden inside the later event
+    // listener would otherwise always return our forced false value.
+    var nativeHiddenGetter = findDocumentGetter('hidden');
+    var nativeVisibilityGetter = findDocumentGetter('visibilityState');
+
+    function updateRealVisibility() {
+        try {
+            _realHidden = nativeHiddenGetter ? nativeHiddenGetter.call(document) : document.hidden;
+            _realVisibility = nativeVisibilityGetter ?
+                nativeVisibilityGetter.call(document) : document.visibilityState;
+        } catch (e) { /* ignore */ }
+    }
+
+    updateRealVisibility();
+    document.addEventListener('visibilitychange', updateRealVisibility);
 
     function enableBackgroundPlayback() {
         try {
@@ -137,56 +155,79 @@
         } catch (e) { /* ignore */ }
     }
 
+    function registerVideoCleanup(video, cleanup) {
+        if (!video._wblockCleanups) { video._wblockCleanups = []; }
+        video._wblockCleanups.push(cleanup);
+    }
+
+    function releaseVideoResources(video) {
+        if (!video) return;
+        var cleanups = video._wblockCleanups || [];
+        video._wblockCleanups = [];
+        for (var i = 0; i < cleanups.length; i++) {
+            try { cleanups[i](); } catch (e) { /* ignore */ }
+        }
+        video._wblockAutoPiPHooked = false;
+        video._wblockControlsGuarded = false;
+        video._wblockControlsPatched = false;
+        video._wblockEnhanced = false;
+        video._wblockUpgradeable = false;
+        video._wblockCleaned = false;
+        try { video.removeAttribute(ATTR_DONE); } catch (e) { /* ignore */ }
+    }
+
     function setupAutoPiP(video) {
         if (!video || video._wblockAutoPiPHooked) return;
         video._wblockAutoPiPHooked = true;
 
-        // Tab switch: enter PiP when tab hides, exit when visible
-        document.addEventListener('visibilitychange', function () {
+        function onVisibilityChange() {
             if (!autoPiPEnabled) return;
             if (_realHidden) {
-                if (!video.paused && !video.ended) {
-                    enterPiP(video);
-                }
-            } else {
-                if (document.hasFocus() && isPiPActive(video)) {
-                    exitPiP(video);
-                }
+                if (!video.paused && !video.ended) { enterPiP(video); }
+            } else if (document.hasFocus() && isPiPActive(video)) {
+                exitPiP(video);
             }
-        });
+        }
 
-        // Window blur: enter PiP when switching to another app
-        window.addEventListener('blur', function () {
-            if (!autoPiPEnabled) return;
-            if (_realHidden) return;
+        function onBlur() {
+            if (!autoPiPEnabled || _realHidden) return;
             setTimeout(function () {
-                if (document.hasFocus()) return;
-                if (!video.paused && !video.ended) {
+                if (!document.hasFocus() && !video.paused && !video.ended) {
                     enterPiP(video);
                 }
             }, 100);
+        }
+
+        function onFocus() {
+            if (!autoPiPEnabled || _realHidden) return;
+            if (document.hasFocus() && isPiPActive(video)) { exitPiP(video); }
+        }
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('blur', onBlur);
+        window.addEventListener('focus', onFocus);
+        registerVideoCleanup(video, function () {
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.removeEventListener('blur', onBlur);
+            window.removeEventListener('focus', onFocus);
         });
 
-        window.addEventListener('focus', function () {
-            if (!autoPiPEnabled) return;
-            if (_realHidden) return;
-            if (document.hasFocus() && isPiPActive(video)) {
-                exitPiP(video);
-            }
-        });
-
-        // Scroll out of view
-        var scrollObserver = new IntersectionObserver(function (entries) {
-            if (!autoPiPEnabled) return;
-            entries.forEach(function (entry) {
-                if (!entry.isIntersecting && !video.paused && !video.ended) {
-                    enterPiP(video);
-                } else if (entry.isIntersecting && isPiPActive(video)) {
-                    exitPiP(video);
-                }
+        if (typeof IntersectionObserver !== 'undefined') {
+            var scrollObserver = new IntersectionObserver(function (entries) {
+                if (!autoPiPEnabled) return;
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting && !video.paused && !video.ended) {
+                        enterPiP(video);
+                    } else if (entry.isIntersecting && isPiPActive(video)) {
+                        exitPiP(video);
+                    }
+                });
+            }, { threshold: 0.1 });
+            scrollObserver.observe(video);
+            registerVideoCleanup(video, function () {
+                try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             });
-        }, { threshold: 0.1 });
-        scrollObserver.observe(video);
+        }
     }
 
     function log() {
@@ -371,13 +412,18 @@
             }
         }
 
+        var observer = null;
         try {
-            var observer = new MutationObserver(restore);
+            observer = new MutationObserver(restore);
             observer.observe(video, { attributes: true, attributeFilter: ['controls'] });
         } catch (e) { /* ignore */ }
 
         restore();
-        setInterval(restore, 1000);
+        registerVideoCleanup(video, function () {
+            if (observer) {
+                try { observer.disconnect(); } catch (e) { /* ignore */ }
+            }
+        });
     }
 
     function enhanceInPlace(container, video, upgradeable) {
@@ -628,9 +674,16 @@
         if (typeof MutationObserver === 'undefined') { return; }
         var observer = new MutationObserver(function (records) {
             var roots = [];
+            var detachedVideos = [];
             function addRoot(node) {
                 if (!node || (node.nodeType !== 1 && node.nodeType !== 9)) { return; }
                 if (roots.indexOf(node) === -1) { roots.push(node); }
+            }
+            function collectVideos(node) {
+                if (!node || node.nodeType !== 1) { return; }
+                if (node.tagName === 'VIDEO') { detachedVideos.push(node); }
+                var videos = node.querySelectorAll ? node.querySelectorAll('video') : [];
+                for (var v = 0; v < videos.length; v++) { detachedVideos.push(videos[v]); }
             }
             for (var i = 0; i < records.length; i++) {
                 var record = records[i];
@@ -638,11 +691,21 @@
                 for (var j = 0; j < record.addedNodes.length; j++) {
                     addRoot(record.addedNodes[j]);
                 }
+                for (var k = 0; k < record.removedNodes.length; k++) {
+                    collectVideos(record.removedNodes[k]);
+                }
             }
             // MutationObserver callbacks run at the microtask checkpoint before
             // rendering. Process affected roots now—never add a timer/debounce—so
             // custom chrome cannot survive into the next paint.
             for (var r = 0; r < roots.length; r++) { scan(roots[r]); }
+            // DOM moves report a removal and addition in the same batch. Release
+            // resources only for videos that remain detached after processing.
+            for (var d = 0; d < detachedVideos.length; d++) {
+                if (!detachedVideos[d].isConnected) {
+                    releaseVideoResources(detachedVideos[d]);
+                }
+            }
         });
         try {
             observer.observe(document, {

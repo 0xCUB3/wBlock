@@ -57,6 +57,9 @@ Player Cleaner scenarios:
   `<head>` script and records insertion, nativeization, and DOMContentLoaded
   timestamps. Enforces pre-paint transformation within one frame, without a
   debounce or DOMContentLoaded gate.
+- The resource-lifecycle scenario replaces an opaque player's `<video>` six
+  times and instruments document/window listeners, intervals, MutationObservers,
+  and IntersectionObservers. Every active count must remain flat.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
@@ -128,8 +131,8 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   against the document base), the clean-source cleanup path (original media
   element/state retention and chrome removal), the opaque-source enhance-in-place
   path, event-driven upgrade once a clean source appears, pre-paint timing for
-  known wrappers, the bare-video fallback for unrecognized/custom players (and
-  its ambient and
+  known wrappers, bounded per-video resources across SPA swaps, the bare-video
+  fallback for unrecognized/custom players (and its ambient and
   already-native skip guards), the background-playback override, and controls
   surviving a fighting player.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate

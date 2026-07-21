@@ -40,6 +40,54 @@ const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
 const injectorSource = readFileSync(INJECTOR_PATH, 'utf8');
 const filter = (process.argv.find(a => a.startsWith('--filter=')) || '').split('=')[1] || '';
 
+const resourceCounterPatch = `
+(function () {
+  var counters = window.__wblockResourceCounters = {
+    listeners: 0, intervals: 0, mutationObservers: 0, intersectionObservers: 0
+  };
+  function patchTarget(target) {
+    var add = target.addEventListener.bind(target);
+    var remove = target.removeEventListener.bind(target);
+    target.addEventListener = function () { counters.listeners++; return add.apply(target, arguments); };
+    target.removeEventListener = function () { counters.listeners--; return remove.apply(target, arguments); };
+  }
+  patchTarget(document);
+  patchTarget(window);
+  var setIntervalNative = window.setInterval.bind(window);
+  var clearIntervalNative = window.clearInterval.bind(window);
+  window.setInterval = function () { counters.intervals++; return setIntervalNative.apply(window, arguments); };
+  window.clearInterval = function (id) { counters.intervals--; return clearIntervalNative(id); };
+
+  var NativeMutationObserver = window.MutationObserver;
+  window.MutationObserver = class extends NativeMutationObserver {
+    constructor(callback) { super(callback); this.__wblockActive = false; }
+    observe() {
+      if (!this.__wblockActive) { this.__wblockActive = true; counters.mutationObservers++; }
+      return super.observe(...arguments);
+    }
+    disconnect() {
+      if (this.__wblockActive) { this.__wblockActive = false; counters.mutationObservers--; }
+      return super.disconnect();
+    }
+  };
+
+  var NativeIntersectionObserver = window.IntersectionObserver;
+  if (NativeIntersectionObserver) {
+    window.IntersectionObserver = class extends NativeIntersectionObserver {
+      constructor(callback, options) { super(callback, options); this.__wblockActive = false; }
+      observe() {
+        if (!this.__wblockActive) { this.__wblockActive = true; counters.intersectionObservers++; }
+        return super.observe(...arguments);
+      }
+      disconnect() {
+        if (this.__wblockActive) { this.__wblockActive = false; counters.intersectionObservers--; }
+        return super.disconnect();
+      }
+    };
+  }
+})();
+`;
+
 const results = [];
 function record(scenario, name, pass, detail = '') {
   results.push({ scenario, name, pass, detail });
@@ -683,7 +731,44 @@ async function audioToggleCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 10: production injector starts before <html> exists -------
+// ---- Scenario 10: Player Cleaner resource lifecycle ---------------------
+// SPA/custom players replace their <video> nodes. Per-video listeners and
+// observers must be released rather than accumulating for the page lifetime.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (resource lifecycle)', {
+    fixture: FIXTURE_PLAYER_URL,
+    scriptSource: resourceCounterPatch + '\n' + playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-resources';
+  await page.waitForTimeout(300);
+  const baseline = await page.evaluate(() => ({ ...window.__wblockResourceCounters }));
+
+  for (let i = 0; i < 6; i++) {
+    await page.evaluate(() => {
+      const container = document.querySelector('.video-js');
+      const oldVideo = container.querySelector('video');
+      const video = document.createElement('video');
+      video.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000';
+      oldVideo.replaceWith(video);
+    });
+    await page.waitForTimeout(80);
+  }
+  const after = await page.evaluate(() => ({ ...window.__wblockResourceCounters }));
+  for (const key of ['listeners', 'intervals', 'mutationObservers', 'intersectionObservers']) {
+    record(S, `${key} stay flat across video swaps`, after[key] === baseline[key],
+      `baseline=${baseline[key]} after=${after[key]}`);
+  }
+  await check(page, S, 'replacement video remains native', () => {
+    const v = document.querySelector('.video-js video');
+    return { pass: !!(v && v.controls && v.hasAttribute('controls')) };
+  });
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 11: production injector starts before <html> exists -------
 // Playwright init scripts run at Safari's true document_start: readyState is
 // "loading" and document.documentElement is null. The production injector must
 // start native lookup immediately, wait only for the parser to create <html>,
