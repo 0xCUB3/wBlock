@@ -421,7 +421,14 @@
         setInterval(restore, 1000);
     }
 
-    function enhanceInPlace(container, video) {
+    function enhanceInPlace(container, video, upgradeable) {
+        if (video._wblockEnhanced) { return; }
+        video._wblockEnhanced = true;
+        // Upgradeable videos get one more replacement chance once their metadata
+        // (and therefore currentSrc) has loaded; see onLoadedMetadata. Bare
+        // videos enhanced under unknown chrome are not upgradeable, so their
+        // wrapper layout is preserved.
+        video._wblockUpgradeable = !!upgradeable;
         // We could not resolve a clean source (opaque MSE blob). Keep the
         // existing video playing but expose native controls + PiP and remove
         // obvious custom control overlays.
@@ -483,8 +490,25 @@
         } else {
             video.setAttribute(ATTR_DONE, '1');
             container.setAttribute(ATTR_DONE, '1');
-            enhanceInPlace(container, video);
+            enhanceInPlace(container, video, true);
         }
+    }
+
+    // A clean source is often not discoverable at first scan because the player
+    // exposes a blob:/opaque src until metadata loads (Plyr and JW Player do
+    // this). Once loadedmetadata fires, currentSrc is reliable, so give
+    // replacement one more chance instead of leaving the video merely enhanced.
+    function onLoadedMetadata(event) {
+        var video = event.target;
+        if (!(video instanceof HTMLVideoElement)) { return; }
+        if (!video._wblockEnhanced || !video._wblockUpgradeable) { return; }
+        video._wblockUpgradeable = false; // one upgrade attempt per load
+        var container = (video.closest && video.closest(PLAYER_SELECTORS.join(','))) ||
+            video.parentElement || video;
+        container = normalizeContainer(container);
+        if (container.removeAttribute) { container.removeAttribute(ATTR_DONE); }
+        if (video.removeAttribute) { video.removeAttribute(ATTR_DONE); }
+        try { replacePlayer(container); } catch (e) { log('upgrade failed', e); }
     }
 
     // ------------------------------------------------------------------
@@ -546,7 +570,7 @@
                 video.setAttribute(ATTR_DONE, '1');
                 if (bareContainer.setAttribute) { bareContainer.setAttribute(ATTR_DONE, '1'); }
                 enableBackgroundPlayback();
-                enhanceInPlace(bareContainer, video);
+                enhanceInPlace(bareContainer, video, false);
             } catch (e) { log('bare enhance failed', e); }
         }
     }
@@ -574,6 +598,12 @@
         setTimeout(function () { scan(document); }, 2000);
         observe();
     }
+
+    // loadedmetadata does not bubble, so listen in the capture phase to catch
+    // it for every video. Registered up front (at document-start) so no early
+    // load is missed.
+    try { document.addEventListener('loadedmetadata', onLoadedMetadata, true); }
+    catch (e) { /* ignore */ }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot, { once: true });

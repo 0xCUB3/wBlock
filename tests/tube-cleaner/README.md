@@ -46,6 +46,14 @@ Player Cleaner scenarios:
   Player exposes (`/download/<item>/movie.mp4`). Verifies discovery resolves
   relative URLs from a JW playlist and from `data-src` to absolute before
   swapping in a clean `<video>`.
+- `fixture-player-cleaner-upgrade.html` — a Plyr-style player that exposes only
+  an opaque `blob:` src at first scan (the plyr.io "slow to switch to native"
+  case). The script can only enhance in place, which stamps `ATTR_DONE` and
+  blocks every later rescan; the test then makes a clean src available and fires
+  `loadedmetadata`, and the script must upgrade the merely-enhanced video to a
+  full native replacement. A negative control asserts a clean src alone (no
+  `loadedmetadata`) does not replace, proving the upgrade keys off the media
+  event rather than a later DOM mutation.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
@@ -115,7 +123,9 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   video.js/JW/Plyr/data-attributes (including root-relative URLs resolved
   against the document base), the clean-source replacement path (poster
   and track copying, chrome removal), the opaque-source enhance-in-place path,
-  the bare-video fallback for unrecognized/custom players (and its ambient and
+  the loadedmetadata-driven upgrade from enhance-in-place to full replacement
+  (prompt native swap once a clean source appears), the bare-video fallback for
+  unrecognized/custom players (and its ambient and
   already-native skip guards), the background-playback override, and controls
   surviving a fighting player.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate

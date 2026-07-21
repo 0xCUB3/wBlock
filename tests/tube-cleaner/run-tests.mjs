@@ -30,6 +30,7 @@ const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
 const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
 const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-relative.html')).href;
+const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-upgrade.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -511,6 +512,84 @@ async function audioToggleCheck(page, scenario) {
     }).map(([id]) => id);
     return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '2/2 replaced' };
   }, { arg: cases });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 8: Player Cleaner upgrade on loadedmetadata ----------------
+// A Plyr-style player exposes only an opaque blob: src at first scan, so Player
+// Cleaner can only enhance it in place (and stamps ATTR_DONE, which blocks every
+// later rescan). Once metadata loads and a clean src appears, the loadedmetadata
+// capture listener must upgrade the enhanced video to a full native replacement.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (upgrade on loadedmetadata)', {
+    fixture: FIXTURE_PLAYER_UPGRADE_URL,
+    scriptSource: playerUserscript,
+    readySignal: '#player-upgrade[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-upgrade';
+
+  // First scan: opaque source -> enhanced in place, NOT replaced.
+  await check(page, S, 'enhances (does not replace) the opaque video at first scan', () => {
+    const v = document.querySelector('#player-upgrade video');
+    if (!v) return { pass: false, detail: 'no video' };
+    const enhanced = v.controls === true && v.hasAttribute('data-wblock-player-cleaner');
+    const notReplaced = v.src.startsWith('blob:');
+    return { pass: enhanced && notReplaced, detail: `controls=${v.controls} src=${v.src}` };
+  });
+
+  // Tag the original element so we can tell it apart from the fresh replacement.
+  await page.evaluate(() => {
+    document.querySelector('#player-upgrade video').setAttribute('data-test-original', '1');
+  });
+
+  // Negative control: a clean src alone must NOT trigger replacement, because
+  // ATTR_DONE blocks rescans. Only loadedmetadata may upgrade.
+  await page.evaluate(() => {
+    const v = document.querySelector('#player-upgrade video');
+    v.setAttribute('src', 'https://example.com/media/movie.mp4');
+  });
+  await page.waitForTimeout(1500); // past the 800ms rescan + 500ms observer debounce
+  await check(page, S, 'clean src alone does NOT replace (ATTR_DONE blocks rescans)', () => {
+    const v = document.querySelector('#player-upgrade video');
+    const stillOriginal = !!(v && v.hasAttribute('data-test-original'));
+    return { pass: stillOriginal, detail: stillOriginal ? 'still the enhanced original' : 'was replaced early' };
+  });
+
+  // Fire loadedmetadata -> the upgrade path should swap in a clean native video.
+  await page.evaluate(() => {
+    const v = document.querySelector('#player-upgrade video');
+    v.dispatchEvent(new Event('loadedmetadata', { bubbles: false }));
+  });
+
+  await check(page, S, 'upgrades to a fresh native <video> on loadedmetadata', () => {
+    const c = document.getElementById('player-upgrade');
+    const v = c ? c.querySelector('video') : null;
+    if (!v) return { pass: false, detail: 'no video' };
+    const fresh = !v.hasAttribute('data-test-original');
+    const clean = v.src === 'https://example.com/media/movie.mp4';
+    return { pass: fresh && clean, detail: `fresh=${fresh} src=${v.src}` };
+  });
+
+  await check(page, S, 'replacement has native controls + copied poster', () => {
+    const v = document.querySelector('#player-upgrade video');
+    const ok = !!(v && v.controls === true && v.getAttribute('poster') === 'https://example.com/poster.jpg');
+    return { pass: ok, detail: v ? `controls=${v.controls} poster=${v.getAttribute('poster')}` : 'no video' };
+  });
+
+  await check(page, S, 'removes the custom control chrome', () => {
+    const c = document.getElementById('player-upgrade');
+    const bar = c ? c.querySelector('.plyr__controls') : null;
+    return { pass: !bar, detail: `plyr__controls present=${!!bar}` };
+  });
+
+  await check(page, S, 'exactly one video after upgrade (idempotent)', () => {
+    const c = document.getElementById('player-upgrade');
+    const n = c ? c.querySelectorAll('video').length : 0;
+    return { pass: n === 1, detail: `${n} video(s)` };
+  });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
