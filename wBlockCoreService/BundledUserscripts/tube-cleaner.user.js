@@ -436,6 +436,46 @@
         video.setAttribute('controls', '');
     }
 
+    // WebKit renders Safari's native controls from the video's `controls`
+    // CONTENT ATTRIBUTE, not from the JavaScript property. forceNativeControls()
+    // shadows the `controls` property so YouTube's `video.controls = false`
+    // assignments are ignored, but YouTube can still strip the attribute via
+    // removeAttribute(), which hides the native controls. A naive
+    // `!video.controls` guard never fires there because the shadowed getter
+    // always returns true. So we defend the attribute itself: a MutationObserver
+    // restores it whenever it is removed, with a polling fallback.
+    function guardNativeControls(video) {
+        if (!video || video._wblockControlsGuarded) return;
+        video._wblockControlsGuarded = true;
+
+        function restore() {
+            if (video && !video.hasAttribute('controls')) {
+                video.setAttribute('controls', '');
+            }
+        }
+
+        try {
+            var observer = new MutationObserver(restore);
+            observer.observe(video, { attributes: true, attributeFilter: ['controls'] });
+        } catch (e) { /* ignore */ }
+
+        restore();
+        setInterval(restore, 1000);
+    }
+
+    // Ensure inline playback on iOS/iPadOS. Without `playsinline`, iOS opens the
+    // video in the fullscreen system player instead of playing inline. YouTube's
+    // desktop player (served to iPadOS by default) may omit this attribute, and
+    // since we reuse YouTube's <video> element we must set it ourselves.
+    function ensurePlaysInline(video) {
+        if (!video) return;
+        try {
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+        } catch (e) { /* ignore */ }
+    }
+
     function transformPlayer() {
         var player = document.getElementById('movie_player');
         if (!player) {
@@ -465,9 +505,10 @@
         //    can't turn them off)
         forceNativeControls(video);
 
-        // 3. Enable PiP
+        // 3. Enable PiP and inline playback (iOS)
         video.removeAttribute('disablepictureinpicture');
         video.disablePictureInPicture = false;
+        ensurePlaysInline(video);
 
         // 4. Keep the original video element (it has the SABR/MSE
         //    pipeline attached by YouTube's player).  Cloning would
@@ -492,14 +533,9 @@
             };
         }
 
-        // 5. Keep controls forced on (YouTube may try to remove them) — but
-        //    don't fight it too aggressively; the Object.defineProperty handles it.
-        var controlsGuard = setInterval(function () {
-            if (video && !video.controls) {
-                video.controls = true;
-                video.setAttribute('controls', '');
-            }
-        }, 2000);
+        // 5. Keep native controls on even when YouTube strips the `controls`
+        //    attribute (see guardNativeControls).
+        guardNativeControls(video);
 
         // 6. Apply audio-only preference
         setAudioOnlyStyles(isAudioOnly());
@@ -522,7 +558,9 @@
                 log('re-patching new video element');
                 video = newVid;
                 forceNativeControls(video);
+                guardNativeControls(video);
                 video.disablePictureInPicture = false;
+                ensurePlaysInline(video);
                 buildToolbar(player, video);
             }
         });
