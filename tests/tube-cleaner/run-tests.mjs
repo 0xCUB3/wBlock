@@ -393,6 +393,19 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: !!(bar && bar.style.display === 'none'), detail: bar ? `display=${bar.style.display}` : 'no bar' };
   });
 
+  await check(page, 'player-cleaner', 'nativeizes MediaElement video in place', () => {
+    const v = document.querySelector('#mediaelement-player video');
+    return { pass: !!(v && v.controls && v.hasAttribute('data-test-mediaelement') &&
+      v.hasAttribute('data-wblock-player-cleaner')) };
+  });
+
+  await check(page, 'player-cleaner', 'preserves MediaElement shell and hides its chrome', () => {
+    const shell = document.querySelector('#mediaelement-player .mejs__inner');
+    const chrome = document.querySelector('#mediaelement-player .mejs__controls');
+    return { pass: !!(shell && chrome && chrome.style.display === 'none'),
+      detail: `shell=${!!shell} chrome=${!!chrome} display=${chrome && chrome.style.display}` };
+  });
+
   await page.waitForTimeout(4200); // let several fightControls rounds run
   await check(page, 'player-cleaner', 'native controls SURVIVE player turning them off', () => {
     const v = document.querySelector('.video-js video');
@@ -400,6 +413,11 @@ async function qualityUISelectionCheck(page, scenario) {
     const hasAttr = v.hasAttribute('controls');
     return { pass: hasAttr, detail: `hasAttribute('controls')=${hasAttr} (getter=${v.controls})` };
   }, { timeout: 1500, interval: 500 });
+
+  await check(page, 'player-cleaner', 'MediaElement lifecycle remains intact', () => ({
+    pass: window.__wblockMediaElementLifecycleIntact === true,
+    detail: `lifecycle=${window.__wblockMediaElementLifecycleIntact}`,
+  }));
 
   record('player-cleaner', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();

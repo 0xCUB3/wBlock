@@ -10,6 +10,9 @@
   .video-js video { width: 100%; height: 100%; background: #222; }
   .vjs-control-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0,0,0,.7); }
   .vjs-big-play-button { position: absolute; top: 40%; left: 45%; width: 60px; height: 60px; background: rgba(0,0,0,.6); border-radius: 50%; }
+  .mejs__container { position: relative; width: 640px; aspect-ratio: 16 / 9; margin: 24px auto; }
+  .mejs__container video { width: 100%; height: 100%; }
+  .mejs__controls { position: absolute; inset: auto 0 0; height: 40px; background: #333; }
 </style>
 </head>
 <body>
@@ -20,6 +23,15 @@
     <video></video>
     <div class="vjs-control-bar"></div>
     <div class="vjs-big-play-button"></div>
+  </div>
+
+  <!-- MediaElement keeps querying this generated shell after setup. Cleaner
+       must hide its chrome without deleting framework-owned structure. -->
+  <div id="mediaelement-player" class="mejs__container">
+    <div class="mejs__inner">
+      <video data-test-mediaelement="1" src="https://example.com/media/mediaelement.mp4"></video>
+      <div class="mejs__controls"></div>
+    </div>
   </div>
 
   <script>
@@ -38,6 +50,13 @@
       setTimeout(fightControls, 800);
       setTimeout(fightControls, 2500);
       setInterval(fightControls, 3000);
+
+      // Reproduce MediaElement's post-startup wrapper access. Structural
+      // deletion makes this throw; in-place nativeization leaves it intact.
+      setTimeout(function () {
+        var inner = document.querySelector('#mediaelement-player .mejs__inner');
+        window.__wblockMediaElementLifecycleIntact = inner.offsetHeight >= 0;
+      }, 500);
     })();
   </script>
 </body>

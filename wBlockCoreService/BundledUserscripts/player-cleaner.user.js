@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.5.0
+// @version      1.5.1
 // @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
 // @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
 // @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
@@ -611,6 +611,11 @@
         // structural cleanup is only safe in the document's light DOM.
         try {
             if (container.getRootNode && container.getRootNode() !== document) { return; }
+            // MediaElement keeps querying its generated wrapper after startup;
+            // deleting that wrapper leaves playback alive but makes its own
+            // lifecycle callbacks throw. Its controls are already hidden, so
+            // preserve the shell and nativeize the media element in place.
+            if (container.matches && container.matches('.mejs-container,.mejs__container')) { return; }
         } catch (e) { /* continue with the conservative light-DOM path */ }
 
         // During parser construction, never delete the wrapper DOM before the

@@ -29,7 +29,10 @@ before DOMContentLoaded and within one frame of insertion.
 Player Cleaner scenarios:
 - `fixture-player-cleaner.html` — opaque (blob) source, so the script enhances
   the existing `<video>` in place and must keep native controls on while the
-  custom player keeps stripping them.
+  custom player keeps stripping them. Its MediaElement case verifies direct
+  sources are also nativeized in place because that framework continues using
+  its generated shell after startup; the shell remains intact and its chrome is
+  hidden without lifecycle errors.
 - `fixture-player-cleaner-replace.html` — a clean http(s) source, exercising the
   full cleanup path: the original `<video>` is retained (avoiding a second media
   load and preserving buffered state, poster, and caption tracks), the custom
