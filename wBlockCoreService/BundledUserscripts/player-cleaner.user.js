@@ -103,11 +103,6 @@
         } catch (e) { return true; }
     }
 
-    function setAutoPiP(v) {
-        try { localStorage.setItem(AUTO_PIP_KEY, v ? '1' : '0'); } catch (e) { /* ignore */ }
-        autoPiPEnabled = v;
-    }
-
     try { autoPiPEnabled = getAutoPiP(); } catch (e) { /* ignore */ }
 
     function isPiPActive(video) {
@@ -300,23 +295,6 @@
                 for (var i = 0; i < sources.length; i++) {
                     if (isPlayableUrl(sources[i].file)) { return sources[i].file; }
                 }
-            }
-        } catch (e) { /* ignore */ }
-        return null;
-    }
-
-    function sourceFromPageMetadata() {
-        try {
-            var selectors = [
-                'meta[property="og:video:secure_url"]',
-                'meta[property="og:video:url"]',
-                'meta[property="og:video"]',
-                'meta[name="twitter:player:stream"]'
-            ];
-            for (var i = 0; i < selectors.length; i++) {
-                var el = document.querySelector(selectors[i]);
-                var content = el ? el.getAttribute('content') : null;
-                if (isPlayableUrl(content)) { return content; }
             }
         } catch (e) { /* ignore */ }
         return null;
