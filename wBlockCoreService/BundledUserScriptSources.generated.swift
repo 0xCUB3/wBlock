@@ -76,6 +76,21 @@ enum BundledUserScriptSources {
     }
 
     // ------------------------------------------------------------------
+    // iOS / iPadOS detection
+    // ------------------------------------------------------------------
+
+    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var IS_MOBILE_SITE = location.hostname === 'm.youtube.com' ||
+        /mobi|android/i.test(navigator.userAgent);
+
+    function isPiPSupported() {
+        // PiP on iOS is automatic (system-managed), not programmatic.
+        // Only show the PiP button on macOS Safari.
+        return document.pictureInPictureEnabled !== false && !IS_IOS;
+    }
+
+    // ------------------------------------------------------------------
     // Preferences
     // ------------------------------------------------------------------
 
@@ -216,6 +231,10 @@ enum BundledUserScriptSources {
         // Let the native controls bar extend below the video.
         '.wblock-tc-native',
         '{ overflow: visible !important; }',
+
+        // Prevent iOS double-tap zoom on toolbar buttons.
+        '.wblock-tc-toolbar button, .wblock-tc-toolbar div',
+        '{ touch-action: manipulation !important; }',
     ].join(' ');
 
     var AUDIO_ONLY_CSS = [
@@ -437,7 +456,9 @@ enum BundledUserScriptSources {
 
     // Click YouTube's internal settings button to open the quality menu
     function openSettingsMenu(player) {
-        var settingsBtn = player.querySelector('.ytp-settings-button');
+        var settingsBtn = player.querySelector('.ytp-settings-button') ||
+            player.querySelector('[aria-label="Settings"]') ||
+            player.querySelector('.ytp-button[aria-label*="Settings"]');
         if (!settingsBtn) { warn('openSettings: no settings button'); return false; }
         // Click it twice to ensure it opens (first click closes, second opens)
         settingsBtn.click();
@@ -646,9 +667,17 @@ enum BundledUserScriptSources {
         toolbar.className = 'wblock-tc-toolbar';
         // Position at bottom-right, above native controls. Always visible but
         // semi-transparent, full opacity on hover.
-        toolbar.style.cssText = 'position:absolute;bottom:42px;right:12px;z-index:60;display:flex;gap:4px;align-items:center;pointer-events:auto;font:11px/1.2 -apple-system,system-ui,sans-serif;opacity:0.75;transition:opacity 0.15s';
+        // On mobile (iOS/iPadOS) use larger touch targets and always-visible.
+        var toolbarBottom = IS_IOS ? '12px' : '42px';
+        var toolbarOpacity = IS_IOS ? '1' : '0.75';
+        var toolbarFont = IS_IOS ? '14px' : '11px';
+        toolbar.style.cssText = 'position:absolute;bottom:' + toolbarBottom + ';right:8px;z-index:60;display:flex;gap:6px;align-items:center;pointer-events:auto;font:' + toolbarFont + '/1.2 -apple-system,system-ui,sans-serif;opacity:' + toolbarOpacity + ';transition:opacity 0.15s';
 
         var btnStyle = 'background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;-webkit-user-select:none;user-select:none';
+        // On iOS, use larger touch targets (minimum 44pt)
+        if (IS_IOS) {
+            btnStyle = 'background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:6px;padding:8px 12px;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none';
+        }
 
         // Quality selector
         var qualityBtn = document.createElement('button');
@@ -662,9 +691,12 @@ enum BundledUserScriptSources {
         }
         updateQualityBtn();
 
-        // Quality dropdown
+        // Quality dropdown — opens upward since toolbar is at bottom
         var qualityMenu = document.createElement('div');
-        qualityMenu.style.cssText = 'position:absolute;top:100%;right:0;margin-top:4px;background:rgba(0,0,0,0.9);border-radius:5px;padding:4px 0;min-width:100px;display:none;z-index:70;font:12px/1.6 -apple-system,system-ui,sans-serif';
+        var menuFont = IS_IOS ? '16px' : '12px';
+        var menuPadding = IS_IOS ? '8px 0' : '4px 0';
+        var menuMinWidth = IS_IOS ? '140px' : '100px';
+        qualityMenu.style.cssText = 'position:absolute;bottom:100%;right:0;margin-bottom:4px;background:rgba(0,0,0,0.9);border-radius:5px;padding:' + menuPadding + ';min-width:' + menuMinWidth + ';display:none;z-index:70;font:' + menuFont + '/1.8 -apple-system,system-ui,sans-serif';
 
         function buildQualityMenu() {
             // Clear safely — avoid innerHTML which triggers TrustedHTML CSP
@@ -674,9 +706,11 @@ enum BundledUserScriptSources {
             var levels = getAvailableQualities();
             var preferred = getPreferredQuality();
 
+            var itemPadding = IS_IOS ? '10px 16px' : '4px 12px';
+
             // Auto option
             var autoItem = document.createElement('div');
-            autoItem.style.cssText = 'padding:4px 12px;cursor:pointer;color:#fff;white-space:nowrap';
+            autoItem.style.cssText = 'padding:' + itemPadding + ';cursor:pointer;color:#fff;white-space:nowrap';
             autoItem.textContent = 'Auto';
             if (preferred === 'auto') {
                 autoItem.style.color = '#4fc3f7';
@@ -696,7 +730,7 @@ enum BundledUserScriptSources {
             for (var i = 0; i < levels.length; i++) {
                 (function (q) {
                     var item = document.createElement('div');
-                    item.style.cssText = 'padding:4px 12px;cursor:pointer;color:#fff;white-space:nowrap';
+                    item.style.cssText = 'padding:' + itemPadding + ';cursor:pointer;color:#fff;white-space:nowrap';
                     item.textContent = QUALITY_LABELS[q] || q;
                     if (preferred === q) {
                         item.style.color = '#4fc3f7';
@@ -757,8 +791,8 @@ enum BundledUserScriptSources {
         });
         toolbar.appendChild(audioBtn);
 
-        // PiP button
-        if (document.pictureInPictureEnabled !== false) {
+        // PiP button — only on macOS where programmatic PiP is available
+        if (isPiPSupported()) {
             var pipBtn = document.createElement('button');
             pipBtn.type = 'button';
             pipBtn.textContent = 'PiP';
@@ -777,18 +811,25 @@ enum BundledUserScriptSources {
             toolbar.appendChild(pipBtn);
         }
 
-        // The toolbar is always visible; full opacity on hover
-        toolbar.addEventListener('mouseenter', function () {
+        // On iOS the toolbar is always visible (no hover). On desktop,
+        // full opacity on hover, semi-transparent otherwise.
+        if (IS_IOS) {
             toolbar.style.opacity = '1';
-        });
-        toolbar.addEventListener('mouseleave', function () {
-            toolbar.style.opacity = '0.75';
-        });
+        } else {
+            toolbar.addEventListener('mouseenter', function () {
+                toolbar.style.opacity = '1';
+            });
+            toolbar.addEventListener('mouseleave', function () {
+                toolbar.style.opacity = '0.75';
+            });
+        }
 
-        // Also show on touch
+        // On mobile, tap toggles toolbar visibility
         player.addEventListener('touchstart', function () {
             toolbar.style.opacity = '1';
-            setTimeout(function () { toolbar.style.opacity = '0'; }, 3000);
+            if (!IS_IOS) {
+                setTimeout(function () { toolbar.style.opacity = '0.75'; }, 3000);
+            }
         }, { passive: true });
 
         player.appendChild(toolbar);
@@ -838,6 +879,11 @@ enum BundledUserScriptSources {
         var timer = setInterval(function () {
             var player = document.getElementById('movie_player') ||
                 document.querySelector('.html5-video-player');
+            // On mobile YouTube, the player may be in a different container
+            if (!player && IS_MOBILE_SITE) {
+                player = document.querySelector('ytd-player') ||
+                    document.querySelector('#player-container');
+            }
             var video = player && player.querySelector('video');
             if (player && video) {
                 clearInterval(timer);
@@ -950,6 +996,9 @@ enum BundledUserScriptSources {
 
     var LOG_PREFIX = '[Player Cleaner]';
     var ATTR_DONE = 'data-wblock-player-cleaner';
+
+    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     function log() {
         try {

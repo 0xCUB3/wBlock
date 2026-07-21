@@ -45,6 +45,9 @@
     var LOG_PREFIX = '[Player Cleaner]';
     var ATTR_DONE = 'data-wblock-player-cleaner';
 
+    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
     function log() {
         try {
             if (window.__wblockPlayerCleanerDebug) {
