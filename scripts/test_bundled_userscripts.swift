@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      4.2.5", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      4.2.6", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
@@ -139,6 +139,10 @@ guard tubeSource.contains("#player-control-container,") &&
       tubeSource.contains(".wblock-tc-native .ytp-player-content") else {
     fail("Tube Cleaner must suppress mobile YouTube controls above the native video")
 }
+guard tubeSource.contains(".wblock-tc-native .ytp-settings-menu,") &&
+      tubeSource.contains(".wblock-tc-native .ytp-panel-menu,") else {
+    fail("Tube Cleaner must hide YouTube's settings shell while changing quality")
+}
 guard tubeSource.contains("if (!IS_IOS) { toolbar.appendChild(audioBtn); }") &&
       tubeSource.contains("if (!IS_IOS) { setPreferredQuality(q); }") else {
     fail("Tube Cleaner must expose non-persistent quality-only controls on iOS")
@@ -153,7 +157,7 @@ for needle in [
     ".video-js",                 // video.js detection
     ".jwplayer",                 // JW Player detection
     ".plyr",                     // Plyr detection
-    "requestPictureInPicture".count > 0 ? "playsInline" : "playsInline", // native controls/PiP
+    "playsInline",                // native controls/PiP
 ] {
     guard playerSource.contains(needle) else {
         fail("Player Cleaner is missing expected feature code: \(needle)")

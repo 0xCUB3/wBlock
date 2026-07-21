@@ -12,7 +12,7 @@ enum BundledUserScriptSources {
 // ==UserScript==
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
-// @version      4.2.5
+// @version      4.2.6
 // @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
 // @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
 // @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
@@ -37,7 +37,7 @@ enum BundledUserScriptSources {
     'use strict';
 
     // ------------------------------------------------------------------
-    // Tube Cleaner v4.2.5
+    // Tube Cleaner v4.2.6
     //
     // Vinegar Extract approach: instead of trying to extract stream URLs
     // from the player response (which 403 due to SABR), we let YouTube's
@@ -275,6 +275,10 @@ enum BundledUserScriptSources {
         '#movie_player .ytp-progress-bar,',
         '#movie_player .ytp-progress-bar-container,',
         '#movie_player .ytp-settings-button,',
+        '#movie_player .ytp-settings-menu,',
+        '#movie_player .ytp-panel,',
+        '#movie_player .ytp-panel-menu,',
+        '#movie_player .ytp-quality-menu,',
         '#movie_player .ytp-fullscreen-button,',
         '#movie_player .ytp-remote-button,',
         '#movie_player .ytp-size-button,',
@@ -408,6 +412,13 @@ enum BundledUserScriptSources {
         '.wblock-tc-native .ytp-autonav-endscreen-countdown-overlay,',
         '.wblock-tc-native .ytp-watermark,',
         '.wblock-tc-native .ytp-related-overlay,',
+        // setQuality() drives YouTube's hidden menu for SABR reliability. Hide
+        // its entire shell—not just menu items—so the panel cannot flash while
+        // our quality picker changes the setting programmatically.
+        '.wblock-tc-native .ytp-settings-menu,',
+        '.wblock-tc-native .ytp-panel,',
+        '.wblock-tc-native .ytp-panel-menu,',
+        '.wblock-tc-native .ytp-quality-menu,',
         '.wblock-tc-native .ytp-error',
         '{ display: none !important; }',
 

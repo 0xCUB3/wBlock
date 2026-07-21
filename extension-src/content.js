@@ -30670,23 +30670,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     return true;
   };
   /**
-   * Executes code in the context of page via Function constructor.
-   * Used as a last-resort fallback when both textContent and blob
-   * injection are blocked by CSP / sandbox restrictions.
-   *
-   * @param {string} code String of scripts to be executed
-   * @returns {boolean} Returns true if code was executed, otherwise returns false.
-   */
-  const executeScriptsViaFunction = code => {
-    try {
-      const fn = new Function(code);
-      fn();
-      return true;
-    } catch (e) {
-      return false;
-    }
-  };
-  /**
    * Execute scripts in a page context and cleanup itself when execution
    * completes.
    *
@@ -30697,14 +30680,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     scripts.unshift('( function () { try {');
     // we use this script detect if the script was applied,
     // if the script tag was removed, then it means that code was applied, otherwise no
-    scripts.push(';document.currentScript.remove();');
+    scripts.push(';document.currentScript && document.currentScript.remove();');
     scripts.push("} catch (ex) { console.error('Error executing AG js: ' + ex); } })();");
     const code = scripts.join('\r\n');
     if (!executeScriptsViaTextContent(code)) {
       if (!executeScriptsViaBlob(code)) {
-        if (!executeScriptsViaFunction(code)) {
-          console.warn('[wBlock] Page script injection was blocked; continuing without page-context scripts.');
-        }
+        console.warn('[wBlock] Page script injection was blocked; continuing without page-context scripts.');
       }
     }
   };

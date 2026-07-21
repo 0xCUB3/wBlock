@@ -382,7 +382,15 @@ async function audioToggleCheck(page, scenario) {
 
 async function qualityUISelectionCheck(page, scenario) {
   await page.evaluate(() => window.__wblockTubeDebug.setQuality('hd1080'));
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(300);
+  await check(page, scenario, 'keeps YouTube quality menu hidden while selecting', () => {
+    const menu = document.querySelector('#movie_player .ytp-panel-menu');
+    return {
+      pass: !!menu && getComputedStyle(menu).display === 'none',
+      detail: `menu=${!!menu} display=${menu ? getComputedStyle(menu).display : 'missing'}`,
+    };
+  });
+  await page.waitForTimeout(500);
   await check(page, scenario, 'selects quality through YouTube UI without double-toggle', () => ({
     pass: window.__uiSelectedQuality === 'hd1080' && window.__settingsClicks === 2,
     detail: `selected=${window.__uiSelectedQuality} settingsClicks=${window.__settingsClicks}`,

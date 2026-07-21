@@ -79,8 +79,8 @@ Player Cleaner scenarios:
 - Visibility scenarios shadow the page-facing document state while simulating a
   native hidden tab, proving both cleaners still enter PiP from the captured
   browser getter but not merely from window focus loss. The Tube Cleaner fixture
-  also verifies its quality UI opens once, selects the requested option, and
-  closes once.
+  also verifies its quality path keeps YouTube's settings shell hidden, selects
+  the requested option once, and closes it without an extra toggle.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
