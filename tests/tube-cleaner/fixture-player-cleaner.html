@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic custom player (Player Cleaner test fixture)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .video-js { position: relative; width: 960px; max-width: 100%; aspect-ratio: 16 / 9; margin: 24px auto; background: #000; }
+  .video-js video { width: 100%; height: 100%; background: #222; }
+  .vjs-control-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0,0,0,.7); }
+  .vjs-big-play-button { position: absolute; top: 40%; left: 45%; width: 60px; height: 60px; background: rgba(0,0,0,.6); border-radius: 50%; }
+  .mejs__container { position: relative; width: 640px; aspect-ratio: 16 / 9; margin: 24px auto; }
+  .mejs__container video { width: 100%; height: 100%; }
+  .mejs__controls { position: absolute; inset: auto 0 0; height: 40px; background: #333; }
+</style>
+</head>
+<body>
+  <!-- A video.js-style custom player wrapping a perfectly good <video>. The
+       video has an opaque (blob) source so Player Cleaner takes the
+       enhance-in-place path (it cannot resolve a clean URL). -->
+  <div class="video-js">
+    <video></video>
+    <div class="vjs-control-bar"></div>
+    <div class="vjs-big-play-button"></div>
+  </div>
+
+  <!-- MediaElement keeps querying this generated shell after setup. Cleaner
+       must hide its chrome without deleting framework-owned structure. -->
+  <div id="mediaelement-player" class="mejs__container">
+    <div class="mejs__inner">
+      <video data-test-mediaelement="1" src="https://example.com/media/mediaelement.mp4"></video>
+      <div class="mejs__controls"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var container = document.querySelector('.video-js');
+      var v = container.querySelector('video');
+      // Opaque MSE-style source: not a clean http(s) URL, so Player Cleaner
+      // enhances in place rather than swapping in a new element.
+      try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
+
+      // Adversarial: the custom player keeps trying to hide native controls.
+      function fightControls() {
+        try { v.controls = false; } catch (e) {}
+        try { v.removeAttribute('controls'); } catch (e) {}
+      }
+      setTimeout(fightControls, 800);
+      setTimeout(fightControls, 2500);
+      setInterval(fightControls, 3000);
+
+      // Reproduce MediaElement's post-startup wrapper access. Structural
+      // deletion makes this throw; in-place nativeization leaves it intact.
+      setTimeout(function () {
+        var inner = document.querySelector('#mediaelement-player .mejs__inner');
+        window.__wblockMediaElementLifecycleIntact = inner.offsetHeight >= 0;
+      }, 500);
+    })();
+  </script>
+</body>
+</html>

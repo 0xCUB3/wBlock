@@ -397,6 +397,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				DataModels.proto,
+				BundledUserscripts/tube-cleaner.user.js,
+				BundledUserscripts/player-cleaner.user.js,
 			);
 			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
 		};

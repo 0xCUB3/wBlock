@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic bare/custom players (Player Cleaner bare-video test fixture)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .modern-player, .custom-wrap, .hero-bg { position: relative; width: 640px; max-width: 100%; margin: 24px auto; background: #000; }
+  .modern-player video, .custom-wrap video, .hero-bg video, #bare-native { display: block; width: 640px; height: 360px; background: #222; }
+  /* A fake custom control bar that a bespoke player would overlay. */
+  .custom-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0,0,0,.7); }
+</style>
+</head>
+<body>
+  <!-- Case 1: a modern custom player whose wrapper class is NOT in Player
+       Cleaner's recognized library list (think Mux / bespoke React players).
+       Opaque blob source, native controls suppressed. Expected: enhanced in
+       place (native controls forced on). -->
+  <div class="modern-player" id="bare-enhance">
+    <video></video>
+    <div class="custom-bar"></div>
+  </div>
+
+  <!-- Case 2: a bare <video> with a clean http(s) source but suppressed native
+       controls. Expected: enhanced in place (controls restored), source kept. -->
+  <div class="custom-wrap" id="bare-clean">
+    <video src="https://example.com/media/movie.mp4"></video>
+  </div>
+
+  <!-- Case 3: an ambient/background video (autoplay + muted + loop). Expected:
+       left completely untouched (no native controls forced on). -->
+  <div class="hero-bg" id="bare-ambient">
+    <video autoplay muted loop playsinline></video>
+  </div>
+
+  <!-- Case 4: a video that already has native controls. Expected: untouched. -->
+  <video id="bare-native" controls src="https://example.com/media/native.mp4"></video>
+
+  <script>
+    (function () {
+      // Give the blob-source players an opaque MSE-style source so Player
+      // Cleaner sees a real (but not clean-http) source.
+      function setBlob(sel) {
+        var v = document.querySelector(sel);
+        try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
+      }
+      setBlob('#bare-enhance video');
+      setBlob('#bare-ambient video');
+
+      // Adversarial: the modern player keeps trying to hide native controls on
+      // the enhanced video; the controls guard must win.
+      var ev = document.querySelector('#bare-enhance video');
+      function fightControls() {
+        try { ev.controls = false; } catch (e) {}
+        try { ev.removeAttribute('controls'); } catch (e) {}
+      }
+      setTimeout(fightControls, 800);
+      setTimeout(fightControls, 2500);
+      setInterval(fightControls, 3000);
+    })();
+  </script>
+</body>
+</html>

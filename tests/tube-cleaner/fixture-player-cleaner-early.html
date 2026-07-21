@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pre-DOMContentLoaded Player Cleaner timing fixture</title>
+<script>
+  (function () {
+    var timing = window.__wblockEarlyPlayerTiming = {
+      createdAt: 0,
+      nativeAt: 0,
+      domContentLoadedAt: 0
+    };
+
+    new MutationObserver(function () {
+      var container = document.getElementById('early-player');
+      var video = container && container.querySelector('video');
+      if (!timing.nativeAt && container && video &&
+          container.hasAttribute('data-wblock-player-cleaner') && video.controls) {
+        timing.nativeAt = performance.now();
+      }
+    }).observe(document, { childList: true, subtree: true, attributes: true });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      timing.domContentLoadedAt = performance.now();
+    }, { once: true });
+
+    var container = document.createElement('div');
+    container.id = 'early-player';
+    container.className = 'video-js';
+    var video = document.createElement('video');
+    video.setAttribute('src', 'https://example.com/media/early.mp4');
+    container.appendChild(video);
+    var controls = document.createElement('div');
+    controls.className = 'vjs-control-bar';
+    container.appendChild(controls);
+    timing.createdAt = performance.now();
+    document.documentElement.appendChild(container);
+  })();
+</script>
+</head>
+<body>Player Cleaner timing fixture</body>
+</html>

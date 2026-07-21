@@ -1,0 +1,12 @@
+{
+  "name": "tube-cleaner-harness",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Autonomous WebKit (Safari-engine) test harness for the Tube Cleaner userscript",
+  "scripts": {
+    "test": "node run-tests.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}

@@ -9,6 +9,10 @@ build/
 DerivedData/
 scripts/.mock_filter_server.log
 
+# Tube Cleaner test harness dependencies (source is committed, deps are not)
+tests/tube-cleaner/node_modules/
+tests/tube-cleaner/package-lock.json
+
 # GSD planning
 .planning/
 .worktrees/

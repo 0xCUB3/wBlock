@@ -30680,7 +30680,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     scripts.unshift('( function () { try {');
     // we use this script detect if the script was applied,
     // if the script tag was removed, then it means that code was applied, otherwise no
-    scripts.push(';document.currentScript.remove();');
+    scripts.push(';document.currentScript && document.currentScript.remove();');
     scripts.push("} catch (ex) { console.error('Error executing AG js: ' + ex); } })();");
     const code = scripts.join('\r\n');
     if (!executeScriptsViaTextContent(code)) {

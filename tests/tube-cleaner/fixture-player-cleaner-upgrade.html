@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plyr-style player, opaque until metadata (Player Cleaner upgrade test)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .plyr { position: relative; width: 960px; max-width: 100%; aspect-ratio: 16 / 9; margin: 24px auto; background: #000; }
+  .plyr video { width: 100%; height: 100%; background: #222; }
+  .plyr__controls { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0,0,0,.7); }
+</style>
+</head>
+<body>
+  <!-- Mimics Plyr: at first scan the <video> exposes only an opaque blob: src
+       (no <source> children, metadata not yet loaded), so Player Cleaner cannot
+       resolve a clean URL and can only enhance it in place. The test later makes
+       a clean source available through a mock player API without mutating the DOM,
+       then fires loadedmetadata. Player Cleaner must clean the wrapper while
+       retaining the original media element—no polling and no second media load. -->
+  <div class="plyr" id="player-upgrade">
+    <video src="blob:https://example.com/00000000-0000-0000-0000-000000000000"
+           poster="https://example.com/poster.jpg" preload="metadata"></video>
+    <div class="plyr__controls"></div>
+  </div>
+</body>
+</html>

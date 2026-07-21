@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base href="https://example.com/details/archive/item">
+<title>Shadow-root JW Player (Archive.org-style)</title>
+<script>
+  (function () {
+    var timing = window.__wblockShadowTiming = {
+      createdAt: 0,
+      nativeAt: 0,
+      domContentLoadedAt: 0
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      timing.domContentLoadedAt = performance.now();
+    }, { once: true });
+
+    customElements.define('test-play-av', class extends HTMLElement {
+      constructor() {
+        super();
+        var root = this.attachShadow({ mode: 'open' });
+        new MutationObserver(function () {
+          var video = root.querySelector('video');
+          if (!timing.nativeAt && video && video.controls &&
+              video.hasAttribute('data-wblock-player-cleaner')) {
+            timing.nativeAt = performance.now();
+          }
+        }).observe(root, { childList: true, subtree: true, attributes: true });
+
+        timing.createdAt = performance.now();
+        root.innerHTML = [
+          '<div id="jw6" class="jwplayer jw-reset">',
+          '  <div class="jw-wrapper">',
+          '    <video class="jw-video" data-test-original="1" src="/download/archive/movie.mp4"></video>',
+          '    <div class="jw-controls"><button>Play</button></div>',
+          '  </div>',
+          '</div>'
+        ].join('');
+      }
+    });
+
+    document.documentElement.appendChild(document.createElement('test-play-av'));
+  })();
+</script>
+</head>
+<body>Archive-style shadow player fixture</body>
+</html>
