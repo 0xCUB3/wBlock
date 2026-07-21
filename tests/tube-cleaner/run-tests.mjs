@@ -201,10 +201,17 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
       return { pass: btns >= 2, detail: `${btns} buttons` };
     });
   } else {
-    await check(page, scenario, 'uses only Safari native controls on iOS', () => ({
-      pass: !document.querySelector('.wblock-tc-toolbar'),
-      detail: `customToolbar=${!!document.querySelector('.wblock-tc-toolbar')}`,
-    }));
+    await check(page, scenario, 'adds only quality beside Safari native controls on iOS', () => {
+      const toolbar = document.querySelector('.wblock-tc-toolbar');
+      const quality = toolbar?.querySelector('.wblock-tc-quality-button');
+      const audio = toolbar?.querySelector('.wblock-tc-audio-button');
+      const buttons = toolbar?.querySelectorAll('button').length || 0;
+      return {
+        pass: !!toolbar && !!quality && !audio && buttons === 1 &&
+          getComputedStyle(toolbar).pointerEvents === 'auto',
+        detail: `toolbar=${!!toolbar} quality=${!!quality} audio=${!!audio} buttons=${buttons}`,
+      };
+    });
   }
 
   await check(page, scenario, 'overrides document.hidden (background playback)', () => {
@@ -273,6 +280,23 @@ async function iosNativeControlsChecks(page, scenario) {
     const settingsClicks = window.__settingsClicks || 0;
     return { pass: quality === 'auto' && bias === null && settingsClicks === 0,
       detail: `quality=${quality} bias=${bias} settingsClicks=${settingsClicks}` };
+  });
+  await check(page, scenario, 'changes iOS quality without persisting a fixed startup range', async () => {
+    const button = document.querySelector('.wblock-tc-quality-button');
+    if (!button) return { pass: false, detail: 'missing quality button' };
+    button.click();
+    const option = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > div'))
+      .find((item) => item.textContent === '1080p');
+    if (!option) return { pass: false, detail: 'missing 1080p option' };
+    option.click();
+    await new Promise((resolve) => setTimeout(resolve, 550));
+    const current = window.__wblockTubeDebug.getCurrentQuality();
+    const preference = localStorage.getItem('wblock.tubeCleaner.quality');
+    const bias = localStorage.getItem('yt-player-quality');
+    return {
+      pass: current === 'hd1080' && preference === 'auto' && bias === null,
+      detail: `current=${current} preference=${preference} bias=${bias}`,
+    };
   });
   await check(page, scenario, 'does not style Safari private media controls', () => {
     const css = document.getElementById('wblock-tc-style')?.textContent || '';
@@ -435,8 +459,9 @@ async function qualityUISelectionCheck(page, scenario) {
   await commonChecks(page, S, { expectToolbar: false });
   await check(page, S, 'detects desktop-UA iPadOS as touch Safari', () => ({
     pass: navigator.platform === 'MacIntel' && navigator.maxTouchPoints === 5 &&
-      !document.querySelector('.wblock-tc-toolbar'),
-    detail: `platform=${navigator.platform} touches=${navigator.maxTouchPoints} customToolbar=${!!document.querySelector('.wblock-tc-toolbar')}`,
+      !!document.querySelector('.wblock-tc-quality-button') &&
+      !document.querySelector('.wblock-tc-audio-button'),
+    detail: `platform=${navigator.platform} touches=${navigator.maxTouchPoints} quality=${!!document.querySelector('.wblock-tc-quality-button')} audio=${!!document.querySelector('.wblock-tc-audio-button')}`,
   }));
   await iosNativeControlsChecks(page, S);
   await controlsSurvivalCheck(page, S, { preserveIOSMMSRestrictions: true });
@@ -459,14 +484,16 @@ async function qualityUISelectionCheck(page, scenario) {
     const selected = window.__wblockTubeDebug.getPlayer();
     const video = document.querySelector('#current-short video');
     return { pass: selected?.id === 'current-short' && video.controls &&
-      !document.querySelector('.wblock-tc-toolbar') };
+      !!document.querySelector('#current-short .wblock-tc-quality-button') &&
+      !document.querySelector('#previous-short .wblock-tc-toolbar') };
   });
   await page.evaluate(() => window.__switchActiveShort());
   await check(page, S, 'moves native enhancements when the active Short changes', () => {
     const selected = window.__wblockTubeDebug.getPlayer();
     const video = document.querySelector('#previous-short video');
     return { pass: selected?.id === 'previous-short' && video.controls &&
-      !document.querySelector('.wblock-tc-toolbar'),
+      !!document.querySelector('#previous-short .wblock-tc-quality-button') &&
+      !document.querySelector('#current-short .wblock-tc-toolbar'),
       detail: `selected=${selected?.id}` };
   });
   await check(page, S, 'hides chrome on a non-movie_player instance', () => {
@@ -1139,10 +1166,23 @@ for (const config of [
       this.webkitPresentationMode = mode;
       window.__wblockPiPMode = mode;
     };
+    window.__wblockPiPMode = 'inline';
+    Object.defineProperty(document, 'hasFocus', {
+      configurable: true,
+      value: () => false,
+    });
+    window.dispatchEvent(new Event('blur'));
+  }, config.selector);
+  await page.waitForTimeout(200);
+  await check(page, config.key, 'does not enter PiP merely because the window loses focus', () => ({
+    pass: window.__wblockPiPMode === 'inline',
+    detail: `pip=${window.__wblockPiPMode}`,
+  }));
+  await page.evaluate(() => {
     window.__wblockNativeHidden = true;
     window.__wblockNativeVisibility = 'hidden';
     document.dispatchEvent(new Event('visibilitychange'));
-  }, config.selector);
+  });
   await check(page, config.key, 'enters PiP from native hidden state while page sees visible', () => ({
     pass: document.hidden === false && document.visibilityState === 'visible' &&
       window.__wblockPiPMode === 'picture-in-picture',

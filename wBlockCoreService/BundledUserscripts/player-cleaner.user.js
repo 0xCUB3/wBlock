@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.5.1
+// @version      1.5.2
 // @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
 // @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
 // @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
@@ -40,7 +40,7 @@
     //
     // Features:
     //   - Custom player detection & replacement (video.js, JW, Plyr, ...)
-    //   - Auto PiP: enters PiP on tab switch, window blur, scroll out of view
+    //   - Auto PiP: enters PiP on tab switch or when scrolled out of view
     //   - Background playback: keeps playing in background tabs
     //   - iOS toolbar: hidden by default, shows on tap, auto-hides
     //
@@ -186,31 +186,19 @@
             }
         }
 
-        var blurTimer = null;
-        function onBlur() {
-            if (!autoPiPEnabled || _realHidden) return;
-            clearTimeout(blurTimer);
-            blurTimer = setTimeout(function () {
-                blurTimer = null;
-                if (!document.hasFocus() && !video.paused && !video.ended) {
-                    enterPiP(video);
-                }
-            }, 100);
-        }
-
+        // Window focus alone cannot tell whether another macOS window covers
+        // Safari, so blur must not trigger PiP. Actual tab hiding and viewport
+        // intersection changes provide reliable signals.
         function onFocus() {
             if (!autoPiPEnabled || _realHidden) return;
             if (document.hasFocus() && isPiPActive(video)) { exitPiP(video); }
         }
 
         document.addEventListener('visibilitychange', onVisibilityChange);
-        window.addEventListener('blur', onBlur);
         window.addEventListener('focus', onFocus);
         registerVideoCleanup(video, function () {
             document.removeEventListener('visibilitychange', onVisibilityChange);
-            window.removeEventListener('blur', onBlur);
             window.removeEventListener('focus', onFocus);
-            clearTimeout(blurTimer);
         });
 
         if (typeof IntersectionObserver !== 'undefined') {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
-// @version      4.2.4
+// @version      4.2.5
 // @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
 // @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
 // @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
@@ -26,7 +26,7 @@
     'use strict';
 
     // ------------------------------------------------------------------
-    // Tube Cleaner v4.2.4
+    // Tube Cleaner v4.2.5
     //
     // Vinegar Extract approach: instead of trying to extract stream URLs
     // from the player response (which 403 due to SABR), we let YouTube's
@@ -171,21 +171,9 @@
             }
         }
 
-        // Window blur: enter PiP when switching to another app
-        var blurTimer = null;
-        function onBlur() {
-            if (!autoPiPEnabled) return;
-            if (_realHidden) return; // already handled by visibilitychange
-            clearTimeout(blurTimer);
-            blurTimer = setTimeout(function () {
-                blurTimer = null;
-                if (document.hasFocus()) return; // focus moved within document
-                if (!video.paused && !video.ended) {
-                    enterPiP(video);
-                }
-            }, 100);
-        }
-
+        // Losing keyboard focus does not mean the video is obscured on macOS:
+        // another visible window may simply be active beside Safari. Enter PiP
+        // only for actual page hiding or when the video scrolls out of view.
         function onFocus() {
             if (!autoPiPEnabled) return;
             if (_realHidden) return;
@@ -195,7 +183,6 @@
         }
 
         document.addEventListener('visibilitychange', onVisibilityChange);
-        window.addEventListener('blur', onBlur);
         window.addEventListener('focus', onFocus);
 
         // Scroll out of view: use IntersectionObserver
@@ -226,9 +213,7 @@
         // and observers do not accumulate across SPA navigations.
         registerCleanup(function () {
             document.removeEventListener('visibilitychange', onVisibilityChange);
-            window.removeEventListener('blur', onBlur);
             window.removeEventListener('focus', onFocus);
-            clearTimeout(blurTimer);
             try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
             video.removeEventListener('leavepictureinpicture', onLeavePictureInPicture);
@@ -562,11 +547,10 @@
         forceNativeControls(video);
         guardNativeControls(video);
         // Keep YouTube's media listeners intact. SABR/MSE uses waiting,
-        // stalled, progress, and related events to maintain the stream.
-        // On iOS, custom controls inside #movie_player are not reliable:
-        // YouTube/native media handling can consume the touch before it reaches
-        // the toolbar. Let Safari own the complete interaction surface there.
-        if (!IS_IOS) { buildToolbar(player, video); }
+        // stalled, progress, and related events to maintain the stream. The
+        // iOS toolbar contains only a compact quality selector positioned above
+        // Safari's native controls; playback remains owned by the video element.
+        buildToolbar(player, video);
         setupAutoPiP(video);
     }
 
@@ -759,8 +743,9 @@
         enableBackgroundPlayback();
 
         // 8. Fixed quality ranges can stall YouTube's SABR pipeline on iOS.
-        // The custom quality UI is desktop-only, so migrate old mobile state
-        // back to YouTube's adaptive range and never start the retry loop there.
+        // Migrate old mobile state back to adaptive and never retry it during
+        // startup. The mobile quality selector applies choices only on demand
+        // to the current video.
         if (IS_IOS) {
             if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }
             setQuality('auto');
@@ -990,14 +975,18 @@
             } catch (e) { /* ignore */ }
         }
 
-        // Approach 4: set the yt-player-quality in localStorage as a bias
-        try {
-            localStorage.setItem('yt-player-quality', JSON.stringify({
-                quality: target,
-                previousQuality: 'auto',
-                expiry: Date.now() + 86400000
-            }));
-        } catch (e) { /* ignore */ }
+        // Approach 4: set the yt-player-quality in localStorage as a desktop
+        // bias. Do not persist fixed iOS ranges: retrying them on the next load
+        // can stall YouTube's ManagedMediaSource/SABR pipeline.
+        if (!IS_IOS) {
+            try {
+                localStorage.setItem('yt-player-quality', JSON.stringify({
+                    quality: target,
+                    previousQuality: 'auto',
+                    expiry: Date.now() + 86400000
+                }));
+            } catch (e) { /* ignore */ }
+        }
 
         log('setQuality complete, UI click:', worked);
         return worked;
@@ -1115,7 +1104,9 @@
                     }
                     item.addEventListener('click', function (e) {
                         e.stopPropagation();
-                        setPreferredQuality(q);
+                        // On iOS apply the choice to this video only. Persisted
+                        // fixed ranges can wedge the next SABR stream at load.
+                        if (!IS_IOS) { setPreferredQuality(q); }
                         setQuality(q);
                         updateQualityBtn();
                         qualityMenu.style.display = 'none';
@@ -1186,7 +1177,7 @@
             setAudioOnlyStyles(next);
             updateAudioBtn();
         });
-        toolbar.appendChild(audioBtn);
+        if (!IS_IOS) { toolbar.appendChild(audioBtn); }
 
         // PiP button is intentionally omitted — Safari's native controls
         // already provide PiP. Auto PiP handles automatic PiP entry.

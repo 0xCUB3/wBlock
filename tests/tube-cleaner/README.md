@@ -22,11 +22,12 @@ userscript at `document-start` in the page world (matching `@run-at` +
 
 Tube Cleaner scenarios: `fixture.html` / `fixture-noplaysinline.html` cover
 macOS Safari, iPhone, legacy iPad mobile UAs, and modern iPadOS requesting the
-desktop site as `MacIntel`. Mobile checks enforce a Safari-native-only interaction surface, migration out
-of old black-screen audio-only and fixed-quality loading states, visible video
-in portrait and landscape, suppression of the separate mobile YouTube controls
-tree, restoration of inline playback and native controls, and preservation of
-the iOS ManagedMediaSource restriction required for SABR playback. `fixture-tube-cleaner-multiple.html` models retained
+desktop site as `MacIntel`. Mobile checks enforce Safari-native playback with a
+non-persistent quality-only overlay, migration out of old black-screen
+audio-only and fixed-quality loading states, visible video in portrait and
+landscape, suppression of the separate mobile YouTube controls tree,
+restoration of inline playback, and preservation of the iOS ManagedMediaSource
+restriction required for SABR playback. `fixture-tube-cleaner-multiple.html` models retained
 Shorts players and verifies native enhancements follow the visible playing
 video. `fixture-tube-cleaner-early.html` creates the YouTube player from a
 `<head>` script and enforces anti-flash CSS plus nativeization before
@@ -77,8 +78,9 @@ Player Cleaner scenarios:
   IntersectionObservers. Every active count must remain flat.
 - Visibility scenarios shadow the page-facing document state while simulating a
   native hidden tab, proving both cleaners still enter PiP from the captured
-  browser getter. The Tube Cleaner fixture also verifies its quality UI opens
-  once, selects the requested option, and closes once.
+  browser getter but not merely from window focus loss. The Tube Cleaner fixture
+  also verifies its quality UI opens once, selects the requested option, and
+  closes once.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)

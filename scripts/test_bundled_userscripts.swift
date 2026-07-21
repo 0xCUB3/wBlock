@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      4.2.4", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      4.2.5", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
@@ -97,7 +97,7 @@ assertMetadata(playerSource, "// @exclude      https://www.youtube.com/*", "Play
 assertMetadata(playerSource, "// @run-at       document-start", "Player Cleaner")
 assertMetadata(playerSource, "// @inject-into  page", "Player Cleaner")
 assertMetadata(playerSource, "// @grant        none", "Player Cleaner")
-assertMetadata(playerSource, "// @version      1.5.1", "Player Cleaner")
+assertMetadata(playerSource, "// @version      1.5.2", "Player Cleaner")
 assertMetadata(playerSource, "// @description:de", "Player Cleaner")
 
 // Feature coverage: the advertised Vinegar/Baking Soda behaviors.
@@ -124,8 +124,8 @@ for needle in [
 if tubeSource.contains("video::-webkit-media-controls") {
     fail("Tube Cleaner must not style Safari's private media-controls tree")
 }
-guard tubeSource.contains("if (!IS_IOS) { buildToolbar(player, video); }") else {
-    fail("Tube Cleaner must keep custom controls out of the iOS player")
+guard tubeSource.contains("buildToolbar(player, video);") else {
+    fail("Tube Cleaner must build its quality toolbar for every YouTube player")
 }
 guard tubeSource.contains("if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }") &&
       tubeSource.contains("if (IS_IOS) {\n            if (getPreferredQuality()") else {
@@ -138,6 +138,15 @@ guard tubeSource.contains("if (!video.disableRemotePlayback) { video.disableRemo
 guard tubeSource.contains("#player-control-container,") &&
       tubeSource.contains(".wblock-tc-native .ytp-player-content") else {
     fail("Tube Cleaner must suppress mobile YouTube controls above the native video")
+}
+guard tubeSource.contains("if (!IS_IOS) { toolbar.appendChild(audioBtn); }") &&
+      tubeSource.contains("if (!IS_IOS) { setPreferredQuality(q); }") else {
+    fail("Tube Cleaner must expose non-persistent quality-only controls on iOS")
+}
+for (name, source) in [("Tube Cleaner", tubeSource), ("Player Cleaner", playerSource)] {
+    if source.contains("window.addEventListener('blur', onBlur)") {
+        fail("\(name) must not enter PiP merely because the window loses focus")
+    }
 }
 
 for needle in [
