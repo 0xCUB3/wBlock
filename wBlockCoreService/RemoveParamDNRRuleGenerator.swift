@@ -25,6 +25,20 @@ public enum RemoveParamDNRRuleGenerator {
         "removeheader", "replace", "strict1p", "strict3p", "urlblock", "webrtc"
     ]
 
+    /// Option names that the generator understands. Any option whose name is
+    /// not in this set (and not a negated resource type handled elsewhere)
+    /// causes the rule to be skipped rather than silently dropped, which
+    /// could widen its scope. For example, `$removeparam=v,hinta.fi` uses a
+    /// bare-domain syntax that this generator cannot interpret; skipping
+    /// the rule avoids generating a global `v`-stripping rule.
+    private static let recognizedOptionNames: Set<String> = [
+        "removeparam", "domain", "to", "third-party", "~third-party",
+        "match-case", "important", "badfilter",
+        "document", "main_frame", "subdocument", "sub_frame",
+        "stylesheet", "script", "image", "font", "object",
+        "xmlhttprequest", "xhr", "ping", "media", "websocket", "other",
+    ]
+
     private static let resourceTypeMap: [String: [String]] = [
         "document": ["main_frame", "sub_frame"],
         "main_frame": ["main_frame"],
@@ -416,6 +430,11 @@ public enum RemoveParamDNRRuleGenerator {
             }
             if skippedOptionNames.contains(option.name) { return true }
             if option.name == "method" { return true }
+            // Skip rules with options we do not understand. Silently ignoring
+            // an unrecognized option (e.g. a bare domain list like
+            // `hinta.fi|carrefoursa.com` without a `domain=` prefix) would
+            // drop the intended restriction and widen the rule to all sites.
+            if !recognizedOptionNames.contains(option.name) { return true }
         }
         return false
     }

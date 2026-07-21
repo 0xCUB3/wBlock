@@ -13,6 +13,7 @@ struct RemoveParamDNRRuleGeneratorTests {
         ||bad.example^$removeparam=~keep
         ||encoded.example^$removeparam=%24param,script,domain=foo.example|~bar.example
         ||typed.example^$xmlhttprequest,removeparam=id,third-party
+        $removeparam=v,hinta.fi|carrefoursa.com
         """
 
         let generated = RemoveParamDNRRuleGenerator.generateRules(
@@ -22,9 +23,9 @@ struct RemoveParamDNRRuleGeneratorTests {
         let rules = generated.rules
         let summary = generated.summary
 
-        expectEqual(summary.removeParamRules, 8, "source removeparam count")
+        expectEqual(summary.removeParamRules, 9, "source removeparam count")
         expectEqual(summary.exceptionRules, 1, "exception count")
-        expectEqual(summary.skippedRules, 2, "unsupported rules skipped")
+        expectEqual(summary.skippedRules, 3, "unsupported rules skipped")
         expectEqual(summary.disabledSiteAllowRules, 2, "disabled-site allow rules")
         expectEqual(summary.generatedRules, 8, "generated DNR rule count")
 
