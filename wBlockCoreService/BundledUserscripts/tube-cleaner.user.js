@@ -386,10 +386,10 @@
     }
 
     // ------------------------------------------------------------------
-    // Quality control via YouTube's internal player API
+    // Quality control via YouTube's internal player UI
     // ------------------------------------------------------------------
 
-    // Quality labels matching YouTube's internal quality strings
+    // YouTube's quality labels match quality strings
     var QUALITY_LABELS = {
         auto: 'Auto',
         hd2160: '4K',
@@ -424,24 +424,101 @@
         return q || 'auto';
     }
 
+    // Click YouTube's internal settings button to open the quality menu
+    function openSettingsMenu(player) {
+        var settingsBtn = player.querySelector('.ytp-settings-button');
+        if (!settingsBtn) { warn('openSettings: no settings button'); return false; }
+        // Click it twice to ensure it opens (first click closes, second opens)
+        settingsBtn.click();
+        settingsBtn.click();
+        return true;
+    }
+
+    // Find the quality menu item in the settings panel
+    function clickQualityMenuItem(player) {
+        var menuItems = player.querySelectorAll('.ytp-menuitem');
+        for (var i = 0; i < menuItems.length; i++) {
+            var item = menuItems[i];
+            var content = item.querySelector('.ytp-menuitem-content');
+            if (content && content.textContent && content.textContent.match(/\d{3,}/)) {
+                // This is the quality menu item (has resolution numbers)
+                item.click();
+                return true;
+            }
+        }
+        // Alternative: look for the label
+        for (var j = 0; j < menuItems.length; j++) {
+            var label = menuItems[j].querySelector('.ytp-menuitem-label');
+            if (label && label.textContent && label.textContent.toLowerCase().indexOf('quality') !== -1) {
+                menuItems[j].click();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Click a specific quality option in the quality submenu
+    function clickQualityOption(player, target) {
+        var targetLabel = QUALITY_LABELS[target] || target;
+        // Try to find by quality label text (e.g. "1080p", "720p")
+        var allOptions = player.querySelectorAll('.ytp-quality-menu .ytp-menuitem, ' +
+            '.ytp-drop-down-menu-button, ' +
+            '[role="menuitemradio"]');
+
+        // Also try the panel menu items
+        var panelItems = player.querySelectorAll('.ytp-panel-menu .ytp-menuitem');
+
+        // Look for the label that matches our target
+        var items = [];
+        for (var i = 0; i < panelItems.length; i++) items.push(panelItems[i]);
+
+        // Sort: prefer exact match, then partial match
+        var bestMatch = null;
+        var bestScore = -1;
+        for (var j = 0; j < items.length; j++) {
+            var text = items[j].textContent || '';
+            var score = 0;
+            if (text.indexOf(targetLabel) !== -1) score = 2;
+            else if (text.indexOf(target) !== -1) score = 1;
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = items[j];
+            }
+        }
+
+        if (bestMatch && bestScore > 0) {
+            log('clicking quality option:', bestMatch.textContent);
+            bestMatch.click();
+            return true;
+        }
+
+        return false;
+    }
+
+    // Close the settings panel
+    function closeSettingsPanel(player) {
+        var backBtn = player.querySelector('.ytp-panel-header button');
+        if (backBtn) {
+            backBtn.click();
+            return true;
+        }
+        // Click the settings button again to toggle it closed
+        var settingsBtn = player.querySelector('.ytp-settings-button');
+        if (settingsBtn) {
+            settingsBtn.click();
+        }
+        return false;
+    }
+
     function setQuality(target) {
         var player = document.getElementById('movie_player');
         if (!player) { warn('setQuality: no player'); return false; }
 
         if (target === 'auto') {
-            // Reset to auto by setting a wide range
+            // Reset to auto by setting a wide range via API
             if (player.setPlaybackQualityRange) {
-                try { player.setPlaybackQualityRange('tiny', 'hd2160'); } catch (e) { warn('setPlaybackQualityRange auto failed', e); }
+                try { player.setPlaybackQualityRange('tiny', 'hd2160'); } catch (e) { /* ignore */ }
             }
-            // Also try to set it on the internal player
-            try {
-                if (player.getInternalPlayer && player.getInternalPlayer()) {
-                    var internal = player.getInternalPlayer();
-                    if (internal.setPlaybackQualityRange) {
-                        internal.setPlaybackQualityRange('tiny', 'hd2160');
-                    }
-                }
-            } catch (e) { /* ignore */ }
             return true;
         }
 
@@ -459,177 +536,59 @@
 
         log('setQuality:', target, 'available:', levels);
 
-        // Try the internal API first
-        var formatId = undefined;
-        if (player.getAvailableQualityData) {
-            try {
-                var qualityData = player.getAvailableQualityData();
-                log('qualityData:', qualityData);
-                for (var j = 0; j < qualityData.length; j++) {
-                    if (qualityData[j].quality === target) {
-                        formatId = qualityData[j].formatId;
-                        break;
-                    }
-                }
-            } catch (e) { warn('getAvailableQualityData failed', e); }
-        }
-
-        log('formatId:', formatId);
-
-        // Try multiple approaches in order of preference
         var worked = false;
 
-        // Approach 1: setPlaybackQualityRange with formatId (most precise)
-        // On the SABR player, formatId may be undefined. Try passing target
-        // as the formatId as well — YouTube sometimes accepts it.
+        // Approach 1: Simulate clicks on YouTube's quality UI (most reliable)
+        // This is what YouTube Auto HD does and it works on the SABR player.
+        try {
+            if (openSettingsMenu(player)) {
+                setTimeout(function () {
+                    if (clickQualityMenuItem(player)) {
+                        setTimeout(function () {
+                            if (clickQualityOption(player, target)) {
+                                worked = true;
+                                log('UI click approach succeeded for', target);
+                            }
+                            // Close the settings panel
+                            setTimeout(function () {
+                                closeSettingsPanel(player);
+                            }, 100);
+                        }, 200);
+                    } else {
+                        // If we can't find the quality menu, close settings
+                        closeSettingsPanel(player);
+                    }
+                }, 200);
+            }
+        } catch (e) { warn('UI click approach failed', e); }
+
+        // Approach 2: setPlaybackQualityRange (may work on non-SABR players)
         if (player.setPlaybackQualityRange) {
             try {
-                if (formatId) {
-                    log('calling setPlaybackQualityRange', target, target, formatId);
-                    player.setPlaybackQualityRange(target, target, formatId);
-                    worked = true;
-                } else {
-                    // Try without formatId first, then try with target as formatId
-                    log('calling setPlaybackQualityRange', target, target);
-                    player.setPlaybackQualityRange(target, target);
-                    // Also try with target as the formatId (SABR sometimes needs this)
-                    player.setPlaybackQualityRange(target, target, target);
-                    worked = true;
-                }
-            } catch (e) { warn('setPlaybackQualityRange failed', e); }
-        } else {
-            warn('setPlaybackQualityRange not available');
+                log('calling setPlaybackQualityRange', target, target);
+                player.setPlaybackQualityRange(target, target);
+                worked = true;
+            } catch (e) { /* ignore */ }
         }
 
-        // Approach 2: setPlaybackQuality (older API)
+        // Approach 3: setPlaybackQuality (older API — no-op on SABR)
         if (player.setPlaybackQuality) {
             try {
                 log('calling setPlaybackQuality', target);
                 player.setPlaybackQuality(target);
-                worked = true;
-            } catch (e) { warn('setPlaybackQuality failed', e); }
-        } else {
-            warn('setPlaybackQuality not available');
+            } catch (e) { /* ignore */ }
         }
 
-        // Approach 3: set the yt-player-quality in localStorage as a bias
+        // Approach 4: set the yt-player-quality in localStorage as a bias
         try {
             localStorage.setItem('yt-player-quality', JSON.stringify({
                 quality: target,
                 previousQuality: 'auto',
                 expiry: Date.now() + 86400000
             }));
-            log('set yt-player-quality in localStorage');
         } catch (e) { /* ignore */ }
 
-        // Approach 4: try to find and click YouTube's internal quality menu
-        // This is the most reliable approach on SABR players
-        try {
-            // YouTube's internal player stores quality settings
-            if (player.getPlayerResponse) {
-                log('player.getPlayerResponse available');
-            }
-            // Check for the internal setPlaybackQuality on the player's internal API
-            if (player.getInternalPlayer && player.getInternalPlayer()) {
-                var internal = player.getInternalPlayer();
-                log('internal player:', typeof internal);
-                if (internal.setPlaybackQuality) {
-                    log('calling internal.setPlaybackQuality');
-                    internal.setPlaybackQuality(target);
-                    worked = true;
-                }
-                // Also try setPlaybackQualityRange on the internal player
-                if (internal.setPlaybackQualityRange) {
-                    log('calling internal.setPlaybackQualityRange');
-                    internal.setPlaybackQualityRange(target, target);
-                    worked = true;
-                }
-                // Try setting the quality on the internal player's state
-                if (internal.setQuality) {
-                    log('calling internal.setQuality');
-                    internal.setQuality(target);
-                    worked = true;
-                }
-                // Try setting qualityLevel on the internal player
-                if (internal.qualityLevels_) {
-                    log('internal.qualityLevels_ available');
-                }
-                if (internal.setQualityLevel) {
-                    log('calling internal.setQualityLevel');
-                    internal.setQualityLevel(target);
-                    worked = true;
-                }
-                // Try the YouTube-specific quality API
-                if (internal.setPlaybackQuality) {
-                    log('calling internal.setPlaybackQuality');
-                    internal.setPlaybackQuality(target);
-                    worked = true;
-                }
-                // Try setting the quality directly on the internal player
-                if (internal.quality_) {
-                    log('setting internal.quality_');
-                    internal.quality_ = target;
-                    worked = true;
-                }
-                // Try the YouTube-specific API
-                if (internal.setQualityAndSource) {
-                    log('calling internal.setQualityAndSource');
-                    internal.setQualityAndSource(target);
-                    worked = true;
-                }
-            }
-        } catch (e) { warn('internal player approach failed', e); }
-
-        // Approach 5: try to find YouTube's quality selector via its internal API
-        try {
-            // The YouTube player has a 'setPlaybackQuality' on the window-level player
-            if (window.yt && window.yt.player && window.yt.player.getPlayerByElement) {
-                var ytPlayer = window.yt.player.getPlayerByElement(player);
-                if (ytPlayer && ytPlayer.setPlaybackQuality) {
-                    log('calling yt.player.getPlayerByElement().setPlaybackQuality');
-                    ytPlayer.setPlaybackQuality(target);
-                    worked = true;
-                }
-            }
-        } catch (e) { warn('yt.player approach failed', e); }
-
-        // Approach 6: set the itag/format on the video element's source
-        // On the SABR player, the actual quality selection happens via the
-        // YouTube player's internal state. Try setting a custom attribute
-        // that YouTube watches.
-        try {
-            var video = player.querySelector('video');
-            if (video) {
-                video.setAttribute('data-wblock-requested-quality', target);
-            }
-        } catch (e) { /* ignore */ }
-
-        // Approach 7: try to find and dispatch a YouTube internal quality change event
-        try {
-            // YouTube's SABR player listens for custom events
-            var video = player.querySelector('video');
-            if (video) {
-                var event = new CustomEvent('yt-quality-change', {
-                    detail: { quality: target },
-                    bubbles: true
-                });
-                video.dispatchEvent(event);
-                log('dispatched yt-quality-change event');
-            }
-        } catch (e) { warn('event dispatch failed', e); }
-
-        // Approach 8: try directly setting the format on the SourceBuffer
-        // This is the most direct approach for the SABR/MSE pipeline
-        try {
-            var video = player.querySelector('video');
-            if (video && video.src) {
-                // The SABR player uses MediaSource. Try to find the source buffer
-                // and set the desired quality through it.
-                log('video src:', video.src.substring(0, 100));
-            }
-        } catch (e) { /* ignore */ }
-
-        log('setQuality worked:', worked);
+        log('setQuality complete, UI click:', worked);
         return worked;
     }
 
