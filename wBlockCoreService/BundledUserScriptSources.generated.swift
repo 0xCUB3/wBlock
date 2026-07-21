@@ -955,9 +955,28 @@ enum BundledUserScriptSources {
 
             // Listen for mouse movement anywhere on the player to show
             // toolbar (same trigger as Safari's native controls)
-            player.addEventListener('mousemove', function () {
-                showToolbar();
-                scheduleHideToolbar();
+            //
+            // We use a document-level mousemove listener and check if
+            // the mouse is over the player area. This is more reliable
+            // than listening on the player element because YouTube's
+            // overlay divs (html5-video-container, etc.) sit on top and
+            // can intercept mouse events.
+            var _isOverPlayer = false;
+            document.addEventListener('mousemove', function (e) {
+                var rect = player.getBoundingClientRect();
+                var over = e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top && e.clientY <= rect.bottom;
+                if (over && !_isOverPlayer) {
+                    _isOverPlayer = true;
+                    showToolbar();
+                }
+                if (over) {
+                    scheduleHideToolbar();
+                }
+                if (!over && _isOverPlayer) {
+                    _isOverPlayer = false;
+                    scheduleHideToolbar();
+                }
             });
 
             // Also show on mouse entering the player from outside
