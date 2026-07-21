@@ -147,10 +147,10 @@ enum BundledUserScriptSources {
         if (!video || video._wblockAutoPiPHooked) return;
         video._wblockAutoPiPHooked = true;
 
-        // Tab switch: enter PiP when tab hides, exit when visible
+        // Tab switch: enter PiP when tab hides, exit when visible.
         // Note: enableBackgroundPlayback() overrides document.hidden to always
         // return false, so we use _realHidden which tracks the true state.
-        document.addEventListener('visibilitychange', function () {
+        function onVisibilityChange() {
             if (!autoPiPEnabled) return;
             if (_realHidden) {
                 if (!video.paused && !video.ended) {
@@ -161,10 +161,10 @@ enum BundledUserScriptSources {
                     exitPiP(video);
                 }
             }
-        });
+        }
 
         // Window blur: enter PiP when switching to another app
-        window.addEventListener('blur', function () {
+        function onBlur() {
             if (!autoPiPEnabled) return;
             if (_realHidden) return; // already handled by visibilitychange
             setTimeout(function () {
@@ -173,15 +173,19 @@ enum BundledUserScriptSources {
                     enterPiP(video);
                 }
             }, 100);
-        });
+        }
 
-        window.addEventListener('focus', function () {
+        function onFocus() {
             if (!autoPiPEnabled) return;
             if (_realHidden) return;
             if (document.hasFocus() && isPiPActive(video)) {
                 exitPiP(video);
             }
-        });
+        }
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('blur', onBlur);
+        window.addEventListener('focus', onFocus);
 
         // Scroll out of view: use IntersectionObserver
         var scrollObserver = new IntersectionObserver(function (entries) {
@@ -197,8 +201,19 @@ enum BundledUserScriptSources {
         scrollObserver.observe(video);
 
         // Listen for presentation mode changes
-        video.addEventListener('webkitpresentationmodechanged', function () {
+        function onPresentationModeChange() {
             log('presentation mode changed:', video.webkitPresentationMode);
+        }
+        video.addEventListener('webkitpresentationmodechanged', onPresentationModeChange);
+
+        // Release all of the above when this video is superseded, so listeners
+        // and observers do not accumulate across SPA navigations.
+        registerCleanup(function () {
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.removeEventListener('blur', onBlur);
+            window.removeEventListener('focus', onFocus);
+            try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
+            video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
         });
     }
 
@@ -423,6 +438,70 @@ enum BundledUserScriptSources {
 
     var currentState = null;
 
+    // ------------------------------------------------------------------
+    // Per-video resource tracking
+    //
+    // YouTube is a single-page app. Navigating between videos (or the player
+    // recreating its <video> element) used to leak resources: each new video
+    // added more document/window listeners, MutationObservers, and setInterval
+    // timers without removing the previous video's. We track the active video's
+    // teardown callbacks and run them before activating a new video, so resource
+    // counts stay flat no matter how many videos play in a session.
+    // ------------------------------------------------------------------
+
+    var activeVideo = null;
+    var playerObserver = null;
+    var activeCleanups = [];
+
+    function registerCleanup(fn) {
+        activeCleanups.push(fn);
+    }
+
+    function releaseActiveVideo() {
+        var cleanups = activeCleanups;
+        activeCleanups = [];
+        for (var i = 0; i < cleanups.length; i++) {
+            try { cleanups[i](); } catch (e) { /* ignore */ }
+        }
+        activeVideo = null;
+    }
+
+    // Intercept addEventListener on the video to drop only YouTube's
+    // tracking/hijacking listeners, not the essential playback events the player
+    // needs to manage the stream. We keep YouTube's own <video> element (cloning
+    // would lose the SABR/MSE source buffers and cause 403s).
+    function patchVideoListeners(video) {
+        if (video._wblockPatched) return;
+        video._wblockPatched = true;
+        var origAdd = video.addEventListener.bind(video);
+        video.addEventListener = function (type, listener, options) {
+            var blocked = [
+                'timeupdate', 'progress', 'waiting', 'stalled',
+                'suspend', 'abort', 'emptied'
+            ];
+            if (blocked.indexOf(type) !== -1) {
+                return; // silently drop tracking
+            }
+            return origAdd(type, listener, options);
+        };
+    }
+
+    // Activate a video element: tear down the previous video's resources first,
+    // then apply every per-video enhancement. Called on first transform and again
+    // whenever the player recreates its <video> element.
+    function activateVideo(player, video) {
+        releaseActiveVideo();
+        activeVideo = video;
+        forceNativeControls(video);
+        guardNativeControls(video);
+        video.removeAttribute('disablepictureinpicture');
+        video.disablePictureInPicture = false;
+        ensurePlaysInline(video);
+        patchVideoListeners(video);
+        buildToolbar(player, video);
+        setupAutoPiP(video);
+    }
+
     function forceNativeControls(video) {
         // YouTube's player actively sets controls=false.  We intercept
         // the property setter to prevent that.  Safari's native controls
@@ -465,13 +544,19 @@ enum BundledUserScriptSources {
             }
         }
 
+        var observer = null;
         try {
-            var observer = new MutationObserver(restore);
+            observer = new MutationObserver(restore);
             observer.observe(video, { attributes: true, attributeFilter: ['controls'] });
         } catch (e) { /* ignore */ }
 
         restore();
-        setInterval(restore, 1000);
+        var timer = setInterval(restore, 1000);
+
+        registerCleanup(function () {
+            if (observer) { try { observer.disconnect(); } catch (e) { /* ignore */ } }
+            clearInterval(timer);
+        });
     }
 
     // Ensure inline playback on iOS/iPadOS. Without `playsinline`, iOS opens the
@@ -512,41 +597,11 @@ enum BundledUserScriptSources {
         // 1. Mark the video as native by adding a wrapper class
         player.classList.add('wblock-tc-native');
 
-        // 2. Force Safari native controls (lock the property so YouTube
-        //    can't turn them off)
-        forceNativeControls(video);
-
-        // 3. Enable PiP and inline playback (iOS)
-        video.removeAttribute('disablepictureinpicture');
-        video.disablePictureInPicture = false;
-        ensurePlaysInline(video);
-
-        // 4. Keep the original video element (it has the SABR/MSE
-        //    pipeline attached by YouTube's player).  Cloning would
-        //    lose the source buffers and cause 403s.
-        //    Intercept addEventListener to block only YouTube's
-        //    tracking/hijacking listeners, not the essential playback
-        //    events that YouTube's player needs to manage the stream.
-        if (!video._wblockPatched) {
-            video._wblockPatched = true;
-            var origAdd = video.addEventListener.bind(video);
-            video.addEventListener = function (type, listener, options) {
-                // Block only YouTube's tracking events, not the
-                // essential playback events the player needs.
-                var blocked = [
-                    'timeupdate', 'progress', 'waiting', 'stalled',
-                    'suspend', 'abort', 'emptied'
-                ];
-                if (blocked.indexOf(type) !== -1) {
-                    return; // silently drop tracking
-                }
-                return origAdd(type, listener, options);
-            };
-        }
-
-        // 5. Keep native controls on even when YouTube strips the `controls`
-        //    attribute (see guardNativeControls).
-        guardNativeControls(video);
+        // 2-5. Apply all per-video enhancements (native controls, PiP/inline
+        // attrs, listener patching, controls guard, toolbar, auto-PiP).
+        // activateVideo first tears down the previous video's resources so
+        // nothing leaks across SPA navigations.
+        activateVideo(player, video);
 
         // 6. Apply audio-only preference
         setAudioOnlyStyles(isAudioOnly());
@@ -554,34 +609,28 @@ enum BundledUserScriptSources {
         // 7. Enable background playback
         enableBackgroundPlayback();
 
-        // 8. Build toolbar overlay
-        buildToolbar(player, video);
-
-        // 9. Apply preferred quality (deferred — let the player finish init)
+        // 6. Apply preferred quality (deferred — let the player finish init)
         setTimeout(function () {
             applyPreferredQuality();
         }, 3000);
 
-        // 10. Observe for video element recreation
-        var observer = new MutationObserver(function () {
+        // 7. Observe for video element recreation. The player element persists
+        // across SPA navigations, so disconnect any previous observer before
+        // creating a new one to avoid accumulating observers.
+        if (playerObserver) {
+            try { playerObserver.disconnect(); } catch (e) { /* ignore */ }
+        }
+        playerObserver = new MutationObserver(function () {
             var newVid = player.querySelector('video');
-            if (newVid && newVid !== video) {
+            if (newVid && newVid !== activeVideo) {
                 log('re-patching new video element');
-                video = newVid;
-                forceNativeControls(video);
-                guardNativeControls(video);
-                video.disablePictureInPicture = false;
-                ensurePlaysInline(video);
-                buildToolbar(player, video);
+                activateVideo(player, newVid);
             }
         });
-        observer.observe(player, { childList: true, subtree: true });
+        playerObserver.observe(player, { childList: true, subtree: true });
 
-        // 11. Hook player state changes to re-apply quality
+        // 8. Hook player state changes to re-apply quality
         hookPlayerStateChanges();
-
-        // 12. Setup auto PiP
-        setupAutoPiP(video);
 
         log('player transformed');
     }
@@ -832,7 +881,10 @@ enum BundledUserScriptSources {
 
     function buildToolbar(player, video) {
         var existing = player.querySelector('.wblock-tc-toolbar');
-        if (existing) existing.remove();
+        if (existing) {
+            if (existing._wblockQualityTimer) clearInterval(existing._wblockQualityTimer);
+            existing.remove();
+        }
 
         var toolbar = document.createElement('div');
         toolbar.className = 'wblock-tc-toolbar';
@@ -941,8 +993,10 @@ enum BundledUserScriptSources {
         qualityWrap.appendChild(qualityMenu);
         toolbar.appendChild(qualityWrap);
 
-        // Update quality label periodically
-        setInterval(updateQualityBtn, 2000);
+        // Update quality label periodically. Store the timer on the toolbar so
+        // it can be cleared when the toolbar is rebuilt (avoids a leak across
+        // video-element re-creation).
+        toolbar._wblockQualityTimer = setInterval(updateQualityBtn, 2000);
 
         // Audio-only toggle
         var audioBtn = document.createElement('button');
