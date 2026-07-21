@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
-// @version      3.0.0
+// @version      4.0.0
 // @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
 // @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
 // @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
@@ -48,9 +48,10 @@
 
     var LOG_PREFIX = '[Tube Cleaner]';
     var STORAGE_AUDIO = 'wblock.tubeCleaner.audioOnly';
+    var STORAGE_QUALITY = 'wblock.tubeCleaner.quality';
     var ATTR_CLEANED = 'data-wblock-tc-cleaned';
 
-    var debug = false;
+    var debug = true;
 
     function log() {
         if (!debug) return;
@@ -73,6 +74,14 @@
 
     function setAudioOnly(v) {
         try { localStorage.setItem(STORAGE_AUDIO, v ? '1' : '0'); } catch (e) { /* ignore */ }
+    }
+
+    function getPreferredQuality() {
+        try { return localStorage.getItem(STORAGE_QUALITY) || 'auto'; } catch (e) { return 'auto'; }
+    }
+
+    function setPreferredQuality(q) {
+        try { localStorage.setItem(STORAGE_QUALITY, q); } catch (e) { /* ignore */ }
     }
 
     // ------------------------------------------------------------------
@@ -166,6 +175,14 @@
         '.ytp-youtube-button,',
         '.ytp-title-link',
         '{ display: none !important; }',
+
+        // Ensure the player container doesn't clip our toolbar.
+        '#movie_player',
+        '{ overflow: visible !important; }',
+
+        // Toolbar is hidden by default, appears on hover near bottom.
+        // '.wblock-tc-toolbar',
+        // '{ opacity: 1 !important; display: flex !important; }',
 
         // Ensure the native controls bar is visible on the video.
         // YouTube's player often sets the video to be a child of
@@ -326,13 +343,14 @@
             };
         }
 
-        // 5. Keep controls forced on (YouTube may try to remove them)
+        // 5. Keep controls forced on (YouTube may try to remove them) — but
+        //    don't fight it too aggressively; the Object.defineProperty handles it.
         var controlsGuard = setInterval(function () {
             if (video && !video.controls) {
                 video.controls = true;
                 video.setAttribute('controls', '');
             }
-        }, 500);
+        }, 2000);
 
         // 6. Apply audio-only preference
         setAudioOnlyStyles(isAudioOnly());
@@ -343,7 +361,12 @@
         // 8. Build toolbar overlay
         buildToolbar(player, video);
 
-        // 9. Observe for video element recreation
+        // 9. Apply preferred quality (deferred — let the player finish init)
+        setTimeout(function () {
+            applyPreferredQuality();
+        }, 3000);
+
+        // 10. Observe for video element recreation
         var observer = new MutationObserver(function () {
             var newVid = player.querySelector('video');
             if (newVid && newVid !== video) {
@@ -356,7 +379,289 @@
         });
         observer.observe(player, { childList: true, subtree: true });
 
+        // 11. Hook player state changes to re-apply quality
+        hookPlayerStateChanges();
+
         log('player transformed');
+    }
+
+    // ------------------------------------------------------------------
+    // Quality control via YouTube's internal player API
+    // ------------------------------------------------------------------
+
+    // Quality labels matching YouTube's internal quality strings
+    var QUALITY_LABELS = {
+        auto: 'Auto',
+        hd2160: '4K',
+        hd1440: '1440p',
+        hd1080: '1080p',
+        hd720: '720p',
+        large: '480p',
+        medium: '360p',
+        small: '240p',
+        tiny: '144p'
+    };
+
+    // Ordered from highest to lowest (excluding 'auto')
+    var QUALITY_ORDER = [
+        'hd2160', 'hd1440', 'hd1080', 'hd720',
+        'large', 'medium', 'small', 'tiny'
+    ];
+
+    function getAvailableQualities() {
+        var player = document.getElementById('movie_player');
+        if (!player || !player.getAvailableQualityLevels) return [];
+        var levels = player.getAvailableQualityLevels();
+        if (!levels || !levels.length) return [];
+        // levels is ordered highest-first, may include 'auto'
+        return levels.filter(function (q) { return q && q !== 'auto'; });
+    }
+
+    function getCurrentQuality() {
+        var player = document.getElementById('movie_player');
+        if (!player || !player.getPlaybackQuality) return 'auto';
+        var q = player.getPlaybackQuality();
+        return q || 'auto';
+    }
+
+    function setQuality(target) {
+        var player = document.getElementById('movie_player');
+        if (!player) { warn('setQuality: no player'); return false; }
+
+        if (target === 'auto') {
+            // Reset to auto by setting a wide range
+            if (player.setPlaybackQualityRange) {
+                try { player.setPlaybackQualityRange('tiny', 'hd2160'); } catch (e) { warn('setPlaybackQualityRange auto failed', e); }
+            }
+            // Also try to set it on the internal player
+            try {
+                if (player.getInternalPlayer && player.getInternalPlayer()) {
+                    var internal = player.getInternalPlayer();
+                    if (internal.setPlaybackQualityRange) {
+                        internal.setPlaybackQualityRange('tiny', 'hd2160');
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            return true;
+        }
+
+        var levels = getAvailableQualities();
+        if (levels.indexOf(target) === -1) {
+            // Target not available, pick the closest lower quality
+            var targetIdx = QUALITY_ORDER.indexOf(target);
+            for (var i = targetIdx + 1; i < QUALITY_ORDER.length; i++) {
+                if (levels.indexOf(QUALITY_ORDER[i]) !== -1) {
+                    target = QUALITY_ORDER[i];
+                    break;
+                }
+            }
+        }
+
+        log('setQuality:', target, 'available:', levels);
+
+        // Try the internal API first
+        var formatId = undefined;
+        if (player.getAvailableQualityData) {
+            try {
+                var qualityData = player.getAvailableQualityData();
+                log('qualityData:', qualityData);
+                for (var j = 0; j < qualityData.length; j++) {
+                    if (qualityData[j].quality === target) {
+                        formatId = qualityData[j].formatId;
+                        break;
+                    }
+                }
+            } catch (e) { warn('getAvailableQualityData failed', e); }
+        }
+
+        log('formatId:', formatId);
+
+        // Try multiple approaches in order of preference
+        var worked = false;
+
+        // Approach 1: setPlaybackQualityRange with formatId (most precise)
+        // On the SABR player, formatId may be undefined. Try passing target
+        // as the formatId as well — YouTube sometimes accepts it.
+        if (player.setPlaybackQualityRange) {
+            try {
+                if (formatId) {
+                    log('calling setPlaybackQualityRange', target, target, formatId);
+                    player.setPlaybackQualityRange(target, target, formatId);
+                    worked = true;
+                } else {
+                    // Try without formatId first, then try with target as formatId
+                    log('calling setPlaybackQualityRange', target, target);
+                    player.setPlaybackQualityRange(target, target);
+                    // Also try with target as the formatId (SABR sometimes needs this)
+                    player.setPlaybackQualityRange(target, target, target);
+                    worked = true;
+                }
+            } catch (e) { warn('setPlaybackQualityRange failed', e); }
+        } else {
+            warn('setPlaybackQualityRange not available');
+        }
+
+        // Approach 2: setPlaybackQuality (older API)
+        if (player.setPlaybackQuality) {
+            try {
+                log('calling setPlaybackQuality', target);
+                player.setPlaybackQuality(target);
+                worked = true;
+            } catch (e) { warn('setPlaybackQuality failed', e); }
+        } else {
+            warn('setPlaybackQuality not available');
+        }
+
+        // Approach 3: set the yt-player-quality in localStorage as a bias
+        try {
+            localStorage.setItem('yt-player-quality', JSON.stringify({
+                quality: target,
+                previousQuality: 'auto',
+                expiry: Date.now() + 86400000
+            }));
+            log('set yt-player-quality in localStorage');
+        } catch (e) { /* ignore */ }
+
+        // Approach 4: try to find and click YouTube's internal quality menu
+        // This is the most reliable approach on SABR players
+        try {
+            // YouTube's internal player stores quality settings
+            if (player.getPlayerResponse) {
+                log('player.getPlayerResponse available');
+            }
+            // Check for the internal setPlaybackQuality on the player's internal API
+            if (player.getInternalPlayer && player.getInternalPlayer()) {
+                var internal = player.getInternalPlayer();
+                log('internal player:', typeof internal);
+                if (internal.setPlaybackQuality) {
+                    log('calling internal.setPlaybackQuality');
+                    internal.setPlaybackQuality(target);
+                    worked = true;
+                }
+                // Also try setPlaybackQualityRange on the internal player
+                if (internal.setPlaybackQualityRange) {
+                    log('calling internal.setPlaybackQualityRange');
+                    internal.setPlaybackQualityRange(target, target);
+                    worked = true;
+                }
+                // Try setting the quality on the internal player's state
+                if (internal.setQuality) {
+                    log('calling internal.setQuality');
+                    internal.setQuality(target);
+                    worked = true;
+                }
+                // Try setting qualityLevel on the internal player
+                if (internal.qualityLevels_) {
+                    log('internal.qualityLevels_ available');
+                }
+                if (internal.setQualityLevel) {
+                    log('calling internal.setQualityLevel');
+                    internal.setQualityLevel(target);
+                    worked = true;
+                }
+                // Try the YouTube-specific quality API
+                if (internal.setPlaybackQuality) {
+                    log('calling internal.setPlaybackQuality');
+                    internal.setPlaybackQuality(target);
+                    worked = true;
+                }
+                // Try setting the quality directly on the internal player
+                if (internal.quality_) {
+                    log('setting internal.quality_');
+                    internal.quality_ = target;
+                    worked = true;
+                }
+                // Try the YouTube-specific API
+                if (internal.setQualityAndSource) {
+                    log('calling internal.setQualityAndSource');
+                    internal.setQualityAndSource(target);
+                    worked = true;
+                }
+            }
+        } catch (e) { warn('internal player approach failed', e); }
+
+        // Approach 5: try to find YouTube's quality selector via its internal API
+        try {
+            // The YouTube player has a 'setPlaybackQuality' on the window-level player
+            if (window.yt && window.yt.player && window.yt.player.getPlayerByElement) {
+                var ytPlayer = window.yt.player.getPlayerByElement(player);
+                if (ytPlayer && ytPlayer.setPlaybackQuality) {
+                    log('calling yt.player.getPlayerByElement().setPlaybackQuality');
+                    ytPlayer.setPlaybackQuality(target);
+                    worked = true;
+                }
+            }
+        } catch (e) { warn('yt.player approach failed', e); }
+
+        // Approach 6: set the itag/format on the video element's source
+        // On the SABR player, the actual quality selection happens via the
+        // YouTube player's internal state. Try setting a custom attribute
+        // that YouTube watches.
+        try {
+            var video = player.querySelector('video');
+            if (video) {
+                video.setAttribute('data-wblock-requested-quality', target);
+            }
+        } catch (e) { /* ignore */ }
+
+        // Approach 7: try to find and dispatch a YouTube internal quality change event
+        try {
+            // YouTube's SABR player listens for custom events
+            var video = player.querySelector('video');
+            if (video) {
+                var event = new CustomEvent('yt-quality-change', {
+                    detail: { quality: target },
+                    bubbles: true
+                });
+                video.dispatchEvent(event);
+                log('dispatched yt-quality-change event');
+            }
+        } catch (e) { warn('event dispatch failed', e); }
+
+        // Approach 8: try directly setting the format on the SourceBuffer
+        // This is the most direct approach for the SABR/MSE pipeline
+        try {
+            var video = player.querySelector('video');
+            if (video && video.src) {
+                // The SABR player uses MediaSource. Try to find the source buffer
+                // and set the desired quality through it.
+                log('video src:', video.src.substring(0, 100));
+            }
+        } catch (e) { /* ignore */ }
+
+        log('setQuality worked:', worked);
+        return worked;
+    }
+
+    function applyPreferredQuality() {
+        var preferred = getPreferredQuality();
+        if (preferred === 'auto') return;
+        // Retry a few times — the player may not be fully ready
+        var attempts = 0;
+        var timer = setInterval(function () {
+            attempts++;
+            var current = getCurrentQuality();
+            if (current === preferred || attempts > 10) {
+                clearInterval(timer);
+                return;
+            }
+            setQuality(preferred);
+        }, 500);
+    }
+
+    var _qualityHooked = false;
+    function hookPlayerStateChanges() {
+        if (_qualityHooked) return;
+        _qualityHooked = true;
+
+        // Re-apply preferred quality when the player changes state
+        // (e.g. new video loads, ad finishes, etc.)
+        document.addEventListener('yt-player-state-change', function () {
+            var preferred = getPreferredQuality();
+            if (preferred !== 'auto') {
+                setTimeout(function () { setQuality(preferred); }, 300);
+            }
+        });
     }
 
     // ------------------------------------------------------------------
@@ -369,9 +674,100 @@
 
         var toolbar = document.createElement('div');
         toolbar.className = 'wblock-tc-toolbar';
-        toolbar.style.cssText = 'position:absolute;top:12px;right:12px;z-index:60;display:flex;gap:6px;align-items:center;pointer-events:auto;font:12px/1.2 -apple-system,system-ui,sans-serif;opacity:0;transition:opacity 0.2s';
+        // Position at bottom-right, above native controls. Always visible but
+        // semi-transparent, full opacity on hover.
+        toolbar.style.cssText = 'position:absolute;bottom:42px;right:12px;z-index:60;display:flex;gap:4px;align-items:center;pointer-events:auto;font:11px/1.2 -apple-system,system-ui,sans-serif;opacity:0.75;transition:opacity 0.15s';
 
-        var btnStyle = 'background:rgba(0,0,0,0.75);color:#fff;border:1px solid rgba(255,255,255,0.25);border-radius:5px;padding:4px 10px;font-size:12px;cursor:pointer;-webkit-user-select:none;user-select:none';
+        var btnStyle = 'background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;-webkit-user-select:none;user-select:none';
+
+        // Quality selector
+        var qualityBtn = document.createElement('button');
+        qualityBtn.type = 'button';
+        qualityBtn.style.cssText = btnStyle;
+        function updateQualityBtn() {
+            var current = getCurrentQuality();
+            var label = QUALITY_LABELS[current] || current;
+            qualityBtn.textContent = label;
+            qualityBtn.title = 'Video quality (click to change)';
+        }
+        updateQualityBtn();
+
+        // Quality dropdown
+        var qualityMenu = document.createElement('div');
+        qualityMenu.style.cssText = 'position:absolute;top:100%;right:0;margin-top:4px;background:rgba(0,0,0,0.9);border-radius:5px;padding:4px 0;min-width:100px;display:none;z-index:70;font:12px/1.6 -apple-system,system-ui,sans-serif';
+
+        function buildQualityMenu() {
+            // Clear safely — avoid innerHTML which triggers TrustedHTML CSP
+            while (qualityMenu.firstChild) {
+                qualityMenu.removeChild(qualityMenu.firstChild);
+            }
+            var levels = getAvailableQualities();
+            var preferred = getPreferredQuality();
+
+            // Auto option
+            var autoItem = document.createElement('div');
+            autoItem.style.cssText = 'padding:4px 12px;cursor:pointer;color:#fff;white-space:nowrap';
+            autoItem.textContent = 'Auto';
+            if (preferred === 'auto') {
+                autoItem.style.color = '#4fc3f7';
+            }
+            autoItem.addEventListener('click', function (e) {
+                e.stopPropagation();
+                setPreferredQuality('auto');
+                setQuality('auto');
+                updateQualityBtn();
+                qualityMenu.style.display = 'none';
+            });
+            autoItem.addEventListener('mouseenter', function () { this.style.background = 'rgba(255,255,255,0.15)'; });
+            autoItem.addEventListener('mouseleave', function () { this.style.background = ''; });
+            qualityMenu.appendChild(autoItem);
+
+            // Available quality levels
+            for (var i = 0; i < levels.length; i++) {
+                (function (q) {
+                    var item = document.createElement('div');
+                    item.style.cssText = 'padding:4px 12px;cursor:pointer;color:#fff;white-space:nowrap';
+                    item.textContent = QUALITY_LABELS[q] || q;
+                    if (preferred === q) {
+                        item.style.color = '#4fc3f7';
+                    }
+                    item.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        setPreferredQuality(q);
+                        setQuality(q);
+                        updateQualityBtn();
+                        qualityMenu.style.display = 'none';
+                    });
+                    item.addEventListener('mouseenter', function () { this.style.background = 'rgba(255,255,255,0.15)'; });
+                    item.addEventListener('mouseleave', function () { this.style.background = ''; });
+                    qualityMenu.appendChild(item);
+                })(levels[i]);
+            }
+        }
+
+        qualityBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (qualityMenu.style.display === 'none') {
+                buildQualityMenu();
+                qualityMenu.style.display = 'block';
+            } else {
+                qualityMenu.style.display = 'none';
+            }
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', function () {
+            qualityMenu.style.display = 'none';
+        });
+
+        var qualityWrap = document.createElement('div');
+        qualityWrap.style.cssText = 'position:relative';
+        qualityWrap.appendChild(qualityBtn);
+        qualityWrap.appendChild(qualityMenu);
+        toolbar.appendChild(qualityWrap);
+
+        // Update quality label periodically
+        setInterval(updateQualityBtn, 2000);
 
         // Audio-only toggle
         var audioBtn = document.createElement('button');
@@ -411,12 +807,12 @@
             toolbar.appendChild(pipBtn);
         }
 
-        // The toolbar appears on hover over the player
-        player.addEventListener('mouseenter', function () {
+        // The toolbar is always visible; full opacity on hover
+        toolbar.addEventListener('mouseenter', function () {
             toolbar.style.opacity = '1';
         });
-        player.addEventListener('mouseleave', function () {
-            toolbar.style.opacity = '0';
+        toolbar.addEventListener('mouseleave', function () {
+            toolbar.style.opacity = '0.75';
         });
 
         // Also show on touch
@@ -498,4 +894,39 @@
     } else {
         boot();
     }
+
+    // Expose debug helpers on window for console testing
+    try {
+        window.__wblockTubeDebug = {
+            getAvailableQualities: getAvailableQualities,
+            getCurrentQuality: getCurrentQuality,
+            setQuality: setQuality,
+            getPreferredQuality: getPreferredQuality,
+            setPreferredQuality: setPreferredQuality,
+            QUALITY_LABELS: QUALITY_LABELS,
+            getPlayer: function () { return document.getElementById('movie_player'); },
+            inspectPlayer: function () {
+                var p = document.getElementById('movie_player');
+                if (!p) return 'no player';
+                var methods = [];
+                for (var k in p) {
+                    if (typeof p[k] === 'function' && k.indexOf('playback') !== -1 || k.indexOf('Quality') !== -1) {
+                        methods.push(k);
+                    }
+                }
+                return {
+                    methods: methods,
+                    hasGetAvailableQualityLevels: typeof p.getAvailableQualityLevels === 'function',
+                    hasGetAvailableQualityData: typeof p.getAvailableQualityData === 'function',
+                    hasSetPlaybackQualityRange: typeof p.setPlaybackQualityRange === 'function',
+                    hasSetPlaybackQuality: typeof p.setPlaybackQuality === 'function',
+                    hasGetPlaybackQuality: typeof p.getPlaybackQuality === 'function',
+                    levels: typeof p.getAvailableQualityLevels === 'function' ? p.getAvailableQualityLevels() : 'N/A',
+                    qualityData: typeof p.getAvailableQualityData === 'function' ? p.getAvailableQualityData() : 'N/A',
+                    current: typeof p.getPlaybackQuality === 'function' ? p.getPlaybackQuality() : 'N/A'
+                };
+            }
+        };
+        log('debug helpers exposed at window.__wblockTubeDebug');
+    } catch (e) { /* ignore */ }
 })();

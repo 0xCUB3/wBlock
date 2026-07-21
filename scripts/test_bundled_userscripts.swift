@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      3.0.0", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      4.0.0", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
@@ -108,6 +108,9 @@ for needle in [
     "visibilityState",           // background playback
     "_wblockPatched",            // video element listener interception
     "controls",                  // native controls
+    "setPlaybackQualityRange",   // quality control via internal API
+    "QUALITY_LABELS",            // quality picker labels
+    "getPreferredQuality",       // quality preference persistence
 ] {
     guard tubeSource.contains(needle) else {
         fail("Tube Cleaner is missing expected feature code: \(needle)")
