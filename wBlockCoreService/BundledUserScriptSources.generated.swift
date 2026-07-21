@@ -12,7 +12,7 @@ enum BundledUserScriptSources {
 // ==UserScript==
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
-// @version      4.2.2
+// @version      4.2.4
 // @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
 // @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
 // @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
@@ -37,7 +37,7 @@ enum BundledUserScriptSources {
     'use strict';
 
     // ------------------------------------------------------------------
-    // Tube Cleaner v4.2.2
+    // Tube Cleaner v4.2.4
     //
     // Vinegar Extract approach: instead of trying to extract stream URLs
     // from the player response (which 403 due to SABR), we let YouTube's
@@ -379,8 +379,17 @@ enum BundledUserScriptSources {
         '.wblock-tc-native .ytp-bezel,',
         '.wblock-tc-native .ytp-spinner,',
         '.wblock-tc-native .ytp-doubletap-ui-legacy,',
-        '.wblock-tc-native .ytp-touch-response',
+        '.wblock-tc-native .ytp-touch-response,',
+        '.wblock-tc-native .ytp-player-content',
         '{ pointer-events: none !important; }',
+
+        // Mobile YouTube renders its new controls outside #movie_player in a
+        // sibling custom-element tree. It appears after "Tap to unmute" and
+        // otherwise sits above Safari's native media controls.
+        '#player-control-container,',
+        'ytm-custom-control,',
+        'ytm-watch-player-controls',
+        '{ display: none !important; pointer-events: none !important; }',
 
         // Do not style Safari's private ::-webkit-media-controls tree. iOS and
         // macOS use different internal layouts, and forcing display/flex on the
@@ -578,16 +587,33 @@ enum BundledUserScriptSources {
             if (!video.controls) { video.controls = true; }
             if (!video.hasAttribute('controls')) { video.setAttribute('controls', ''); }
             ensurePlaysInline(video);
-            // YouTube may suppress native PiP, fullscreen-adjacent controls, or
-            // AirPlay while its custom chrome is active. Those restrictions no
-            // longer apply once Safari's native controls own interaction.
+            // YouTube may suppress native PiP and fullscreen-adjacent controls
+            // while its custom chrome is active. Those restrictions no longer
+            // apply once Safari's native controls own interaction.
             if (video.hasAttribute('controlslist')) { video.removeAttribute('controlslist'); }
             if (video.hasAttribute('disablepictureinpicture')) { video.removeAttribute('disablepictureinpicture'); }
-            if (video.hasAttribute('disableremoteplayback')) { video.removeAttribute('disableremoteplayback'); }
             if (video.disablePictureInPicture) { video.disablePictureInPicture = false; }
-            if (video.disableRemotePlayback) { video.disableRemotePlayback = false; }
-            if (video.getAttribute('x-webkit-airplay') !== 'allow') {
-                video.setAttribute('x-webkit-airplay', 'allow');
+
+            if (IS_IOS) {
+                // YouTube's iOS SABR pipeline uses ManagedMediaSource through a
+                // blob URL. WebKit requires remote playback to stay disabled
+                // unless the element also provides a network source for AirPlay.
+                // Forcing AirPlay on can leave the physical-device media pipeline
+                // loading forever even though desktop WebKit keeps playing.
+                if (!video.disableRemotePlayback) { video.disableRemotePlayback = true; }
+                if (!video.hasAttribute('disableremoteplayback')) {
+                    video.setAttribute('disableremoteplayback', '');
+                }
+                if (video.getAttribute('x-webkit-airplay') === 'allow') {
+                    video.removeAttribute('x-webkit-airplay');
+                }
+            } else {
+                // Desktop Safari can safely expose AirPlay too.
+                if (video.hasAttribute('disableremoteplayback')) { video.removeAttribute('disableremoteplayback'); }
+                if (video.disableRemotePlayback) { video.disableRemotePlayback = false; }
+                if (video.getAttribute('x-webkit-airplay') !== 'allow') {
+                    video.setAttribute('x-webkit-airplay', 'allow');
+                }
             }
         } catch (e) { /* ignore */ }
     }

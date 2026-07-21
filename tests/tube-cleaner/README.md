@@ -24,8 +24,9 @@ Tube Cleaner scenarios: `fixture.html` / `fixture-noplaysinline.html` cover
 macOS Safari, iPhone, legacy iPad mobile UAs, and modern iPadOS requesting the
 desktop site as `MacIntel`. Mobile checks enforce a Safari-native-only interaction surface, migration out
 of old black-screen audio-only and fixed-quality loading states, visible video
-in portrait and landscape, and restoration of inline playback, PiP, AirPlay, and native controls
-after YouTube removes them. `fixture-tube-cleaner-multiple.html` models retained
+in portrait and landscape, suppression of the separate mobile YouTube controls
+tree, restoration of inline playback and native controls, and preservation of
+the iOS ManagedMediaSource restriction required for SABR playback. `fixture-tube-cleaner-multiple.html` models retained
 Shorts players and verifies native enhancements follow the visible playing
 video. `fixture-tube-cleaner-early.html` creates the YouTube player from a
 `<head>` script and enforces anti-flash CSS plus nativeization before

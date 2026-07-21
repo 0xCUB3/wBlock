@@ -227,26 +227,36 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
 }
 
 // The fixture's mock player repeatedly removes controls/inline playback and
-// reapplies native PiP/AirPlay restrictions. A correct implementation must
-// restore the complete Safari media-controls surface after every attempt.
-async function controlsSurvivalCheck(page, scenario) {
+// reapplies native PiP/AirPlay restrictions. Both platforms restore PiP and
+// native controls; iOS must retain the MMS remote-playback safety restriction.
+async function controlsSurvivalCheck(page, scenario, { preserveIOSMMSRestrictions = false } = {}) {
   await page.waitForTimeout(4200); // let several fightControls rounds run
-  await check(page, scenario, 'native media capabilities SURVIVE YouTube restrictions', () => {
+  const label = preserveIOSMMSRestrictions
+    ? 'native controls survive while iOS MMS safety restrictions remain'
+    : 'native media capabilities SURVIVE YouTube restrictions';
+  await check(page, scenario, label, (preserveIOSMMSRestrictions) => {
     const v = document.querySelector('#movie_player video');
     if (!v) return { pass: false, detail: 'no video' };
     const state = {
       controls: v.controls && v.hasAttribute('controls'),
       inline: v.playsInline && v.hasAttribute('playsinline') && v.hasAttribute('webkit-playsinline'),
-      pip: !v.hasAttribute('disablepictureinpicture'),
-      remote: !v.hasAttribute('disableremoteplayback'),
-      controlsList: !v.hasAttribute('controlslist'),
-      airplay: v.getAttribute('x-webkit-airplay') === 'allow',
     };
+    if (preserveIOSMMSRestrictions) {
+      state.pip = !v.disablePictureInPicture && !v.hasAttribute('disablepictureinpicture');
+      state.controlsList = !v.hasAttribute('controlslist');
+      state.remoteDisabled = v.disableRemotePlayback && v.hasAttribute('disableremoteplayback');
+      state.airplayNotForced = v.getAttribute('x-webkit-airplay') !== 'allow';
+    } else {
+      state.pip = !v.hasAttribute('disablepictureinpicture');
+      state.remote = !v.hasAttribute('disableremoteplayback');
+      state.controlsList = !v.hasAttribute('controlslist');
+      state.airplay = v.getAttribute('x-webkit-airplay') === 'allow';
+    }
     return {
       pass: Object.values(state).every(Boolean),
       detail: Object.entries(state).map(([k, value]) => `${k}=${value}`).join(' '),
     };
-  }, { timeout: 1500, interval: 500 });
+  }, { timeout: 1500, interval: 500, arg: preserveIOSMMSRestrictions });
 }
 
 async function iosNativeControlsChecks(page, scenario) {
@@ -267,6 +277,44 @@ async function iosNativeControlsChecks(page, scenario) {
   await check(page, scenario, 'does not style Safari private media controls', () => {
     const css = document.getElementById('wblock-tc-style')?.textContent || '';
     return { pass: !css.includes('::-webkit-media-controls') && !css.includes('touch-action: manipulation !important; } .wblock-tc-native video') };
+  });
+  await check(page, scenario, 'keeps mobile YouTube controls behind the native video after unmute', () => {
+    const player = document.querySelector('.wblock-tc-native');
+    const video = player?.querySelector('video');
+    if (!player || !video) return { pass: false, detail: 'missing player or video' };
+
+    const content = document.createElement('div');
+    content.className = 'ytp-player-content ytp-timely-actions-content';
+    content.style.cssText = 'position:absolute;inset:0;z-index:1000';
+    player.appendChild(content);
+
+    const rect = video.getBoundingClientRect();
+    const controls = document.createElement('div');
+    controls.id = 'player-control-container';
+    controls.innerHTML = '<ytm-custom-control><ytm-watch-player-controls><div id="player-control-overlay"></div></ytm-watch-player-controls></ytm-custom-control>';
+    controls.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:2000`;
+
+    // Mobile YouTube adds its separate controls tree when the required
+    // "Tap to unmute" action runs. Keep that button usable, then ensure the
+    // resulting YouTube overlay cannot cover Safari's controls.
+    const unmute = document.createElement('button');
+    unmute.className = 'ytp-unmute ytp-popup ytp-button';
+    player.appendChild(unmute);
+    const unmuteUsable = getComputedStyle(unmute).display !== 'none' &&
+      getComputedStyle(unmute).pointerEvents !== 'none';
+    unmute.addEventListener('click', () => {
+      unmute.remove();
+      document.body.appendChild(controls);
+    });
+    unmute.click();
+
+    const contentPointerEvents = getComputedStyle(content).pointerEvents;
+    const controlsDisplay = getComputedStyle(controls).display;
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    const pass = unmuteUsable && contentPointerEvents === 'none' && controlsDisplay === 'none' && hit === video;
+    content.remove();
+    controls.remove();
+    return { pass, detail: `unmuteUsable=${unmuteUsable} contentPointerEvents=${contentPointerEvents} controlsDisplay=${controlsDisplay} hit=${hit?.tagName}` };
   });
   await check(page, scenario, 'keeps the iOS video visible with a real layout box', () => {
     const video = document.querySelector('#movie_player video');
@@ -343,7 +391,7 @@ async function qualityUISelectionCheck(page, scenario) {
   await commonChecks(page, 'iPhone', { expectToolbar: false });
   await iosNativeControlsChecks(page, 'iPhone');
   await iosLandscapeCheck(page, 'iPhone');
-  await controlsSurvivalCheck(page, 'iPhone');
+  await controlsSurvivalCheck(page, 'iPhone', { preserveIOSMMSRestrictions: true });
   record('iPhone', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
@@ -367,7 +415,7 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: ok, detail: `playsInline=${v.playsInline}, attr=${v.hasAttribute('playsinline')}` };
   });
   await iosNativeControlsChecks(page, 'iPad-mobile');
-  await controlsSurvivalCheck(page, 'iPad-mobile');
+  await controlsSurvivalCheck(page, 'iPad-mobile', { preserveIOSMMSRestrictions: true });
   record('iPad-mobile', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
@@ -391,7 +439,7 @@ async function qualityUISelectionCheck(page, scenario) {
     detail: `platform=${navigator.platform} touches=${navigator.maxTouchPoints} customToolbar=${!!document.querySelector('.wblock-tc-toolbar')}`,
   }));
   await iosNativeControlsChecks(page, S);
-  await controlsSurvivalCheck(page, S);
+  await controlsSurvivalCheck(page, S, { preserveIOSMMSRestrictions: true });
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }

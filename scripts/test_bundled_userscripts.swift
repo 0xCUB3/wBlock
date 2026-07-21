@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      4.2.2", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      4.2.4", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
@@ -130,6 +130,14 @@ guard tubeSource.contains("if (!IS_IOS) { buildToolbar(player, video); }") else 
 guard tubeSource.contains("if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }") &&
       tubeSource.contains("if (IS_IOS) {\n            if (getPreferredQuality()") else {
     fail("Tube Cleaner must restore adaptive quality on iOS")
+}
+guard tubeSource.contains("if (!video.disableRemotePlayback) { video.disableRemotePlayback = true; }") &&
+      tubeSource.contains("WebKit requires remote playback to stay disabled") else {
+    fail("Tube Cleaner must preserve iOS ManagedMediaSource remote-playback safety")
+}
+guard tubeSource.contains("#player-control-container,") &&
+      tubeSource.contains(".wblock-tc-native .ytp-player-content") else {
+    fail("Tube Cleaner must suppress mobile YouTube controls above the native video")
 }
 
 for needle in [
