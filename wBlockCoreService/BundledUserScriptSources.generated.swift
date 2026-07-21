@@ -80,7 +80,9 @@ enum BundledUserScriptSources {
     // ------------------------------------------------------------------
 
     var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        (/iPad/.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 &&
+         typeof document.documentElement.ontouchstart !== 'undefined');
     var IS_MOBILE_SITE = location.hostname === 'm.youtube.com' ||
         /mobi|android/i.test(navigator.userAgent);
 
