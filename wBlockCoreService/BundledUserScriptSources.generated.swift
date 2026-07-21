@@ -1177,17 +1177,17 @@ enum BundledUserScriptSources {
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.0.0
-// @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls and Picture-in-Picture. Disable it per site from the wBlock toolbar if a player misbehaves.
-// @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente und Bild-in-Bild wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
-// @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos y Picture-in-Picture. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
-// @description:fr  Remplace les lecteurs vidéo personnalisés des sites web (autres que YouTube) par un élément vidéo HTML5 propre, en restaurant les commandes natives et l'image dans l'image. Désactivez-le par site depuis la barre d'outils wBlock si un lecteur se comporte mal.
-// @description:it  Sostituisce i lettori video personalizzati sui siti web (diversi da YouTube) con un elemento video HTML5 pulito, ripristinando i controlli nativi e Picture-in-Picture. Disattivalo per sito dalla barra degli strumenti di wBlock se un lettore non funziona.
-// @description:pt-BR  Substitui players de vídeo personalizados em sites (diferentes do YouTube) por um elemento de vídeo HTML5 limpo, restaurando os controles nativos e o Picture-in-Picture. Desative-o por site na barra de ferramentas do wBlock se um player se comportar mal.
-// @description:ja  YouTube以外のWebサイトのカスタム動画プレーヤーをクリーンなHTML5 video要素に置き換え、ネイティブコントロールとピクチャー・イン・ピクチャーを復元します。プレーヤーが誤動作する場合は、wBlockツールバーからサイトごとに無効にできます。
-// @description:ko  YouTube 이외의 웹사이트에서 사용자 지정 동영상 플레이어를 깨끗한 HTML5 video 요소로 대체하여 네이티브 컨트롤과 PIP를 복원합니다. 플레이어가 오작동하면 wBlock 도구 막대에서 사이트별로 비활성화하세요.
-// @description:ru  Заменяет пользовательские видеоплееры на сайтах (кроме YouTube) чистым HTML5-элементом video, восстанавливая нативные элементы управления и картинку-в-картинке. Отключите его для сайта на панели wBlock, если плеер работает некорректно.
-// @description:zh-Hans  将网站（YouTube 除外）上的自定义视频播放器替换为干净的 HTML5 video 元素，恢复原生控件和画中画。如果某个播放器出现问题，可从 wBlock 工具栏按网站停用。
+// @version      1.1.0
+// @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
+// @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
+// @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
+// @description:fr  Remplace les lecteurs vidéo personnalisés des sites web (autres que YouTube) par un élément vidéo HTML5 propre, en restaurant les commandes natives, l'image dans l'image, le PiP automatique et la lecture en arrière-plan. Désactivez-le par site depuis la barre d'outils wBlock si un lecteur se comporte mal.
+// @description:it  Sostituisce i lettori video personalizzati sui siti web (diversi da YouTube) con un elemento video HTML5 pulito, ripristinando i controlli nativi, Picture-in-Picture, PiP automatico e riproduzione in background. Disattivalo per sito dalla barra degli strumenti di wBlock se un lettore non funziona.
+// @description:pt-BR  Substitui players de vídeo personalizados em sites (diferentes do YouTube) por um elemento de vídeo HTML5 limpo, restaurando os controles nativos, Picture-in-Picture, PiP automático e reprodução em segundo plano. Desative-o por site na barra de ferramentas do wBlock se um player se comportar mal.
+// @description:ja  YouTube以外のWebサイトのカスタム動画プレーヤーをクリーンなHTML5 video要素に置き換え、ネイティブコントロール、ピクチャー・イン・ピクチャー、自動PiP、バックグラウンド再生を復元します。プレーヤーが誤動作する場合は、wBlockツールバーからサイトごとに無効にできます。
+// @description:ko  YouTube 이외의 웹사이트에서 사용자 지정 동영상 플레이어를 깨끗한 HTML5 video 요소로 대체하여 네이티브 컨트롤, PIP, 자동 PIP, 백그라운드 재생을 복원합니다. 플레이어가 오작동하면 wBlock 도구 막대에서 사이트별로 비활성화하세요.
+// @description:ru  Заменяет пользовательские видеоплееры на сайтах (кроме YouTube) чистым HTML5-элементом video, восстанавливая нативные элементы управления, картинку-в-картинке, автоматический PiP и фоновое воспроизведение. Отключите его для сайта на панели wBlock, если плеер работает некорректно.
+// @description:zh-Hans  将网站（YouTube 除外）上的自定义视频播放器替换为干净的 HTML5 video 元素，恢复原生控件、画中画、自动画中画和后台播放。如果某个播放器出现问题，可从 wBlock 工具栏按网站停用。
 // @author       wBlock
 // @match        http://*/*
 // @match        https://*/*
@@ -1214,6 +1214,12 @@ enum BundledUserScriptSources {
     // is an opaque media-source blob we instead enhance the existing video
     // in place so playback keeps working with native controls.
     //
+    // Features:
+    //   - Custom player detection & replacement (video.js, JW, Plyr, ...)
+    //   - Auto PiP: enters PiP on tab switch, window blur, scroll out of view
+    //   - Background playback: keeps playing in background tabs
+    //   - iOS toolbar: hidden by default, shows on tap, auto-hides
+    //
     // YouTube is excluded; Tube Cleaner handles it. Per-site disabling is
     // provided by wBlock's userscript site settings.
     // ------------------------------------------------------------------
@@ -1223,6 +1229,146 @@ enum BundledUserScriptSources {
 
     var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // ------------------------------------------------------------------
+    // Background playback — keep videos playing in background tabs
+    // ------------------------------------------------------------------
+
+    var _realHidden = false;
+    var _realVisibility = 'visible';
+
+    // Capture real visibility state before we override document.hidden
+    try {
+        _realHidden = document.hidden;
+        _realVisibility = document.visibilityState;
+    } catch (e) { /* ignore */ }
+
+    document.addEventListener('visibilitychange', function () {
+        try {
+            _realHidden = document.hidden;
+            _realVisibility = document.visibilityState;
+        } catch (e) { /* ignore */ }
+    });
+
+    function enableBackgroundPlayback() {
+        try {
+            Object.defineProperty(document, 'hidden', {
+                get: function () { return false; },
+                configurable: true
+            });
+        } catch (e) { /* ignore */ }
+        try {
+            Object.defineProperty(document, 'visibilityState', {
+                get: function () { return 'visible'; },
+                configurable: true
+            });
+        } catch (e) { /* ignore */ }
+    }
+
+    // ------------------------------------------------------------------
+    // Auto PiP — automatic Picture-in-Picture
+    // ------------------------------------------------------------------
+
+    var AUTO_PIP_KEY = 'wblock.playerCleaner.autoPiP';
+    var autoPiPEnabled = true;
+
+    function getAutoPiP() {
+        try {
+            var stored = localStorage.getItem(AUTO_PIP_KEY);
+            return stored === null ? true : stored === '1';
+        } catch (e) { return true; }
+    }
+
+    function setAutoPiP(v) {
+        try { localStorage.setItem(AUTO_PIP_KEY, v ? '1' : '0'); } catch (e) { /* ignore */ }
+        autoPiPEnabled = v;
+    }
+
+    try { autoPiPEnabled = getAutoPiP(); } catch (e) { /* ignore */ }
+
+    function isPiPActive(video) {
+        return document.pictureInPictureElement === video ||
+            (video && video.webkitPresentationMode === 'picture-in-picture');
+    }
+
+    function enterPiP(video) {
+        if (!video || !autoPiPEnabled) return;
+        if (isPiPActive(video)) return;
+        if (video.paused || video.ended) return;
+        try {
+            if (video.webkitSupportsPresentationMode &&
+                typeof video.webkitSetPresentationMode === 'function') {
+                video.webkitSetPresentationMode('picture-in-picture');
+            } else if (video.requestPictureInPicture) {
+                video.requestPictureInPicture();
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function exitPiP(video) {
+        if (!video) return;
+        if (!isPiPActive(video)) return;
+        try {
+            if (video.webkitSupportsPresentationMode &&
+                typeof video.webkitSetPresentationMode === 'function') {
+                video.webkitSetPresentationMode('inline');
+            } else if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function setupAutoPiP(video) {
+        if (!video || video._wblockAutoPiPHooked) return;
+        video._wblockAutoPiPHooked = true;
+
+        // Tab switch: enter PiP when tab hides, exit when visible
+        document.addEventListener('visibilitychange', function () {
+            if (!autoPiPEnabled) return;
+            if (_realHidden) {
+                if (!video.paused && !video.ended) {
+                    enterPiP(video);
+                }
+            } else {
+                if (document.hasFocus() && isPiPActive(video)) {
+                    exitPiP(video);
+                }
+            }
+        });
+
+        // Window blur: enter PiP when switching to another app
+        window.addEventListener('blur', function () {
+            if (!autoPiPEnabled) return;
+            if (_realHidden) return;
+            setTimeout(function () {
+                if (document.hasFocus()) return;
+                if (!video.paused && !video.ended) {
+                    enterPiP(video);
+                }
+            }, 100);
+        });
+
+        window.addEventListener('focus', function () {
+            if (!autoPiPEnabled) return;
+            if (_realHidden) return;
+            if (document.hasFocus() && isPiPActive(video)) {
+                exitPiP(video);
+            }
+        });
+
+        // Scroll out of view
+        var scrollObserver = new IntersectionObserver(function (entries) {
+            if (!autoPiPEnabled) return;
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting && !video.paused && !video.ended) {
+                    enterPiP(video);
+                } else if (entry.isIntersecting && isPiPActive(video)) {
+                    exitPiP(video);
+                }
+            });
+        }, { threshold: 0.1 });
+        scrollObserver.observe(video);
+    }
 
     function log() {
         try {
@@ -1388,6 +1534,8 @@ enum BundledUserScriptSources {
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
+        video.removeAttribute('disablepictureinpicture');
+        video.disablePictureInPicture = false;
         video.style.width = '100%';
         video.style.height = '100%';
         video.style.background = '#000';
@@ -1410,15 +1558,34 @@ enum BundledUserScriptSources {
         return container;
     }
 
+    function forceNativeControls(video) {
+        if (video._wblockControlsPatched) return;
+        video._wblockControlsPatched = true;
+        video.controls = true;
+        try {
+            Object.defineProperty(video, 'controls', {
+                get: function () { return true; },
+                set: function (v) { /* ignore */ },
+                configurable: false
+            });
+        } catch (e) { /* ignore */ }
+        video.setAttribute('controls', '');
+    }
+
     function enhanceInPlace(container, video) {
         // We could not resolve a clean source (opaque MSE blob). Keep the
         // existing video playing but expose native controls + PiP and remove
         // obvious custom control overlays.
         try {
-            video.controls = true;
+            forceNativeControls(video);
             video.playsInline = true;
             video.setAttribute('playsinline', '');
+            video.removeAttribute('disablepictureinpicture');
+            video.disablePictureInPicture = false;
         } catch (e) { /* ignore */ }
+
+        setupAutoPiP(video);
+
         var overlaySelectors = [
             '.vjs-control-bar', '.vjs-big-play-button', '.vjs-poster',
             '.jw-controls', '.jw-display-icon-container',
@@ -1432,6 +1599,14 @@ enum BundledUserScriptSources {
                 try { overlays[j].style.display = 'none'; } catch (e) { /* ignore */ }
             }
         }
+
+        // Keep controls forced on
+        setInterval(function () {
+            if (video && !video.controls) {
+                video.controls = true;
+                video.setAttribute('controls', '');
+            }
+        }, 2000);
     }
 
     function replacePlayer(container) {
@@ -1442,6 +1617,8 @@ enum BundledUserScriptSources {
 
         var src = discoverSource(container, video);
         log('player detected', container.className, 'source:', src ? 'resolved' : 'opaque');
+
+        enableBackgroundPlayback();
 
         if (src) {
             var clean = buildCleanVideo(src, video);
@@ -1454,6 +1631,16 @@ enum BundledUserScriptSources {
                 container.classList.remove('video-js', 'vjs-paused', 'vjs-playing');
             } catch (e) { /* ignore */ }
             container.setAttribute(ATTR_DONE, '1');
+            forceNativeControls(clean);
+            setupAutoPiP(clean);
+
+            // Keep controls forced on
+            setInterval(function () {
+                if (clean && !clean.controls) {
+                    clean.controls = true;
+                    clean.setAttribute('controls', '');
+                }
+            }, 2000);
         } else {
             video.setAttribute(ATTR_DONE, '1');
             container.setAttribute(ATTR_DONE, '1');
