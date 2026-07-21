@@ -36,6 +36,7 @@ const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cl
 const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-relative.html')).href;
 const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-upgrade.html')).href;
 const FIXTURE_PLAYER_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-early.html')).href;
+const FIXTURE_PLAYER_ARTDECO_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-artdeco.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -954,6 +955,59 @@ async function qualityUISelectionCheck(page, scenario) {
     const ok = counts.every(n => n === 1) && nativeCount === 1;
     return { pass: ok, detail: `counts=${counts.join(',')} native=${nativeCount}` };
   });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario: Player Cleaner LinkedIn Artdeco player ----------------------
+// LinkedIn wraps videos in .artdeco-video-player with custom overlay and
+// control-bar elements. Player Cleaner must detect the wrapper, hide the
+// custom chrome, and force native controls.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (LinkedIn Artdeco player)', {
+    fixture: FIXTURE_PLAYER_ARTDECO_URL,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-artdeco';
+
+  await check(page, S, 'forces video.controls === true', () => {
+    const v = document.querySelector('.artdeco-video-player video');
+    return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
+  });
+
+  await check(page, S, 'marks video and container done', () => {
+    const v = document.querySelector('.artdeco-video-player video');
+    const c = document.querySelector('.artdeco-video-player');
+    const ok = !!(v && v.getAttribute('data-wblock-player-cleaner') === '1' &&
+      c && c.getAttribute('data-wblock-player-cleaner') === '1');
+    return { pass: ok, detail: `video=${v && v.getAttribute('data-wblock-player-cleaner')} container=${c && c.getAttribute('data-wblock-player-cleaner')}` };
+  });
+
+  await check(page, S, 'hides Artdeco controls container', () => {
+    const el = document.querySelector('.artdeco-video-player__controls-container');
+    return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
+  });
+
+  await check(page, S, 'hides Artdeco overlay', () => {
+    const el = document.querySelector('.artdeco-video-player__overlay');
+    return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
+  });
+
+  await check(page, S, 'hides Artdeco controls bar', () => {
+    const el = document.querySelector('.artdeco-video-player__controls');
+    return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
+  });
+
+  await page.waitForTimeout(4200);
+  await check(page, S, 'native controls SURVIVE player turning them off', () => {
+    const v = document.querySelector('.artdeco-video-player video');
+    if (!v) return { pass: false, detail: 'no video' };
+    const hasAttr = v.hasAttribute('controls');
+    return { pass: hasAttr, detail: `hasAttribute('controls')=${hasAttr} (getter=${v.controls})` };
+  }, { timeout: 1500, interval: 500 });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();

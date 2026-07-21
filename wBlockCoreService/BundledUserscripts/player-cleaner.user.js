@@ -247,7 +247,8 @@
         'media-theme',               // Media Chrome generic theme
         'media-theme-youtube',       // Media Chrome YouTube theme
         '.media-player',             // Media Chrome / modern wrappers
-        '.media-default-skin'        // videojs.org's modern demo wrapper
+        '.media-default-skin',       // videojs.org's modern demo wrapper
+        '.artdeco-video-player'       // LinkedIn Artdeco video player
     ];
     var PLAYER_SELECTOR = PLAYER_SELECTORS.join(',');
 
@@ -408,7 +409,7 @@
             '.flowplayer', '.mejs-container', '.mejs__container', '.clappr',
             '[data-clappr-player]', '.fluid_video_wrapper', 'mux-player',
             'media-controller', 'media-theme', 'media-theme-youtube',
-            '.media-player', '.media-default-skin'];
+            '.media-player', '.media-default-skin', '.artdeco-video-player'];
         for (var i = 0; i < wrapperSelectors.length; i++) {
             var ancestor = container.closest ? container.closest(wrapperSelectors[i]) : null;
             if (ancestor) { container = ancestor; }
@@ -460,7 +461,11 @@
             '.plyr__controls', '.fp-ui', '.fp-header',
             '.mejs-controls', '.mejs__controls',
             '.clappr-media-control',
-            'media-control-bar', 'media-loading-indicator', 'media-poster-image'
+            'media-control-bar', 'media-loading-indicator', 'media-poster-image',
+            // LinkedIn Artdeco player overlays
+            '.artdeco-video-player__controls-container',
+            '.artdeco-video-player__controls',
+            '.artdeco-video-player__overlay'
         ];
         for (var i = 0; i < overlaySelectors.length; i++) {
             var overlays = container.querySelectorAll(overlaySelectors[i]);

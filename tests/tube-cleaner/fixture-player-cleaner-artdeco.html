@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic LinkedIn Artdeco player (Player Cleaner test fixture)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .artdeco-video-player {
+    position: relative; width: 960px; max-width: 100%;
+    aspect-ratio: 16 / 9; margin: 24px auto; background: #000;
+  }
+  .artdeco-video-player video { width: 100%; height: 100%; background: #222; }
+  .artdeco-video-player__overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.15);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .artdeco-video-player__controls-container {
+    position: absolute; left: 0; right: 0; bottom: 0;
+  }
+  .artdeco-video-player__controls {
+    height: 48px; background: rgba(0,0,0,.75);
+    display: flex; align-items: center; padding: 0 12px; gap: 8px;
+    color: #fff; font: 13px/1 sans-serif;
+  }
+</style>
+</head>
+<body>
+  <!-- LinkedIn-style Artdeco player: custom wrapper with overlay and control
+       bar that must be hidden when Player Cleaner nativeizes the video. -->
+  <div class="artdeco-video-player artdeco-video-player--has-controls">
+    <video></video>
+    <div class="artdeco-video-player__overlay">
+      <span class="artdeco-video-player__play-pause-btn">▶</span>
+    </div>
+    <div class="artdeco-video-player__controls-container">
+      <div class="artdeco-video-player__controls">
+        <span class="artdeco-video-player__play-pause-btn">⏸</span>
+        <span class="artdeco-video-player__time-display">0:00</span>
+        <div class="artdeco-video-player__progress-bar"></div>
+        <span class="artdeco-video-player__mute-btn">🔊</span>
+        <span class="artdeco-video-player__cc-btn">CC</span>
+        <span class="artdeco-video-player__fullscreen-btn">⛶</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var v = document.querySelector('.artdeco-video-player video');
+      // Opaque MSE-style source so Player Cleaner enhances in place.
+      try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
+
+      // Adversarial: the custom player keeps trying to hide native controls.
+      function fightControls() {
+        try { v.controls = false; } catch (e) {}
+        try { v.removeAttribute('controls'); } catch (e) {}
+      }
+      setTimeout(fightControls, 800);
+      setTimeout(fightControls, 2500);
+      setInterval(fightControls, 3000);
+    })();
+  </script>
+</body>
+</html>
