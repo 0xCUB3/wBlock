@@ -396,6 +396,32 @@
         video.setAttribute('controls', '');
     }
 
+    // WebKit renders native controls from the `controls` CONTENT ATTRIBUTE, not
+    // the JavaScript property. forceNativeControls() shadows the property so
+    // `video.controls = false` is ignored, but a player can still strip the
+    // attribute via removeAttribute(), hiding the controls. A `!video.controls`
+    // guard never fires because the shadowed getter always returns true. So we
+    // defend the attribute itself: a MutationObserver restores it whenever it is
+    // removed, with a polling fallback.
+    function guardNativeControls(video) {
+        if (!video || video._wblockControlsGuarded) return;
+        video._wblockControlsGuarded = true;
+
+        function restore() {
+            if (video && !video.hasAttribute('controls')) {
+                video.setAttribute('controls', '');
+            }
+        }
+
+        try {
+            var observer = new MutationObserver(restore);
+            observer.observe(video, { attributes: true, attributeFilter: ['controls'] });
+        } catch (e) { /* ignore */ }
+
+        restore();
+        setInterval(restore, 1000);
+    }
+
     function enhanceInPlace(container, video) {
         // We could not resolve a clean source (opaque MSE blob). Keep the
         // existing video playing but expose native controls + PiP and remove
@@ -425,12 +451,7 @@
         }
 
         // Keep controls forced on
-        setInterval(function () {
-            if (video && !video.controls) {
-                video.controls = true;
-                video.setAttribute('controls', '');
-            }
-        }, 2000);
+        guardNativeControls(video);
     }
 
     function replacePlayer(container) {
@@ -459,12 +480,7 @@
             setupAutoPiP(clean);
 
             // Keep controls forced on
-            setInterval(function () {
-                if (clean && !clean.controls) {
-                    clean.controls = true;
-                    clean.setAttribute('controls', '');
-                }
-            }, 2000);
+            guardNativeControls(clean);
         } else {
             video.setAttribute(ATTR_DONE, '1');
             container.setAttribute(ATTR_DONE, '1');
