@@ -321,7 +321,7 @@ They are optional built-in userscripts, inspired by Vinegar and Baking Soda, tha
 <br><br>
 <b>Tube Cleaner</b> targets YouTube (including embeds). It lets YouTube create and initialize its own <code>&lt;video&gt;</code> and SABR/MSE stream, then applies native controls and hides YouTube's custom chrome before it can paint. Reusing the same media element preserves buffering and adaptive playback while restoring Picture-in-Picture and background playback. Its small toolbar provides quality and audio-only controls. Ads remain the responsibility of wBlock's content-blocking rules.
 <br><br>
-<b>Player Cleaner</b> targets custom players on other websites (video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome/Mux, and more). It enables native controls immediately. When a safe direct source is available, it removes the custom chrome while retaining the original media element; opaque HLS/DASH/MSE pipelines remain in place and continue using the site's stream machinery. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
+<b>Player Cleaner</b> targets custom players on other websites (video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome/Mux, and more), including shadow-root players such as Archive.org's <code>&lt;play-av&gt;</code>. It enables native controls immediately. When a safe direct source is available in the light DOM, it removes the custom chrome while retaining the original media element; shadow components and opaque HLS/DASH/MSE pipelines remain intact and continue using the site's stream machinery. If a site misbehaves, disable Player Cleaner for that site from the wBlock toolbar.
 </details>
 
 <details>
@@ -340,6 +340,7 @@ Player Cleaner (other sites' custom players), one demo per supported library:
 <br>• video.js / Media Chrome — <a href="https://videojs.org/">videojs.org</a>
 <br>• Plyr — <a href="https://plyr.io/">plyr.io</a>
 <br>• JW Player — <a href="https://developer-tools.jwplayer.com/stream-tester">stream tester</a> and <a href="https://jwplayer.github.io/jwplayer/">demo</a>
+<br>• Archive.org shadow-root JW Player — <a href="https://archive.org/details/gov.ntis.ava15996vnb1/0.theater.hd.splice.avi">FedFlix sample</a>
 <br>• Clappr — <a href="http://clappr.io/">clappr.io</a> and <a href="http://cdn.clappr.io/">cdn.clappr.io</a>
 <br>• MediaElement — <a href="https://www.mediaelementjs.com/">mediaelementjs.com</a>
 <br>• hls.js — <a href="https://hlsjs.video-dev.org/demo/">hls.js demo</a>

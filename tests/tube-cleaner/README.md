@@ -39,14 +39,19 @@ Player Cleaner scenarios:
   `data-src`, a mocked video.js `currentSource()`, a mocked JW Player playlist
   item); each must resolve to the right clean source. Negative cases ensure a
   poster `data-src` and a DASH `.mpd` never replace a working blob/MSE stream.
+- `fixture-player-cleaner-shadow.html` — reproduces Archive.org's `<play-av>`:
+  JW Player and its `<video>` live inside a shadow root. Verifies document-start
+  `attachShadow` capture, one-frame nativeization, in-place pipeline retention,
+  custom-chrome hiding, controls defense, and flat resources after removing and
+  reattaching the shadow host.
 - `fixture-player-cleaner-bare.html` — modern/custom players whose wrapper is
   not a recognized library class (Mux-style or bespoke). Verifies the bare-video
   fallback: a controls-less `<video>` in an unknown wrapper is enhanced in place
   (native controls forced on, source kept), while an ambient `autoplay muted
   loop` video and an already-native video are left untouched.
 - `fixture-player-cleaner-relative.html` — players whose media URL is
-  root-relative (a `<base>` makes it resolve to http(s)), as archive.org's JW
-  Player exposes (`/download/<item>/movie.mp4`). Verifies discovery resolves
+  root-relative (a `<base>` makes it resolve to http(s)), as media APIs commonly
+  expose (`/download/<item>/movie.mp4`). Verifies discovery resolves
   relative URLs from a JW playlist and from `data-src` to absolute before
   swapping in a clean `<video>`.
 - `fixture-player-cleaner-upgrade.html` — a Plyr-style player that exposes only

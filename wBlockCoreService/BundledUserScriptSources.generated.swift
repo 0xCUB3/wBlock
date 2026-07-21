@@ -1316,7 +1316,7 @@ enum BundledUserScriptSources {
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.4.0
+// @version      1.5.0
 // @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
 // @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
 // @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
@@ -1780,12 +1780,31 @@ enum BundledUserScriptSources {
         });
     }
 
+    function hideCustomOverlays(container) {
+        var overlaySelectors = [
+            '.vjs-control-bar', '.vjs-big-play-button', '.vjs-poster',
+            '.jw-controls', '.jw-display-icon-container',
+            '.plyr__controls', '.fp-ui', '.fp-header',
+            '.mejs-controls', '.mejs__controls',
+            '.clappr-media-control',
+            'media-control-bar', 'media-loading-indicator', 'media-poster-image'
+        ];
+        for (var i = 0; i < overlaySelectors.length; i++) {
+            var overlays = container.querySelectorAll(overlaySelectors[i]);
+            for (var j = 0; j < overlays.length; j++) {
+                try { overlays[j].style.display = 'none'; } catch (e) { /* ignore */ }
+            }
+        }
+    }
+
     function enhanceInPlace(container, video, upgradeable) {
         if (video._wblockEnhanced) {
             // A video can first appear as a bare custom player and later be
             // wrapped by a known library. Promote it so source discovery may
-            // still clean the known wrapper when its API/data arrives.
+            // still clean the known wrapper when its API/data arrives. Re-hide
+            // chrome a framework may have rendered after initial cleanup.
             if (upgradeable) { video._wblockUpgradeable = true; }
+            hideCustomOverlays(container);
             return;
         }
         video._wblockEnhanced = true;
@@ -1807,20 +1826,7 @@ enum BundledUserScriptSources {
 
         setupAutoPiP(video);
 
-        var overlaySelectors = [
-            '.vjs-control-bar', '.vjs-big-play-button', '.vjs-poster',
-            '.jw-controls', '.jw-display-icon-container',
-            '.plyr__controls', '.fp-ui', '.fp-header',
-            '.mejs-controls', '.mejs__controls',
-            '.clappr-media-control',
-            'media-control-bar', 'media-loading-indicator', 'media-poster-image'
-        ];
-        for (var i = 0; i < overlaySelectors.length; i++) {
-            var overlays = container.querySelectorAll(overlaySelectors[i]);
-            for (var j = 0; j < overlays.length; j++) {
-                try { overlays[j].style.display = 'none'; } catch (e) { /* ignore */ }
-            }
-        }
+        hideCustomOverlays(container);
 
         // Keep controls forced on
         guardNativeControls(video);
@@ -1900,7 +1906,11 @@ enum BundledUserScriptSources {
 
     function replacePlayer(container, allowExternalDiscovery) {
         var video = container.querySelector ? container.querySelector('video') : null;
-        if (!video || video._wblockCleaned) { return; }
+        if (!video) { return; }
+        if (video._wblockCleaned) {
+            hideCustomOverlays(container);
+            return;
+        }
 
         // Native controls are the critical path. Apply them before querying
         // player APIs or walking data attributes so the visible switch happens
@@ -1909,6 +1919,14 @@ enum BundledUserScriptSources {
         video.setAttribute(ATTR_DONE, '1');
         container.setAttribute(ATTR_DONE, '1');
         enhanceInPlace(container, video, true);
+
+        // A custom element owns its shadow tree and may tear itself down if its
+        // internal structure is removed (Archive.org's <play-av> does exactly
+        // that). Nativeize shadow players in place and preserve their pipeline;
+        // structural cleanup is only safe in the document's light DOM.
+        try {
+            if (container.getRootNode && container.getRootNode() !== document) { return; }
+        } catch (e) { /* continue with the conservative light-DOM path */ }
 
         // During parser construction, never delete the wrapper DOM before the
         // site's own setup script has run. Native controls and hidden overlays
@@ -2025,63 +2043,112 @@ enum BundledUserScriptSources {
         }
     }
 
-    function observe() {
-        if (typeof MutationObserver === 'undefined') { return; }
-        var observer = new MutationObserver(function (records) {
-            var roots = [];
-            var detachedVideos = [];
-            var sourceRelevant = false;
-            function addRoot(node) {
-                if (!node || (node.nodeType !== 1 && node.nodeType !== 9)) { return; }
-                if (roots.indexOf(node) === -1) { roots.push(node); }
-            }
-            function collectVideos(node) {
-                if (!node || node.nodeType !== 1) { return; }
-                if (node.tagName === 'VIDEO') { detachedVideos.push(node); }
-                var videos = node.querySelectorAll ? node.querySelectorAll('video') : [];
-                for (var v = 0; v < videos.length; v++) { detachedVideos.push(videos[v]); }
-            }
-            function hasSourceSignal(node) {
-                if (!node || node.nodeType !== 1) { return false; }
-                try {
-                    if (node.tagName === 'VIDEO' || node.tagName === 'SOURCE' ||
-                        node.matches('[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]')) {
-                        return true;
-                    }
-                    return !!node.querySelector('video,source,[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]');
-                } catch (e) { return false; }
-            }
-            for (var i = 0; i < records.length; i++) {
-                var record = records[i];
-                addRoot(record.target);
-                if (record.type === 'attributes' && record.attributeName !== 'class') {
-                    sourceRelevant = true;
-                }
-                for (var j = 0; j < record.addedNodes.length; j++) {
-                    addRoot(record.addedNodes[j]);
-                    if (hasSourceSignal(record.addedNodes[j])) { sourceRelevant = true; }
-                }
-                for (var k = 0; k < record.removedNodes.length; k++) {
-                    collectVideos(record.removedNodes[k]);
-                }
-            }
-            // MutationObserver callbacks run at the microtask checkpoint before
-            // rendering. Process affected roots now—never add a timer/debounce—so
-            // custom chrome cannot survive into the next paint. Only source/video
-            // changes after parsing may trigger structural source discovery;
-            // ordinary player UI churn is nativeization-only.
-            var mayDiscover = sourceRelevant && document.readyState !== 'loading';
-            for (var r = 0; r < roots.length; r++) { scan(roots[r], mayDiscover); }
-            // DOM moves report a removal and addition in the same batch. Release
-            // resources only for videos that remain detached after processing.
-            for (var d = 0; d < detachedVideos.length; d++) {
-                if (!detachedVideos[d].isConnected) {
-                    releaseVideoResources(detachedVideos[d]);
-                }
-            }
-        });
+    var observedRoots = [];
+    var observedRootObservers = [];
+
+    function collectVideos(node, output) {
+        if (!node || !node.querySelectorAll) { return; }
+        if (node.nodeType === 1 && node.tagName === 'VIDEO') { output.push(node); }
+        var videos = node.querySelectorAll('video');
+        for (var i = 0; i < videos.length; i++) { output.push(videos[i]); }
+    }
+
+    function discoverShadowRoots(node) {
+        if (!node || !node.querySelectorAll) { return; }
+        function inspect(element) {
+            try {
+                if (element.shadowRoot) { observeTreeRoot(element.shadowRoot); }
+            } catch (e) { /* closed roots are captured by attachShadow instead */ }
+        }
+        if (node.nodeType === 1) { inspect(node); }
+        var elements = node.querySelectorAll('*');
+        for (var i = 0; i < elements.length; i++) { inspect(elements[i]); }
+    }
+
+    function disconnectTreeRoot(root) {
+        var index = observedRoots.indexOf(root);
+        if (index === -1 || root === document) { return; }
+        try { observedRootObservers[index].disconnect(); } catch (e) { /* ignore */ }
         try {
-            observer.observe(document, {
+            root.removeEventListener('loadedmetadata', onMediaSourceReady, true);
+            root.removeEventListener('durationchange', onMediaSourceReady, true);
+        } catch (e) { /* ignore */ }
+        observedRoots.splice(index, 1);
+        observedRootObservers.splice(index, 1);
+    }
+
+    function releaseDetachedShadowRoots() {
+        // Closed roots are not reachable through host.shadowRoot, so use the
+        // retained root list. Disconnect and release them when their host leaves
+        // the document; re-insertion of an open root is rediscovered normally.
+        for (var i = observedRoots.length - 1; i >= 0; i--) {
+            var root = observedRoots[i];
+            if (root === document || !root.host || root.host.isConnected) { continue; }
+            var videos = [];
+            collectVideos(root, videos);
+            for (var v = 0; v < videos.length; v++) { releaseVideoResources(videos[v]); }
+            disconnectTreeRoot(root);
+        }
+    }
+
+    function hasSourceSignal(node) {
+        if (!node || !node.querySelectorAll) { return false; }
+        try {
+            if (node.nodeType === 1 &&
+                (node.tagName === 'VIDEO' || node.tagName === 'SOURCE' ||
+                 node.matches('[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]'))) {
+                return true;
+            }
+            return !!node.querySelector('video,source,[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]');
+        } catch (e) { return false; }
+    }
+
+    function handleMutations(records) {
+        var roots = [];
+        var detachedVideos = [];
+        var sourceRelevant = false;
+        function addRoot(node) {
+            if (!node || (node.nodeType !== 1 && node.nodeType !== 9 && node.nodeType !== 11)) { return; }
+            if (roots.indexOf(node) === -1) { roots.push(node); }
+        }
+        for (var i = 0; i < records.length; i++) {
+            var record = records[i];
+            addRoot(record.target);
+            if (record.type === 'attributes' && record.attributeName !== 'class') {
+                sourceRelevant = true;
+            }
+            for (var j = 0; j < record.addedNodes.length; j++) {
+                var added = record.addedNodes[j];
+                addRoot(added);
+                discoverShadowRoots(added);
+                if (hasSourceSignal(added)) { sourceRelevant = true; }
+            }
+            for (var k = 0; k < record.removedNodes.length; k++) {
+                collectVideos(record.removedNodes[k], detachedVideos);
+            }
+        }
+        // MutationObserver callbacks run at the microtask checkpoint before
+        // rendering. Process affected roots now—never add a timer/debounce—so
+        // custom chrome cannot survive into the next paint. Only source/video
+        // changes after parsing may trigger structural source discovery;
+        // ordinary player UI churn is nativeization-only.
+        var mayDiscover = sourceRelevant && document.readyState !== 'loading';
+        for (var r = 0; r < roots.length; r++) { scan(roots[r], mayDiscover); }
+        // DOM moves report a removal and addition in the same batch. Release
+        // resources only for videos that remain detached after processing.
+        for (var d = 0; d < detachedVideos.length; d++) {
+            if (!detachedVideos[d].isConnected) {
+                releaseVideoResources(detachedVideos[d]);
+            }
+        }
+        releaseDetachedShadowRoots();
+    }
+
+    function observeTreeRoot(root) {
+        if (!root || observedRoots.indexOf(root) !== -1 || typeof MutationObserver === 'undefined') { return; }
+        var observer = new MutationObserver(handleMutations);
+        try {
+            observer.observe(root, {
                 childList: true,
                 subtree: true,
                 attributes: true,
@@ -2090,30 +2157,50 @@ enum BundledUserScriptSources {
                     'data-video', 'data-source', 'data-url'
                 ]
             });
+        } catch (e) { return; }
+        observedRoots.push(root);
+        observedRootObservers.push(observer);
+        try {
+            root.addEventListener('loadedmetadata', onMediaSourceReady, true);
+            root.addEventListener('durationchange', onMediaSourceReady, true);
         } catch (e) { /* ignore */ }
+        discoverShadowRoots(root);
+        scan(root, document.readyState !== 'loading');
+    }
+
+    function patchAttachShadow() {
+        try {
+            var original = Element.prototype.attachShadow;
+            if (!original || original._wblockPlayerCleanerPatched) { return; }
+            function patchedAttachShadow() {
+                var root = original.apply(this, arguments);
+                observeTreeRoot(root);
+                return root;
+            }
+            patchedAttachShadow._wblockPlayerCleanerPatched = true;
+            Element.prototype.attachShadow = patchedAttachShadow;
+        } catch (e) { /* fall back to discovering open roots from DOM mutations */ }
+    }
+
+    function scanAllRoots(allowExternalDiscovery) {
+        var roots = observedRoots.slice();
+        for (var i = 0; i < roots.length; i++) { scan(roots[i], allowExternalDiscovery); }
     }
 
     function boot() {
-        // Observe first so a player mounted while the initial scan runs cannot
-        // slip through. Observing Document works even before <html> exists.
-        observe();
-        scan(document, document.readyState !== 'loading');
+        // Patch first so a custom element attaching a root during parser startup
+        // cannot outrun observation. Document and every discovered shadow root
+        // then share the same pre-paint mutation/source lifecycle.
+        patchAttachShadow();
+        observeTreeRoot(document);
     }
 
-    // Media readiness events do not bubble, so use capture. loadedmetadata and
-    // durationchange indicate the media pipeline is initialized; loadstart is
-    // intentionally excluded because it can fire before the site's setup script.
-    try {
-        document.addEventListener('loadedmetadata', onMediaSourceReady, true);
-        document.addEventListener('durationchange', onMediaSourceReady, true);
-    } catch (e) { /* ignore */ }
-
     // Start at document-start. DOMContentLoaded/load scans are recovery passes
-    // only; normal players are handled by the pre-paint MutationObserver.
+    // only; normal players are handled by the pre-paint MutationObservers.
     boot();
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { scan(document, true); }, { once: true });
-        window.addEventListener('load', function () { scan(document, true); }, { once: true });
+        document.addEventListener('DOMContentLoaded', function () { scanAllRoots(true); }, { once: true });
+        window.addEventListener('load', function () { scanAllRoots(true); }, { once: true });
     }
 })();
 """###

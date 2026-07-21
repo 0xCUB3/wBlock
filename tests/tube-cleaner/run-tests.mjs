@@ -30,6 +30,7 @@ const FIXTURE_TUBE_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-tube-clean
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
+const FIXTURE_PLAYER_SHADOW_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-shadow.html')).href;
 const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
 const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-relative.html')).href;
 const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-upgrade.html')).href;
@@ -568,6 +569,80 @@ async function qualityUISelectionCheck(page, scenario) {
     }).map(([id]) => id);
     return { pass: bad.length === 0, detail: bad.length ? `duplicated: ${bad.join(',')}` : '5/5 still single' };
   }, { arg: cases });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Player Cleaner: Archive.org-style shadow-root JW Player ------------
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (shadow-root JW Player)', {
+    fixture: FIXTURE_PLAYER_SHADOW_URL,
+    scriptSource: resourceCounterPatch + '\n' + playerUserscript,
+    readySignal: 'test-play-av',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-shadow';
+
+  await check(page, S, 'nativeizes shadow video before DOMContentLoaded', () => {
+    const t = window.__wblockShadowTiming;
+    const pass = !!(t && t.nativeAt > 0 && t.domContentLoadedAt > 0 && t.nativeAt <= t.domContentLoadedAt);
+    return { pass, detail: t ? `native=${t.nativeAt.toFixed(1)}ms dcl=${t.domContentLoadedAt.toFixed(1)}ms` : 'no timing' };
+  });
+
+  await check(page, S, 'nativeizes shadow video within one frame', () => {
+    const t = window.__wblockShadowTiming;
+    const elapsed = t && t.nativeAt ? t.nativeAt - t.createdAt : Infinity;
+    return { pass: elapsed >= 0 && elapsed < 50,
+      detail: `latency=${Number.isFinite(elapsed) ? elapsed.toFixed(1) : 'n/a'}ms` };
+  });
+
+  await check(page, S, 'retains Archive-style media element and absolute source', () => {
+    const root = document.querySelector('test-play-av').shadowRoot;
+    const videos = root.querySelectorAll('video');
+    const v = videos[0];
+    const retained = videos.length === 1 && v.hasAttribute('data-test-original');
+    return { pass: retained && v.src === 'https://example.com/download/archive/movie.mp4',
+      detail: `count=${videos.length} retained=${retained} src=${v.src}` };
+  });
+
+  await check(page, S, 'forces native controls inside shadow root', () => {
+    const v = document.querySelector('test-play-av').shadowRoot.querySelector('video');
+    return { pass: !!(v && v.controls && v.hasAttribute('controls') &&
+      v.hasAttribute('data-wblock-player-cleaner')) };
+  });
+
+  await check(page, S, 'preserves shadow component but hides JW chrome', () => {
+    const root = document.querySelector('test-play-av').shadowRoot;
+    const chrome = root.querySelector('.jw-controls');
+    return { pass: !!(chrome && chrome.style.display === 'none'),
+      detail: `present=${!!chrome} display=${chrome && chrome.style.display}` };
+  });
+
+  await page.evaluate(() => {
+    document.querySelector('test-play-av').shadowRoot.querySelector('video').removeAttribute('controls');
+  });
+  await check(page, S, 'shadow controls survive player removal attempts', () => {
+    const v = document.querySelector('test-play-av').shadowRoot.querySelector('video');
+    return { pass: !!(v && v.hasAttribute('controls')) };
+  });
+
+  const baseline = await page.evaluate(() => ({ ...window.__wblockResourceCounters }));
+  await page.evaluate(() => {
+    const host = document.querySelector('test-play-av');
+    host.remove();
+    setTimeout(() => document.body.appendChild(host), 50);
+  });
+  await page.waitForTimeout(200);
+  const after = await page.evaluate(() => ({ ...window.__wblockResourceCounters }));
+  for (const key of ['listeners', 'intervals', 'mutationObservers', 'intersectionObservers']) {
+    record(S, `${key} stay flat after shadow host reattachment`, after[key] === baseline[key],
+      `baseline=${baseline[key]} after=${after[key]}`);
+  }
+  await check(page, S, 'reattached shadow video is native again', () => {
+    const v = document.querySelector('test-play-av').shadowRoot.querySelector('video');
+    return { pass: !!(v && v.controls && v.hasAttribute('data-wblock-player-cleaner')) };
+  });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
