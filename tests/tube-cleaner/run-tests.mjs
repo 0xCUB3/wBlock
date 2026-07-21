@@ -18,10 +18,13 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = join(__dirname, '..', '..', 'wBlockCoreService', 'BundledUserscripts', 'tube-cleaner.user.js');
+const PLAYER_SCRIPT_PATH = join(__dirname, '..', '..', 'wBlockCoreService', 'BundledUserscripts', 'player-cleaner.user.js');
 const FIXTURE_URL = pathToFileURL(join(__dirname, 'fixture.html')).href;
 const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.html')).href;
+const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
+const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
 const filter = (process.argv.find(a => a.startsWith('--filter=')) || '').split('=')[1] || '';
 
 const results = [];
@@ -54,7 +57,7 @@ async function waitForTransform(page) {
   await page.waitForSelector('.wblock-tc-toolbar', { timeout: 10000 }).catch(() => {});
 }
 
-async function runScenario(name, { device, fixture, ua, hasTouch, viewport }) {
+async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scriptSource, readySignal }) {
   console.log(`\n=== Scenario: ${name} ===`);
   const browser = await webkit.launch();
   const ctxOpts = {};
@@ -66,13 +69,14 @@ async function runScenario(name, { device, fixture, ua, hasTouch, viewport }) {
   const page = await context.newPage();
 
   // Inject the real userscript at document-start in the page world.
-  await page.addInitScript(userscript);
+  await page.addInitScript(scriptSource || userscript);
 
   const pageErrors = [];
   page.on('pageerror', e => pageErrors.push(e.message));
 
   await page.goto(fixture, { waitUntil: 'domcontentloaded' });
-  await waitForTransform(page);
+  if (readySignal) await page.waitForSelector(readySignal, { timeout: 10000 }).catch(() => {});
+  else await waitForTransform(page);
 
   return { browser, context, page, pageErrors };
 }
@@ -202,6 +206,45 @@ async function audioToggleCheck(page, scenario) {
     return { pass: ok, detail: `playsInline=${v.playsInline}, attr=${v.hasAttribute('playsinline')}` };
   });
   record('iPad-desktop', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 4: Player Cleaner on a custom (video.js) player ------------
+// Verifies the ported controls guard: Player Cleaner enhances the existing
+// <video> in place (opaque blob source) and must keep native controls on even
+// though the custom player keeps stripping them.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (custom video.js player)', {
+    fixture: FIXTURE_PLAYER_URL,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+
+  await check(page, 'player-cleaner', 'forces video.controls === true', () => {
+    const v = document.querySelector('.video-js video');
+    return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
+  });
+
+  await check(page, 'player-cleaner', 'sets playsinline', () => {
+    const v = document.querySelector('.video-js video');
+    return { pass: !!(v && (v.playsInline || v.hasAttribute('playsinline'))) };
+  });
+
+  await check(page, 'player-cleaner', 'hides custom control overlay', () => {
+    const bar = document.querySelector('.vjs-control-bar');
+    return { pass: !!(bar && bar.style.display === 'none'), detail: bar ? `display=${bar.style.display}` : 'no bar' };
+  });
+
+  await page.waitForTimeout(4200); // let several fightControls rounds run
+  await check(page, 'player-cleaner', 'native controls SURVIVE player turning them off', () => {
+    const v = document.querySelector('.video-js video');
+    if (!v) return { pass: false, detail: 'no video' };
+    const hasAttr = v.hasAttribute('controls');
+    return { pass: hasAttr, detail: `hasAttribute('controls')=${hasAttr} (getter=${v.controls})` };
+  }, { timeout: 1500, interval: 500 });
+
+  record('player-cleaner', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
 
