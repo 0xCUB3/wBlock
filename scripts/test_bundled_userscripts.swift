@@ -89,14 +89,15 @@ assertMetadata(tubeSource, "// @version      4.0.0", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
 
-// Player Cleaner: all sites except YouTube, document-idle, page world.
+// Player Cleaner: all sites except YouTube, document-start, page world.
 assertMetadata(playerSource, "// @name         Player Cleaner", "Player Cleaner")
 assertMetadata(playerSource, "// @match        http://*/*", "Player Cleaner")
 assertMetadata(playerSource, "// @match        https://*/*", "Player Cleaner")
 assertMetadata(playerSource, "// @exclude      https://www.youtube.com/*", "Player Cleaner")
-assertMetadata(playerSource, "// @run-at       document-idle", "Player Cleaner")
+assertMetadata(playerSource, "// @run-at       document-start", "Player Cleaner")
 assertMetadata(playerSource, "// @inject-into  page", "Player Cleaner")
 assertMetadata(playerSource, "// @grant        none", "Player Cleaner")
+assertMetadata(playerSource, "// @version      1.4.0", "Player Cleaner")
 assertMetadata(playerSource, "// @description:de", "Player Cleaner")
 
 // Feature coverage: the advertised Vinegar/Baking Soda behaviors.

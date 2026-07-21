@@ -32,6 +32,7 @@ const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-play
 const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
 const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-relative.html')).href;
 const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-upgrade.html')).href;
+const FIXTURE_PLAYER_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-early.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -260,9 +261,9 @@ async function audioToggleCheck(page, scenario) {
 }
 
 // ---- Scenario 5: Player Cleaner clean-source replacement path ------------
-// The headline feature: when the underlying media source is a clean http(s)
-// URL, Player Cleaner builds a brand-new native <video> (copying poster and
-// caption tracks), drops the custom chrome, and defends native controls.
+// When the underlying media source is a clean http(s) URL, Player Cleaner keeps
+// the original media element (and therefore its buffered state/poster/tracks),
+// drops the custom chrome, and defends native controls.
 {
   const { browser, page, pageErrors } = await runScenario('Player Cleaner (clean source replacement)', {
     fixture: FIXTURE_PLAYER_REPLACE_URL,
@@ -272,16 +273,19 @@ async function audioToggleCheck(page, scenario) {
   });
   const S = 'player-cleaner-replace';
 
-  await check(page, S, 'swaps in a single clean <video>', () => {
+  await check(page, S, 'keeps a single original <video>', () => {
     const c = document.getElementById('player-replace');
-    const vids = c ? c.querySelectorAll('video').length : 0;
-    return { pass: vids === 1, detail: `${vids} video(s) in container` };
+    const videos = c ? c.querySelectorAll('video') : [];
+    const retained = videos.length === 1 && videos[0].hasAttribute('data-test-original');
+    return { pass: retained, detail: `${videos.length} video(s), retained=${retained}` };
   });
 
-  await check(page, S, 'resolves and applies the clean source', () => {
+  await check(page, S, 'resolves and retains the clean source', () => {
     const v = document.querySelector('#player-replace video');
-    const ok = !!(v && v.src === 'https://example.com/media/movie.mp4');
-    return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
+    const source = v && (v.currentSrc || v.getAttribute('src') ||
+      (v.querySelector('source') && v.querySelector('source').src));
+    const ok = source === 'https://example.com/media/movie.mp4';
+    return { pass: ok, detail: v ? `src=${source || ''}` : 'no video' };
   });
 
   await check(page, S, 'forces video.controls === true', () => {
@@ -294,13 +298,13 @@ async function audioToggleCheck(page, scenario) {
     return { pass: !!(v && (v.playsInline || v.hasAttribute('playsinline'))) };
   });
 
-  await check(page, S, 'copies the poster attribute', () => {
+  await check(page, S, 'retains the poster attribute', () => {
     const v = document.querySelector('#player-replace video');
     const p = v ? v.getAttribute('poster') : null;
     return { pass: p === 'https://example.com/poster.jpg', detail: `poster=${p}` };
   });
 
-  await check(page, S, 'carries over caption <track>', () => {
+  await check(page, S, 'retains the caption <track>', () => {
     const v = document.querySelector('#player-replace video');
     const t = v ? v.querySelector('track') : null;
     return { pass: !!t, detail: t ? `track src=${t.getAttribute('src')}` : 'no track' };
@@ -331,8 +335,8 @@ async function audioToggleCheck(page, scenario) {
     return { pass: !!(v && v._wblockAutoPiPHooked === true) };
   });
 
-  // Idempotency: boot rescans at 800ms/2000ms and a MutationObserver keeps
-  // scanning. The container must never gain a second video.
+  // Idempotency: recovery scans and the MutationObserver must never add a
+  // second video.
   await page.waitForTimeout(2600);
   await check(page, S, 'stays a single video after rescans (idempotent)', () => {
     const c = document.getElementById('player-replace');
@@ -376,8 +380,10 @@ async function audioToggleCheck(page, scenario) {
     await check(page, S, `resolves source via ${how}`, ({ id, expected }) => {
       const c = document.getElementById(id);
       const v = c ? c.querySelector('video') : null;
-      const ok = !!(v && v.src === expected);
-      return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
+      const source = v && (v.currentSrc || v.getAttribute('src') ||
+        (v.querySelector('source') && v.querySelector('source').src));
+      const ok = source === expected;
+      return { pass: ok, detail: v ? `src=${source || ''}` : 'no video' };
     }, { arg: { id, expected } });
   }
 
@@ -521,9 +527,9 @@ async function audioToggleCheck(page, scenario) {
 
 // ---- Scenario 8: Player Cleaner upgrade on loadedmetadata ----------------
 // A Plyr-style player exposes only an opaque blob: src at first scan, so Player
-// Cleaner can only enhance it in place (and stamps ATTR_DONE, which blocks every
-// later rescan). Once metadata loads and a clean src appears, the loadedmetadata
-// capture listener must upgrade the enhanced video to a full native replacement.
+// Cleaner can only enhance it in place. Its mock player API appears later without
+// mutating the DOM. loadedmetadata must trigger source discovery and structural
+// cleanup while retaining the already-buffering media element.
 {
   const { browser, page, pageErrors } = await runScenario('Player Cleaner (upgrade on loadedmetadata)', {
     fixture: FIXTURE_PLAYER_UPGRADE_URL,
@@ -542,40 +548,44 @@ async function audioToggleCheck(page, scenario) {
     return { pass: enhanced && notReplaced, detail: `controls=${v.controls} src=${v.src}` };
   });
 
-  // Tag the original element so we can tell it apart from the fresh replacement.
+  // Tag the original element, then wait until all boot recovery events have
+  // passed before exposing a clean source only through the mocked player API.
+  await page.waitForLoadState('load');
   await page.evaluate(() => {
     document.querySelector('#player-upgrade video').setAttribute('data-test-original', '1');
+    window.jwplayer = function (id) {
+      if (id !== 'player-upgrade') return null;
+      return { getPlaylistItem: function () {
+        return { file: 'https://example.com/media/movie.mp4' };
+      } };
+    };
+  });
+  await page.waitForTimeout(700);
+  await check(page, S, 'API availability alone does not require polling', () => {
+    const c = document.getElementById('player-upgrade');
+    const v = c && c.querySelector('video');
+    const custom = c && c.querySelector('.plyr__controls');
+    return { pass: !!(v && v.src.startsWith('blob:') && custom),
+      detail: v ? `src=${v.src} custom=${!!custom}` : 'no video' };
   });
 
-  // Negative control: a clean src alone must NOT trigger replacement, because
-  // ATTR_DONE blocks rescans. Only loadedmetadata may upgrade.
-  await page.evaluate(() => {
-    const v = document.querySelector('#player-upgrade video');
-    v.setAttribute('src', 'https://example.com/media/movie.mp4');
-  });
-  await page.waitForTimeout(1500); // past the 800ms rescan + 500ms observer debounce
-  await check(page, S, 'clean src alone does NOT replace (ATTR_DONE blocks rescans)', () => {
-    const v = document.querySelector('#player-upgrade video');
-    const stillOriginal = !!(v && v.hasAttribute('data-test-original'));
-    return { pass: stillOriginal, detail: stillOriginal ? 'still the enhanced original' : 'was replaced early' };
-  });
-
-  // Fire loadedmetadata -> the upgrade path should swap in a clean native video.
+  // Fire loadedmetadata -> the event-driven upgrade should discover the API
+  // source, remove custom chrome, and keep the original media element.
   await page.evaluate(() => {
     const v = document.querySelector('#player-upgrade video');
     v.dispatchEvent(new Event('loadedmetadata', { bubbles: false }));
   });
 
-  await check(page, S, 'upgrades to a fresh native <video> on loadedmetadata', () => {
+  await check(page, S, 'upgrades the original <video> on loadedmetadata', () => {
     const c = document.getElementById('player-upgrade');
     const v = c ? c.querySelector('video') : null;
     if (!v) return { pass: false, detail: 'no video' };
-    const fresh = !v.hasAttribute('data-test-original');
+    const retained = v.hasAttribute('data-test-original');
     const clean = v.src === 'https://example.com/media/movie.mp4';
-    return { pass: fresh && clean, detail: `fresh=${fresh} src=${v.src}` };
+    return { pass: retained && clean, detail: `retained=${retained} src=${v.src}` };
   });
 
-  await check(page, S, 'replacement has native controls + copied poster', () => {
+  await check(page, S, 'cleaned video has native controls + retained poster', () => {
     const v = document.querySelector('#player-upgrade video');
     const ok = !!(v && v.controls === true && v.getAttribute('poster') === 'https://example.com/poster.jpg');
     return { pass: ok, detail: v ? `controls=${v.controls} poster=${v.getAttribute('poster')}` : 'no video' };
@@ -597,7 +607,43 @@ async function audioToggleCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 9: production injector starts before <html> exists --------
+// ---- Scenario 9: Player Cleaner transforms before DOMContentLoaded -------
+// The player is created by a <head> script. A true document-start cleaner must
+// observe and nativeize it at the mutation microtask checkpoint, before the
+// parser reaches DOMContentLoaded and without a timer/debounce.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (pre-paint timing)', {
+    fixture: FIXTURE_PLAYER_EARLY_URL,
+    scriptSource: playerUserscript,
+    readySignal: '#early-player[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-timing';
+
+  await check(page, S, 'nativeizes before DOMContentLoaded', () => {
+    const t = window.__wblockEarlyPlayerTiming;
+    const pass = !!(t && t.nativeAt > 0 && t.domContentLoadedAt > 0 && t.nativeAt <= t.domContentLoadedAt);
+    return { pass, detail: t ? `native=${t.nativeAt.toFixed(1)}ms dcl=${t.domContentLoadedAt.toFixed(1)}ms` : 'no timing' };
+  });
+
+  await check(page, S, 'nativeizes within one frame of insertion', () => {
+    const t = window.__wblockEarlyPlayerTiming;
+    const elapsed = t && t.nativeAt ? t.nativeAt - t.createdAt : Infinity;
+    return { pass: elapsed >= 0 && elapsed < 50, detail: `latency=${Number.isFinite(elapsed) ? elapsed.toFixed(1) : 'n/a'}ms` };
+  });
+
+  await check(page, S, 'shows native controls with custom chrome removed', () => {
+    const c = document.getElementById('early-player');
+    const v = c && c.querySelector('video');
+    const custom = c && c.querySelector('.vjs-control-bar');
+    return { pass: !!(v && v.controls && !custom), detail: `controls=${!!(v && v.controls)} custom=${!!custom}` };
+  });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 10: production injector starts before <html> exists -------
 // Playwright init scripts run at Safari's true document_start: readyState is
 // "loading" and document.documentElement is null. The production injector must
 // start native lookup immediately, wait only for the parser to create <html>,

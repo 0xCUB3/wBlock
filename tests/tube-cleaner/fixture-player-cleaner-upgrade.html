@@ -14,11 +14,10 @@
 <body>
   <!-- Mimics Plyr: at first scan the <video> exposes only an opaque blob: src
        (no <source> children, metadata not yet loaded), so Player Cleaner cannot
-       resolve a clean URL and can only enhance it in place. The test then swaps
-       in a clean src and fires loadedmetadata; Player Cleaner must UPGRADE the
-       merely-enhanced video to a full native replacement. This is the plyr.io
-       "slow to switch to native" case: replacement must key off loadedmetadata,
-       not wait for a later DOM mutation. -->
+       resolve a clean URL and can only enhance it in place. The test later makes
+       a clean source available through a mock player API without mutating the DOM,
+       then fires loadedmetadata. Player Cleaner must clean the wrapper while
+       retaining the original media element—no polling and no second media load. -->
   <div class="plyr" id="player-upgrade">
     <video src="blob:https://example.com/00000000-0000-0000-0000-000000000000"
            poster="https://example.com/poster.jpg" preload="metadata"></video>

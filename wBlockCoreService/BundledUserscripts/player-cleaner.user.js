@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
-// @version      1.3.0
+// @version      1.4.0
 // @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
 // @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
 // @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
@@ -19,7 +19,7 @@
 // @exclude      https://m.youtube.com/*
 // @exclude      https://music.youtube.com/*
 // @exclude      https://www.youtube-nocookie.com/*
-// @run-at       document-idle
+// @run-at       document-start
 // @inject-into  page
 // @grant        none
 // ==/UserScript==
@@ -211,8 +211,15 @@
         '[data-clappr-player]',      // Clappr
         '.hlsjs',                    // hls.js wrappers
         '.fluid_video_wrapper',      // Fluid Player
-        '.fp-player'                 // Flowplayer (inner)
+        '.fp-player',                // Flowplayer (inner)
+        'mux-player',                // Mux Player custom element
+        'media-controller',          // Media Chrome
+        'media-theme',               // Media Chrome generic theme
+        'media-theme-youtube',       // Media Chrome YouTube theme
+        '.media-player',             // Media Chrome / modern wrappers
+        '.media-default-skin'        // videojs.org's modern demo wrapper
     ];
+    var PLAYER_SELECTOR = PLAYER_SELECTORS.join(',');
 
     function isHttpUrl(value) {
         return typeof value === 'string' && /^https?:\/\//i.test(value);
@@ -321,51 +328,9 @@
         return null;
     }
 
-    function discoverSource(container, video) {
-        return sourceFromVideoElement(video) ||
-            sourceFromVideojs(container) ||
-            sourceFromJwPlayer(container) ||
-            sourceFromDom(container) ||
-            null;
-    }
-
     // ------------------------------------------------------------------
     // Replacement
     // ------------------------------------------------------------------
-
-    function copyRelevantAttributes(fromVideo, toVideo) {
-        var attrs = ['poster', 'title', 'preload', 'loop', 'muted', 'autoplay'];
-        for (var i = 0; i < attrs.length; i++) {
-            var name = attrs[i];
-            var value = fromVideo.getAttribute(name);
-            if (value !== null) {
-                try { toVideo.setAttribute(name, value); } catch (e) { /* ignore */ }
-            }
-        }
-        // Carry over <track> elements (captions/subtitles).
-        try {
-            var tracks = fromVideo.getElementsByTagName('track');
-            for (var t = 0; t < tracks.length; t++) {
-                toVideo.appendChild(tracks[t].cloneNode(true));
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    function buildCleanVideo(src, originalVideo) {
-        var video = document.createElement('video');
-        video.controls = true;
-        video.playsInline = true;
-        video.setAttribute('playsinline', '');
-        video.setAttribute('webkit-playsinline', '');
-        video.removeAttribute('disablepictureinpicture');
-        video.disablePictureInPicture = false;
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.background = '#000';
-        if (originalVideo) { copyRelevantAttributes(originalVideo, video); }
-        if (src) { video.src = src; }
-        return video;
-    }
 
     function normalizeContainer(raw) {
         // Some selectors match inner elements; climb to the outermost player
@@ -373,7 +338,9 @@
         var container = raw;
         var wrapperSelectors = ['.video-js', '.jwplayer', '.jw-wrapper', '.plyr',
             '.flowplayer', '.mejs-container', '.mejs__container', '.clappr',
-            '[data-clappr-player]', '.fluid_video_wrapper'];
+            '[data-clappr-player]', '.fluid_video_wrapper', 'mux-player',
+            'media-controller', 'media-theme', 'media-theme-youtube',
+            '.media-player', '.media-default-skin'];
         for (var i = 0; i < wrapperSelectors.length; i++) {
             var ancestor = container.closest ? container.closest(wrapperSelectors[i]) : null;
             if (ancestor) { container = ancestor; }
@@ -385,23 +352,15 @@
         if (video._wblockControlsPatched) return;
         video._wblockControlsPatched = true;
         video.controls = true;
-        try {
-            Object.defineProperty(video, 'controls', {
-                get: function () { return true; },
-                set: function (v) { /* ignore */ },
-                configurable: false
-            });
-        } catch (e) { /* ignore */ }
         video.setAttribute('controls', '');
     }
 
-    // WebKit renders native controls from the `controls` CONTENT ATTRIBUTE, not
-    // the JavaScript property. forceNativeControls() shadows the property so
-    // `video.controls = false` is ignored, but a player can still strip the
-    // attribute via removeAttribute(), hiding the controls. A `!video.controls`
-    // guard never fires because the shadowed getter always returns true. So we
-    // defend the attribute itself: a MutationObserver restores it whenever it is
-    // removed, with a polling fallback.
+    // WebKit renders native controls from the `controls` content attribute.
+    // Do not shadow the media element's controls property with a non-configurable
+    // instance descriptor: doing that before WebKit initializes its native media
+    // controls can break the controls implementation itself. Observe the content
+    // attribute instead; MutationObserver restores it at the pre-paint microtask
+    // checkpoint whenever a custom player removes it.
     function guardNativeControls(video) {
         if (!video || video._wblockControlsGuarded) return;
         video._wblockControlsGuarded = true;
@@ -422,7 +381,13 @@
     }
 
     function enhanceInPlace(container, video, upgradeable) {
-        if (video._wblockEnhanced) { return; }
+        if (video._wblockEnhanced) {
+            // A video can first appear as a bare custom player and later be
+            // wrapped by a known library. Promote it so source discovery may
+            // still clean the known wrapper when its API/data arrives.
+            if (upgradeable) { video._wblockUpgradeable = true; }
+            return;
+        }
         video._wblockEnhanced = true;
         // Upgradeable videos get one more replacement chance once their metadata
         // (and therefore currentSrc) has loaded; see onLoadedMetadata. Bare
@@ -447,7 +412,8 @@
             '.jw-controls', '.jw-display-icon-container',
             '.plyr__controls', '.fp-ui', '.fp-header',
             '.mejs-controls', '.mejs__controls',
-            '.clappr-media-control'
+            '.clappr-media-control',
+            'media-control-bar', 'media-loading-indicator', 'media-poster-image'
         ];
         for (var i = 0; i < overlaySelectors.length; i++) {
             var overlays = container.querySelectorAll(overlaySelectors[i]);
@@ -460,55 +426,118 @@
         guardNativeControls(video);
     }
 
-    function replacePlayer(container) {
-        if (container.getAttribute && container.getAttribute(ATTR_DONE)) { return; }
-        var video = container.querySelector ? container.querySelector('video') : null;
-        if (!video) { return; }
-        if (video.getAttribute && video.getAttribute(ATTR_DONE)) { return; }
+    function capturePlaybackState(video) {
+        var state = { paused: true, currentTime: 0, volume: 1, muted: false, playbackRate: 1 };
+        try { state.paused = video.paused; } catch (e) { /* ignore */ }
+        try { state.currentTime = video.currentTime || 0; } catch (e) { /* ignore */ }
+        try { state.volume = video.volume; } catch (e) { /* ignore */ }
+        try { state.muted = video.muted; } catch (e) { /* ignore */ }
+        try { state.playbackRate = video.playbackRate || 1; } catch (e) { /* ignore */ }
+        return state;
+    }
 
-        var src = discoverSource(container, video);
-        log('player detected', container.className, 'source:', src ? 'resolved' : 'opaque');
+    function restorePlaybackState(video, state, sourceChanged) {
+        try { video.volume = state.volume; } catch (e) { /* ignore */ }
+        try { video.muted = state.muted; } catch (e) { /* ignore */ }
+        try { video.playbackRate = state.playbackRate; } catch (e) { /* ignore */ }
 
-        enableBackgroundPlayback();
+        function restorePositionAndPlayback() {
+            if (state.currentTime > 0) {
+                try { video.currentTime = state.currentTime; } catch (e) { /* ignore */ }
+            }
+            if (!state.paused) {
+                try {
+                    var result = video.play();
+                    if (result && result.catch) { result.catch(function () {}); }
+                } catch (e) { /* ignore */ }
+            }
+        }
 
-        if (src) {
-            var clean = buildCleanVideo(src, video);
-            clean.setAttribute(ATTR_DONE, '1');
-            // Replace the container's contents with the clean video, keeping
-            // the container itself so page layout/sizing still applies.
-            while (container.firstChild) { container.removeChild(container.firstChild); }
-            container.appendChild(clean);
-            try {
-                container.classList.remove('video-js', 'vjs-paused', 'vjs-playing');
-            } catch (e) { /* ignore */ }
-            container.setAttribute(ATTR_DONE, '1');
-            forceNativeControls(clean);
-            setupAutoPiP(clean);
-
-            // Keep controls forced on
-            guardNativeControls(clean);
+        if (sourceChanged && video.readyState < 1) {
+            video.addEventListener('loadedmetadata', restorePositionAndPlayback, { once: true });
         } else {
-            video.setAttribute(ATTR_DONE, '1');
-            container.setAttribute(ATTR_DONE, '1');
-            enhanceInPlace(container, video, true);
+            restorePositionAndPlayback();
         }
     }
 
+    function cleanPlayer(container, video, src) {
+        if (video._wblockCleaned) { return; }
+        var state = capturePlaybackState(video);
+        // If the browser is already playing a direct source, retain it exactly:
+        // changing src would discard buffered media, selected tracks, and time.
+        // API/data-attribute discovery is used only when the element itself still
+        // has no direct http(s) source (typically an opaque placeholder blob).
+        var elementSource = sourceFromVideoElement(video);
+        var sourceChanged = !elementSource && !!src;
+
+        // Detach and reinsert the SAME media element. Creating a replacement
+        // element causes another network load and a visible blank/buffering gap.
+        // Keeping the original also preserves captions and any MSE pipeline.
+        try { video.remove(); } catch (e) {
+            try { if (video.parentNode) { video.parentNode.removeChild(video); } } catch (e2) { /* ignore */ }
+        }
+        while (container.firstChild) { container.removeChild(container.firstChild); }
+        container.appendChild(video);
+        if (sourceChanged) {
+            try { video.src = src; } catch (e) { /* ignore */ }
+        }
+
+        video._wblockCleaned = true;
+        video._wblockUpgradeable = false;
+        video.setAttribute(ATTR_DONE, '1');
+        container.setAttribute(ATTR_DONE, '1');
+        try {
+            container.classList.remove('video-js', 'vjs-paused', 'vjs-playing');
+        } catch (e) { /* ignore */ }
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.background = '#000';
+        forceNativeControls(video);
+        setupAutoPiP(video);
+        guardNativeControls(video);
+        restorePlaybackState(video, state, sourceChanged);
+    }
+
+    function replacePlayer(container, allowExternalDiscovery) {
+        var video = container.querySelector ? container.querySelector('video') : null;
+        if (!video || video._wblockCleaned) { return; }
+
+        // Native controls are the critical path. Apply them before querying
+        // player APIs or walking data attributes so the visible switch happens
+        // in this mutation microtask even if source discovery is not ready yet.
+        enableBackgroundPlayback();
+        video.setAttribute(ATTR_DONE, '1');
+        container.setAttribute(ATTR_DONE, '1');
+        enhanceInPlace(container, video, true);
+
+        // A source already attached to <video>/<source> is safe to clean now.
+        // Player APIs and data attributes are not: during parser construction,
+        // cleaning from provisional config can run before the site's setup script
+        // and get overwritten. Wait for a media event or DOMContentLoaded before
+        // consulting those external sources; native controls are already visible.
+        var src = sourceFromVideoElement(video);
+        if (!src && (allowExternalDiscovery || document.readyState !== 'loading')) {
+            src = sourceFromVideojs(container) ||
+                sourceFromJwPlayer(container) ||
+                sourceFromDom(container) ||
+                null;
+        }
+        log('player detected', container.className, 'source:', src ? 'resolved' : 'opaque');
+        if (src) { cleanPlayer(container, video, src); }
+    }
+
     // A clean source is often not discoverable at first scan because the player
-    // exposes a blob:/opaque src until metadata loads (Plyr and JW Player do
-    // this). Once loadedmetadata fires, currentSrc is reliable, so give
-    // replacement one more chance instead of leaving the video merely enhanced.
-    function onLoadedMetadata(event) {
+    // exposes a blob:/opaque src until metadata or its JS API loads. ATTR_DONE is
+    // deliberately non-terminal: media events, source mutations, and recovery
+    // scans all call replacePlayer again until cleanup becomes possible.
+    function onMediaSourceReady(event) {
         var video = event.target;
         if (!(video instanceof HTMLVideoElement)) { return; }
-        if (!video._wblockEnhanced || !video._wblockUpgradeable) { return; }
-        video._wblockUpgradeable = false; // one upgrade attempt per load
-        var container = (video.closest && video.closest(PLAYER_SELECTORS.join(','))) ||
+        if (!video._wblockEnhanced || !video._wblockUpgradeable || video._wblockCleaned) { return; }
+        var container = (video.closest && video.closest(PLAYER_SELECTOR)) ||
             video.parentElement || video;
         container = normalizeContainer(container);
-        if (container.removeAttribute) { container.removeAttribute(ATTR_DONE); }
-        if (video.removeAttribute) { video.removeAttribute(ATTR_DONE); }
-        try { replacePlayer(container); } catch (e) { log('upgrade failed', e); }
+        try { replacePlayer(container, true); } catch (e) { log('upgrade failed', e); }
     }
 
     // ------------------------------------------------------------------
@@ -540,31 +569,51 @@
 
     function scan(root) {
         var scope = root || document;
+        if (!scope || !scope.querySelectorAll) { return; }
         var seen = [];
-        // Pass 1: known player-library containers (video.js, JW Player, Plyr...).
-        for (var i = 0; i < PLAYER_SELECTORS.length; i++) {
-            var nodes;
-            try { nodes = scope.querySelectorAll(PLAYER_SELECTORS[i]); }
-            catch (e) { continue; }
-            for (var j = 0; j < nodes.length; j++) {
-                var container = normalizeContainer(nodes[j]);
-                if (!container || seen.indexOf(container) !== -1) { continue; }
-                seen.push(container);
-                try { replacePlayer(container); }
-                catch (e) { log('replace failed', e); }
-            }
+
+        function addContainer(raw) {
+            var container = normalizeContainer(raw);
+            if (!container || seen.indexOf(container) !== -1) { return; }
+            seen.push(container);
         }
+
+        // Include the affected node's nearest wrapper. querySelectorAll() does
+        // not include the root itself, and a player often adds its <video> in a
+        // later mutation after the wrapper was first observed.
+        if (scope.nodeType === 1) {
+            try {
+                var nearest = scope.matches(PLAYER_SELECTOR) ? scope : scope.closest(PLAYER_SELECTOR);
+                if (nearest) { addContainer(nearest); }
+            } catch (e) { /* ignore */ }
+        }
+
+        // Pass 1: known player-library containers (video.js, JW Player, Plyr...).
+        var known;
+        try { known = scope.querySelectorAll(PLAYER_SELECTOR); }
+        catch (e) { known = []; }
+        for (var i = 0; i < known.length; i++) { addContainer(known[i]); }
+        for (var j = 0; j < seen.length; j++) {
+            try { replacePlayer(seen[j]); }
+            catch (e) { log('replace failed', e); }
+        }
+
         // Pass 2: any other <video> whose native controls are suppressed by an
-        // unrecognized custom player. Enhance in place only (never rebuild), so
-        // an unknown wrapper's layout is left intact.
-        var bareVideos;
-        try { bareVideos = scope.querySelectorAll('video'); }
-        catch (e) { bareVideos = []; }
-        for (var k = 0; k < bareVideos.length; k++) {
-            var video = bareVideos[k];
+        // unrecognized custom player. Wait until parsing finishes: before then,
+        // autoplay/muted/layout signals can be incomplete, and WebKit can throw
+        // while initializing native controls for several parser-created videos.
+        // Known wrappers above remain on the pre-paint path.
+        if (document.readyState === 'loading') { return; }
+        var bareVideos = [];
+        if (scope.nodeType === 1 && scope.tagName === 'VIDEO') { bareVideos.push(scope); }
+        var descendants;
+        try { descendants = scope.querySelectorAll('video'); }
+        catch (e) { descendants = []; }
+        for (var k = 0; k < descendants.length; k++) { bareVideos.push(descendants[k]); }
+        for (var v = 0; v < bareVideos.length; v++) {
+            var video = bareVideos[v];
             if (!needsBareEnhancement(video)) { continue; }
             var bareContainer = video.parentElement || video;
-            if (bareContainer.getAttribute && bareContainer.getAttribute(ATTR_DONE)) { continue; }
             log('bare player detected', bareContainer.className || '(no class)', 'enhancing in place');
             try {
                 video.setAttribute(ATTR_DONE, '1');
@@ -577,37 +626,57 @@
 
     function observe() {
         if (typeof MutationObserver === 'undefined') { return; }
-        var scheduled = false;
-        var observer = new MutationObserver(function () {
-            if (scheduled) { return; }
-            scheduled = true;
-            setTimeout(function () {
-                scheduled = false;
-                scan(document);
-            }, 500);
+        var observer = new MutationObserver(function (records) {
+            var roots = [];
+            function addRoot(node) {
+                if (!node || (node.nodeType !== 1 && node.nodeType !== 9)) { return; }
+                if (roots.indexOf(node) === -1) { roots.push(node); }
+            }
+            for (var i = 0; i < records.length; i++) {
+                var record = records[i];
+                addRoot(record.target);
+                for (var j = 0; j < record.addedNodes.length; j++) {
+                    addRoot(record.addedNodes[j]);
+                }
+            }
+            // MutationObserver callbacks run at the microtask checkpoint before
+            // rendering. Process affected roots now—never add a timer/debounce—so
+            // custom chrome cannot survive into the next paint.
+            for (var r = 0; r < roots.length; r++) { scan(roots[r]); }
         });
         try {
-            observer.observe(document.documentElement, { childList: true, subtree: true });
+            observer.observe(document, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: [
+                    'class', 'src', 'data-src', 'data-video-src', 'data-file',
+                    'data-video', 'data-source', 'data-url'
+                ]
+            });
         } catch (e) { /* ignore */ }
     }
 
     function boot() {
-        scan(document);
-        // Players often mount after idle; rescan a few times then observe.
-        setTimeout(function () { scan(document); }, 800);
-        setTimeout(function () { scan(document); }, 2000);
+        // Observe first so a player mounted while the initial scan runs cannot
+        // slip through. Observing Document works even before <html> exists.
         observe();
+        scan(document);
     }
 
-    // loadedmetadata does not bubble, so listen in the capture phase to catch
-    // it for every video. Registered up front (at document-start) so no early
-    // load is missed.
-    try { document.addEventListener('loadedmetadata', onLoadedMetadata, true); }
-    catch (e) { /* ignore */ }
+    // Media readiness events do not bubble, so use capture. loadstart also
+    // catches a player assigning its final source before metadata is available.
+    try {
+        document.addEventListener('loadstart', onMediaSourceReady, true);
+        document.addEventListener('loadedmetadata', onMediaSourceReady, true);
+        document.addEventListener('durationchange', onMediaSourceReady, true);
+    } catch (e) { /* ignore */ }
 
+    // Start at document-start. DOMContentLoaded/load scans are recovery passes
+    // only; normal players are handled by the pre-paint MutationObserver.
+    boot();
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot, { once: true });
-    } else {
-        boot();
+        document.addEventListener('DOMContentLoaded', function () { scan(document); }, { once: true });
+        window.addEventListener('load', function () { scan(document); }, { once: true });
     }
 })();

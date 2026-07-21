@@ -29,9 +29,9 @@ Player Cleaner scenarios:
   the existing `<video>` in place and must keep native controls on while the
   custom player keeps stripping them.
 - `fixture-player-cleaner-replace.html` — a clean http(s) source, exercising the
-  full replacement path: a brand-new native `<video>` is swapped in, the poster
-  and caption `<track>` are copied, the custom chrome is dropped, and controls
-  survive an adversarial player.
+  full cleanup path: the original `<video>` is retained (avoiding a second media
+  load and preserving buffered state, poster, and caption tracks), the custom
+  chrome is dropped, and controls survive an adversarial player.
 - `fixture-player-cleaner-discovery.html` — five players exposing the media URL
   through different mechanisms (video.src, `<source>` child, descendant
   `data-src`, a mocked video.js `currentSource()`, a mocked JW Player playlist
@@ -48,12 +48,13 @@ Player Cleaner scenarios:
   swapping in a clean `<video>`.
 - `fixture-player-cleaner-upgrade.html` — a Plyr-style player that exposes only
   an opaque `blob:` src at first scan (the plyr.io "slow to switch to native"
-  case). The script can only enhance in place, which stamps `ATTR_DONE` and
-  blocks every later rescan; the test then makes a clean src available and fires
-  `loadedmetadata`, and the script must upgrade the merely-enhanced video to a
-  full native replacement. A negative control asserts a clean src alone (no
-  `loadedmetadata`) does not replace, proving the upgrade keys off the media
-  event rather than a later DOM mutation.
+  case). Native controls must appear immediately; a clean source then becomes
+  available through a mock player API without a DOM mutation. `loadedmetadata`
+  must trigger event-driven cleanup while retaining the original media element.
+- `fixture-player-cleaner-early.html` — creates a known custom player from a
+  `<head>` script and records insertion, nativeization, and DOMContentLoaded
+  timestamps. Enforces pre-paint transformation within one frame, without a
+  debounce or DOMContentLoaded gate.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
@@ -121,11 +122,11 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   hooks, iOS code paths, `playsinline`, controls surviving YouTube's attempts to
   remove them. Player Cleaner: custom-player detection, source discovery across
   video.js/JW/Plyr/data-attributes (including root-relative URLs resolved
-  against the document base), the clean-source replacement path (poster
-  and track copying, chrome removal), the opaque-source enhance-in-place path,
-  the loadedmetadata-driven upgrade from enhance-in-place to full replacement
-  (prompt native swap once a clean source appears), the bare-video fallback for
-  unrecognized/custom players (and its ambient and
+  against the document base), the clean-source cleanup path (original media
+  element/state retention and chrome removal), the opaque-source enhance-in-place
+  path, event-driven upgrade once a clean source appears, pre-paint timing for
+  known wrappers, the bare-video fallback for unrecognized/custom players (and
+  its ambient and
   already-native skip guards), the background-playback override, and controls
   surviving a fighting player.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate

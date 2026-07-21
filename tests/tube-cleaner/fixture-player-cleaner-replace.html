@@ -18,7 +18,7 @@
        should resolve the source and swap in a brand-new native <video>,
        carrying the poster and track over and dropping the custom chrome. -->
   <div class="video-js" id="player-replace">
-    <video poster="https://example.com/poster.jpg" preload="metadata">
+    <video data-test-original="1" poster="https://example.com/poster.jpg" preload="metadata">
       <source src="https://example.com/media/movie.mp4" type="video/mp4">
       <track kind="captions" src="https://example.com/captions.vtt" srclang="en" label="English">
     </video>
