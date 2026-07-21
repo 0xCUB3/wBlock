@@ -1,12 +1,16 @@
-// Autonomous WebKit (Safari-engine) test harness for the Tube Cleaner userscript.
+// Autonomous WebKit (Safari-engine) test harness for the Tube Cleaner and
+// Player Cleaner userscripts.
 //
-// It loads a synthetic YouTube watch page (fixture.html) in Playwright WebKit,
-// injects the REAL bundled tube-cleaner.user.js at document-start in the page
-// world (matching `@run-at document-start` + `@inject-into page`), and asserts
-// the player transformation actually happens. It runs three scenarios:
-//   1. desktop  – macOS Safari-like
-//   2. iPhone   – mobile Safari (touch, mobile UA)
-//   3. iPad desktop-site – iPadOS requesting www.youtube.com (no playsinline)
+// It loads synthetic pages in Playwright WebKit, injects the REAL bundled
+// userscript at document-start in the page world (matching `@run-at` +
+// `@inject-into page`), and asserts the player transformation actually happens.
+// Scenarios:
+//   1. desktop  – Tube Cleaner, macOS Safari-like
+//   2. iPhone   – Tube Cleaner, mobile Safari (touch, mobile UA)
+//   3. iPad desktop-site – Tube Cleaner, iPadOS requesting www.youtube.com
+//   4. Player Cleaner – opaque (blob) source, enhance-in-place + controls guard
+//   5. Player Cleaner – clean source, full replacement path (poster/tracks copy)
+//   6. Player Cleaner – source discovery across video.js/JW/Plyr/data-attr
 //
 // Exit code is non-zero if any assertion fails, so this can gate CI.
 // Usage: node run-tests.mjs [--filter substring]
@@ -22,6 +26,8 @@ const PLAYER_SCRIPT_PATH = join(__dirname, '..', '..', 'wBlockCoreService', 'Bun
 const FIXTURE_URL = pathToFileURL(join(__dirname, 'fixture.html')).href;
 const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.html')).href;
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
+const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
+const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -36,12 +42,12 @@ function record(scenario, name, pass, detail = '') {
 
 // Run an in-page check that returns {pass, detail}. Retries until pass or timeout
 // because the userscript transforms the player asynchronously (250ms poll loop).
-async function check(page, scenario, name, fn, { timeout = 6000, interval = 150 } = {}) {
+async function check(page, scenario, name, fn, { timeout = 6000, interval = 150, arg } = {}) {
   const start = Date.now();
   let last = { pass: false, detail: 'timeout' };
   while (Date.now() - start < timeout) {
     try {
-      last = await page.evaluate(fn);
+      last = await page.evaluate(fn, arg);
       if (last && last.pass) break;
     } catch (e) {
       last = { pass: false, detail: 'eval error: ' + e.message };
@@ -245,6 +251,158 @@ async function audioToggleCheck(page, scenario) {
   }, { timeout: 1500, interval: 500 });
 
   record('player-cleaner', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 5: Player Cleaner clean-source replacement path ------------
+// The headline feature: when the underlying media source is a clean http(s)
+// URL, Player Cleaner builds a brand-new native <video> (copying poster and
+// caption tracks), drops the custom chrome, and defends native controls.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (clean source replacement)', {
+    fixture: FIXTURE_PLAYER_REPLACE_URL,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-replace';
+
+  await check(page, S, 'swaps in a single clean <video>', () => {
+    const c = document.getElementById('player-replace');
+    const vids = c ? c.querySelectorAll('video').length : 0;
+    return { pass: vids === 1, detail: `${vids} video(s) in container` };
+  });
+
+  await check(page, S, 'resolves and applies the clean source', () => {
+    const v = document.querySelector('#player-replace video');
+    const ok = !!(v && v.src === 'https://example.com/media/movie.mp4');
+    return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
+  });
+
+  await check(page, S, 'forces video.controls === true', () => {
+    const v = document.querySelector('#player-replace video');
+    return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
+  });
+
+  await check(page, S, 'sets playsinline', () => {
+    const v = document.querySelector('#player-replace video');
+    return { pass: !!(v && (v.playsInline || v.hasAttribute('playsinline'))) };
+  });
+
+  await check(page, S, 'copies the poster attribute', () => {
+    const v = document.querySelector('#player-replace video');
+    const p = v ? v.getAttribute('poster') : null;
+    return { pass: p === 'https://example.com/poster.jpg', detail: `poster=${p}` };
+  });
+
+  await check(page, S, 'carries over caption <track>', () => {
+    const v = document.querySelector('#player-replace video');
+    const t = v ? v.querySelector('track') : null;
+    return { pass: !!t, detail: t ? `track src=${t.getAttribute('src')}` : 'no track' };
+  });
+
+  await check(page, S, 'removes custom control chrome', () => {
+    const c = document.getElementById('player-replace');
+    const bar = c ? c.querySelector('.vjs-control-bar') : null;
+    const big = c ? c.querySelector('.vjs-big-play-button') : null;
+    return { pass: !bar && !big, detail: `bar=${!!bar}, bigPlay=${!!big}` };
+  });
+
+  await check(page, S, 'marks container done + drops video-js class', () => {
+    const c = document.getElementById('player-replace');
+    const done = !!(c && c.hasAttribute('data-wblock-player-cleaner'));
+    const declassed = !!(c && !c.classList.contains('video-js'));
+    return { pass: done && declassed, detail: `done=${done}, declassed=${declassed}` };
+  });
+
+  await check(page, S, 'overrides document.hidden (background playback)', () => {
+    const desc = Object.getOwnPropertyDescriptor(document, 'hidden');
+    return { pass: !!(desc && typeof desc.get === 'function' && document.hidden === false),
+      detail: `hidden=${document.hidden}, overridden=${!!(desc && desc.get)}` };
+  });
+
+  await check(page, S, 'hooks auto-PiP on the clean video', () => {
+    const v = document.querySelector('#player-replace video');
+    return { pass: !!(v && v._wblockAutoPiPHooked === true) };
+  });
+
+  // Idempotency: boot rescans at 800ms/2000ms and a MutationObserver keeps
+  // scanning. The container must never gain a second video.
+  await page.waitForTimeout(2600);
+  await check(page, S, 'stays a single video after rescans (idempotent)', () => {
+    const c = document.getElementById('player-replace');
+    const vids = c ? c.querySelectorAll('video').length : 0;
+    return { pass: vids === 1, detail: `${vids} video(s) after rescans` };
+  });
+
+  await page.waitForTimeout(2000); // let several fightControls rounds run
+  await check(page, S, 'native controls SURVIVE player turning them off', () => {
+    const v = document.querySelector('#player-replace video');
+    if (!v) return { pass: false, detail: 'no video' };
+    const hasAttr = v.hasAttribute('controls');
+    return { pass: hasAttr, detail: `hasAttribute('controls')=${hasAttr} (getter=${v.controls})` };
+  }, { timeout: 1500, interval: 500 });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 6: Player Cleaner source discovery -------------------------
+// Five players, each exposing its media source through a different mechanism.
+// Player Cleaner must resolve the right URL for every one and swap in a clean
+// native <video> carrying that source.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (source discovery)', {
+    fixture: FIXTURE_PLAYER_DISCOVERY_URL,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-discovery';
+
+  const cases = [
+    ['p-src', 'https://example.com/a.mp4', 'video.src'],
+    ['p-source-child', 'https://example.com/b.mp4', '<source> child'],
+    ['p-dom', 'https://example.com/c.mp4', 'descendant data-src'],
+    ['p-videojs', 'https://example.com/d.mp4', 'video.js currentSource()'],
+    ['p-jwplayer', 'https://example.com/e.mp4', 'JW Player playlist item'],
+  ];
+  for (const [id, expected, how] of cases) {
+    await check(page, S, `resolves source via ${how}`, ({ id, expected }) => {
+      const c = document.getElementById(id);
+      const v = c ? c.querySelector('video') : null;
+      const ok = !!(v && v.src === expected);
+      return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
+    }, { arg: { id, expected } });
+  }
+
+  await check(page, S, 'every player replaced with exactly one clean video', (cases) => {
+    const bad = cases.filter(([id]) => {
+      const c = document.getElementById(id);
+      return !c || c.querySelectorAll('video').length !== 1;
+    }).map(([id]) => id);
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '5/5 single-video' };
+  }, { arg: cases });
+
+  await check(page, S, 'all clean videos have native controls', (cases) => {
+    const missing = cases.filter(([id]) => {
+      const v = document.getElementById(id).querySelector('video');
+      return !(v && v.controls === true && v.hasAttribute('controls'));
+    }).map(([id]) => id);
+    return { pass: missing.length === 0, detail: missing.length ? `missing: ${missing.join(',')}` : '5/5 controls' };
+  }, { arg: cases });
+
+  // Idempotency across the boot rescans + observer.
+  await page.waitForTimeout(2600);
+  await check(page, S, 'no duplicate videos after rescans (idempotent)', (cases) => {
+    const bad = cases.filter(([id]) => {
+      const c = document.getElementById(id);
+      return !c || c.querySelectorAll('video').length !== 1;
+    }).map(([id]) => id);
+    return { pass: bad.length === 0, detail: bad.length ? `duplicated: ${bad.join(',')}` : '5/5 still single' };
+  }, { arg: cases });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
 

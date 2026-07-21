@@ -1,9 +1,10 @@
-# Tube Cleaner test harness
+# Tube Cleaner & Player Cleaner test harness
 
-Autonomous tests for the bundled Tube Cleaner userscript
-(`wBlockCoreService/BundledUserscripts/tube-cleaner.user.js`). They run in
-Playwright **WebKit** — the same engine Safari uses — so results approximate
-real macOS/iOS Safari behavior without needing a device or a human to report.
+Autonomous tests for the bundled Tube Cleaner and Player Cleaner userscripts
+(`wBlockCoreService/BundledUserscripts/tube-cleaner.user.js` and
+`player-cleaner.user.js`). They run in Playwright **WebKit** — the same engine
+Safari uses — so results approximate real macOS/iOS Safari behavior without
+needing a device or a human to report.
 
 ## Setup (once)
 
@@ -15,22 +16,36 @@ npx playwright install webkit
 
 ## Deterministic gate — `run-tests.mjs`
 
-Loads a synthetic YouTube watch page (`fixture.html`) that mimics the real
-player DOM and the `#movie_player` API surface, injects the real userscript at
-`document-start` in the page world (matching `@run-at document-start` +
+Loads a synthetic page that mimics the real player DOM, injects the real
+userscript at `document-start` in the page world (matching `@run-at` +
 `@inject-into page`), and asserts the transformation actually happens.
 
-Three scenarios run: desktop (macOS Safari-like), iPhone (mobile Safari, touch),
-and iPad requesting the desktop site (no `playsinline`, the iPadOS default).
+Tube Cleaner scenarios (fixture.html / fixture-noplaysinline.html): desktop
+(macOS Safari-like), iPhone (mobile Safari, touch), and iPad requesting the
+desktop site (no `playsinline`, the iPadOS default).
+
+Player Cleaner scenarios:
+- `fixture-player-cleaner.html` — opaque (blob) source, so the script enhances
+  the existing `<video>` in place and must keep native controls on while the
+  custom player keeps stripping them.
+- `fixture-player-cleaner-replace.html` — a clean http(s) source, exercising the
+  full replacement path: a brand-new native `<video>` is swapped in, the poster
+  and caption `<track>` are copied, the custom chrome is dropped, and controls
+  survive an adversarial player.
+- `fixture-player-cleaner-discovery.html` — five players exposing the media URL
+  through different mechanisms (video.src, `<source>` child, descendant
+  `data-src`, a mocked video.js `currentSource()`, a mocked JW Player playlist
+  item); each must resolve to the right clean source.
 
 ```sh
 node run-tests.mjs            # exit code 1 if any check fails (CI-gateable)
 node run-tests.mjs --filter=iPad
+node run-tests.mjs --filter=player-cleaner
 ```
 
-The fixture's mock player actively fights the userscript (strips `controls`
-repeatedly, the way YouTube's html5 player does) so the tests verify the script
-survives adversarial behavior, not just a static page.
+The fixtures' mock players actively fight the userscripts (strip `controls`
+repeatedly, the way real custom players and YouTube's html5 player do) so the
+tests verify the scripts survive adversarial behavior, not just a static page.
 
 ## Real-world smoke — `live-smoke.mjs` (best-effort)
 
@@ -68,9 +83,13 @@ node probe-yt-events.mjs
 
 ## What these tests do and don't prove
 
-- Prove: the userscript's DOM transformation logic (native controls, chrome
-  hiding, toolbar, background-playback override, auto-PiP hooks, iOS code paths,
-  `playsinline`, controls surviving YouTube's attempts to remove them).
+- Prove: the userscripts' DOM transformation logic. Tube Cleaner: native
+  controls, chrome hiding, toolbar, background-playback override, auto-PiP
+  hooks, iOS code paths, `playsinline`, controls surviving YouTube's attempts to
+  remove them. Player Cleaner: custom-player detection, source discovery across
+  video.js/JW/Plyr/data-attributes, the clean-source replacement path (poster
+  and track copying, chrome removal), the opaque-source enhance-in-place path,
+  the background-playback override, and controls surviving a fighting player.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate
   AdGuard scriptlets (`trusted-replace-*-response`, `set-constant` on
   `adPlacements`/`adSlots`/`playerAds`), not by Tube Cleaner. Verify those via

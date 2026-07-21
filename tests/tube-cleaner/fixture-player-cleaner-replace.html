@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic custom player — clean source (Player Cleaner replace test)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .video-js { position: relative; width: 960px; max-width: 100%; aspect-ratio: 16 / 9; margin: 24px auto; background: #000; }
+  .video-js video { width: 100%; height: 100%; background: #222; }
+  .vjs-control-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0,0,0,.7); }
+  .vjs-big-play-button { position: absolute; top: 40%; left: 45%; width: 60px; height: 60px; background: rgba(0,0,0,.6); border-radius: 50%; }
+</style>
+</head>
+<body>
+  <!-- A video.js-style player whose <video> has a CLEAN, resolvable source
+       (via a <source> child) plus a poster and a caption track. Player Cleaner
+       should resolve the source and swap in a brand-new native <video>,
+       carrying the poster and track over and dropping the custom chrome. -->
+  <div class="video-js" id="player-replace">
+    <video poster="https://example.com/poster.jpg" preload="metadata">
+      <source src="https://example.com/media/movie.mp4" type="video/mp4">
+      <track kind="captions" src="https://example.com/captions.vtt" srclang="en" label="English">
+    </video>
+    <div class="vjs-control-bar"></div>
+    <div class="vjs-big-play-button"></div>
+  </div>
+
+  <script>
+    (function () {
+      // Adversarial: after Player Cleaner swaps in a clean video, keep trying
+      // to strip native controls from whatever video is in the container. A
+      // correct implementation must defend the controls attribute.
+      var container = document.getElementById('player-replace');
+      function fightControls() {
+        var v = container.querySelector('video');
+        if (!v) return;
+        try { v.controls = false; } catch (e) {}
+        try { v.removeAttribute('controls'); } catch (e) {}
+      }
+      setTimeout(fightControls, 800);
+      setTimeout(fightControls, 2500);
+      setInterval(fightControls, 3000);
+    })();
+  </script>
+</body>
+</html>

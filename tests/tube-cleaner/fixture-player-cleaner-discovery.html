@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source discovery variants (Player Cleaner test)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .player { position: relative; width: 320px; aspect-ratio: 16 / 9; margin: 12px auto; background: #000; }
+  .player video { width: 100%; height: 100%; background: #222; }
+</style>
+</head>
+<body>
+  <!-- A: source on the video element itself (sourceFromVideoElement -> src) -->
+  <div class="video-js player" id="p-src">
+    <video src="https://example.com/a.mp4"></video>
+  </div>
+
+  <!-- B: source in a <source> child (sourceFromVideoElement -> source child) -->
+  <div class="plyr player" id="p-source-child">
+    <video><source src="https://example.com/b.mp4" type="video/mp4"></video>
+  </div>
+
+  <!-- C: source in a descendant data attribute (sourceFromDom) -->
+  <div class="jwplayer player" id="p-dom">
+    <video></video>
+    <div data-src="https://example.com/c.mp4"></div>
+  </div>
+
+  <!-- D: source via a mocked video.js player (sourceFromVideojs) -->
+  <div class="flowplayer player" id="p-videojs">
+    <video></video>
+  </div>
+
+  <!-- E: source via a mocked JW Player instance (sourceFromJwPlayer) -->
+  <div class="mejs-container player" id="p-jwplayer">
+    <video></video>
+  </div>
+
+  <script>
+    (function () {
+      // Give the opaque-source players a blob src so sourceFromVideoElement
+      // returns null and the intended discovery path is exercised.
+      ['p-dom', 'p-videojs', 'p-jwplayer'].forEach(function (id) {
+        var v = document.getElementById(id).querySelector('video');
+        try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
+      });
+
+      // Mock video.js: one player whose element lives inside #p-videojs, so the
+      // containment check in sourceFromVideojs only matches that container.
+      window.videojs = {
+        getPlayers: function () {
+          return {
+            mock: {
+              el: function () { return document.querySelector('#p-videojs video'); },
+              currentSource: function () { return { src: 'https://example.com/d.mp4', type: 'video/mp4' }; }
+            }
+          };
+        }
+      };
+
+      // Mock JW Player: only the #p-jwplayer container gets a playlist item, so
+      // sourceFromJwPlayer does not leak a source into the other containers.
+      window.jwplayer = function (idOrEl) {
+        var id = typeof idOrEl === 'string' ? idOrEl : (idOrEl && idOrEl.id);
+        if (id !== 'p-jwplayer') return null;
+        return { getPlaylistItem: function () { return { file: 'https://example.com/e.mp4' }; } };
+      };
+    })();
+  </script>
+</body>
+</html>
