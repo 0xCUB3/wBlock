@@ -27,6 +27,7 @@ const INJECTOR_PATH = join(__dirname, '..', '..', 'wBlock Scripts (iOS)', 'Resou
 const FIXTURE_URL = pathToFileURL(join(__dirname, 'fixture.html')).href;
 const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.html')).href;
 const FIXTURE_TUBE_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-tube-cleaner-early.html')).href;
+const FIXTURE_TUBE_MULTIPLE_URL = pathToFileURL(join(__dirname, 'fixture-tube-cleaner-multiple.html')).href;
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
@@ -40,6 +41,25 @@ const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
 const injectorSource = readFileSync(INJECTOR_PATH, 'utf8');
 const filter = (process.argv.find(a => a.startsWith('--filter=')) || '').split('=')[1] || '';
+
+const iosStuckPreferencesPrelude = `
+try {
+  localStorage.setItem('wblock.tubeCleaner.audioOnly', '1');
+  localStorage.setItem('wblock.tubeCleaner.quality', 'hd1080');
+  localStorage.setItem('yt-player-quality', JSON.stringify({ quality: 'hd1080', previousQuality: 'auto' }));
+} catch (e) {}
+`;
+
+const ipadDesktopPrelude = `
+Object.defineProperty(Navigator.prototype, 'maxTouchPoints', {
+  configurable: true,
+  get: function () { return 5; }
+});
+Object.defineProperty(Navigator.prototype, 'platform', {
+  configurable: true,
+  get: function () { return 'MacIntel'; }
+});
+`;
 
 const visibilityPrelude = `
 window.__wblockNativeHidden = false;
@@ -127,9 +147,7 @@ async function check(page, scenario, name, fn, { timeout = 6000, interval = 150,
 }
 
 async function waitForTransform(page) {
-  // The toolbar is appended last in transformPlayer(); its presence means the
-  // transformation ran.
-  await page.waitForSelector('.wblock-tc-toolbar', { timeout: 10000 }).catch(() => {});
+  await page.waitForSelector('.wblock-tc-native', { timeout: 10000 }).catch(() => {});
 }
 
 async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scriptSource, readySignal }) {
@@ -156,7 +174,7 @@ async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scri
   return { browser, context, page, pageErrors };
 }
 
-async function commonChecks(page, scenario) {
+async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
   await check(page, scenario, 'injects its stylesheet (#wblock-tc-style)', () => ({
     pass: !!document.getElementById('wblock-tc-style'),
   }));
@@ -176,11 +194,18 @@ async function commonChecks(page, scenario) {
     return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
   });
 
-  await check(page, scenario, 'builds toolbar with quality+audio buttons', () => {
-    const tb = document.querySelector('.wblock-tc-toolbar');
-    const btns = tb ? tb.querySelectorAll('button').length : 0;
-    return { pass: btns >= 2, detail: `${btns} buttons` };
-  });
+  if (expectToolbar) {
+    await check(page, scenario, 'builds toolbar with quality+audio buttons', () => {
+      const tb = document.querySelector('.wblock-tc-toolbar');
+      const btns = tb ? tb.querySelectorAll('button').length : 0;
+      return { pass: btns >= 2, detail: `${btns} buttons` };
+    });
+  } else {
+    await check(page, scenario, 'uses only Safari native controls on iOS', () => ({
+      pass: !document.querySelector('.wblock-tc-toolbar'),
+      detail: `customToolbar=${!!document.querySelector('.wblock-tc-toolbar')}`,
+    }));
+  }
 
   await check(page, scenario, 'overrides document.hidden (background playback)', () => {
     const desc = Object.getOwnPropertyDescriptor(document, 'hidden');
@@ -201,19 +226,74 @@ async function commonChecks(page, scenario) {
   });
 }
 
-// The fixture's mock player fights controls off at 800ms, 2500ms and every 3s.
-// A correct implementation must keep native controls ON despite that.
+// The fixture's mock player repeatedly removes controls/inline playback and
+// reapplies native PiP/AirPlay restrictions. A correct implementation must
+// restore the complete Safari media-controls surface after every attempt.
 async function controlsSurvivalCheck(page, scenario) {
   await page.waitForTimeout(4200); // let several fightControls rounds run
-  await check(page, scenario, 'native controls SURVIVE YouTube turning them off', () => {
+  await check(page, scenario, 'native media capabilities SURVIVE YouTube restrictions', () => {
     const v = document.querySelector('#movie_player video');
     if (!v) return { pass: false, detail: 'no video' };
-    const hasAttr = v.hasAttribute('controls');
+    const state = {
+      controls: v.controls && v.hasAttribute('controls'),
+      inline: v.playsInline && v.hasAttribute('playsinline') && v.hasAttribute('webkit-playsinline'),
+      pip: !v.hasAttribute('disablepictureinpicture'),
+      remote: !v.hasAttribute('disableremoteplayback'),
+      controlsList: !v.hasAttribute('controlslist'),
+      airplay: v.getAttribute('x-webkit-airplay') === 'allow',
+    };
     return {
-      pass: hasAttr,
-      detail: `hasAttribute('controls')=${hasAttr} (JS getter reports controls=${v.controls})`,
+      pass: Object.values(state).every(Boolean),
+      detail: Object.entries(state).map(([k, value]) => `${k}=${value}`).join(' '),
     };
   }, { timeout: 1500, interval: 500 });
+}
+
+async function iosNativeControlsChecks(page, scenario) {
+  await check(page, scenario, 'clears persisted audio-only mode on iOS', () => {
+    const video = document.querySelector('#movie_player video');
+    const audioStyle = document.getElementById('wblock-tc-style-audio');
+    return { pass: localStorage.getItem('wblock.tubeCleaner.audioOnly') !== '1' &&
+      !audioStyle && video && getComputedStyle(video).visibility === 'visible',
+      detail: `stored=${localStorage.getItem('wblock.tubeCleaner.audioOnly')} style=${!!audioStyle} visibility=${video && getComputedStyle(video).visibility}` };
+  });
+  await check(page, scenario, 'restores adaptive quality instead of retrying fixed 1080p', () => {
+    const quality = localStorage.getItem('wblock.tubeCleaner.quality');
+    const bias = localStorage.getItem('yt-player-quality');
+    const settingsClicks = window.__settingsClicks || 0;
+    return { pass: quality === 'auto' && bias === null && settingsClicks === 0,
+      detail: `quality=${quality} bias=${bias} settingsClicks=${settingsClicks}` };
+  });
+  await check(page, scenario, 'does not style Safari private media controls', () => {
+    const css = document.getElementById('wblock-tc-style')?.textContent || '';
+    return { pass: !css.includes('::-webkit-media-controls') && !css.includes('touch-action: manipulation !important; } .wblock-tc-native video') };
+  });
+  await check(page, scenario, 'keeps the iOS video visible with a real layout box', () => {
+    const video = document.querySelector('#movie_player video');
+    const rect = video?.getBoundingClientRect();
+    return { pass: !!(video && rect && rect.width > 100 && rect.height > 100 &&
+      getComputedStyle(video).display !== 'none' && getComputedStyle(video).visibility !== 'hidden'),
+      detail: rect ? `${rect.width.toFixed(0)}x${rect.height.toFixed(0)} visibility=${getComputedStyle(video).visibility}` : 'no video' };
+  });
+}
+
+async function iosLandscapeCheck(page, scenario) {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.evaluate(() => {
+    const wrap = document.getElementById('player-wrap');
+    const player = document.querySelector('.wblock-tc-native');
+    if (wrap) wrap.style.margin = '0';
+    player.style.width = '100vw';
+    player.style.height = '100vh';
+  });
+  await check(page, scenario, 'iOS native video survives landscape rotation', () => {
+    const player = document.querySelector('.wblock-tc-native').getBoundingClientRect();
+    const video = document.querySelector('.wblock-tc-native video');
+    const rect = video.getBoundingClientRect();
+    return { pass: video.controls && rect.width > 100 && rect.height > 100 &&
+      rect.left >= player.left - 1 && rect.right <= player.right + 1,
+      detail: `video=${rect.width.toFixed(0)}x${rect.height.toFixed(0)} viewport=${innerWidth}x${innerHeight}` };
+  });
 }
 
 async function audioToggleCheck(page, scenario) {
@@ -258,43 +338,99 @@ async function qualityUISelectionCheck(page, scenario) {
     device: iphone,
     fixture: FIXTURE_URL,
     hasTouch: true,
+    scriptSource: iosStuckPreferencesPrelude + '\n' + userscript,
   });
-  await commonChecks(page, 'iPhone');
-  // iOS-specific: toolbar should use larger touch targets (font-size 14px).
-  await check(page, 'iPhone', 'iOS toolbar uses enlarged touch targets', () => {
-    const tb = document.querySelector('.wblock-tc-toolbar');
-    if (!tb) return { pass: false, detail: 'no toolbar' };
-    const fs = parseFloat((tb.querySelector('button') || tb).style.fontSize || '0');
-    return { pass: fs >= 14, detail: `button font-size=${fs}px` };
-  });
+  await commonChecks(page, 'iPhone', { expectToolbar: false });
+  await iosNativeControlsChecks(page, 'iPhone');
+  await iosLandscapeCheck(page, 'iPhone');
+  await controlsSurvivalCheck(page, 'iPhone');
   record('iPhone', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
 
-// ---- Scenario 3: iPad requesting desktop site (no playsinline) -----------
-// iPadOS defaults to the desktop UA, so YouTube serves the desktop player whose
-// <video> may lack `playsinline`. Without playsinline iOS jumps to fullscreen
-// instead of inline playback. Tube Cleaner reuses that video element, so it must
-// ensure playsinline itself.
+// ---- Scenario 3: iPad mobile UA (no playsinline) -------------------------
+// Older iPadOS/mobile-site UAs still need the same inline-playback and touch UI
+// defenses as modern iPadOS requesting the desktop site.
 {
   const ipad = devices['iPad Pro 11'];
-  const { browser, page, pageErrors } = await runScenario('iPad desktop-site (no playsinline)', {
+  const { browser, page, pageErrors } = await runScenario('iPad mobile UA (no playsinline)', {
     device: ipad,
     fixture: FIXTURE_NOPI_URL,
     hasTouch: true,
+    scriptSource: iosStuckPreferencesPrelude + '\n' + userscript,
   });
-  await commonChecks(page, 'iPad-desktop');
-  await check(page, 'iPad-desktop', 'ensures playsinline for inline iOS playback', () => {
+  await commonChecks(page, 'iPad-mobile', { expectToolbar: false });
+  await check(page, 'iPad-mobile', 'ensures playsinline for inline iOS playback', () => {
     const v = document.querySelector('#movie_player video');
     if (!v) return { pass: false, detail: 'no video' };
     const ok = v.hasAttribute('playsinline') || v.playsInline === true;
     return { pass: ok, detail: `playsInline=${v.playsInline}, attr=${v.hasAttribute('playsinline')}` };
   });
-  record('iPad-desktop', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await iosNativeControlsChecks(page, 'iPad-mobile');
+  await controlsSurvivalCheck(page, 'iPad-mobile');
+  record('iPad-mobile', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
 
-// ---- Scenario 4: Tube Cleaner transforms before DOMContentLoaded ---------
+// ---- Scenario 4: modern iPadOS requesting the desktop site --------------
+// Current iPadOS identifies as MacIntel with touch points. This is the path that
+// historically risks being mistaken for macOS, especially at document-start.
+{
+  const { browser, page, pageErrors } = await runScenario('iPadOS desktop-site UA', {
+    fixture: FIXTURE_NOPI_URL,
+    ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+    hasTouch: true,
+    viewport: { width: 1024, height: 768 },
+    scriptSource: iosStuckPreferencesPrelude + '\n' + ipadDesktopPrelude + '\n' + userscript,
+  });
+  const S = 'iPad-desktop';
+  await commonChecks(page, S, { expectToolbar: false });
+  await check(page, S, 'detects desktop-UA iPadOS as touch Safari', () => ({
+    pass: navigator.platform === 'MacIntel' && navigator.maxTouchPoints === 5 &&
+      !document.querySelector('.wblock-tc-toolbar'),
+    detail: `platform=${navigator.platform} touches=${navigator.maxTouchPoints} customToolbar=${!!document.querySelector('.wblock-tc-toolbar')}`,
+  }));
+  await iosNativeControlsChecks(page, S);
+  await controlsSurvivalCheck(page, S);
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 5: iPadOS active-player selection (Shorts-style) -----------
+{
+  const { browser, page, pageErrors } = await runScenario('iPadOS multiple YouTube players', {
+    fixture: FIXTURE_TUBE_MULTIPLE_URL,
+    ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+    hasTouch: true,
+    viewport: { width: 1024, height: 768 },
+    scriptSource: ipadDesktopPrelude + '\n' + userscript,
+    readySignal: '#current-short.wblock-tc-native',
+  });
+  const S = 'iPad-multiple-players';
+  await check(page, S, 'nativeizes the visible playing player, not the first DOM match', () => {
+    const selected = window.__wblockTubeDebug.getPlayer();
+    const video = document.querySelector('#current-short video');
+    return { pass: selected?.id === 'current-short' && video.controls &&
+      !document.querySelector('.wblock-tc-toolbar') };
+  });
+  await page.evaluate(() => window.__switchActiveShort());
+  await check(page, S, 'moves native enhancements when the active Short changes', () => {
+    const selected = window.__wblockTubeDebug.getPlayer();
+    const video = document.querySelector('#previous-short video');
+    return { pass: selected?.id === 'previous-short' && video.controls &&
+      !document.querySelector('.wblock-tc-toolbar'),
+      detail: `selected=${selected?.id}` };
+  });
+  await check(page, S, 'hides chrome on a non-movie_player instance', () => {
+    const chrome = document.querySelector('#previous-short .ytp-chrome-bottom');
+    return { pass: !!(chrome && getComputedStyle(chrome).display === 'none'),
+      detail: chrome ? `display=${getComputedStyle(chrome).display}` : 'no chrome' };
+  });
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 6: Tube Cleaner transforms before DOMContentLoaded ---------
 // A <head> script creates the YouTube player. The document observer must install
 // anti-flash CSS and nativeize the video in the same pre-paint mutation cycle.
 {
@@ -964,6 +1100,25 @@ for (const config of [
       window.__wblockPiPMode === 'picture-in-picture',
     detail: `pageHidden=${document.hidden} pageState=${document.visibilityState} pip=${window.__wblockPiPMode}`,
   }));
+  if (config.name === 'Tube Cleaner') {
+    await page.evaluate((selector) => {
+      const video = document.querySelector(selector);
+      // End the cleaner-owned PiP session, then model the user entering PiP
+      // manually from Safari's native controls.
+      video.webkitPresentationMode = 'inline';
+      video.dispatchEvent(new Event('webkitpresentationmodechanged'));
+      video.webkitPresentationMode = 'picture-in-picture';
+      video.dispatchEvent(new Event('webkitpresentationmodechanged'));
+      window.__wblockPiPMode = 'picture-in-picture';
+      window.__wblockNativeHidden = false;
+      window.__wblockNativeVisibility = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, config.selector);
+    await check(page, config.key, 'does not close PiP entered manually by the user', () => ({
+      pass: window.__wblockPiPMode === 'picture-in-picture',
+      detail: `pip=${window.__wblockPiPMode}`,
+    }));
+  }
   record(config.key, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }

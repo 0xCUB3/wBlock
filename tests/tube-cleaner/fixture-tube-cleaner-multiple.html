@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multiple YouTube players (Shorts-style)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .short-player { position: relative; width: 390px; height: 680px; background: #000; }
+  .short-player.is-inactive { display: none; }
+  .html5-video-container, video { width: 100%; height: 100%; }
+  .ytp-chrome-bottom { position: absolute; inset: auto 0 0; height: 44px; background: #333; }
+</style>
+</head>
+<body>
+  <div id="previous-short" class="html5-video-player short-player is-inactive" aria-hidden="true">
+    <div class="html5-video-container"><video></video></div>
+    <div class="ytp-chrome-bottom">Previous controls</div>
+  </div>
+  <div id="current-short" class="html5-video-player short-player playing-mode" aria-hidden="false">
+    <div class="html5-video-container"><video></video></div>
+    <div class="ytp-chrome-bottom">Current controls</div>
+  </div>
+<script>
+(function () {
+  var previous = document.querySelector('#previous-short video');
+  var current = document.querySelector('#current-short video');
+  function mediaState(video, playing) {
+    Object.defineProperty(video, 'paused', { configurable: true, get: function () { return !playing; } });
+    Object.defineProperty(video, 'ended', { configurable: true, get: function () { return false; } });
+    Object.defineProperty(video, 'readyState', { configurable: true, get: function () { return playing ? 4 : 0; } });
+  }
+  mediaState(previous, false);
+  mediaState(current, true);
+
+  for (var player of document.querySelectorAll('.html5-video-player')) {
+    player.getAvailableQualityLevels = function () { return ['hd1080', 'hd720']; };
+    player.getPlaybackQuality = function () { return 'hd720'; };
+    player.setPlaybackQualityRange = function () {};
+    player.setPlaybackQuality = function () {};
+  }
+
+  window.__switchActiveShort = function () {
+    var oldPlayer = document.getElementById('current-short');
+    var nextPlayer = document.getElementById('previous-short');
+    oldPlayer.classList.remove('playing-mode');
+    oldPlayer.classList.add('is-inactive');
+    oldPlayer.setAttribute('aria-hidden', 'true');
+    nextPlayer.classList.remove('is-inactive');
+    nextPlayer.classList.add('playing-mode');
+    nextPlayer.setAttribute('aria-hidden', 'false');
+    mediaState(current, false);
+    mediaState(previous, true);
+  };
+})();
+</script>
+</body>
+</html>

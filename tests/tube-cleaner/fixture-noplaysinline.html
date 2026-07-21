@@ -63,6 +63,12 @@
         if (v) {
           try { v.controls = false; } catch (e) {}
           try { v.removeAttribute('controls'); } catch (e) {}
+          try { v.removeAttribute('playsinline'); } catch (e) {}
+          try { v.removeAttribute('webkit-playsinline'); } catch (e) {}
+          try { v.setAttribute('controlslist', 'nofullscreen noremoteplayback'); } catch (e) {}
+          try { v.setAttribute('disablepictureinpicture', ''); } catch (e) {}
+          try { v.setAttribute('disableremoteplayback', ''); } catch (e) {}
+          try { v.setAttribute('x-webkit-airplay', 'deny'); } catch (e) {}
         }
       }
       setTimeout(fightControls, 800);

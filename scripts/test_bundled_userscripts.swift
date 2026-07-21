@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      4.1.0", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      4.2.2", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
@@ -112,11 +112,26 @@ for needle in [
     "setPlaybackQualityRange",   // quality control via internal API
     "QUALITY_LABELS",            // quality picker labels
     "getPreferredQuality",       // quality preference persistence
+    "maxTouchPoints",            // desktop-UA iPadOS detection
+    "safe-area-inset-bottom",    // iPhone/iPad toolbar placement
+    "findPlayer",                // active Shorts player selection
+    "x-webkit-airplay",          // native Safari media capabilities
 ] {
     guard tubeSource.contains(needle) else {
         fail("Tube Cleaner is missing expected feature code: \(needle)")
     }
 }
+if tubeSource.contains("video::-webkit-media-controls") {
+    fail("Tube Cleaner must not style Safari's private media-controls tree")
+}
+guard tubeSource.contains("if (!IS_IOS) { buildToolbar(player, video); }") else {
+    fail("Tube Cleaner must keep custom controls out of the iOS player")
+}
+guard tubeSource.contains("if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }") &&
+      tubeSource.contains("if (IS_IOS) {\n            if (getPreferredQuality()") else {
+    fail("Tube Cleaner must restore adaptive quality on iOS")
+}
+
 for needle in [
     ".video-js",                 // video.js detection
     ".jwplayer",                 // JW Player detection

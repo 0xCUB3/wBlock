@@ -12,7 +12,7 @@ enum BundledUserScriptSources {
 // ==UserScript==
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
-// @version      4.1.0
+// @version      4.2.2
 // @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
 // @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
 // @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
@@ -37,7 +37,7 @@ enum BundledUserScriptSources {
     'use strict';
 
     // ------------------------------------------------------------------
-    // Tube Cleaner v3.0.0
+    // Tube Cleaner v4.2.2
     //
     // Vinegar Extract approach: instead of trying to extract stream URLs
     // from the player response (which 403 due to SABR), we let YouTube's
@@ -79,14 +79,11 @@ enum BundledUserScriptSources {
     // iOS / iPadOS detection
     // ------------------------------------------------------------------
 
-    // iPadOS requesting the desktop site reports "MacIntel" with touch support;
-    // the ontouchstart check keeps real Macs (trackpads) from matching.
+    // iPadOS requesting the desktop site reports "MacIntel" with touch support.
+    // Real Macs report zero maxTouchPoints in Safari. Do not inspect
+    // documentElement here: production injection can run before <html> exists.
     var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 &&
-         typeof document.documentElement.ontouchstart !== 'undefined');
-    var IS_MOBILE_SITE = location.hostname === 'm.youtube.com' ||
-        /mobi|android/i.test(navigator.userAgent);
-
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     // ------------------------------------------------------------------
     // Auto PiP
     // ------------------------------------------------------------------
@@ -121,25 +118,46 @@ enum BundledUserScriptSources {
         try {
             if (video.webkitSupportsPresentationMode &&
                 typeof video.webkitSetPresentationMode === 'function') {
+                // Track only PiP entered by Tube Cleaner. PiP entered manually
+                // from Safari's controls must remain under the user's control.
+                pipActive = true;
                 video.webkitSetPresentationMode('picture-in-picture');
                 log('PiP entered');
             } else if (video.requestPictureInPicture) {
-                video.requestPictureInPicture();
+                pipActive = true;
+                var request = video.requestPictureInPicture();
+                if (request && request.catch) {
+                    request.catch(function (e) {
+                        pipActive = false;
+                        log('PiP request rejected', e);
+                    });
+                }
                 log('PiP entered via API');
             }
-        } catch (e) { warn('enterPiP failed', e); }
+        } catch (e) {
+            pipActive = false;
+            warn('enterPiP failed', e);
+        }
     }
 
     function exitPiP(video) {
-        if (!video) return;
-        if (!isPiPActive(video)) return;
+        if (!video || !pipActive) return;
+        if (!isPiPActive(video)) {
+            pipActive = false;
+            return;
+        }
         try {
             if (video.webkitSupportsPresentationMode &&
                 typeof video.webkitSetPresentationMode === 'function') {
                 video.webkitSetPresentationMode('inline');
+                pipActive = false;
                 log('PiP exited');
             } else if (document.pictureInPictureElement) {
-                document.exitPictureInPicture();
+                var request = document.exitPictureInPicture();
+                if (request && request.catch) {
+                    request.catch(function (e) { log('PiP exit rejected', e); });
+                }
+                pipActive = false;
             }
         } catch (e) { warn('exitPiP failed', e); }
     }
@@ -206,9 +224,14 @@ enum BundledUserScriptSources {
 
         // Listen for presentation mode changes
         function onPresentationModeChange() {
+            if (video.webkitPresentationMode !== 'picture-in-picture') {
+                pipActive = false;
+            }
             log('presentation mode changed:', video.webkitPresentationMode);
         }
+        function onLeavePictureInPicture() { pipActive = false; }
         video.addEventListener('webkitpresentationmodechanged', onPresentationModeChange);
+        video.addEventListener('leavepictureinpicture', onLeavePictureInPicture);
 
         // Release all of the above when this video is superseded, so listeners
         // and observers do not accumulate across SPA navigations.
@@ -219,6 +242,7 @@ enum BundledUserScriptSources {
             clearTimeout(blurTimer);
             try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
+            video.removeEventListener('leavepictureinpicture', onLeavePictureInPicture);
         });
     }
 
@@ -346,14 +370,21 @@ enum BundledUserScriptSources {
         // YouTube's player often sets the video to be a child of
         // elements with overflow:hidden or pointer-events:none.
         '.wblock-tc-native video',
-        '{ display: block !important; }',
+        '{ display: block !important; pointer-events: auto !important; }',
 
-        // Ensure Safari's native media controls show up.
-        '.wblock-tc-native video::-webkit-media-controls',
-        '{ display: flex !important; opacity: 1 !important; visibility: visible !important; }',
+        // YouTube leaves several transparent gesture/feedback layers above the
+        // media element. They must not steal taps from Safari's native controls.
+        '.wblock-tc-native .ytp-cued-thumbnail-overlay,',
+        '.wblock-tc-native .ytp-paid-content-overlay,',
+        '.wblock-tc-native .ytp-bezel,',
+        '.wblock-tc-native .ytp-spinner,',
+        '.wblock-tc-native .ytp-doubletap-ui-legacy,',
+        '.wblock-tc-native .ytp-touch-response',
+        '{ pointer-events: none !important; }',
 
-        '.wblock-tc-native video::-webkit-media-controls-panel',
-        '{ display: flex !important; opacity: 1 !important; }',
+        // Do not style Safari's private ::-webkit-media-controls tree. iOS and
+        // macOS use different internal layouts, and forcing display/flex on the
+        // iOS shadow controls breaks both video painting and touch hit-testing.
 
         // Make sure the video container allows native controls to
         // render by removing overflow hidden.
@@ -363,6 +394,34 @@ enum BundledUserScriptSources {
         // Let the native controls bar extend below the video.
         '.wblock-tc-native',
         '{ overflow: visible !important; }',
+
+        // The active desktop-Shorts player is not guaranteed to use the
+        // movie_player id. Repeat the critical cleanup rules against the class
+        // applied by Tube Cleaner so alternate YouTube player instances receive
+        // the same native layout.
+        '.wblock-tc-native .ytp-chrome-top,',
+        '.wblock-tc-native .ytp-chrome-bottom,',
+        '.wblock-tc-native .ytp-gradient-top,',
+        '.wblock-tc-native .ytp-gradient-bottom,',
+        '.wblock-tc-native .ytp-title,',
+        '.wblock-tc-native .ytp-large-play-button,',
+        '.wblock-tc-native .ytp-ad-module,',
+        '.wblock-tc-native .video-ads,',
+        '.wblock-tc-native .ytp-ad-overlay-container,',
+        '.wblock-tc-native .ytp-ce-element,',
+        '.wblock-tc-native .ytp-cards-teaser,',
+        '.wblock-tc-native .ytp-pause-overlay,',
+        '.wblock-tc-native .ytp-autonav-endscreen-countdown-overlay,',
+        '.wblock-tc-native .ytp-watermark,',
+        '.wblock-tc-native .ytp-related-overlay,',
+        '.wblock-tc-native .ytp-error',
+        '{ display: none !important; }',
+
+        '.wblock-tc-native .html5-video-container',
+        '{ position: static !important; overflow: visible !important; }',
+
+        '.wblock-tc-native video',
+        '{ width: 100% !important; height: 100% !important; }',
 
         // Prevent iOS double-tap zoom on toolbar buttons.
         '.wblock-tc-toolbar button, .wblock-tc-toolbar div',
@@ -493,6 +552,7 @@ enum BundledUserScriptSources {
             previousVideo._wblockControlsPatched = false;
         }
         activeVideo = null;
+        pipActive = false;
     }
 
     // Activate a video element: tear down the previous video's resources first,
@@ -503,20 +563,39 @@ enum BundledUserScriptSources {
         activeVideo = video;
         forceNativeControls(video);
         guardNativeControls(video);
-        video.removeAttribute('disablepictureinpicture');
-        video.disablePictureInPicture = false;
-        ensurePlaysInline(video);
         // Keep YouTube's media listeners intact. SABR/MSE uses waiting,
         // stalled, progress, and related events to maintain the stream.
-        buildToolbar(player, video);
+        // On iOS, custom controls inside #movie_player are not reliable:
+        // YouTube/native media handling can consume the touch before it reaches
+        // the toolbar. Let Safari own the complete interaction surface there.
+        if (!IS_IOS) { buildToolbar(player, video); }
         setupAutoPiP(video);
+    }
+
+    function restoreNativeMediaCapabilities(video) {
+        if (!video) return;
+        try {
+            if (!video.controls) { video.controls = true; }
+            if (!video.hasAttribute('controls')) { video.setAttribute('controls', ''); }
+            ensurePlaysInline(video);
+            // YouTube may suppress native PiP, fullscreen-adjacent controls, or
+            // AirPlay while its custom chrome is active. Those restrictions no
+            // longer apply once Safari's native controls own interaction.
+            if (video.hasAttribute('controlslist')) { video.removeAttribute('controlslist'); }
+            if (video.hasAttribute('disablepictureinpicture')) { video.removeAttribute('disablepictureinpicture'); }
+            if (video.hasAttribute('disableremoteplayback')) { video.removeAttribute('disableremoteplayback'); }
+            if (video.disablePictureInPicture) { video.disablePictureInPicture = false; }
+            if (video.disableRemotePlayback) { video.disableRemotePlayback = false; }
+            if (video.getAttribute('x-webkit-airplay') !== 'allow') {
+                video.setAttribute('x-webkit-airplay', 'allow');
+            }
+        } catch (e) { /* ignore */ }
     }
 
     function forceNativeControls(video) {
         if (video._wblockControlsPatched) return;
         video._wblockControlsPatched = true;
-        video.controls = true;
-        video.setAttribute('controls', '');
+        restoreNativeMediaCapabilities(video);
     }
 
     // WebKit renders Safari's native controls from the controls content
@@ -527,16 +606,19 @@ enum BundledUserScriptSources {
         if (!video || video._wblockControlsGuarded) return;
         video._wblockControlsGuarded = true;
 
-        function restore() {
-            if (video && !video.hasAttribute('controls')) {
-                video.setAttribute('controls', '');
-            }
-        }
+        function restore() { restoreNativeMediaCapabilities(video); }
 
         var observer = null;
         try {
             observer = new MutationObserver(restore);
-            observer.observe(video, { attributes: true, attributeFilter: ['controls'] });
+            observer.observe(video, {
+                attributes: true,
+                attributeFilter: [
+                    'controls', 'controlslist', 'disablepictureinpicture',
+                    'disableremoteplayback', 'playsinline',
+                    'webkit-playsinline', 'x-webkit-airplay'
+                ]
+            });
         } catch (e) { /* ignore */ }
 
         restore();
@@ -553,21 +635,74 @@ enum BundledUserScriptSources {
     function ensurePlaysInline(video) {
         if (!video) return;
         try {
-            video.playsInline = true;
-            video.setAttribute('playsinline', '');
-            video.setAttribute('webkit-playsinline', '');
+            if (!video.playsInline) { video.playsInline = true; }
+            if (!video.hasAttribute('playsinline')) { video.setAttribute('playsinline', ''); }
+            if (!video.hasAttribute('webkit-playsinline')) { video.setAttribute('webkit-playsinline', ''); }
         } catch (e) { /* ignore */ }
     }
 
+    function findPlayer() {
+        var candidates = [];
+        function add(raw) {
+            if (!raw) return;
+            var player = raw.matches && raw.matches('.html5-video-player') ? raw :
+                (raw.querySelector && raw.querySelector('.html5-video-player')) || raw;
+            if (!player.querySelector || !player.querySelector('video')) return;
+            if (candidates.indexOf(player) === -1) { candidates.push(player); }
+        }
+
+        var known = document.querySelectorAll('#movie_player, .html5-video-player');
+        for (var i = 0; i < known.length; i++) { add(known[i]); }
+        if (!candidates.length) {
+            var wrappers = document.querySelectorAll('ytd-player, ytm-player, #player-container');
+            for (var w = 0; w < wrappers.length; w++) { add(wrappers[w]); }
+        }
+        if (!candidates.length) return null;
+        if (candidates.length === 1) return candidates[0];
+        var visiblePlaying = null;
+        for (var p = 0; p < candidates.length; p++) {
+            if (candidates[p].classList.contains('playing-mode') &&
+                candidates[p].getAttribute('aria-hidden') !== 'true' && !candidates[p].hidden) {
+                if (visiblePlaying) { visiblePlaying = null; break; }
+                visiblePlaying = candidates[p];
+            }
+        }
+        if (visiblePlaying) return visiblePlaying;
+
+        // Desktop Shorts can retain multiple player instances. Prefer the
+        // visible, initialized, currently-playing one instead of the first DOM
+        // match, which is commonly an offscreen previous Short.
+        var best = candidates[0];
+        var bestScore = -Infinity;
+        for (var c = 0; c < candidates.length; c++) {
+            var candidate = candidates[c];
+            var video = candidate.querySelector('video');
+            var score = 0;
+            try {
+                if (candidate.getAttribute('aria-hidden') === 'true' || candidate.hidden) { score -= 200; }
+                if (candidate.classList.contains('playing-mode')) { score += 80; }
+                if (video.currentSrc || video.src) { score += 30; }
+                if (video.readyState > 0) { score += 30; }
+                if (!video.paused && !video.ended) { score += 100; }
+                var rect = candidate.getBoundingClientRect();
+                if (rect.width > 1 && rect.height > 1 &&
+                    rect.bottom > 0 && rect.right > 0 &&
+                    rect.top < window.innerHeight && rect.left < window.innerWidth) {
+                    score += 60;
+                }
+                var style = getComputedStyle(candidate);
+                if (style.display === 'none' || style.visibility === 'hidden') { score -= 200; }
+            } catch (e) { /* keep the structural score */ }
+            if (score > bestScore) {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
     function transformPlayer() {
-        var player = document.getElementById('movie_player');
-        if (!player) {
-            player = document.querySelector('.html5-video-player');
-        }
-        if (!player && IS_MOBILE_SITE) {
-            player = document.querySelector('ytd-player') ||
-                document.querySelector('#player-container');
-        }
+        var player = findPlayer();
         if (!player) return;
 
         var video = player.querySelector('video');
@@ -594,23 +729,38 @@ enum BundledUserScriptSources {
         // nothing leaks across SPA navigations.
         activateVideo(player, video);
 
-        // 6. Apply audio-only preference
-        setAudioOnlyStyles(isAudioOnly());
+        // 6. Apply audio-only preference on desktop only. Hiding the <video>
+        // on iOS also hides Safari's native controls, and the mode never reduced
+        // SABR video transfer in the first place. Clear old persisted state so
+        // users cannot remain trapped on a black, non-interactive player.
+        if (IS_IOS) {
+            if (isAudioOnly()) { setAudioOnly(false); }
+            setAudioOnlyStyles(false);
+        } else {
+            setAudioOnlyStyles(isAudioOnly());
+        }
 
         // 7. Enable background playback
         enableBackgroundPlayback();
 
-        // 6. Apply preferred quality (deferred — let the player finish init)
-        var qualityDelay = setTimeout(function () {
-            qualityDelay = null;
-            applyPreferredQuality();
-        }, 3000);
-        registerCleanup(function () {
-            if (qualityDelay !== null) {
-                clearTimeout(qualityDelay);
+        // 8. Fixed quality ranges can stall YouTube's SABR pipeline on iOS.
+        // The custom quality UI is desktop-only, so migrate old mobile state
+        // back to YouTube's adaptive range and never start the retry loop there.
+        if (IS_IOS) {
+            if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }
+            setQuality('auto');
+        } else {
+            var qualityDelay = setTimeout(function () {
                 qualityDelay = null;
-            }
-        });
+                applyPreferredQuality();
+            }, 3000);
+            registerCleanup(function () {
+                if (qualityDelay !== null) {
+                    clearTimeout(qualityDelay);
+                    qualityDelay = null;
+                }
+            });
+        }
 
         // 7. Observe for video element recreation. The player element persists
         // across SPA navigations, so disconnect any previous observer before
@@ -654,7 +804,7 @@ enum BundledUserScriptSources {
     ];
 
     function getAvailableQualities() {
-        var player = document.getElementById('movie_player');
+        var player = findPlayer();
         if (!player || !player.getAvailableQualityLevels) return [];
         var levels = player.getAvailableQualityLevels();
         if (!levels || !levels.length) return [];
@@ -663,7 +813,7 @@ enum BundledUserScriptSources {
     }
 
     function getCurrentQuality() {
-        var player = document.getElementById('movie_player');
+        var player = findPlayer();
         if (!player || !player.getPlaybackQuality) return 'auto';
         var q = player.getPlaybackQuality();
         return q || 'auto';
@@ -755,14 +905,16 @@ enum BundledUserScriptSources {
     }
 
     function setQuality(target) {
-        var player = document.getElementById('movie_player');
+        var player = findPlayer();
         if (!player) { warn('setQuality: no player'); return false; }
 
         if (target === 'auto') {
-            // Reset to auto by setting a wide range via API
+            // Reset to auto by setting a wide range via API and remove the
+            // fixed-quality bias previously written by Tube Cleaner.
             if (player.setPlaybackQualityRange) {
                 try { player.setPlaybackQualityRange('tiny', 'hd2160'); } catch (e) { /* ignore */ }
             }
+            try { localStorage.removeItem('yt-player-quality'); } catch (e) { /* ignore */ }
             return true;
         }
 
@@ -873,22 +1025,24 @@ enum BundledUserScriptSources {
 
         var toolbar = document.createElement('div');
         toolbar.className = 'wblock-tc-toolbar';
-        // Position at bottom-right, above native controls. Always visible but
-        // semi-transparent, full opacity on hover.
-        // On mobile (iOS/iPadOS) use larger touch targets and always-visible.
-        var toolbarBottom = IS_IOS ? '12px' : '42px';
+        // Position at bottom-right above Safari's native controls. On iOS the
+        // native controls consume touch events, so this toolbar must stay visible
+        // rather than relying on a tap bubbling through the media-controls layer.
+        var toolbarBottom = IS_IOS ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '42px';
+        var toolbarRight = IS_IOS ? 'max(8px, env(safe-area-inset-right, 0px))' : '8px';
         var toolbarOpacity = IS_IOS ? '1' : '0.75';
         var toolbarFont = IS_IOS ? '14px' : '11px';
-        toolbar.style.cssText = 'position:absolute;bottom:' + toolbarBottom + ';right:8px;z-index:60;display:flex;gap:6px;align-items:center;pointer-events:auto;font:' + toolbarFont + '/1.2 -apple-system,system-ui,sans-serif;opacity:' + toolbarOpacity + ';transition:opacity 0.15s';
+        toolbar.style.cssText = 'position:absolute;bottom:' + toolbarBottom + ';right:' + toolbarRight + ';z-index:2147483646;display:flex;gap:6px;align-items:center;pointer-events:auto;font:' + toolbarFont + '/1.2 -apple-system,system-ui,sans-serif;opacity:' + toolbarOpacity + ';transition:opacity 0.15s';
 
         var btnStyle = 'background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;-webkit-user-select:none;user-select:none';
         // On iOS, use larger touch targets (minimum 44pt)
         if (IS_IOS) {
-            btnStyle = 'background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:6px;padding:8px 12px;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none';
+            btnStyle = 'background:rgba(0,0,0,0.78);color:#fff;border:none;border-radius:8px;padding:8px 12px;min-width:44px;min-height:44px;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation';
         }
 
         // Quality selector
         var qualityBtn = document.createElement('button');
+        qualityBtn.className = 'wblock-tc-quality-button';
         qualityBtn.type = 'button';
         qualityBtn.style.cssText = btnStyle;
         function updateQualityBtn() {
@@ -901,10 +1055,11 @@ enum BundledUserScriptSources {
 
         // Quality dropdown — opens upward since toolbar is at bottom
         var qualityMenu = document.createElement('div');
+        qualityMenu.className = 'wblock-tc-quality-menu';
         var menuFont = IS_IOS ? '16px' : '12px';
         var menuPadding = IS_IOS ? '8px 0' : '4px 0';
         var menuMinWidth = IS_IOS ? '140px' : '100px';
-        qualityMenu.style.cssText = 'position:absolute;bottom:100%;right:0;margin-bottom:4px;background:rgba(0,0,0,0.9);border-radius:5px;padding:' + menuPadding + ';min-width:' + menuMinWidth + ';display:none;z-index:70;font:' + menuFont + '/1.8 -apple-system,system-ui,sans-serif';
+        qualityMenu.style.cssText = 'position:absolute;bottom:100%;right:0;margin-bottom:4px;box-sizing:border-box;background:rgba(0,0,0,0.92);border-radius:5px;padding:' + menuPadding + ';min-width:' + menuMinWidth + ';max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;z-index:70;font:' + menuFont + '/1.8 -apple-system,system-ui,sans-serif';
 
         function buildQualityMenu() {
             // Clear safely — avoid innerHTML which triggers TrustedHTML CSP
@@ -961,6 +1116,12 @@ enum BundledUserScriptSources {
             e.stopPropagation();
             if (qualityMenu.style.display === 'none') {
                 buildQualityMenu();
+                if (IS_IOS) {
+                    var playerRect = player.getBoundingClientRect();
+                    var toolbarRect = toolbar.getBoundingClientRect();
+                    var roomAbove = Math.floor(toolbarRect.top - playerRect.top - 8);
+                    qualityMenu.style.maxHeight = Math.max(44, roomAbove) + 'px';
+                }
                 qualityMenu.style.display = 'block';
             } else {
                 qualityMenu.style.display = 'none';
@@ -995,6 +1156,7 @@ enum BundledUserScriptSources {
 
         // Audio-only toggle
         var audioBtn = document.createElement('button');
+        audioBtn.className = 'wblock-tc-audio-button';
         audioBtn.type = 'button';
         audioBtn.style.cssText = btnStyle;
         function updateAudioBtn() {
@@ -1014,52 +1176,12 @@ enum BundledUserScriptSources {
         // PiP button is intentionally omitted — Safari's native controls
         // already provide PiP. Auto PiP handles automatic PiP entry.
 
-        // On iOS / iPadOS: hide by default, show on tap, auto-hide after
-        // a few seconds (same behavior as Safari's native controls).
+        // Keep the compact mobile toolbar visible. Native iOS media controls
+        // consume taps before they bubble to #movie_player, so tap-to-reveal is
+        // not reliable on actual iPhone/iPad hardware.
         if (IS_IOS) {
-            toolbar.style.opacity = '0';
-            toolbar.style.pointerEvents = 'none';
-
-            var iosToolbarTimer = null;
-
-            function showToolbarIOS() {
-                toolbar.style.opacity = '1';
-                toolbar.style.pointerEvents = 'auto';
-                clearTimeout(iosToolbarTimer);
-                iosToolbarTimer = setTimeout(function () {
-                    toolbar.style.opacity = '0';
-                    toolbar.style.pointerEvents = 'none';
-                }, 4000);
-            }
-
-            // Show on tap anywhere on the player
-            player.addEventListener('touchstart', showToolbarIOS, { passive: true });
-
-            // Also show on play/pause (user tapped the native controls)
-            video.addEventListener('play', showToolbarIOS);
-            video.addEventListener('pause', showToolbarIOS);
-
-            // Keep visible while tapping directly on toolbar buttons
-            toolbar.addEventListener('touchstart', function (e) {
-                e.stopPropagation();
-                clearTimeout(iosToolbarTimer);
-            }, { passive: true });
-
-            // Hide after a timeout when a toolbar button is tapped
-            toolbar.addEventListener('click', function () {
-                clearTimeout(iosToolbarTimer);
-                iosToolbarTimer = setTimeout(function () {
-                    toolbar.style.opacity = '0';
-                    toolbar.style.pointerEvents = 'none';
-                }, 4000);
-            });
-
-            registerCleanup(function () {
-                clearTimeout(iosToolbarTimer);
-                player.removeEventListener('touchstart', showToolbarIOS, { passive: true });
-                video.removeEventListener('play', showToolbarIOS);
-                video.removeEventListener('pause', showToolbarIOS);
-            });
+            toolbar.style.opacity = '1';
+            toolbar.style.pointerEvents = 'auto';
         } else {
             // Start hidden on desktop — it appears with native controls
             toolbar.style.opacity = '0';
@@ -1179,8 +1301,7 @@ enum BundledUserScriptSources {
         if (location.href === lastUrl) return;
         lastUrl = location.href;
 
-        var player = document.getElementById('movie_player') ||
-            document.querySelector('.html5-video-player');
+        var player = findPlayer();
         if (player) {
             player.removeAttribute(ATTR_CLEANED);
             // Never remove wblock-tc-native here. Keeping the native class on
@@ -1282,9 +1403,9 @@ enum BundledUserScriptSources {
             getPreferredQuality: getPreferredQuality,
             setPreferredQuality: setPreferredQuality,
             QUALITY_LABELS: QUALITY_LABELS,
-            getPlayer: function () { return document.getElementById('movie_player'); },
+            getPlayer: findPlayer,
             inspectPlayer: function () {
-                var p = document.getElementById('movie_player');
+                var p = findPlayer();
                 if (!p) return 'no player';
                 var methods = [];
                 for (var k in p) {

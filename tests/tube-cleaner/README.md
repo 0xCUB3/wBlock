@@ -21,10 +21,15 @@ userscript at `document-start` in the page world (matching `@run-at` +
 `@inject-into page`), and asserts the transformation actually happens.
 
 Tube Cleaner scenarios: `fixture.html` / `fixture-noplaysinline.html` cover
-macOS Safari, iPhone, and iPad requesting the desktop site (no `playsinline`,
-the iPadOS default). `fixture-tube-cleaner-early.html` creates the YouTube
-player from a `<head>` script and enforces anti-flash CSS plus nativeization
-before DOMContentLoaded and within one frame of insertion.
+macOS Safari, iPhone, legacy iPad mobile UAs, and modern iPadOS requesting the
+desktop site as `MacIntel`. Mobile checks enforce a Safari-native-only interaction surface, migration out
+of old black-screen audio-only and fixed-quality loading states, visible video
+in portrait and landscape, and restoration of inline playback, PiP, AirPlay, and native controls
+after YouTube removes them. `fixture-tube-cleaner-multiple.html` models retained
+Shorts players and verifies native enhancements follow the visible playing
+video. `fixture-tube-cleaner-early.html` creates the YouTube player from a
+`<head>` script and enforces anti-flash CSS plus nativeization before
+DOMContentLoaded and within one frame of insertion.
 
 Player Cleaner scenarios:
 - `fixture-player-cleaner.html` — opaque (blob) source, so the script enhances
@@ -150,7 +155,9 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   known wrappers, bounded per-video resources across SPA swaps, the bare-video
   fallback for unrecognized/custom players (and its ambient and
   already-native skip guards), the background-playback override, and controls
-  surviving a fighting player.
+  surviving a fighting player. Tube Cleaner additionally distinguishes
+  automatically entered PiP from user-entered PiP so returning to the page does
+  not close a PiP session the user requested manually.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate
   AdGuard scriptlets (`trusted-replace-*-response`, `set-constant` on
   `adPlacements`/`adSlots`/`playerAds`), not by Tube Cleaner. Verify those via
