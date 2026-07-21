@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pre-DOMContentLoaded Tube Cleaner timing fixture</title>
+<script>
+  (function () {
+    var timing = window.__wblockEarlyTubeTiming = {
+      createdAt: 0,
+      nativeAt: 0,
+      styleAt: document.getElementById('wblock-tc-style') ? performance.now() : 0,
+      domContentLoadedAt: 0
+    };
+
+    new MutationObserver(function () {
+      var player = document.getElementById('movie_player');
+      var video = player && player.querySelector('video');
+      if (!timing.styleAt && document.getElementById('wblock-tc-style')) {
+        timing.styleAt = performance.now();
+      }
+      if (!timing.nativeAt && player && video &&
+          player.classList.contains('wblock-tc-native') && video.controls) {
+        timing.nativeAt = performance.now();
+      }
+    }).observe(document, { childList: true, subtree: true, attributes: true });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      timing.domContentLoadedAt = performance.now();
+    }, { once: true });
+
+    var player = document.createElement('div');
+    player.id = 'movie_player';
+    player.className = 'html5-video-player';
+    player.getAvailableQualityLevels = function () { return ['hd720', 'medium']; };
+    player.getPlaybackQuality = function () { return 'hd720'; };
+    var videoContainer = document.createElement('div');
+    videoContainer.className = 'html5-video-container';
+    videoContainer.appendChild(document.createElement('video'));
+    player.appendChild(videoContainer);
+    var chrome = document.createElement('div');
+    chrome.className = 'ytp-chrome-bottom';
+    player.appendChild(chrome);
+    timing.createdAt = performance.now();
+    document.documentElement.appendChild(player);
+  })();
+</script>
+</head>
+<body>Tube Cleaner timing fixture</body>
+</html>

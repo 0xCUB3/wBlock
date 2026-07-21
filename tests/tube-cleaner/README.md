@@ -20,9 +20,11 @@ Loads a synthetic page that mimics the real player DOM, injects the real
 userscript at `document-start` in the page world (matching `@run-at` +
 `@inject-into page`), and asserts the transformation actually happens.
 
-Tube Cleaner scenarios (fixture.html / fixture-noplaysinline.html): desktop
-(macOS Safari-like), iPhone (mobile Safari, touch), and iPad requesting the
-desktop site (no `playsinline`, the iPadOS default).
+Tube Cleaner scenarios: `fixture.html` / `fixture-noplaysinline.html` cover
+macOS Safari, iPhone, and iPad requesting the desktop site (no `playsinline`,
+the iPadOS default). `fixture-tube-cleaner-early.html` creates the YouTube
+player from a `<head>` script and enforces anti-flash CSS plus nativeization
+before DOMContentLoaded and within one frame of insertion.
 
 Player Cleaner scenarios:
 - `fixture-player-cleaner.html` — opaque (blob) source, so the script enhances
@@ -117,9 +119,10 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
 
 ## What these tests do and don't prove
 
-- Prove: the userscripts' DOM transformation logic. Tube Cleaner: native
-  controls, chrome hiding, toolbar, background-playback override, auto-PiP
-  hooks, iOS code paths, `playsinline`, controls surviving YouTube's attempts to
+- Prove: the userscripts' DOM transformation logic. Tube Cleaner: pre-paint
+  startup and anti-flash CSS, native controls, chrome hiding, toolbar,
+  background-playback override, auto-PiP hooks, iOS code paths, `playsinline`,
+  controls surviving YouTube's attempts to
   remove them. Player Cleaner: custom-player detection, source discovery across
   video.js/JW/Plyr/data-attributes (including root-relative URLs resolved
   against the document base), the clean-source cleanup path (original media

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
-// @version      4.0.0
+// @version      4.1.0
 // @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
 // @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
 // @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
@@ -361,15 +361,14 @@
     ].join(' ');
 
     function injectStyles() {
-        if (document.getElementById(STYLE_ID)) { return; }
+        if (document.getElementById(STYLE_ID)) { return true; }
+        var root = document.head || document.documentElement;
+        if (!root) { return false; }
         var style = document.createElement('style');
         style.id = STYLE_ID;
         style.textContent = CSS;
-        if (document.head) {
-            document.head.appendChild(style);
-        } else {
-            document.documentElement.appendChild(style);
-        }
+        root.appendChild(style);
+        return true;
     }
 
     function setAudioOnlyStyles(enabled) {
@@ -566,8 +565,12 @@
         var player = document.getElementById('movie_player');
         if (!player) {
             player = document.querySelector('.html5-video-player');
-            if (!player) return;
         }
+        if (!player && IS_MOBILE_SITE) {
+            player = document.querySelector('ytd-player') ||
+                document.querySelector('#player-container');
+        }
+        if (!player) return;
 
         var video = player.querySelector('video');
         if (!video) return;
@@ -579,7 +582,7 @@
             videoId = params.get('v') || '';
         } catch (e) { /* ignore */ }
 
-        if (player.getAttribute(ATTR_CLEANED) === videoId) return;
+        if (player.getAttribute(ATTR_CLEANED) === videoId && activeVideo === video) return;
         player.setAttribute(ATTR_CLEANED, videoId);
 
         log('transforming player for', videoId || '(unknown)');
@@ -1139,22 +1142,25 @@
             document.querySelector('.html5-video-player');
         if (player) {
             player.removeAttribute(ATTR_CLEANED);
-            player.classList.remove('wblock-tc-native');
+            // Never remove wblock-tc-native here. Keeping the native class on
+            // the persistent player prevents YouTube chrome flashing while the
+            // SPA swaps video/page data.
         }
 
-        // Try to transform at intervals
+        transformPlayer();
+        // Recovery only. The player/document observers are the primary path.
+        setTimeout(transformPlayer, 100);
         setTimeout(transformPlayer, 500);
-        setTimeout(transformPlayer, 1500);
-        setTimeout(transformPlayer, 3000);
     }
 
     function watchNavigation() {
+        document.addEventListener('yt-navigate-start', onNavigate, true);
         document.addEventListener('yt-navigate-finish', onNavigate, true);
         try {
             document.addEventListener('yt-page-data-updated', onNavigate, true);
         } catch (e) { /* ignore */ }
         window.addEventListener('popstate', onNavigate, true);
-        // Poll for URL changes as a fallback
+        // Poll for URL changes as a last-resort fallback only.
         setInterval(function () {
             if (location.href !== lastUrl) onNavigate();
         }, 1000);
@@ -1164,42 +1170,67 @@
     // Boot
     // ------------------------------------------------------------------
 
-    function waitForPlayer() {
-        var started = Date.now();
-        var timer = setInterval(function () {
-            var player = document.getElementById('movie_player') ||
-                document.querySelector('.html5-video-player');
-            // On mobile YouTube, the player may be in a different container
-            if (!player && IS_MOBILE_SITE) {
-                player = document.querySelector('ytd-player') ||
-                    document.querySelector('#player-container');
+    var documentPlayerObserver = null;
+
+    function nodeMayContainPlayer(node) {
+        if (!node || node.nodeType !== 1) { return false; }
+        try {
+            if (node.tagName === 'VIDEO' || node.id === 'movie_player' ||
+                node.id === 'player-container' ||
+                node.matches('.html5-video-player, ytd-player')) {
+                return true;
             }
-            var video = player && player.querySelector('video');
-            if (player && video) {
-                clearInterval(timer);
-                transformPlayer();
-            } else if (Date.now() - started > 15000) {
-                clearInterval(timer);
-                warn('timed out waiting for player');
+            return !!node.querySelector('video, #movie_player, .html5-video-player, ytd-player, #player-container');
+        } catch (e) { return false; }
+    }
+
+    function observeDocumentForPlayer() {
+        if (documentPlayerObserver || typeof MutationObserver === 'undefined') { return; }
+        documentPlayerObserver = new MutationObserver(function (records) {
+            // The first parser mutation creates <html>; install anti-flash CSS
+            // then even when the userscript itself ran before documentElement.
+            injectStyles();
+            var relevant = false;
+            for (var i = 0; i < records.length && !relevant; i++) {
+                var record = records[i];
+                if (nodeMayContainPlayer(record.target)) { relevant = true; break; }
+                for (var j = 0; j < record.addedNodes.length; j++) {
+                    if (nodeMayContainPlayer(record.addedNodes[j])) {
+                        relevant = true;
+                        break;
+                    }
+                }
             }
-        }, 250);
+            // MutationObserver runs before rendering. Transform now—no polling
+            // interval or debounce—so YouTube chrome never reaches next paint.
+            if (relevant) { transformPlayer(); }
+        });
+        try {
+            documentPlayerObserver.observe(document, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['id', 'class']
+            });
+        } catch (e) { /* ignore */ }
     }
 
     function boot() {
-        // Inject CSS immediately
+        observeDocumentForPlayer();
         injectStyles();
         enableBackgroundPlayback();
-
         lastUrl = location.href;
         watchNavigation();
-        waitForPlayer();
+        transformPlayer();
+
+        // Recovery scans only; normal startup is handled pre-paint above.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', transformPlayer, { once: true });
+            window.addEventListener('load', transformPlayer, { once: true });
+        }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        boot();
-    }
+    boot();
 
     // Expose debug helpers on window for console testing
     try {

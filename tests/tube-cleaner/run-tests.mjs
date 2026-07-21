@@ -26,6 +26,7 @@ const PLAYER_SCRIPT_PATH = join(__dirname, '..', '..', 'wBlockCoreService', 'Bun
 const INJECTOR_PATH = join(__dirname, '..', '..', 'wBlock Scripts (iOS)', 'Resources', 'userscript-injector.js');
 const FIXTURE_URL = pathToFileURL(join(__dirname, 'fixture.html')).href;
 const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.html')).href;
+const FIXTURE_TUBE_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-tube-cleaner-early.html')).href;
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
@@ -221,7 +222,46 @@ async function audioToggleCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 4: Player Cleaner on a custom (video.js) player ------------
+// ---- Scenario 4: Tube Cleaner transforms before DOMContentLoaded ---------
+// A <head> script creates the YouTube player. The document observer must install
+// anti-flash CSS and nativeize the video in the same pre-paint mutation cycle.
+{
+  const { browser, page, pageErrors } = await runScenario('Tube Cleaner (pre-paint timing)', {
+    fixture: FIXTURE_TUBE_EARLY_URL,
+    readySignal: '#movie_player.wblock-tc-native',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'tube-cleaner-timing';
+
+  await check(page, S, 'injects anti-flash CSS before DOMContentLoaded', () => {
+    const t = window.__wblockEarlyTubeTiming;
+    const pass = !!(t && t.styleAt > 0 && t.domContentLoadedAt > 0 && t.styleAt <= t.domContentLoadedAt);
+    return { pass, detail: t ? `style=${t.styleAt.toFixed(1)}ms dcl=${t.domContentLoadedAt.toFixed(1)}ms` : 'no timing' };
+  });
+
+  await check(page, S, 'nativeizes before DOMContentLoaded', () => {
+    const t = window.__wblockEarlyTubeTiming;
+    const pass = !!(t && t.nativeAt > 0 && t.domContentLoadedAt > 0 && t.nativeAt <= t.domContentLoadedAt);
+    return { pass, detail: t ? `native=${t.nativeAt.toFixed(1)}ms dcl=${t.domContentLoadedAt.toFixed(1)}ms` : 'no timing' };
+  });
+
+  await check(page, S, 'nativeizes within one frame of insertion', () => {
+    const t = window.__wblockEarlyTubeTiming;
+    const elapsed = t && t.nativeAt ? t.nativeAt - t.createdAt : Infinity;
+    return { pass: elapsed >= 0 && elapsed < 50, detail: `latency=${Number.isFinite(elapsed) ? elapsed.toFixed(1) : 'n/a'}ms` };
+  });
+
+  await check(page, S, 'keeps YouTube chrome hidden', () => {
+    const chrome = document.querySelector('#movie_player .ytp-chrome-bottom');
+    return { pass: !!(chrome && getComputedStyle(chrome).display === 'none'),
+      detail: chrome ? `display=${getComputedStyle(chrome).display}` : 'no chrome fixture' };
+  });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 5: Player Cleaner on a custom (video.js) player ------------
 // Verifies the ported controls guard: Player Cleaner enhances the existing
 // <video> in place (opaque blob source) and must keep native controls on even
 // though the custom player keeps stripping them.

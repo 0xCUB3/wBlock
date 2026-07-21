@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      4.0.0", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      4.1.0", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
