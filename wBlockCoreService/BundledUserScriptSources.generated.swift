@@ -925,10 +925,45 @@ enum BundledUserScriptSources {
         // PiP button is intentionally omitted — Safari's native controls
         // already provide PiP. Auto PiP handles automatic PiP entry.
 
-        // On iOS the toolbar is always visible (no hover). On desktop,
-        // show/hide with native controls using mouse tracking.
+        // On iOS / iPadOS: hide by default, show on tap, auto-hide after
+        // a few seconds (same behavior as Safari's native controls).
         if (IS_IOS) {
-            toolbar.style.opacity = '1';
+            toolbar.style.opacity = '0';
+            toolbar.style.pointerEvents = 'none';
+
+            var iosToolbarTimer = null;
+
+            function showToolbarIOS() {
+                toolbar.style.opacity = '1';
+                toolbar.style.pointerEvents = 'auto';
+                clearTimeout(iosToolbarTimer);
+                iosToolbarTimer = setTimeout(function () {
+                    toolbar.style.opacity = '0';
+                    toolbar.style.pointerEvents = 'none';
+                }, 4000);
+            }
+
+            // Show on tap anywhere on the player
+            player.addEventListener('touchstart', showToolbarIOS, { passive: true });
+
+            // Also show on play/pause (user tapped the native controls)
+            video.addEventListener('play', showToolbarIOS);
+            video.addEventListener('pause', showToolbarIOS);
+
+            // Keep visible while tapping directly on toolbar buttons
+            toolbar.addEventListener('touchstart', function (e) {
+                e.stopPropagation();
+                clearTimeout(iosToolbarTimer);
+            }, { passive: true });
+
+            // Hide after a timeout when a toolbar button is tapped
+            toolbar.addEventListener('click', function () {
+                clearTimeout(iosToolbarTimer);
+                iosToolbarTimer = setTimeout(function () {
+                    toolbar.style.opacity = '0';
+                    toolbar.style.pointerEvents = 'none';
+                }, 4000);
+            });
         } else {
             // Start hidden on desktop — it appears with native controls
             toolbar.style.opacity = '0';
@@ -1017,12 +1052,6 @@ enum BundledUserScriptSources {
                 }
             });
         }
-
-        // On mobile, tap toggles toolbar visibility
-        player.addEventListener('touchstart', function () {
-            toolbar.style.opacity = '1';
-            toolbar.style.pointerEvents = 'auto';
-        }, { passive: true });
 
         // Show on CSS class toggle (for keyboard shortcuts)
         toolbar.classList.add('wblock-tc-toolbar-built');
