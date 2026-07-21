@@ -84,10 +84,118 @@ enum BundledUserScriptSources {
     var IS_MOBILE_SITE = location.hostname === 'm.youtube.com' ||
         /mobi|android/i.test(navigator.userAgent);
 
-    function isPiPSupported() {
-        // PiP on iOS is automatic (system-managed), not programmatic.
-        // Only show the PiP button on macOS Safari.
-        return document.pictureInPictureEnabled !== false && !IS_IOS;
+    // ------------------------------------------------------------------
+    // Auto PiP
+    // ------------------------------------------------------------------
+
+    var AUTO_PIP_KEY = 'wblock.tubeCleaner.autoPiP';
+    var autoPiPEnabled = true;
+    var pipActive = false;
+
+    function getAutoPiP() {
+        try {
+            var stored = localStorage.getItem(AUTO_PIP_KEY);
+            return stored === null ? true : stored === '1';
+        } catch (e) { return true; }
+    }
+
+    function setAutoPiP(v) {
+        try { localStorage.setItem(AUTO_PIP_KEY, v ? '1' : '0'); } catch (e) { /* ignore */ }
+        autoPiPEnabled = v;
+    }
+
+    try { autoPiPEnabled = getAutoPiP(); } catch (e) { /* ignore */ }
+
+    function isPiPActive(video) {
+        return document.pictureInPictureElement === video ||
+            (video && video.webkitPresentationMode === 'picture-in-picture');
+    }
+
+    function enterPiP(video) {
+        if (!video || !autoPiPEnabled) return;
+        if (isPiPActive(video)) return;
+        if (video.paused || video.ended) return;
+        try {
+            if (video.webkitSupportsPresentationMode &&
+                typeof video.webkitSetPresentationMode === 'function') {
+                video.webkitSetPresentationMode('picture-in-picture');
+                log('PiP entered');
+            } else if (video.requestPictureInPicture) {
+                video.requestPictureInPicture();
+                log('PiP entered via API');
+            }
+        } catch (e) { warn('enterPiP failed', e); }
+    }
+
+    function exitPiP(video) {
+        if (!video) return;
+        if (!isPiPActive(video)) return;
+        try {
+            if (video.webkitSupportsPresentationMode &&
+                typeof video.webkitSetPresentationMode === 'function') {
+                video.webkitSetPresentationMode('inline');
+                log('PiP exited');
+            } else if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            }
+        } catch (e) { warn('exitPiP failed', e); }
+    }
+
+    function setupAutoPiP(video) {
+        if (!video || video._wblockAutoPiPHooked) return;
+        video._wblockAutoPiPHooked = true;
+
+        // Tab switch: enter PiP when tab hides, exit when visible
+        document.addEventListener('visibilitychange', function () {
+            if (!autoPiPEnabled) return;
+            if (document.hidden) {
+                if (!video.paused && !video.ended) {
+                    enterPiP(video);
+                }
+            } else {
+                if (document.hasFocus() && isPiPActive(video)) {
+                    exitPiP(video);
+                }
+            }
+        });
+
+        // Window blur: enter PiP when switching to another app
+        window.addEventListener('blur', function () {
+            if (!autoPiPEnabled) return;
+            if (document.hidden) return; // already handled by visibilitychange
+            setTimeout(function () {
+                if (document.hasFocus()) return; // focus moved within document
+                if (!video.paused && !video.ended) {
+                    enterPiP(video);
+                }
+            }, 100);
+        });
+
+        window.addEventListener('focus', function () {
+            if (!autoPiPEnabled) return;
+            if (document.hidden) return;
+            if (document.hasFocus() && isPiPActive(video)) {
+                exitPiP(video);
+            }
+        });
+
+        // Scroll out of view: use IntersectionObserver
+        var scrollObserver = new IntersectionObserver(function (entries) {
+            if (!autoPiPEnabled) return;
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting && !video.paused && !video.ended) {
+                    enterPiP(video);
+                } else if (entry.isIntersecting && isPiPActive(video)) {
+                    exitPiP(video);
+                }
+            });
+        }, { threshold: 0.1 });
+        scrollObserver.observe(video);
+
+        // Listen for presentation mode changes
+        video.addEventListener('webkitpresentationmodechanged', function () {
+            log('presentation mode changed:', video.webkitPresentationMode);
+        });
     }
 
     // ------------------------------------------------------------------
@@ -411,6 +519,9 @@ enum BundledUserScriptSources {
 
         // 11. Hook player state changes to re-apply quality
         hookPlayerStateChanges();
+
+        // 12. Setup auto PiP
+        setupAutoPiP(video);
 
         log('player transformed');
     }
@@ -791,46 +902,77 @@ enum BundledUserScriptSources {
         });
         toolbar.appendChild(audioBtn);
 
-        // PiP button — only on macOS where programmatic PiP is available
-        if (isPiPSupported()) {
-            var pipBtn = document.createElement('button');
-            pipBtn.type = 'button';
-            pipBtn.textContent = 'PiP';
-            pipBtn.title = 'Picture in Picture';
-            pipBtn.style.cssText = btnStyle;
-            pipBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                try {
-                    if (document.pictureInPictureElement) {
-                        document.exitPictureInPicture();
-                    } else if (video && video.requestPictureInPicture) {
-                        video.requestPictureInPicture();
-                    }
-                } catch (err) { warn('PiP failed', err); }
-            });
-            toolbar.appendChild(pipBtn);
-        }
+        // PiP button is intentionally omitted — Safari's native controls
+        // already provide PiP. Auto PiP handles automatic PiP entry.
 
         // On iOS the toolbar is always visible (no hover). On desktop,
-        // full opacity on hover, semi-transparent otherwise.
+        // show/hide with native controls using mouse tracking.
         if (IS_IOS) {
             toolbar.style.opacity = '1';
         } else {
-            toolbar.addEventListener('mouseenter', function () {
+            // Start hidden on desktop — it appears with native controls
+            toolbar.style.opacity = '0';
+            toolbar.style.pointerEvents = 'none';
+
+            var toolbarTimer = null;
+            var TOOLBAR_HIDE_DELAY = 3000; // match native controls fade
+
+            function showToolbar() {
                 toolbar.style.opacity = '1';
+                toolbar.style.pointerEvents = 'auto';
+                clearTimeout(toolbarTimer);
+            }
+
+            function hideToolbar() {
+                toolbar.style.opacity = '0';
+                toolbar.style.pointerEvents = 'none';
+            }
+
+            function scheduleHideToolbar() {
+                clearTimeout(toolbarTimer);
+                toolbarTimer = setTimeout(hideToolbar, TOOLBAR_HIDE_DELAY);
+            }
+
+            // Show toolbar when mouse moves over the player or toolbar
+            player.addEventListener('mousemove', function () {
+                showToolbar();
+                scheduleHideToolbar();
             });
+
+            // Keep visible while hovering directly over toolbar
+            toolbar.addEventListener('mouseenter', function () {
+                showToolbar();
+                clearTimeout(toolbarTimer);
+            });
+
             toolbar.addEventListener('mouseleave', function () {
-                toolbar.style.opacity = '0.75';
+                scheduleHideToolbar();
+            });
+
+            // Show on keyboard focus (tab navigation)
+            toolbar.addEventListener('focusin', function () {
+                showToolbar();
+            });
+
+            // Hide when video starts playing (controls auto-hide)
+            video.addEventListener('play', function () {
+                scheduleHideToolbar();
+            });
+
+            // Show when video is paused
+            video.addEventListener('pause', function () {
+                showToolbar();
             });
         }
 
         // On mobile, tap toggles toolbar visibility
         player.addEventListener('touchstart', function () {
             toolbar.style.opacity = '1';
-            if (!IS_IOS) {
-                setTimeout(function () { toolbar.style.opacity = '0.75'; }, 3000);
-            }
+            toolbar.style.pointerEvents = 'auto';
         }, { passive: true });
+
+        // Show on CSS class toggle (for keyboard shortcuts)
+        toolbar.classList.add('wblock-tc-toolbar-built');
 
         player.appendChild(toolbar);
     }
