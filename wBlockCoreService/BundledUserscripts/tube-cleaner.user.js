@@ -135,9 +135,11 @@
         video._wblockAutoPiPHooked = true;
 
         // Tab switch: enter PiP when tab hides, exit when visible
+        // Note: enableBackgroundPlayback() overrides document.hidden to always
+        // return false, so we use _realHidden which tracks the true state.
         document.addEventListener('visibilitychange', function () {
             if (!autoPiPEnabled) return;
-            if (document.hidden) {
+            if (_realHidden) {
                 if (!video.paused && !video.ended) {
                     enterPiP(video);
                 }
@@ -151,7 +153,7 @@
         // Window blur: enter PiP when switching to another app
         window.addEventListener('blur', function () {
             if (!autoPiPEnabled) return;
-            if (document.hidden) return; // already handled by visibilitychange
+            if (_realHidden) return; // already handled by visibilitychange
             setTimeout(function () {
                 if (document.hasFocus()) return; // focus moved within document
                 if (!video.paused && !video.ended) {
@@ -162,7 +164,7 @@
 
         window.addEventListener('focus', function () {
             if (!autoPiPEnabled) return;
-            if (document.hidden) return;
+            if (_realHidden) return;
             if (document.hasFocus() && isPiPActive(video)) {
                 exitPiP(video);
             }
@@ -368,6 +370,24 @@
     // ------------------------------------------------------------------
     // Background playback
     // ------------------------------------------------------------------
+
+    // Track real visibility state separately since we override document.hidden
+    var _realHidden = false;
+    var _realVisibility = 'visible';
+
+    document.addEventListener('visibilitychange', function () {
+        // Store the real state before it gets overridden
+        try {
+            _realHidden = document.hidden;
+            _realVisibility = document.visibilityState;
+        } catch (e) { /* ignore */ }
+    });
+
+    // Also capture the initial state
+    try {
+        _realHidden = document.hidden;
+        _realVisibility = document.visibilityState;
+    } catch (e) { /* ignore */ }
 
     function enableBackgroundPlayback() {
         try {
@@ -904,7 +924,7 @@
             toolbar.style.pointerEvents = 'none';
 
             var toolbarTimer = null;
-            var TOOLBAR_HIDE_DELAY = 3000; // match native controls fade
+            var TOOLBAR_HIDE_DELAY = 3000;
 
             function showToolbar() {
                 toolbar.style.opacity = '1';
@@ -922,10 +942,16 @@
                 toolbarTimer = setTimeout(hideToolbar, TOOLBAR_HIDE_DELAY);
             }
 
-            // Show toolbar when mouse moves over the player or toolbar
+            // Listen for mouse movement anywhere on the player to show
+            // toolbar (same trigger as Safari's native controls)
             player.addEventListener('mousemove', function () {
                 showToolbar();
                 scheduleHideToolbar();
+            });
+
+            // Also show on mouse entering the player from outside
+            player.addEventListener('mouseenter', function () {
+                showToolbar();
             });
 
             // Keep visible while hovering directly over toolbar
@@ -951,6 +977,14 @@
             // Show when video is paused
             video.addEventListener('pause', function () {
                 showToolbar();
+            });
+
+            // Show toolbar briefly when entering PiP (user can interact)
+            video.addEventListener('webkitpresentationmodechanged', function () {
+                if (video.webkitPresentationMode === 'picture-in-picture') {
+                    showToolbar();
+                    setTimeout(hideToolbar, 3000);
+                }
             });
         }
 
