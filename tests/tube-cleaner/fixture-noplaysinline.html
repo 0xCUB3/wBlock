@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic YouTube Watch Page (Tube Cleaner test fixture)</title>
+<style>
+  body { margin: 0; background: #0f0f0f; color: #fff; font-family: sans-serif; }
+  #player-wrap { width: 960px; max-width: 100%; margin: 24px auto; }
+  #movie_player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  .html5-video-container { position: absolute; inset: 0; }
+  .html5-video-container video { width: 100%; height: 100%; background: #111; }
+  /* YouTube chrome elements that Tube Cleaner is supposed to hide */
+  .ytp-chrome-top, .ytp-chrome-bottom { position: absolute; left: 0; right: 0; height: 40px; background: rgba(0,0,0,.6); }
+  .ytp-chrome-top { top: 0; }
+  .ytp-chrome-bottom { bottom: 0; }
+  .ytp-settings-button { position: absolute; right: 8px; bottom: 8px; width: 32px; height: 32px; }
+  .spacer { height: 1200px; }
+</style>
+</head>
+<body>
+  <div id="player-wrap">
+    <div id="movie_player" class="html5-video-player">
+      <div class="html5-video-container">
+        <!-- The video element YouTube's player would create. A tiny valid mp4
+             keeps WebKit happy; playback itself is not required for these tests. -->
+        <video></video>
+      </div>
+      <div class="ytp-chrome-top"><div class="ytp-title">Synthetic Video</div></div>
+      <div class="ytp-chrome-bottom">
+        <div class="ytp-chrome-controls">
+          <button class="ytp-play-button"></button>
+          <div class="ytp-progress-bar"></div>
+          <button class="ytp-settings-button" aria-label="Settings"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="spacer">scroll area to exercise IntersectionObserver auto-PiP</div>
+
+  <script>
+    // Mock the subset of YouTube's Html5Player API that Tube Cleaner touches.
+    // This mirrors what `#movie_player` exposes on a real watch page so the
+    // userscript's quality/control logic runs against a realistic surface.
+    (function () {
+      var player = document.getElementById('movie_player');
+      var available = ['hd1080', 'hd720', 'large', 'medium', 'small', 'tiny'];
+      var current = 'hd720';
+      var state = 1; // 1 = playing
+
+      player.getAvailableQualityLevels = function () { return available.slice(); };
+      player.getPlaybackQuality = function () { return current; };
+      player.setPlaybackQuality = function (q) { current = q; };
+      player.setPlaybackQualityRange = function (lo, hi) { /* SABR: no-op */ };
+      player.getVideoData = function () { return { video_id: 'TESTVID123' }; };
+      player.getPlayerState = function () { return state; };
+
+      // Simulate YouTube's player actively trying to keep controls OFF, the way
+      // the real html5 player does. This is the adversarial behavior Tube Cleaner
+      // must survive. We flip controls off shortly after load and again later.
+      function fightControls() {
+        var v = player.querySelector('video');
+        if (v) {
+          try { v.controls = false; } catch (e) {}
+          try { v.removeAttribute('controls'); } catch (e) {}
+        }
+      }
+      setTimeout(fightControls, 800);
+      setTimeout(fightControls, 2500);
+      setInterval(fightControls, 3000);
+
+      // Expose a hook so tests can trigger the player-state-change path.
+      window.__firePlayerStateChange = function () {
+        document.dispatchEvent(new Event('yt-player-state-change'));
+      };
+    })();
+  </script>
+</body>
+</html>
