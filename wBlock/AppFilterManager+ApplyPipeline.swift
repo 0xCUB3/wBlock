@@ -212,22 +212,32 @@ extension AppFilterManager {
 
             let enabledFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
             if !enabledFilters.isEmpty {
-                guard let updatedFilters = await filterUpdater.refreshFiltersIfNeeded(
+                let refreshResult = await filterUpdater.refreshFiltersIfNeeded(
                     enabledFilters, progressCallback: { prog in
                         Task { @MainActor in
                             self.progress = prog * 0.1
                             self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
                         }
                     }
-                ) else {
-                    await failApplyRun(
-                        logMessage: LocalizedStrings.text("Failed to process one or more pre-apply filter updates")
-                    )
-                    return
-                }
+                )
+                let updatedFilters = refreshResult.updated
 
                 await MainActor.run {
                     self.applyProgressViewModel.updateUpdatesFound(updatedFilters.count)
+                }
+
+                if refreshResult.failedCount > 0 {
+                    await ConcurrentLogManager.shared.warning(
+                        .filterApply,
+                        LocalizedStrings.text(
+                            "Some pre-apply filter updates failed; continuing with available lists",
+                            comment: "Apply pipeline soft-fail for pre-apply updates"
+                        ),
+                        metadata: [
+                            "failed": "\(refreshResult.failedCount)",
+                            "updated": "\(updatedFilters.count)",
+                        ]
+                    )
                 }
 
                 if !updatedFilters.isEmpty {

@@ -848,3 +848,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Skipped overlapping apply request" = "Skipped overlapping apply request";
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
+"Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";

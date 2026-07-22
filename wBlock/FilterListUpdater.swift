@@ -573,23 +573,29 @@ final class FilterListUpdater: @unchecked Sendable {
         return results
     }
 
+    struct RefreshFiltersResult: Sendable {
+        let updated: [FilterList]
+        let failedCount: Int
+    }
+
+    /// Refreshes filters that need updates and continues even if some downloads fail.
     func refreshFiltersIfNeeded(
         _ filters: [FilterList],
         progressCallback: @escaping (Float) -> Void
-    ) async -> [FilterList]? {
+    ) async -> RefreshFiltersResult {
         var updated: [FilterList] = []
-        var failed = false
+        var failedCount = 0
         for (filter, result) in await refreshFilters(filters, progressCallback: progressCallback) {
             switch result {
             case .updated:
                 updated.append(filter)
             case .failed:
-                failed = true
+                failedCount += 1
             case .unchanged, .unavailable:
                 break
             }
         }
-        return failed ? nil : updated
+        return RefreshFiltersResult(updated: updated, failedCount: failedCount)
     }
 
     /// Updates selected filters and returns the list of successfully updated filters
