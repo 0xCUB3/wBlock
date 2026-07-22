@@ -1242,8 +1242,12 @@ public class UserScriptManager: ObservableObject {
             let existing = userScripts[index]
             let bundledVersion = bundledContentVersion(bundledContent)
             let needsInstall = existing.content.isEmpty
+            // Bundled content shipped with the app is always canonical, so any
+            // version difference (including a reset like 4.2.6 → 0.1.0) triggers
+            // a refresh.  Using isVersionNewer here would silently skip the
+            // update when the bundled version is numerically lower.
             let needsRefresh = !bundledVersion.isEmpty
-                && UserScript.isVersionNewer(bundledVersion, than: existing.version)
+                && bundledVersion != existing.version
 
             guard needsInstall || needsRefresh else { continue }
 
