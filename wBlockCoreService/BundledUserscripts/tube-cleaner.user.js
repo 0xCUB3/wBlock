@@ -2,16 +2,16 @@
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
 // @version      0.1.0
-// @description  Gives YouTube Safari-native controls, chapters, subtitles, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode.
-// @description:de  Bietet YouTube native Safari-Steuerelemente, Kapitel, Untertitel, SponsorBlock, Bild-in-Bild, Hintergrundwiedergabe, Qualitätsauswahl und einen Nur-Audio-Modus.
-// @description:es  Añade a YouTube controles nativos de Safari, capítulos, subtítulos, SponsorBlock, imagen en imagen, reproducción en segundo plano, selección de calidad y modo de solo audio.
-// @description:fr  Ajoute à YouTube les commandes natives de Safari, les chapitres, les sous-titres, SponsorBlock, l’image dans l’image, la lecture en arrière-plan, le choix de qualité et le mode audio seul.
-// @description:it  Aggiunge a YouTube controlli nativi di Safari, capitoli, sottotitoli, SponsorBlock, picture-in-picture, riproduzione in background, selezione qualità e modalità solo audio.
-// @description:pt-BR  Adiciona ao YouTube controles nativos do Safari, capítulos, legendas, SponsorBlock, picture-in-picture, reprodução em segundo plano, seleção de qualidade e modo somente áudio.
-// @description:ja  YouTubeにSafariネイティブのコントロール、チャプター、字幕、SponsorBlock、ピクチャ・イン・ピクチャ、バックグラウンド再生、画質選択、音声のみモードを追加します。
-// @description:ko  YouTube에 Safari 네이티브 컨트롤, 챕터, 자막, SponsorBlock, PIP, 백그라운드 재생, 화질 선택 및 오디오 전용 모드를 추가합니다.
-// @description:ru  Добавляет YouTube нативные элементы управления Safari, главы, субтитры, SponsorBlock, картинку-в-картинке, фоновое воспроизведение, выбор качества и аудиорежим.
-// @description:zh-Hans  为 YouTube 添加 Safari 原生控件、章节、字幕、SponsorBlock 跳过、画中画、后台播放、画质选择和纯音频模式。
+// @description  Gives YouTube Safari-native controls, chapters, subtitles, SponsorBlock, optional DeArrow branding, picture-in-picture, background playback, quality selection, and audio-only mode.
+// @description:de  Bietet YouTube native Safari-Steuerelemente, Kapitel, Untertitel, SponsorBlock, optionales DeArrow-Branding, Bild-in-Bild, Hintergrundwiedergabe, Qualitätsauswahl und einen Nur-Audio-Modus.
+// @description:es  Añade a YouTube controles nativos de Safari, capítulos, subtítulos, SponsorBlock, marcas opcionales de DeArrow, imagen en imagen, reproducción en segundo plano, selección de calidad y modo de solo audio.
+// @description:fr  Ajoute à YouTube les commandes natives de Safari, les chapitres, les sous-titres, SponsorBlock, le branding DeArrow facultatif, l’image dans l’image, la lecture en arrière-plan, le choix de qualité et le mode audio seul.
+// @description:it  Aggiunge a YouTube controlli nativi di Safari, capitoli, sottotitoli, SponsorBlock, branding DeArrow opzionale, picture-in-picture, riproduzione in background, selezione qualità e modalità solo audio.
+// @description:pt-BR  Adiciona ao YouTube controles nativos do Safari, capítulos, legendas, SponsorBlock, identidade visual opcional do DeArrow, picture-in-picture, reprodução em segundo plano, seleção de qualidade e modo somente áudio.
+// @description:ja  YouTubeにSafariネイティブのコントロール、チャプター、字幕、SponsorBlock、任意のDeArrow表示、ピクチャ・イン・ピクチャ、バックグラウンド再生、画質選択、音声のみモードを追加します。
+// @description:ko  YouTube에 Safari 네이티브 컨트롤, 챕터, 자막, SponsorBlock, 선택적 DeArrow 브랜딩, PIP, 백그라운드 재생, 화질 선택 및 오디오 전용 모드를 추가합니다.
+// @description:ru  Добавляет YouTube нативные элементы управления Safari, главы, субтитры, SponsorBlock, дополнительный брендинг DeArrow, картинку-в-картинке, фоновое воспроизведение, выбор качества и аудиорежим.
+// @description:zh-Hans  为 YouTube 添加 Safari 原生控件、章节、字幕、SponsorBlock、可选的 DeArrow 品牌替换、画中画、后台播放、画质选择和纯音频模式。
 // @author       wBlock
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -1016,6 +1016,524 @@
     }
 
     // ------------------------------------------------------------------
+    // DeArrow
+    //
+    // DeArrow stores voted replacement titles and thumbnail timestamps on the
+    // SponsorBlock server. The current watch video uses its four-character
+    // SHA-256 bucket so its exact id is filtered locally. Visible feed cards use
+    // DeArrow's compact single-video endpoint, matching the official extension,
+    // and are cached for the page session. We intentionally use submissions
+    // only: local video rendering, random fallbacks, voting, and title-case
+    // rewriting would add substantial machinery to this small userscript.
+    // ------------------------------------------------------------------
+
+    var DEARROW_API = 'https://sponsor.ajay.app/api/branding';
+    var DEARROW_THUMBNAIL_API = 'https://dearrow-thumb.ajay.app/api/v1/getThumbnail';
+    var DEARROW_SETTINGS_KEY = 'wblock.tubeCleaner.deArrow';
+    var DEARROW_CARD_SELECTOR = [
+        'ytd-rich-grid-media', 'ytd-video-renderer', 'ytd-compact-video-renderer',
+        'ytd-grid-video-renderer', 'ytd-playlist-video-renderer', 'yt-lockup-view-model',
+        'ytm-video-with-context-renderer', 'ytm-compact-video-renderer',
+        'ytm-rich-item-renderer', 'ytm-shorts-lockup-view-model'
+    ].join(',');
+    var DEARROW_WATCH_TITLE_SELECTOR = [
+        'ytd-watch-metadata h1 yt-formatted-string',
+        '#watch-metadata h1 yt-formatted-string',
+        'ytm-slim-video-metadata-section-renderer h1',
+        'ytm-watch-metadata h1',
+        'h1.title yt-formatted-string'
+    ].join(',');
+    var deArrowSettingsCache = null;
+    var deArrowBrandingCache = {};
+    var deArrowBrandingCacheOrder = [];
+    var deArrowActiveRequests = {};
+    var deArrowIntersectionObserver = null;
+    var deArrowPendingScanRoots = [];
+    var deArrowScanScheduled = false;
+
+    function defaultDeArrowSettings() {
+        return {
+            enabled: false,
+            replaceTitles: true,
+            replaceThumbnails: true,
+            showOriginalOnHover: true,
+            excludedChannels: []
+        };
+    }
+
+    function loadDeArrowSettings() {
+        if (deArrowSettingsCache) return deArrowSettingsCache;
+        var settings = defaultDeArrowSettings();
+        try {
+            var saved = JSON.parse(localStorage.getItem(DEARROW_SETTINGS_KEY) || '{}');
+            ['enabled', 'replaceTitles', 'replaceThumbnails', 'showOriginalOnHover'].forEach(function (key) {
+                if (typeof saved[key] === 'boolean') settings[key] = saved[key];
+            });
+            if (Array.isArray(saved.excludedChannels)) settings.excludedChannels = saved.excludedChannels.filter(function (id) {
+                return typeof id === 'string' && id.length < 200;
+            }).slice(0, 200);
+        } catch (e) { /* use defaults */ }
+        deArrowSettingsCache = settings;
+        return settings;
+    }
+
+    function saveDeArrowSettings(settings) {
+        deArrowSettingsCache = settings;
+        try { localStorage.setItem(DEARROW_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
+        refreshDeArrowBranding();
+    }
+
+    function deArrowLocale() {
+        var language = (navigator.language || 'en').toLowerCase().split('-')[0];
+        var english = {
+            title: 'DeArrow settings', enabled: 'Enable DeArrow', titles: 'Replace titles',
+            thumbnails: 'Replace thumbnails', hover: 'Show originals when hovering over a video',
+            channel: 'Disable on this channel', reset: 'Reset defaults', using: 'Using DeArrow'
+        };
+        var translations = {
+            de: { title:'DeArrow-Einstellungen',enabled:'DeArrow aktivieren',titles:'Titel ersetzen',thumbnails:'Vorschaubilder ersetzen',hover:'Originale beim Bewegen über ein Video anzeigen',channel:'Auf diesem Kanal deaktivieren',reset:'Zurücksetzen',using:'Verwendet DeArrow' },
+            es: { title:'Ajustes de DeArrow',enabled:'Activar DeArrow',titles:'Sustituir títulos',thumbnails:'Sustituir miniaturas',hover:'Mostrar originales al pasar sobre un vídeo',channel:'Desactivar en este canal',reset:'Restablecer',using:'Usa DeArrow' },
+            fr: { title:'Réglages DeArrow',enabled:'Activer DeArrow',titles:'Remplacer les titres',thumbnails:'Remplacer les miniatures',hover:'Afficher les originaux au survol d’une vidéo',channel:'Désactiver sur cette chaîne',reset:'Réinitialiser',using:'Utilise DeArrow' },
+            it: { title:'Impostazioni DeArrow',enabled:'Attiva DeArrow',titles:'Sostituisci titoli',thumbnails:'Sostituisci miniature',hover:'Mostra gli originali passando su un video',channel:'Disattiva su questo canale',reset:'Ripristina',using:'Usa DeArrow' },
+            pt: { title:'Configurações do DeArrow',enabled:'Ativar DeArrow',titles:'Substituir títulos',thumbnails:'Substituir miniaturas',hover:'Mostrar originais ao passar sobre um vídeo',channel:'Desativar neste canal',reset:'Restaurar padrões',using:'Usa DeArrow' },
+            ja: { title:'DeArrow設定',enabled:'DeArrowを有効にする',titles:'タイトルを置き換える',thumbnails:'サムネイルを置き換える',hover:'動画にカーソルを合わせたとき元を表示',channel:'このチャンネルでは無効にする',reset:'初期設定に戻す',using:'DeArrowを使用' },
+            ko: { title:'DeArrow 설정',enabled:'DeArrow 활성화',titles:'제목 바꾸기',thumbnails:'미리보기 이미지 바꾸기',hover:'동영상 위에 마우스를 놓으면 원본 표시',channel:'이 채널에서 비활성화',reset:'기본값 복원',using:'DeArrow 사용' },
+            ru: { title:'Настройки DeArrow',enabled:'Включить DeArrow',titles:'Заменять названия',thumbnails:'Заменять значки',hover:'Показывать оригиналы при наведении на видео',channel:'Отключить на этом канале',reset:'Сбросить',using:'Использует DeArrow' },
+            zh: { title:'DeArrow 设置',enabled:'启用 DeArrow',titles:'替换标题',thumbnails:'替换缩略图',hover:'悬停视频时显示原始内容',channel:'对这个频道停用',reset:'恢复默认设置',using:'使用 DeArrow' }
+        };
+        return translations[language] || english;
+    }
+
+    function cachedDeArrowBranding(videoId) {
+        return Object.prototype.hasOwnProperty.call(deArrowBrandingCache, videoId) ?
+            deArrowBrandingCache[videoId] : undefined;
+    }
+
+    function cacheDeArrowBranding(videoId, branding) {
+        if (!Object.prototype.hasOwnProperty.call(deArrowBrandingCache, videoId)) {
+            deArrowBrandingCacheOrder.push(videoId);
+        }
+        deArrowBrandingCache[videoId] = branding;
+        while (deArrowBrandingCacheOrder.length > 100) {
+            delete deArrowBrandingCache[deArrowBrandingCacheOrder.shift()];
+        }
+    }
+
+    function normalizeDeArrowBranding(value) {
+        if (!value || typeof value !== 'object') return null;
+        return {
+            titles: Array.isArray(value.titles) ? value.titles : [],
+            thumbnails: Array.isArray(value.thumbnails) ? value.thumbnails : []
+        };
+    }
+
+    function fetchDeArrowBranding(videoId, hashLookup) {
+        var cached = cachedDeArrowBranding(videoId);
+        if (cached !== undefined) return Promise.resolve(cached);
+        if (deArrowActiveRequests[videoId]) return deArrowActiveRequests[videoId];
+        if (!window.fetch) return Promise.resolve(null);
+
+        var request;
+        if (hashLookup && window.crypto && crypto.subtle && window.TextEncoder) {
+            request = crypto.subtle.digest('SHA-256', new TextEncoder().encode(videoId)).then(function (buffer) {
+                var bytes = new Uint8Array(buffer);
+                var hash = '';
+                for (var i = 0; i < bytes.length; i++) hash += ('0' + bytes[i].toString(16)).slice(-2);
+                return fetch(DEARROW_API + '/' + hash.slice(0, 4) + '?fetchAll=true', { referrerPolicy: 'no-referrer' });
+            }).then(function (response) {
+                if (!response.ok && response.status !== 404) throw new Error('DeArrow HTTP ' + response.status);
+                return response.json();
+            }).then(function (bucket) {
+                return normalizeDeArrowBranding(bucket && bucket[videoId]);
+            });
+        } else {
+            request = fetch(DEARROW_API + '?videoID=' + encodeURIComponent(videoId) + '&fetchAll=true', {
+                referrerPolicy: 'no-referrer'
+            }).then(function (response) {
+                if (!response.ok && response.status !== 404) throw new Error('DeArrow HTTP ' + response.status);
+                return response.json();
+            }).then(normalizeDeArrowBranding);
+        }
+        deArrowActiveRequests[videoId] = request.then(function (branding) {
+            cacheDeArrowBranding(videoId, branding);
+            delete deArrowActiveRequests[videoId];
+            return branding;
+        }, function (error) {
+            delete deArrowActiveRequests[videoId];
+            log('DeArrow unavailable', error);
+            return null;
+        });
+        return deArrowActiveRequests[videoId];
+    }
+
+    function deArrowAcceptedTitle(branding) {
+        var title = branding && branding.titles[0];
+        return title && title.original !== true && typeof title.title === 'string' && title.title.trim() &&
+            (title.locked || Number(title.votes) >= 0) ? title.title.replace(/‹/g, '<') : null;
+    }
+
+    function deArrowAcceptedThumbnail(branding) {
+        var thumbnail = branding && branding.thumbnails[0];
+        return thumbnail && thumbnail.original !== true && isFinite(thumbnail.timestamp) && thumbnail.timestamp >= 0 &&
+            (thumbnail.locked || Number(thumbnail.votes) >= 0) ? Number(thumbnail.timestamp) : null;
+    }
+
+    function deArrowVideoIdFromUrl(value) {
+        try {
+            var url = new URL(value, location.href);
+            var id = url.searchParams.get('v');
+            if (!id) {
+                var match = url.pathname.match(/^\/(?:shorts|embed)\/([A-Za-z0-9_-]{11})/);
+                id = match && match[1];
+            }
+            return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+        } catch (e) { return null; }
+    }
+
+    function deArrowCardVideoId(card) {
+        var direct = card.getAttribute('data-video-id');
+        if (direct && /^[A-Za-z0-9_-]{11}$/.test(direct)) return direct;
+        var links = card.querySelectorAll('a[href], [href]');
+        for (var i = 0; i < links.length; i++) {
+            var id = deArrowVideoIdFromUrl(links[i].getAttribute('href'));
+            if (id) return id;
+        }
+        return null;
+    }
+
+    function deArrowCardChannelId(card) {
+        var direct = card.getAttribute('data-channel-id');
+        if (direct) return direct;
+        var link = card.querySelector('a[href^="/@"],a[href^="/channel/"],a[href^="/c/"],a[href^="/user/"]');
+        if (!link) return null;
+        try { return new URL(link.getAttribute('href'), location.href).pathname; }
+        catch (e) { return null; }
+    }
+
+    function deArrowChannelExcluded(settings, channelId) {
+        return !!(channelId && settings.excludedChannels.indexOf(channelId) !== -1);
+    }
+
+    function findDeArrowCardTitle(card) {
+        var selectors = [
+            '#video-title yt-formatted-string', 'yt-formatted-string#video-title',
+            'a#video-title-link yt-formatted-string', 'a#video-title-link', 'a#video-title',
+            '.yt-lockup-metadata-view-model__title span', '.yt-lockup-metadata-view-model__title',
+            '.media-item-headline', 'h3 a[href]'
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+            var element = card.querySelector(selectors[i]);
+            if (element) return element;
+        }
+        return null;
+    }
+
+    function findDeArrowCardThumbnail(card, videoId) {
+        var links = card.querySelectorAll('a[href]');
+        for (var i = 0; i < links.length; i++) {
+            if (deArrowVideoIdFromUrl(links[i].getAttribute('href')) === videoId) {
+                var image = links[i].querySelector('img');
+                if (image) return image;
+            }
+        }
+        return card.querySelector('#thumbnail img, ytm-thumbnail-cover img, img.yt-core-image');
+    }
+
+    function applyDeArrowTitleElement(element, customTitle) {
+        if (!element) return;
+        var current = element.textContent || '';
+        if (element._wblockDeArrowOriginalText === undefined ||
+            current !== element._wblockDeArrowCustomText && current !== element._wblockDeArrowOriginalText) {
+            element._wblockDeArrowOriginalText = current;
+        }
+        element._wblockDeArrowCustomText = customTitle;
+        element.setAttribute('data-wblock-dearrow-title', '');
+        if (!element._wblockDeArrowShowingOriginal && current !== customTitle) element.textContent = customTitle;
+    }
+
+    function restoreDeArrowTitleElement(element) {
+        if (!element || element._wblockDeArrowOriginalText === undefined) return;
+        if (element.textContent === element._wblockDeArrowCustomText) {
+            element.textContent = element._wblockDeArrowOriginalText;
+        }
+        delete element._wblockDeArrowOriginalText;
+        delete element._wblockDeArrowCustomText;
+        delete element._wblockDeArrowShowingOriginal;
+        element.removeAttribute('data-wblock-dearrow-title');
+    }
+
+    function restoreDeArrowAttribute(element, name, value) {
+        if (value === null || value === undefined) element.removeAttribute(name);
+        else element.setAttribute(name, value);
+    }
+
+    function applyDeArrowThumbnailElement(element, videoId, timestamp) {
+        if (!element) return;
+        var url = DEARROW_THUMBNAIL_API + '?videoID=' + encodeURIComponent(videoId) +
+            '&time=' + encodeURIComponent(String(timestamp));
+        if (element._wblockDeArrowOriginalSrc === undefined) {
+            element._wblockDeArrowOriginalSrc = element.getAttribute('src');
+            element._wblockDeArrowOriginalSrcset = element.getAttribute('srcset');
+            element._wblockDeArrowOriginalReferrerPolicy = element.getAttribute('referrerpolicy');
+        } else if (!element._wblockDeArrowShowingOriginal && element.getAttribute('src') !== url &&
+            element.getAttribute('src') !== element._wblockDeArrowOriginalSrc) {
+            // YouTube recycles card image elements as the feed changes. Preserve
+            // its newly assigned original before applying the cached thumbnail.
+            element._wblockDeArrowOriginalSrc = element.getAttribute('src');
+            element._wblockDeArrowOriginalSrcset = element.getAttribute('srcset');
+            element._wblockDeArrowOriginalReferrerPolicy = element.getAttribute('referrerpolicy');
+            delete element._wblockDeArrowThumbnailFailed;
+        }
+        element._wblockDeArrowCustomSrc = url;
+        element.setAttribute('data-wblock-dearrow-thumbnail', '');
+        if (element._wblockDeArrowThumbnailFailed === url || element._wblockDeArrowShowingOriginal) return;
+        element.removeAttribute('srcset');
+        element.setAttribute('referrerpolicy', 'no-referrer');
+        if (element.getAttribute('src') !== url) element.setAttribute('src', url);
+        if (!element._wblockDeArrowErrorHooked) {
+            element._wblockDeArrowErrorHooked = true;
+            element.addEventListener('error', function () {
+                if (element.getAttribute('src') !== element._wblockDeArrowCustomSrc) return;
+                element._wblockDeArrowThumbnailFailed = element._wblockDeArrowCustomSrc;
+                restoreDeArrowAttribute(element, 'src', element._wblockDeArrowOriginalSrc);
+                restoreDeArrowAttribute(element, 'srcset', element._wblockDeArrowOriginalSrcset);
+                restoreDeArrowAttribute(element, 'referrerpolicy', element._wblockDeArrowOriginalReferrerPolicy);
+            });
+        }
+    }
+
+    function restoreDeArrowThumbnailElement(element) {
+        if (!element || element._wblockDeArrowOriginalSrc === undefined) return;
+        restoreDeArrowAttribute(element, 'src', element._wblockDeArrowOriginalSrc);
+        restoreDeArrowAttribute(element, 'srcset', element._wblockDeArrowOriginalSrcset);
+        restoreDeArrowAttribute(element, 'referrerpolicy', element._wblockDeArrowOriginalReferrerPolicy);
+        delete element._wblockDeArrowOriginalSrc;
+        delete element._wblockDeArrowOriginalSrcset;
+        delete element._wblockDeArrowOriginalReferrerPolicy;
+        delete element._wblockDeArrowCustomSrc;
+        delete element._wblockDeArrowThumbnailFailed;
+        delete element._wblockDeArrowShowingOriginal;
+        element.removeAttribute('data-wblock-dearrow-thumbnail');
+    }
+
+    function installDeArrowHover(card) {
+        if (card._wblockDeArrowHoverInstalled) return;
+        card._wblockDeArrowHoverInstalled = true;
+        card._wblockDeArrowMouseEnter = function () {
+            if (!loadDeArrowSettings().showOriginalOnHover) return;
+            card._wblockDeArrowShowingOriginal = true;
+            var title = card._wblockDeArrowTitleElement;
+            var image = card._wblockDeArrowThumbnailElement;
+            if (title && title._wblockDeArrowOriginalText !== undefined) {
+                title._wblockDeArrowShowingOriginal = true;
+                title.textContent = title._wblockDeArrowOriginalText;
+            }
+            if (image && image._wblockDeArrowOriginalSrc !== undefined) {
+                image._wblockDeArrowShowingOriginal = true;
+                restoreDeArrowAttribute(image, 'src', image._wblockDeArrowOriginalSrc);
+                restoreDeArrowAttribute(image, 'srcset', image._wblockDeArrowOriginalSrcset);
+                restoreDeArrowAttribute(image, 'referrerpolicy', image._wblockDeArrowOriginalReferrerPolicy);
+            }
+        };
+        card._wblockDeArrowMouseLeave = function () {
+            card._wblockDeArrowShowingOriginal = false;
+            var settings = loadDeArrowSettings();
+            if (!settings.enabled || deArrowChannelExcluded(settings, deArrowCardChannelId(card))) return;
+            var title = card._wblockDeArrowTitleElement;
+            var image = card._wblockDeArrowThumbnailElement;
+            if (title) {
+                title._wblockDeArrowShowingOriginal = false;
+                if (settings.replaceTitles && title._wblockDeArrowCustomText) title.textContent = title._wblockDeArrowCustomText;
+            }
+            if (image) {
+                image._wblockDeArrowShowingOriginal = false;
+                if (settings.replaceThumbnails && image._wblockDeArrowCustomSrc &&
+                    image._wblockDeArrowThumbnailFailed !== image._wblockDeArrowCustomSrc) {
+                    image.removeAttribute('srcset');
+                    image.setAttribute('referrerpolicy', 'no-referrer');
+                    image.setAttribute('src', image._wblockDeArrowCustomSrc);
+                }
+            }
+        };
+        card.addEventListener('mouseenter', card._wblockDeArrowMouseEnter);
+        card.addEventListener('mouseleave', card._wblockDeArrowMouseLeave);
+    }
+
+    function restoreDeArrowCard(card) {
+        if (!card) return;
+        restoreDeArrowTitleElement(card._wblockDeArrowTitleElement);
+        restoreDeArrowThumbnailElement(card._wblockDeArrowThumbnailElement);
+        if (card._wblockDeArrowHoverInstalled) {
+            card.removeEventListener('mouseenter', card._wblockDeArrowMouseEnter);
+            card.removeEventListener('mouseleave', card._wblockDeArrowMouseLeave);
+        }
+        delete card._wblockDeArrowTitleElement;
+        delete card._wblockDeArrowThumbnailElement;
+        delete card._wblockDeArrowHoverInstalled;
+        delete card._wblockDeArrowMouseEnter;
+        delete card._wblockDeArrowMouseLeave;
+        delete card._wblockDeArrowShowingOriginal;
+        delete card._wblockDeArrowObserved;
+        delete card._wblockDeArrowRequestedVideoId;
+        delete card._wblockDeArrowProcessedVideoId;
+        card.removeAttribute('data-wblock-dearrow-card');
+    }
+
+    function applyDeArrowCard(card) {
+        var videoId = deArrowCardVideoId(card);
+        if (!videoId) return;
+        if (card._wblockDeArrowRequestedVideoId && card._wblockDeArrowRequestedVideoId !== videoId) {
+            restoreDeArrowCard(card);
+        }
+        var settings = loadDeArrowSettings();
+        if (!settings.enabled || deArrowChannelExcluded(settings, deArrowCardChannelId(card))) {
+            restoreDeArrowCard(card);
+            return;
+        }
+        card._wblockDeArrowRequestedVideoId = videoId;
+        card.setAttribute('data-wblock-dearrow-card', '');
+        fetchDeArrowBranding(videoId, false).then(function (branding) {
+            if (!card.isConnected || card._wblockDeArrowRequestedVideoId !== videoId) return;
+            var currentSettings = loadDeArrowSettings();
+            if (!currentSettings.enabled || deArrowChannelExcluded(currentSettings, deArrowCardChannelId(card))) {
+                restoreDeArrowCard(card);
+                return;
+            }
+            var customTitle = deArrowAcceptedTitle(branding);
+            var customTimestamp = deArrowAcceptedThumbnail(branding);
+            var titleElement = findDeArrowCardTitle(card);
+            var thumbnailElement = findDeArrowCardThumbnail(card, videoId);
+            if (currentSettings.replaceTitles && customTitle) {
+                card._wblockDeArrowTitleElement = titleElement;
+                applyDeArrowTitleElement(titleElement, customTitle);
+            } else {
+                restoreDeArrowTitleElement(card._wblockDeArrowTitleElement);
+                delete card._wblockDeArrowTitleElement;
+            }
+            if (currentSettings.replaceThumbnails && customTimestamp !== null) {
+                card._wblockDeArrowThumbnailElement = thumbnailElement;
+                applyDeArrowThumbnailElement(thumbnailElement, videoId, customTimestamp);
+            } else {
+                restoreDeArrowThumbnailElement(card._wblockDeArrowThumbnailElement);
+                delete card._wblockDeArrowThumbnailElement;
+            }
+            if (card._wblockDeArrowTitleElement || card._wblockDeArrowThumbnailElement) installDeArrowHover(card);
+            card._wblockDeArrowProcessedVideoId = videoId;
+        });
+    }
+
+    function queueDeArrowCard(card) {
+        if (!card || card._wblockDeArrowShowingOriginal) return;
+        var videoId = deArrowCardVideoId(card);
+        if (!videoId) return;
+        if (card._wblockDeArrowProcessedVideoId === videoId) {
+            var title = card._wblockDeArrowTitleElement;
+            var image = card._wblockDeArrowThumbnailElement;
+            var titleNeedsRepair = title && title._wblockDeArrowCustomText &&
+                title.textContent !== title._wblockDeArrowCustomText;
+            var imageNeedsRepair = image && image._wblockDeArrowCustomSrc &&
+                image._wblockDeArrowThumbnailFailed !== image._wblockDeArrowCustomSrc &&
+                image.getAttribute('src') !== image._wblockDeArrowCustomSrc;
+            if (!titleNeedsRepair && !imageNeedsRepair) return;
+            applyDeArrowCard(card);
+            return;
+        }
+        if (card._wblockDeArrowRequestedVideoId === videoId && card._wblockDeArrowObserved) return;
+        if (typeof IntersectionObserver === 'undefined') {
+            applyDeArrowCard(card);
+            return;
+        }
+        if (!deArrowIntersectionObserver) {
+            deArrowIntersectionObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    try { deArrowIntersectionObserver.unobserve(entry.target); } catch (e) { /* ignore */ }
+                    entry.target._wblockDeArrowObserved = false;
+                    applyDeArrowCard(entry.target);
+                });
+            }, { rootMargin: '240px 0px', threshold: 0.01 });
+        }
+        if (!card._wblockDeArrowObserved) {
+            card._wblockDeArrowObserved = true;
+            card._wblockDeArrowRequestedVideoId = videoId;
+            card.setAttribute('data-wblock-dearrow-card', '');
+            deArrowIntersectionObserver.observe(card);
+        }
+    }
+
+    function applyCurrentDeArrowTitle() {
+        var settings = loadDeArrowSettings();
+        var videoId = sponsorBlockVideoId();
+        var channelId = sponsorBlockChannelId();
+        if (!settings.enabled || !settings.replaceTitles || !videoId || deArrowChannelExcluded(settings, channelId)) return;
+        fetchDeArrowBranding(videoId, true).then(function (branding) {
+            var currentSettings = loadDeArrowSettings();
+            if (!currentSettings.enabled || !currentSettings.replaceTitles || sponsorBlockVideoId() !== videoId ||
+                deArrowChannelExcluded(currentSettings, sponsorBlockChannelId())) return;
+            var customTitle = deArrowAcceptedTitle(branding);
+            if (!customTitle) return;
+            var titles = document.querySelectorAll(DEARROW_WATCH_TITLE_SELECTOR);
+            for (var i = 0; i < titles.length; i++) applyDeArrowTitleElement(titles[i], customTitle);
+        });
+    }
+
+    function scanForDeArrow(root) {
+        var settings = loadDeArrowSettings();
+        if (!settings.enabled || !root) return;
+        applyCurrentDeArrowTitle();
+        var cards = [];
+        if (root.nodeType === 1) {
+            try {
+                if (root.matches(DEARROW_CARD_SELECTOR)) cards.push(root);
+                var closest = root.closest(DEARROW_CARD_SELECTOR);
+                if (closest && cards.indexOf(closest) === -1) cards.push(closest);
+            } catch (e) { /* ignore */ }
+        }
+        if (root.querySelectorAll) {
+            var nested = root.querySelectorAll(DEARROW_CARD_SELECTOR);
+            for (var i = 0; i < nested.length; i++) if (cards.indexOf(nested[i]) === -1) cards.push(nested[i]);
+        }
+        for (var j = 0; j < cards.length; j++) queueDeArrowCard(cards[j]);
+    }
+
+    function scheduleDeArrowScan(root) {
+        if (!loadDeArrowSettings().enabled) return;
+        if (root === document) deArrowPendingScanRoots = [document];
+        else if (deArrowPendingScanRoots.indexOf(document) === -1 && root && deArrowPendingScanRoots.indexOf(root) === -1) {
+            deArrowPendingScanRoots.push(root);
+            if (deArrowPendingScanRoots.length > 40) deArrowPendingScanRoots = [document];
+        }
+        if (deArrowScanScheduled) return;
+        deArrowScanScheduled = true;
+        Promise.resolve().then(function () {
+            deArrowScanScheduled = false;
+            var roots = deArrowPendingScanRoots;
+            deArrowPendingScanRoots = [];
+            for (var i = 0; i < roots.length; i++) {
+                if (roots[i] === document || roots[i].isConnected) scanForDeArrow(roots[i]);
+            }
+        });
+    }
+
+    function restoreAllDeArrowBranding() {
+        if (deArrowIntersectionObserver) {
+            try { deArrowIntersectionObserver.disconnect(); } catch (e) { /* ignore */ }
+            deArrowIntersectionObserver = null;
+        }
+        var cards = document.querySelectorAll('[data-wblock-dearrow-card]');
+        for (var i = 0; i < cards.length; i++) restoreDeArrowCard(cards[i]);
+        var titles = document.querySelectorAll('[data-wblock-dearrow-title]');
+        for (var j = 0; j < titles.length; j++) restoreDeArrowTitleElement(titles[j]);
+        var thumbnails = document.querySelectorAll('[data-wblock-dearrow-thumbnail]');
+        for (var k = 0; k < thumbnails.length; k++) restoreDeArrowThumbnailElement(thumbnails[k]);
+    }
+
+    function refreshDeArrowBranding() {
+        restoreAllDeArrowBranding();
+        if (loadDeArrowSettings().enabled) scheduleDeArrowScan(document);
+    }
+
+    // ------------------------------------------------------------------
     // Chapters
     //
     // Safari's <video> element is backed by the same AVFoundation engine
@@ -1856,7 +2374,7 @@
     }
 
     // ------------------------------------------------------------------
-    // Toolbar overlay (quality, audio-only, and SponsorBlock settings)
+    // Toolbar overlay (playback controls plus SponsorBlock and DeArrow settings)
     // ------------------------------------------------------------------
 
     function buildToolbar(player, video) {
@@ -1875,13 +2393,21 @@
         var toolbarRight = IS_IOS ? 'max(8px, env(safe-area-inset-right, 0px))' : '8px';
         var toolbarOpacity = IS_IOS ? '1' : '0.75';
         var toolbarFont = IS_IOS ? '14px' : '11px';
-        toolbar.style.cssText = 'position:absolute;bottom:' + toolbarBottom + ';right:' + toolbarRight + ';z-index:2147483646;display:flex;gap:6px;align-items:center;pointer-events:auto;font:' + toolbarFont + '/1.2 -apple-system,system-ui,sans-serif;opacity:' + toolbarOpacity + ';transition:opacity 0.15s';
+        toolbar.style.cssText = 'position:absolute;bottom:' + toolbarBottom + ';right:' + toolbarRight + ';z-index:2147483646;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:auto;font:' + toolbarFont + '/1.2 -apple-system,system-ui,sans-serif;opacity:' + toolbarOpacity + ';transition:opacity 0.15s';
 
         var btnStyle = 'background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;-webkit-user-select:none;user-select:none';
         // On iOS, use larger touch targets (minimum 44pt)
         if (IS_IOS) {
             btnStyle = 'background:rgba(0,0,0,0.78);color:#fff;border:none;border-radius:8px;padding:8px 12px;min-width:44px;min-height:44px;font-size:14px;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation';
         }
+        var playbackRow = document.createElement('div');
+        playbackRow.className = 'wblock-tc-playback-row';
+        playbackRow.style.cssText = 'display:flex;gap:6px;align-items:center;justify-content:flex-end';
+        var servicesRow = document.createElement('div');
+        servicesRow.className = 'wblock-tc-services-row';
+        servicesRow.style.cssText = 'display:flex;gap:6px;align-items:center;justify-content:flex-end';
+        toolbar.appendChild(playbackRow);
+        toolbar.appendChild(servicesRow);
 
         // Quality selector
         var qualityBtn = document.createElement('button');
@@ -1963,6 +2489,10 @@
                 sponsorMenu.style.display = 'none';
                 if (sponsorBtn) sponsorBtn.setAttribute('aria-expanded', 'false');
             }
+            if (deArrowMenu) {
+                deArrowMenu.style.display = 'none';
+                if (deArrowBtn) deArrowBtn.setAttribute('aria-expanded', 'false');
+            }
             if (qualityMenu.style.display === 'none') {
                 buildQualityMenu();
                 if (IS_IOS) {
@@ -1990,7 +2520,7 @@
         qualityWrap.style.cssText = 'position:relative';
         qualityWrap.appendChild(qualityBtn);
         qualityWrap.appendChild(qualityMenu);
-        toolbar.appendChild(qualityWrap);
+        playbackRow.appendChild(qualityWrap);
 
         // Update quality label periodically. Store the timer on the toolbar so
         // it can be cleared when the toolbar is rebuilt (avoids a leak across
@@ -2020,7 +2550,7 @@
             setAudioOnlyStyles(next);
             updateAudioBtn();
         });
-        if (!IS_IOS) { toolbar.appendChild(audioBtn); }
+        if (!IS_IOS) { playbackRow.appendChild(audioBtn); }
 
         // SponsorBlock settings. This mirrors SponsorBlock's familiar category
         // colors and Auto / Show button / Disabled choices without importing
@@ -2180,8 +2710,15 @@
         sponsorBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             qualityMenu.style.display = 'none';
+            if (deArrowMenu) {
+                deArrowMenu.style.display = 'none';
+                if (deArrowBtn) deArrowBtn.setAttribute('aria-expanded', 'false');
+            }
             if (sponsorMenu.style.display === 'none') {
                 buildSponsorMenu();
+                // SB sits left of DA in the service row; align its panel with
+                // the row's right edge so the wider iOS panel stays on-screen.
+                sponsorMenu.style.right = deArrowWrap ? -(deArrowWrap.offsetWidth + 6) + 'px' : '0';
                 if (IS_IOS) {
                     var playerRect = player.getBoundingClientRect();
                     var toolbarRect = toolbar.getBoundingClientRect();
@@ -2202,7 +2739,143 @@
         document.addEventListener('click', onSponsorOutsideClick);
         registerCleanup(function () { document.removeEventListener('click', onSponsorOutsideClick); });
         updateSponsorButton();
-        sponsorWrap.appendChild(sponsorBtn); sponsorWrap.appendChild(sponsorMenu); toolbar.appendChild(sponsorWrap);
+        sponsorWrap.appendChild(sponsorBtn); sponsorWrap.appendChild(sponsorMenu); servicesRow.appendChild(sponsorWrap);
+
+        // DeArrow settings. The small panel keeps the high-value replacement
+        // controls but leaves DeArrow's submission and formatting workflows to
+        // the full extension.
+        var deArrowWrap = document.createElement('div');
+        deArrowWrap.style.cssText = 'position:relative';
+        var deArrowBtn = document.createElement('button');
+        deArrowBtn.className = 'wblock-tc-dearrow-button';
+        deArrowBtn.type = 'button';
+        deArrowBtn.style.cssText = btnStyle;
+        deArrowBtn.textContent = 'DA';
+        deArrowBtn.setAttribute('aria-haspopup', 'dialog');
+        deArrowBtn.setAttribute('aria-expanded', 'false');
+        var deArrowMenu = document.createElement('div');
+        deArrowMenu.className = 'wblock-tc-dearrow-menu';
+        deArrowMenu.setAttribute('role', 'dialog');
+        deArrowMenu.setAttribute('aria-label', deArrowLocale().title);
+        deArrowMenu.style.cssText = 'position:absolute;bottom:100%;right:0;margin-bottom:6px;box-sizing:border-box;' +
+            'width:' + (IS_IOS ? 'min(340px,calc(100vw - 16px))' : '310px') + ';max-height:65vh;overflow:auto;' +
+            'background:rgba(22,22,24,.98);border:1px solid rgba(255,255,255,.14);border-radius:10px;' +
+            'padding:12px;color:#fff;display:none;z-index:80;font:' + (IS_IOS ? '14px' : '12px') +
+            '/1.35 -apple-system,system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.45);text-align:left';
+
+        function updateDeArrowButton() {
+            var settings = loadDeArrowSettings();
+            var enabled = settings.enabled && !deArrowChannelExcluded(settings, sponsorBlockChannelId());
+            deArrowBtn.style.color = enabled ? '#ffb347' : '#aaa';
+            deArrowBtn.title = deArrowLocale().title;
+            deArrowBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        }
+
+        function deArrowCheckboxRow(labelText, checked, disabled, settingName, onChange) {
+            var label = document.createElement('label');
+            label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;cursor:' +
+                (disabled ? 'default;opacity:.55' : 'pointer');
+            var input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = checked;
+            input.disabled = disabled;
+            input.style.cssText = 'width:16px;height:16px;accent-color:#ffb347';
+            if (settingName) input.setAttribute('data-dearrow-setting', settingName);
+            input.addEventListener('change', function () { onChange(input.checked); });
+            var text = document.createElement('span');
+            text.textContent = labelText;
+            label.appendChild(input); label.appendChild(text);
+            return label;
+        }
+
+        function buildDeArrowMenu() {
+            while (deArrowMenu.firstChild) deArrowMenu.removeChild(deArrowMenu.firstChild);
+            var locale = deArrowLocale();
+            var settings = loadDeArrowSettings();
+            var heading = document.createElement('div');
+            heading.textContent = 'DeArrow';
+            heading.style.cssText = 'font-size:' + (IS_IOS ? '18px' : '15px') + ';font-weight:700;margin:0 0 7px';
+            deArrowMenu.appendChild(heading);
+            deArrowMenu.appendChild(deArrowCheckboxRow(locale.enabled, settings.enabled, false, 'enabled', function (checked) {
+                settings.enabled = checked;
+                saveDeArrowSettings(settings);
+                updateDeArrowButton();
+                buildDeArrowMenu();
+            }));
+            var divider = document.createElement('div');
+            divider.style.cssText = 'height:1px;background:rgba(255,255,255,.12);margin:5px 0';
+            deArrowMenu.appendChild(divider);
+            deArrowMenu.appendChild(deArrowCheckboxRow(locale.titles, settings.replaceTitles, !settings.enabled,
+                'replaceTitles', function (checked) {
+                    settings.replaceTitles = checked; saveDeArrowSettings(settings);
+                }));
+            deArrowMenu.appendChild(deArrowCheckboxRow(locale.thumbnails, settings.replaceThumbnails, !settings.enabled,
+                'replaceThumbnails', function (checked) {
+                    settings.replaceThumbnails = checked; saveDeArrowSettings(settings);
+                }));
+            deArrowMenu.appendChild(deArrowCheckboxRow(locale.hover, settings.showOriginalOnHover, !settings.enabled,
+                'showOriginalOnHover', function (checked) {
+                    settings.showOriginalOnHover = checked; saveDeArrowSettings(settings);
+                }));
+            var channelId = sponsorBlockChannelId();
+            if (channelId) {
+                var channelRow = deArrowCheckboxRow(locale.channel,
+                    settings.excludedChannels.indexOf(channelId) !== -1, !settings.enabled, 'channel', function (checked) {
+                        var index = settings.excludedChannels.indexOf(channelId);
+                        if (checked && index === -1) settings.excludedChannels.push(channelId);
+                        if (!checked && index !== -1) settings.excludedChannels.splice(index, 1);
+                        saveDeArrowSettings(settings);
+                        updateDeArrowButton();
+                    });
+                channelRow.setAttribute('data-dearrow-channel', channelId);
+                deArrowMenu.appendChild(channelRow);
+            }
+            var footer = document.createElement('div');
+            footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;' +
+                'border-top:1px solid rgba(255,255,255,.12)';
+            var reset = document.createElement('button');
+            reset.type = 'button'; reset.textContent = locale.reset;
+            reset.style.cssText = 'background:transparent;color:#aaa;border:0;padding:3px 0;font:inherit;cursor:pointer';
+            reset.addEventListener('click', function () {
+                deArrowSettingsCache = defaultDeArrowSettings();
+                saveDeArrowSettings(deArrowSettingsCache);
+                updateDeArrowButton();
+                buildDeArrowMenu();
+            });
+            var credit = document.createElement('a');
+            credit.href = 'https://dearrow.ajay.app/'; credit.target = '_blank'; credit.rel = 'noopener noreferrer';
+            credit.textContent = locale.using; credit.style.cssText = 'color:#69a9ff;text-decoration:none';
+            footer.appendChild(reset); footer.appendChild(credit); deArrowMenu.appendChild(footer);
+        }
+
+        deArrowBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            qualityMenu.style.display = 'none';
+            sponsorMenu.style.display = 'none';
+            sponsorBtn.setAttribute('aria-expanded', 'false');
+            if (deArrowMenu.style.display === 'none') {
+                buildDeArrowMenu();
+                if (IS_IOS) {
+                    var playerRect = player.getBoundingClientRect();
+                    var toolbarRect = toolbar.getBoundingClientRect();
+                    deArrowMenu.style.maxHeight = Math.max(120, Math.floor(toolbarRect.top - playerRect.top - 8)) + 'px';
+                }
+                deArrowMenu.style.display = 'block';
+                deArrowBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                deArrowMenu.style.display = 'none';
+                deArrowBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+        deArrowMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+        function onDeArrowOutsideClick() {
+            deArrowMenu.style.display = 'none';
+            deArrowBtn.setAttribute('aria-expanded', 'false');
+        }
+        document.addEventListener('click', onDeArrowOutsideClick);
+        registerCleanup(function () { document.removeEventListener('click', onDeArrowOutsideClick); });
+        updateDeArrowButton();
+        deArrowWrap.appendChild(deArrowBtn); deArrowWrap.appendChild(deArrowMenu); servicesRow.appendChild(deArrowWrap);
 
         // PiP button is intentionally omitted — Safari's native controls
         // already provide PiP. Auto PiP handles automatic PiP entry.
@@ -2341,6 +3014,7 @@
         }
 
         transformPlayer();
+        refreshDeArrowBranding();
         // Recovery only. The player/document observers are the primary path.
         setTimeout(transformPlayer, 100);
         setTimeout(transformPlayer, 500);
@@ -2394,6 +3068,17 @@
                     }
                 }
             }
+            // DeArrow follows YouTube's lazily inserted and recycled cards. Its
+            // scan is microtask-batched and does no work while the opt-in feature
+            // is disabled.
+            if (loadDeArrowSettings().enabled) {
+                for (var k = 0; k < records.length; k++) {
+                    scheduleDeArrowScan(records[k].target);
+                    for (var n = 0; n < records[k].addedNodes.length; n++) {
+                        if (records[k].addedNodes[n].nodeType === 1) scheduleDeArrowScan(records[k].addedNodes[n]);
+                    }
+                }
+            }
             // MutationObserver runs before rendering. Transform now—no polling
             // interval or debounce—so YouTube chrome never reaches next paint.
             if (relevant) { transformPlayer(); }
@@ -2415,6 +3100,7 @@
         lastUrl = location.href;
         watchNavigation();
         transformPlayer();
+        scheduleDeArrowScan(document);
 
         // Recovery scans only; normal startup is handled pre-paint above.
         if (document.readyState === 'loading') {

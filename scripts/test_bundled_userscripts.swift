@@ -123,6 +123,13 @@ for needle in [
     "Using SponsorBlock",                  // API data attribution
     "cacheSponsorBlockSegments",           // per-session SponsorBlock result cache
     "scheduleNextBoundary",                // precise SponsorBlock boundary timer
+    "sponsor.ajay.app/api/branding",        // DeArrow branding API
+    "dearrow-thumb.ajay.app",               // DeArrow thumbnail cache
+    "wblock.tubeCleaner.deArrow",           // persistent, opt-in DeArrow settings
+    "data-dearrow-setting",                 // DeArrow settings panel
+    "Using DeArrow",                        // DeArrow attribution
+    "cacheDeArrowBranding",                 // bounded per-session branding cache
+    "wblock-tc-services-row",               // SB/DA row separate from playback controls
     "data-wblock-native-subtitle",          // native Safari subtitle tracks
     "ANDROID_VR",                          // token-safe YouTube caption metadata fallback
 ] {
@@ -152,9 +159,14 @@ guard tubeSource.contains(".wblock-tc-native .ytp-settings-menu,") &&
       tubeSource.contains(".wblock-tc-native .ytp-panel-menu,") else {
     fail("Tube Cleaner must hide YouTube's settings shell while changing quality")
 }
-guard tubeSource.contains("if (!IS_IOS) { toolbar.appendChild(audioBtn); }") &&
+guard tubeSource.contains("if (!IS_IOS) { playbackRow.appendChild(audioBtn); }") &&
       tubeSource.contains("if (!IS_IOS) { setPreferredQuality(q); }") else {
     fail("Tube Cleaner must expose non-persistent quality-only controls on iOS")
+}
+guard tubeSource.contains("playbackRow.appendChild(qualityWrap);") &&
+      tubeSource.contains("servicesRow.appendChild(sponsorWrap);") &&
+      tubeSource.contains("servicesRow.appendChild(deArrowWrap);") else {
+    fail("Tube Cleaner must keep SB and DA on a separate row from quality and audio")
 }
 for (name, source) in [("Tube Cleaner", tubeSource), ("Player Cleaner", playerSource)] {
     if source.contains("window.addEventListener('blur', onBlur)") {

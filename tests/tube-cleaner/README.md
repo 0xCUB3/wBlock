@@ -30,7 +30,11 @@ restoration of inline playback, preservation of the iOS ManagedMediaSource
 restriction required for SABR playback, native chapter and WebVTT subtitle
 mirroring (including token-gated caption metadata fallback), and k-anonymous
 SponsorBlock skipping with a bounded session cache, precise boundary timers,
-persistent category modes, manual skip, and Undo behavior.
+persistent category modes, manual skip, and Undo behavior. The desktop fixture
+also enables the otherwise opt-in DeArrow integration and verifies submitted
+watch/card titles, cached thumbnails, separate title/thumbnail settings,
+original-on-hover restoration, current-channel exclusions, bounded request
+reuse across SPA activation, and the dedicated SB/DA service row.
 `fixture-tube-cleaner-multiple.html` models retained
 Shorts players and verifies native enhancements follow the visible playing
 video. `fixture-tube-cleaner-early.html` creates the YouTube player from a

@@ -122,6 +122,34 @@ const sponsorBlockPrelude = `
 })();
 `;
 
+const deArrowPrelude = `
+(function () {
+  localStorage.setItem('wblock.tubeCleaner.deArrow', JSON.stringify({
+    enabled: true, replaceTitles: true, replaceThumbnails: true,
+    showOriginalOnHover: true, excludedChannels: []
+  }));
+  var nativeFetch = window.fetch;
+  window.__wblockDeArrowRequests = [];
+  window.fetch = function (url, options) {
+    var value = String(url);
+    if (value.indexOf('sponsor.ajay.app/api/branding') !== -1) {
+      window.__wblockDeArrowRequests.push(value);
+      var watch = {
+        titles: [{ title: 'Accurate Watch Title', original: false, votes: 4, locked: false }],
+        thumbnails: []
+      };
+      var card = {
+        titles: [{ title: 'Accurate Related Title', original: false, votes: 2, locked: false }],
+        thumbnails: [{ timestamp: 12.5, original: false, votes: 3, locked: false }]
+      };
+      var payload = value.indexOf('videoID=CARDVID1234') !== -1 ? card : { dQw4w9WgXcQ: watch };
+      return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve(payload); } });
+    }
+    return nativeFetch.apply(this, arguments);
+  };
+})();
+`;
+
 // WEB caption URLs with exp=xpe currently require a Proof-of-Origin token. The
 // fixture exercises Tube Cleaner's lightweight Android VR metadata fallback and
 // returns two valid WebVTT documents for Safari's native subtitle menu.
@@ -259,6 +287,11 @@ async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scri
   if (hasTouch) ctxOpts.hasTouch = true;
   if (viewport) ctxOpts.viewport = viewport;
   const context = await browser.newContext(ctxOpts);
+  await context.route('https://dearrow-thumb.ajay.app/**', route => route.fulfill({
+    status: 200,
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"><rect width="16" height="9" fill="#345"/></svg>',
+  }));
   const page = await context.newPage();
 
   // Inject the real userscript at document-start in the page world.
@@ -295,23 +328,31 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
   });
 
   if (expectToolbar) {
-    await check(page, scenario, 'builds toolbar with quality, audio, and SponsorBlock buttons', () => {
+    await check(page, scenario, 'builds separate playback and service rows with quality, audio, SB, and DA', () => {
       const tb = document.querySelector('.wblock-tc-toolbar');
-      const quality = tb?.querySelector('.wblock-tc-quality-button');
-      const audio = tb?.querySelector('.wblock-tc-audio-button');
-      const sponsor = tb?.querySelector('.wblock-tc-sponsor-button');
-      return { pass: !!(quality && audio && sponsor), detail: `quality=${!!quality} audio=${!!audio} sponsor=${!!sponsor}` };
+      const playback = tb?.querySelector('.wblock-tc-playback-row');
+      const services = tb?.querySelector('.wblock-tc-services-row');
+      const quality = playback?.querySelector('.wblock-tc-quality-button');
+      const audio = playback?.querySelector('.wblock-tc-audio-button');
+      const sponsor = services?.querySelector('.wblock-tc-sponsor-button');
+      const deArrow = services?.querySelector('.wblock-tc-dearrow-button');
+      return { pass: !!(quality && audio && sponsor && deArrow) && !playback.querySelector('.wblock-tc-sponsor-button') &&
+          !playback.querySelector('.wblock-tc-dearrow-button'),
+        detail: `quality=${!!quality} audio=${!!audio} sponsor=${!!sponsor} deArrow=${!!deArrow}` };
     });
   } else {
-    await check(page, scenario, 'adds quality and SponsorBlock beside Safari native controls on iOS', () => {
+    await check(page, scenario, 'adds separate quality and service rows beside Safari native controls on iOS', () => {
       const toolbar = document.querySelector('.wblock-tc-toolbar');
-      const quality = toolbar?.querySelector('.wblock-tc-quality-button');
-      const sponsor = toolbar?.querySelector('.wblock-tc-sponsor-button');
+      const playback = toolbar?.querySelector('.wblock-tc-playback-row');
+      const services = toolbar?.querySelector('.wblock-tc-services-row');
+      const quality = playback?.querySelector('.wblock-tc-quality-button');
+      const sponsor = services?.querySelector('.wblock-tc-sponsor-button');
+      const deArrow = services?.querySelector('.wblock-tc-dearrow-button');
       const audio = toolbar?.querySelector('.wblock-tc-audio-button');
       return {
-        pass: !!toolbar && !!quality && !!sponsor && !audio &&
+        pass: !!toolbar && !!quality && !!sponsor && !!deArrow && !audio &&
           getComputedStyle(toolbar).pointerEvents === 'auto',
-        detail: `toolbar=${!!toolbar} quality=${!!quality} sponsor=${!!sponsor} audio=${!!audio}`,
+        detail: `toolbar=${!!toolbar} quality=${!!quality} sponsor=${!!sponsor} deArrow=${!!deArrow} audio=${!!audio}`,
       };
     });
     await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
@@ -322,6 +363,17 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
         detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)}` : 'no panel' };
     });
     await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
+    await page.evaluate(() => document.querySelector('.wblock-tc-dearrow-button').click());
+    await check(page, scenario, 'keeps the opt-in DeArrow settings panel inside the iOS viewport', () => {
+      const panel = document.querySelector('.wblock-tc-dearrow-menu');
+      const rect = panel?.getBoundingClientRect();
+      const enabled = panel?.querySelector('[data-dearrow-setting="enabled"]');
+      const button = document.querySelector('.wblock-tc-dearrow-button');
+      return { pass: !!rect && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight &&
+          enabled?.checked === false && button?.getAttribute('aria-pressed') === 'false',
+        detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)} enabled=${enabled?.checked}` : 'no panel' };
+    });
+    await page.evaluate(() => document.querySelector('.wblock-tc-dearrow-button').click());
   }
 
   await check(page, scenario, 'overrides document.hidden (background playback)', () => {
@@ -512,7 +564,7 @@ async function qualityUISelectionCheck(page, scenario) {
   const { browser, page, pageErrors } = await runScenario('desktop (macOS Safari-like)', {
     fixture: FIXTURE_URL,
     viewport: { width: 1280, height: 800 },
-    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + captionDataPrelude + '\n' + userscript,
+    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + captionDataPrelude + '\n' + deArrowPrelude + '\n' + userscript,
   });
   await commonChecks(page, 'desktop');
   await check(page, 'desktop', 'deduplicates and timestamps native chapter cues', () => {
@@ -553,6 +605,84 @@ async function qualityUISelectionCheck(page, scenario) {
       detail: `tracks=${labels.join(',')} playerRequests=${window.__wblockCaptionPlayerRequests} textRequests=${window.__wblockCaptionTextRequests}`,
     };
   });
+  await page.waitForFunction(() => document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent === 'Accurate Watch Title' &&
+    document.querySelector('ytd-compact-video-renderer #video-title')?.textContent === 'Accurate Related Title');
+  await check(page, 'desktop', 'applies submitted DeArrow titles and cached thumbnails to visible YouTube branding', () => {
+    const watchTitle = document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent;
+    const cardTitle = document.querySelector('ytd-compact-video-renderer #video-title')?.textContent;
+    const thumbnail = document.querySelector('ytd-compact-video-renderer img')?.getAttribute('src') || '';
+    const requests = window.__wblockDeArrowRequests || [];
+    const hashRequest = requests.find(value => /api\/branding\/[a-f0-9]{4}/.test(value));
+    const cardRequest = requests.find(value => value.includes('videoID=CARDVID1234'));
+    return {
+      pass: watchTitle === 'Accurate Watch Title' && cardTitle === 'Accurate Related Title' &&
+        thumbnail.includes('dearrow-thumb.ajay.app/api/v1/getThumbnail') && thumbnail.includes('time=12.5') &&
+        !!hashRequest && !hashRequest.includes('dQw4w9WgXcQ') && !!cardRequest,
+      detail: `watch=${watchTitle} card=${cardTitle} requests=${requests.length} thumbnail=${thumbnail}`,
+    };
+  });
+  await page.evaluate(() => document.querySelector('ytd-compact-video-renderer').dispatchEvent(new MouseEvent('mouseenter')));
+  await check(page, 'desktop', 'shows original DeArrow card branding on hover', () => {
+    const title = document.querySelector('ytd-compact-video-renderer #video-title')?.textContent;
+    const thumbnail = document.querySelector('ytd-compact-video-renderer img')?.getAttribute('src') || '';
+    return { pass: title === 'Original Related Title' && thumbnail.startsWith('data:image/gif'),
+      detail: `title=${title} thumbnail=${thumbnail}` };
+  });
+  await page.evaluate(() => document.querySelector('ytd-compact-video-renderer').dispatchEvent(new MouseEvent('mouseleave')));
+  await check(page, 'desktop', 'restores custom DeArrow card branding after hover', () => {
+    const title = document.querySelector('ytd-compact-video-renderer #video-title')?.textContent;
+    const thumbnail = document.querySelector('ytd-compact-video-renderer img')?.getAttribute('src') || '';
+    return { pass: title === 'Accurate Related Title' && thumbnail.includes('dearrow-thumb.ajay.app'),
+      detail: `title=${title} thumbnail=${thumbnail}` };
+  });
+  await page.evaluate(() => {
+    document.querySelector('.wblock-tc-dearrow-button').click();
+    const titles = document.querySelector('[data-dearrow-setting="replaceTitles"]');
+    titles.checked = false;
+    titles.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await check(page, 'desktop', 'persists and immediately applies independent DeArrow title settings', () => {
+    const settings = JSON.parse(localStorage.getItem('wblock.tubeCleaner.deArrow') || '{}');
+    const watchTitle = document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent;
+    const cardTitle = document.querySelector('ytd-compact-video-renderer #video-title')?.textContent;
+    const thumbnail = document.querySelector('ytd-compact-video-renderer img')?.getAttribute('src') || '';
+    return { pass: settings.replaceTitles === false && watchTitle === 'Original Watch Title' &&
+        cardTitle === 'Original Related Title' && thumbnail.includes('dearrow-thumb.ajay.app'),
+      detail: `replaceTitles=${settings.replaceTitles} watch=${watchTitle} card=${cardTitle}` };
+  });
+  await page.evaluate(() => {
+    const titles = document.querySelector('[data-dearrow-setting="replaceTitles"]');
+    titles.checked = true;
+    titles.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await check(page, 'desktop', 'reapplies DeArrow titles from its bounded session cache', () => {
+    const requests = window.__wblockDeArrowRequests || [];
+    const watchTitle = document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent;
+    const cardTitle = document.querySelector('ytd-compact-video-renderer #video-title')?.textContent;
+    return { pass: requests.length === 2 && watchTitle === 'Accurate Watch Title' && cardTitle === 'Accurate Related Title',
+      detail: `requests=${requests.length} watch=${watchTitle} card=${cardTitle}` };
+  });
+  await page.evaluate(() => {
+    const channel = document.querySelector('[data-dearrow-setting="channel"]');
+    channel.checked = true;
+    channel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await check(page, 'desktop', 'supports per-channel DeArrow exclusions without affecting other channels', () => {
+    const settings = JSON.parse(localStorage.getItem('wblock.tubeCleaner.deArrow') || '{}');
+    const watchTitle = document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent;
+    const cardTitle = document.querySelector('ytd-compact-video-renderer #video-title')?.textContent;
+    const button = document.querySelector('.wblock-tc-dearrow-button');
+    return { pass: settings.excludedChannels?.includes('test-channel') && watchTitle === 'Original Watch Title' &&
+        cardTitle === 'Accurate Related Title' && button?.getAttribute('aria-pressed') === 'false',
+      detail: `channels=${settings.excludedChannels?.join(',')} watch=${watchTitle} card=${cardTitle}` };
+  });
+  await page.evaluate(() => {
+    const channel = document.querySelector('[data-dearrow-setting="channel"]');
+    channel.checked = false;
+    channel.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector('.wblock-tc-dearrow-button').click();
+  });
+  await page.waitForFunction(() => document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent === 'Accurate Watch Title');
   await page.waitForFunction(() => !!window.__wblockSponsorRequest);
   await page.evaluate(() => {
     const video = document.querySelector('#movie_player video');
@@ -580,9 +710,9 @@ async function qualityUISelectionCheck(page, scenario) {
     document.dispatchEvent(new Event('yt-navigate-finish'));
   });
   await page.waitForTimeout(300);
-  await check(page, 'desktop', 'reuses cached SponsorBlock segments across SPA activation', () => ({
-    pass: window.__wblockSponsorRequestCount === 1,
-    detail: `requests=${window.__wblockSponsorRequestCount}`,
+  await check(page, 'desktop', 'reuses SponsorBlock and DeArrow caches across SPA activation', () => ({
+    pass: window.__wblockSponsorRequestCount === 1 && window.__wblockDeArrowRequests.length === 2,
+    detail: `sponsorRequests=${window.__wblockSponsorRequestCount} deArrowRequests=${window.__wblockDeArrowRequests.length}`,
   }));
   await page.evaluate(() => {
     document.querySelector('.wblock-tc-sponsor-button').click();

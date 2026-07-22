@@ -15,6 +15,10 @@
   .ytp-chrome-top { top: 0; }
   .ytp-chrome-bottom { bottom: 0; }
   .ytp-settings-button { position: absolute; right: 8px; bottom: 8px; width: 32px; height: 32px; }
+  #watch-metadata, #recommendations { width: 960px; max-width: calc(100% - 24px); margin: 12px auto; }
+  ytd-compact-video-renderer { display: grid; grid-template-columns: 180px 1fr; gap: 12px; width: 420px; max-width: 100%; }
+  ytd-compact-video-renderer img { display: block; width: 180px; aspect-ratio: 16 / 9; background: #333; }
+  #video-title { color: #fff; }
   .spacer { height: 1200px; }
 </style>
 </head>
@@ -35,6 +39,15 @@
         </div>
       </div>
     </div>
+  </div>
+  <div id="watch-metadata">
+    <h1><yt-formatted-string>Original Watch Title</yt-formatted-string></h1>
+  </div>
+  <div id="recommendations">
+    <ytd-compact-video-renderer data-video-id="CARDVID1234" data-channel-id="related-channel">
+      <a id="thumbnail" href="/watch?v=CARDVID1234"><img alt="Original Related Thumbnail" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></a>
+      <div><a id="video-title" href="/watch?v=CARDVID1234">Original Related Title</a><a href="/@related">Related Channel</a></div>
+    </ytd-compact-video-renderer>
   </div>
   <div class="spacer">scroll area to exercise IntersectionObserver auto-PiP</div>
 
